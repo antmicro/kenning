@@ -1,0 +1,107 @@
+from typing import List, Tuple, Any, Dict
+from .dataset import Dataset
+
+"""
+Provides an API for inference tests of a model.
+"""
+
+class InferenceTester(object):
+    """
+    Runs inference on a given model.
+    """
+
+    def __init__(self, dataset : Dataset):
+        """
+        Creates the inference tester.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset to verify the inference
+        """
+        self.dataset = dataset
+
+    def preprocess_input(self, X: List) -> Any:
+        """
+        Preprocesses the inputs for a given model.
+
+        By default no action is taken, and the inputs are passed unmodified.
+
+        Parameters
+        ----------
+        X : List
+            The input data from the Dataset object
+
+        Returns
+        -------
+        Any: the preprocessed inputs that are ready to be fed to the model
+        """
+        return X
+
+    def postprocess_outputs(self, y: Any) -> List:
+        """
+        Preprocesses the inputs for a given model.
+
+        By default no action is taken, and the inputs are passed unmodified.
+
+        Parameters
+        ----------
+        y : Any
+            The output from the model
+
+        Returns
+        -------
+        List:
+            the postprocessed outputs from the model that need to be in
+            format requested by the Dataset object.
+        """
+        return y
+
+    def run_inference(self, X: List) -> Any:
+        """
+        Runs inference for a given preprocessed input.
+
+        Parameters
+        ----------
+        X : List
+            The preprocessed inputs for the model
+
+        Returns
+        -------
+        Any: the results of the inference.
+        """
+        raise NotImplementedError
+
+    def test_inference(self, batch_size=1) -> List:
+        """
+        Runs the inference with a given dataset.
+
+        Returns
+        -------
+        List : The inference results
+        """
+        self.dataset.set_batch_size(batch_size)
+
+        predictions = []
+
+        for X, _ in iter(self.dataset):
+            prepX = self.preprocess_input(X)
+            preds = self.run_inference(prepX)
+            predictions += self.postprocess_outputs(preds)
+
+        return results
+
+    def evaluate_results(self, predictions : List) -> Dict[str, Any]:
+        """
+        Evaluates the model.
+
+        Parameters
+        ----------
+        predictions : List
+            The model predictions
+
+        Returns
+        -------
+        Dict[str, Any] : The evaluation results
+        """
+        return self.dataset.evaluation(predictions)

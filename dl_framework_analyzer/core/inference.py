@@ -1,5 +1,7 @@
 from typing import List, Tuple, Any, Dict
 from .dataset import Dataset
+from .measurements import Measurements
+from collections import defaultdict
 
 """
 Provides an API for inference tests of a model.
@@ -20,6 +22,14 @@ class InferenceTester(object):
             The dataset to verify the inference
         """
         self.dataset = dataset
+        self.data = defaultdict(list)
+        self.prepare_model()
+
+    def prepare_model(self):
+        """
+        Downloads/loads the model for the inference.
+        """
+        return NotImplementedError
 
     def preprocess_input(self, X: List) -> Any:
         """
@@ -72,7 +82,7 @@ class InferenceTester(object):
         """
         raise NotImplementedError
 
-    def test_inference(self, batch_size=1) -> List:
+    def test_inference(self) -> List:
         """
         Runs the inference with a given dataset.
 
@@ -80,28 +90,12 @@ class InferenceTester(object):
         -------
         List : The inference results
         """
-        self.dataset.set_batch_size(batch_size)
 
-        predictions = []
+        measurements = Measurements()
 
-        for X, _ in iter(self.dataset):
+        for X, y in iter(self.dataset):
             prepX = self.preprocess_input(X)
             preds = self.run_inference(prepX)
-            predictions += self.postprocess_outputs(preds)
+            measurements += self.dataset.evaluate(preds, y)
 
-        return results
-
-    def evaluate_results(self, predictions : List) -> Dict[str, Any]:
-        """
-        Evaluates the model.
-
-        Parameters
-        ----------
-        predictions : List
-            The model predictions
-
-        Returns
-        -------
-        Dict[str, Any] : The evaluation results
-        """
-        return self.dataset.evaluation(predictions)
+        return measurements

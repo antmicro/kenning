@@ -6,6 +6,7 @@ import argparse
 from ..core.dataset import Dataset
 from ..utils.class_loader import load_class
 from ..core.measurements import Measurements
+from ..utils import logger
 
 class RandomizedClassificationDataset(Dataset):
     """
@@ -62,7 +63,7 @@ def run_classification(
 
     inferenceobj = inferencetestercls(dataset)
 
-    inferenceobj.test_inference()
+    print(inferenceobj.test_inference())
         
     
 def main(argv):
@@ -83,8 +84,17 @@ def main(argv):
         type=int,
         default=1000
     )
+    parser.add_argument(
+        '--verbosity',
+        help='Verbosity level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
+    )
 
     args = parser.parse_args(argv[1:])
+
+    logger.set_verbosity(args.verbosity)
+    logger.get_logger()
 
     cls = load_class(args.inferencetestercls)
 

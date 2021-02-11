@@ -1,6 +1,6 @@
 from typing import List, Tuple, Any, Dict
 from .dataset import Dataset
-from .measurements import Measurements
+from .measurements import Measurements, statistics
 from collections import defaultdict
 
 """
@@ -82,6 +82,7 @@ class InferenceTester(object):
         """
         raise NotImplementedError
 
+    @statistics('inferencetime')
     def test_inference(self) -> List:
         """
         Runs the inference with a given dataset.

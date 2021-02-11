@@ -1,12 +1,12 @@
 import sys
 import numpy as np
-import importlib
 import argparse
 
 from ..core.dataset import Dataset
 from ..utils.class_loader import load_class
 from ..core.measurements import Measurements
 from ..utils import logger
+
 
 class RandomizedClassificationDataset(Dataset):
     """
@@ -50,11 +50,12 @@ class RandomizedClassificationDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         return Measurements()
-    
+
+
 def run_classification(
-    inferencetestercls,
-    batch_size=1,
-    samplescount=1000):
+        inferencetestercls,
+        batch_size=1,
+        samplescount=1000):
     dataset = RandomizedClassificationDataset(
         '',
         batch_size,
@@ -63,14 +64,14 @@ def run_classification(
 
     inferenceobj = inferencetestercls(dataset)
 
-    print(inferenceobj.test_inference())
-        
-    
+    return inferenceobj.test_inference()
+
+
 def main(argv):
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'inferencetestercls',
-        help='InferenceTester-based class with inference implementation to import',
+        help='InferenceTester-based class with inference implementation to import',  # noqa: E501
     )
     parser.add_argument(
         '--batch-size',
@@ -102,6 +103,7 @@ def main(argv):
         cls,
         args.batch_size,
         args.num_samples)
+
 
 if __name__ == '__main__':
     main(sys.argv)

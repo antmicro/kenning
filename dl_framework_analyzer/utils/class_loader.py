@@ -1,6 +1,7 @@
 import importlib
 from typing import ClassVar
 
+
 def load_class(modulepath: str) -> ClassVar:
     """
     Loads class given in the module path.

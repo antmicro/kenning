@@ -1,4 +1,4 @@
-from typing import List, Tuple, Any, Dict
+from typing import List, Any
 from .dataset import Dataset
 from .measurements import Measurements, statistics
 from collections import defaultdict
@@ -7,12 +7,13 @@ from collections import defaultdict
 Provides an API for inference tests of a model.
 """
 
+
 class InferenceTester(object):
     """
     Runs inference on a given model.
     """
 
-    def __init__(self, dataset : Dataset):
+    def __init__(self, dataset: Dataset):
         """
         Creates the inference tester.
 

@@ -1,4 +1,3 @@
-import numpy as np
 from collections import defaultdict
 import time
 from ..utils import logger
@@ -19,6 +18,7 @@ class Measurements(object):
             for k, v in other.items():
                 self.data[k] += other[k]
         return self
+
 
 def statistics(measurementname):
     def statistics_decorator(function):

@@ -1,8 +1,10 @@
-from typing import Tuple, List, Dict, Any
+from typing import Tuple, List
+from .measurements import Measurements
 
 """
 Provides an API for dataset loading, creation and configuration.
 """
+
 
 class Dataset(object):
     """
@@ -20,7 +22,7 @@ class Dataset(object):
         ID of the next data to be delivered for inference
     """
 
-    def __init__(self, root : str, batch_size: int = 1):
+    def __init__(self, root: str, batch_size: int = 1):
         """
         Prepares all structures and data required for providing data samples.
 

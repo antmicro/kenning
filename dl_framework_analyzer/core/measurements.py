@@ -6,6 +6,11 @@ class Measurements(object):
         self.data = defaultdict(list)
 
     def __iadd__(self, other):
-        for k, v in other.data.items():
-            self.data[k] += other.data[k]
+        assert isinstance(other, dict) or isinstance(other, Measurements)
+        if isinstance(other, Measurements):
+            for k, v in other.data.items():
+                self.data[k] += other.data[k]
+        else:
+            for k, v in other.items():
+                self.data[k] += other[k]
         return self

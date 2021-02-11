@@ -1,3 +1,7 @@
+"""
+Provides methods for importing classes and modules at runtime based on string.
+"""
+
 import importlib
 from typing import ClassVar
 

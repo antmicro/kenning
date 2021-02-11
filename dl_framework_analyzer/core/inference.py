@@ -1,11 +1,11 @@
+"""
+Provides an API for inference tests of a model.
+"""
+
 from typing import List, Any
 from .dataset import Dataset
 from .measurements import Measurements, statistics
 from collections import defaultdict
-
-"""
-Provides an API for inference tests of a model.
-"""
 
 
 class InferenceTester(object):

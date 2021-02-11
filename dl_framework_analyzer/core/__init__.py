@@ -1,0 +1,3 @@
+"""
+Module containing core functionality.
+"""

@@ -1,9 +1,9 @@
-from typing import Tuple, List
-from .measurements import Measurements
-
 """
 Provides an API for dataset loading, creation and configuration.
 """
+
+from typing import Tuple, List
+from .measurements import Measurements
 
 
 class Dataset(object):

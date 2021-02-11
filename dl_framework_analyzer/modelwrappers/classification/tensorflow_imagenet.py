@@ -3,7 +3,12 @@ from tensorflow import keras
 import numpy as np
 
 
-class TensorflowImagenetClassifier(InferenceTester):
+"""
+Contains Tensorflow models for the classification problem.
+"""
+
+
+class TensorflowImagenetResNet152(InferenceTester):
     def prepare_model(self):
         self.model = keras.applications.ResNet152()
 

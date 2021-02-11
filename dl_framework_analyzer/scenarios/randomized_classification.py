@@ -1,3 +1,13 @@
+"""
+The sample benchmark for classification problem.
+
+It works with Imagenet-trained models, provides 224x224x3 float tensors as
+numpy arrays. It also expects 1000-element float vector as an output.
+
+It provides random data, so it is not applicable for the quality measures.
+This test is only for performance tests.
+"""
+
 import sys
 import numpy as np
 import argparse
@@ -54,8 +64,25 @@ class RandomizedClassificationDataset(Dataset):
 
 def run_classification(
         inferencetestercls,
-        batch_size=1,
-        samplescount=1000):
+        batch_size: int = 1,
+        samplescount: int = 1000):
+    """
+    Runs classification speed benchmark for a given model.
+
+    Parameters
+    ----------
+    inferencetestercls : class
+        The class variable that inherits from InferenceTester and implements
+        virtual methods for a given model
+    batch_size : int
+        The batch size of processing
+    samplecount : int
+        The number of input samples to process
+
+    Returns
+    -------
+    Measurements : the benchmark results
+    """
     dataset = RandomizedClassificationDataset(
         '',
         batch_size,

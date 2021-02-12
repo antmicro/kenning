@@ -2,10 +2,12 @@
 Module containing decorators for benchmark data gathering.
 """
 
-from typing import List, Dict, Union
+from typing import List, Dict, Union, Any
 from collections import defaultdict
 import time
 from ..utils import logger
+import psutil
+from threading import Thread, current_thread
 
 from functools import wraps
 
@@ -71,6 +73,20 @@ class Measurements(object):
         assert isinstance(measurementtype, str)
         self.data[measurementtype] += valueslist
 
+    def add_measurement(self, measurementtype: str, value: Any):
+        """
+        Add new value to a given measurement type.
+
+        Parameters
+        ----------
+        measurementtype : str
+            the measurement type to be updated
+        value : Any
+            the value to add
+        """
+        assert isinstance(measurementtype, str)
+        self.data[measurementtype].append(value)
+
     def get_values(self, measurementtype: str) -> List:
         """
         Returns list of values for a given measurement type.
@@ -113,14 +129,38 @@ def timemeasurements(measurementname: str):
             )
             MeasurementsCollector.measurements += {
                 measurementname: [duration],
-                f'{measurementname}_duration': [time.perf_counter_ns()]
+                f'{measurementname}_timestamp': [time.perf_counter_ns()]
             }
             return returnvalue
         return statistics_wrapper
     return statistics_decorator
 
 
-def memorymeasurements(measurementname: str):
+class SystemStatsCollector(Thread):
+    def __init__(self, prefix):
+        Thread.__init__(self)
+        self.measurements = Measurements()
+        self.running = True
+        self.prefix = prefix
+
+    def get_measurements(self):
+        return self.measurements
+
+    def run(self):
+        while self.running:
+            cpus = psutil.cpu_percent(interval=0.5, percpu=True)
+            mem = psutil.virtual_memory()
+            self.measurements += {
+                f'{self.prefix}_cpus_percent': [cpus],
+                f'{self.prefix}_mem_percent': [mem.percent],
+                f'{self.prefix}_timestamp': [time.perf_counter_ns()]
+            }
+
+    def stop(self):
+        self.running = False
+
+
+def systemstatsmeasurements(measurementname: str):
     """
     Decorator for measuring memory usage of the function.
 
@@ -129,3 +169,17 @@ def memorymeasurements(measurementname: str):
     measurementname : str
         The name of the measurement type.
     """
+
+    def statistics_decorator(function):
+        @wraps(function)
+        def statistics_wrapper(*args):
+            measurementsthread = SystemStatsCollector(measurementname)
+            measurementsthread.start()
+            returnvalue = function(*args)
+            measurementsthread.stop()
+            measurementsthread.join()
+            MeasurementsCollector.measurements += \
+                    measurementsthread.get_measurements()
+            return returnvalue
+        return statistics_wrapper
+    return statistics_decorator

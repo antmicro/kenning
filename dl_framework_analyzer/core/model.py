@@ -5,7 +5,7 @@ Provides a wrapper for deep learning models.
 from typing import List, Any
 from .dataset import Dataset
 from .measurements import Measurements, MeasurementsCollector
-from .measurements import timemeasurements, memorymeasurements
+from .measurements import timemeasurements, systemstatsmeasurements
 from collections import defaultdict
 
 
@@ -94,6 +94,7 @@ class ModelWrapper(object):
     def _run_inference(self, X):
         return self.run_inference(X)
 
+    @systemstatsmeasurements('inferencesysstats')
     @timemeasurements('inference')
     def test_inference(self) -> List:
         """

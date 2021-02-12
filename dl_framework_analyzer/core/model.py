@@ -4,7 +4,8 @@ Provides a wrapper for deep learning models.
 
 from typing import List, Any
 from .dataset import Dataset
-from .measurements import Measurements, statistics
+from .measurements import Measurements, MeasurementsCollector
+from .measurements import timemeasurements, memorymeasurements
 from collections import defaultdict
 
 
@@ -49,6 +50,9 @@ class ModelWrapper(object):
         """
         return X
 
+    def _preprocess_input(self, X):
+        return self.preprocess_input(X)
+
     def postprocess_outputs(self, y: Any) -> List:
         """
         Processes the outputs for a given model.
@@ -68,6 +72,9 @@ class ModelWrapper(object):
         """
         return y
 
+    def _postprocess_outputs(self, y):
+        return self.postprocess_outputs(y)
+
     def run_inference(self, X: List) -> Any:
         """
         Runs inference for a given preprocessed input.
@@ -83,7 +90,11 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    @statistics('inferencetime')
+    @timemeasurements('inference_step')
+    def _run_inference(self, X):
+        return self.run_inference(X)
+
+    @timemeasurements('inference')
     def test_inference(self) -> List:
         """
         Runs the inference with a given dataset.
@@ -96,8 +107,11 @@ class ModelWrapper(object):
         measurements = Measurements()
 
         for X, y in iter(self.dataset):
-            prepX = self.preprocess_input(X)
-            preds = self.run_inference(prepX)
-            measurements += self.dataset.evaluate(preds, y)
+            prepX = self._preprocess_input(X)
+            preds = self._run_inference(prepX)
+            posty = self._postprocess_outputs(preds)
+            measurements += self.dataset.evaluate(posty, y)
+
+        MeasurementsCollector.measurements += measurements
 
         return measurements

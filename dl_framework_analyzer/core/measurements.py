@@ -7,6 +7,8 @@ from collections import defaultdict
 import time
 from ..utils import logger
 
+from functools import wraps
+
 logger = logger.get_logger()
 
 
@@ -85,13 +87,15 @@ class Measurements(object):
         return self.data[measurementtype]
 
 
-def statistics(measurementname: str):
+class MeasurementsCollector(object):
+    measurements = Measurements()
+
+
+def timemeasurements(measurementname: str):
     """
     Decorator for measuring time of the function.
 
-    The function wrapped by the decorator must return the Measurements object,
-    since the decorator will append timing data to the returned Measurements
-    object.
+    The duration is given in nanoseconds.
 
     Parameters
     ----------
@@ -99,12 +103,29 @@ def statistics(measurementname: str):
         The name of the measurement type.
     """
     def statistics_decorator(function):
+        @wraps(function)
         def statistics_wrapper(*args):
             start = time.perf_counter_ns()
-            measurements = function(*args)
+            returnvalue = function(*args)
             duration = time.perf_counter_ns() - start
-            logger.debug(f'{function.__name__} time:  {duration / 1000000} ms')
-            measurements += {'processing_time': [duration]}
-            return measurements
+            logger.debug(
+                f'{function.__name__} time:  {duration / 1000000} ms'
+            )
+            MeasurementsCollector.measurements += {
+                measurementname: [duration],
+                f'{measurementname}_duration': [time.perf_counter_ns()]
+            }
+            return returnvalue
         return statistics_wrapper
     return statistics_decorator
+
+
+def memorymeasurements(measurementname: str):
+    """
+    Decorator for measuring memory usage of the function.
+
+    Parameters
+    ----------
+    measurementname : str
+        The name of the measurement type.
+    """

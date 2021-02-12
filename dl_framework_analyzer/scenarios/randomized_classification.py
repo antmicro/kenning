@@ -14,7 +14,7 @@ import argparse
 
 from ..core.dataset import Dataset
 from ..utils.class_loader import load_class
-from ..core.measurements import Measurements
+from ..core.measurements import Measurements, MeasurementsCollector
 from ..utils import logger
 
 
@@ -85,8 +85,8 @@ def run_classification(
     """
     dataset = RandomizedClassificationDataset(
         '',
-        batch_size,
-        samplescount
+        batch_size=batch_size,
+        samplescount=samplescount
     )
 
     inferenceobj = modelwrappercls(dataset)
@@ -130,6 +130,8 @@ def main(argv):
         cls,
         args.batch_size,
         args.num_samples)
+
+    print(f'Measurements:\n{MeasurementsCollector.measurements.data}')
 
 
 if __name__ == '__main__':

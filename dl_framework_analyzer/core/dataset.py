@@ -37,7 +37,7 @@ class Dataset(object):
         self._dataindex = 0
         self.dataX = []
         self.dataY = []
-        self.batch_size = 1
+        self.batch_size = batch_size
         self.prepare()
 
     def __iter__(self) -> 'Dataset':

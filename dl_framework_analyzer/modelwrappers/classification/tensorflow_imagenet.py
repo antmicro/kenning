@@ -1,4 +1,4 @@
-from ...core.inference import InferenceTester
+from ...core.model import ModelWrapper
 from tensorflow import keras
 import numpy as np
 
@@ -8,7 +8,7 @@ Contains Tensorflow models for the classification problem.
 """
 
 
-class TensorflowImagenetResNet152(InferenceTester):
+class TensorflowImagenetResNet152(ModelWrapper):
     def prepare_model(self):
         self.model = keras.applications.ResNet152()
 

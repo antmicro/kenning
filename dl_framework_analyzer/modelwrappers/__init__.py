@@ -1,3 +1,3 @@
 """
-Provides inference testers for various deep learning problems.
+Provides model wrappers for various deep learning models.
 """

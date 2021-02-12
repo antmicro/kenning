@@ -1,3 +1,3 @@
 """
-Contains inference testers for the classification problem.
+Contains model wrappers for the classification problem.
 """

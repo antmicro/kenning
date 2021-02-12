@@ -1,5 +1,5 @@
 """
-Provides an API for inference tests of a model.
+Provides a wrapper for deep learning models.
 """
 
 from typing import List, Any
@@ -8,14 +8,14 @@ from .measurements import Measurements, statistics
 from collections import defaultdict
 
 
-class InferenceTester(object):
+class ModelWrapper(object):
     """
-    Runs inference on a given model.
+    Wraps the given model.
     """
 
     def __init__(self, dataset: Dataset):
         """
-        Creates the inference tester.
+        Creates the model wrapper.
 
         Parameters
         ----------
@@ -28,13 +28,13 @@ class InferenceTester(object):
 
     def prepare_model(self):
         """
-        Downloads/loads the model for the inference.
+        Downloads/loads the model.
         """
         return NotImplementedError
 
     def preprocess_input(self, X: List) -> Any:
         """
-        Preprocesses the inputs for a given model.
+        Preprocesses the inputs for a given model before inference.
 
         By default no action is taken, and the inputs are passed unmodified.
 
@@ -51,9 +51,9 @@ class InferenceTester(object):
 
     def postprocess_outputs(self, y: Any) -> List:
         """
-        Preprocesses the inputs for a given model.
+        Processes the outputs for a given model.
 
-        By default no action is taken, and the inputs are passed unmodified.
+        By default no action is taken, and the outputs are passed unmodified.
 
         Parameters
         ----------

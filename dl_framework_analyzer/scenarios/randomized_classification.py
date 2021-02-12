@@ -63,7 +63,7 @@ class RandomizedClassificationDataset(Dataset):
 
 
 def run_classification(
-        inferencetestercls,
+        modelwrappercls,
         batch_size: int = 1,
         samplescount: int = 1000):
     """
@@ -71,8 +71,8 @@ def run_classification(
 
     Parameters
     ----------
-    inferencetestercls : class
-        The class variable that inherits from InferenceTester and implements
+    modelwrappercls : class
+        The class variable that inherits from ModelWrapper and implements
         virtual methods for a given model
     batch_size : int
         The batch size of processing
@@ -89,7 +89,7 @@ def run_classification(
         samplescount
     )
 
-    inferenceobj = inferencetestercls(dataset)
+    inferenceobj = modelwrappercls(dataset)
 
     return inferenceobj.test_inference()
 
@@ -97,8 +97,8 @@ def run_classification(
 def main(argv):
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
-        'inferencetestercls',
-        help='InferenceTester-based class with inference implementation to import',  # noqa: E501
+        'modelwrappercls',
+        help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
     )
     parser.add_argument(
         '--batch-size',
@@ -124,7 +124,7 @@ def main(argv):
     logger.set_verbosity(args.verbosity)
     logger.get_logger()
 
-    cls = load_class(args.inferencetestercls)
+    cls = load_class(args.modelwrappercls)
 
     run_classification(
         cls,

@@ -7,7 +7,9 @@ from collections import defaultdict
 import time
 from dl_framework_analyzer.utils import logger
 import psutil
-from threading import Thread, current_thread
+# TODO add checking if NVIDIA is present. It may not be neccessary
+from pynvml.smi import nvidia_smi
+from threading import Thread
 
 from functools import wraps
 
@@ -142,6 +144,7 @@ class SystemStatsCollector(Thread):
         self.measurements = Measurements()
         self.running = True
         self.prefix = prefix
+        self.nvidia_smi = nvidia_smi.getInstance()
 
     def get_measurements(self):
         return self.measurements
@@ -150,10 +153,19 @@ class SystemStatsCollector(Thread):
         while self.running:
             cpus = psutil.cpu_percent(interval=0.5, percpu=True)
             mem = psutil.virtual_memory()
+            gpu = self.nvidia_smi.DeviceQuery(
+                'memory.free, memory.total, utilization.gpu'
+            )
+            memtot = float(gpu['gpu'][0]['fb_memory_usage']['total'])
+            memfree = float(gpu['gpu'][0]['fb_memory_usage']['free'])
+            gpumemutilization = (memtot - memfree) / memtot * 100.0
+            gpuutilization = float(gpu['gpu'][0]['utilization']['gpu_util'])
             self.measurements += {
                 f'{self.prefix}_cpus_percent': [cpus],
                 f'{self.prefix}_mem_percent': [mem.percent],
-                f'{self.prefix}_timestamp': [time.perf_counter_ns()]
+                f'{self.prefix}_gpu_utilization': [gpuutilization],
+                f'{self.prefix}_gpu_mem_utilization': [gpumemutilization],
+                f'{self.prefix}_timestamp': [time.perf_counter_ns()],
             }
 
     def stop(self):

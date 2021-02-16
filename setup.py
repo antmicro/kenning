@@ -24,5 +24,6 @@ setuptools.setup(
         'Jinja2>=2.11.2',
         'matplotlib>=3.3.4',
         'pynvml>=8.0.4',
+        'tqdm>=4.56.2'
     ],
 )

@@ -191,7 +191,7 @@ def systemstatsmeasurements(measurementname: str):
             measurementsthread.stop()
             measurementsthread.join()
             MeasurementsCollector.measurements += \
-                    measurementsthread.get_measurements()
+                measurementsthread.get_measurements()
             return returnvalue
         return statistics_wrapper
     return statistics_decorator

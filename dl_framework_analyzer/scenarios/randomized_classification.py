@@ -69,6 +69,7 @@ class RandomizedClassificationDataset(Dataset):
         return Measurements()
 
 
+@systemstatsmeasurements('full_run_statistics')
 def run_classification(
         modelwrappercls,
         batch_size: int = 1,
@@ -98,6 +99,13 @@ def run_classification(
 
     inferenceobj = modelwrappercls(dataset)
 
+    frameworktuple = inferenceobj.get_framework_and_version()
+
+    MeasurementsCollector.measurements += {
+        'framework': frameworktuple[0],
+        'version': frameworktuple[1]
+    }
+
     return inferenceobj.test_inference()
 
 
@@ -106,6 +114,19 @@ def main(argv):
     parser.add_argument(
         'modelwrappercls',
         help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
+    )
+    parser.add_argument(
+        'output',
+        help='The path to the output directory',
+        type=Path)
+    parser.add_argument(
+        'reportname',
+        help='The name of the report, used as RST name and resources prefix',
+        type=str)
+    parser.add_argument(
+        '--resources-dir',
+        help='The path to the directory with resources',
+        type=Path
     )
     parser.add_argument(
         '--batch-size',
@@ -128,6 +149,12 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
+    if args.resources_dir is None:
+        args.resources_dir = Path(args.output / 'img')
+
+    args.output.mkdir(parents=True, exist_ok=True)
+    args.resources_dir.mkdir(parents=True, exist_ok=True)
+
     logger.set_verbosity(args.verbosity)
     logger.get_logger()
 
@@ -138,7 +165,50 @@ def main(argv):
         args.batch_size,
         args.num_samples)
 
-    print(f'Measurements:\n{MeasurementsCollector.measurements.data}')
+    reportname = args.reportname
+
+    with path(reports, f'classification-performance.rst') as reportpath:
+        batchtime = args.resources_dir / f'{reportname}-batchtime.png'
+        memusage = args.resources_dir / f'{reportname}-memoryusage.png'
+        gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
+        gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
+        create_line_plot(
+            batchtime,
+            'Inference time for batches',
+            'Time', 'ns',
+            'Inference time', 'ns',
+            MeasurementsCollector.measurements.data['inference_step_timestamp'],
+            MeasurementsCollector.measurements.data['inference_step'])
+        create_line_plot(
+            memusage,
+            'Memory usage over benchmark',
+            'Time', 'ns',
+            'Memory usage', '%',
+            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
+            MeasurementsCollector.measurements.data['full_run_statistics_mem_percent'])
+        create_line_plot(
+            gpumemusage,
+            'GPU Memory usage over benchmark',
+            'Time', 'ns',
+            'Memory usage', '%',
+            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
+            MeasurementsCollector.measurements.data['full_run_statistics_gpu_mem_utilization'])
+        create_line_plot(
+            gpuusage,
+            'GPU usage over benchmark',
+            'Time', 'ns',
+            'Memory usage', '%',
+            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
+            MeasurementsCollector.measurements.data['full_run_statistics_gpu_utilization'])
+        MeasurementsCollector.measurements += {
+            'reportname': [reportname],
+            'memusagepath': [memusage],
+            'batchtimepath': [batchtime]
+        }
+        create_report_from_measurements(
+            reportpath,
+            MeasurementsCollector.measurements.data,
+            args.output / f'{reportname}.rst')
 
 
 if __name__ == '__main__':

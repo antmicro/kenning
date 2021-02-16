@@ -2,10 +2,12 @@
 Provides a wrapper for deep learning models.
 """
 
-from typing import List, Any
-from .dataset import Dataset
-from .measurements import Measurements, MeasurementsCollector
-from .measurements import timemeasurements, systemstatsmeasurements
+from typing import List, Any, Tuple
+from dl_framework_analyzer.core.dataset import Dataset
+from dl_framework_analyzer.core.measurements import Measurements
+from dl_framework_analyzer.core.measurements import MeasurementsCollector
+from dl_framework_analyzer.core.measurements import timemeasurements
+from dl_framework_analyzer.core.measurements import systemstatsmeasurements
 from collections import defaultdict
 
 

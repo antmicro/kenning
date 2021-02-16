@@ -5,7 +5,7 @@ Module containing decorators for benchmark data gathering.
 from typing import List, Dict, Union, Any
 from collections import defaultdict
 import time
-from ..utils import logger
+from dl_framework_analyzer.utils import logger
 import psutil
 from threading import Thread, current_thread
 

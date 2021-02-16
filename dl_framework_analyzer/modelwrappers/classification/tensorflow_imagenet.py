@@ -1,5 +1,5 @@
-from ...core.model import ModelWrapper
-from tensorflow import keras
+from dl_framework_analyzer.core.model import ModelWrapper
+import tensorflow as tf
 import numpy as np
 
 

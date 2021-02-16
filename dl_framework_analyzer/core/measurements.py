@@ -106,6 +106,9 @@ class Measurements(object):
 
 
 class MeasurementsCollector(object):
+    """
+    It is a 'static' class collecting measurements from various sources.
+    """
     measurements = Measurements()
 
 
@@ -139,19 +142,61 @@ def timemeasurements(measurementname: str):
 
 
 class SystemStatsCollector(Thread):
-    def __init__(self, prefix):
+    """
+    It is a separate thread used for collecting system statistics.
+
+    It collects:
+
+    * CPU utilization,
+    * RAM utilization,
+    * GPU utilization,
+    * GPU Memory utilization.
+
+    It can be executed in parallel to another function to check its
+    utilization of resources.
+    """
+    def __init__(self, prefix: str, step: float = 0.5):
+        """
+        Prepares thread for execution.
+
+        Parameters
+        ----------
+        prefix : str
+            The prefix used in measurements
+        step : float
+            The step for the measurements, in seconds
+        """
         Thread.__init__(self)
         self.measurements = Measurements()
         self.running = True
         self.prefix = prefix
         self.nvidia_smi = nvidia_smi.getInstance()
+        self.step = step
 
     def get_measurements(self):
+        """
+        Returns measurements from the thread.
+
+        Collected measurements names are prefixed by the prefix given in the
+        constructor.
+
+        The list of measurements:
+
+        * `<prefix>_cpus_percent`: gives per-core CPU utilization (%),
+        * `<prefix>_mem_percent`: gives overall memory usage (%),
+        * `<prefix>_gpu_utilization`: gives overall GPU utilization (%),
+        * `<prefix>_gpu_mem_utilization`: gives overall memory utilization (%),
+        * `<prefix>_timestamp`: gives the timestamp of above measurements (ns).
+
+        Returns
+        -------
+        Measurements : Measurements object.
+        """
         return self.measurements
 
     def run(self):
         while self.running:
-            cpus = psutil.cpu_percent(interval=0.5, percpu=True)
+            cpus = psutil.cpu_percent(interval=self.step, percpu=True)
             mem = psutil.virtual_memory()
             gpu = self.nvidia_smi.DeviceQuery(
                 'memory.free, memory.total, utilization.gpu'
@@ -172,20 +217,25 @@ class SystemStatsCollector(Thread):
         self.running = False
 
 
-def systemstatsmeasurements(measurementname: str):
+def systemstatsmeasurements(measurementname: str, step: float = 0.5):
     """
     Decorator for measuring memory usage of the function.
+
+    Check SystemStatsCollector.get_measurements for list of delivered
+    measurements.
 
     Parameters
     ----------
     measurementname : str
         The name of the measurement type.
+    step : float
+        The step for the measurements, in seconds
     """
 
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args):
-            measurementsthread = SystemStatsCollector(measurementname)
+            measurementsthread = SystemStatsCollector(measurementname, step)
             measurementsthread.start()
             returnvalue = function(*args)
             measurementsthread.stop()

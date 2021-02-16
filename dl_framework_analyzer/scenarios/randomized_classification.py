@@ -167,7 +167,9 @@ def main(argv):
 
     reportname = args.reportname
 
-    with path(reports, f'classification-performance.rst') as reportpath:
+    measurementsdata = MeasurementsCollector.measurements.data
+
+    with path(reports, 'classification-performance.rst') as reportpath:
         batchtime = args.resources_dir / f'{reportname}-batchtime.png'
         memusage = args.resources_dir / f'{reportname}-memoryusage.png'
         gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
@@ -177,29 +179,29 @@ def main(argv):
             'Inference time for batches',
             'Time', 'ns',
             'Inference time', 'ns',
-            MeasurementsCollector.measurements.data['inference_step_timestamp'],
-            MeasurementsCollector.measurements.data['inference_step'])
+            measurementsdata['inference_step_timestamp'],
+            measurementsdata['inference_step'])
         create_line_plot(
             memusage,
             'Memory usage over benchmark',
             'Time', 'ns',
             'Memory usage', '%',
-            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
-            MeasurementsCollector.measurements.data['full_run_statistics_mem_percent'])
+            measurementsdata['full_run_statistics_timestamp'],
+            measurementsdata['full_run_statistics_mem_percent'])
         create_line_plot(
             gpumemusage,
             'GPU Memory usage over benchmark',
             'Time', 'ns',
             'Memory usage', '%',
-            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
-            MeasurementsCollector.measurements.data['full_run_statistics_gpu_mem_utilization'])
+            measurementsdata['full_run_statistics_timestamp'],
+            measurementsdata['full_run_statistics_gpu_mem_utilization'])
         create_line_plot(
             gpuusage,
             'GPU usage over benchmark',
             'Time', 'ns',
             'Memory usage', '%',
-            MeasurementsCollector.measurements.data['full_run_statistics_timestamp'],
-            MeasurementsCollector.measurements.data['full_run_statistics_gpu_utilization'])
+            measurementsdata['full_run_statistics_timestamp'],
+            measurementsdata['full_run_statistics_gpu_utilization'])
         MeasurementsCollector.measurements += {
             'reportname': [reportname],
             'memusagepath': [memusage],
@@ -207,7 +209,7 @@ def main(argv):
         }
         create_report_from_measurements(
             reportpath,
-            MeasurementsCollector.measurements.data,
+            measurementsdata,
             args.output / f'{reportname}.rst')
 
 

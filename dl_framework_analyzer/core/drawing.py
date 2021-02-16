@@ -4,6 +4,7 @@ Wrappers for drawing plots for reports.
 
 from matplotlib import pyplot as plt
 
+
 def create_line_plot(
         outpath,
         title,

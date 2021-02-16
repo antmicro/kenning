@@ -3,6 +3,7 @@ Provides an API for dataset loading, creation and configuration.
 """
 
 from typing import Tuple, List
+from pathlib import Path
 from .measurements import Measurements
 
 
@@ -22,22 +23,30 @@ class Dataset(object):
         ID of the next data to be delivered for inference
     """
 
-    def __init__(self, root: str, batch_size: int = 1):
+    def __init__(
+            self,
+            root: Path,
+            batch_size: int = 1,
+            download_dataset: bool = False):
         """
         Prepares all structures and data required for providing data samples.
 
         Parameters
         ----------
-        root : str
+        root : Path
             The path to the dataset data
         batch_size : int
             The batch size
+        download_dataset : bool
+            True if dataset should be downloaded first
         """
-        self.root = root
+        self.root = Path(root)
         self._dataindex = 0
         self.dataX = []
         self.dataY = []
         self.batch_size = batch_size
+        if download_dataset:
+            self.download_dataset()
         self.prepare()
 
     def __iter__(self) -> 'Dataset':

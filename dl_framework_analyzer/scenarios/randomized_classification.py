@@ -34,7 +34,7 @@ class RandomizedClassificationDataset(Dataset):
 
     def __init__(
             self,
-            root: str,
+            root: Path,
             batch_size: int = 1,
             samplescount: int = 1000,
             inputdims: list = (224, 224, 3),

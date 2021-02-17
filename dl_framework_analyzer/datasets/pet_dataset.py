@@ -89,7 +89,9 @@ class PetDataset(Dataset):
                 if line.startswith('#'):
                     continue
                 fields = line.split(' ')
-                self.dataX.append(fields[0])
+                self.dataX.append(
+                    str(self.root / 'images' / (fields[0] + '.jpg'))
+                )
                 if self.classify_by == 'species':
                     self.dataY.append(int(fields[2]) - 1)
                 else:

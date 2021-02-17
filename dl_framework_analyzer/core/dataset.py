@@ -4,6 +4,8 @@ Provides an API for dataset loading, creation and configuration.
 
 from typing import Tuple, List
 from pathlib import Path
+from sklearn.model_selection import train_test_split
+
 from .measurements import Measurements
 
 
@@ -135,6 +137,10 @@ class Dataset(object):
         """
         Returns the tuple of all inputs and outputs for the dataset.
 
+        *WARNING*: It loads all entries with prepare_input_samples and
+        prepare_output_samples to the memory - for large datasets it may result
+        in filling the whole space.
+
         Returns
         -------
         Tuple[List, List] : the list of data samples
@@ -143,6 +149,43 @@ class Dataset(object):
             self.prepare_input_samples(self.dataX),
             self.prepare_output_samples(self.dataY)
         )
+
+    def get_data_unloaded(self) -> Tuple[List, List]:
+        """
+        Returns the input and output representations before loading.
+
+        The representations can be opened using prepare_input_samples and
+        prepare_output_samples.
+
+        Returns
+        -------
+        Tuple[List, List] : the list of data samples representations
+        """
+        return (self.dataX, self.dataY)
+
+    def train_test_split_representations(
+            self,
+            test_fraction: float = 0.25,
+            seed: int = 12345):
+        """
+        Splits the data representations into train dataset and test dataset.
+
+        Parameters
+        ----------
+        test_fraction : float
+            The fraction of data to leave for model validation
+        seed : int
+            The seed for random state
+        """
+        dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
+            self.dataX,
+            self.dataY,
+            test_size=test_fraction,
+            random_state=seed,
+            shuffle=True,
+            stratify=self.dataY
+        )
+        return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
     def download_dataset(self):
         """

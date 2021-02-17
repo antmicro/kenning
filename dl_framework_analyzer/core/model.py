@@ -124,3 +124,19 @@ class ModelWrapper(object):
         MeasurementsCollector.measurements += measurements
 
         return measurements
+
+    def train_model(self, outputmodel, logdir=None):
+        """
+        Trains the model with a given dataset.
+
+        This method should implement training routine for a given dataset and
+        save a working model to a given path in a form of a single file.
+
+        Parameters
+        ----------
+        outputmodel : Path
+            Path to the output model.
+        logdir : Path
+            Optional path to the logs file.
+        """
+        raise NotImplementedError

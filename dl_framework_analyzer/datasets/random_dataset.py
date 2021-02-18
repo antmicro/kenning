@@ -1,6 +1,5 @@
 import numpy as np
 from pathlib import Path
-import argparse
 
 from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.core.measurements import Measurements

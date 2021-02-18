@@ -8,7 +8,6 @@ from dl_framework_analyzer.core.model import ModelWrapper
 from pathlib import Path
 import tensorflow as tf
 import tensorflow_addons as tfa
-import numpy as np
 
 from dl_framework_analyzer.core.dataset import Dataset
 
@@ -77,7 +76,7 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
                 tf.random.uniform([], minval=-0.3, maxval=0.3), 'BILINEAR'
             )
             return img, tf.convert_to_tensor(onehot)
-        
+
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(
             0.25
         )
@@ -119,10 +118,10 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
 
         self.model.fit(
             traindataset,
-            epochs = epochs,
-            callbacks = [
+            epochs=epochs,
+            callbacks=[
                 tensorboard_callback,
                 model_checkpoint_callback
             ],
-            validation_data = validdataset
+            validation_data=validdataset
         )

@@ -3,7 +3,6 @@ The training script
 """
 
 import sys
-import numpy as np
 import argparse
 from pathlib import Path
 
@@ -52,7 +51,7 @@ def main(argv):
     )
 
     args, _ = parser.parse_known_args(argv[1:])
-    
+
     modelwrappercls = load_class(args.modelwrappercls)
     datasetcls = load_class(args.datasetcls)
     args.logdir.mkdir(parents=True, exist_ok=True)
@@ -78,6 +77,7 @@ def main(argv):
         args.logdir
     )
     model.save_model(model.modelpath)
+
 
 if __name__ == '__main__':
     main(sys.argv)

@@ -9,22 +9,18 @@ This test is only for performance tests.
 """
 
 import sys
-import numpy as np
 import argparse
 from pathlib import Path
 from importlib.resources import path
 
-from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.core.model import ModelWrapper
 from dl_framework_analyzer.utils.class_loader import load_class
-from dl_framework_analyzer.core.measurements import Measurements
 from dl_framework_analyzer.core.measurements import MeasurementsCollector
 from dl_framework_analyzer.core.measurements import systemstatsmeasurements
 from dl_framework_analyzer.utils import logger
 from dl_framework_analyzer.core.report import create_report_from_measurements
 from dl_framework_analyzer.resources import reports
 from dl_framework_analyzer.core.drawing import create_line_plot
-from typing import ClassVar
 
 
 @systemstatsmeasurements('full_run_statistics')
@@ -85,7 +81,7 @@ def main(argv):
     )
 
     args, _ = parser.parse_known_args(argv[1:])
-    
+
     modelwrappercls = load_class(args.modelwrappercls)
     datasetcls = load_class(args.datasetcls)
 

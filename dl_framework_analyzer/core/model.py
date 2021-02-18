@@ -91,7 +91,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def load_model(self, modelpath : Path):
+    def load_model(self, modelpath: Path):
         """
         Loads the model from file.
 
@@ -102,7 +102,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def save_model(self, modelpath : Path):
+    def save_model(self, modelpath: Path):
         """
         Saves the model to file.
 
@@ -113,7 +113,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def save_to_onnx(self, modelpath : Path):
+    def save_to_onnx(self, modelpath: Path):
         """
         Saves the model in the ONNX format.
 
@@ -124,7 +124,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def load_from_onnx(self, modelpath : Path):
+    def load_from_onnx(self, modelpath: Path):
         """
         Loads the model in the ONNX format.
 

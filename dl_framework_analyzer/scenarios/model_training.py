@@ -77,7 +77,7 @@ def main(argv):
         args.num_epochs,
         args.logdir
     )
-    model.save_mode(model.modelpath)
+    model.save_model(model.modelpath)
 
 if __name__ == '__main__':
     main(sys.argv)

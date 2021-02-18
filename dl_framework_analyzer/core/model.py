@@ -3,12 +3,15 @@ Provides a wrapper for deep learning models.
 """
 
 from typing import List, Any, Tuple
+import argparse
+from pathlib import Path
+from collections import defaultdict
+
 from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.core.measurements import Measurements
 from dl_framework_analyzer.core.measurements import MeasurementsCollector
 from dl_framework_analyzer.core.measurements import timemeasurements
 from dl_framework_analyzer.core.measurements import systemstatsmeasurements
-from collections import defaultdict
 
 
 class ModelWrapper(object):
@@ -16,18 +19,71 @@ class ModelWrapper(object):
     Wraps the given model.
     """
 
-    def __init__(self, dataset: Dataset):
+    def __init__(
+            self,
+            modelpath: Path,
+            dataset: Dataset,
+            from_file: bool = True):
         """
         Creates the model wrapper.
 
         Parameters
         ----------
+        modelpath : Path
+            The path to the model
         dataset : Dataset
             The dataset to verify the inference
         """
+        self.modelpath = modelpath
         self.dataset = dataset
         self.data = defaultdict(list)
+        self.from_file = from_file
         self.prepare_model()
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the ModelWrapper object.
+
+        Returns
+        -------
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Inference model arguments')
+        group.add_argument(
+            '--model-path',
+            help='Path to the model',
+            required=True,
+            type=Path
+        )
+        return parser, group
+
+    @classmethod
+    def from_argparse(
+            cls,
+            dataset: Dataset,
+            args,
+            from_file: bool = True):
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object to feed to the model
+        args : Dict
+            Arguments from ArgumentParser object
+        from_file : bool
+            Determines if the model should be loaded from modelspath
+
+        Returns
+        -------
+        Dataset : object of class Dataset
+        """
+        return cls(args.model_path, dataset, from_file)
 
     def prepare_model(self):
         """

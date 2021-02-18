@@ -69,6 +69,26 @@ class PetDataset(Dataset):
         self.classnames = dict()
         super().__init__(root, batch_size, download_dataset)
 
+    @classmethod
+    def form_argparse(cls):
+        parser, group = super().form_argparse()
+        group.add_argument(
+            '--classify-by',
+            help='Determines if classification should be performed by species or by breeds',  # noqa: E501
+            choices=['species', 'breeds'],
+            default='breeds'
+        )
+        return parser, group
+
+    @classmethod
+    def from_argparse(cls, args):
+        return cls(
+            args.dataset_root,
+            args.inference_batch_size,
+            args.download_dataset,
+            args.classify_by
+        )
+
     def download_dataset(self):
         self.root.mkdir(parents=True, exist_ok=True)
         imgs = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz'

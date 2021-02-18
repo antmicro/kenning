@@ -3,6 +3,7 @@ Provides an API for dataset loading, creation and configuration.
 """
 
 from typing import Tuple, List
+import argparse
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 
@@ -50,6 +51,58 @@ class Dataset(object):
         if download_dataset:
             self.download_dataset()
         self.prepare()
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the Dataset object.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Dataset arguments')
+        group.add_argument(
+            '--dataset-root',
+            help='Path to the dataset directory',
+            required=True,
+            type=Path
+        )
+        group.add_argument(
+            '--download-dataset',
+            help='Downloads the dataset before taking any action',
+            action='store_true'
+        )
+        group.add_argument(
+            '--inference-batch-size',
+            help='The batch size for providing the input data',
+            type=int,
+            default=1
+        )
+        return parser, group
+
+    @classmethod
+    def from_argparse(cls, args):
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        Parameters
+        ----------
+        args : arguments from ArgumentParser object
+
+        Returns
+        -------
+        Dataset : object of class Dataset
+        """
+        return cls(
+            args.dataset_root,
+            args.inference_batch_size,
+            args.download_dataset
+        )
 
     def __iter__(self) -> 'Dataset':
         """

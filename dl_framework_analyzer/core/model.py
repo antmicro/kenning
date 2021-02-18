@@ -225,18 +225,32 @@ class ModelWrapper(object):
 
         return measurements
 
-    def train_model(self, outputmodel, logdir=None):
+    def train_model(
+            self,
+            batch_size: int,
+            learning_rate: float,
+            epochs: int,
+            logdir: Path):
         """
         Trains the model with a given dataset.
 
         This method should implement training routine for a given dataset and
         save a working model to a given path in a form of a single file.
 
+        The training should be performed with given batch size, learning rate,
+        and number of epochs.
+
+        The model needs to be saved explicitly.
+
         Parameters
         ----------
-        outputmodel : Path
-            Path to the output model.
+        batch_size : int
+            The batch size for the training
+        learning_rate : float
+            The learning rate for the training
+        epochs : int
+            The number of epochs for training
         logdir : Path
-            Optional path to the logs file.
+            Path to the logging directory
         """
         raise NotImplementedError

@@ -5,6 +5,7 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 """
 
 from dl_framework_analyzer.core.model import ModelWrapper
+from pathlib import Path
 import tensorflow as tf
 import tensorflow_addons as tfa
 import numpy as np
@@ -13,26 +14,42 @@ from dl_framework_analyzer.core.dataset import Dataset
 
 
 class TensorflowPetDatasetMobileNetV2(ModelWrapper):
-    def __init__(self, dataset: Dataset):
+    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
         self.numclasses = dataset.numclasses
-        super().__init__(dataset)
+        super().__init__(modelpath, dataset, from_file)
 
     def prepare_model(self):
-        self.base = tf.keras.applications.MobileNetV2(
-            input_shape=(224, 224, 3),
-            include_top=False,
-            weights='imagenet'
-        )
-        avgpool = tf.keras.layers.GlobalAveragePooling2D()(self.base.output)
-        output = tf.keras.layers.Dense(
-            self.numclasses,
-            name='out_layer'
-        )(avgpool)
-        self.model = tf.keras.models.Model(
-            inputs=self.base.input,
-            outputs=output
-        )
+        if self.from_file:
+            self.load_model(self.modelpath)
+        else:
+            self.base = tf.keras.applications.MobileNetV2(
+                input_shape=(224, 224, 3),
+                include_top=False,
+                weights='imagenet'
+            )
+            self.base.trainable = False
+            avgpool = tf.keras.layers.GlobalAveragePooling2D()(
+                self.base.output
+            )
+            output = tf.keras.layers.Dense(
+                self.numclasses,
+                name='out_layer'
+            )(avgpool)
+            self.model = tf.keras.models.Model(
+                inputs=self.base.input,
+                outputs=output
+            )
+            print(self.model.summary())
+
+    def load_model(self, modelpath):
+        tf.keras.backend.clear_session()
+        if hasattr(self, 'model') and self.model is not None:
+            del self.model
+        self.model = tf.keras.models.load_model(str(modelpath))
         print(self.model.summary())
+
+    def save_model(self, modelpath):
+        self.model.save(modelpath)
 
     def run_inference(self, X):
         return self.model.predict(X)
@@ -40,10 +57,12 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
 
-    def train_model(self, outputmodel, logdir=None):
-        BATCH_SIZE = 64
-        LEARNING_RATE = 0.0001
-        EPOCHS = 20
+    def train_model(
+            self,
+            batch_size: int,
+            learning_rate: int,
+            epochs: int,
+            logdir: Path):
 
         def preprocess_input(path, onehot):
             data = tf.io.read_file(path)
@@ -68,12 +87,12 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
         traindataset = traindataset.map(
             preprocess_input,
             num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(BATCH_SIZE)
+        ).batch(batch_size)
         validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
         validdataset = validdataset.map(
             preprocess_input,
             num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(BATCH_SIZE)
+        ).batch(batch_size)
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
             logdir,
@@ -88,7 +107,7 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
         )
 
         self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(lr=LEARNING_RATE),
+            optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
             metrics=[
                 tf.keras.metrics.CategoricalAccuracy(),
@@ -100,7 +119,7 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
 
         self.model.fit(
             traindataset,
-            epochs = EPOCHS,
+            epochs = epochs,
             callbacks = [
                 tensorboard_callback,
                 model_checkpoint_callback

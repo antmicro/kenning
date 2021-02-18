@@ -91,6 +91,50 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
+    def load_model(self, modelpath : Path):
+        """
+        Loads the model from file.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the model file
+        """
+        raise NotImplementedError
+
+    def save_model(self, modelpath : Path):
+        """
+        Saves the model to file.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the model file
+        """
+        raise NotImplementedError
+
+    def save_to_onnx(self, modelpath : Path):
+        """
+        Saves the model in the ONNX format.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the ONNX file
+        """
+        raise NotImplementedError
+
+    def load_from_onnx(self, modelpath : Path):
+        """
+        Loads the model in the ONNX format.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the ONNX file
+        """
+        raise NotImplementedError
+
     def preprocess_input(self, X: List) -> Any:
         """
         Preprocesses the inputs for a given model before inference.

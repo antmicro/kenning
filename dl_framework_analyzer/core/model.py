@@ -89,7 +89,7 @@ class ModelWrapper(object):
         """
         Downloads the model (if required) and loads it to the device.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def preprocess_input(self, X: List) -> Any:
         """

@@ -135,7 +135,8 @@ class PetDataset(Dataset):
         result = []
         for sample in samples:
             img = Image.open(sample)
-            img.resize((224, 224))
+            img = img.convert('RGB')
+            img = img.resize((224, 224))
             npimg = np.array(img)
             result.append(npimg)
         return result

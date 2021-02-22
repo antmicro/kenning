@@ -151,6 +151,11 @@ class PetDataset(Dataset):
             confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             top_5_count += 1 if np.argmax(label) in np.argsort(prediction)[::-1][:5] else 0  # noqa: E501
         measurements = Measurements()
-        measurements.add_measurement('eval_confusion_matrix', confusion_matrix)
-        measurements.add_measurement('top_5_count', top_5_count)
+        measurements.accumulate(
+            'eval_confusion_matrix',
+            confusion_matrix,
+            lambda: np.zeros((self.numclasses, self.numclasses))
+        )
+        measurements.accumulate('top_5_count', top_5_count, lambda: 0)
+        measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements

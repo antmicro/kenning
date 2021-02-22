@@ -8,6 +8,7 @@ from dl_framework_analyzer.core.model import ModelWrapper
 from pathlib import Path
 import tensorflow as tf
 import tensorflow_addons as tfa
+import numpy as np
 
 from dl_framework_analyzer.core.dataset import Dataset
 
@@ -49,6 +50,9 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
 
     def save_model(self, modelpath):
         self.model.save(modelpath)
+
+    def preprocess_input(self, X):
+        return np.array(X)
 
     def run_inference(self, X):
         return self.model.predict(X)
@@ -109,10 +113,7 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
             optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
             metrics=[
-                tf.keras.metrics.CategoricalAccuracy(),
-                tfa.metrics.MultiLabelConfusionMatrix(
-                    num_classes=self.numclasses
-                )
+                tf.keras.metrics.CategoricalAccuracy()
             ]
         )
 

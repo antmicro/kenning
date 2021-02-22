@@ -21,6 +21,7 @@ from dl_framework_analyzer.utils import logger
 from dl_framework_analyzer.core.report import create_report_from_measurements
 from dl_framework_analyzer.resources import reports
 from dl_framework_analyzer.core.drawing import create_line_plot
+from dl_framework_analyzer.core.drawing import draw_confusion_matrix
 
 
 @systemstatsmeasurements('full_run_statistics')
@@ -119,6 +120,7 @@ def main(argv):
         memusage = args.resources_dir / f'{reportname}-memoryusage.png'
         gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
         gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
+        confusionmatrix = args.resources_dir / f'{reportname}-conf-matrix.png'
         create_line_plot(
             batchtime,
             'Inference time for batches',
@@ -147,6 +149,14 @@ def main(argv):
             'Memory usage', '%',
             measurementsdata['full_run_statistics_timestamp'],
             measurementsdata['full_run_statistics_gpu_utilization'])
+        if 'eval_confusion_matrix' in measurementsdata:
+            draw_confusion_matrix(
+                measurementsdata['eval_confusion_matrix'],
+                confusionmatrix,
+                'Confusion matrix',
+                [dataset.classnames[i] for i in range(dataset.numclasses)],
+                True
+            )
         MeasurementsCollector.measurements += {
             'reportname': [reportname],
             'memusagepath': [memusage],
@@ -155,7 +165,8 @@ def main(argv):
         create_report_from_measurements(
             reportpath,
             measurementsdata,
-            args.output / f'{reportname}.rst')
+            args.output / f'{reportname}.rst'
+        )
 
 
 if __name__ == '__main__':

@@ -2,8 +2,7 @@
 Module containing decorators for benchmark data gathering.
 """
 
-from typing import List, Dict, Union, Any
-from collections import defaultdict
+from typing import List, Dict, Union, Any, Callable
 import time
 from dl_framework_analyzer.utils import logger
 import psutil
@@ -26,17 +25,40 @@ class Measurements(object):
     The dictionary in Measurements has measurement type as a key, and list of
     values for given measurement type.
 
+    There can be other values assigned to a given measurement type than list,
+    but it requires explicit initialization.
+
     Attributes
     ----------
     data : dict
         Dictionary storing lists of values
     """
     def __init__(self):
-        self.data = defaultdict(list)
+        self.data = dict()
 
     def __iadd__(self, other: Union[Dict, 'Measurements']) -> 'Measurements':
         self.update_measurements(other)
         return self
+
+    def initialize_measurement(self, measurement_type: str, value: Any):
+        """
+        Sets the initial value for a given measurement type.
+
+        By default, the initial values for every measurement are empty lists.
+        Lists are meant to collect time series data and other probed
+        measurements for further analysis.
+
+        In case the data is collected in a different container, it should
+        be configured explicitly.
+
+        Parameters
+        ----------
+        measurement_type : str
+            The type (name) of the measurement
+        value : Any
+            The initial value for the measurement type
+        """
+        self.data[measurement_type] = value
 
     def update_measurements(self, other: Union[Dict, 'Measurements']):
         """
@@ -55,12 +77,21 @@ class Measurements(object):
         assert isinstance(other, dict) or isinstance(other, Measurements)
         if isinstance(other, Measurements):
             for k, v in other.data.items():
-                self.data[k] += other.data[k]
+                if k not in self.data:
+                    self.data[k] = other.data[k]
+                else:
+                    self.data[k] += other.data[k]
         else:
             for k, v in other.items():
-                self.data[k] += other[k]
+                if k not in self.data:
+                    self.data[k] = other[k]
+                else:
+                    self.data[k] += other[k]
 
-    def add_measurements(self, measurementtype: str, valueslist: List):
+    def add_measurements_list(
+            self,
+            measurementtype: str,
+            valueslist: List):
         """
         Adds new values to a given measurement type.
 
@@ -73,9 +104,15 @@ class Measurements(object):
         """
         assert isinstance(valueslist, list)
         assert isinstance(measurementtype, str)
+        if measurementtype not in self.data:
+            self.data[measurementtype] = list()
         self.data[measurementtype] += valueslist
 
-    def add_measurement(self, measurementtype: str, value: Any):
+    def add_measurement(
+            self,
+            measurementtype: str,
+            value: Any,
+            initialvaluefunc: Callable = lambda: list()):
         """
         Add new value to a given measurement type.
 
@@ -85,9 +122,13 @@ class Measurements(object):
             the measurement type to be updated
         value : Any
             the value to add
+        initialvaluefunc : Callable
+            the initial value for the measurement
         """
         assert isinstance(measurementtype, str)
-        self.data[measurementtype].append(value)
+        if measurementtype not in self.data:
+            self.data[measurementtype] = initialvaluefunc()
+        self.data[measurementtype] += value
 
     def get_values(self, measurementtype: str) -> List:
         """
@@ -103,6 +144,34 @@ class Measurements(object):
         List : list of values for a given measurement type
         """
         return self.data[measurementtype]
+
+    def accumulate(
+            self,
+            measurementtype: str,
+            valuetoadd: Any,
+            initvaluefunc: Callable[[], Any] = lambda: 0) -> List:
+        """
+        Adds given value to a measurement.
+
+        This function adds given value (it can be integer, float, numpy array,
+        or any type that implements iadd operator).
+
+        If it is the first assignment to a given measurement type, the first
+        list element is initialized with the ``initvaluefunc`` (function
+        returns the initial value).
+
+        Parameters
+        ----------
+        measurementtype : str
+            the name of the measurement
+        valuetoadd : Any
+            New value to add to the measurement
+        initvaluefunc : Any
+            The initial value of the measurement, default 0
+        """
+        if measurementtype not in self.data:
+            self.data[measurementtype] = initvaluefunc()
+        self.data[measurementtype] += valuetoadd
 
 
 class MeasurementsCollector(object):

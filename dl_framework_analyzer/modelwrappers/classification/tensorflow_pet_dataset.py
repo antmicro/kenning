@@ -34,10 +34,19 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
             avgpool = tf.keras.layers.GlobalAveragePooling2D()(
                 self.base.output
             )
+            layer1 = tf.keras.layers.Dense(
+                1024,
+                activation='relu')(avgpool)
+            layer2 = tf.keras.layers.Dense(
+                512,
+                activation='relu')(layer1)
+            layer3 = tf.keras.layers.Dense(
+                128,
+                activation='relu')(layer2)
             output = tf.keras.layers.Dense(
                 self.numclasses,
                 name='out_layer'
-            )(avgpool)
+            )(layer3)
             self.model = tf.keras.models.Model(
                 inputs=self.base.input,
                 outputs=output
@@ -78,10 +87,6 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
             img = tf.image.random_brightness(img, 0.1)
             img = tf.image.random_contrast(img, 0.7, 1.0)
             img = tf.image.random_flip_left_right(img)
-            img = tfa.image.rotate(
-                img,
-                tf.random.uniform([], minval=-0.3, maxval=0.3), 'BILINEAR'
-            )
             return img, tf.convert_to_tensor(onehot)
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(

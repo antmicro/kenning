@@ -19,6 +19,7 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         self.numclasses = dataset.numclasses
+        self.mean, self.std = dataset.get_input_mean_std()
         super().__init__(modelpath, dataset, from_file)
 
     def prepare_model(self):
@@ -84,6 +85,8 @@ class TensorflowPetDatasetMobileNetV2(ModelWrapper):
             img = tf.io.decode_jpeg(data, channels=3)
             img = tf.image.resize(img, [224, 224])
             img = tf.image.convert_image_dtype(img, dtype=tf.float32)
+            img /= 255.0
+            img = (img - self.mean) / self.std
             img = tf.image.random_brightness(img, 0.1)
             img = tf.image.random_contrast(img, 0.7, 1.0)
             img = tf.image.random_flip_left_right(img)

@@ -2,7 +2,7 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List
+from typing import Tuple, List, Any
 import argparse
 from pathlib import Path
 from sklearn.model_selection import train_test_split
@@ -266,5 +266,40 @@ class Dataset(object):
         Returns
         -------
         Measurements : The dictionary containing the evaluation results
+        """
+        raise NotImplementedError
+
+    def compute_input_mean_std(self, samples: List) -> Tuple[Any, Any]:
+        """
+        Computes mean and std values for a given dataset.
+
+        The input standardization values for a given model are computed based
+        on a train dataset.
+
+        Parameters
+        ----------
+        samples : List
+            The list of input tensors from the train dataset
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            the standardization values for a given train dataset.
+            Tuple of two variables describing mean and std values
+        """
+        raise NotImplementedError
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        """
+        Returns mean and std values for input tensors.
+
+        The mean and std values returned here should be computed using
+        ``compute_input_mean_std`` method.
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            the standardization values for a given train dataset.
+            Tuple of two variables describing mean and std values
         """
         raise NotImplementedError

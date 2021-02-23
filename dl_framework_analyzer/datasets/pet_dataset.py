@@ -44,7 +44,8 @@ class PetDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            classify_by='breeds'):
+            classify_by='breeds',
+            standardize: bool = True):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -62,11 +63,17 @@ class PetDataset(Dataset):
         classify_by : str
             Determines what should be the object of classification.
             The valid values are "species" and "breeds".
+        standardize : bool
+            Standardize the given input samples.
+            Should be set to False when using compute_input_mean_std
         """
         assert classify_by in ['species', 'breeds']
         self.classify_by = classify_by
         self.numclasses = None
         self.classnames = dict()
+        self.standardize = standardize
+        if standardize:
+            self.mean, self.std = self.get_input_mean_std()
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -137,7 +144,9 @@ class PetDataset(Dataset):
             img = Image.open(sample)
             img = img.convert('RGB')
             img = img.resize((224, 224))
-            npimg = np.array(img)
+            npimg = np.array(img) / 255.0
+            if self.standardize:
+                npimg = (npimg - self.mean) / self.std
             result.append(npimg)
         return result
 
@@ -159,3 +168,19 @@ class PetDataset(Dataset):
         measurements.accumulate('top_5_count', top_5_count, lambda: 0)
         measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements
+
+    def compute_input_mean_std(self):
+        count = 0
+        mean = np.zeros((3))
+        std = np.zeros((3))
+        for X, _ in iter(self):
+            for img in X:
+                mean += np.mean(img, axis=(0, 1))
+                std += np.std(img, axis=(0, 1))
+                count += 1
+        mean /= count
+        std /= count
+        return mean, std
+
+    def get_input_mean_std(self):
+        return np.array([0.48136492, 0.44937421, 0.39576963]), np.array([0.22781384, 0.22496867, 0.22693157])  # noqa: E501

@@ -57,7 +57,6 @@ class ONNXConversion(object):
 
     def _onnx_export(self, modelentry: ModelEntry, exportpath: Path):
         try:
-            self.logger.info(f'    {modelentry.name} ===> {exportpath}')
             return self.onnx_export(modelentry, exportpath)
         except NotImplementedError:
             return SupportStatus.NOTIMPLEMENTED
@@ -81,16 +80,23 @@ class ONNXConversion(object):
         supportlist = []
         for modelentry in self.modelslist:
             onnxtargetpath = modelsdir / f'{modelentry.name}.onnx'
-            exported = self.onnx_export(modelentry, onnxtargetpath)
-            if exported:
+            self.logger.info(f'    {modelentry.name} ===> {onnxtargetpath}')
+            self.logger.info(f'        Exporting...')
+            exported = self._onnx_export(modelentry, onnxtargetpath)
+            self.logger.info(f'        Exported')
+            if exported == SupportStatus.SUPPORTED:
+                self.logger.info(f'        Verifying...')
                 onnxmodel = onnx.load(onnxtargetpath)
                 try:
                     onnx.checker.check_model(onnxmodel)
+                    self.logger.info(f'        Verified')
                 except:
                     exported = SupportStatus.ONNXMODELINVALID
             imported = SupportStatus.UNVERIFIED
             if exported == SupportStatus.SUPPORTED:
+                self.logger.info(f'        Importing...')
                 imported = self._onnx_import(modelentry, onnxtargetpath)
+                self.logger.info(f'        Imported')
             supportlist.append(Support(
                 self.framework,
                 self.version,

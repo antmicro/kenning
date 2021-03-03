@@ -1,0 +1,70 @@
+import mxnet
+from mxnet.contrib import onnx as onnx_mxnet
+import numpy as np
+from gluoncv import model_zoo as model_zoo
+from tempfile import TemporaryDirectory
+from pathlib import Path
+
+from dl_framework_analyzer.core.onnxconversion import ONNXConversion
+from dl_framework_analyzer.core.onnxconversion import SupportStatus
+
+class MXNetONNXConversion(ONNXConversion):
+    def __init__(self):
+        super().__init__('mxnet', mxnet.__version__)
+
+    def prepare(self):
+        self.add_entry(
+            'DenseNet201',
+            lambda: model_zoo.densenet201(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'MobileNetV2',
+            lambda: model_zoo.mobilenet_v2_1_0(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'ResNet50',
+            lambda: model_zoo.resnet50_v1b(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'VGG16',
+            lambda: model_zoo.vgg16(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'DeepLabV3 ResNet50',
+            lambda: model_zoo.get_deeplab_resnet50_citys(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'Faster R-CNN ResNet50 FPN',
+            lambda: model_zoo.faster_rcnn_resnet50_v1b_voc(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+        self.add_entry(
+            'Mask R-CNN',
+            lambda: model_zoo.mask_rcnn_resnet50_v1b_coco(pretrained=True),
+            input_shape=(1, 3, 224, 224)
+        )
+
+    def onnx_export(self, modelentry, exportpath):
+        model = modelentry.modelgenerator()
+        model.hybridize()
+        inp = mxnet.ndarray.random.randn(*modelentry.parameters['input_shape'])
+        model(inp)
+        with TemporaryDirectory() as tempdir:
+            tempd = Path(tempdir)
+            modelname = tempd / 'mxnet-model'
+            model.export(modelname)
+            params = str(tempd / 'mxnet-model-0000.params')
+            symbol = str(tempd / 'mxnet-model-symbol.json')
+            onnx_mxnet.export_model(
+                symbol,
+                params,
+                [modelentry.parameters['input_shape']],
+                np.float32,
+                exportpath
+            )
+        return SupportStatus.SUPPORTED

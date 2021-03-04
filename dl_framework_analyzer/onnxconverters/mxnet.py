@@ -4,9 +4,13 @@ import numpy as np
 from gluoncv import model_zoo as model_zoo
 from tempfile import TemporaryDirectory
 from pathlib import Path
+from collections import namedtuple
 
 from dl_framework_analyzer.core.onnxconversion import ONNXConversion
 from dl_framework_analyzer.core.onnxconversion import SupportStatus
+
+Batch = namedtuple('Batch', ['data'])
+
 
 class MXNetONNXConversion(ONNXConversion):
     def __init__(self):
@@ -67,4 +71,27 @@ class MXNetONNXConversion(ONNXConversion):
                 np.float32,
                 exportpath
             )
+        return SupportStatus.SUPPORTED
+
+    def onnx_import(self, modelentry, importpath):
+        sym, arg, aux = onnx_mxnet.import_model(importpath)
+        data_names = [inp for inp in sym.list_inputs() if inp not in arg and inp not in aux]
+        mod = mxnet.mod.Module(
+            symbol=sym,
+            data_names=data_names,
+            label_names=None
+        )
+        inputdata = mxnet.ndarray.random.randn(*modelentry.parameters['input_shape'])
+        mod.bind(
+            for_training=False,
+            data_shapes=[(data_names[0], inputdata.shape)],
+            label_shapes=None
+        )
+        mod.set_params(
+            arg_params=arg,
+            aux_params=aux,
+            allow_missing=True,
+            allow_extra=True
+        )
+        mod.forward(Batch([inputdata]))
         return SupportStatus.SUPPORTED

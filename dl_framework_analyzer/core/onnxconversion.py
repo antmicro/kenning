@@ -66,7 +66,7 @@ class ONNXConversion(object):
 
     def _onnx_import(self, modelentry: ModelEntry, importpath: Path):
         try:
-            self.onnx_import(modelentry, importpath)
+            return self.onnx_import(modelentry, importpath)
         except NotImplementedError:
             return SupportStatus.NOTIMPLEMENTED
         except Exception as e:

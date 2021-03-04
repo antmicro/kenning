@@ -1,5 +1,7 @@
 import tensorflow as tf
 import tf2onnx
+import onnx
+from onnx_tf.backend import prepare
 
 from dl_framework_analyzer.core.onnxconversion import ONNXConversion
 from dl_framework_analyzer.core.onnxconversion import SupportStatus
@@ -50,4 +52,12 @@ class TensorFlowONNXConversion(ONNXConversion):
             model,
             input_signature=spec,
             output_path=exportpath)
+        return SupportStatus.SUPPORTED
+
+    def onnx_import(self, modelentry, importpath):
+        onnxmodel = onnx.load(importpath)
+        model = prepare(onnxmodel)
+        spec = modelentry.parameters['tensor_spec'][0]
+        inp = tf.random.normal([s if s is not None else 1 for s in spec.shape], dtype=spec.dtype)
+        model.run(inp)
         return SupportStatus.SUPPORTED

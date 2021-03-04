@@ -1,3 +1,7 @@
+"""
+ONNXConversion for MXNet models.
+"""
+
 import mxnet
 from mxnet.contrib import onnx as onnx_mxnet
 import numpy as np
@@ -75,13 +79,15 @@ class MXNetONNXConversion(ONNXConversion):
 
     def onnx_import(self, modelentry, importpath):
         sym, arg, aux = onnx_mxnet.import_model(importpath)
-        data_names = [inp for inp in sym.list_inputs() if inp not in arg and inp not in aux]
+        data_names = [inp for inp in sym.list_inputs() if inp not in arg and inp not in aux]  # noqa: E501
         mod = mxnet.mod.Module(
             symbol=sym,
             data_names=data_names,
             label_names=None
         )
-        inputdata = mxnet.ndarray.random.randn(*modelentry.parameters['input_shape'])
+        inputdata = mxnet.ndarray.random.randn(
+            *modelentry.parameters['input_shape']
+        )
         mod.bind(
             for_training=False,
             data_shapes=[(data_names[0], inputdata.shape)],

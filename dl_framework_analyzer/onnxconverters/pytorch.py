@@ -1,8 +1,13 @@
+"""
+ONNXConversion for PyTorch models.
+"""
+
 import torchvision.models as models
 import torch
 
 from dl_framework_analyzer.core.onnxconversion import ONNXConversion
 from dl_framework_analyzer.core.onnxconversion import SupportStatus
+
 
 class PyTorchONNXConversion(ONNXConversion):
     def __init__(self):
@@ -13,10 +18,10 @@ class PyTorchONNXConversion(ONNXConversion):
             'DenseNet201',
             lambda: models.densenet201(True),
             input_tensor=torch.randn((1, 3, 224, 224))
-        )                                 
-        self.add_entry(                   
-            'MobileNetV2',                
-            lambda: models.mobilenet_v2   (True),
+        )
+        self.add_entry(
+            'MobileNetV2',
+            lambda: models.mobilenet_v2(True),
             input_tensor=torch.randn((1, 3, 224, 224))
         )
         self.add_entry(
@@ -55,3 +60,6 @@ class PyTorchONNXConversion(ONNXConversion):
         input_tensor = modelentry.parameters['input_tensor']
         torch.onnx.export(model, input_tensor, exportpath, opset_version=11)
         return SupportStatus.SUPPORTED
+
+    def onnx_import(self, modelentry, importpath):
+        return self.UNSUPPORTED

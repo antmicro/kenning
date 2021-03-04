@@ -3,6 +3,7 @@ from dl_framework_analyzer.core.model import ModelWrapper
 import numpy as np
 import torch
 
+
 class PyTorchWrapper(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
         self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')  # noqa: E501

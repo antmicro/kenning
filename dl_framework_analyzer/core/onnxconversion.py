@@ -1,3 +1,7 @@
+"""
+Provides an API for ONNX conversions of various models in a given framework.
+"""
+
 from collections import namedtuple
 from pathlib import Path
 from enum import Enum
@@ -5,18 +9,63 @@ import onnx
 
 from dl_framework_analyzer.utils.logger import get_logger
 
-ModelEntry = namedtuple('ModelEntry', ['name', 'modelgenerator', 'parameters'])
-Support = namedtuple('Support', ['framework', 'version', 'model', 'exported', 'imported'])
+ModelEntry = namedtuple(
+    'ModelEntry',
+    ['name', 'modelgenerator', 'parameters']
+)
+ModelEntry.__doc__ = """
+Represents single model entry for a given framework.
+
+Attributes
+----------
+name : str
+    Name of the model
+modelgenerator : FuncVar
+    function variable that can be called without any parameters to create
+    the model
+parameters : Dict[str, Any]
+    the dictionary with additional model conversion/initialization parameters
+"""
+
+Support = namedtuple(
+    'Support',
+    ['framework', 'version', 'model', 'exported', 'imported']
+)
+Support.__doc__ = """
+Shows the framework's ONNX conversion support status for a given model.
+
+Attributes
+----------
+framework : str
+    Name of the framework
+version : str
+    Version of the framework
+model : str
+    Name of the model
+exported : SupportStatus
+    The status of exporting the model to the ONNX
+imported : SupportStatus
+    The status of importing the model from the ONNX
+"""
 
 
 class SupportStatus(Enum):
+    """
+    Enum representing the support status for ONNX conversion.
+
+    NOTIMPLEMENTED - import/export is not implemented
+    SUPPORTED - import/export is supported
+    UNSUPPORTED - import/export is not supported
+    UNVERIFIED - import/export is unverified (due to lack of model to process)
+    ERROR - import/export resulted in an error
+    ONNXMODELINVALID - exported ONNX model is invalid
+    """
     NOTIMPLEMENTED = 0
     SUPPORTED = 1
     UNSUPPORTED = 2
     UNVERIFIED = 3
     ERROR = 4
     ONNXMODELINVALID = 5
-    NOTPROVIDED = 6
 
     def __str__(self):
         converter = {
@@ -26,7 +75,6 @@ class SupportStatus(Enum):
             self.UNVERIFIED: 'unverified',
             self.ERROR: 'ERROR',
             self.ONNXMODELINVALID: 'Converter returned invalid ONNX model',
-            self.NOTPROVIDED: 'Not provided'
         }
         return converter[SupportStatus(self.value)]
 
@@ -37,6 +85,19 @@ class ONNXConversion(object):
     """
 
     def __init__(self, framework, version):
+        """
+        Prepares structures for ONNX conversion.
+
+        The framework and version values should be provided by the inheriting
+        classes.
+
+        Parameters
+        ----------
+        framework : str
+            Name of the framework
+        version : str
+            Version of the framework (should be derived from __version__)
+        """
         self.modelslist = []
         self.framework = framework
         self.version = version
@@ -44,15 +105,72 @@ class ONNXConversion(object):
         self.prepare()
 
     def add_entry(self, name, modelgenerator, **kwargs):
+        """
+        Adds new model for verification.
+
+        Parameters
+        ----------
+        name : str
+            Full name of the model, should match the name of the same models
+            in other framework's implementations
+        modelgenerator : Callable
+            Function that generates the model for ONNX conversion in a given
+            framework. The callable should accept no arguments
+        kwargs : Dict[str, Any]
+            Additional arguments that are passed to ModelEntry object as
+            parameters
+        """
         self.modelslist.append(ModelEntry(name, modelgenerator, kwargs))
 
     def onnx_export(self, modelentry: ModelEntry, exportpath: Path):
+        """
+        Virtual function for exporting the model to ONNX in a given framework.
+
+        This method needs to be implemented for a given framework in inheriting
+        class.
+
+        Parameters
+        ----------
+        modelentry : ModelEntry
+            ModelEntry object.
+        exportpath : Path
+            Path to the output ONNX file.
+
+        Returns
+        -------
+        SupportStatus : the support status of exporting given model to ONNX
+        """
         raise NotImplementedError
 
     def onnx_import(self, modelentry: ModelEntry, importpath: Path):
+        """
+        Virtual function for importing ONNX model to a given framework.
+
+        This method needs to be implemented for a given framework in inheriting
+        class.
+
+        Parameters
+        ----------
+        modelentry : ModelEntry
+            ModelEntry object.
+        importpath : Path
+            Path to the input ONNX file.
+
+        Returns
+        -------
+        SupportStatus : the support status of importing given model from ONNX
+        """
         raise NotImplementedError
 
     def prepare(self):
+        """
+        Virtual function for preparing the ONNX conversion test.
+
+        This method should add model entries using add_entry methos.
+
+        It is later called in the constructor to prepare the list of models to
+        test.
+        """
         raise NotImplementedError
 
     def _onnx_export(self, modelentry: ModelEntry, exportpath: Path):
@@ -61,7 +179,7 @@ class ONNXConversion(object):
         except NotImplementedError:
             return SupportStatus.NOTIMPLEMENTED
         except Exception as e:
-            print(e)
+            self.logger.error(e)
             return SupportStatus.ERROR
 
     def _onnx_import(self, modelentry: ModelEntry, importpath: Path):
@@ -70,7 +188,7 @@ class ONNXConversion(object):
         except NotImplementedError:
             return SupportStatus.NOTIMPLEMENTED
         except Exception as e:
-            print(e)
+            self.logger.error(e)
             return SupportStatus.ERROR
 
     def check_conversions(self, modelsdir: Path):
@@ -80,23 +198,24 @@ class ONNXConversion(object):
         supportlist = []
         for modelentry in self.modelslist:
             onnxtargetpath = modelsdir / f'{modelentry.name}.onnx'
-            self.logger.info(f'    {modelentry.name} ===> {onnxtargetpath}')
-            self.logger.info(f'        Exporting...')
+            self.logger.info('    {modelentry.name} ===> {onnxtargetpath}')
+            self.logger.info('        Exporting...')
             exported = self._onnx_export(modelentry, onnxtargetpath)
-            self.logger.info(f'        Exported')
+            self.logger.info('        Exported')
             if exported == SupportStatus.SUPPORTED:
-                self.logger.info(f'        Verifying...')
+                self.logger.info('        Verifying...')
                 onnxmodel = onnx.load(onnxtargetpath)
                 try:
                     onnx.checker.check_model(onnxmodel)
-                    self.logger.info(f'        Verified')
-                except:
+                    self.logger.info('        Verified')
+                except Exception as ex:
+                    self.logger.error(ex)
                     exported = SupportStatus.ONNXMODELINVALID
             imported = SupportStatus.UNVERIFIED
             if exported == SupportStatus.SUPPORTED:
-                self.logger.info(f'        Importing...')
+                self.logger.info('        Importing...')
                 imported = self._onnx_import(modelentry, onnxtargetpath)
-                self.logger.info(f'        Imported')
+                self.logger.info('        Imported')
             supportlist.append(Support(
                 self.framework,
                 self.version,

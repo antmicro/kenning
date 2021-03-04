@@ -1,3 +1,10 @@
+"""
+The script for creating ONNX import/export support matrix.
+
+It expects a list of the implemented ONNXConversion classes and generates
+the RST file with support matrix table.
+"""
+
 import argparse
 from collections import defaultdict
 from jinja2 import Template
@@ -5,7 +12,6 @@ from pathlib import Path
 from typing import List
 from importlib.resources import path
 
-from dl_framework_analyzer.core.onnxconversion import SupportStatus
 from dl_framework_analyzer.core.onnxconversion import ONNXConversion
 from dl_framework_analyzer.resources import reports
 from dl_framework_analyzer.utils.class_loader import load_class
@@ -15,12 +21,29 @@ from dl_framework_analyzer.utils import logger
 def generate_onnx_support_grid(
         converterslist: List[ONNXConversion],
         modelsdir: Path):
+    """
+    Creates support matrix for ONNX import/export functions.
+
+    Parameters
+    ----------
+    converterslist : List[ONNXConversion]
+        List of specialized ONNXConversion objects for various frameworks to
+        check
+    modelsdir : Path
+        Path to the temporarily created ONNX models
+
+    Returns
+    -------
+    Tuple[List[str], Dict[str, Dict[str, str]] : tuple with list of frameworks
+        and their versions, and the dictionary with models, frameworks and
+        their export/import support
+    """
     supportlist = []
     for converter in converterslist:
         supportlist += converter.check_conversions(modelsdir)
 
-    frameworkheaders = [f'{x.framework} (ver. {x.version})' for x in converterslist]
-    
+    frameworkheaders = [f'{x.framework} (ver. {x.version})' for x in converterslist]  # noqa: E501
+
     supportgrid = defaultdict(dict)
 
     for el in supportlist:
@@ -41,7 +64,7 @@ def create_onnx_support_report(
         modelsdir: Path,
         output: Path):
     headers, grid = generate_onnx_support_grid(converterslist, modelsdir)
-    
+
     with path(reports, 'onnx-conversion-support-grid.rst') as reportpath:
         with open(reportpath, 'r') as templatefile:
             template = templatefile.read()
@@ -52,6 +75,7 @@ def create_onnx_support_report(
             )
             with open(output, 'w') as out:
                 out.write(content)
+
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()

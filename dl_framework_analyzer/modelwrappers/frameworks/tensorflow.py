@@ -3,6 +3,7 @@ from dl_framework_analyzer.core.model import ModelWrapper
 import numpy as np
 import tensorflow as tf
 
+
 class TensorFlowWrapper(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
         super().__init__(modelpath, dataset, from_file)

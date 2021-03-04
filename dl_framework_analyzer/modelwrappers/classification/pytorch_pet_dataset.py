@@ -8,14 +8,11 @@ from pathlib import Path
 from torchvision import models, transforms
 import torch
 import numpy as np
-from torch.utils.data import Dataset, DataLoader
-from torchvision import transforms
+from torch.utils.data import Dataset
 import torch.optim as optim
 from tqdm import tqdm
 
-from dl_framework_analyzer.core.dataset import Dataset
-from dl_framework_analyzer.modelwrappers.frameworks.pytorch import PyTorchWrapper
-from dl_framework_analyzer.utils.logger import get_logger
+from dl_framework_analyzer.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
@@ -151,7 +148,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 if acc > best_acc:
                     torch.save(self.model, self.modelpath)
                     best_acc = acc
-                
+
                 print(f'ep: {epoch:3} acc: {acc:5.2f}% avgloss: {avgloss}{", model saved" if saved else ""}')  # noqa: E501
 
         self.model.eval()

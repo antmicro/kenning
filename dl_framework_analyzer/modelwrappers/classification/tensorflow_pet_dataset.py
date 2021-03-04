@@ -6,11 +6,9 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 
 from pathlib import Path
 import tensorflow as tf
-import tensorflow_addons as tfa
-import numpy as np
 
 from dl_framework_analyzer.core.dataset import Dataset
-from dl_framework_analyzer.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
+from dl_framework_analyzer.modelwrappers.frameworks.tensorflow import TensorFlowWrapper  # noqa: E501
 
 
 class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):

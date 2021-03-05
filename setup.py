@@ -22,11 +22,16 @@ setuptools.setup(
         'psutil>=5.8.0',
         'tensorflow>=2.4.1',
         'tensorflow_addons>=0.12.1',
+        'onnx_tf>=1.7.0',
+        'tf2onnx>=1.8.3',
         'Pillow>=8.1.0',
         'scikit_learn>=0.24.1',
         'Jinja2>=2.11.2',
         'matplotlib>=3.3.4',
         'pynvml>=8.0.4',
-        'tqdm>=4.56.2'
+        'tqdm>=4.56.2',
+        'onnx>=1.7.0',
+        'torchvision>=0.8.2',
+        'torch>=1.7.1',
     ],
 )

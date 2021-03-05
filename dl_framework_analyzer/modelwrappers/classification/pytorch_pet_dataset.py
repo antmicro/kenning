@@ -112,10 +112,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 images = images.float().to(self.device)
                 labels = labels.float().to(self.device)
 
+                opt.zero_grad()
+
                 outputs = self.model(images)
                 loss = criterion(outputs, torch.argmax(labels, axis=1))
 
-                opt.zero_grad()
                 loss.backward()
                 opt.step()
 

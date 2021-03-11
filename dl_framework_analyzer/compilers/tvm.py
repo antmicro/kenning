@@ -1,8 +1,7 @@
 import tvm
-from tvm import te
 import tvm.relay as relay
-import onnx
 from pathlib import Path
+from typing import Any
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
 
@@ -11,7 +10,10 @@ class TVMCompiler(ModelCompiler):
     """
     The TVM compiler.
     """
-    
+
+    def onnxconversion(self, inputmodel: Any):
+        return relay.frontend.from_onnx(inputmodel)
+
     inputtypes = {
         'onnx': onnxconversion
     }
@@ -22,9 +24,11 @@ class TVMCompiler(ModelCompiler):
             target: str,
             target_host: str,
             opt_level=2):
-        self.set_input_type(inputtype)
+        self.set_input_type(modelframework)
         self.target = tvm.target.Target(target)
-        self.target_host = tvm.target.Target(target_host) if target_host else None
+        self.target_host = (
+                tvm.target.Target(target_host) if target_host else None
+        )
         self.opt_level = opt_level
 
     @classmethod
@@ -33,13 +37,14 @@ class TVMCompiler(ModelCompiler):
         group.add_argument(
             '--model-framework',
             help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys()
+            choices=cls.inputtypes.keys(),
             required=True
         )
         group.add_argument(
             '--target',
             help='The kind or tag of the target device',
-            choices=tvm.target.Target.list_kinds() + [key for key, _ in tvm.target.list_tags().items()],
+            choices=(tvm.target.Target.list_kinds() +
+                     [key for key, _ in tvm.target.list_tags().items()]),
             required=True
         )
         group.add_argument(
@@ -70,12 +75,8 @@ class TVMCompiler(ModelCompiler):
         )
 
     def set_input_type(self, inputtype: str):
-        assert inputtype in inputtypes.keys()
+        assert inputtype in self.inputtypes.keys()
         self.inputtype = inputtype
-
-    def onnxconversion(self, inputmodel: Any):
-        onnxmodel = onnx.load(inputfile)
-        return relay.frontend.from_onnx(onnxmodel)
 
     def compile_model(self, mod, params, outputpath):
         with tvm.transform.PassContext(opt_level=self.opt_level):

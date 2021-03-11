@@ -17,11 +17,10 @@ on Jetson AGX Xavier.
 """
 
 import tvm
-from tvm import te
 import tvm.relay as relay
 import onnx
 from tvm import rpc
-from tvm.contrib import utils, graph_runtime as runtime
+from tvm.contrib import graph_runtime as runtime
 
 import numpy as np
 
@@ -45,7 +44,12 @@ if __name__ == '__main__':
     args = parser.parse_args()
     tvm.autotvm.measure.measure_methods.set_cuda_target_arch('sm_72')
     onnxmodel = onnx.load(args.model)
-    mod, params = relay.frontend.from_onnx(onnxmodel, shape={'input.1': (1, 3, 224, 224)}, freeze_params=True, dtype='float32')
+    mod, params = relay.frontend.from_onnx(
+        onnxmodel,
+        shape={'input.1': (1, 3, 224, 224)},
+        freeze_params=True,
+        dtype='float32'
+    )
     lib = relay.build(
         mod['main'],
         target=tvm.target.Target('nvidia/jetson-agx-xavier'),
@@ -60,7 +64,10 @@ if __name__ == '__main__':
     rlib = remote.load_module(args.output)
     ctx = remote.gpu()
     m = runtime.GraphModule(rlib['default'](ctx))
-    m.set_input(0, tvm.nd.array(np.random.randn(1, 3, 224, 224).astype('float32')))
+    m.set_input(
+        0,
+        tvm.nd.array(np.random.randn(1, 3, 224, 224).astype('float32'))
+    )
     m.run()
     out = m.get_output(0)
     print(out)

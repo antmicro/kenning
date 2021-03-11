@@ -2,6 +2,7 @@ import tvm
 import tvm.relay as relay
 from pathlib import Path
 from typing import Any
+import re
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
 
@@ -79,6 +80,11 @@ class TVMCompiler(ModelCompiler):
         self.inputtype = inputtype
 
     def compile_model(self, mod, params, outputpath):
+        if str(self.target).startswith('cuda'):
+            archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target))
+            arch = archmatch.group(1) if archmatch else None
+            if arch:
+                tvm.autotvm.measure.measure_methods.set_cuda_target_arch(arch)
         with tvm.transform.PassContext(opt_level=self.opt_level):
             lib = relay.build(
                 mod['main'],

@@ -33,6 +33,8 @@ class ModelWrapper(object):
             The path to the model
         dataset : Dataset
             The dataset to verify the inference
+        from_file : bool
+            True if the model should be loaded from file
         """
         self.modelpath = modelpath
         self.dataset = dataset
@@ -116,17 +118,6 @@ class ModelWrapper(object):
     def save_to_onnx(self, modelpath: Path):
         """
         Saves the model in the ONNX format.
-
-        Parameters
-        ----------
-        modelpath : Path
-            Path to the ONNX file
-        """
-        raise NotImplementedError
-
-    def load_from_onnx(self, modelpath: Path):
-        """
-        Loads the model in the ONNX format.
 
         Parameters
         ----------

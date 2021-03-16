@@ -18,7 +18,12 @@ class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):
             tf.config.experimental.set_memory_growth(gpu, True)
         self.numclasses = dataset.numclasses
         self.mean, self.std = dataset.get_input_mean_std()
-        super().__init__(modelpath, dataset, from_file)
+        super().__init__(
+            modelpath,
+            dataset,
+            from_file,
+            (tf.TensorSpec((1, 224, 224, 3), name='input'),)
+        )
 
     def prepare_model(self):
         if self.from_file:

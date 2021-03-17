@@ -6,6 +6,6 @@ python3 -m dl_framework_analyzer.scenarios.inference_server \
     --host 192.168.188.100 \
     --port 12345 \
     --save-model-path /home/nvidia/compiled-model.tar \
-    --target-device-context cuda
-    --input-dtype float32
+    --target-device-context cuda \
+    --input-dtype float32 \
     --verbosity DEBUG

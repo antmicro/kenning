@@ -2,7 +2,7 @@
 Provides a wrapper for deep learning models.
 """
 
-from typing import List, Any, Tuple
+from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
@@ -243,5 +243,53 @@ class ModelWrapper(object):
             The number of epochs for training
         logdir : Path
             Path to the logging directory
+        """
+        raise NotImplementedError
+
+    def get_input_spec(self) -> Tuple[Dict[str, Tuple[int, ...]], str]:
+        """
+        Returns a dictionary with shapes for each input and dtype.
+
+        Method returns a dictionary, where key is the name of the input, and
+        the value is its shape in a form of tuple.
+
+        It is later used in optimization and compilation steps.
+
+        Returns
+        -------
+        Tuple[Dict[str, Tuple[int, ...]], str] : A tuple with dictionary
+            mapping input name to input dimensions, and with the dtype name
+        """
+        raise NotImplementedError
+
+    def convert_input_to_bytes(self, inputdata: Any) -> bytes:
+        """
+        Converts the input returned by the preprocess_input method to bytes.
+
+        Parameters
+        ----------
+        inputdata : Any
+            The preprocessed inputs
+
+        Returns
+        -------
+        bytes : input data as byte stream
+        """
+        raise NotImplementedError
+
+    def convert_output_from_bytes(self, outputdata: bytes) -> Any:
+        """
+        Converts bytes array to the model output format.
+
+        The converted bytes are later passed to postprocess_outputs method.
+
+        Parameters
+        ----------
+        outputdata : bytes
+            output data in raw bytes
+
+        Returns
+        -------
+        Any : output data to feed to postprocess_outputs
         """
         raise NotImplementedError

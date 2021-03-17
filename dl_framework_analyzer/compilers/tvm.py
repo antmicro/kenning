@@ -1,10 +1,19 @@
 import tvm
+import onnx
 import tvm.relay as relay
 from pathlib import Path
-from typing import Any
 import re
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
+
+
+def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
+    onnxmodel = onnx.load(modelpath)
+    return relay.frontend.from_onnx(
+        onnxmodel,
+        shape=input_shapes,
+        freeze_params=True,
+        dtype=dtype)
 
 
 class TVMCompiler(ModelCompiler):
@@ -12,15 +21,13 @@ class TVMCompiler(ModelCompiler):
     The TVM compiler.
     """
 
-    def onnxconversion(self, inputmodel: Any):
-        return relay.frontend.from_onnx(inputmodel)
-
     inputtypes = {
         'onnx': onnxconversion
     }
 
     def __init__(
             self,
+            compiled_model_path: Path,
             modelframework: str,
             target: str,
             target_host: str,
@@ -31,6 +38,7 @@ class TVMCompiler(ModelCompiler):
                 tvm.target.Target(target_host) if target_host else None
         )
         self.opt_level = opt_level
+        super().__init__(compiled_model_path)
 
     @classmethod
     def form_argparse(cls):
@@ -39,7 +47,7 @@ class TVMCompiler(ModelCompiler):
             '--model-framework',
             help='The input type of the model, framework-wise',
             choices=cls.inputtypes.keys(),
-            required=True
+            default='onnx'
         )
         group.add_argument(
             '--target',
@@ -53,12 +61,6 @@ class TVMCompiler(ModelCompiler):
             help='The kind or tag of the host (CPU) target device',
         )
         group.add_argument(
-            '--compiled-model-path',
-            help='The path to the compiled model output',
-            type=Path,
-            required=True
-        )
-        group.add_argument(
             '--opt-level',
             help='The optimization level of the compilation',
             default=2,
@@ -69,6 +71,7 @@ class TVMCompiler(ModelCompiler):
     @classmethod
     def from_argparse(cls, args):
         return cls(
+            args.compiled_model_path,
             args.model_framework,
             args.target,
             args.target_host,
@@ -94,7 +97,14 @@ class TVMCompiler(ModelCompiler):
             )
             lib.export_library(outputpath)
 
-    def compile(self, inputmodel: Any, inputtype: str, outfile: Path):
-        assert inputtype in self.inputtypes, 'Not supported model format'
-        mod, params = self.inputtypes[inputtype](inputmodel)
-        self.compile_model(mod, params, outfile)
+    def compile(
+            self,
+            inputmodelpath: Path,
+            inputshapes,
+            dtype='float32'):
+        mod, params = self.inputtypes[self.inputtype](
+            inputmodelpath,
+            inputshapes,
+            dtype
+        )
+        self.compile_model(mod, params, self.compiled_model_path)

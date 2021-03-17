@@ -1,12 +1,19 @@
 import numpy as np
 import tensorflow as tf
 import tf2onnx
+from pathlib import Path
 
 from dl_framework_analyzer.core.model import ModelWrapper
+from dl_framework_analyzer.core.dataset import Dataset
 
 
 class TensorFlowWrapper(ModelWrapper):
-    def __init__(self, modelpath, dataset, from_file, inputspec: tf.TensorSpec):
+    def __init__(
+            self,
+            modelpath: Path,
+            dataset: Dataset,
+            from_file: bool,
+            inputspec: tf.TensorSpec):
         """
         Creates the TensorFlow model wrapper.
 
@@ -53,3 +60,14 @@ class TensorFlowWrapper(ModelWrapper):
             input_signature=self.inputspec,
             output_path=modelpath
         )
+
+    def convert_input_to_bytes(self, inputdata):
+        return inputdata.tobytes()
+
+    def convert_output_from_bytes(self, outputdata):
+        result = []
+        singleoutputsize = self.numclasses * np.float32
+        for ind in range(0, len(outputdata), singleoutputsize):
+            arr = np.frombuffer(singleoutputsize[ind:ind + singleoutputsize])
+            result.append(arr)
+        return result

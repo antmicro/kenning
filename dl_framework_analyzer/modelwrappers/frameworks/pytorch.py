@@ -17,7 +17,7 @@ class PyTorchWrapper(ModelWrapper):
         torch.save(self.model, modelpath)
 
     def preprocess_input(self, X):
-        return torch.Tensor(np.array(X)).to(self.device).permute(0, 3, 1, 2)
+        return torch.Tensor(np.array(X)).to(self.device)
 
     def postprocess_outputs(self, y):
         return y.detach().cpu().numpy()

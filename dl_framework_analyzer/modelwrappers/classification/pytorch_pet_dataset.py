@@ -20,6 +20,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         self.numclasses = dataset.numclasses
         super().__init__(modelpath, dataset, from_file)
 
+    def preprocess_input(self, X):
+        return torch.Tensor(np.array(X)).to(self.device).permute(0, 3, 1, 2)
+
     def prepare_model(self):
         if self.from_file:
             self.load_model(self.modelpath)

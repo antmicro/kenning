@@ -20,6 +20,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         self.numclasses = dataset.numclasses
         super().__init__(modelpath, dataset, from_file)
 
+    def get_input_spec(self):
+        return {'input': (1, 3, 224, 224)}, 'float32'
+
     def preprocess_input(self, X):
         return torch.Tensor(np.array(X)).to(self.device).permute(0, 3, 1, 2)
 
@@ -158,10 +161,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         self.model.eval()
 
     def save_to_onnx(self, modelpath):
-        x = torch.randn(self.batch_size, 224, 224, 3, requires_grad=True)
+        x = torch.randn(1, 3, 224, 224, requires_grad=True).cuda()
         torch.onnx.export(
             self.model,
             x,
             modelpath,
-            export_params=True
+            export_params=True,
+            opset_version=11
         )

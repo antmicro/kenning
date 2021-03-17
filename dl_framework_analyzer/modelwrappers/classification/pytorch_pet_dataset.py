@@ -169,3 +169,17 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             export_params=True,
             opset_version=11
         )
+
+    def convert_input_to_bytes(self, inputdata):
+        data = bytes()
+        for inp in inputdata.detach().cpu().numpy():
+            data += inp.tobytes()
+        return data
+
+    def convert_output_from_bytes(self, outputdata):
+        result = []
+        singleoutputsize = self.numclasses * np.float32
+        for ind in range(0, len(outputdata), singleoutputsize):
+            arr = np.frombuffer(singleoutputsize[ind:ind + singleoutputsize])
+            result.append(arr)
+        return result

@@ -36,6 +36,9 @@ class TVMRuntime(Runtime):
         self.contextname = contextname
         self.contextid = contextid
         self.inputdtype = inputdtype
+        self.module = None
+        self.func = None
+        self.ctx = None
         self.model = None
         self.lastoutput = None
         super().__init__(protocol)
@@ -96,10 +99,10 @@ class TVMRuntime(Runtime):
         self.protocol.log.info('Loading model')
         with open(self.modelpath, 'wb') as outmodel:
             outmodel.write(input_data)
-        module = tvm.runtime.load_module(str(self.modelpath))
-        func = module.get_function('default')
-        ctx = tvm.runtime.context(self.contextname, self.contextid)
-        self.model = graph_runtime.GraphModule(func(ctx))
+        self.module = tvm.runtime.load_module(str(self.modelpath))
+        self.func = self.module.get_function('default')
+        self.ctx = tvm.runtime.context(self.contextname, self.contextid)
+        self.model = graph_runtime.GraphModule(self.func(self.ctx))
         self.protocol.request_success()
         self.protocol.log.info('Model loading ended successfully')
 

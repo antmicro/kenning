@@ -149,7 +149,6 @@ class NetworkProtocol(RuntimeProtocol):
         while len(self.collecteddata) - 4 >= datatoload:
             self.collecteddata = self.collecteddata[4:]
             message = self.collecteddata[:datatoload]
-            self.log.debug(f'Adding message of length {len(message)}')
             messages.append(message)
             self.collecteddata = self.collecteddata[datatoload:]
             if len(self.collecteddata) > 4:

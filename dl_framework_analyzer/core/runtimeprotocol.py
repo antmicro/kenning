@@ -2,9 +2,25 @@ from enum import Enum
 from pathlib import Path
 import argparse
 
-from typing import Any, Tuple, List, Optional
+from typing import Any, Tuple, List, Optional, Union
 
 from dl_framework_analyzer.core.measurements import Measurements
+
+
+class RequestFailure(Exception):
+    pass
+
+
+def check_request(
+        request: Union[bool, Tuple[bool, Optional[bytes]]],
+        msg: str):
+    if isinstance(request, bool):
+        if not request:
+            raise RequestFailure(f'Failed to handle request: {msg}')
+    else:
+        if not request[0]:
+            raise RequestFailure(f'Failed to handle request: {msg}')
+    return request
 
 
 class MessageType(Enum):
@@ -265,7 +281,7 @@ class RuntimeProtocol(object):
         """
         return Measurements()
 
-    def request_success(self, data: bytes()) -> bool:
+    def request_success(self, data: bytes = bytes()) -> bool:
         """
         Sends OK message back to the client once the request is finished.
 

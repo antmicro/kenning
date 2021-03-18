@@ -2,6 +2,8 @@ import argparse
 
 from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
 from dl_framework_analyzer.core.runtimeprotocol import MessageType
+from dl_framework_analyzer.core.runtimeprotocol import RequestFailure
+from dl_framework_analyzer.core.runtimeprotocol import check_request
 from dl_framework_analyzer.core.measurements import Measurements
 from dl_framework_analyzer.core.measurements import MeasurementsCollector
 from dl_framework_analyzer.core.runtimeprotocol import ServerStatus
@@ -89,17 +91,25 @@ class Runtime(object):
         self.prepare_client()
         self.protocol.upload_model(compiledmodelpath)
         measurements = Measurements()
-        for X, y in iter(dataset):
-            prepX = modelwrapper._preprocess_input(X)
-            prepX = modelwrapper.convert_input_to_bytes(prepX)
-            self.protocol.upload_input(prepX)
-            self.protocol.request_processing()
-            preds = self.protocol.download_output()
-            preds = modelwrapper.convert_output_from_bytes(preds)
-            posty = modelwrapper._postprocess_outputs(preds)
-            measurements += dataset.evaluate(posty, y)
-            measurements += self.protocol.download_statistics()
-        MeasurementsCollector.measurements += measurements
+        try:
+            for X, y in iter(dataset):
+                prepX = modelwrapper._preprocess_input(X)
+                prepX = modelwrapper.convert_input_to_bytes(prepX)
+                check_request(self.protocol.upload_input(prepX), 'send input')
+                check_request(self.protocol.request_processing(), 'inference')
+                _, preds = check_request(
+                    self.protocol.download_output(),
+                    'receive output'
+                )
+                self.protocol.log.debug(f'Received output ({len(preds)} bytes)')
+                preds = modelwrapper.convert_output_from_bytes(preds)
+                posty = modelwrapper._postprocess_outputs(preds)
+                measurements += dataset.evaluate(posty, y)
+                measurements += self.protocol.download_statistics()
+        except RequestFailure as ex:
+            self.protocol.log.fatal(ex)
+        else:
+            MeasurementsCollector.measurements += measurements
 
     def run_server(self):
         self.prepare_server()

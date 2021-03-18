@@ -1,9 +1,13 @@
 import sys
 import argparse
 from pathlib import Path
+import json
 
 from dl_framework_analyzer.utils.class_loader import load_class
 import dl_framework_analyzer.utils.logger as logger
+from dl_framework_analyzer.core.measurements import MeasurementsCollector
+from dl_framework_analyzer.core.drawing import create_line_plot
+from dl_framework_analyzer.core.drawing import draw_confusion_matrix
 
 
 def main(argv):
@@ -37,6 +41,11 @@ def main(argv):
         'output',
         help='The path to the output directory',
         type=Path
+    )
+    parser.add_argument(
+        'reportname',
+        help='The name of the generated report, used as prefix for images',
+        type=str
     )
     parser.add_argument(
         '--resources-dir',
@@ -93,6 +102,60 @@ def main(argv):
 
     compiler.compile(args.onnxmodelpath, inputspec, inputdtype)
     runtime.run_client(dataset, model, compiler.compiled_model_path)
+
+    reportname = args.reportname
+
+    measurementsdata = MeasurementsCollector.measurements.data
+
+    batchtime = args.resources_dir / f'{reportname}-batchtime.png'
+    memusage = args.resources_dir / f'{reportname}-memoryusage.png'
+    gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
+    gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
+    confusionmatrix = args.resources_dir / f'{reportname}-conf-matrix.png'
+    create_line_plot(
+        batchtime,
+        'Target inference time for batches',
+        'Time', 's',
+        'Inference time', 's',
+        measurementsdata['target_inference_step_timestamp'],
+        measurementsdata['target_inference_step'])
+    create_line_plot(
+        memusage,
+        'Memory usage over benchmark',
+        'Time', 's',
+        'Memory usage', '%',
+        measurementsdata['session_utilization_timestamp'],
+        measurementsdata['session_utilization_mem_percent'])
+    create_line_plot(
+        gpumemusage,
+        'GPU Memory usage over benchmark',
+        'Time', 's',
+        'Memory usage', '%',
+        measurementsdata['session_utilization_gpu_timestamp'],
+        measurementsdata['session_utilization_gpu_mem_utilization'])
+    create_line_plot(
+        gpuusage,
+        'GPU usage over benchmark',
+        'Time', 's',
+        'Memory usage', '%',
+        measurementsdata['session_utilization_gpu_timestamp'],
+        measurementsdata['session_utilization_gpu_utilization'])
+    if 'eval_confusion_matrix' in measurementsdata:
+        draw_confusion_matrix(
+            measurementsdata['eval_confusion_matrix'],
+            confusionmatrix,
+            'Confusion matrix',
+            [dataset.classnames[i] for i in range(dataset.numclasses)],
+            True
+        )
+
+    MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+    with open(args.output / 'measurements.json', 'w') as measurementsfile:
+        json.dump(
+            MeasurementsCollector.measurements.data,
+            measurementsfile,
+            indent=2
+        )
 
 
 if __name__ == '__main__':

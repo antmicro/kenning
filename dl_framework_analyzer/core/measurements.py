@@ -6,12 +6,17 @@ from typing import List, Dict, Union, Any, Callable
 import time
 from dl_framework_analyzer.utils import logger
 import psutil
+import subprocess
+import re
+import numpy as np
 
 try:
     from pynvml.smi import nvidia_smi
 except:
     nvidia_smi = None
 from threading import Thread, Condition
+
+from shutil import which
 
 from functools import wraps
 
@@ -284,6 +289,13 @@ class SystemStatsCollector(Thread):
     def run(self):
         self.measurements = Measurements()
         self.running = True
+        tegrastats = which('tegrastats')
+        if tegrastats is not None:
+            tegrastatsstart = time.perf_counter()
+            tegrastatsproc = subprocess.Popen(
+                f'{tegrastats} --interval {self.step * 1000}'.split(' '),
+                stdout=subprocess.PIPE
+            )
         while self.running:
             cpus = psutil.cpu_percent(interval=0, percpu=True)
             mem = psutil.virtual_memory()
@@ -309,6 +321,30 @@ class SystemStatsCollector(Thread):
                 }
             with self.runningcondition:
                 self.runningcondition.wait(timeout=self.step)
+        if tegrastats:
+            tegrastatsproc.terminate()
+            tegrastatsend = time.perf_counter()
+            readings = tegrastatsproc.stdout.read().decode().split('\n')
+            ramusages = []
+            gpuutilization = []
+            for entry in readings:
+                match = re.match('RAM (\d+)/(\d+)MB', entry)
+                if match:
+                    ramusages.append(int(match.group(1)))
+                match = re.match('.*GR3D_FREQ (\d+)%', entry)
+                if match:
+                    gpuutilization.append(int(match.group(1)))
+            timestamps = np.linspace(
+                tegrastatsstart,
+                tegrastatsend,
+                num=len(readings)-1,
+                endpoint=True
+            ).tolist()
+            self.measurements += {
+                f'{self.prefix}_gpu_utilization': gpuutilization,
+                f'{self.prefix}_gpu_mem_utilization': ramusages,
+                f'{self.prefix}_gpu_timestamp': timestamps,
+            }
 
     def stop(self):
         self.running = False

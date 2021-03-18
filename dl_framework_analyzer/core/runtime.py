@@ -1,4 +1,5 @@
 import argparse
+from tqdm import tqdm
 
 from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
 from dl_framework_analyzer.core.runtimeprotocol import MessageType
@@ -92,7 +93,7 @@ class Runtime(object):
         self.protocol.upload_model(compiledmodelpath)
         measurements = Measurements()
         try:
-            for X, y in iter(dataset):
+            for X, y in tqdm(iter(dataset)):
                 prepX = modelwrapper._preprocess_input(X)
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')

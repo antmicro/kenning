@@ -12,7 +12,7 @@ from dl_framework_analyzer.core.measurements import Measurements
 
 
 class NetworkProtocol(RuntimeProtocol):
-    def __init__(self, host, port, endianness='little'):
+    def __init__(self, host, port, packet_size=4096, endianness='little'):
         self.host = host
         self.port = port
         self.collecteddata = bytes()
@@ -21,7 +21,7 @@ class NetworkProtocol(RuntimeProtocol):
         self.selector = selectors.DefaultSelector()
         self.serversocket = None
         self.socket = None
-        self.packet_size = 4096
+        self.packet_size = packet_size
         super().__init__()
 
     @classmethod
@@ -40,6 +40,12 @@ class NetworkProtocol(RuntimeProtocol):
             required=True
         )
         group.add_argument(
+            '--packet-size',
+            help='The maximum size of the received packets, in bytes.',
+            type=int,
+            default=4096
+        )
+        group.add_argument(
             '--endianness',
             help='The endianness of data to transfer',
             choices=['big', 'little'],
@@ -52,6 +58,7 @@ class NetworkProtocol(RuntimeProtocol):
         return cls(
             args.host,
             args.port,
+            args.packet_size,
             args.endianness
         )
 

@@ -195,15 +195,15 @@ def timemeasurements(measurementname: str):
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args):
-            start = time.perf_counter_ns()
+            start = time.perf_counter()
             returnvalue = function(*args)
-            duration = time.perf_counter_ns() - start
+            duration = time.perf_counter() - start
             logger.debug(
-                f'{function.__name__} time:  {duration / 1000000} ms'
+                f'{function.__name__} time:  {duration * 1000} ms'
             )
             MeasurementsCollector.measurements += {
                 measurementname: [duration],
-                f'{measurementname}_timestamp': [time.perf_counter_ns()]
+                f'{measurementname}_timestamp': [time.perf_counter()]
             }
             return returnvalue
         return statistics_wrapper
@@ -279,7 +279,7 @@ class SystemStatsCollector(Thread):
                 f'{self.prefix}_mem_percent': [mem.percent],
                 f'{self.prefix}_gpu_utilization': [gpuutilization],
                 f'{self.prefix}_gpu_mem_utilization': [gpumemutilization],
-                f'{self.prefix}_timestamp': [time.perf_counter_ns()],
+                f'{self.prefix}_timestamp': [time.perf_counter()],
             }
 
     def stop(self):

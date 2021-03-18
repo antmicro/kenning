@@ -11,7 +11,10 @@ This test is only for performance tests.
 import sys
 import argparse
 from pathlib import Path
-from importlib.resources import path
+if sys.version_info.minor < 9:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
 
 from dl_framework_analyzer.core.model import ModelWrapper
 from dl_framework_analyzer.utils.class_loader import load_class
@@ -124,28 +127,28 @@ def main(argv):
         create_line_plot(
             batchtime,
             'Inference time for batches',
-            'Time', 'ns',
-            'Inference time', 'ns',
+            'Time', 's',
+            'Inference time', 's',
             measurementsdata['inference_step_timestamp'],
             measurementsdata['inference_step'])
         create_line_plot(
             memusage,
             'Memory usage over benchmark',
-            'Time', 'ns',
+            'Time', 's',
             'Memory usage', '%',
             measurementsdata['full_run_statistics_timestamp'],
             measurementsdata['full_run_statistics_mem_percent'])
         create_line_plot(
             gpumemusage,
             'GPU Memory usage over benchmark',
-            'Time', 'ns',
+            'Time', 's',
             'Memory usage', '%',
             measurementsdata['full_run_statistics_timestamp'],
             measurementsdata['full_run_statistics_gpu_mem_utilization'])
         create_line_plot(
             gpuusage,
             'GPU usage over benchmark',
-            'Time', 'ns',
+            'Time', 's',
             'Memory usage', '%',
             measurementsdata['full_run_statistics_timestamp'],
             measurementsdata['full_run_statistics_gpu_utilization'])

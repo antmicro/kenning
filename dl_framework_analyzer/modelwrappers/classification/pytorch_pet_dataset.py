@@ -180,6 +180,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         result = []
         singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
         for ind in range(0, len(outputdata), singleoutputsize):
-            arr = np.frombuffer(outputdata[ind:(ind + singleoutputsize)], dtype=np.float32)
+            arr = np.frombuffer(
+                outputdata[ind:(ind + singleoutputsize)],
+                dtype=np.float32
+            )
             result.append(arr)
         return torch.FloatTensor(result)

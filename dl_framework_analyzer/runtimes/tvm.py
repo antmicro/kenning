@@ -80,15 +80,17 @@ class TVMRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
+        self.protocol.log.debug(f'Preparing inputs of size {len(input_data)}')
         try:
             self.model.set_input(
                 0,
                 tvm.nd.array(np.frombuffer(input_data, dtype=self.inputdtype))
             )
+            self.protocol.request_success()
+            self.protocol.log.debug('Inputs are ready')
         except (TypeError, ValueError, tvm.TVMError):
             self.protocol.log.error('Failed to load input')
             self.protocol.request_failure()
-        self.protocol.request_success()
 
     def prepare_model(self, input_data):
         self.protocol.log.info('Loading model')

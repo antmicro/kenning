@@ -258,6 +258,7 @@ class SystemStatsCollector(Thread):
         else:
             self.nvidia_smi = None
         self.step = step
+        self.runningcondition = Condition()
 
     def get_measurements(self):
         """
@@ -284,7 +285,7 @@ class SystemStatsCollector(Thread):
         self.measurements = Measurements()
         self.running = True
         while self.running:
-            cpus = psutil.cpu_percent(interval=self.step, percpu=True)
+            cpus = psutil.cpu_percent(interval=0, percpu=True)
             mem = psutil.virtual_memory()
             self.measurements += {
                 f'{self.prefix}_cpus_percent': [cpus],
@@ -306,9 +307,13 @@ class SystemStatsCollector(Thread):
                     f'{self.prefix}_gpu_mem_utilization': [gpumemutilization],
                     f'{self.prefix}_gpu_timestamp': [time.perf_counter()],
                 }
+            with self.runningcondition:
+                self.runningcondition.wait(timeout=self.step)
 
     def stop(self):
         self.running = False
+        with self.runningcondition:
+            self.runningcondition.notify_all()
 
 
 def systemstatsmeasurements(measurementname: str, step: float = 0.5):

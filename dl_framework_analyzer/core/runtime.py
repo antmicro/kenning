@@ -128,5 +128,3 @@ class Runtime(object):
                     self.protocol.log.error('Invalid message received')
                     self.close_server()
                     self.shouldwork = False
-                if status == ServerStatus.NOTHING:
-                    self.protocol.log.debug('Nothing happened...')

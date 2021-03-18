@@ -115,7 +115,7 @@ class TVMRuntime(Runtime):
         self.lastoutput = self.model.get_output(0).asnumpy().tobytes()
 
     def upload_output(self, input_data):
-        self.protocol.log.info('Uploading output')
+        self.protocol.log.debug('Uploading output')
         if self.lastoutput:
             self.protocol.request_success(self.lastoutput)
             self.lastoutput = None
@@ -123,6 +123,6 @@ class TVMRuntime(Runtime):
             self.protocol.request_failure()
 
     def upload_stats(self, input_data):
-        self.protocol.log.info('Uploading stats')
+        self.protocol.log.debug('Uploading stats')
         stats = json.dumps(MeasurementsCollector.measurements.data)
         self.protocol.request_success(stats.encode('utf-8'))

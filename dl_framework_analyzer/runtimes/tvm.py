@@ -106,13 +106,8 @@ class TVMRuntime(Runtime):
         self.protocol.request_success()
         self.protocol.log.info('Model loading ended successfully')
 
-    def process_input(self, input_data):
-        self.protocol.log.debug('Processing input')
-        self.protocol.request_success()
+    def run(self):
         self.model.run()
-        self.protocol.request_success()
-        self.protocol.log.debug('Input processed')
-        self.lastoutput = self.model.get_output(0).asnumpy().tobytes()
 
     def upload_output(self, input_data):
         self.protocol.log.debug('Uploading output')

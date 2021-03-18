@@ -140,6 +140,16 @@ class Dataset(object):
             )
         raise StopIteration
 
+    def __len__(self) -> int:
+        """
+        Returns the number of data samples.
+
+        Returns
+        -------
+        int : Number of input samples
+        """
+        return len(self.dataX)
+
     def prepare_input_samples(self, samples: List) -> List:
         """
         Preprocesses input samples, i.e. load images from files, converts them.

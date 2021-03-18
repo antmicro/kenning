@@ -6,13 +6,19 @@ from typing import List, Dict, Union, Any, Callable
 import time
 from dl_framework_analyzer.utils import logger
 import psutil
-# TODO add checking if NVIDIA is present. It may not be neccessary
-from pynvml.smi import nvidia_smi
-from threading import Thread
+
+try:
+    from pynvml.smi import nvidia_smi
+except:
+    nvidia_smi = None
+from threading import Thread, Condition
 
 from functools import wraps
 
 logger = logger.get_logger()
+
+
+is_nvidia_smi_loadable = True
 
 
 class Measurements(object):
@@ -224,7 +230,7 @@ class SystemStatsCollector(Thread):
     It can be executed in parallel to another function to check its
     utilization of resources.
     """
-    def __init__(self, prefix: str, step: float = 0.5):
+    def __init__(self, prefix: str, step: float = 0.1):
         """
         Prepares thread for execution.
 
@@ -235,11 +241,22 @@ class SystemStatsCollector(Thread):
         step : float
             The step for the measurements, in seconds
         """
+        global is_nvidia_smi_loadable
         Thread.__init__(self)
         self.measurements = Measurements()
         self.running = True
         self.prefix = prefix
-        self.nvidia_smi = nvidia_smi.getInstance()
+        if is_nvidia_smi_loadable and nvidia_smi is not None:
+            try:
+                self.nvidia_smi = nvidia_smi.getInstance()
+            except Exception as ex:
+                logger.warning(
+                    f'No NVML support due to error {ex}'
+                )
+                self.nvidia_smi = None
+                is_nvidia_smi_loadable = False
+        else:
+            self.nvidia_smi = None
         self.step = step
 
     def get_measurements(self):
@@ -264,23 +281,31 @@ class SystemStatsCollector(Thread):
         return self.measurements
 
     def run(self):
+        self.measurements = Measurements()
+        self.running = True
         while self.running:
             cpus = psutil.cpu_percent(interval=self.step, percpu=True)
             mem = psutil.virtual_memory()
-            gpu = self.nvidia_smi.DeviceQuery(
-                'memory.free, memory.total, utilization.gpu'
-            )
-            memtot = float(gpu['gpu'][0]['fb_memory_usage']['total'])
-            memfree = float(gpu['gpu'][0]['fb_memory_usage']['free'])
-            gpumemutilization = (memtot - memfree) / memtot * 100.0
-            gpuutilization = float(gpu['gpu'][0]['utilization']['gpu_util'])
             self.measurements += {
                 f'{self.prefix}_cpus_percent': [cpus],
                 f'{self.prefix}_mem_percent': [mem.percent],
-                f'{self.prefix}_gpu_utilization': [gpuutilization],
-                f'{self.prefix}_gpu_mem_utilization': [gpumemutilization],
                 f'{self.prefix}_timestamp': [time.perf_counter()],
             }
+            if self.nvidia_smi is not None:
+                gpu = self.nvidia_smi.DeviceQuery(
+                    'memory.free, memory.total, utilization.gpu'
+                )
+                memtot = float(gpu['gpu'][0]['fb_memory_usage']['total'])
+                memfree = float(gpu['gpu'][0]['fb_memory_usage']['free'])
+                gpumemutilization = (memtot - memfree) / memtot * 100.0
+                gpuutilization = float(
+                    gpu['gpu'][0]['utilization']['gpu_util']
+                )
+                self.measurements += {
+                    f'{self.prefix}_gpu_utilization': [gpuutilization],
+                    f'{self.prefix}_gpu_mem_utilization': [gpumemutilization],
+                    f'{self.prefix}_gpu_timestamp': [time.perf_counter()],
+                }
 
     def stop(self):
         self.running = False

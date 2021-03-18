@@ -8,6 +8,8 @@ from dl_framework_analyzer.core.runtimeprotocol import check_request
 from dl_framework_analyzer.core.measurements import Measurements
 from dl_framework_analyzer.core.measurements import MeasurementsCollector
 from dl_framework_analyzer.core.runtimeprotocol import ServerStatus
+from dl_framework_analyzer.core.measurements import timemeasurements
+from dl_framework_analyzer.core.measurements import SystemStatsCollector
 
 
 class Runtime(object):
@@ -26,11 +28,12 @@ class Runtime(object):
         self.shouldwork = True
         self.callbacks = {
             MessageType.DATA: self.prepare_input,
-            MessageType.MODEL: self.prepare_model,
+            MessageType.MODEL: self._prepare_model,
             MessageType.PROCESS: self.process_input,
             MessageType.OUTPUT: self.upload_output,
-            MessageType.STATS: self.upload_stats
+            MessageType.STATS: self._upload_stats
         }
+        self.statsmeasurements = None
 
     @classmethod
     def form_argparse(cls):
@@ -64,6 +67,36 @@ class Runtime(object):
         """
         return cls(protocol)
 
+    def inference_session_start(self):
+        """
+        Calling this function indicates that the client is connected.
+
+        This method should be called once the client has connected to a server.
+
+        This will enable performance tracking.
+        """
+        if self.statsmeasurements is None:
+            self.statsmeasurements = SystemStatsCollector(
+                'session_utilization'
+            )
+        self.statsmeasurements.start()
+
+    def inference_session_end(self):
+        """
+        Calling this function indicates that the inference session has ended.
+
+        This method should be called once all the inference data is sent to
+        the server by the client.
+
+        This will stop performance tracking.
+        """
+        if self.statsmeasurements:
+            self.statsmeasurements.stop()
+            self.statsmeasurements.join()
+            MeasurementsCollector.measurements += \
+                self.statsmeasurements.get_measurements()
+            self.statsmeasurements = None
+
     def close_server(self):
         self.shouldwork = False
 
@@ -76,14 +109,34 @@ class Runtime(object):
     def prepare_input(self, input_data):
         raise NotImplementedError
 
+    def _prepare_model(self, input_data):
+        self.inference_session_start()
+        self.prepare_model(input_data)
+
     def prepare_model(self, input_data):
         raise NotImplementedError
 
     def process_input(self, input_data):
+        self.protocol.log.debug('Processing input')
+        self.protocol.request_success()
+        self._run()
+        self.protocol.request_success()
+        self.protocol.log.debug('Input processed')
+        self.lastoutput = self.model.get_output(0).asnumpy().tobytes()
+
+    @timemeasurements('target_inference_step')
+    def _run(self):
+        self.run()
+
+    def run(self):
         raise NotImplementedError
 
     def upload_output(self, input_data):
         raise NotImplementedError
+
+    def _upload_stats(self, input_data):
+        self.inference_session_end()
+        self.upload_stats(input_data)
 
     def upload_stats(self, input_data):
         raise NotImplementedError
@@ -102,18 +155,23 @@ class Runtime(object):
                     self.protocol.download_output(),
                     'receive output'
                 )
-                self.protocol.log.debug(f'Received output ({len(preds)} bytes)')
+                self.protocol.log.debug(
+                    f'Received output ({len(preds)} bytes)'
+                )
                 preds = modelwrapper.convert_output_from_bytes(preds)
                 posty = modelwrapper._postprocess_outputs(preds)
                 measurements += dataset.evaluate(posty, y)
-                measurements += self.protocol.download_statistics()
+
+            measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
             self.protocol.log.fatal(ex)
         else:
             MeasurementsCollector.measurements += measurements
+        self.protocol.disconnect()
 
     def run_server(self):
         self.prepare_server()
+        self.shouldwork = True
         while self.shouldwork:
             actions = self.protocol.wait_for_activity()
             for status, data in actions:
@@ -124,8 +182,8 @@ class Runtime(object):
                         self.shouldwork = False
                     msgtype, content = self.protocol.parse_message(data[0])
                     self.callbacks[msgtype](content)
-                if status == ServerStatus.DATA_INVALID:
-                    # TODO should it be closed on invalid data?
+                elif status == ServerStatus.DATA_INVALID:
                     self.protocol.log.error('Invalid message received')
-                    self.close_server()
-                    self.shouldwork = False
+                    self.protocol.log.error('Client will be disconnected')
+                    self.disconnect()
+        self.disconnect()

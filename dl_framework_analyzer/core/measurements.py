@@ -12,7 +12,7 @@ import numpy as np
 
 try:
     from pynvml.smi import nvidia_smi
-except:
+except ImportError:
     nvidia_smi = None
 from threading import Thread, Condition
 
@@ -328,10 +328,10 @@ class SystemStatsCollector(Thread):
             ramusages = []
             gpuutilization = []
             for entry in readings:
-                match = re.match('RAM (\d+)/(\d+)MB', entry)
+                match = re.match(r'RAM (\d+)/(\d+)MB', entry)
                 if match:
                     ramusages.append(int(match.group(1)))
-                match = re.match('.*GR3D_FREQ (\d+)%', entry)
+                match = re.match(r'.*GR3D_FREQ (\d+)%', entry)
                 if match:
                     gpuutilization.append(int(match.group(1)))
             timestamps = np.linspace(

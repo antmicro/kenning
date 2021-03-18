@@ -266,7 +266,10 @@ class NetworkProtocol(RuntimeProtocol):
     def request_processing(self):
         self.log.debug('Requesting processing')
         self.send_message(MessageType.PROCESS)
-        return self.receive_confirmation()[0]
+        if self.receive_confirmation()[0]:
+            return self.receive_confirmation()[0]
+        else:
+            return False
 
     def download_output(self):
         self.log.debug('Downloading output')
@@ -278,15 +281,15 @@ class NetworkProtocol(RuntimeProtocol):
         self.send_message(MessageType.STATS)
         status, dat = self.receive_confirmation()
         measurements = Measurements()
-        if status:
+        if status and isinstance(dat, bytes) and len(dat) > 0:
             jsonstr = dat.decode('utf8')
             jsondata = json.loads(jsonstr)
             measurements += jsondata
         return measurements
 
-    def request_success(self):
+    def request_success(self, data=bytes()):
         self.log.debug('Sending OK')
-        return self.send_message(MessageType.OK)
+        return self.send_message(MessageType.OK, data)
 
     def request_failure(self):
         self.log.debug('Sending ERROR')

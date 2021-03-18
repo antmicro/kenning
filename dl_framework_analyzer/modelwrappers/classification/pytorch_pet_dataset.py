@@ -178,8 +178,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
     def convert_output_from_bytes(self, outputdata):
         result = []
-        singleoutputsize = self.numclasses * np.float32
+        singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
+        print(f'GL singleoutputsize: {singleoutputsize}')
+        print(f'GL outputdata size: {len(outputdata)}')
         for ind in range(0, len(outputdata), singleoutputsize):
-            arr = np.frombuffer(singleoutputsize[ind:ind + singleoutputsize])
+            print(f'GL block size: {len(outputdata[ind:(ind + singleoutputsize)])}')
+            arr = np.frombuffer(outputdata[ind:(ind + singleoutputsize)], dtype=np.float32)
             result.append(arr)
-        return result
+        return torch.FloatTensor(result)

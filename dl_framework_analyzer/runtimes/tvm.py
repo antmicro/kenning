@@ -124,5 +124,5 @@ class TVMRuntime(Runtime):
 
     def upload_stats(self, input_data):
         self.protocol.log.info('Uploading stats')
-        stats = json.dumps(MeasurementsCollector.measurements)
+        stats = json.dumps(MeasurementsCollector.measurements.data)
         self.protocol.request_success(stats.encode('utf-8'))

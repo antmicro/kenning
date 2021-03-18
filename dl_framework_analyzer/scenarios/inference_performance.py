@@ -11,6 +11,7 @@ This test is only for performance tests.
 import sys
 import argparse
 from pathlib import Path
+import json
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -143,14 +144,14 @@ def main(argv):
             'GPU Memory usage over benchmark',
             'Time', 's',
             'Memory usage', '%',
-            measurementsdata['full_run_statistics_timestamp'],
+            measurementsdata['full_run_statistics_gpu_timestamp'],
             measurementsdata['full_run_statistics_gpu_mem_utilization'])
         create_line_plot(
             gpuusage,
             'GPU usage over benchmark',
             'Time', 's',
             'Memory usage', '%',
-            measurementsdata['full_run_statistics_timestamp'],
+            measurementsdata['full_run_statistics_gpu_timestamp'],
             measurementsdata['full_run_statistics_gpu_utilization'])
         if 'eval_confusion_matrix' in measurementsdata:
             draw_confusion_matrix(
@@ -170,6 +171,13 @@ def main(argv):
             measurementsdata,
             args.output / f'{reportname}.rst'
         )
+        MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+        with open(args.output / 'measurements.json', 'w') as measurementsfile:
+            json.dump(
+                MeasurementsCollector.measurements.data,
+                measurementsfile,
+                indent=2
+            )
 
 
 if __name__ == '__main__':

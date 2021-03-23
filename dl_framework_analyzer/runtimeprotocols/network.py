@@ -86,7 +86,7 @@ class NetworkProtocol(RuntimeProtocol):
             self.socket.setblocking(False)
             self.selector.register(
                 self.socket,
-                selectors.EVENT_READ,
+                selectors.EVENT_READ | selectors.EVENT_WRITE,
                 self.receive_data
             )
             return ServerStatus.CLIENT_CONNECTED, None
@@ -115,7 +115,7 @@ class NetworkProtocol(RuntimeProtocol):
         # self.socket.setblocking(0)
         self.selector.register(
             self.socket,
-            selectors.EVENT_READ,
+            selectors.EVENT_READ | selectors.EVENT_WRITE,
             self.receive_data
         )
         return True
@@ -181,19 +181,29 @@ class NetworkProtocol(RuntimeProtocol):
         events = self.selector.select(timeout=1)
         results = []
         for key, mask in events:
-            callback = key.data
-            code, data = callback(key.fileobj, mask)
-            results.append((code, data))
+            if mask & selectors.EVENT_READ:
+                callback = key.data
+                code, data = callback(key.fileobj, mask)
+                results.append((code, data))
         if len(results) == 0:
             return [(ServerStatus.NOTHING, None)]
         return results
+
+    def wait_send(self, data):
+        ret = self.socket.send(data)
+        while True:
+            events = self.selector.select(timeout=1)
+            for key, mask in events:
+                if key.fileobj == self.socket and mask & selectors.EVENT_WRITE:
+                    return ret
+        return ret
 
     def send_data(self, data):
         length = (len(data)).to_bytes(4, self.endianness, signed=False)
         packet = length + data
         index = 0
         while index < len(packet):
-            ret = self.socket.send(packet[index:])
+            ret = self.wait_send(packet[index:])
             if ret < 0:
                 return False
             index += ret

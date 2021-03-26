@@ -56,7 +56,7 @@ class MessageType(Enum):
     """
     Enum representing message type in the communication with the target device.
 
-    For example, each message in the communication between the host and the 
+    For example, each message in the communication between the host and the
     target can start with 2 bytes unsigned integer representing the message
     type.
 
@@ -77,7 +77,7 @@ class MessageType(Enum):
     OUTPUT = 5
     STATS = 6
 
-    def to_bytes(self, endianness: str='little') -> str:
+    def to_bytes(self, endianness: str = 'little') -> str:
         """
         Converts MessageType enum to bytes in uint16 format.
 
@@ -93,7 +93,10 @@ class MessageType(Enum):
         return int(self.value).to_bytes(2, endianness, signed=False)
 
     @classmethod
-    def from_bytes(cls, value: bytes, endianness: str='little') -> 'MessageType':
+    def from_bytes(
+            cls,
+            value: bytes,
+            endianness: str = 'little') -> 'MessageType':
         """
         Converts 2-byte bytes to MessageType enum.
 

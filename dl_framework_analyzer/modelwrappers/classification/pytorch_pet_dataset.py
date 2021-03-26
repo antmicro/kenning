@@ -148,9 +148,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     bar.set_description(f'valid epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
 
                 acc = 100 * correct / total
-                avgloss = losssum / losscount
 
-                saved = False
                 if acc > best_acc:
                     torch.save(self.model, self.modelpath)
                     best_acc = acc

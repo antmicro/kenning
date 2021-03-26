@@ -35,7 +35,7 @@ class TVMCompiler(ModelCompiler):
             modelframework: str,
             target: str,
             target_host: str,
-            opt_level: int=2):
+            opt_level: int = 2):
         """
         A TVM Compiler wrapper.
 

@@ -6,7 +6,10 @@ Runtimes implement running and testing deployed models on target devices.
 
 import argparse
 from tqdm import tqdm
+from pathlib import Path
 
+from dl_framework_analyzer.core.dataset import Dataset
+from dl_framework_analyzer.core.model import ModelWrapper
 from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
 from dl_framework_analyzer.core.runtimeprotocol import MessageType
 from dl_framework_analyzer.core.runtimeprotocol import RequestFailure
@@ -143,14 +146,14 @@ class Runtime(object):
         """
         raise NotImplementedError
 
-    def _prepare_model(self, input_data : bytes):
+    def _prepare_model(self, input_data: bytes):
         """
         Internal call for preparing a model for inference task.
         """
         self.inference_session_start()
         self.prepare_model(input_data)
 
-    def prepare_model(self, input_data : bytes):
+    def prepare_model(self, input_data: bytes):
         """
         Receives the model to infer from the client in bytes.
 
@@ -192,7 +195,7 @@ class Runtime(object):
         Runs inference on prepared input.
 
         The input should be introduced in runtime's model representation, or
-        it should be delivered using a variable that was assigned in 
+        it should be delivered using a variable that was assigned in
         prepare_input method.
         """
         raise NotImplementedError

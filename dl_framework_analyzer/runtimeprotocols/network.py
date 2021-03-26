@@ -37,8 +37,8 @@ class NetworkProtocol(RuntimeProtocol):
             self,
             host: str,
             port: int,
-            packet_size: int=4096,
-            endianness: str='little'):
+            packet_size: int = 4096,
+            endianness: str = 'little'):
         """
         Initializes NetworkProtocol.
 

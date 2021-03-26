@@ -1,11 +1,12 @@
+"""
+Contains Tensorflow models for the classification problem.
+
+Pretrained on ImageNet dataset.
+"""
+
 from dl_framework_analyzer.core.model import ModelWrapper
 import tensorflow as tf
 import numpy as np
-
-
-"""
-Contains Tensorflow models for the classification problem.
-"""
 
 
 class TensorflowImagenetResNet152(ModelWrapper):

@@ -2,7 +2,11 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List
+from typing import Tuple, List, Any
+import argparse
+from pathlib import Path
+from sklearn.model_selection import train_test_split
+
 from .measurements import Measurements
 
 
@@ -22,23 +26,83 @@ class Dataset(object):
         ID of the next data to be delivered for inference
     """
 
-    def __init__(self, root: str, batch_size: int = 1):
+    def __init__(
+            self,
+            root: Path,
+            batch_size: int = 1,
+            download_dataset: bool = False):
         """
         Prepares all structures and data required for providing data samples.
 
         Parameters
         ----------
-        root : str
+        root : Path
             The path to the dataset data
         batch_size : int
             The batch size
+        download_dataset : bool
+            True if dataset should be downloaded first
         """
-        self.root = root
+        self.root = Path(root)
         self._dataindex = 0
         self.dataX = []
         self.dataY = []
         self.batch_size = batch_size
+        if download_dataset:
+            self.download_dataset()
         self.prepare()
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the Dataset object.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Dataset arguments')
+        group.add_argument(
+            '--dataset-root',
+            help='Path to the dataset directory',
+            required=True,
+            type=Path
+        )
+        group.add_argument(
+            '--download-dataset',
+            help='Downloads the dataset before taking any action',
+            action='store_true'
+        )
+        group.add_argument(
+            '--inference-batch-size',
+            help='The batch size for providing the input data',
+            type=int,
+            default=1
+        )
+        return parser, group
+
+    @classmethod
+    def from_argparse(cls, args):
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        Parameters
+        ----------
+        args : arguments from ArgumentParser object
+
+        Returns
+        -------
+        Dataset : object of class Dataset
+        """
+        return cls(
+            args.dataset_root,
+            args.inference_batch_size,
+            args.download_dataset
+        )
 
     def __iter__(self) -> 'Dataset':
         """
@@ -75,6 +139,16 @@ class Dataset(object):
                 self.prepare_output_samples(self.dataY[prev:self._dataindex])
             )
         raise StopIteration
+
+    def __len__(self) -> int:
+        """
+        Returns the number of data samples.
+
+        Returns
+        -------
+        int : Number of input samples
+        """
+        return len(self.dataX)
 
     def prepare_input_samples(self, samples: List) -> List:
         """
@@ -126,6 +200,10 @@ class Dataset(object):
         """
         Returns the tuple of all inputs and outputs for the dataset.
 
+        *WARNING*: It loads all entries with prepare_input_samples and
+        prepare_output_samples to the memory - for large datasets it may result
+        in filling the whole space.
+
         Returns
         -------
         Tuple[List, List] : the list of data samples
@@ -134,6 +212,43 @@ class Dataset(object):
             self.prepare_input_samples(self.dataX),
             self.prepare_output_samples(self.dataY)
         )
+
+    def get_data_unloaded(self) -> Tuple[List, List]:
+        """
+        Returns the input and output representations before loading.
+
+        The representations can be opened using prepare_input_samples and
+        prepare_output_samples.
+
+        Returns
+        -------
+        Tuple[List, List] : the list of data samples representations
+        """
+        return (self.dataX, self.dataY)
+
+    def train_test_split_representations(
+            self,
+            test_fraction: float = 0.25,
+            seed: int = 12345):
+        """
+        Splits the data representations into train dataset and test dataset.
+
+        Parameters
+        ----------
+        test_fraction : float
+            The fraction of data to leave for model validation
+        seed : int
+            The seed for random state
+        """
+        dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
+            self.dataX,
+            self.dataY,
+            test_size=test_fraction,
+            random_state=seed,
+            shuffle=True,
+            stratify=self.dataY
+        )
+        return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
     def download_dataset(self):
         """
@@ -161,5 +276,40 @@ class Dataset(object):
         Returns
         -------
         Measurements : The dictionary containing the evaluation results
+        """
+        raise NotImplementedError
+
+    def compute_input_mean_std(self, samples: List) -> Tuple[Any, Any]:
+        """
+        Computes mean and std values for a given dataset.
+
+        The input standardization values for a given model are computed based
+        on a train dataset.
+
+        Parameters
+        ----------
+        samples : List
+            The list of input tensors from the train dataset
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            the standardization values for a given train dataset.
+            Tuple of two variables describing mean and std values
+        """
+        raise NotImplementedError
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        """
+        Returns mean and std values for input tensors.
+
+        The mean and std values returned here should be computed using
+        ``compute_input_mean_std`` method.
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            the standardization values for a given train dataset.
+            Tuple of two variables describing mean and std values
         """
         raise NotImplementedError

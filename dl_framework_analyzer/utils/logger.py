@@ -3,6 +3,9 @@ Module for preparing the logging structures.
 """
 
 import logging
+from tqdm import tqdm
+import io
+import urllib
 
 
 def string_to_verbosity(level: str):
@@ -35,3 +38,45 @@ def get_logger():
     FORMAT = '[%(asctime)-15s %(filename)s:%(lineno)s] %(message)s'
     logging.basicConfig(format=FORMAT)
     return logger
+
+
+class LoggerProgressBar(io.StringIO):
+    """
+    Prepares IO stream for TQDM progress bar to run in logging.
+    """
+
+    def __init__(self, suppress_new_line=True):
+        super().__init__()
+        self.logger = get_logger()
+        self.buf = ''
+        if suppress_new_line:
+            for handler in self.logger.handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    handler.terminator = ''
+
+    def write(self, buf):
+        self.buf = buf.strip('\r\n\t ')
+
+    def flush(self):
+        self.logger.log(logging.INFO, '\r' + self.buf)
+
+
+class DownloadProgressBar(tqdm):
+    def update_to(self, b=1, bsize=1, tsize=None):
+        if tsize is not None:
+            self.total = tsize
+        self.update(b * bsize - self.n)
+
+
+def download_url(url, output_path):
+    with DownloadProgressBar(
+            unit='B',
+            unit_scale=True,
+            miniters=1,
+            file=LoggerProgressBar(),
+            desc=url.split('/')[-1]) as t:
+        urllib.request.urlretrieve(
+            url,
+            filename=output_path,
+            reporthook=t.update_to
+        )

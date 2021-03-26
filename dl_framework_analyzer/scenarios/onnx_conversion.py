@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 The script for creating ONNX import/export support matrix.
 

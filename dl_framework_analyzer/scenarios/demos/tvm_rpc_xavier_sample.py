@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 The below program tests compiling and running CUDA-based target on Jetson.
 

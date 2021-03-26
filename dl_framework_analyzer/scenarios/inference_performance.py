@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 The sample benchmark for classification problem.
 

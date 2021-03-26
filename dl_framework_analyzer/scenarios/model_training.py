@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """
 The script for training models given in ModelWrapper object with dataset given
 in Dataset object.

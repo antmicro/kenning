@@ -12,7 +12,15 @@ class ModelCompiler(object):
     Compiles the given model to a different format or runtime.
     """
 
-    def __init__(self, compiled_model_path):
+    def __init__(self, compiled_model_path: str):
+        """
+        Prepares the ModelCompiler object.
+
+        Parameters
+        ----------
+        compiled_model_path : str
+            Path to file where the compiled model should be saved
+        """
         self.compiled_model_path = compiled_model_path
 
     @classmethod

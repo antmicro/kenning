@@ -7,6 +7,8 @@ from matplotlib import patheffects
 from typing import List
 import numpy as np
 import itertools
+from numpy.typing import ArrayLike
+from pathlib import Path
 
 
 def create_line_plot(
@@ -61,15 +63,30 @@ def create_line_plot(
 
 
 def draw_confusion_matrix(
-        confusion_matrix,
-        outpath: str,
+        confusion_matrix: ArrayLike,
+        outpath: Path,
         title: str,
         class_names: List[str],
         normalized: bool = True,
-        add_summary_columns: bool = True,
         cmap=None):
     """
     Creates a confusion matrix plot.
+
+    Parameters
+    ----------
+    confusion_matrix : ArrayLike
+        Square numpy matrix containing the confusion matrix.
+        0-th axis stands for ground truth, 1-st axis stands for predictions
+    outpath : Path
+        Path where the plot will be saved
+    title : str
+        Title of the plot
+    class_names : List[str]
+        List of the class names
+    normalized : bool
+        If true, the values for each ground truth class will be normalized
+    cmap : Any
+        Color map for the plot
     """
     if cmap is None:
         cmap = plt.get_cmap('Blues')

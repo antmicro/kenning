@@ -6,6 +6,7 @@ from collections import namedtuple
 from pathlib import Path
 from enum import Enum
 import onnx
+from typing import List
 
 from dl_framework_analyzer.utils.logger import get_logger
 
@@ -191,7 +192,20 @@ class ONNXConversion(object):
             self.logger.error(e)
             return SupportStatus.ERROR
 
-    def check_conversions(self, modelsdir: Path):
+    def check_conversions(self, modelsdir: Path) -> List[Support]:
+        """
+        Runs ONNX conversion for every model entry in the list of models.
+
+        Parameters
+        ----------
+        modelsdir : Path
+            Path to the directory where the intermediate models will be saved.
+
+        Returns
+        -------
+        List[Support] :
+            List with Support tuples describing support status.
+        """
         self.logger.info(f'~~~~> {self.framework} (ver. {self.version})')
         modelsdir = Path(modelsdir)
         modelsdir.mkdir(parents=True, exist_ok=True)

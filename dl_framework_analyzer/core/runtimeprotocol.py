@@ -1,3 +1,8 @@
+"""
+Module providing a communication protocol for communication between host and
+the client.
+"""
+
 from enum import Enum
 from pathlib import Path
 import argparse
@@ -8,12 +13,36 @@ from dl_framework_analyzer.core.measurements import Measurements
 
 
 class RequestFailure(Exception):
+    """
+    Exception for failing requests.
+    """
     pass
 
 
 def check_request(
         request: Union[bool, Tuple[bool, Optional[bytes]]],
         msg: str):
+    """
+    Checks if the request finished successfully.
+
+    When request failed, function raises RequestFailure exception.
+
+    Parameters
+    ----------
+    request : Union[bool, Tuple[bool, Optional[bytes]]]
+        Request result
+    msg : str
+        Message that should be provided with the RequestFailure exception
+        when request failed.
+
+    Raises
+    ------
+    RequestFailure : raised when the request did not finish successfully
+
+    Returns
+    -------
+    Union[bool, Tuple[bool, Optional[bytes]]] : the request given in the input
+    """
     if isinstance(request, bool):
         if not request:
             raise RequestFailure(f'Failed to handle request: {msg}')
@@ -27,8 +56,9 @@ class MessageType(Enum):
     """
     Enum representing message type in the communication with the target device.
 
-    Each message in the communication between the host and the target starts
-    with 2 bytes unsigned integer representing the message type.
+    For example, each message in the communication between the host and the 
+    target can start with 2 bytes unsigned integer representing the message
+    type.
 
     OK - message indicating success of previous command
     ERROR - message indicating failure of previous command
@@ -47,11 +77,37 @@ class MessageType(Enum):
     OUTPUT = 5
     STATS = 6
 
-    def to_bytes(self, endianness='little'):
+    def to_bytes(self, endianness: str='little') -> str:
+        """
+        Converts MessageType enum to bytes in uint16 format.
+
+        Parameters
+        ----------
+        endianness : str
+            Can be 'little' or 'big'
+
+        Returns
+        -------
+        bytes : converted message type
+        """
         return int(self.value).to_bytes(2, endianness, signed=False)
 
     @classmethod
-    def from_bytes(cls, value, endianness='little'):
+    def from_bytes(cls, value: bytes, endianness: str='little') -> 'MessageType':
+        """
+        Converts 2-byte bytes to MessageType enum.
+
+        Parameters
+        ----------
+        value : bytes
+            enum in bytes
+        endiannes : str
+            endianness in bytes
+
+        Returns
+        -------
+        MessageType : enum value
+        """
         return MessageType(int.from_bytes(value, endianness, signed=False))
 
 

@@ -1,3 +1,9 @@
+"""
+Module providing a Runtime wrapper.
+
+Runtimes implement running and testing deployed models on target devices.
+"""
+
 import argparse
 from tqdm import tqdm
 
@@ -13,6 +19,14 @@ from dl_framework_analyzer.core.measurements import SystemStatsCollector
 
 
 class Runtime(object):
+    """
+    Runtime object provides an API for testing inference on target devices.
+
+    Using a provided RuntimeProtocol it sets up a client (host) and server
+    (target) communication, during which the inference metrics are being
+    analyzed.
+    """
+
     def __init__(
             self,
             protocol: RuntimeProtocol):
@@ -98,25 +112,67 @@ class Runtime(object):
             self.statsmeasurements = None
 
     def close_server(self):
+        """
+        Indicates that the server should be closed.
+        """
         self.shouldwork = False
 
     def prepare_server(self):
+        """
+        Runs initialization of the server.
+        """
         self.protocol.initialize_server()
 
     def prepare_client(self):
+        """
+        Runs initialization for the client.
+        """
         self.protocol.initialize_client()
 
-    def prepare_input(self, input_data):
+    def prepare_input(self, input_data: bytes):
+        """
+        Loads and converts delivered data to the accelerator for inference.
+
+        This method is called when the input is received from the client.
+        It is supposed to prepare input before running inference.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Input data in bytes delivered by the client, preprocessed
+        """
         raise NotImplementedError
 
-    def _prepare_model(self, input_data):
+    def _prepare_model(self, input_data : bytes):
+        """
+        Internal call for preparing a model for inference task.
+        """
         self.inference_session_start()
         self.prepare_model(input_data)
 
-    def prepare_model(self, input_data):
+    def prepare_model(self, input_data : bytes):
+        """
+        Receives the model to infer from the client in bytes.
+
+        The method should load bytes with the model, optionally save to file
+        and allocate the model on target device for inference.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Model data
+        """
         raise NotImplementedError
 
     def process_input(self, input_data):
+        """
+        Processes received input and measures the performance quality.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here
+        """
         self.protocol.log.debug('Processing input')
         self.protocol.request_success()
         self._run()
@@ -126,22 +182,90 @@ class Runtime(object):
 
     @timemeasurements('target_inference_step')
     def _run(self):
+        """
+        Performance wrapper for run method.
+        """
         self.run()
 
     def run(self):
+        """
+        Runs inference on prepared input.
+
+        The input should be introduced in runtime's model representation, or
+        it should be delivered using a variable that was assigned in 
+        prepare_input method.
+        """
         raise NotImplementedError
 
-    def upload_output(self, input_data):
+    def upload_output(self, input_data: bytes):
+        """
+        Uploads the output to the client, in bytes.
+
+        The method converts the direct output from the model to bytes and sends
+        back to the client.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here
+        """
         raise NotImplementedError
 
-    def _upload_stats(self, input_data):
+    def _upload_stats(self, input_data: bytes):
+        """
+        Wrapper for uploading stats.
+
+        Stops measurements and uploads stats.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here
+        """
         self.inference_session_end()
         self.upload_stats(input_data)
 
-    def upload_stats(self, input_data):
+    def upload_stats(self, input_data: bytes):
+        """
+        Uploads statistics of inference passes to the client.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here
+        """
         raise NotImplementedError
 
-    def run_client(self, dataset, modelwrapper, compiledmodelpath):
+    def run_client(
+            self,
+            dataset: Dataset,
+            modelwrapper: ModelWrapper,
+            compiledmodelpath: Path):
+        """
+        Main runtime client program.
+
+        The client performance procedure is as follows:
+
+        * connect with the server
+        * upload the model
+        * send dataset data in a loop to the server:
+
+            * upload input
+            * request processing of inputs
+            * request predictions for inputs
+            * evaluate the response
+        * collect performance statistics
+        * end connection
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset to verify the inference on
+        modelwrapper : ModelWrapper
+            Model that is executed on target hardware
+        compiledmodelpath : Path
+            Path to the file with a compiled model
+        """
         self.prepare_client()
         self.protocol.upload_model(compiledmodelpath)
         measurements = Measurements()
@@ -170,6 +294,14 @@ class Runtime(object):
         self.protocol.disconnect()
 
     def run_server(self):
+        """
+        Main runtime server program.
+
+        It waits for requests from a single client.
+
+        Based on requests, it loads the model, runs inference and provides
+        statistics.
+        """
         self.prepare_server()
         self.shouldwork = True
         while self.shouldwork:

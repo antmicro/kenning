@@ -31,7 +31,23 @@ class TVMCompiler(ModelCompiler):
             modelframework: str,
             target: str,
             target_host: str,
-            opt_level=2):
+            opt_level: int=2):
+        """
+        A TVM Compiler wrapper.
+
+        Parameters
+        ----------
+        compiled_model_path : Path
+            Path where compiled model will be saved
+        modelframework : str
+            Framework of the input model, used to select a proper backend
+        target : str
+            Target accelerator on which the model will be executed
+        target_host : str
+            CPU architecture of the target (used when target has a host).
+        opt_level : int
+            optimization level of compilation
+        """
         self.set_input_type(modelframework)
         self.target = tvm.target.Target(target)
         self.target_host = (

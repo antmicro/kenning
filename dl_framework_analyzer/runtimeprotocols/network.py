@@ -1,3 +1,7 @@
+"""
+TCP-based inference communication protocol.
+"""
+
 import socket
 import selectors
 import dl_framework_analyzer.utils.logger as logger
@@ -12,7 +16,43 @@ from dl_framework_analyzer.core.measurements import Measurements
 
 
 class NetworkProtocol(RuntimeProtocol):
-    def __init__(self, host, port, packet_size=4096, endianness='little'):
+    """
+    A TCP-based runtime protocol.
+
+    Protocol is implemented using BSD sockets and selectors-based pooling.
+
+    Every message in the network protocol has a format:
+
+    <num-bytes><msg-type>[<data>]
+
+    Where:
+
+    * num-bytes - tells the size of <msg-type>[<data>] part of the message,
+      in bytes
+    * msg-type - the type of the message. For message types check the
+      MessageType enum from dl_framework_analyzer.core.runtimeprotocol
+    * <data> - optional data that comes with the message of MessageType
+    """
+    def __init__(
+            self,
+            host: str,
+            port: int,
+            packet_size: int=4096,
+            endianness: str='little'):
+        """
+        Initializes NetworkProtocol.
+
+        Parameters
+        ----------
+        host : str
+            host for the TCP connection
+        port : int
+            port for the TCP connection
+        packet_size : int
+            receive packet sizes
+        endiannes : str
+            endianness of the communication
+        """
         self.host = host
         self.port = port
         self.collecteddata = bytes()
@@ -112,7 +152,6 @@ class NetworkProtocol(RuntimeProtocol):
             socket.SOCK_STREAM
         )
         self.socket.connect((self.host, self.port))
-        # self.socket.setblocking(0)
         self.selector.register(
             self.socket,
             selectors.EVENT_READ | selectors.EVENT_WRITE,
@@ -190,6 +229,10 @@ class NetworkProtocol(RuntimeProtocol):
         return results
 
     def wait_send(self, data):
+        """
+        Wrapper for sending method that waits until write buffer is ready for
+        new data.
+        """
         ret = self.socket.send(data)
         while True:
             events = self.selector.select(timeout=1)

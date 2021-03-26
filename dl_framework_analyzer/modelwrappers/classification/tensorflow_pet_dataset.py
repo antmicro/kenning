@@ -44,16 +44,19 @@ class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):
             layer1 = tf.keras.layers.Dense(
                 1024,
                 activation='relu')(avgpool)
+            d1 = tf.keras.layers.Dropout(0.5)(layer1)
             layer2 = tf.keras.layers.Dense(
                 512,
-                activation='relu')(layer1)
+                activation='relu')(d1)
+            d2 = tf.keras.layers.Dropout(0.5)(layer2)
             layer3 = tf.keras.layers.Dense(
                 128,
-                activation='relu')(layer2)
+                activation='relu')(d2)
+            d3 = tf.keras.layers.Dropout(0.5)(layer3)
             output = tf.keras.layers.Dense(
                 self.numclasses,
                 name='out_layer'
-            )(layer3)
+            )(d3)
             self.model = tf.keras.models.Model(
                 inputs=self.base.input,
                 outputs=output

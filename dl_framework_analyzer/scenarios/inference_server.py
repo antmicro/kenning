@@ -1,3 +1,15 @@
+"""
+A script that runs inference server.
+
+It requires implementations of several classes as input:
+
+* RuntimeProtocol - provides routines for communicating with the client
+* Runtime - provides implementation of inference runtime
+
+Each of those classes require specific set or arguments to configure the
+compilation and benchmark process.
+"""
+
 import sys
 import argparse
 

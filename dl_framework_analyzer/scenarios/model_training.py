@@ -1,5 +1,6 @@
 """
-The training script
+The script for training models given in ModelWrapper object with dataset given
+in Dataset object.
 """
 
 import sys

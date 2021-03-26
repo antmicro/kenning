@@ -1,3 +1,18 @@
+"""
+A script that runs inference client.
+
+It requires implementations of several classes as input:
+
+* ModelWrapper - wraps the model that will be compiled and executed on hardware
+* ModelCompiler - wraps the compiling routines for the deep learning model
+* RuntimeProtocol - describes the protocol over which the communication is
+  performed
+* Dataset - provides data for benchmarking
+
+Each of those classes require specific set or arguments to configure the
+compilation and benchmark process.
+"""
+
 import sys
 import argparse
 from pathlib import Path

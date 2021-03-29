@@ -109,7 +109,7 @@ def main(argv):
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
-    compiler = modelcompilercls.from_argparse(args)
+    compiler = modelcompilercls.from_argparse(dataset, args)
     protocol = protocolcls.from_argparse(args)
     runtime = runtimecls.from_argparse(protocol, args)
 

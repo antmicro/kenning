@@ -250,6 +250,27 @@ class Dataset(object):
         )
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
+    def calibration_dataset_generator(
+            self,
+            percentage: float = 0.25,
+            seed: int = 12345):
+        """
+        Creates generator for the calibration data.
+
+        Parameters
+        ----------
+        percentage : float
+            The fraction of data to use for calibration
+        seed : int
+            The seed for random state
+        """
+        _, X, _, _ = self.train_test_split_representations(
+            percentage,
+            seed
+        )
+        for x in X:
+            yield self.prepare_input_samples([x])
+
     def download_dataset(self):
         """
         Downloads the dataset to the root directory.

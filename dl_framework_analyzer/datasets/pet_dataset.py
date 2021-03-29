@@ -144,7 +144,7 @@ class PetDataset(Dataset):
             img = Image.open(sample)
             img = img.convert('RGB')
             img = img.resize((224, 224))
-            npimg = np.array(img) / 255.0
+            npimg = np.array(img, dtype=np.float32) / 255.0
             if self.standardize:
                 npimg = (npimg - self.mean) / self.std
             result.append(npimg)

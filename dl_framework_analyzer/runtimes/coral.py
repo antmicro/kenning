@@ -5,11 +5,8 @@ Runtime implementation for Google Coral boards (based on pycoral).
 from pathlib import Path
 import numpy as np
 
-from pycoral.utils import edgetpu, dataset
-from pycoral.adapters import common, classify
-
 from dl_framework_analyzer.core.runtime import Runtime
-from dl_framework_analyzer.core.runtimeprotocol import RuntimeP
+from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
 
 
 class GoogleCoralRuntime(Runtime):
@@ -66,16 +63,20 @@ class GoogleCoralRuntime(Runtime):
     def from_argparse(cls, protocol, args):
         return cls(
             protocol,
-            args.save_model_path
+            args.save_model_path,
+            args.input_dtype,
+            args.output_dtype
         )
 
     def prepare_model(self, input_data):
+        from pycoral.utils import edgetpu
         self.protocol.log.info('Loading model')
         with open(self.modelpath, 'wb') as outmodel:
             outmodel.write(input_data)
-        self.interpreter = edgetpu.make_interpreter(self.modelpath)
+        self.interpreter = edgetpu.make_interpreter(str(self.modelpath))
         self.interpreter.allocate_tensors()
         self.protocol.log.info('Model loading ended successfully')
+        return True
 
     def prepare_input(self, input_data):
         self.protocol.log.debug(f'Preparing inputs of size {len(input_data)}')
@@ -84,10 +85,12 @@ class GoogleCoralRuntime(Runtime):
             siz = np.prod(det['shape']) * dt.itemsize
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(det['shape'])
-            scale, zero_point = det['quantization']
-            inp = inp / scale + zero_point
-            self.interpreter.tensor(det['index'])()[0] = inp
+            if det['dtype'] != np.float32:
+                scale, zero_point = det['quantization']
+                inp = inp / scale + zero_point
+            self.interpreter.tensor(det['index'])()[0] = inp.astype(det['dtype'])
             input_data = input_data[siz:]
+        return True
 
     def run(self):
         self.interpreter.invoke()
@@ -95,12 +98,12 @@ class GoogleCoralRuntime(Runtime):
     def upload_output(self, input_data):
         self.protocol.log.debug('Uploading output')
         result = bytes()
+        dt = np.dtype(self.outputdtype)
         for det in self.interpreter.get_output_details():
-            out = sel.interpreter.tensor(det['index'])()
-            scale, zero_point = det['quantization']
-            out = (out.astype(self.outputdtype) - zero_point) / scale
-            result.append(out.tobytes())
-        if result:
-            self.protocol.request_success(result)
-        else:
-            self.protocol.request_failure()
+            out = self.interpreter.tensor(det['index'])()
+            if det['dtype'] != np.float32:
+                scale, zero_point = det['quantization']
+                out = (out.astype(np.float32) - zero_point) * scale
+                out = out.astype(dt)
+            result += out.tobytes()
+        return result

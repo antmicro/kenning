@@ -1,6 +1,5 @@
 import numpy as np
 import tensorflow as tf
-import tf2onnx
 from pathlib import Path
 
 from dl_framework_analyzer.core.model import ModelWrapper
@@ -46,7 +45,7 @@ class TensorFlowWrapper(ModelWrapper):
         self.model.save(modelpath)
 
     def preprocess_input(self, X):
-        return np.array(X)
+        return np.array(X, dtype='float32')
 
     def run_inference(self, X):
         return self.model.predict(X)
@@ -55,6 +54,7 @@ class TensorFlowWrapper(ModelWrapper):
         return ('tensorflow', tf.__version__)
 
     def save_to_onnx(self, modelpath):
+        import tf2onnx
         modelproto, _ = tf2onnx.convert.from_keras(
             self.model,
             input_signature=self.inputspec,
@@ -66,8 +66,11 @@ class TensorFlowWrapper(ModelWrapper):
 
     def convert_output_from_bytes(self, outputdata):
         result = []
-        singleoutputsize = self.numclasses * np.float32
+        singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
         for ind in range(0, len(outputdata), singleoutputsize):
-            arr = np.frombuffer(singleoutputsize[ind:ind + singleoutputsize])
+            arr = np.frombuffer(
+                outputdata[ind:ind + singleoutputsize],
+                dtype=np.float32
+            )
             result.append(arr)
         return result

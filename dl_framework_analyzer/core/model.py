@@ -42,6 +42,9 @@ class ModelWrapper(object):
         self.from_file = from_file
         self.prepare_model()
 
+    def get_path(self):
+        return self.modelpath
+
     @classmethod
     def form_argparse(cls):
         """

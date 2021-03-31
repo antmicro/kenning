@@ -94,11 +94,11 @@ class TVMRuntime(Runtime):
                 0,
                 tvm.nd.array(np.frombuffer(input_data, dtype=self.inputdtype))
             )
-            self.protocol.request_success()
             self.protocol.log.debug('Inputs are ready')
-        except (TypeError, ValueError, tvm.TVMError):
-            self.protocol.log.error('Failed to load input')
-            self.protocol.request_failure()
+            return True
+        except (TypeError, ValueError, tvm.TVMError) as ex:
+            self.protocol.log.error(f'Failed to load input:  {ex}')
+            return False
 
     def prepare_model(self, input_data):
         self.protocol.log.info('Loading model')
@@ -108,8 +108,8 @@ class TVMRuntime(Runtime):
         self.func = self.module.get_function('default')
         self.ctx = tvm.runtime.context(self.contextname, self.contextid)
         self.model = graph_runtime.GraphModule(self.func(self.ctx))
-        self.protocol.request_success()
         self.protocol.log.info('Model loading ended successfully')
+        return True
 
     def run(self):
         self.model.run()
@@ -117,7 +117,4 @@ class TVMRuntime(Runtime):
     def upload_output(self, input_data):
         self.protocol.log.debug('Uploading output')
         out = self.model.get_output(0).asnumpy().tobytes()
-        if out:
-            self.protocol.request_success(out)
-        else:
-            self.protocol.request_failure()
+        return out

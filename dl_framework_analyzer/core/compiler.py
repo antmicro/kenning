@@ -71,7 +71,7 @@ class ModelCompiler(object):
                 help='Tells how much data from dataset (from 0.0 to 1.0) ' + \
                      'will be used for calibration dataset',
                 type=float,
-                default=1.0
+                default=0.25
             )
         return parser, group
 

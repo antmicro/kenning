@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
+from dl_framework_analyzer.core.dataset import Dataset
 
 
 def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):

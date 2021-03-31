@@ -35,6 +35,8 @@ class TVMRuntime(Runtime):
             Name of the runtime context on the target device
         contextid : int
             ID of the runtime context device
+        inputdtype : str
+            Type of the input data
         """
         self.modelpath = modelpath
         self.contextname = contextname
@@ -44,7 +46,6 @@ class TVMRuntime(Runtime):
         self.func = None
         self.ctx = None
         self.model = None
-        self.lastoutput = None
         super().__init__(protocol)
 
     @classmethod
@@ -115,13 +116,8 @@ class TVMRuntime(Runtime):
 
     def upload_output(self, input_data):
         self.protocol.log.debug('Uploading output')
-        if self.lastoutput:
-            self.protocol.request_success(self.lastoutput)
-            self.lastoutput = None
+        out = self.model.get_output(0).asnumpy().tobytes()
+        if out:
+            self.protocol.request_success(out)
         else:
             self.protocol.request_failure()
-
-    def upload_stats(self, input_data):
-        self.protocol.log.debug('Uploading stats')
-        stats = json.dumps(MeasurementsCollector.measurements.data)
-        self.protocol.request_success(stats.encode('utf-8'))

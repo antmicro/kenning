@@ -5,7 +5,6 @@ Provides an API for dataset loading, creation and configuration.
 from typing import Tuple, List, Any
 import argparse
 from pathlib import Path
-from sklearn.model_selection import train_test_split
 
 from .measurements import Measurements
 
@@ -240,6 +239,7 @@ class Dataset(object):
         seed : int
             The seed for random state
         """
+        from sklearn.model_selection import train_test_split
         dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
             self.dataX,
             self.dataY,

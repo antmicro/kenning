@@ -7,6 +7,7 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
+from typing import Dict, Tuple
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
 from dl_framework_analyzer.core.dataset import Dataset
@@ -130,7 +131,9 @@ class TFLiteCompiler(ModelCompiler):
 
     def compile(
             self,
-            inputmodelpath):
+            inputmodelpath: Path,
+            inputshapes: Dict[str, Tuple[int, ...]],
+            dtype: str = 'float32'):
         converter = self.inputtypes[self.inputtype](inputmodelpath)
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         if self.target in ['int8', 'edgetpu']:
@@ -165,9 +168,15 @@ class TFLiteCompiler(ModelCompiler):
             returncode = subprocess.call(
                 f'{edgetpu_compiler} {self.compiled_model_path}'.split()
             )
-            if not Path(f'{Path(self.compiled_model_path).stem}_edgetpu.tflite').is_file():  # noqa: E501
+            edgetpupath = Path(
+                f'{Path(self.compiled_model_path).stem}_edgetpu.tflite'
+            )
+            if not edgetpupath.is_file():
                 raise EdgeTPUCompilerError(
                     f'{self.compiled_model_path}_edgetpu.tflite not created'
                 )
+
+            edgetpupath.rename(self.compiled_model_path)
+
             return returncode
         return 0

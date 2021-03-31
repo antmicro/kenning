@@ -11,6 +11,7 @@ import numpy as np
 from torch.utils.data import Dataset
 import torch.optim as optim
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from dl_framework_analyzer.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
 
@@ -36,10 +37,13 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.model.classifier = torch.nn.Sequential(
                 torch.nn.Linear(1280, 1024),
                 torch.nn.ReLU(),
+                torch.nn.Dropout(0.5),
                 torch.nn.Linear(1024, 512),
                 torch.nn.ReLU(),
+                torch.nn.Dropout(0.5),
                 torch.nn.Linear(512, 128),
                 torch.nn.ReLU(),
+                torch.nn.Dropout(0.5),
                 torch.nn.Linear(128, self.numclasses)
             )
 
@@ -111,9 +115,13 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         best_acc = 0
 
+        writer = SummaryWriter(log_dir=logdir)
+
         for epoch in range(epochs):
             self.model.train()
             bar = tqdm(trainloader)
+            losssum = 0
+            losscount = 0
             for i, (images, labels) in enumerate(bar):
                 images = images.float().to(self.device)
                 labels = labels.float().to(self.device)
@@ -126,7 +134,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 loss.backward()
                 opt.step()
 
-                bar.set_description(f'train epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
+                lossval = loss.data.cpu().numpy()
+                losssum += lossval
+                losscount += 1
+                bar.set_description(f'train epoch: {epoch:3} loss: {lossval:.4f}')  # noqa: E501
+            writer.add_scalar('Loss/train', losssum / losscount, epoch)
 
             self.model.eval()
             with torch.no_grad():
@@ -143,16 +155,19 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     total += labels.size(0)
                     correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), np.argmax(labels, axis=1)).sum()  # noqa: E501
                     loss = criterion(outputs, torch.argmax(labelsgpu, axis=1))
-                    losssum += loss.data.cpu().numpy()
+                    lossval = loss.data.cpu().numpy()
+                    losssum += lossval
                     losscount += 1
                     bar.set_description(f'valid epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
-
+                writer.add_scalar('Loss/valid', losssum / losscount, epoch)
                 acc = 100 * correct / total
+                writer.add_scalar('Accuracy/valid', acc, epoch)
 
                 if acc > best_acc:
                     torch.save(self.model, self.modelpath)
                     best_acc = acc
 
+        writer.close()
         self.model.eval()
 
     def save_to_onnx(self, modelpath):

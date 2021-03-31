@@ -31,6 +31,15 @@ def tensorflowconversion(modelpath: Path):
     return converter
 
 
+def onnxconversion(modelpath: Path):
+    from onnx_tf.backend import prepare
+    import onnx
+    onnxmodel = onnx.load(modelpath)
+    model = prepare(onnxmodel)
+    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+    return converter
+
+
 class TFLiteCompiler(ModelCompiler):
     """
     The TFLite and EdgeTPU compiler.
@@ -39,6 +48,7 @@ class TFLiteCompiler(ModelCompiler):
     inputtypes = {
         'tensorflow': tensorflowconversion,
         'keras': kerasconversion,
+        'onnx': onnxconversion,
     }
 
     def __init__(

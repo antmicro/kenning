@@ -25,7 +25,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return {'input': (1, 3, 224, 224)}, 'float32'
 
     def preprocess_input(self, X):
-        return torch.Tensor(np.array(X)).to(self.device).permute(0, 3, 1, 2)
+        return torch.Tensor(
+            np.array(X, dtype=np.float32)
+        ).to(self.device).permute(0, 3, 1, 2)
 
     def prepare_model(self):
         if self.from_file:
@@ -58,41 +60,38 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
         class PetDatasetPytorch(Dataset):
-            def __init__(self, inputs, labels, dataset, transform=None):
+            def __init__(self, inputs, labels, dataset, dev, transform=None):
                 self.inputs = inputs
                 self.labels = labels
                 self.transform = transform
                 self.dataset = dataset
+                self.device = dev
 
             def __len__(self):
                 return len(self.inputs)
 
             def __getitem__(self, idx):
                 X = self.dataset.prepare_input_samples([self.inputs[idx]])[0]
-                y = self.dataset.prepare_output_samples([self.labels[idx]])[0]
+                y = np.array(self.labels[idx])
                 X = torch.from_numpy(X).permute(2, 0, 1)
                 y = torch.from_numpy(y)
                 if self.transform:
                     X = self.transform(X)
-                return (X, y)
-
-        mean, std = self.dataset.get_input_mean_std()
+                return (X.float().to(self.device), y.to(self.device))
 
         traindat = PetDatasetPytorch(
-            Xt, Yt, self.dataset,
+            Xt, Yt, self.dataset, self.device,
             transform=transforms.Compose([
-                transforms.ColorJitter(0.1, 0.1),
+                transforms.ColorJitter(0.1, 0.3),
                 transforms.RandomHorizontalFlip(),
-                transforms.Normalize(mean, std)
             ])
         )
 
         validdat = PetDatasetPytorch(
-            Xv, Yv, self.dataset,
+            Xv, Yv, self.dataset, self.device,
             transform=transforms.Compose([
-                transforms.ColorJitter(0.1, 0.1),
-                transforms.RandomHorizontalFlip(),
-                transforms.Normalize(mean, std)
+                transforms.ColorJitter(0.1, 0.3),
+                transforms.RandomHorizontalFlip()
             ])
         )
 
@@ -123,13 +122,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             losssum = 0
             losscount = 0
             for i, (images, labels) in enumerate(bar):
-                images = images.float().to(self.device)
-                labels = labels.float().to(self.device)
-
                 opt.zero_grad()
 
                 outputs = self.model(images)
-                loss = criterion(outputs, torch.argmax(labels, axis=1))
+                loss = criterion(outputs, labels)
 
                 loss.backward()
                 opt.step()
@@ -148,13 +144,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 correct = 0
                 losscount = 0
                 for (images, labels) in bar:
-                    images = images.float().to(self.device)
-                    labelsgpu = labels.float().to(self.device)
-
                     outputs = self.model(images)
                     total += labels.size(0)
-                    correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), np.argmax(labels, axis=1)).sum()  # noqa: E501
-                    loss = criterion(outputs, torch.argmax(labelsgpu, axis=1))
+                    correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), labels.cpu().numpy()).sum()  # noqa: E501
+                    loss = criterion(outputs, labels)
                     lossval = loss.data.cpu().numpy()
                     losssum += lossval
                     losscount += 1

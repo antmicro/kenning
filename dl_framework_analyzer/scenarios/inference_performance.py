@@ -164,9 +164,9 @@ def main(argv):
                 True
             )
         MeasurementsCollector.measurements += {
-            'reportname': [reportname],
-            'memusagepath': [memusage],
-            'batchtimepath': [batchtime]
+            'reportname': [str(reportname)],
+            'memusagepath': [str(memusage)],
+            'batchtimepath': [str(batchtime)]
         }
         create_report_from_measurements(
             reportpath,

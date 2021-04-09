@@ -26,7 +26,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         )
 
     def get_input_spec(self):
-        return {'input': (1, 224, 224, 3)}, 'float32'
+        return {'input_1': (1, 3, 224, 224)}, 'float32'
 
     def prepare_model(self):
         if self.from_file:

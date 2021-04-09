@@ -1,23 +1,25 @@
 """
-Runtime implementation for Google Coral boards (based on pycoral).
+Runtime implementation for TFLite models.
 """
 
 from pathlib import Path
 import numpy as np
+from typing import Optional, List
 
 from dl_framework_analyzer.core.runtime import Runtime
 from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
 
 
-class GoogleCoralRuntime(Runtime):
+class TFLiteRuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
             inputdtype: str = 'float32',
-            outputdtype: str = 'float32'):
+            outputdtype: str = 'float32',
+            delegates: Optional[List] = None):
         """
-        Constructs Google Coral EdgeTPU pipeline.
+        Constructs TFLite Runtime pipeline.
 
         Parameters
         ----------
@@ -29,11 +31,14 @@ class GoogleCoralRuntime(Runtime):
             Type of the input data
         outputdtype : str
             Type of the output data
+        delegates : List
+            List of TFLite acceleration delegate libraries
         """
         self.modelpath = modelpath
         self.interpreter = None
         self.inputdtype = inputdtype
         self.outputdtype = outputdtype
+        self.delegates = delegates
         super().__init__(protocol)
 
     @classmethod
@@ -57,6 +62,12 @@ class GoogleCoralRuntime(Runtime):
             type=str,
             default='float32'
         )
+        group.add_argument(
+            '--delegates-list',
+            help='List of runtime delegates for the TFLite runtime',
+            nargs='+',
+            default=None
+        )
         return parser, group
 
     @classmethod
@@ -65,15 +76,20 @@ class GoogleCoralRuntime(Runtime):
             protocol,
             args.save_model_path,
             args.input_dtype,
-            args.output_dtype
+            args.output_dtype,
+            args.delegates_list
         )
 
     def prepare_model(self, input_data):
-        from pycoral.utils import edgetpu
+        import tflite_runtime.interpreter as tflite
         self.protocol.log.info('Loading model')
         with open(self.modelpath, 'wb') as outmodel:
             outmodel.write(input_data)
-        self.interpreter = edgetpu.make_interpreter(str(self.modelpath))
+        delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
+        self.interpreter = tflite.Interpreter(
+            str(self.modelpath),
+            experimental_delegates=delegates
+        )
         self.interpreter.allocate_tensors()
         self.protocol.log.info('Model loading ended successfully')
         return True

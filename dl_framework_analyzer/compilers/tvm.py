@@ -21,13 +21,26 @@ def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
         dtype=dtype)
 
 
+def kerasconversion(modelpath: Path, input_shapes, dtype='float32'):
+    import tensorflow as tf
+    tf.keras.backend.clear_session()
+    model = tf.keras.models.load_model(str(modelpath))
+    print(model.summary())
+    return relay.frontend.from_keras(
+        model,
+        shape=input_shapes,
+        layout='NCHW'
+    )
+
+
 class TVMCompiler(ModelCompiler):
     """
     The TVM compiler.
     """
 
     inputtypes = {
-        'onnx': onnxconversion
+        'onnx': onnxconversion,
+        'keras': kerasconversion
     }
 
     def __init__(

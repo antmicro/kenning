@@ -6,6 +6,7 @@ from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
+from tqdm import tqdm
 
 from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.core.measurements import Measurements
@@ -209,7 +210,7 @@ class ModelWrapper(object):
 
         measurements = Measurements()
 
-        for X, y in iter(self.dataset):
+        for X, y in tqdm(iter(self.dataset)):
             prepX = self._preprocess_input(X)
             preds = self._run_inference(prepX)
             posty = self._postprocess_outputs(preds)

@@ -33,7 +33,6 @@ class ModelCompiler(object):
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
             to be used
-            
         """
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
@@ -68,7 +67,7 @@ class ModelCompiler(object):
         if quantizes_model:
             group.add_argument(
                 '--dataset-percentage',
-                help='Tells how much data from dataset (from 0.0 to 1.0) ' + \
+                help='Tells how much data from dataset (from 0.0 to 1.0) ' +
                      'will be used for calibration dataset',
                 type=float,
                 default=0.25

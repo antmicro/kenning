@@ -65,7 +65,14 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
         class PetDatasetPytorch(Dataset):
-            def __init__(self, inputs, labels, dataset, model, dev, transform=None):
+            def __init__(
+                    self,
+                    inputs,
+                    labels,
+                    dataset,
+                    model,
+                    dev,
+                    transform=None):
                 self.inputs = inputs
                 self.labels = labels
                 self.transform = transform

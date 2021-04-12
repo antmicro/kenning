@@ -2,7 +2,6 @@
 Runtime implementation for TVM-compiled models.
 """
 
-import json
 from pathlib import Path
 import numpy as np
 
@@ -11,7 +10,6 @@ from tvm.contrib import graph_runtime
 
 from dl_framework_analyzer.core.runtime import Runtime
 from dl_framework_analyzer.core.runtimeprotocol import RuntimeProtocol
-from dl_framework_analyzer.core.measurements import MeasurementsCollector
 
 
 class TVMRuntime(Runtime):

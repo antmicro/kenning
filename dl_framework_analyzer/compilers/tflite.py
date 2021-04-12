@@ -112,13 +112,13 @@ class TFLiteCompiler(ModelCompiler):
         group.add_argument(
             '--inference-input-type',
             help='Data type of the input layer',
-            choices = ['float32', 'int8', 'uint8'],
+            choices=['float32', 'int8', 'uint8'],
             default='float32'
         )
         group.add_argument(
             '--inference-output-type',
             help='Data type of the output layer',
-            choices = ['float32', 'int8', 'uint8'],
+            choices=['float32', 'int8', 'uint8'],
             default='float32'
         )
         return parser, group
@@ -165,7 +165,7 @@ class TFLiteCompiler(ModelCompiler):
         converter.representative_dataset = generator
 
         tflite_model = converter.convert()
-        
+
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
 

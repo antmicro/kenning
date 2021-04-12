@@ -122,7 +122,7 @@ def main(argv):
 
     compiler.compile(modelpath, inputspec, inputdtype)
     ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
-    
+
     if not ret:
         return 1
 

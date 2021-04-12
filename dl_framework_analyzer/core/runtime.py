@@ -221,7 +221,7 @@ class Runtime(object):
         """
         Returns the output to the client, in bytes.
 
-        The method converts the direct output from the model to bytes and 
+        The method converts the direct output from the model to bytes and
         returns them.
 
         The wrapper later sends the data to the client.

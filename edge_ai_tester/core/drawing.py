@@ -7,7 +7,6 @@ from matplotlib import patheffects
 from typing import List
 import numpy as np
 import itertools
-from numpy.typing import ArrayLike
 from pathlib import Path
 
 
@@ -63,7 +62,7 @@ def create_line_plot(
 
 
 def draw_confusion_matrix(
-        confusion_matrix: ArrayLike,
+        confusion_matrix,
         outpath: Path,
         title: str,
         class_names: List[str],

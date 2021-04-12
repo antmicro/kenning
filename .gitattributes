@@ -1,2 +1,2 @@
-dl_framework_analyzer/resources/models/**/*.h5 filter=lfs diff=lfs merge=lfs -text
-dl_framework_analyzer/resources/models/**/*.pth filter=lfs diff=lfs merge=lfs -text
+edge_ai_tester/resources/models/**/*.h5 filter=lfs diff=lfs merge=lfs -text
+edge_ai_tester/resources/models/**/*.pth filter=lfs diff=lfs merge=lfs -text

@@ -1,8 +1,8 @@
 #!/bin/bash
 
-python3 -m dl_framework_analyzer.scenarios.inference_server \
-    dl_framework_analyzer.runtimeprotocols.network.NetworkProtocol \
-    dl_framework_analyzer.runtimes.tvm.TVMRuntime \
+python3 -m edge_ai_tester.scenarios.inference_server \
+    edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
+    edge_ai_tester.runtimes.tvm.TVMRuntime \
     --host 192.168.188.100 \
     --port 12345 \
     --packet-size 32768 \

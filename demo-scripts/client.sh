@@ -1,11 +1,11 @@
 #!/bin/bash
 
-python3 -m dl_framework_analyzer.scenarios.inference_client \
-    dl_framework_analyzer.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    dl_framework_analyzer.compilers.tvm.TVMCompiler \
-    dl_framework_analyzer.runtimeprotocols.network.NetworkProtocol \
-    dl_framework_analyzer.runtimes.tvm.TVMRuntime \
-    dl_framework_analyzer.datasets.pet_dataset.PetDataset \
+python3 -m edge_ai_tester.scenarios.inference_client \
+    edge_ai_tester.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
+    edge_ai_tester.compilers.tvm.TVMCompiler \
+    edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
+    edge_ai_tester.runtimes.tvm.TVMRuntime \
+    edge_ai_tester.datasets.pet_dataset.PetDataset \
     ./build/before-compile.onnx \
     ./build/xavier-output \
     jetson-agx-xavier-tvm \

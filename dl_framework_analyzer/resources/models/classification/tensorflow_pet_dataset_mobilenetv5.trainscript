@@ -1,3 +1,0 @@
-#!/bin/bash
-
-python3 -m dl_framework_analyzer.scenarios.model_training dl_framework_analyzer.modelwrappers.classification.tensorflow_pet_dataset.TensorflowPetDatasetMobileNetV2 dl_framework_analyzer.datasets.pet_dataset.PetDataset --logdir build/logs4 --dataset-root build/pet-dataset/ --model-path build/larger-net.h5 --batch-size 32 --learning-rate 0.0001 --num-epochs 50

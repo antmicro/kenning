@@ -9,6 +9,7 @@ from pathlib import Path
 import re
 
 from dl_framework_analyzer.core.compiler import ModelCompiler
+from dl_framework_analyzer.core.dataset import Dataset
 
 
 def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
@@ -20,17 +21,31 @@ def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
         dtype=dtype)
 
 
+def kerasconversion(modelpath: Path, input_shapes, dtype='float32'):
+    import tensorflow as tf
+    tf.keras.backend.clear_session()
+    model = tf.keras.models.load_model(str(modelpath))
+    print(model.summary())
+    return relay.frontend.from_keras(
+        model,
+        shape=input_shapes,
+        layout='NCHW'
+    )
+
+
 class TVMCompiler(ModelCompiler):
     """
     The TVM compiler.
     """
 
     inputtypes = {
-        'onnx': onnxconversion
+        'onnx': onnxconversion,
+        'keras': kerasconversion
     }
 
     def __init__(
             self,
+            dataset: Dataset,
             compiled_model_path: Path,
             modelframework: str,
             target: str,
@@ -58,7 +73,7 @@ class TVMCompiler(ModelCompiler):
                 tvm.target.Target(target_host) if target_host else None
         )
         self.opt_level = opt_level
-        super().__init__(compiled_model_path)
+        super().__init__(dataset, compiled_model_path)
 
     @classmethod
     def form_argparse(cls):
@@ -89,8 +104,9 @@ class TVMCompiler(ModelCompiler):
         return parser, group
 
     @classmethod
-    def from_argparse(cls, args):
+    def from_argparse(cls, dataset, args):
         return cls(
+            dataset,
             args.compiled_model_path,
             args.model_framework,
             args.target,

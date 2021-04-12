@@ -7,6 +7,7 @@ Runtimes implement running and testing deployed models on target devices.
 import argparse
 from tqdm import tqdm
 from pathlib import Path
+import json
 
 from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.core.model import ModelWrapper
@@ -44,10 +45,10 @@ class Runtime(object):
         self.protocol = protocol
         self.shouldwork = True
         self.callbacks = {
-            MessageType.DATA: self.prepare_input,
+            MessageType.DATA: self._prepare_input,
             MessageType.MODEL: self._prepare_model,
             MessageType.PROCESS: self.process_input,
-            MessageType.OUTPUT: self.upload_output,
+            MessageType.OUTPUT: self._upload_output,
             MessageType.STATS: self._upload_stats
         }
         self.statsmeasurements = None
@@ -143,17 +144,30 @@ class Runtime(object):
         ----------
         input_data : bytes
             Input data in bytes delivered by the client, preprocessed
+
+        Returns
+        -------
+        bool : True if succeded
         """
         raise NotImplementedError
+
+    def _prepare_input(self, input_data: bytes):
+        if self.prepare_input(input_data):
+            self.protocol.request_success()
+        else:
+            self.protocol.request_failure()
 
     def _prepare_model(self, input_data: bytes):
         """
         Internal call for preparing a model for inference task.
         """
         self.inference_session_start()
-        self.prepare_model(input_data)
+        if self.prepare_model(input_data):
+            self.protocol.request_success()
+        else:
+            self.protocol.request_failure()
 
-    def prepare_model(self, input_data: bytes):
+    def prepare_model(self, input_data: bytes) -> bool:
         """
         Receives the model to infer from the client in bytes.
 
@@ -164,6 +178,10 @@ class Runtime(object):
         ----------
         input_data : bytes
             Model data
+
+        Returns
+        -------
+        bool : True if succeded
         """
         raise NotImplementedError
 
@@ -181,7 +199,6 @@ class Runtime(object):
         self._run()
         self.protocol.request_success()
         self.protocol.log.debug('Input processed')
-        self.lastoutput = self.model.get_output(0).asnumpy().tobytes()
 
     @timemeasurements('target_inference_step')
     def _run(self):
@@ -200,19 +217,32 @@ class Runtime(object):
         """
         raise NotImplementedError
 
-    def upload_output(self, input_data: bytes):
+    def upload_output(self, input_data: bytes) -> bytes:
         """
-        Uploads the output to the client, in bytes.
+        Returns the output to the client, in bytes.
 
-        The method converts the direct output from the model to bytes and sends
-        back to the client.
+        The method converts the direct output from the model to bytes and 
+        returns them.
+
+        The wrapper later sends the data to the client.
 
         Parameters
         ----------
         input_data : bytes
             Not used here
+
+        Returns
+        -------
+        bytes : data to send to the client
         """
         raise NotImplementedError
+
+    def _upload_output(self, input_data: bytes) -> bytes:
+        out = self.upload_output(input_data)
+        if out:
+            self.protocol.request_success(out)
+        else:
+            self.protocol.request_failure()
 
     def _upload_stats(self, input_data: bytes):
         """
@@ -226,18 +256,28 @@ class Runtime(object):
             Not used here
         """
         self.inference_session_end()
-        self.upload_stats(input_data)
+        out = self.upload_stats(input_data)
+        self.protocol.request_success(out)
 
-    def upload_stats(self, input_data: bytes):
+    def upload_stats(self, input_data: bytes) -> bytes:
         """
-        Uploads statistics of inference passes to the client.
+        Returns statistics of inference passes to the client.
+
+        Default implementation converts collected metrics in
+        MeasurementsCollector to JSON format and returns them for sending.
 
         Parameters
         ----------
         input_data : bytes
             Not used here
+
+        Returns
+        -------
+        bytes : statistics to be sent to the client
         """
-        raise NotImplementedError
+        self.protocol.log.debug('Uploading stats')
+        stats = json.dumps(MeasurementsCollector.measurements.data)
+        return stats.encode('utf-8')
 
     def run_client(
             self,
@@ -268,6 +308,10 @@ class Runtime(object):
             Model that is executed on target hardware
         compiledmodelpath : Path
             Path to the file with a compiled model
+
+        Returns
+        -------
+        bool : True if executed successfully
         """
         self.prepare_client()
         self.protocol.upload_model(compiledmodelpath)
@@ -292,9 +336,11 @@ class Runtime(object):
             measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
             self.protocol.log.fatal(ex)
+            return False
         else:
             MeasurementsCollector.measurements += measurements
         self.protocol.disconnect()
+        return True
 
     def run_server(self):
         """

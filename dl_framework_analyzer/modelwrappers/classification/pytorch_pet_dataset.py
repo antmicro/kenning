@@ -11,6 +11,7 @@ import numpy as np
 from torch.utils.data import Dataset
 import torch.optim as optim
 from tqdm import tqdm
+from torch.utils.tensorboard import SummaryWriter
 
 from dl_framework_analyzer.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
 
@@ -24,24 +25,34 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return {'input': (1, 3, 224, 224)}, 'float32'
 
     def preprocess_input(self, X):
-        return torch.Tensor(np.array(X)).to(self.device).permute(0, 3, 1, 2)
+        return torch.Tensor(
+            np.array(X, dtype=np.float32)
+        ).to(self.device).permute(0, 3, 1, 2)
 
     def prepare_model(self):
+        self.model = models.mobilenet_v2(pretrained=True)
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.model.classifier = torch.nn.Sequential(
+            torch.nn.Linear(1280, 1024),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(512, 128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(128, self.numclasses)
+        )
         if self.from_file:
             self.load_model(self.modelpath)
         else:
-            self.model = models.mobilenet_v2(pretrained=True)
-            for param in self.model.parameters():
-                param.requires_grad = False
-            self.model.classifier = torch.nn.Sequential(
-                torch.nn.Linear(1280, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Linear(1024, 512),
-                torch.nn.ReLU(),
-                torch.nn.Linear(512, 128),
-                torch.nn.ReLU(),
-                torch.nn.Linear(128, self.numclasses)
-            )
+            def weights_init(m):
+                if isinstance(m, torch.nn.Linear):
+                    torch.nn.init.xavier_uniform_(m.weight)
+                    torch.nn.init.zeros_(m.bias)
+            self.model.classifier.apply(weights_init)
 
     def train_model(
             self,
@@ -54,54 +65,54 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
         class PetDatasetPytorch(Dataset):
-            def __init__(self, inputs, labels, dataset, transform=None):
+            def __init__(self, inputs, labels, dataset, model, dev, transform=None):
                 self.inputs = inputs
                 self.labels = labels
                 self.transform = transform
                 self.dataset = dataset
+                self.model = model
+                self.device = dev
 
             def __len__(self):
                 return len(self.inputs)
 
             def __getitem__(self, idx):
-                X = self.dataset.prepare_input_samples([self.inputs[idx]])[0]
-                y = self.dataset.prepare_output_samples([self.labels[idx]])[0]
-                X = torch.from_numpy(X).permute(2, 0, 1)
+                X = self.dataset.prepare_input_samples([self.inputs[idx]])
+                y = np.array(self.labels[idx])
+                X = self.model.preprocess_input(X)[0]
                 y = torch.from_numpy(y)
                 if self.transform:
                     X = self.transform(X)
-                return (X, y)
-
-        mean, std = self.dataset.get_input_mean_std()
+                return (X, y.to(self.device))
 
         traindat = PetDatasetPytorch(
-            Xt, Yt, self.dataset,
+            Xt, Yt, self.dataset, self, self.device,
             transform=transforms.Compose([
                 transforms.ColorJitter(0.1, 0.1),
                 transforms.RandomHorizontalFlip(),
-                transforms.Normalize(mean, std)
             ])
         )
 
         validdat = PetDatasetPytorch(
-            Xv, Yv, self.dataset,
+            Xv, Yv, self.dataset, self, self.device,
             transform=transforms.Compose([
                 transforms.ColorJitter(0.1, 0.1),
-                transforms.RandomHorizontalFlip(),
-                transforms.Normalize(mean, std)
+                transforms.RandomHorizontalFlip()
             ])
         )
 
         trainloader = torch.utils.data.DataLoader(
             traindat,
             batch_size=batch_size,
-            num_workers=0
+            num_workers=0,
+            shuffle=True
         )
 
         validloader = torch.utils.data.DataLoader(
             validdat,
             batch_size=batch_size,
-            num_workers=0
+            num_workers=0,
+            shuffle=True
         )
 
         self.model.to(self.device)
@@ -111,22 +122,27 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         best_acc = 0
 
+        writer = SummaryWriter(log_dir=logdir)
+
         for epoch in range(epochs):
             self.model.train()
             bar = tqdm(trainloader)
+            losssum = 0
+            losscount = 0
             for i, (images, labels) in enumerate(bar):
-                images = images.float().to(self.device)
-                labels = labels.float().to(self.device)
-
                 opt.zero_grad()
 
                 outputs = self.model(images)
-                loss = criterion(outputs, torch.argmax(labels, axis=1))
+                loss = criterion(outputs, labels)
 
                 loss.backward()
                 opt.step()
 
-                bar.set_description(f'train epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
+                lossval = loss.data.cpu().numpy()
+                losssum += lossval
+                losscount += 1
+                bar.set_description(f'train epoch: {epoch:3} loss: {lossval:.4f}')  # noqa: E501
+            writer.add_scalar('Loss/train', losssum / losscount, epoch)
 
             self.model.eval()
             with torch.no_grad():
@@ -136,23 +152,28 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 correct = 0
                 losscount = 0
                 for (images, labels) in bar:
-                    images = images.float().to(self.device)
-                    labelsgpu = labels.float().to(self.device)
-
                     outputs = self.model(images)
                     total += labels.size(0)
-                    correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), np.argmax(labels, axis=1)).sum()  # noqa: E501
-                    loss = criterion(outputs, torch.argmax(labelsgpu, axis=1))
-                    losssum += loss.data.cpu().numpy()
+                    correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), labels.cpu().numpy()).sum()  # noqa: E501
+                    loss = criterion(outputs, labels)
+                    lossval = loss.data.cpu().numpy()
+                    losssum += lossval
                     losscount += 1
                     bar.set_description(f'valid epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
-
+                writer.add_scalar('Loss/valid', losssum / losscount, epoch)
                 acc = 100 * correct / total
+                writer.add_scalar('Accuracy/valid', acc, epoch)
 
                 if acc > best_acc:
                     torch.save(self.model, self.modelpath)
                     best_acc = acc
 
+        torch.save(
+            self.model,
+            self.modelpath.parent / f'{self.modelpath.stem}_final{self.modelpath.suffix}'  # noqa: E501
+        )
+
+        writer.close()
         self.model.eval()
 
     def save_to_onnx(self, modelpath):

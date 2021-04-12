@@ -10,11 +10,12 @@ class PyTorchWrapper(ModelWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):
-        self.model = torch.load(modelpath)
+        self.model.load_state_dict(torch.load(modelpath))
+        self.model.to(self.device)
         self.model.eval()
 
     def save_model(self, modelpath):
-        torch.save(self.model, modelpath)
+        torch.save(self.model.state_dict(), modelpath)
 
     def preprocess_input(self, X):
         return torch.Tensor(np.array(X)).to(self.device)

@@ -11,7 +11,7 @@ from dl_framework_analyzer.core.dataset import Dataset
 from dl_framework_analyzer.modelwrappers.frameworks.tensorflow import TensorFlowWrapper  # noqa: E501
 
 
-class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):
+class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
@@ -26,7 +26,7 @@ class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):
         )
 
     def get_input_spec(self):
-        return {'input': (1, 224, 224, 3)}, 'float32'
+        return {'input_1': (1, 3, 224, 224)}, 'float32'
 
     def prepare_model(self):
         if self.from_file:
@@ -99,12 +99,12 @@ class TensorflowPetDatasetMobileNetV2(TensorFlowWrapper):
         ).batch(batch_size)
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            logdir,
+            str(logdir),
             histogram_freq=1
         )
 
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=logdir,
+            filepath=str(logdir),
             monitor='val_categorical_accuracy',
             mode='max',
             save_best_only=True

@@ -35,6 +35,8 @@ class TVMRuntime(Runtime):
             Name of the runtime context on the target device
         contextid : int
             ID of the runtime context device
+        inputdtype : str
+            Type of the input data
         """
         self.modelpath = modelpath
         self.contextname = contextname
@@ -44,7 +46,6 @@ class TVMRuntime(Runtime):
         self.func = None
         self.ctx = None
         self.model = None
-        self.lastoutput = None
         super().__init__(protocol)
 
     @classmethod
@@ -93,11 +94,11 @@ class TVMRuntime(Runtime):
                 0,
                 tvm.nd.array(np.frombuffer(input_data, dtype=self.inputdtype))
             )
-            self.protocol.request_success()
             self.protocol.log.debug('Inputs are ready')
-        except (TypeError, ValueError, tvm.TVMError):
-            self.protocol.log.error('Failed to load input')
-            self.protocol.request_failure()
+            return True
+        except (TypeError, ValueError, tvm.TVMError) as ex:
+            self.protocol.log.error(f'Failed to load input:  {ex}')
+            return False
 
     def prepare_model(self, input_data):
         self.protocol.log.info('Loading model')
@@ -107,21 +108,13 @@ class TVMRuntime(Runtime):
         self.func = self.module.get_function('default')
         self.ctx = tvm.runtime.context(self.contextname, self.contextid)
         self.model = graph_runtime.GraphModule(self.func(self.ctx))
-        self.protocol.request_success()
         self.protocol.log.info('Model loading ended successfully')
+        return True
 
     def run(self):
         self.model.run()
 
     def upload_output(self, input_data):
         self.protocol.log.debug('Uploading output')
-        if self.lastoutput:
-            self.protocol.request_success(self.lastoutput)
-            self.lastoutput = None
-        else:
-            self.protocol.request_failure()
-
-    def upload_stats(self, input_data):
-        self.protocol.log.debug('Uploading stats')
-        stats = json.dumps(MeasurementsCollector.measurements.data)
-        self.protocol.request_success(stats.encode('utf-8'))
+        out = self.model.get_output(0).asnumpy().tobytes()
+        return out

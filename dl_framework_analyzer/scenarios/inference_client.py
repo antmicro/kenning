@@ -50,11 +50,6 @@ def main(argv):
         help='Dataset-based class with dataset to import',
     )
     parser.add_argument(
-        'onnxmodelpath',
-        help='Path to the intermediate ONNX model',
-        type=Path
-    )
-    parser.add_argument(
         'output',
         help='The path to the output directory',
         type=Path
@@ -63,6 +58,11 @@ def main(argv):
         'reportname',
         help='The name of the generated report, used as prefix for images',
         type=str
+    )
+    parser.add_argument(
+        '--convert-to-onnx',
+        help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
+        type=Path
     )
     parser.add_argument(
         '--resources-dir',
@@ -109,16 +109,22 @@ def main(argv):
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
-    compiler = modelcompilercls.from_argparse(args)
+    compiler = modelcompilercls.from_argparse(dataset, args)
     protocol = protocolcls.from_argparse(args)
     runtime = runtimecls.from_argparse(protocol, args)
 
-    model.save_to_onnx(args.onnxmodelpath)
+    modelpath = model.get_path()
+    if args.convert_to_onnx:
+        model.save_to_onnx(args.convert_to_onnx)
+        modelpath = args.convert_to_onnx
 
     inputspec, inputdtype = model.get_input_spec()
 
-    compiler.compile(args.onnxmodelpath, inputspec, inputdtype)
-    runtime.run_client(dataset, model, compiler.compiled_model_path)
+    compiler.compile(modelpath, inputspec, inputdtype)
+    ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
+    
+    if not ret:
+        return 1
 
     reportname = args.reportname
 
@@ -129,34 +135,38 @@ def main(argv):
     gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
     gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
     confusionmatrix = args.resources_dir / f'{reportname}-conf-matrix.png'
-    create_line_plot(
-        batchtime,
-        'Target inference time for batches',
-        'Time', 's',
-        'Inference time', 's',
-        measurementsdata['target_inference_step_timestamp'],
-        measurementsdata['target_inference_step'])
-    create_line_plot(
-        memusage,
-        'Memory usage over benchmark',
-        'Time', 's',
-        'Memory usage', '%',
-        measurementsdata['session_utilization_timestamp'],
-        measurementsdata['session_utilization_mem_percent'])
-    create_line_plot(
-        gpumemusage,
-        'GPU Memory usage over benchmark',
-        'Time', 's',
-        'Memory usage', '%',
-        measurementsdata['session_utilization_gpu_timestamp'],
-        measurementsdata['session_utilization_gpu_mem_utilization'])
-    create_line_plot(
-        gpuusage,
-        'GPU usage over benchmark',
-        'Time', 's',
-        'Memory usage', '%',
-        measurementsdata['session_utilization_gpu_timestamp'],
-        measurementsdata['session_utilization_gpu_utilization'])
+    if 'target_inference_step' in measurementsdata:
+        create_line_plot(
+            batchtime,
+            'Target inference time for batches',
+            'Time', 's',
+            'Inference time', 's',
+            measurementsdata['target_inference_step_timestamp'],
+            measurementsdata['target_inference_step'])
+    if 'session_utilization_mem_percent' in measurementsdata:
+        create_line_plot(
+            memusage,
+            'Memory usage over benchmark',
+            'Time', 's',
+            'Memory usage', '%',
+            measurementsdata['session_utilization_timestamp'],
+            measurementsdata['session_utilization_mem_percent'])
+    if 'session_utilization_gpu_mem_utilization' in measurementsdata:
+        create_line_plot(
+            gpumemusage,
+            'GPU Memory usage over benchmark',
+            'Time', 's',
+            'Memory usage', '%',
+            measurementsdata['session_utilization_gpu_timestamp'],
+            measurementsdata['session_utilization_gpu_mem_utilization'])
+    if 'session_utilization_gpu_utilization' in measurementsdata:
+        create_line_plot(
+            gpuusage,
+            'GPU usage over benchmark',
+            'Time', 's',
+            'Memory usage', '%',
+            measurementsdata['session_utilization_gpu_timestamp'],
+            measurementsdata['session_utilization_gpu_utilization'])
     if 'eval_confusion_matrix' in measurementsdata:
         draw_confusion_matrix(
             measurementsdata['eval_confusion_matrix'],
@@ -173,6 +183,7 @@ def main(argv):
             measurementsfile,
             indent=2
         )
+    return 0
 
 
 if __name__ == '__main__':

@@ -30,24 +30,29 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         ).to(self.device).permute(0, 3, 1, 2)
 
     def prepare_model(self):
+        self.model = models.mobilenet_v2(pretrained=True)
+        for param in self.model.parameters():
+            param.requires_grad = False
+        self.model.classifier = torch.nn.Sequential(
+            torch.nn.Linear(1280, 1024),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(1024, 512),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(512, 128),
+            torch.nn.ReLU(),
+            torch.nn.Dropout(0.5),
+            torch.nn.Linear(128, self.numclasses)
+        )
         if self.from_file:
             self.load_model(self.modelpath)
         else:
-            self.model = models.mobilenet_v2(pretrained=True)
-            for param in self.model.parameters():
-                param.requires_grad = False
-            self.model.classifier = torch.nn.Sequential(
-                torch.nn.Linear(1280, 1024),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(0.5),
-                torch.nn.Linear(1024, 512),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(0.5),
-                torch.nn.Linear(512, 128),
-                torch.nn.ReLU(),
-                torch.nn.Dropout(0.5),
-                torch.nn.Linear(128, self.numclasses)
-            )
+            def weights_init(m):
+                if isinstance(m, torch.nn.Linear):
+                    torch.nn.init.xavier_uniform_(m.weight)
+                    torch.nn.init.zeros_(m.bias)
+            self.model.classifier.apply(weights_init)
 
     def train_model(
             self,
@@ -98,13 +103,15 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         trainloader = torch.utils.data.DataLoader(
             traindat,
             batch_size=batch_size,
-            num_workers=0
+            num_workers=0,
+            shuffle=True
         )
 
         validloader = torch.utils.data.DataLoader(
             validdat,
             batch_size=batch_size,
-            num_workers=0
+            num_workers=0,
+            shuffle=True
         )
 
         self.model.to(self.device)
@@ -159,6 +166,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 if acc > best_acc:
                     torch.save(self.model, self.modelpath)
                     best_acc = acc
+
+        torch.save(
+            self.model,
+            self.modelpath.parent / f'{self.modelpath.stem}_final{self.modelpath.suffix}'  # noqa: E501
+        )
 
         writer.close()
         self.model.eval()

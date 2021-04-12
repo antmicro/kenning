@@ -22,7 +22,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             modelpath,
             dataset,
             from_file,
-            (tf.TensorSpec((1, 224, 224, 3), name='input'),)
+            (tf.TensorSpec((1, 224, 224, 3), name='input_1'),)
         )
 
     def get_input_spec(self):

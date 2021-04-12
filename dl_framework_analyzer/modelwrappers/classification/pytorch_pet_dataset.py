@@ -65,37 +65,38 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
         class PetDatasetPytorch(Dataset):
-            def __init__(self, inputs, labels, dataset, dev, transform=None):
+            def __init__(self, inputs, labels, dataset, model, dev, transform=None):
                 self.inputs = inputs
                 self.labels = labels
                 self.transform = transform
                 self.dataset = dataset
+                self.model = model
                 self.device = dev
 
             def __len__(self):
                 return len(self.inputs)
 
             def __getitem__(self, idx):
-                X = self.dataset.prepare_input_samples([self.inputs[idx]])[0]
+                X = self.dataset.prepare_input_samples([self.inputs[idx]])
                 y = np.array(self.labels[idx])
-                X = torch.from_numpy(X).permute(2, 0, 1)
+                X = self.model.preprocess_input(X)[0]
                 y = torch.from_numpy(y)
                 if self.transform:
                     X = self.transform(X)
-                return (X.float().to(self.device), y.to(self.device))
+                return (X, y.to(self.device))
 
         traindat = PetDatasetPytorch(
-            Xt, Yt, self.dataset, self.device,
+            Xt, Yt, self.dataset, self, self.device,
             transform=transforms.Compose([
-                transforms.ColorJitter(0.1, 0.3),
+                transforms.ColorJitter(0.1, 0.1),
                 transforms.RandomHorizontalFlip(),
             ])
         )
 
         validdat = PetDatasetPytorch(
-            Xv, Yv, self.dataset, self.device,
+            Xv, Yv, self.dataset, self, self.device,
             transform=transforms.Compose([
-                transforms.ColorJitter(0.1, 0.3),
+                transforms.ColorJitter(0.1, 0.1),
                 transforms.RandomHorizontalFlip()
             ])
         )

@@ -8,16 +8,16 @@ This is a project for implementing testing pipelines for deploying deep learning
 Deployment flow
 ---------------
 
-Deploying deep learning models on edge devices usually involves following steps:
+Deploying deep learning models on edge devices usually involves the following steps:
 
 * Preparation and analysis of the dataset, preparation of data preprocessing and output postprocessing routines,
 * Model training (usually transfer learning), if necessary,
-* Evaluation of the model and model improvement until its quality is satisfactory,
+* Evaluation and improvement of the model until its quality is satisfactory,
 * Model optimization, usually hardware-specific optimizations (e.g. operator fusion, quantization, neuron-wise or connection-wise pruning),
 * Model compilation to a given target,
 * Model execution on a given target.
 
-For nearly all of the above steps (training, optimization, compilation and runtime) there are different frameworks.
+There are different frameworks for most of the above steps (training, optimization, compilation and runtime). 
 The cooperation between those frameworks differs and may provide different results.
 
 This framework introduces interfaces for those above-mentioned steps that can be implemented using specific deep learning frameworks.
@@ -28,7 +28,7 @@ It also verifies the compatibility between various training, compilation and opt
 Edge AI tester structure
 ------------------------
 
-The ``edge_ai_tester`` module consists of following submodules:
+The ``edge_ai_tester`` module consists of the following submodules:
 
 * ``core`` - provides interface APIs for datasets, models, compilers, runtimes and runtime protocols,
 * ``datasets`` - provides implementations for datasets,
@@ -48,15 +48,15 @@ The ``edge_ai_tester.core.dataset.Dataset`` classes
 
 Classes that implement the methods from ``edge_ai_tester.core.dataset.Dataset`` are responsible for:
 
-* preparing the dataset, involving the download routines,
-* preprocessing the inputs to format expected by most of the models for a given task,
+* preparing the dataset, including the download routines,
+* preprocessing the inputs into the format expected by most of the models for a given task,
 * postprocessing the outputs for the evaluation process,
 * evaluating a given model based on its predictions,
 * subdividing the samples into training and validation datasets.
 
-Based on the above methods the ``Dataset`` class provides data to the model wrappers, compilers and runtimes to train and test the models.
+Based on the above methods, the ``Dataset`` class provides data to the model wrappers, compilers and runtimes to train and test the models.
 
-The datasets are present in the ``edge_ai_tester.datasets`` submodule.
+The datasets are included in the ``edge_ai_tester.datasets`` submodule.
 
 Check out the `Pet Dataset wrapper <./edge_ai_tester/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
 
@@ -101,13 +101,13 @@ The general communication protocol
 The communication protocol is message-based.
 There are:
 
-* ``OK`` messages - indicate success, and may come with additional data,
+* ``OK`` messages - indicate success, and may come with additional information,
 * ``ERROR`` messages - indicate failure,
-* ``DATA`` messages - they provide input data for inference,
-* ``MODEL`` messages - they provide model to load for inference,
-* ``PROCESS`` messages - they request processing inputs delivered in ``DATA`` message,
-* ``OUTPUT`` messages - they request results of processing,
-* ``STATS`` messages - they request statistics from the target device.
+* ``DATA`` messages - provide input data for inference,
+* ``MODEL`` messages - provide model to load for inference,
+* ``PROCESS`` messages - request processing inputs delivered in ``DATA`` message,
+* ``OUTPUT`` messages - request results of processing,
+* ``STATS`` messages - request statistics from the target device.
 
 The message types and enclosed data are encoded in format implemented in the ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol``-based class.
 
@@ -115,18 +115,18 @@ The communication during inference benchmark session is as follows:
 
 * The client (host) connects to the server (target),
 * The client sends the ``MODEL`` request along with the compiled model,
-* The server loads the model from request, prepares everything for running the model and sends ``OK`` response,
-* After receiving ``OK`` response from the server, clients starts reading input samples from the dataset, preprocesses the inputs, and sends ``DATA`` request with the preprocessed input,
-* Upon receiving the ``DATA`` request, the server stores the input for inference, and sends ``OK`` message,
-* Upon receiving confirmation, the client sends ``PROCESS`` request,
+* The server loads the model from request, prepares everything for running the model and sends the ``OK`` response,
+* After receiving the ``OK`` response from the server, the client starts reading input samples from the dataset, preprocesses the inputs, and sends ``DATA`` request with the preprocessed input,
+* Upon receiving the ``DATA`` request, the server stores the input for inference, and sends the ``OK`` message,
+* Upon receiving confirmation, the client sends the ``PROCESS`` request,
 * Just after receiving the ``PROCESS`` request, the server should send the ``OK`` message to confirm that it starts the inference, and just after finishing the inference the server should send another ``OK`` message to confirm that the inference is finished,
 * After receiving the first ``OK`` message, the client starts measuring inference time until the second ``OK`` response is received,
-* The client sends ``OUTPUT`` request in order to receive the outputs from the server,
-* Server sends ``OK`` message along with the output data,
+* The client sends the ``OUTPUT`` request in order to receive the outputs from the server,
+* Server sends the ``OK`` message along with the output data,
 * The client parses the output and evaluates model performance,
 * The client sends ``STATS`` request to obtain additional statistics (inference time, CPU/GPU/Memory utilization) from the server,
-* If server provides any statistics, it sends ``OK`` message with the data,
-* The same process applies for the rest of input samples.
+* If server provides any statistics, it sends the ``OK`` message with the data,
+* The same process applies to the rest of input samples.
 
 The way of determining the message type and sending data between the server and the client depends on the implementation of the ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol`` class.
 The implementation of running inference on the given target is implemented in the ``edge_ai_tester.core.runtime.Runtime`` class.
@@ -147,7 +147,7 @@ The ``RuntimeProtocol`` class requires implementing methods for:
 * requesting the inference on target,
 * downloading the outputs from the server,
 * (optionally) downloading the statistics from the server (i.e. performance speed, CPU/GPU utilization, power consumption),
-* notifying the success or failure by the server,
+* notifying of success or failure by the server,
 * parsing messages.
 
 Based on the above-mentioned methods, the ``edge_ai_tester.core.runtime.Runtime`` connects the host with the target.
@@ -160,7 +160,7 @@ The ``edge_ai_tester.core.runtime.Runtime`` classes
 The ``Runtime`` objects provide an API for the host and (optionally) the target device.
 If the target device does not support Python, the runtime needs to be implemented in a different language, and the host API needs to support it.
 
-The client (host) side of the ``Runtime`` class utilizes the methods from ``Dataset``, ``ModelWrapper`` and ``RuntimeProtocol`` classes to run inference on target device.
+The client (host) side of the ``Runtime`` class utilizes the methods from ``Dataset``, ``ModelWrapper`` and ``RuntimeProtocol`` classes to run inference on the target device.
 The server (target) side of the ``Runtime`` class requires implementing methods for:
 
 * loading model delivered by the client,
@@ -187,7 +187,7 @@ It requires implementing:
 * method for exporting ONNX model from a given framework,
 * list of models implemented in a given framework, where each model will be exported to ONNX, and then imported back to the framework.
 
-The ``ONNXConversion`` class implements method for converting the models.
+The ``ONNXConversion`` class implements a method for converting the models.
 It catches exceptions and any issues in the import/export methods, and provides the report on conversion status per model.
 
 Look at the `TensorFlowONNXConversion class <./edge_ai_tester/onnxconverters/tensorflow.py>`_ for an example of API usage.
@@ -218,7 +218,7 @@ By default, ``edge_ai_tester.scenarios.model_training`` script requires two clas
 * ``Dataset``-based class that provides training data for the model.
 
 The remaining arguments are provided by the ``form_argparse`` class methods in each class, and may be different based on selected dataset and model.
-In order to get the full help for the training scenario for the above case, run::
+In order to get full help for the training scenario for the above case, run::
 
     python -m edge_ai_tester.scenarios.model_training \
         edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
@@ -241,9 +241,9 @@ Benchmarking trained model on host
 
 The ``edge_ai_tester.scenarios.inference_performance`` script runs the model using its deep learning framework routines on a host device.
 It runs the inference on a given dataset, computes model quality metrics and performance metrics.
-The results from the script can be used as a reference point for the benchmarks of the compiled models on target devices.
+The results from the script can be used as a reference point for benchmarking of the compiled models on target devices.
 
-The example usage of the script is following::
+The example usage of the script is as follows::
 
     python -m edge_ai_tester.scenarios.inference_performance \
         edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
@@ -328,13 +328,13 @@ Their meaning is following:
 * ``--inference-output-type`` (``TFLiteCompiler`` argument) tells TFLite compiler what will be the type of the output tensors,
 * ``--host`` tells the ``NetworkProtocol`` what is the IP address of the target device,
 * ``--port`` tells the ``NetworkProtocol`` on what port the server application is listening,
-* ``--packet-size`` tells the ``NetworkProtocol`` what should be the packet size during communication,
-* ``--save-model-path`` (``TFLiteRuntime`` argument) is the path where the compiled model will be stored on target device,
+* ``--packet-size`` tells the ``NetworkProtocol`` what the packet size during communication should be,
+* ``--save-model-path`` (``TFLiteRuntime`` argument) is the path where the compiled model will be stored on the target device,
 * ``--dataset-root`` (``PetDataset`` argument) is the path to the dataset files,
 * ``--inference-batch-size`` is the batch size for the inference on the target hardware,
 * ``--verbosity`` is the verbosity of logs.
 
-The example call for the second script is following::
+The example call for the second script is as follows::
 
     python -m edge_ai_tester.scenarios.inference_server \
         edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
@@ -349,7 +349,7 @@ The example call for the second script is following::
 This script only requires ``Runtime``-based class and ``RuntimeProtocol``-based class.
 It waits for a client using a given protocol, and later runs inference based on the implementation from the ``Runtime`` class.
 
-The additional arguments are following:
+The additional arguments are as follows:
 
 * ``--host`` (``NetworkProtocol`` argument) is the address where the server will listen,
 * ``--port`` (``NetworkProtocol`` argument) is the port on which the server will listen,

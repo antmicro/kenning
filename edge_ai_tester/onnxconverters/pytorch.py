@@ -62,4 +62,4 @@ class PyTorchONNXConversion(ONNXConversion):
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):
-        return self.UNSUPPORTED
+        return SupportStatus.UNSUPPORTED

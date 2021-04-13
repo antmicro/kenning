@@ -212,7 +212,7 @@ class ONNXConversion(object):
         supportlist = []
         for modelentry in self.modelslist:
             onnxtargetpath = modelsdir / f'{modelentry.name}.onnx'
-            self.logger.info('    {modelentry.name} ===> {onnxtargetpath}')
+            self.logger.info(f'    {modelentry.name} ===> {onnxtargetpath}')
             self.logger.info('        Exporting...')
             exported = self._onnx_export(modelentry, onnxtargetpath)
             self.logger.info('        Exported')

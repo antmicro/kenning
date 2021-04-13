@@ -361,3 +361,16 @@ First, the client compiles the model and sends it to the server using the runtim
 Then, it sends next batches of data to process to the server.
 In the end, it collects the benchmark metrics and saves them to JSON file.
 In addition, it generates plots with performance changes over time.
+
+Adding new implementations
+--------------------------
+
+``Dataset``, ``ModelWrapper``, ``ModelCompiler``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``edge_ai_tester.core`` module have dedicated directories for their implementations.
+Each method in base classes that requires implementation raises NotImplementedError.
+Implemented methods can be also overriden, if neccessary.
+
+Most of the base classes implement ``form_argparse`` and ``from_argparse`` methods.
+The first one creates an argument parser and a group of arguments specific to the base class.
+The second one creates an object of the class based on the arguments from argument parser.
+
+Inheriting classes can modify ``form_argparse`` and ``from_argparse`` methods to provide better control over their processing, but they should always be based on the results of their base implementations.

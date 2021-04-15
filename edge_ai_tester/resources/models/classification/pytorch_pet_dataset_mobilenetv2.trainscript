@@ -1,0 +1,9 @@
+#!/bin/bash
+
+python3 -m edge_ai_tester.scenarios.model_training \
+    edge_ai_tester.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
+    edge_ai_tester.datasets.pet_dataset.PetDataset \
+    --logdir build/pytorch-training \
+    --dataset-root build/pet-dataset/ \
+    --model-path edge_ai_tester/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
+    --batch-size 32 --learning-rate 0.0001 --num-epochs 50

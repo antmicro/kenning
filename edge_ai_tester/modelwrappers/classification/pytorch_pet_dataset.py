@@ -64,6 +64,8 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             0.25
         )
 
+        self.dataset.standardize = False
+
         class PetDatasetPytorch(Dataset):
             def __init__(
                     self,
@@ -84,19 +86,22 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 return len(self.inputs)
 
             def __getitem__(self, idx):
-                X = self.dataset.prepare_input_samples([self.inputs[idx]])
+                X = self.dataset.prepare_input_samples([self.inputs[idx]])[0]
                 y = np.array(self.labels[idx])
-                X = self.model.preprocess_input(X)[0]
+                X = torch.from_numpy(X.astype('float32')).permute(2, 0, 1)
                 y = torch.from_numpy(y)
                 if self.transform:
                     X = self.transform(X)
-                return (X, y.to(self.device))
+                return (X, y)
+
+        mean, std = self.dataset.get_input_mean_std()
 
         traindat = PetDatasetPytorch(
             Xt, Yt, self.dataset, self, self.device,
             transform=transforms.Compose([
                 transforms.ColorJitter(0.1, 0.1),
                 transforms.RandomHorizontalFlip(),
+                transforms.Normalize(mean, std)
             ])
         )
 
@@ -104,7 +109,8 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             Xv, Yv, self.dataset, self, self.device,
             transform=transforms.Compose([
                 transforms.ColorJitter(0.1, 0.1),
-                transforms.RandomHorizontalFlip()
+                transforms.RandomHorizontalFlip(),
+                transforms.Normalize(mean, std)
             ])
         )
 
@@ -134,9 +140,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         for epoch in range(epochs):
             self.model.train()
             bar = tqdm(trainloader)
-            losssum = 0
+            losssum = torch.zeros(1).to(self.device)
             losscount = 0
             for i, (images, labels) in enumerate(bar):
+                images = images.to(self.device)
+                labels = labels.to(self.device)
                 opt.zero_grad()
 
                 outputs = self.model(images)
@@ -145,40 +153,36 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 loss.backward()
                 opt.step()
 
-                lossval = loss.data.cpu().numpy()
-                losssum += lossval
+                losssum += loss
                 losscount += 1
-                bar.set_description(f'train epoch: {epoch:3} loss: {lossval:.4f}')  # noqa: E501
-            writer.add_scalar('Loss/train', losssum / losscount, epoch)
+                bar.set_description(f'train epoch: {epoch:3}')  # noqa: E501
+            writer.add_scalar('Loss/train', losssum.data.cpu().numpy() / losscount, epoch)
 
             self.model.eval()
             with torch.no_grad():
                 bar = tqdm(validloader)
                 total = 0
-                losssum = 0
                 correct = 0
-                losscount = 0
                 for (images, labels) in bar:
+                    images = images.to(self.device)
+                    labels = labels.to(self.device)
                     outputs = self.model(images)
+                    _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
-                    correct += np.equal(np.argmax(outputs.cpu().numpy(), axis=1), labels.cpu().numpy()).sum()  # noqa: E501
-                    loss = criterion(outputs, labels)
-                    lossval = loss.data.cpu().numpy()
-                    losssum += lossval
-                    losscount += 1
-                    bar.set_description(f'valid epoch: {epoch:3} loss: {loss.data.cpu().numpy():.4f}')  # noqa: E501
-                writer.add_scalar('Loss/valid', losssum / losscount, epoch)
+                    correct += (predicted == labels).sum().item()
+                    bar.set_description(f'valid epoch: {epoch:3}')  # noqa: E501
                 acc = 100 * correct / total
                 writer.add_scalar('Accuracy/valid', acc, epoch)
 
                 if acc > best_acc:
-                    torch.save(self.model, self.modelpath)
+                    self.save_model(self.modelpath)
                     best_acc = acc
 
-        torch.save(
-            self.model,
+        self.save_model(
             self.modelpath.parent / f'{self.modelpath.stem}_final{self.modelpath.suffix}'  # noqa: E501
         )
+
+        self.dataset.standardize = True
 
         writer.close()
         self.model.eval()

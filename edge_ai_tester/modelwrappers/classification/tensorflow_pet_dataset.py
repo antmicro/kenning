@@ -76,10 +76,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             img = tf.image.resize(img, [224, 224])
             img = tf.image.convert_image_dtype(img, dtype=tf.float32)
             img /= 255.0
-            img = (img - self.mean) / self.std
             img = tf.image.random_brightness(img, 0.1)
             img = tf.image.random_contrast(img, 0.7, 1.0)
             img = tf.image.random_flip_left_right(img)
+            img = (img - self.mean) / self.std
             return img, tf.convert_to_tensor(onehot)
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(

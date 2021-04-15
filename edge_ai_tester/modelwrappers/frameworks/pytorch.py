@@ -2,6 +2,7 @@ from edge_ai_tester.core.model import ModelWrapper
 
 import numpy as np
 import torch
+import copy
 
 
 class PyTorchWrapper(ModelWrapper):
@@ -10,7 +11,7 @@ class PyTorchWrapper(ModelWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):
-        self.model.load_state_dict(torch.load(modelpath))
+        self.model.load_state_dict(copy.deepcopy(torch.load(modelpath)))
         self.model.to(self.device)
         self.model.eval()
 

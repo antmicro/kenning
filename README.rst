@@ -1,7 +1,7 @@
 Edge AI tester
 ==============
 
-Copyright (c) 2021 `Antmicro <https://www.antmicro.com>`_.
+Copyright (c) 2020-2021 `Antmicro <https://www.antmicro.com>`_
 
 This is a project for implementing testing pipelines for deploying deep learning models on edge devices.
 

@@ -136,6 +136,7 @@ class NetworkProtocol(RuntimeProtocol):
             socket.AF_INET,
             socket.SOCK_STREAM
         )
+        self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.serversocket.setblocking(0)
         self.serversocket.bind((self.host, self.port))
         self.serversocket.listen(1)

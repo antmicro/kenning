@@ -14,6 +14,7 @@ compilation and benchmark process.
 
 import sys
 import argparse
+import signal
 
 from edge_ai_tester.utils.class_loader import load_class
 import edge_ai_tester.utils.logger as logger
@@ -57,6 +58,15 @@ def main(argv):
 
     protocol = protocolcls.from_argparse(args)
     runtime = runtimecls.from_argparse(protocol, args)
+
+    formersighandler = signal.getsignal(signal.SIGINT)
+
+    def sigint_handler(sig, frame):
+        runtime.close_server()
+        runtime.protocol.log.info('Closing application (press Ctrl-C again for force closing)...')  # noqa: E501
+        signal.signal(signal.SIGINT, formersighandler)
+
+    signal.signal(signal.SIGINT, sigint_handler)
 
     runtime.run_server()
 

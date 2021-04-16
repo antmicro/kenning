@@ -367,4 +367,4 @@ class Runtime(object):
                     self.protocol.log.error('Invalid message received')
                     self.protocol.log.error('Client will be disconnected')
                     self.disconnect()
-        self.disconnect()
+        self.protocol.disconnect()

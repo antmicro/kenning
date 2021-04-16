@@ -8,11 +8,13 @@ import edge_ai_tester.utils.logger as logger
 from typing import Tuple
 import json
 from typing import Optional, List
+import time
 
 from edge_ai_tester.core.runtimeprotocol import RuntimeProtocol
 from edge_ai_tester.core.runtimeprotocol import MessageType
 from edge_ai_tester.core.runtimeprotocol import ServerStatus
 from edge_ai_tester.core.measurements import Measurements
+from edge_ai_tester.core.measurements import MeasurementsCollector
 
 
 class NetworkProtocol(RuntimeProtocol):
@@ -326,10 +328,20 @@ class NetworkProtocol(RuntimeProtocol):
     def request_processing(self):
         self.log.debug('Requesting processing')
         self.send_message(MessageType.PROCESS)
-        if self.receive_confirmation()[0]:
-            return self.receive_confirmation()[0]
-        else:
+        ret = self.receive_confirmation()[0]
+        if not ret:
             return False
+        start = time.perf_counter()
+        ret = self.receive_confirmation()[0]
+        if not ret:
+            return False
+        duration = time.perf_counter() - start
+        measurementname = 'NetworkProtocol_inference_step'
+        MeasurementsCollector.measurements += {
+            measurementname: [duration],
+            f'{measurementname}_timestamp': [time.perf_counter()]
+        }
+        return True
 
     def download_output(self):
         self.log.debug('Downloading output')

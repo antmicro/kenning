@@ -126,12 +126,12 @@ class TVMCompiler(ModelCompiler):
                 tvm.autotvm.measure.measure_methods.set_cuda_target_arch(arch)
         with tvm.transform.PassContext(opt_level=self.opt_level):
             lib = relay.build(
-                mod['main'],
+                mod,
                 target=self.target,
                 target_host=self.target_host,
                 params=params
             )
-            lib.export_library(outputpath)
+        lib.export_library(outputpath)
 
     def compile(
             self,

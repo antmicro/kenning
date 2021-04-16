@@ -44,7 +44,8 @@ class PetDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            classify_by='breeds',
+            classify_by: str = 'breeds',
+            image_memory_layout: str = 'NHWC',
             standardize: bool = True):
         """
         Prepares all structures and data required for providing data samples.
@@ -63,17 +64,22 @@ class PetDataset(Dataset):
         classify_by : str
             Determines what should be the object of classification.
             The valid values are "species" and "breeds".
+        image_memory_layout : str
+            Tells if the images should be delivered in NCHW or NHWC format.
+            The default format is NHWC.
         standardize : bool
             Standardize the given input samples.
             Should be set to False when using compute_input_mean_std
         """
         assert classify_by in ['species', 'breeds']
+        assert image_memory_layout in ['NHWC', 'NCHW']
         self.classify_by = classify_by
         self.numclasses = None
         self.classnames = dict()
         self.standardize = standardize
         if standardize:
             self.mean, self.std = self.get_input_mean_std()
+        self.image_memory_layout = image_memory_layout
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -85,6 +91,12 @@ class PetDataset(Dataset):
             choices=['species', 'breeds'],
             default='breeds'
         )
+        group.add_argument(
+            '--image-memory-layout',
+            help='Determines if images should be delivered in NHWC or NCHW format',
+            choices=['NHWC', 'NCHW'],
+            default='NHWC'
+        )
         return parser, group
 
     @classmethod
@@ -93,7 +105,8 @@ class PetDataset(Dataset):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset,
-            args.classify_by
+            args.classify_by,
+            args.image_memory_layout
         )
 
     def download_dataset(self):
@@ -147,6 +160,8 @@ class PetDataset(Dataset):
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.standardize:
                 npimg = (npimg - self.mean) / self.std
+            if self.image_memory_layout == 'NCHW':
+                npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
         return result
 

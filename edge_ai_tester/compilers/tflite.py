@@ -34,9 +34,13 @@ def tensorflowconversion(modelpath: Path):
 def onnxconversion(modelpath: Path):
     from onnx_tf.backend import prepare
     import onnx
+    from datetime import datetime
+    import shutil
     onnxmodel = onnx.load(modelpath)
     model = prepare(onnxmodel)
-    converter = tf.lite.TFLiteConverter.from_keras_model(model)
+    convertedpath = str(Path(modelpath).with_suffix(f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'))  # noqa: E501
+    model.export_graph(convertedpath)
+    converter = tf.lite.TFLiteConverter.from_saved_model(convertedpath)
     return converter
 
 

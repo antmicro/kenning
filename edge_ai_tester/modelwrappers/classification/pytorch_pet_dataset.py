@@ -156,7 +156,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 losssum += loss
                 losscount += 1
                 bar.set_description(f'train epoch: {epoch:3}')  # noqa: E501
-            writer.add_scalar('Loss/train', losssum.data.cpu().numpy() / losscount, epoch)
+            writer.add_scalar(
+                'Loss/train',
+                losssum.data.cpu().numpy() / losscount,
+                epoch
+            )
 
             self.model.eval()
             with torch.no_grad():

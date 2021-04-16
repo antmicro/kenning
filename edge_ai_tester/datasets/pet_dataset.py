@@ -93,7 +93,7 @@ class PetDataset(Dataset):
         )
         group.add_argument(
             '--image-memory-layout',
-            help='Determines if images should be delivered in NHWC or NCHW format',
+            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
             choices=['NHWC', 'NCHW'],
             default='NHWC'
         )

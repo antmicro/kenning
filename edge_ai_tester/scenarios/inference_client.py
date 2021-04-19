@@ -51,22 +51,12 @@ def main(argv):
     )
     parser.add_argument(
         'output',
-        help='The path to the output directory',
+        help='The path to the output JSON file with measurements',
         type=Path
-    )
-    parser.add_argument(
-        'reportname',
-        help='The name of the generated report, used as prefix for images',
-        type=str
     )
     parser.add_argument(
         '--convert-to-onnx',
         help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
-        type=Path
-    )
-    parser.add_argument(
-        '--resources-dir',
-        help='The path to the directory with resources',
         type=Path
     )
     parser.add_argument(
@@ -98,12 +88,6 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    if args.resources_dir is None:
-        args.resources_dir = Path(args.output / 'img')
-
-    args.output.mkdir(parents=True, exist_ok=True)
-    args.resources_dir.mkdir(parents=True, exist_ok=True)
-
     logger.set_verbosity(args.verbosity)
     logger.get_logger()
 
@@ -126,58 +110,8 @@ def main(argv):
     if not ret:
         return 1
 
-    reportname = args.reportname
-
-    measurementsdata = MeasurementsCollector.measurements.data
-
-    batchtime = args.resources_dir / f'{reportname}-batchtime.png'
-    memusage = args.resources_dir / f'{reportname}-memoryusage.png'
-    gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
-    gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
-    confusionmatrix = args.resources_dir / f'{reportname}-conf-matrix.png'
-    if 'target_inference_step' in measurementsdata:
-        create_line_plot(
-            batchtime,
-            'Target inference time for batches',
-            'Time', 's',
-            'Inference time', 's',
-            measurementsdata['target_inference_step_timestamp'],
-            measurementsdata['target_inference_step'])
-    if 'session_utilization_mem_percent' in measurementsdata:
-        create_line_plot(
-            memusage,
-            'Memory usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['session_utilization_timestamp'],
-            measurementsdata['session_utilization_mem_percent'])
-    if 'session_utilization_gpu_mem_utilization' in measurementsdata:
-        create_line_plot(
-            gpumemusage,
-            'GPU Memory usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['session_utilization_gpu_timestamp'],
-            measurementsdata['session_utilization_gpu_mem_utilization'])
-    if 'session_utilization_gpu_utilization' in measurementsdata:
-        create_line_plot(
-            gpuusage,
-            'GPU usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['session_utilization_gpu_timestamp'],
-            measurementsdata['session_utilization_gpu_utilization'])
-    if 'eval_confusion_matrix' in measurementsdata:
-        draw_confusion_matrix(
-            measurementsdata['eval_confusion_matrix'],
-            confusionmatrix,
-            'Confusion matrix',
-            [dataset.classnames[i] for i in range(dataset.numclasses)],
-            True
-        )
-
     MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
-    with open(args.output / 'measurements.json', 'w') as measurementsfile:
+    with open(args.output, 'w') as measurementsfile:
         json.dump(
             MeasurementsCollector.measurements.data,
             measurementsfile,

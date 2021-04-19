@@ -6,8 +6,7 @@ python3 -m edge_ai_tester.scenarios.inference_client \
     edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     edge_ai_tester.runtimes.tflite.TFLiteRuntime \
     edge_ai_tester.datasets.pet_dataset.PetDataset \
-    ./build/google-coral-devboard-tflite-tensorflow-output \
-    google-coral-devboard-tflite-tensorflow \
+    ./build/google-coral-devboard-tflite-tensorflow.json \
     --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \

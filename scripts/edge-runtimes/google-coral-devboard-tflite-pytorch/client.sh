@@ -6,8 +6,7 @@ python3 -m edge_ai_tester.scenarios.inference_client \
     edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     edge_ai_tester.runtimes.tflite.TFLiteRuntime \
     edge_ai_tester.datasets.pet_dataset.PetDataset \
-    ./build/google-coral-devboard-tflite-pytorch-output \
-    google-coral-devboard-tflite-pytorch \
+    ./build/google-coral-devboard-tflite-pytorch.json \
     --model-path ./edge_ai_tester/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \
     --model-framework onnx \

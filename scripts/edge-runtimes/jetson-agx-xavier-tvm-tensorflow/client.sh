@@ -6,8 +6,7 @@ python3 -m edge_ai_tester.scenarios.inference_client \
     edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     edge_ai_tester.runtimes.tvm.TVMRuntime \
     edge_ai_tester.datasets.pet_dataset.PetDataset \
-    ./build/jetson-agx-xavier-tvm-tensorflow-output \
-    jetson-agx-xavier-tvm \
+    ./build/jetson-agx-xavier-tvm-tensorflow.json \
     --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "nvidia/jetson-agx-xavier" \

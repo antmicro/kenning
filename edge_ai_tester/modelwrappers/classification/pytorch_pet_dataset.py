@@ -22,7 +22,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def get_input_spec(self):
-        return {'input': (1, 3, 224, 224)}, 'float32'
+        return {'input.1': (1, 3, 224, 224)}, 'float32'
 
     def preprocess_input(self, X):
         return torch.Tensor(

@@ -6,7 +6,7 @@ from pathlib import Path
 import numpy as np
 
 import tvm
-from tvm.contrib import graph_runtime
+from tvm.contrib import graph_executor
 
 from edge_ai_tester.core.runtime import Runtime
 from edge_ai_tester.core.runtimeprotocol import RuntimeProtocol
@@ -58,7 +58,7 @@ class TVMRuntime(Runtime):
         group.add_argument(
             '--target-device-context',
             help='What accelerator should be used on target device',
-            choices=list(tvm.runtime.TVMContext.STR2MASK.keys()),
+            choices=list(tvm.runtime.Device.STR2MASK.keys()),
             default='cpu'
         )
         group.add_argument(
@@ -104,8 +104,8 @@ class TVMRuntime(Runtime):
             outmodel.write(input_data)
         self.module = tvm.runtime.load_module(str(self.modelpath))
         self.func = self.module.get_function('default')
-        self.ctx = tvm.runtime.context(self.contextname, self.contextid)
-        self.model = graph_runtime.GraphModule(self.func(self.ctx))
+        self.ctx = tvm.runtime.device(self.contextname, self.contextid)
+        self.model = graph_executor.GraphModule(self.func(self.ctx))
         self.protocol.log.info('Model loading ended successfully')
         return True
 

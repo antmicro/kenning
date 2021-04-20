@@ -139,3 +139,4 @@ cython_debug/
 
 # ctags tags file
 tags
+**/*.swp

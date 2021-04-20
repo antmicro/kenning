@@ -56,8 +56,7 @@ def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Pa
         measurementsdata['inferencetimepath'] = usepath
         measurementsdata['inferencetime'] = measurementsdata['protocol_inference_step']
     else:
-        log.warn('No inference time measurements in the report')
-        measurementsdata['inferencetime'] = []
+        log.warning('No inference time measurements in the report')
 
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
@@ -71,8 +70,7 @@ def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Pa
             measurementsdata['session_utilization_mem_percent'])
         measurementsdata['memusagepath'] = usepath
     else:
-        log.warn('No memory usage measurements in the report')
-        measurementsdata['session_utilization_mem_percent'] = []
+        log.warning('No memory usage measurements in the report')
 
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
@@ -86,8 +84,7 @@ def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Pa
             measurementsdata['session_utilization_gpu_mem_utilization'])
         measurementsdata['gpumemusagepath'] = usepath
     else:
-        log.warn('No GPU memory usage measurements in the report')
-        measurementsdata['session_utilization_gpu_mem_utilization'] = []
+        log.warning('No GPU memory usage measurements in the report')
 
     if 'session_utilization_gpu_utilization' in measurementsdata:
         log.info('Using target measurements GPU utilization')
@@ -101,8 +98,7 @@ def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Pa
             measurementsdata['session_utilization_gpu_utilization'])
         measurementsdata['gpuusagepath'] = usepath
     else:
-        log.warn('No GPU memory usage measurements in the report')
-        measurementsdata['session_utilization_gpu_utilization'] = []
+        log.warning('No GPU memory usage measurements in the report')
 
     with path(reports, 'performance.rst') as reportpath:
         return create_report_from_measurements(
@@ -122,7 +118,7 @@ def classification_report(reportname, measurementsdata: Dict[str, List], imgdir:
     draw_confusion_matrix(
         measurementsdata['eval_confusion_matrix'],
         confusionpath,
-        f'Confusion matrix for {reportname}',
+        f'Confusion matrix',
         measurementsdata['class_names']
     )
     measurementsdata['confusionpath'] = confusionpath

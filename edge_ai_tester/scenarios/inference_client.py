@@ -104,6 +104,22 @@ def main(argv):
 
     inputspec, inputdtype = model.get_input_spec()
 
+    modelframeworktuple = model.get_framework_and_version()
+    compilerframeworktuple = compiler.get_framework_and_version()
+
+    MeasurementsCollector.measurements += {
+        'model_framework': modelframeworktuple[0],
+        'model_version': modelframeworktuple[1],
+        'compiler_framework': compilerframeworktuple[0],
+        'compiler_version': compilerframeworktuple[1],
+    }
+
+    # TODO add method for providing metadata to dataset
+    if hasattr(dataset, 'classnames'):
+        MeasurementsCollector.measurements += {
+            'class_names': [val for val in dataset.classnames.values()]
+        }
+
     compiler.compile(modelpath, inputspec, inputdtype)
     ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
 

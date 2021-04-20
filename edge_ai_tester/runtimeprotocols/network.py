@@ -336,7 +336,7 @@ class NetworkProtocol(RuntimeProtocol):
         if not ret:
             return False
         duration = time.perf_counter() - start
-        measurementname = 'NetworkProtocol_inference_step'
+        measurementname = 'protocol_inference_step'
         MeasurementsCollector.measurements += {
             measurementname: [duration],
             f'{measurementname}_timestamp': [time.perf_counter()]

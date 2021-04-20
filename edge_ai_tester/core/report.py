@@ -14,20 +14,20 @@ def accuracy(confusion_matrix):
 
 def mean_precision(confusion_matrix):
     return np.mean(
-        np.array(confusion_matrix).diagonal() / np.sum(confusionmatrix, axis=1)
+        np.array(confusion_matrix).diagonal() / np.sum(confusion_matrix, axis=1)
     )
 
 
 def mean_sensitivity(confusion_matrix):
     return np.mean(
-        np.array(confusion_matrix).diagonal() / np.sum(confusionmatrix, axis=0)
+        np.array(confusion_matrix).diagonal() / np.sum(confusion_matrix, axis=0)
     )
 
 
 def g_mean(confusion_matrix):
     return np.float_power(np.prod(
-        np.array(confusion_matrix).diagonal() / np.sum(confusionmatrix, axis=0)
-    ))
+        np.array(confusion_matrix).diagonal() / np.sum(confusion_matrix, axis=0)
+    ), 1.0 / np.array(confusion_matrix).shape[0])
 
 
 def create_report_from_measurements(

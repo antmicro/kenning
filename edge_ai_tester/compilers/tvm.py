@@ -144,3 +144,6 @@ class TVMCompiler(ModelCompiler):
             dtype
         )
         self.compile_model(mod, params, self.compiled_model_path)
+
+    def get_framework_and_version(self):
+        return ('tvm', tvm.__version__)

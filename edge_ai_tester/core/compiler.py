@@ -130,3 +130,9 @@ class ModelCompiler(object):
             The type of input tensors
         """
         raise NotImplementedError
+
+    def get_framework_and_version(self) -> Tuple[str, str]:
+        """
+        Returns name of the framework and its version in a form of a tuple.
+        """
+        raise NotImplementedError

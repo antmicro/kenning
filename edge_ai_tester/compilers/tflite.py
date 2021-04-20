@@ -193,3 +193,6 @@ class TFLiteCompiler(ModelCompiler):
 
             return returncode
         return 0
+
+    def get_framework_and_version(self):
+        return ('tensorflow', tf.__version__)

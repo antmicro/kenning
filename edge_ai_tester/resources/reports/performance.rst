@@ -18,7 +18,7 @@ Inference time
    :alt: Inference time
    :align: center
 
-    Inference time
+   Inference time
 
 * *First inference duration* (usually including allocation time): **{{ data['inferencetime'][0] }}**,
 * *Mean*: **{{ mean(data['inferencetime']) }} s**,
@@ -35,7 +35,7 @@ Memory usage
    :alt: Memory usage
    :align: center
 
-    Memory usage during benchmark
+   Memory usage during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_mem_percent']) }} %**,
 * *Standard deviation*: **{{ std(data['session_utilization_mem_percent']) }} %**,
@@ -51,7 +51,7 @@ GPU memory usage
    :alt: GPU memory usage
    :align: center
 
-    GPU memory usage during benchmark
+   GPU memory usage during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_gpu_mem_utilization']) }} MB**,
 * *Standard deviation*: **{{ std(data['session_utilization_gpu_mem_utilization']) }} MB**,
@@ -67,7 +67,7 @@ GPU usage
    :alt: GPU usage
    :align: center
 
-    GPU utilization during benchmark
+   GPU utilization during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_gpu_utilization']) }} %**,
 * *Standard deviation*: **{{ std(data['session_utilization_gpu_utilization']) }} %**,

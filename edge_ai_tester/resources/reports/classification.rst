@@ -6,7 +6,7 @@ Inference quality metrics
    :alt: Confusion matrix
    :align: center
 
-    Confusion matrix
+   Confusion matrix
 
 * *Accuracy*:  {{ accuracy(data['eval_confusion_matrix']) }}
 * *Top-5 accuracy*: {{ data['top_5_count'] / data['total'] }}

@@ -26,105 +26,105 @@ from edge_ai_tester.core.report import create_report_from_measurements
 log = logger.get_logger()
 
 
-def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Path):
+def performance_report(reportname, measurementsdata: Dict[str, List], imgdir: Path, reportpath: Path):
     log.info('Running performance_report')
 
     if 'target_inference_step' in measurementsdata:
         log.info('Using target measurements for inference time')
-        usepath = str(imgdir / f'{reportname}_inference_time.png')
+        usepath = imgdir / f'{reportname}_inference_time.png'
         create_line_plot(
-            usepath,
+            str(usepath),
             f'Inference time for {reportname}',
             'Time', 's',
             'Inference time', 's',
             measurementsdata['target_inference_step_timestamp'],
             measurementsdata['target_inference_step'],
             skipfirst=True)
-        measurementsdata['inferencetimepath'] = usepath
+        measurementsdata['inferencetimepath'] = str(usepath.relative_to(reportpath.parent))
         measurementsdata['inferencetime'] = measurementsdata['target_inference_step']
     elif 'protocol_inference_step' in measurementsdata:
         log.info('Using protocol measurements for inference time')
-        usepath = str(imgdir / f'{reportname}_inference_time.png')
+        usepath = imgdir / f'{reportname}_inference_time.png'
         create_line_plot(
-            usepath,
+            str(usepath),
             f'Inference time for {reportname}',
             'Time', 's',
             'Inference time', 's',
             measurementsdata['protocol_inference_step_timestamp'],
             measurementsdata['protocol_inference_step'],
             skipfirst=True)
-        measurementsdata['inferencetimepath'] = usepath
+        measurementsdata['inferencetimepath'] = str(usepath.relative_to(reportpath.parent))
         measurementsdata['inferencetime'] = measurementsdata['protocol_inference_step']
     else:
         log.warning('No inference time measurements in the report')
 
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
-        usepath = str(imgdir / f'{reportname}_cpu_memory_usage.png')
+        usepath = imgdir / f'{reportname}_cpu_memory_usage.png'
         create_line_plot(
-            usepath,
+            str(usepath),
             f'Memory usage for {reportname}',
             'Time', 's',
             'Memory usage', '%',
             measurementsdata['session_utilization_timestamp'],
             measurementsdata['session_utilization_mem_percent'])
-        measurementsdata['memusagepath'] = usepath
+        measurementsdata['memusagepath'] = str(usepath.relative_to(reportpath.parent))
     else:
         log.warning('No memory usage measurements in the report')
 
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
-        usepath = str(imgdir / f'{reportname}_gpu_memory_usage.png')
+        usepath = imgdir / f'{reportname}_gpu_memory_usage.png'
         create_line_plot(
-            usepath,
+            str(usepath),
             f'GPU memory usage for {reportname}',
             'Time', 's',
             'GPU memory usage', 'MB',
             measurementsdata['session_utilization_gpu_timestamp'],
             measurementsdata['session_utilization_gpu_mem_utilization'])
-        measurementsdata['gpumemusagepath'] = usepath
+        measurementsdata['gpumemusagepath'] = str(usepath.relative_to(reportpath.parent))
     else:
         log.warning('No GPU memory usage measurements in the report')
 
     if 'session_utilization_gpu_utilization' in measurementsdata:
         log.info('Using target measurements GPU utilization')
-        usepath = str(imgdir / f'{reportname}_gpu_usage.png')
+        usepath = imgdir / f'{reportname}_gpu_usage.png'
         create_line_plot(
-            usepath,
+            str(usepath),
             f'GPU Utilization for {reportname}',
             'Time', 's',
             'Utilization', '%',
             measurementsdata['session_utilization_gpu_timestamp'],
             measurementsdata['session_utilization_gpu_utilization'])
-        measurementsdata['gpuusagepath'] = usepath
+        measurementsdata['gpuusagepath'] = str(usepath.relative_to(reportpath.parent))
     else:
         log.warning('No GPU memory usage measurements in the report')
 
-    with path(reports, 'performance.rst') as reportpath:
+    with path(reports, 'performance.rst') as reporttemplate:
         return create_report_from_measurements(
-            reportpath,
+            reporttemplate,
             measurementsdata
         )
 
 
-def classification_report(reportname, measurementsdata: Dict[str, List], imgdir: Path):
+def classification_report(reportname, measurementsdata: Dict[str, List], imgdir: Path, reportpath: Path):
     log.info('Running classification report')
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
         return ''
     log.info('Using confusion matrix')
-    confusionpath = str(imgdir / f'{reportname}_confusion_matrix.png')
+    confusionpath = imgdir / f'{reportname}_confusion_matrix.png'
     draw_confusion_matrix(
         measurementsdata['eval_confusion_matrix'],
-        confusionpath,
+        str(confusionpath),
         f'Confusion matrix',
         measurementsdata['class_names']
     )
-    measurementsdata['confusionpath'] = confusionpath
-    with path(reports, 'classification.rst') as reportpath:
+    measurementsdata['confusionpath'] = str(confusionpath.relative_to(reportpath.parent))
+    with path(reports, 'classification.rst') as reporttemplate:
         return create_report_from_measurements(
-            reportpath,
+            reporttemplate,
             measurementsdata
         )
 
@@ -143,7 +143,7 @@ def generate_report(
     content = ''
     data['reportname'] = [reportname]
     for typ in report_types:
-        content += reptypes[typ](reportname, data, imgdir)
+        content += reptypes[typ](reportname, data, imgdir, outputpath)
 
     with open(outputpath, 'w') as out:
         out.write(content)

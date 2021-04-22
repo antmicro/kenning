@@ -10,6 +10,7 @@ python3 -m edge_ai_tester.scenarios.inference_client \
     --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "nvidia/jetson-agx-xavier" \
+    --target-host "llvm -mtriple=aarch64-linux-gnu" \
     --compiled-model-path ./build/compiled-model.tar \
     --opt-level 3 \
     --host $1 \
@@ -19,4 +20,4 @@ python3 -m edge_ai_tester.scenarios.inference_client \
     --target-device-context cuda \
     --dataset-root ./build/pet-dataset/ \
     --inference-batch-size 1 \
-    --verbosity DEBUG
+    --verbosity INFO

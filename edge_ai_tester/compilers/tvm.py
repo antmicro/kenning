@@ -29,7 +29,7 @@ def kerasconversion(modelpath: Path, input_shapes, dtype='float32'):
     return relay.frontend.from_keras(
         model,
         shape=input_shapes,
-        layout='NCHW'
+        layout='NHWC'
     )
 
 

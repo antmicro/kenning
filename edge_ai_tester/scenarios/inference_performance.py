@@ -121,65 +121,14 @@ def main(argv):
 
     measurementsdata = MeasurementsCollector.measurements.data
 
-    with path(reports, 'classification-performance.rst') as reportpath:
-        batchtime = args.resources_dir / f'{reportname}-batchtime.png'
-        memusage = args.resources_dir / f'{reportname}-memoryusage.png'
-        gpumemusage = args.resources_dir / f'{reportname}-gpumemoryusage.png'
-        gpuusage = args.resources_dir / f'{reportname}-gpuutilization.png'
-        confusionmatrix = args.resources_dir / f'{reportname}-conf-matrix.png'
-        create_line_plot(
-            batchtime,
-            'Inference time for batches',
-            'Time', 's',
-            'Inference time', 's',
-            measurementsdata['inference_step_timestamp'],
-            measurementsdata['inference_step'])
-        create_line_plot(
-            memusage,
-            'Memory usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['full_run_statistics_timestamp'],
-            measurementsdata['full_run_statistics_mem_percent'])
-        create_line_plot(
-            gpumemusage,
-            'GPU Memory usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['full_run_statistics_gpu_timestamp'],
-            measurementsdata['full_run_statistics_gpu_mem_utilization'])
-        create_line_plot(
-            gpuusage,
-            'GPU usage over benchmark',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['full_run_statistics_gpu_timestamp'],
-            measurementsdata['full_run_statistics_gpu_utilization'])
-        if 'eval_confusion_matrix' in measurementsdata:
-            draw_confusion_matrix(
-                measurementsdata['eval_confusion_matrix'],
-                confusionmatrix,
-                'Confusion matrix',
-                [dataset.classnames[i] for i in range(dataset.numclasses)],
-                True
-            )
-        MeasurementsCollector.measurements += {
-            'reportname': [str(reportname)],
-            'memusagepath': [str(memusage)],
-            'batchtimepath': [str(batchtime)]
-        }
-        create_report_from_measurements(
-            reportpath,
-            measurementsdata,
-            args.output / f'{reportname}.rst'
+    MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+
+    with open(args.output, 'w') as measurementsfile:
+        json.dump(
+            MeasurementsCollector.measurements.data,
+            measurementsfile,
+            indent=2
         )
-        MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
-        with open(args.output / 'measurements.json', 'w') as measurementsfile:
-            json.dump(
-                MeasurementsCollector.measurements.data,
-                measurementsfile,
-                indent=2
-            )
 
 
 if __name__ == '__main__':

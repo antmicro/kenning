@@ -23,8 +23,6 @@ import json
 from edge_ai_tester.utils.class_loader import load_class
 import edge_ai_tester.utils.logger as logger
 from edge_ai_tester.core.measurements import MeasurementsCollector
-from edge_ai_tester.core.drawing import create_line_plot
-from edge_ai_tester.core.drawing import draw_confusion_matrix
 
 
 def main(argv):

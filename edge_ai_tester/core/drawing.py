@@ -4,7 +4,7 @@ Wrappers for drawing plots for reports.
 
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 import numpy as np
 import itertools
 from pathlib import Path
@@ -12,8 +12,8 @@ import matplotlib.colors as colors
 from matplotlib import gridspec
 
 
-def create_line_plot(
-        outpath: str,
+def time_series_plot(
+        outpath: Optional[Path],
         title: str,
         xtitle: str,
         xunit: str,
@@ -26,14 +26,17 @@ def create_line_plot(
         figsize: Tuple = (15, 8.5),
         bins: int = 20):
     """
-    Draws single line plot.
+    Draws time series plot.
 
     Used i.e. for timeline of resource usage.
 
+    It also draws the histogram of values that appeared throughout the
+    experiment.
+
     Parameters
     ----------
-    outpath : str
-        Output path for the plot image
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
     title : str
         Title of the plot
     xtitle : str
@@ -56,7 +59,7 @@ def create_line_plot(
     figsize: Tuple
         The size of the figure
     bins: int
-        Number of bins for 
+        Number of bins for value histograms
     """
     start = 1 if skipfirst else 0
     xdata = np.array(xdata[start:], copy=True)
@@ -90,13 +93,13 @@ def create_line_plot(
 
 
 def draw_confusion_matrix(
-        confusion_matrix,
-        outpath,
+        confusion_matrix: np.ndarray,
+        outpath: Optional[Path],
         title: str,
-        class_names,
+        class_names: List[str],
         cmap=None,
-        figsize=None,
-        dpi=None):
+        figsize: Optional[Tuple] = None,
+        dpi: Optional[int] = None):
     """
     Creates a confusion matrix plot.
 
@@ -105,17 +108,17 @@ def draw_confusion_matrix(
     confusion_matrix : ArrayLike
         Square numpy matrix containing the confusion matrix.
         0-th axis stands for ground truth, 1-st axis stands for predictions
-    outpath : Path
-        Path where the plot will be saved
+    outpath : Optional[Path]
+        Path where the plot will be saved. If None, the plot will be displayed.
     title : str
         Title of the plot
     class_names : List[str]
         List of the class names
     cmap : Any
         Color map for the plot
-    figsize : Tuple
+    figsize : Optional[Tuple]
         The size of the plot
-    dpi : int
+    dpi : Optional[int]
         The dpi of the plot
     """
     if cmap is None:
@@ -134,7 +137,8 @@ def draw_confusion_matrix(
     correctactual = correctactual.reshape(1, len(class_names))
 
     # compute precision
-    correctpredicted = confusion_matrix.diagonal() / confusion_matrix.sum(axis=0)
+    correctpredicted = \
+        confusion_matrix.diagonal() / confusion_matrix.sum(axis=0)
     correctpredicted = correctpredicted.reshape(len(class_names), 1)
 
     if figsize is None:
@@ -147,9 +151,19 @@ def draw_confusion_matrix(
     fig = plt.figure(figsize=figsize, dpi=dpi)
     gs = gridspec.GridSpec(len(class_names) + 1, len(class_names) + 1)
     axConfMatrix = fig.add_subplot(gs[0:len(class_names), 0:len(class_names)])
-    axPredicted = fig.add_subplot(gs[len(class_names), 0:len(class_names)], sharex=axConfMatrix)
-    axActual = fig.add_subplot(gs[0:len(class_names), len(class_names)], sharey=axConfMatrix)
-    axTotal = fig.add_subplot(gs[len(class_names), len(class_names)], sharex=axActual, sharey=axPredicted)
+    axPredicted = fig.add_subplot(
+        gs[len(class_names), 0:len(class_names)],
+        sharex=axConfMatrix
+    )
+    axActual = fig.add_subplot(
+        gs[0:len(class_names), len(class_names)],
+        sharey=axConfMatrix
+    )
+    axTotal = fig.add_subplot(
+        gs[len(class_names), len(class_names)],
+        sharex=axActual,
+        sharey=axPredicted
+    )
 
     # define ticks for classes
     ticks = np.arange(len(class_names))
@@ -177,7 +191,8 @@ def draw_confusion_matrix(
             range(len(class_names))):
         txt = axConfMatrix.text(
             i, j,
-            '100' if confusion_matrix[i,j] == 1.0 else f'{100.0 * confusion_matrix[i,j]:3.1f}',
+            ('100' if confusion_matrix[i, j] == 1.0
+                else f'{100.0 * confusion_matrix[i,j]:3.1f}'),
             ha='center',
             va='center',
             color='black',
@@ -189,7 +204,7 @@ def draw_confusion_matrix(
     # configure and draw sensitivity percentages
     axPredicted.set_xticks(ticks)
     axPredicted.set_yticks([0])
-    axPredicted.set_xlabel('Sensitivity', fontsize='large')    
+    axPredicted.set_xlabel('Sensitivity', fontsize='large')
     axPredicted.imshow(
         correctactual,
         interpolation='nearest',
@@ -201,7 +216,8 @@ def draw_confusion_matrix(
     for i in range(len(class_names)):
         txt = axPredicted.text(
             i, 0,
-            '100' if correctactual[0, i] == 1.0 else f'{100.0 * correctactual[0, i]:3.1f}',
+            ('100' if correctactual[0, i] == 1.0
+                else f'{100.0 * correctactual[0, i]:3.1f}'),
             ha='center',
             va='center',
             color='black',
@@ -226,7 +242,8 @@ def draw_confusion_matrix(
     for i in range(len(class_names)):
         txt = axActual.text(
             0, i,
-            '100' if correctpredicted[i, 0] == 1.0 else f'{100.0 * correctpredicted[i, 0]:3.1f}',
+            ('100' if correctpredicted[i, 0] == 1.0
+                else f'{100.0 * correctpredicted[i, 0]:3.1f}'),
             ha='center',
             va='center',
             color='black',
@@ -265,11 +282,25 @@ def draw_confusion_matrix(
         plt.setp(a.get_xticklabels(), visible=False)
 
     # draw colorbar for confusion matrix
-    cbar = fig.colorbar(img, ax=[axPredicted, axConfMatrix, axActual, axTotal], shrink=0.5, pad=0.1)
+    cbar = fig.colorbar(
+        img,
+        ax=[axPredicted, axConfMatrix, axActual, axTotal],
+        shrink=0.5,
+        pad=0.1
+    )
     for t in cbar.ax.get_yticklabels():
         t.set_fontsize('medium')
-    suptitlehandle = fig.suptitle(f'{title} (ACC={accuracy:.5f})', fontsize='xx-large')
+    suptitlehandle = fig.suptitle(
+        f'{title} (ACC={accuracy:.5f})',
+        fontsize='xx-large'
+    )
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath, dpi=dpi, bbox_inches='tight', bbox_extra_artists=[suptitlehandle], pad_inches=0.1)
+        plt.savefig(
+            outpath,
+            dpi=dpi,
+            bbox_inches='tight',
+            bbox_extra_artists=[suptitlehandle],
+            pad_inches=0.1
+        )

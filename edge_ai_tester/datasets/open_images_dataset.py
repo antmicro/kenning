@@ -6,13 +6,26 @@ The downloader part of the script is based on Open Images Dataset V6::
     https://raw.githubusercontent.com/openimages/dataset/master/downloader.py
 """
 
+import os
+import sys
+import psutil
 from concurrent import futures
 import botocore
 import tqdm
 import boto3
+import pandas as pd
+import shutil
+from pathlib import Path
+import re
+if sys.version_info.minor < 9:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
 
 from edge_ai_tester.core.dataset import Dataset
 from edge_ai_tester.utils.logger import download_url
+from edge_ai_tester.resources import coco_detection
+
 
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
@@ -34,12 +47,6 @@ def check_and_homogenize_image_list(image_list):
             )
 
 
-def read_image_list_file(image_list_file):
-    with open(image_list_file, 'r') as f:
-        for line in f:
-            yield line.strip().replace('.jpg', '')
-
-
 def download_one_image(bucket, split, image_id, download_folder):
     try:
         bucket.download_file(
@@ -54,24 +61,15 @@ def download_one_image(bucket, split, image_id, download_folder):
 
 
 def download_all_images(download_folder, image_list, num_processes):
-    """Downloads all images specified in the input file."""
+    """Downloads all images specified in list of images."""
     bucket = boto3.resource(
         's3', config=botocore.config.Config(
             signature_version=botocore.UNSIGNED
         )
     ).Bucket(BUCKET_NAME)
 
-    if not os.path.exists(download_folder):
-        os.makedirs(download_folder)
-
-    try:
-        image_list = list(
-            check_and_homogenize_image_list(
-                read_image_list_file(image_list)
-            )
-        )
-    except ValueError as exception:
-        sys.exit(exception)
+    download_folder.mkdir(parents=True, exist_ok=True)
+    image_list = list(check_and_homogenize_image_list(image_list))
 
     progress_bar = tqdm.tqdm(
         total=len(image_list),
@@ -119,10 +117,16 @@ class OpenImagesDatasetV6(Dataset):
             download_dataset: bool = False,
             task: str = 'object_detection',
             classes: str = 'coco',
-            download_samples_per_class: int = 200,
+            download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation'):
         self.task = task
-        self.classes = classes
+        self.download_num_bboxes_per_class = download_num_bboxes_per_class
+        if classes == 'coco':
+            with path(coco_detection, 'cocov6.classes') as p:
+                self.classes = Path(p)
+        else:
+            self.classes = Path(classes)
+        self.download_annotations_type = download_annotations_type
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -135,16 +139,15 @@ class OpenImagesDatasetV6(Dataset):
             default='object_detection'
         )
         group.add_argument(
-            '--classes',
-            help='The path to file with classes to use or class set name',
-            choices=['coco'],
-            default='coco'
-        )
-        group.add_argument(
-            '--download-samples-per-class',
-            help='Number of images per object class',
+            '--download-num-bboxes-per-class',
+            help='Number of images per object class (this is a preferred value, there may be less or more values)',  # noqa: E501
             type=int,
             default=200
+        )
+        group.add_argument(
+            '--classes',
+            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using edge_ai_tester.scenarios.open_images_classes_extractor) or class type',
+            type=str
         )
         group.add_argument(
             '--download-annotations-type',
@@ -162,26 +165,82 @@ class OpenImagesDatasetV6(Dataset):
             args.download_dataset,
             args.task,
             args.classes,
-            args.download_samples_per_class,
+            args.download_num_bboxes_per_class,
             args.download_annotations_type
         )
 
     def download_dataset(self):
         self.root.mkdir(parents=True, exist_ok=True)
 
-        classnamesurl = 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv'  # noqa: E501
-        classnamespath = self.dataset_root / 'classnames.csv'
+        # prepare class files
+        classnamespath = self.root / 'classnames.csv'
+        if self.classes:
+            shutil.copy(self.classes, classnamespath)
+        else:
+            classnamesurl = 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv'  # noqa: E501
+            download_url(classnamesurl, classnamespath)
         
+        # prepare annotations
         annotationsurls = {
             'train': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
             'validation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
             'test': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv'  # noqa: E501
         }
-        annotationspath = self.dataset_root / 'annotations.csv'
-
-        download_url(classnamesurl, classnamespath)
+        origannotationspath = self.root / 'original-annotations.csv'
         download_url(
             annotationsurls[self.download_annotations_type],
-            annotationspath
+            origannotationspath
         )
         
+        # load classes
+        self.classmap = {}
+        with open(classnamespath, 'r') as clsfile:
+            for line in clsfile:
+                clsid, clsname = line.split(',')
+                self.classmap[clsid] = clsname
+
+        annotations = pd.read_csv(origannotationspath)
+
+        # drop grouped bboxes (where one bbox covers multiple examples of a
+        # class)
+        annotations = annotations[annotations.IsGroupOf == 0]
+
+        # filter only entries with desired classes
+        filtered = annotations[annotations.LabelName.isin(
+            list(self.classmap.keys())
+        )]
+
+        # sample image ids to get around download_num_bboxes_per_class bounding
+        # boxes for each class
+        sampleids = filtered.groupby(
+            filtered.LabelName,
+            group_keys=False
+        ).apply(
+            lambda grp: grp.sample(frac=1.0).ImageID.drop_duplicates().head(
+                self.download_num_bboxes_per_class
+            )
+        )
+
+        # get final annotations
+        final_annotations = filtered[filtered.ImageID.isin(sampleids)]
+        # sort by images
+        final_annotations.sort_values('ImageID')
+
+        # save annotations
+        annotationspath = self.root / 'annotations.csv'
+        final_annotations.to_csv(annotationspath, index=False)
+
+        # prepare download entries
+        download_entries = [
+            f'{self.download_annotations_type}/{cid}' for cid in list(
+                final_annotations.ImageID.unique()
+            )
+        ]
+
+        # download images
+        imgdir = self.root / 'img'
+        imgdir.mkdir(parents=True, exist_ok=True)
+        download_all_images(imgdir, download_entries, psutil.cpu_count())
+
+    def prepare(self):
+        pass

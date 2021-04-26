@@ -202,3 +202,6 @@ class PetDataset(Dataset):
         # However, it is recommended to use Imagenet-based mean and std values
         # return np.array([0.48136492, 0.44937421, 0.39576963]), np.array([0.22781384, 0.22496867, 0.22693157])  # noqa: E501
         return np.array([0.485, 0.456, 0.406], dtype='float32'), np.array([0.229, 0.224, 0.225], dtype='float32')  # noqa: E501
+
+    def get_class_names(self):
+        return [val for val in self.classnames.values()]

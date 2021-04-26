@@ -334,3 +334,13 @@ class Dataset(object):
             Tuple of two variables describing mean and std values
         """
         raise NotImplementedError
+
+    def get_class_names(self) -> List[str]:
+        """
+        Returns list of class names in order of their IDs.
+
+        Returns
+        -------
+        List[str] :  List of class names
+        """
+        raise NotImplementedError

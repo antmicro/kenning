@@ -120,7 +120,7 @@ def main(argv):
     # TODO add method for providing metadata to dataset
     if hasattr(dataset, 'classnames'):
         MeasurementsCollector.measurements += {
-            'class_names': [val for val in dataset.classnames.values()]
+            'class_names': [val for val in dataset.get_class_names()]
         }
 
     compiler.compile(modelpath, inputspec, inputdtype)

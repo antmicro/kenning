@@ -25,6 +25,11 @@ def main():
         help='Path to the JSON file with mapping from detector class name to v6 class name (lower case)',  # noqa: E501
         type=Path
     )
+    parser.add_argument(
+        '--use-v6-class-names',
+        help='Use Open Images class names instead of class names from detectorclasses file',  # noqa: E501
+        action='store_true'
+    )
 
     args = parser.parse_args()
 
@@ -59,7 +64,7 @@ def main():
 
     with open(args.output, 'w') as out:
         for entry in clslst:
-            out.write(','.join(entry) + '\n')
+            out.write(f'{entry[1]},{entry[2] if args.use_v6_class_names else entry[0]}\n')  # noqa: E501
 
     if len(notfound) > 0:
         return 1

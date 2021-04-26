@@ -1,80 +1,80 @@
-person,/m/01g317,Person
-bicycle,/m/0199g,Bicycle
-car,/m/0k4j,Car
-motorbike,/m/04_sv,Motorcycle
-aeroplane,/m/0cmf2,Airplane
-bus,/m/01bjv,Bus
-train,/m/07jdr,Train
-truck,/m/07r04,Truck
-boat,/m/019jd,Boat
-traffic light,/m/015qff,Traffic light
-fire hydrant,/m/01pns0,Fire hydrant
-stop sign,/m/02pv19,Stop sign
-parking meter,/m/015qbp,Parking meter
-bench,/m/0cvnqh,Bench
-bird,/m/015p6,Bird
-cat,/m/01yrx,Cat
-dog,/m/0bt9lr,Dog
-horse,/m/03k3r,Horse
-sheep,/m/07bgp,Sheep
-cow,/m/0cnyhnx,Bull
-elephant,/m/0bwd_0j,Elephant
-bear,/m/01dws,Bear
-zebra,/m/0898b,Zebra
-giraffe,/m/03bk1,Giraffe
-backpack,/m/01940j,Backpack
-umbrella,/m/0hnnb,Umbrella
-handbag,/m/080hkjn,Handbag
-tie,/m/01rkbr,Tie
-suitcase,/m/01s55n,Suitcase
-frisbee,/m/02wmf,Flying disc
-skis,/m/071p9,Ski
-snowboard,/m/06__v,Snowboard
-sports ball,/m/018xm,Ball
-kite,/m/02zt3,Kite
-baseball bat,/m/03g8mr,Baseball bat
-baseball glove,/m/03grzl,Baseball glove
-skateboard,/m/06_fw,Skateboard
-surfboard,/m/019w40,Surfboard
-tennis racket,/m/0h8my_4,Tennis racket
-bottle,/m/04dr76w,Bottle
-wine glass,/m/09tvcd,Wine glass
-cup,/m/02jvh9,Mug
-fork,/m/0dt3t,Fork
-knife,/m/04ctx,Knife
-spoon,/m/0cmx8,Spoon
-bowl,/m/04kkgm,Bowl
-banana,/m/09qck,Banana
-apple,/m/014j1m,Apple
-sandwich,/m/0l515,Sandwich
-orange,/m/0cyhj_,Orange
-broccoli,/m/0hkxq,Broccoli
-carrot,/m/0fj52s,Carrot
-hot dog,/m/01b9xk,Hot dog
-pizza,/m/0663v,Pizza
-donut,/m/0jy4k,Doughnut
-cake,/m/0fszt,Cake
-chair,/m/01mzpv,Chair
-sofa,/m/03m3pdh,Sofa bed
-pottedplant,/m/03fp41,Houseplant
-bed,/m/03ssj5,Bed
-diningtable,/m/0h8n5zk,Kitchen & dining room table
-toilet,/m/09g1w,Toilet
-tvmonitor,/m/07c52,Television
-laptop,/m/01c648,Laptop
-mouse,/m/04rmv,Mouse
-remote,/m/0qjjc,Remote control
-keyboard,/m/01m2v,Computer keyboard
-cell phone,/m/050k8,Mobile phone
-microwave,/m/0fx9l,Microwave oven
-oven,/m/029bxz,Oven
-toaster,/m/01k6s3,Toaster
-sink,/m/0130jx,Sink
-refrigerator,/m/040b_t,Refrigerator
-book,/m/0bt_c3,Book
-clock,/m/01x3z,Clock
-vase,/m/02s195,Vase
-scissors,/m/01lsmm,Scissors
-teddy bear,/m/0kmg4,Teddy bear
-hair drier,/m/03wvsk,Hair dryer
-toothbrush,/m/012xff,Toothbrush
+/m/01g317,person
+/m/0199g,bicycle
+/m/0k4j,car
+/m/04_sv,motorbike
+/m/0cmf2,aeroplane
+/m/01bjv,bus
+/m/07jdr,train
+/m/07r04,truck
+/m/019jd,boat
+/m/015qff,traffic light
+/m/01pns0,fire hydrant
+/m/02pv19,stop sign
+/m/015qbp,parking meter
+/m/0cvnqh,bench
+/m/015p6,bird
+/m/01yrx,cat
+/m/0bt9lr,dog
+/m/03k3r,horse
+/m/07bgp,sheep
+/m/0cnyhnx,cow
+/m/0bwd_0j,elephant
+/m/01dws,bear
+/m/0898b,zebra
+/m/03bk1,giraffe
+/m/01940j,backpack
+/m/0hnnb,umbrella
+/m/080hkjn,handbag
+/m/01rkbr,tie
+/m/01s55n,suitcase
+/m/02wmf,frisbee
+/m/071p9,skis
+/m/06__v,snowboard
+/m/018xm,sports ball
+/m/02zt3,kite
+/m/03g8mr,baseball bat
+/m/03grzl,baseball glove
+/m/06_fw,skateboard
+/m/019w40,surfboard
+/m/0h8my_4,tennis racket
+/m/04dr76w,bottle
+/m/09tvcd,wine glass
+/m/02jvh9,cup
+/m/0dt3t,fork
+/m/04ctx,knife
+/m/0cmx8,spoon
+/m/04kkgm,bowl
+/m/09qck,banana
+/m/014j1m,apple
+/m/0l515,sandwich
+/m/0cyhj_,orange
+/m/0hkxq,broccoli
+/m/0fj52s,carrot
+/m/01b9xk,hot dog
+/m/0663v,pizza
+/m/0jy4k,donut
+/m/0fszt,cake
+/m/01mzpv,chair
+/m/03m3pdh,sofa
+/m/03fp41,pottedplant
+/m/03ssj5,bed
+/m/0h8n5zk,diningtable
+/m/09g1w,toilet
+/m/07c52,tvmonitor
+/m/01c648,laptop
+/m/04rmv,mouse
+/m/0qjjc,remote
+/m/01m2v,keyboard
+/m/050k8,cell phone
+/m/0fx9l,microwave
+/m/029bxz,oven
+/m/01k6s3,toaster
+/m/0130jx,sink
+/m/040b_t,refrigerator
+/m/0bt_c3,book
+/m/01x3z,clock
+/m/02s195,vase
+/m/01lsmm,scissors
+/m/0kmg4,teddy bear
+/m/03wvsk,hair drier
+/m/012xff,toothbrush

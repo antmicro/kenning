@@ -6,6 +6,10 @@ The downloader part of the script is based on Open Images Dataset V6::
     https://raw.githubusercontent.com/openimages/dataset/master/downloader.py
 """
 
+# TODO things to consider:
+# - provide images with no detectable objects.
+# - add support for instance segmentation and other scenarios.
+
 import os
 import sys
 import psutil
@@ -18,6 +22,7 @@ import shutil
 from pathlib import Path
 from typing import Tuple, List
 import re
+from collections import namedtuple
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -30,6 +35,21 @@ from edge_ai_tester.resources import coco_detection
 
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
+
+DectObject = namedtuple(
+    'DectObject',
+    ['clsname', 'xmin', 'ymin', 'xmax', 'ymax']
+)
+DectObject.__doc__ = """
+Represents single detectable object in an image.
+
+Attributes
+----------
+class : str
+    class of the object
+xmin, ymin, xmax, ymax : float
+    coordinates of the bounding box
+"""
 
 
 def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
@@ -183,6 +203,7 @@ class OpenImagesDatasetV6(Dataset):
         else:
             self.classes = Path(classes)
         self.download_annotations_type = download_annotations_type
+        self.classmap = {}
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -210,6 +231,12 @@ class OpenImagesDatasetV6(Dataset):
             help='Type of annotations to extract the images from',
             choices=['train', 'validation', 'test'],
             default='validation'
+        )
+        group.add_argument(
+            '--download-seed',
+            help='Seed for image sampling',
+            type=int,
+            default=12345
         )
         return parser, group
 
@@ -252,7 +279,7 @@ class OpenImagesDatasetV6(Dataset):
         self.classmap = {}
         with open(classnamespath, 'r') as clsfile:
             for line in clsfile:
-                clsid, clsname = line.split(',')
+                clsid, clsname = line.strip().split(',')
                 self.classmap[clsid] = clsname
 
         annotations = pd.read_csv(origannotationspath)
@@ -299,4 +326,44 @@ class OpenImagesDatasetV6(Dataset):
         download_all_images(imgdir, download_entries, psutil.cpu_count())
 
     def prepare(self):
+        classnamespath = self.root / 'classnames.csv'
+        self.classmap = {}
+        with open(classnamespath, 'r') as clsfile:
+            for line in clsfile:
+                clsid, clsname = line.strip().split(',')
+                self.classmap[clsid] = clsname
+
+        self.annotations = {}
+        annotationsfile = pd.read_csv(self.root / 'annotations.csv')
+        for index, row in annotationsfile.iterrows():
+            self.annotations[row['ImageID']] = DectObject(
+                clsname=self.classmap[row['LabelName']],
+                xmin=row['XMin'],
+                ymin=row['YMin'],
+                xmax=row['XMax'],
+                ymax=row['YMax']
+            )
+        self.numclasses = len(self.classmap)
+    
+    def prepare_input_samples(self, samples):
+        result = []
+        for sample in samples:
+            img = Image.open(sample)
+            img = img.convert('RGB')
+            result.append(npimg)
+        return result
+
+    def prepare_output_samples(self, samples):
+        pass
+
+    def evaluate(self, predictions, truth):
+        pass
+
+    def compute_input_mean_std(self):
+        pass
+
+    def get_input_mean_std(self):
+        pass
+
+    def get_class_names(self):
         pass

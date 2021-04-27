@@ -14,20 +14,12 @@ import sys
 import argparse
 from pathlib import Path
 import json
-if sys.version_info.minor < 9:
-    from importlib_resources import path
-else:
-    from importlib.resources import path
 
 from edge_ai_tester.core.model import ModelWrapper
 from edge_ai_tester.utils.class_loader import load_class
 from edge_ai_tester.core.measurements import MeasurementsCollector
 from edge_ai_tester.core.measurements import systemstatsmeasurements
 from edge_ai_tester.utils import logger
-from edge_ai_tester.core.report import create_report_from_measurements
-from edge_ai_tester.resources import reports
-from edge_ai_tester.core.drawing import create_line_plot
-from edge_ai_tester.core.drawing import draw_confusion_matrix
 
 
 @systemstatsmeasurements('full_run_statistics')
@@ -67,17 +59,7 @@ def main(argv):
     )
     parser.add_argument(
         'output',
-        help='The path to the output directory',
-        type=Path
-    )
-    parser.add_argument(
-        'reportname',
-        help='The name of the report, used as RST name and resources prefix',
-        type=str
-    )
-    parser.add_argument(
-        '--resources-dir',
-        help='The path to the directory with resources',
+        help='The path to the output JSON file with measurements',
         type=Path
     )
     parser.add_argument(
@@ -103,12 +85,6 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    if args.resources_dir is None:
-        args.resources_dir = Path(args.output / 'img')
-
-    args.output.mkdir(parents=True, exist_ok=True)
-    args.resources_dir.mkdir(parents=True, exist_ok=True)
-
     logger.set_verbosity(args.verbosity)
     logger.get_logger()
 
@@ -116,10 +92,6 @@ def main(argv):
     inferenceobj = modelwrappercls.from_argparse(dataset, args)
 
     test_inference(inferenceobj)
-
-    reportname = args.reportname
-
-    measurementsdata = MeasurementsCollector.measurements.data
 
     MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
 

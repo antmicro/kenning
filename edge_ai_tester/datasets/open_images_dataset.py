@@ -16,6 +16,7 @@ import boto3
 import pandas as pd
 import shutil
 from pathlib import Path
+from typing import Tuple, List
 import re
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -31,12 +32,36 @@ BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
 
 
-def check_and_homogenize_one_image(image):
+def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
+    """
+    Subdivides download entry to split type and image ID.
+
+    Parameters
+    ----------
+    image : str
+        image entry in format split/id.
+    
+    Returns
+    -------
+    Tuple[str, str]: tuple containing split and image ID
+    """
     split, image_id = re.match(REGEX, image).groups()
     yield split, image_id
 
 
-def check_and_homogenize_image_list(image_list):
+def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
+    """
+    Converts download entries using check_and_homogenize_one_image.
+
+    Parameters
+    ----------
+    image_list : List[str]
+        List of download entries
+
+    Yields
+    ------
+    Tuple[str, str] : download entries
+    """
     for line_number, image in enumerate(image_list):
         try:
             yield from check_and_homogenize_one_image(image)
@@ -47,7 +72,24 @@ def check_and_homogenize_image_list(image_list):
             )
 
 
-def download_one_image(bucket, split, image_id, download_folder):
+def download_one_image(
+        bucket,
+        split: str,
+        image_id: str,
+        download_folder: Path):
+    """
+    Downloads image from a bucket.
+
+    Parameters
+    ----------
+    bucket : boto3 bucket
+    split : str
+        dataset split
+    image_id : str
+        image id
+    download_folder : Path
+        target directory
+    """
     try:
         bucket.download_file(
             f'{split}/{image_id}.jpg',
@@ -60,8 +102,22 @@ def download_one_image(bucket, split, image_id, download_folder):
         )
 
 
-def download_all_images(download_folder, image_list, num_processes):
-    """Downloads all images specified in list of images."""
+def download_all_images(
+        download_folder: Path,
+        image_list: List[str],
+        num_processes: int):
+    """
+    Downloads all images specified in list of images.
+
+    Parameters
+    ----------
+    download_folder : Path
+        Path to the target directory
+    image_list : List[str]
+        List of images
+    num_processes : int
+        Number of threads to use for image download
+    """
     bucket = boto3.resource(
         's3', config=botocore.config.Config(
             signature_version=botocore.UNSIGNED

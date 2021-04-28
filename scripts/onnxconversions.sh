@@ -2,7 +2,7 @@
 
 set -e
 
-python3 -m edge_ai_tester.scenarios.onnx_conversion \
+python -m edge_ai_tester.scenarios.onnx_conversion \
     build/models-directory \
     build/onnx-support.rst \
     --converters-list \

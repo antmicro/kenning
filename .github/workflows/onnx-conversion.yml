@@ -11,18 +11,17 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.9
+          python-version: 3.8.5
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc g++ build-essential python3-dev cmake llvm protobuf-compiler libprotoc-dev
-          pip3 install --upgrade pip setuptools
-          pip3 install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
-          pip3 install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
-          pip3 install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
-          pip3 install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
-          pip3 install --upgrade mxnet gluoncv
-          pip3 install --upgrade Jinja2
-
+          sudo python -m pip install --upgrade pip==21.0.1 setuptools
+          sudo python -m pip install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
+          sudo python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
+          sudo python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
+          sudo python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+          sudo python -m pip install --upgrade mxnet gluoncv
+          sudo python -m pip install --upgrade jinja2
       - name: Run ONNX conversion tests
-        run: ./scripts/onnxconversions.sh
+        run: sudo ./scripts/onnxconversions.sh

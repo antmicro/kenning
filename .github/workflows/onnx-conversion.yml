@@ -11,7 +11,7 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v2
         with:
-          python-version: 3.8.5
+          python-version: 3.9
       - name: Install dependencies
         run: |
           apt-get update
@@ -22,7 +22,7 @@ jobs:
           pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
           pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
           pip install --upgrade mxnet gluoncv
-          pip install --upgrade Jinja2 importlib-resources
-          
+          pip install --upgrade Jinja2
+
       - name: Run ONNX conversion tests
         run: ./scripts/onnxconversions.sh

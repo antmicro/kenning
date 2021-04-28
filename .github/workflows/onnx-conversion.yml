@@ -16,13 +16,13 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc g++ build-essential python3-dev cmake llvm protobuf-compiler libprotoc-dev
-          sudo pip3 install --upgrade pip setuptools
-          sudo pip3 install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
-          sudo pip3 install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
-          sudo pip3 install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
-          sudo pip3 install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
-          sudo pip3 install --upgrade mxnet gluoncv
-          sudo pip3 install --upgrade Jinja2
+          pip3 install --upgrade pip setuptools
+          pip3 install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
+          pip3 install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
+          pip3 install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
+          pip3 install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+          pip3 install --upgrade mxnet gluoncv
+          pip3 install --upgrade Jinja2
 
       - name: Run ONNX conversion tests
         run: ./scripts/onnxconversions.sh

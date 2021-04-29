@@ -59,6 +59,7 @@ class PyTorchONNXConversion(ONNXConversion):
         model = modelentry.modelgenerator()
         input_tensor = modelentry.parameters['input_tensor']
         torch.onnx.export(model, input_tensor, exportpath, opset_version=11)
+        del model
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):

@@ -57,6 +57,7 @@ class TensorFlowONNXConversion(ONNXConversion):
             model,
             input_signature=spec,
             output_path=exportpath)
+        del model
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):
@@ -68,4 +69,5 @@ class TensorFlowONNXConversion(ONNXConversion):
             dtype=spec.dtype
         )
         model.run(inp)
+        del model
         return SupportStatus.SUPPORTED

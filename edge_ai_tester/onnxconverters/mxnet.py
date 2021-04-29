@@ -75,6 +75,7 @@ class MXNetONNXConversion(ONNXConversion):
                 np.float32,
                 exportpath
             )
+        del model
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):
@@ -100,4 +101,5 @@ class MXNetONNXConversion(ONNXConversion):
             allow_extra=True
         )
         mod.forward(Batch([inputdata]))
+        del mod
         return SupportStatus.SUPPORTED

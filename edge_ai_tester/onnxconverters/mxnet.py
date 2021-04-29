@@ -36,11 +36,11 @@ class MXNetONNXConversion(ONNXConversion):
             lambda: model_zoo.resnet50_v1b(pretrained=True),
             input_shape=(1, 3, 224, 224)
         )
-        self.add_entry(
-            'VGG16',
-            lambda: model_zoo.vgg16(pretrained=True),
-            input_shape=(1, 3, 224, 224)
-        )
+        # self.add_entry(
+        #     'VGG16',
+        #     lambda: model_zoo.vgg16(pretrained=True),
+        #     input_shape=(1, 3, 224, 224)
+        # )
         self.add_entry(
             'DeepLabV3 ResNet50',
             lambda: model_zoo.get_deeplab_resnet50_citys(pretrained=True),

@@ -29,11 +29,11 @@ class PyTorchONNXConversion(ONNXConversion):
             lambda: models.resnet50(True),
             input_tensor=torch.randn((1, 3, 224, 224))
         )
-        self.add_entry(
-            'VGG16',
-            lambda: models.vgg16(True),
-            input_tensor=torch.randn((1, 3, 224, 224))
-        )
+        # self.add_entry(
+        #     'VGG16',
+        #     lambda: models.vgg16(True),
+        #     input_tensor=torch.randn((1, 3, 224, 224))
+        # )
         self.add_entry(
             'DeepLabV3 ResNet50',
             lambda: models.segmentation.deeplabv3_resnet50(True),

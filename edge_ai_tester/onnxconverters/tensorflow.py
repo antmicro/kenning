@@ -41,14 +41,14 @@ class TensorFlowONNXConversion(ONNXConversion):
                 tf.float32,
                 name="input"
             ),))
-        self.add_entry(
-            'VGG16',
-            lambda: apps.VGG16(),
-            tensor_spec=(tf.TensorSpec(
-                (None, 224, 224, 3),
-                tf.float32,
-                name="input"
-            ),))
+        # self.add_entry(
+        #     'VGG16',
+        #     lambda: apps.VGG16(),
+        #     tensor_spec=(tf.TensorSpec(
+        #         (None, 224, 224, 3),
+        #         tf.float32,
+        #         name="input"
+        #     ),))
 
     def onnx_export(self, modelentry, exportpath):
         model = modelentry.modelgenerator()

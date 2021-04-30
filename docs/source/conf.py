@@ -16,7 +16,7 @@
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
 
-from sphinx_antmicro_theme import __version__, get_html_theme_path
+from sphinx_antmicro_theme import get_html_theme_path
 theme_path = get_html_theme_path() + "/sphinx_antmicro_theme"
 
 # -- Project information -----------------------------------------------------
@@ -51,7 +51,7 @@ extensions = [
 dev = 'https://github.com/antmicro/edge-ai-tester'
 
 extlinks = {
-    'issue' : (dev + 'issues/%s', '#')
+    'issue': (dev + 'issues/%s', '#')
 }
 
 numfig = True
@@ -174,7 +174,7 @@ man_pages = [
 #  dir menu entry, description, category)
 texinfo_documents = [
     (master_doc, basic_filename, f'{project} Documentation',
-     author, basic_filename, 'Project for implementing testing pipelines for Edge AI applications deployment.',
+     author, basic_filename, 'Project for implementing testing pipelines for Edge AI applications deployment.',  # noqa: E501
      'Miscellaneous'),
 ]
 

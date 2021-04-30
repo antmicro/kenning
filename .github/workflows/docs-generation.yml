@@ -1,8 +1,8 @@
 name: Documentation generation
-
 on:
   workflow_run:
     workflows: ["ONNX conversion support check"]
+    branches: [master]
     types:
       - completed
 

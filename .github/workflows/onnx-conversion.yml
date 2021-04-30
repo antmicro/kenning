@@ -1,0 +1,37 @@
+name: ONNX conversion support check
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  onnxconversion:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.8.5
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc g++ build-essential cmake llvm protobuf-compiler libprotoc-dev
+          python -m pip install --upgrade pip==21.0.1 setuptools
+          python -m pip install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
+          python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
+          python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
+          python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
+          python -m pip install --upgrade mxnet gluoncv
+          python -m pip install --upgrade jinja2
+      - name: Run ONNX conversion tests
+        run: |
+          ./scripts/onnxconversions.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: onnxconversion
+          path: build/onnx-support.rst

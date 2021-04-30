@@ -1,0 +1,42 @@
+name: Documentation generation
+on:
+  workflow_run:
+    workflows: ["ONNX conversion support check"]
+    branches: [master]
+    types:
+      - completed
+
+jobs:
+  docs-generation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/download-artifact@v2
+      - uses: actions/setup-python@v2
+        with:
+          python-version: 3.8.5
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade sphinx
+          python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
+      - name: Generate documentation
+        run: |
+          cp build/onnx-support.rst docs/source/generated/
+          cd docs
+          make html
+      - uses: actions/upload-artifact@v2
+        with: 
+          name: gh-page
+          path: docs/build/html
+      - name: Deploy to Github Pages
+        run: |
+          cd docs/build/html
+          touch .nojekyll
+          git init
+          cp ../../../.git/config ./.git/config
+          git add .
+          git config --local user.email "push@gha"
+          git config --local user.name "GHA"
+          git commit -am "update ${{ github.sha }}"
+          git push -u origin +HEAD:gh-pages
+          rm -rf .git

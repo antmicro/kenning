@@ -41,14 +41,14 @@ class TensorFlowONNXConversion(ONNXConversion):
                 tf.float32,
                 name="input"
             ),))
-        self.add_entry(
-            'VGG16',
-            lambda: apps.VGG16(),
-            tensor_spec=(tf.TensorSpec(
-                (None, 224, 224, 3),
-                tf.float32,
-                name="input"
-            ),))
+        # self.add_entry(
+        #     'VGG16',
+        #     lambda: apps.VGG16(),
+        #     tensor_spec=(tf.TensorSpec(
+        #         (None, 224, 224, 3),
+        #         tf.float32,
+        #         name="input"
+        #     ),))
 
     def onnx_export(self, modelentry, exportpath):
         model = modelentry.modelgenerator()
@@ -57,6 +57,7 @@ class TensorFlowONNXConversion(ONNXConversion):
             model,
             input_signature=spec,
             output_path=exportpath)
+        del model
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):
@@ -68,4 +69,5 @@ class TensorFlowONNXConversion(ONNXConversion):
             dtype=spec.dtype
         )
         model.run(inp)
+        del model
         return SupportStatus.SUPPORTED

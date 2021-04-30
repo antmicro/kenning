@@ -1,4 +1,4 @@
-name: Flake8 check
+name: Flake8
 
 on:
   push:

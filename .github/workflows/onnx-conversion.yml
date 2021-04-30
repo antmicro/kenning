@@ -1,4 +1,4 @@
-name: ONNX conversion support check
+name: ONNXConversion
 
 on:
   push:

@@ -92,6 +92,26 @@ def performance_report(
     else:
         log.warning('No memory usage measurements in the report')
 
+    if 'session_utilization_cpus_percent' in measurementsdata:
+        log.info('Using target measurements CPU usage percentage')
+        usepath = imgdir / f'{reportpath.stem}_cpu_usage.png'
+        measurementsdata['session_utilization_cpus_percent_avg'] = [
+            np.mean(cpus) for cpus in
+            measurementsdata['session_utilization_cpus_percent']
+        ]
+        time_series_plot(
+            str(usepath),
+            f'Mean CPU usage for {reportname}',
+            'Time', 's',
+            'Mean CPU usage', '%',
+            measurementsdata['session_utilization_timestamp'],
+            measurementsdata['session_utilization_cpus_percent_avg'])
+        measurementsdata['cpuusagepath'] = str(
+            usepath.relative_to(rootdir)
+        )
+    else:
+        log.warning('No memory usage measurements in the report')
+
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
         usepath = imgdir / f'{reportpath.stem}_gpu_memory_usage.png'

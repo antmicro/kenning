@@ -26,6 +26,22 @@ Inference time
 * *Median*: **{{ median(data['inferencetime']) }} s**.
 {% endif %}
 
+{% if 'session_utilization_cpus_percent_avg' in data -%}
+Mean CPU usage
+~~~~~~~~~~~~~~
+
+.. figure:: {{data["cpuusagepath"]}}
+   :name: {{data["reportname"][0]}}_cpuusage
+   :alt: Mean CPU usage
+   :align: center
+
+   Mean CPU usage during benchmark
+
+* *Mean*: **{{ mean(data['session_utilization_cpus_percent_avg']) }} %**,
+* *Standard deviation*: **{{ std(data['session_utilization_cpus_percent_avg']) }} %**,
+* *Median*: **{{ median(data['session_utilization_cpus_percent_avg']) }} %**.
+{% endif %}
+
 {% if 'session_utilization_mem_percent' in data -%}
 Memory usage
 ~~~~~~~~~~~~
@@ -42,6 +58,22 @@ Memory usage
 * *Median*: **{{ median(data['session_utilization_mem_percent']) }} %**.
 {% endif %}
 
+{% if 'session_utilization_gpu_utilization' in data -%}
+GPU usage
+~~~~~~~~~
+
+.. figure:: {{data["gpuusagepath"]}}
+   :name: {{data["reportname"][0]}}_gpuusage
+   :alt: GPU usage
+   :align: center
+
+   GPU utilization during benchmark
+
+* *Mean*: **{{ mean(data['session_utilization_gpu_utilization']) }} %**,
+* *Standard deviation*: **{{ std(data['session_utilization_gpu_utilization']) }} %**,
+* *Median*: **{{ median(data['session_utilization_gpu_utilization']) }} %**.
+{% endif %}
+
 {% if 'session_utilization_gpu_mem_utilization' in data -%}
 GPU memory usage
 ~~~~~~~~~~~~~~~~
@@ -56,21 +88,5 @@ GPU memory usage
 * *Mean*: **{{ mean(data['session_utilization_gpu_mem_utilization']) }} MB**,
 * *Standard deviation*: **{{ std(data['session_utilization_gpu_mem_utilization']) }} MB**,
 * *Median*: **{{ median(data['session_utilization_gpu_mem_utilization']) }} MB**.
-{% endif %}
-
-{% if 'session_utilization_gpu_percent' in data -%}
-GPU usage
-~~~~~~~~~
-
-.. figure:: {{data["gpuusagepath"]}}
-   :name: {{data["reportname"][0]}}_gpuusage
-   :alt: GPU usage
-   :align: center
-
-   GPU utilization during benchmark
-
-* *Mean*: **{{ mean(data['session_utilization_gpu_utilization']) }} %**,
-* *Standard deviation*: **{{ std(data['session_utilization_gpu_utilization']) }} %**,
-* *Median*: **{{ median(data['session_utilization_gpu_utilization']) }} %**.
 {% endif %}
 

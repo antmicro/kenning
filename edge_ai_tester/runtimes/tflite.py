@@ -83,8 +83,9 @@ class TFLiteRuntime(Runtime):
     def prepare_model(self, input_data):
         import tflite_runtime.interpreter as tflite
         self.log.info('Loading model')
-        with open(self.modelpath, 'wb') as outmodel:
-            outmodel.write(input_data)
+        if input_data:
+            with open(self.modelpath, 'wb') as outmodel:
+                outmodel.write(input_data)
         delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
         self.interpreter = tflite.Interpreter(
             str(self.modelpath),

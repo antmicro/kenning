@@ -100,8 +100,9 @@ class TVMRuntime(Runtime):
 
     def prepare_model(self, input_data):
         self.log.info('Loading model')
-        with open(self.modelpath, 'wb') as outmodel:
-            outmodel.write(input_data)
+        if input_data:
+            with open(self.modelpath, 'wb') as outmodel:
+                outmodel.write(input_data)
         self.module = tvm.runtime.load_module(str(self.modelpath))
         self.func = self.module.get_function('default')
         self.ctx = tvm.runtime.device(self.contextname, self.contextid)

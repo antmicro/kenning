@@ -36,10 +36,6 @@ def main(argv):
         help='ModelCompiler-based class with compiling routines to import'
     )
     parser.add_argument(
-        'protocolcls',
-        help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
-    )
-    parser.add_argument(
         'runtimecls',
         help='Runtime-based class with the implementation of model runtime'
     )
@@ -51,6 +47,10 @@ def main(argv):
         'output',
         help='The path to the output JSON file with measurements',
         type=Path
+    )
+    parser.add_argument(
+        '--protocol-cls',
+        help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
     )
     parser.add_argument(
         '--convert-to-onnx',
@@ -68,9 +68,12 @@ def main(argv):
 
     modelwrappercls = load_class(args.modelwrappercls)
     modelcompilercls = load_class(args.modelcompilercls)
-    protocolcls = load_class(args.protocolcls)
     runtimecls = load_class(args.runtimecls)
     datasetcls = load_class(args.datasetcls)
+    if args.protocol_cls:
+        protocolcls = load_class(args.protocol_cls)
+    else:
+        protocolcls = None
 
     parser = argparse.ArgumentParser(
         argv[0],
@@ -78,10 +81,9 @@ def main(argv):
             parser,
             modelwrappercls.form_argparse()[0],
             modelcompilercls.form_argparse()[0],
-            protocolcls.form_argparse()[0],
             runtimecls.form_argparse()[0],
             datasetcls.form_argparse()[0]
-        ]
+        ] + ([protocolcls.form_argparse()[0]] if protocolcls else [])
     )
 
     args = parser.parse_args(argv[1:])
@@ -92,7 +94,7 @@ def main(argv):
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
     compiler = modelcompilercls.from_argparse(dataset, args)
-    protocol = protocolcls.from_argparse(args)
+    protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args)
 
     modelpath = model.get_path()
@@ -119,7 +121,11 @@ def main(argv):
         }
 
     compiler.compile(modelpath, inputspec, inputdtype)
-    ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
+
+    if protocol:
+        ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
+    else:
+        ret = runtime.run_locally(dataset, model, compiler.compiled_model_path)
 
     if not ret:
         return 1

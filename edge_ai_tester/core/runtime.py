@@ -7,6 +7,7 @@ Runtimes implement running and testing deployed models on target devices.
 import argparse
 from tqdm import tqdm
 from pathlib import Path
+from typing import Optional
 import json
 
 from edge_ai_tester.core.dataset import Dataset
@@ -21,6 +22,7 @@ from edge_ai_tester.core.runtimeprotocol import ServerStatus
 from edge_ai_tester.core.measurements import timemeasurements
 from edge_ai_tester.core.measurements import SystemStatsCollector
 from edge_ai_tester.utils.logger import get_logger
+from edge_ai_tester.core.measurements import systemstatsmeasurements
 
 
 class Runtime(object):
@@ -159,27 +161,44 @@ class Runtime(object):
         else:
             self.protocol.request_failure()
 
-    def _prepare_model(self, input_data: bytes):
+    def _prepare_model(self, input_data: Optional[bytes]):
         """
         Internal call for preparing a model for inference task.
+
+        Parameters
+        ----------
+        input_data : Optional[bytes]
+            Model data or None, if the model should be loaded from another
+            source.
+
+        Returns
+        -------
+        bool : True if succeded
         """
         self.inference_session_start()
-        if self.prepare_model(input_data):
+        ret = self.prepare_model(input_data)
+        if ret:
             self.protocol.request_success()
         else:
             self.protocol.request_failure()
+        return ret
 
-    def prepare_model(self, input_data: bytes) -> bool:
+    def prepare_model(self, input_data: Optional[bytes]) -> bool:
         """
         Receives the model to infer from the client in bytes.
 
         The method should load bytes with the model, optionally save to file
         and allocate the model on target device for inference.
 
+        ``input_data`` stores the model representation in bytes.
+        If ``input_data`` is None, the model is extracted from another source
+        (i.e. from existing file).
+
         Parameters
         ----------
-        input_data : bytes
-            Model data
+        input_data : Optional[bytes]
+            Model data or None, if the model should be loaded from another
+            source.
 
         Returns
         -------
@@ -281,6 +300,42 @@ class Runtime(object):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
+    @systemstatsmeasurements('full_run_statistics')
+    def run_locally(
+            self,
+            dataset: Dataset,
+            modelwrapper: ModelWrapper,
+            compiledmodelpath: Path):
+        """
+        Runs inference locally using a given runtime.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset to verify the inference on
+        modelwrapper : ModelWrapper
+            Model that is executed on target hardware
+        compiledmodelpath : Path
+            Path to the file with a compiled model
+
+        Returns
+        -------
+        bool : True if executed successfully
+        """
+        measurements = Measurements()
+        self.prepare_model(None)
+        for X, y in tqdm(iter(dataset)):
+            prepX = modelwrapper._preprocess_input(X)
+            prepX = modelwrapper.convert_input_to_bytes(prepX)
+            self.prepare_input(prepX)
+            self.run()
+            outbytes = self.upload_output(None)
+            preds = modelwrapper.convert_output_from_bytes(outbytes)
+            posty = modelwrapper._postprocess_outputs(preds)
+            measurements += dataset.evaluate(posty, y)
+        MeasurementsCollector.measurements += measurements
+        return True
+
     def run_client(
             self,
             dataset: Dataset,
@@ -315,6 +370,8 @@ class Runtime(object):
         -------
         bool : True if executed successfully
         """
+        if self.protocol is None:
+            raise RequestFailure('Protocol is not provided')
         self.prepare_client()
         self.protocol.upload_model(compiledmodelpath)
         measurements = Measurements()
@@ -353,6 +410,8 @@ class Runtime(object):
         Based on requests, it loads the model, runs inference and provides
         statistics.
         """
+        if self.protocol is None:
+            raise RequestFailure('Protocol is not provided')
         self.prepare_server()
         self.shouldwork = True
         while self.shouldwork:

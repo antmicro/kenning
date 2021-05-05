@@ -1,12 +1,12 @@
 #!/bin/bash
 
-python3 -m edge_ai_tester.scenarios.inference_client \
+python3 -m edge_ai_tester.scenarios.inference_tester \
     edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     edge_ai_tester.compilers.tflite.TFLiteCompiler \
-    edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     edge_ai_tester.runtimes.tflite.TFLiteRuntime \
     edge_ai_tester.datasets.pet_dataset.PetDataset \
     ./build/google-coral-devboard-tflite-tensorflow.json \
+    --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \

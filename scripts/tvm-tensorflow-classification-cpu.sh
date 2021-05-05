@@ -15,4 +15,5 @@ python3 -m edge_ai_tester.scenarios.inference_tester \
     --target-device-context cpu \
     --dataset-root ./build/pet-dataset/ \
     --inference-batch-size 1 \
+    --download-dataset \
     --verbosity INFO

@@ -20,6 +20,7 @@ from edge_ai_tester.core.measurements import MeasurementsCollector
 from edge_ai_tester.core.runtimeprotocol import ServerStatus
 from edge_ai_tester.core.measurements import timemeasurements
 from edge_ai_tester.core.measurements import SystemStatsCollector
+from edge_ai_tester.utils.logger import get_logger
 
 
 class Runtime(object):
@@ -52,6 +53,7 @@ class Runtime(object):
             MessageType.STATS: self._upload_stats
         }
         self.statsmeasurements = None
+        self.log = get_logger()
 
     @classmethod
     def form_argparse(cls):
@@ -194,11 +196,11 @@ class Runtime(object):
         input_data : bytes
             Not used here
         """
-        self.protocol.log.debug('Processing input')
+        self.log.debug('Processing input')
         self.protocol.request_success()
         self._run()
         self.protocol.request_success()
-        self.protocol.log.debug('Input processed')
+        self.log.debug('Input processed')
 
     @timemeasurements('target_inference_step')
     def _run(self):
@@ -275,7 +277,7 @@ class Runtime(object):
         -------
         bytes : statistics to be sent to the client
         """
-        self.protocol.log.debug('Uploading stats')
+        self.log.debug('Uploading stats')
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
@@ -326,7 +328,7 @@ class Runtime(object):
                     self.protocol.download_output(),
                     'receive output'
                 )
-                self.protocol.log.debug(
+                self.log.debug(
                     f'Received output ({len(preds)} bytes)'
                 )
                 preds = modelwrapper.convert_output_from_bytes(preds)
@@ -335,7 +337,7 @@ class Runtime(object):
 
             measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
-            self.protocol.log.fatal(ex)
+            self.log.fatal(ex)
             return False
         else:
             MeasurementsCollector.measurements += measurements
@@ -358,13 +360,13 @@ class Runtime(object):
             for status, data in actions:
                 if status == ServerStatus.DATA_READY:
                     if len(data) != 1:
-                        self.protocol.log.error('Too many messages')
+                        self.log.error('Too many messages')
                         self.close_server()
                         self.shouldwork = False
                     msgtype, content = self.protocol.parse_message(data[0])
                     self.callbacks[msgtype](content)
                 elif status == ServerStatus.DATA_INVALID:
-                    self.protocol.log.error('Invalid message received')
-                    self.protocol.log.error('Client will be disconnected')
+                    self.log.error('Invalid message received')
+                    self.log.error('Client will be disconnected')
                     self.disconnect()
         self.protocol.disconnect()

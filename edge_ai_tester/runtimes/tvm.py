@@ -86,33 +86,33 @@ class TVMRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.protocol.log.debug(f'Preparing inputs of size {len(input_data)}')
+        self.log.debug(f'Preparing inputs of size {len(input_data)}')
         try:
             self.model.set_input(
                 0,
                 tvm.nd.array(np.frombuffer(input_data, dtype=self.inputdtype))
             )
-            self.protocol.log.debug('Inputs are ready')
+            self.log.debug('Inputs are ready')
             return True
         except (TypeError, ValueError, tvm.TVMError) as ex:
-            self.protocol.log.error(f'Failed to load input:  {ex}')
+            self.log.error(f'Failed to load input:  {ex}')
             return False
 
     def prepare_model(self, input_data):
-        self.protocol.log.info('Loading model')
+        self.log.info('Loading model')
         with open(self.modelpath, 'wb') as outmodel:
             outmodel.write(input_data)
         self.module = tvm.runtime.load_module(str(self.modelpath))
         self.func = self.module.get_function('default')
         self.ctx = tvm.runtime.device(self.contextname, self.contextid)
         self.model = graph_executor.GraphModule(self.func(self.ctx))
-        self.protocol.log.info('Model loading ended successfully')
+        self.log.info('Model loading ended successfully')
         return True
 
     def run(self):
         self.model.run()
 
     def upload_output(self, input_data):
-        self.protocol.log.debug('Uploading output')
+        self.log.debug('Uploading output')
         out = self.model.get_output(0).asnumpy().tobytes()
         return out

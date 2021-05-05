@@ -82,7 +82,7 @@ class TFLiteRuntime(Runtime):
 
     def prepare_model(self, input_data):
         import tflite_runtime.interpreter as tflite
-        self.protocol.log.info('Loading model')
+        self.log.info('Loading model')
         with open(self.modelpath, 'wb') as outmodel:
             outmodel.write(input_data)
         delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
@@ -91,11 +91,11 @@ class TFLiteRuntime(Runtime):
             experimental_delegates=delegates
         )
         self.interpreter.allocate_tensors()
-        self.protocol.log.info('Model loading ended successfully')
+        self.log.info('Model loading ended successfully')
         return True
 
     def prepare_input(self, input_data):
-        self.protocol.log.debug(f'Preparing inputs of size {len(input_data)}')
+        self.log.debug(f'Preparing inputs of size {len(input_data)}')
         for det in self.interpreter.get_input_details():
             dt = np.dtype(self.inputdtype)
             siz = np.prod(det['shape']) * dt.itemsize
@@ -112,7 +112,7 @@ class TFLiteRuntime(Runtime):
         self.interpreter.invoke()
 
     def upload_output(self, input_data):
-        self.protocol.log.debug('Uploading output')
+        self.log.debug('Uploading output')
         result = bytes()
         dt = np.dtype(self.outputdtype)
         for det in self.interpreter.get_output_details():

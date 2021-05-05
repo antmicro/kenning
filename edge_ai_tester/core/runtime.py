@@ -323,16 +323,18 @@ class Runtime(object):
         bool : True if executed successfully
         """
         measurements = Measurements()
+        self.inference_session_start()
         self.prepare_model(None)
         for X, y in tqdm(iter(dataset)):
             prepX = modelwrapper._preprocess_input(X)
             prepX = modelwrapper.convert_input_to_bytes(prepX)
             self.prepare_input(prepX)
-            self.run()
+            self._run()
             outbytes = self.upload_output(None)
             preds = modelwrapper.convert_output_from_bytes(outbytes)
             posty = modelwrapper._postprocess_outputs(preds)
             measurements += dataset.evaluate(posty, y)
+        self.inference_session_end()
         MeasurementsCollector.measurements += measurements
         return True
 

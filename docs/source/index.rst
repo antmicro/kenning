@@ -9,3 +9,4 @@
    dl-deployment-stack
    project-readme
    onnx-conversion-support
+   sample-report

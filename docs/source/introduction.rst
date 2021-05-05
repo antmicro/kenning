@@ -7,4 +7,5 @@ This documentation contains the following chapters:
 
 * :doc:`dl-deployment-stack` describes the typical flow of deploying models on edge devices,
 * :doc:`project-readme` describes the |projecturl| library in detail,
-* :doc:`onnx-conversion-support` shows the support for ONNX model format in deep learning frameworks.
+* :doc:`onnx-conversion-support` shows the support for ONNX model format in deep learning frameworks,
+* :doc:`sample-report` shows sample report generated using |projecturl|.

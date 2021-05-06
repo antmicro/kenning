@@ -48,7 +48,7 @@ The ``edge_ai_tester.core.dataset.Dataset`` classes
 
 Classes that implement the methods from ``edge_ai_tester.core.dataset.Dataset`` are responsible for:
 
-* preparing the dataset, including the download routines,
+* preparing the dataset, including the download routines (use ``--download-dataset`` flag to download the dataset data),
 * preprocessing the inputs into the format expected by most of the models for a given task,
 * postprocessing the outputs for the evaluation process,
 * evaluating a given model based on its predictions,
@@ -236,10 +236,12 @@ The arguments in the above command are:
 * ``--learning-rate`` - training learning rate,
 * ``--num-epochs`` - number of epochs.
 
+If the dataset files are not present, use ``--download-dataset`` flag in order to let the Dataset API download the data.
+
 Benchmarking trained model on host
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``edge_ai_tester.scenarios.inference_performance`` script runs the model using its deep learning framework routines on a host device.
+The ``edge_ai_tester.scenarios.inference_performance`` script runs the model using the deep learning framework used for training on a host device.
 It runs the inference on a given dataset, computes model quality metrics and performance metrics.
 The results from the script can be used as a reference point for benchmarking of the compiled models on target devices.
 
@@ -248,17 +250,15 @@ The example usage of the script is as follows::
     python -m edge_ai_tester.scenarios.inference_performance \
         edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
         edge_ai_tester.datasets.pet_dataset.PetDataset \
-        build/report-directory \
-        report-name \
-        --model-path build/trained-model.h5 \
+        build/result.json \
+        --model-path edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --dataset-root build/pet-dataset
 
 The obligatory arguments for the script are:
 
 * ``ModelWrapper``-based class that implements the model loading, I/O processing and inference method,
 * ``Dataset``-based class that implements fetching of data samples and evaluation of the model,
-* ``build/report-directory``, which is the path where the JSON with benchmark results, along with plots for quality and performance metrics are stored,
-* ``report-name``, which is the name of the report that will act as prefix for all files generated and saved in the ``build/report-directory``.
+* ``build/result.json``, which is the path to the output JSON file with benchmark results.
 
 The remaining parameters are specific to the ``ModelWrapper``-based class and ``Dataset``-based class.
 
@@ -268,32 +268,34 @@ Testing ONNX conversions
 The ``edge_ai_tester.scenarios.onnx_conversion`` runs as follows::
 
     python -m edge_ai_tester.scenarios.onnx_conversion \
-        ./onnx-models-directory \
-        build/onnx-support-grid.rst \
+        build/models-directory \
+        build/onnx-support.rst \
         --converters-list \
             edge_ai_tester.onnxconverters.pytorch.PyTorchONNXConversion \
-            edge_ai_tester.onnxconverters.tensorflow.TensorFlowONNXConversion
+            edge_ai_tester.onnxconverters.tensorflow.TensorFlowONNXConversion \
+            edge_ai_tester.onnxconverters.mxnet.MXNetONNXConversion
 
 The first argument is the directory, where the generated ONNX models will be stored.
 The second argument is the RST file with import/export support table for each model for each framework.
 The third argument is the list of ``ONNXConversion`` classes implementing list of models, import method and export method.
 
+.. _compilation-and-deployment:
+
 Running compilation and deployment of models on target hardware
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two scripts - ``edge_ai_tester.scenarios.inference_client`` and ``edge_ai_tester.scenarios.inference_server``.
+There are two scripts - ``edge_ai_tester.scenarios.inference_tester`` and ``edge_ai_tester.scenarios.inference_server``.
 
 The example call for the first script is following::
 
-    python -m edge_ai_tester.scenarios.inference_client \
+    python -m edge_ai_tester.scenarios.inference_tester \
         edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
         edge_ai_tester.compilers.tflite.TFLiteCompiler \
-        edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
         edge_ai_tester.runtimes.tflite.TFLiteRuntime \
         edge_ai_tester.datasets.pet_dataset.PetDataset \
-        build/report-directory \
-        report-name \
-        --model-path build/trained-model.h5 \
+        ./build/google-coral-devboard-tflite-tensorflow.json \
+        --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
+        --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --model-framework keras \
         --target "edgetpu" \
         --compiled-model-path build/compiled-model.tflite \
@@ -311,11 +313,12 @@ The script requires:
 
 * ``ModelWrapper``-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
 * ``ModelCompiler``-based class for compiling the model for a given target,
-* ``RuntimeProtocol``-based class that implements communication between the host and the target hardware,
 * ``Runtime``-based class that implements data processing and the inference method for the compiled model on the target hardware,
 * ``Dataset``-based class that implements fetching of data samples and evaluation of the model,
-* ``build/report-directory``, which is the path where JSON with benchmark results and benchmark plots will be saved,
-* ``report-name``, which is the name of a given benchmark.
+* ``./build/google-coral-devboard-tflite-tensorflow.json``, which is the path to the output JSON file with performance and quality metrics.
+
+In case of running inference on remote edge device, the ``--protocol-cls RuntimeProtocol`` also needs to be provided in order to provide communication protocol between the host and the target.
+If ``--protocol-cls`` is not provided, the ``inference_tester`` will run inference on the host machine (which is useful for testing and comparison).
 
 The remaining arguments come from the above-mentioned classes.
 Their meaning is following:
@@ -362,11 +365,72 @@ Then, it sends next batches of data to process to the server.
 In the end, it collects the benchmark metrics and saves them to JSON file.
 In addition, it generates plots with performance changes over time.
 
+Render report from benchmarks
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``edge_ai_tester.scenarios.inference_performance`` and ``edge_ai_tester.scenarios.inference_tester`` create JSON files that contain:
+
+* command string that was used to generate the JSON file,
+* frameworks along with their versions used to train the model and compile the model,
+* performance metrics, including:
+
+    * CPU usage over time,
+    * RAM usage over time,
+    * GPU usage over time,
+    * GPU memory usage over time,
+* predictions and ground truth to compute quality metrics, i.e. in form of confusion matrix and top-5 accuracy for classification task.
+
+The ``edge_ai_tester.scenarios.render_report`` renders the report RST file along with plots for metrics for a given JSON file based on selected templates.
+
+For example, for the file ``./build/google-coral-devboard-tflite-tensorflow.json`` created in :ref:`compilation-and-deployment` the report can be rendered as follows::
+
+    python -m edge_ai_tester.scenarios.render_report \
+        build/google-coral-devboard-tflite-tensorflow.json \
+        "Pet Dataset classification using TFLite-compiled TensorFlow model" \
+        docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst \
+        --img-dir docs/source/generated/img/ \
+        --root-dir docs/source/ \
+        --report-types \
+            performance \
+            classification
+
+Where:
+
+* ``build/google-coral-devboard-tflite-tensorflow.json`` is the input JSON file with benchmark results
+* ``"Pet Dataset classification using TFLite-compiled TensorFlow model"`` is the report name that will be used as title in generated plots,
+* ``docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst`` is the path to the output RST file,
+* ``--img-dir docs/source/generated/img/`` is the path to the directory where generated plots will be stored,
+* ``--root-dir docs/source`` is the root directory for documentation sources (it will be used to compute relative paths in the RST file),
+* ``--report-types performance classification`` is the list of report types that will form the final RST file.
+
+The ``performance`` type provides report sections for performance metrics, i.e.:
+
+* Inference time changes over time,
+* Mean CPU usage over time,
+* RAM usage over time,
+* GPU usage over time,
+* GPU memory usage over time.
+
+It also computes mean, standard deviation and median values for the above time series.
+
+The ``classification`` type provides report section regarding quality metrics for classification task:
+
+* Confusion matrics,
+* Per-class precision,
+* Per-class sensitivity,
+* Accuracy,
+* Top-5 accuracy,
+* Mean precision,
+* Mean sensitivity,
+* G-Mean.
+
+The above metrics can be used to determine any quality losses resulting from optimizations (i.e. pruning or quantization).
+
 Adding new implementations
 --------------------------
 
 ``Dataset``, ``ModelWrapper``, ``ModelCompiler``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``edge_ai_tester.core`` module have dedicated directories for their implementations.
-Each method in base classes that requires implementation raises NotImplementedError.
+Each method in base classes that requires implementation raises ``NotImplementedError`` exception.
 Implemented methods can be also overriden, if neccessary.
 
 Most of the base classes implement ``form_argparse`` and ``from_argparse`` methods.

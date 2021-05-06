@@ -1,6 +1,18 @@
 Inference performance metrics
 -----------------------------
 
+{% if data['command']|length > 0 -%}
+.. note::
+    
+    This section was generated using:
+    
+    .. code-block:: bash
+
+        {% for line in data['command'] -%}
+        {{ line }}
+        {% endfor %}
+{% endif -%}
+
 General information
 ~~~~~~~~~~~~~~~~~~~
 

@@ -20,12 +20,14 @@ import argparse
 from pathlib import Path
 import json
 
-from edge_ai_tester.utils.class_loader import load_class
+from edge_ai_tester.utils.class_loader import load_class, get_command
 import edge_ai_tester.utils.logger as logger
 from edge_ai_tester.core.measurements import MeasurementsCollector
 
 
 def main(argv):
+    command = get_command(argv)
+
     parser = argparse.ArgumentParser(argv[0], add_help=False)
     parser.add_argument(
         'modelwrappercls',
@@ -112,6 +114,7 @@ def main(argv):
         'model_version': modelframeworktuple[1],
         'compiler_framework': compilerframeworktuple[0],
         'compiler_version': compilerframeworktuple[1],
+        'command': command
     }
 
     # TODO add method for providing metadata to dataset

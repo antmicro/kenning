@@ -7,6 +7,7 @@ It expects a list of the implemented ONNXConversion classes and generates
 the RST file with support matrix table.
 """
 
+import sys
 import argparse
 from collections import defaultdict
 from jinja2 import Template
@@ -16,7 +17,7 @@ from importlib.resources import path
 
 from edge_ai_tester.core.onnxconversion import ONNXConversion
 from edge_ai_tester.resources import reports
-from edge_ai_tester.utils.class_loader import load_class
+from edge_ai_tester.utils.class_loader import load_class, get_command
 from edge_ai_tester.utils import logger
 
 
@@ -64,7 +65,8 @@ def generate_onnx_support_grid(
 def create_onnx_support_report(
         converterslist: List[ONNXConversion],
         modelsdir: Path,
-        output: Path):
+        output: Path,
+        command: str = ''):
     headers, grid = generate_onnx_support_grid(converterslist, modelsdir)
 
     with path(reports, 'onnx-conversion-support-grid.rst') as reportpath:
@@ -73,14 +75,17 @@ def create_onnx_support_report(
             tm = Template(template)
             content = tm.render(
                 headers=headers,
-                grid=grid
+                grid=grid,
+                command=command
             )
             with open(output, 'w') as out:
                 out.write(content)
 
 
-if __name__ == '__main__':
-    parser = argparse.ArgumentParser()
+def main(argv):
+    command = get_command(argv)
+
+    parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'modelsdir',
         help='Path to the directory where generated models will be stored',
@@ -104,7 +109,7 @@ if __name__ == '__main__':
         default='INFO'
     )
 
-    args = parser.parse_args()
+    args = parser.parse_args(argv[1:])
 
     logger.set_verbosity(args.verbosity)
 
@@ -118,4 +123,9 @@ if __name__ == '__main__':
     create_onnx_support_report(
         converterslist,
         args.modelsdir,
-        args.output)
+        args.output,
+        command)
+
+
+if __name__ == '__main__':
+    main(sys.argv)

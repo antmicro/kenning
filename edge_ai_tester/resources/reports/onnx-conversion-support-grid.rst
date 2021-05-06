@@ -1,6 +1,19 @@
 ONNX conversion support grid
 ----------------------------
 
+{% if command|length > 0 -%}
+.. note::
+    
+    This section was generated using:
+    
+    .. code-block:: bash
+
+        {% for line in command -%}
+        {{ line }}
+        {% endfor %}
+{% endif -%}
+        
+
 .. list-table:: ONNX conversion support grid
     :header-rows: 1
     :align: center

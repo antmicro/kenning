@@ -11,6 +11,7 @@ import argparse
 from pathlib import Path
 from typing import Dict, List, Optional
 import json
+import numpy as np
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -21,7 +22,7 @@ from edge_ai_tester.core.drawing import time_series_plot
 from edge_ai_tester.core.drawing import draw_confusion_matrix
 from edge_ai_tester.utils import logger
 from edge_ai_tester.core.report import create_report_from_measurements
-import numpy as np
+from edge_ai_tester.utils.class_loader import get_command
 
 
 log = logger.get_logger()
@@ -208,6 +209,7 @@ def generate_report(
 
 
 def main(argv):
+    command = get_command(argv)
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'measurements',
@@ -258,6 +260,8 @@ def main(argv):
 
     with open(args.measurements, 'r') as measurements:
         measurementsdata = json.load(measurements)
+
+    measurementsdata['command'] += [''] + command
 
     generate_report(
         args.reportname,

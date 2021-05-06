@@ -16,7 +16,7 @@ from pathlib import Path
 import json
 
 from edge_ai_tester.core.model import ModelWrapper
-from edge_ai_tester.utils.class_loader import load_class
+from edge_ai_tester.utils.class_loader import load_class, get_command
 from edge_ai_tester.core.measurements import MeasurementsCollector
 from edge_ai_tester.core.measurements import systemstatsmeasurements
 from edge_ai_tester.utils import logger
@@ -48,6 +48,7 @@ def test_inference(modelwrapper: ModelWrapper):
 
 
 def main(argv):
+    command = get_command(argv)
     parser = argparse.ArgumentParser(argv[0], add_help=False)
     parser.add_argument(
         'modelwrappercls',
@@ -92,6 +93,10 @@ def main(argv):
     inferenceobj = modelwrappercls.from_argparse(dataset, args)
 
     test_inference(inferenceobj)
+
+    MeasurementsCollector.measurements += {
+        'command': command
+    }
 
     MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
 

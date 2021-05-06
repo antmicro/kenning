@@ -58,7 +58,7 @@ Based on the above methods, the ``Dataset`` class provides data to the model wra
 
 The datasets are included in the ``edge_ai_tester.datasets`` submodule.
 
-Check out the `Pet Dataset wrapper <./edge_ai_tester/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
+Check out the `Pet Dataset wrapper <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
 
 The ``edge_ai_tester.core.model.ModelWrapper`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -79,7 +79,7 @@ The ``ModelWrapper`` provides methods for running the inference in a loop from d
 
 The ``edge_ai_tester.modelwrappers.frameworks`` submodule contains framework-wise specifications of ``ModelWrapper`` class - they implement all methods that are common for all the models implemented in this framework.
 
-For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <./edge_ai_tester/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
+For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
 
 The ``edge_ai_tester.core.compiler.ModelCompiler`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -88,7 +88,7 @@ Objects of this class implement compilation and optional hardware-specific optim
 For the latter, the ``ModelCompiler`` may require a dataset, for example to perform quantization or pruning.
 
 The implementations for compiler wrappers are in ``edge_ai_tester.compilers``.
-For example, `TFLiteCompiler <./edge_ai_tester/compilers/tvm.py>`_ class wraps the TVM routines for compiling the model to a specified target.
+For example, `TFLiteCompiler <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/compilers/tflite.py>`_ class wraps the TensorFlow Lite routines for compiling the model to a specified target.
 
 Model deployment and benchmarking on target devices
 ---------------------------------------------------
@@ -152,7 +152,7 @@ The ``RuntimeProtocol`` class requires implementing methods for:
 
 Based on the above-mentioned methods, the ``edge_ai_tester.core.runtime.Runtime`` connects the host with the target.
 
-Look at the `TCP runtime protocol <./edge_ai_tester/runtimeprotocols/network.py>`_ for an example.
+Look at the `TCP runtime protocol <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/runtimeprotocols/network.py>`_ for an example.
 
 The ``edge_ai_tester.core.runtime.Runtime`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -169,7 +169,7 @@ The server (target) side of the ``Runtime`` class requires implementing methods 
 * preparing outputs to be delivered to the client,
 * (optionally) sending inference statistics.
 
-Look at the `TVM runtime <./edge_ai_tester/runtimes/tvm.py>`_ for an example.
+Look at the `TVM runtime <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/runtimes/tvm.py>`_ for an example.
 
 ONNX conversion
 ---------------
@@ -190,7 +190,7 @@ It requires implementing:
 The ``ONNXConversion`` class implements a method for converting the models.
 It catches exceptions and any issues in the import/export methods, and provides the report on conversion status per model.
 
-Look at the `TensorFlowONNXConversion class <./edge_ai_tester/onnxconverters/tensorflow.py>`_ for an example of API usage.
+Look at the `TensorFlowONNXConversion class <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/onnxconverters/tensorflow.py>`_ for an example of API usage.
 
 Running the benchmarks
 ----------------------

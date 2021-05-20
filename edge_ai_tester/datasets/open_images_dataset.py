@@ -379,17 +379,28 @@ class OpenImagesDatasetV6(Dataset):
             result.append(npimg)
         return result
 
+    def compute_iou(self, b1: DectObject, b2: DectObject):
+        xmn = max(b1.xmin, b2.xmin)
+        ymn = max(b1.ymin, b2.ymin)
+        xmx = min(b1.xmax, b2.xmax)
+        ymx = min(b1.ymax, b2.ymax)
+
+        intersectarea = max(0, xmx - xmn) * max(0, ymx - ymn)
+
+        b1area = (b1.xmax - b1.xmin) * (b1.ymax - b1.ymin)
+        b2area = (b2.xmax - b2.xmin) * (b2.ymax - b2.ymin)
+
+        iou = intersectarea / (b1area + b2area - intersectarea)
+
+        return iou
+
     def prepare_output_samples(self, samples):
-        pass
+        return samples
 
     def evaluate(self, predictions, truth):
-        pass
+        return Measurements()
 
-    def compute_input_mean_std(self):
-        pass
 
-    def get_input_mean_std(self):
-        pass
 
     def get_class_names(self):
-        pass
+        return self.classnames

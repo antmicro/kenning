@@ -23,12 +23,15 @@ from pathlib import Path
 from typing import Tuple, List
 import re
 from collections import namedtuple
+import numpy as np
+from collections import defaultdict
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
 
 from edge_ai_tester.core.dataset import Dataset
+from edge_ai_tester.core.measurements import Measurements
 from edge_ai_tester.utils.logger import download_url
 from edge_ai_tester.resources import coco_detection
 
@@ -38,7 +41,7 @@ REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
 
 DectObject = namedtuple(
     'DectObject',
-    ['clsname', 'xmin', 'ymin', 'xmax', 'ymax']
+    ['clsname', 'xmin', 'ymin', 'xmax', 'ymax', 'score']
 )
 DectObject.__doc__ = """
 Represents single detectable object in an image.
@@ -49,6 +52,8 @@ class : str
     class of the object
 xmin, ymin, xmax, ymax : float
     coordinates of the bounding box
+score : float
+    the probability of correctness of the detected object
 """
 
 
@@ -194,7 +199,9 @@ class OpenImagesDatasetV6(Dataset):
             task: str = 'object_detection',
             classes: str = 'coco',
             download_num_bboxes_per_class: int = 200,
-            download_annotations_type: str = 'validation'):
+            download_annotations_type: str = 'validation',
+            image_memory_layout: str = 'NCHW'):
+        assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
         if classes == 'coco':
@@ -204,6 +211,8 @@ class OpenImagesDatasetV6(Dataset):
             self.classes = Path(classes)
         self.download_annotations_type = download_annotations_type
         self.classmap = {}
+        self.image_memory_layout = image_memory_layout
+        self.classnames = []
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -224,7 +233,8 @@ class OpenImagesDatasetV6(Dataset):
         group.add_argument(
             '--classes',
             help='File containing Open Images class IDs and class names in CSV format to use (can be generated using edge_ai_tester.scenarios.open_images_classes_extractor) or class type',
-            type=str
+            type=str,
+            default='coco'
         )
         group.add_argument(
             '--download-annotations-type',
@@ -238,6 +248,12 @@ class OpenImagesDatasetV6(Dataset):
             type=int,
             default=12345
         )
+        group.add_argument(
+            '--image-memory-layout',
+            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
+            choices=['NHWC', 'NCHW'],
+            default='NCHW'
+        )
         return parser, group
 
     @classmethod
@@ -249,7 +265,8 @@ class OpenImagesDatasetV6(Dataset):
             args.task,
             args.classes,
             args.download_num_bboxes_per_class,
-            args.download_annotations_type
+            args.download_annotations_type,
+            args.image_memory_layout
         )
 
     def download_dataset(self):
@@ -332,24 +349,33 @@ class OpenImagesDatasetV6(Dataset):
             for line in clsfile:
                 clsid, clsname = line.strip().split(',')
                 self.classmap[clsid] = clsname
+                self.classnames.append(clsname)
 
-        self.annotations = {}
+        annotations = defaultdict(list)
         annotationsfile = pd.read_csv(self.root / 'annotations.csv')
         for index, row in annotationsfile.iterrows():
-            self.annotations[row['ImageID']] = DectObject(
+            annotations[row['ImageID']].append(DectObject(
                 clsname=self.classmap[row['LabelName']],
                 xmin=row['XMin'],
                 ymin=row['YMin'],
                 xmax=row['XMax'],
-                ymax=row['YMax']
-            )
+                ymax=row['YMax'],
+                score=1.0
+            ))
+        for k, v in annotations.items():
+            self.dataX.append(k)
+            self.dataY.append(v)
         self.numclasses = len(self.classmap)
     
     def prepare_input_samples(self, samples):
         result = []
         for sample in samples:
             img = Image.open(sample)
-            img = img.convert('RGB')
+            img = img.convert('BGR')
+            img = img.resize((416, 416))  # this may be moved to specific model
+            npimg = np.array(img, dtype=np.float32) / 255.0
+            if self.image_memory_layout == 'NCHW':
+                npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
         return result
 

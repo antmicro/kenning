@@ -8,8 +8,9 @@ import tvm.relay as relay
 from pathlib import Path
 import re
 
-from edge_ai_tester.core.compiler import ModelCompiler
+from edge_ai_tester.core.compiler import ModelCompiler, CompilationError
 from edge_ai_tester.core.dataset import Dataset
+from edge_ai_tester.utils.logger import get_logger
 
 
 def onnxconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
@@ -35,7 +36,13 @@ def kerasconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtyp
 
 def darknetconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
     from tvm.relay.testing.darknet import __darknetffi__
-    lib = __darknetffi__.dlopen(compiler.libdarknetpath)
+    if not compiler.libdarknetpath:
+        log = get_logger()
+        log.fatal(
+            'The darknet converter requires libdarknet.so library. ' +
+            'Provide the path to it using --libdarknet-path flag')
+        raise CompilationError('Provide libdarknet.so library')
+    lib = __darknetffi__.dlopen(str(compiler.libdarknetpath))
     net = lib.load_network(
         str(modelpath.with_suffix('.cfg')).encode('utf-8'),
         str(modelpath).encode('utf-8'),
@@ -67,7 +74,7 @@ class TVMCompiler(ModelCompiler):
             target: str,
             target_host: str,
             opt_level: int = 2,
-            libdarknetpath: Path = Path('/usr/local/lib/libdarknet.so')):
+            libdarknetpath: str = '/usr/local/lib/libdarknet.so'):
         """
         A TVM Compiler wrapper.
 
@@ -85,7 +92,7 @@ class TVMCompiler(ModelCompiler):
             CPU architecture of the target (used when target has a host).
         opt_level : int
             optimization level of compilation
-        libdarknetpath : Path
+        libdarknetpath : str
             path to the libdarknet.so library, used only during conversion
             of darknet model
         """
@@ -127,7 +134,7 @@ class TVMCompiler(ModelCompiler):
         group.add_argument(
             '--libdarknet-path',
             help='Path to the libdarknet.so library, for darknet models',
-            default=Path('/usr/local/lib/libdarknet.so')
+            type=str
         )
         return parser, group
 

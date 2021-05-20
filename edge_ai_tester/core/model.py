@@ -37,7 +37,7 @@ class ModelWrapper(object):
         from_file : bool
             True if the model should be loaded from file
         """
-        self.modelpath = modelpath
+        self.modelpath = Path(modelpath)
         self.dataset = dataset
         self.data = defaultdict(list)
         self.from_file = from_file

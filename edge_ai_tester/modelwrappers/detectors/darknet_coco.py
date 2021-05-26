@@ -218,7 +218,6 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
         return inputdata.tobytes()
 
     def convert_output_from_bytes(self, outputdata):
-        # this one actually should not convert output from bytes
         return np.frombuffer(outputdata, dtype='float32')
 
     def get_framework_and_version(self):

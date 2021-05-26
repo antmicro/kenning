@@ -439,7 +439,5 @@ class OpenImagesDatasetV6(Dataset):
             plt.show()
         return Measurements()
 
-
-
     def get_class_names(self):
         return self.classnames

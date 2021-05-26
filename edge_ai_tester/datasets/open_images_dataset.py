@@ -11,6 +11,7 @@ The downloader part of the script is based on Open Images Dataset V6::
 # - add support for instance segmentation and other scenarios.
 
 import os
+import cv2
 import sys
 import psutil
 from concurrent import futures
@@ -29,6 +30,7 @@ if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
+from PIL import Image
 
 from edge_ai_tester.core.dataset import Dataset
 from edge_ai_tester.core.measurements import Measurements
@@ -370,9 +372,9 @@ class OpenImagesDatasetV6(Dataset):
     def prepare_input_samples(self, samples):
         result = []
         for sample in samples:
-            img = Image.open(sample)
-            img = img.convert('BGR')
-            img = img.resize((416, 416))  # this may be moved to specific model
+            img = cv2.imread(str(self.root / 'img' / f'{sample}.jpg'))
+            img = cv2.resize(img, (416, 416))  # this may be moved to specific model
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.image_memory_layout == 'NCHW':
                 npimg = np.transpose(npimg, (2, 0, 1))

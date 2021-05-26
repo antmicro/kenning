@@ -37,6 +37,9 @@ from edge_ai_tester.core.measurements import Measurements
 from edge_ai_tester.utils.logger import download_url
 from edge_ai_tester.resources import coco_detection
 
+from matplotlib import pyplot as plt
+from matplotlib import patches as patches
+
 
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
@@ -202,7 +205,8 @@ class OpenImagesDatasetV6(Dataset):
             classes: str = 'coco',
             download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation',
-            image_memory_layout: str = 'NCHW'):
+            image_memory_layout: str = 'NCHW',
+            show_on_eval: bool = False):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
@@ -215,6 +219,7 @@ class OpenImagesDatasetV6(Dataset):
         self.classmap = {}
         self.image_memory_layout = image_memory_layout
         self.classnames = []
+        self.show_on_eval = show_on_eval
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -256,6 +261,11 @@ class OpenImagesDatasetV6(Dataset):
             choices=['NHWC', 'NCHW'],
             default='NCHW'
         )
+        group.add_argument(
+            '--show-predictions-on-eval',
+            help='Show predictions during evaluation',
+            action='store_true'
+        )
         return parser, group
 
     @classmethod
@@ -268,7 +278,8 @@ class OpenImagesDatasetV6(Dataset):
             args.classes,
             args.download_num_bboxes_per_class,
             args.download_annotations_type,
-            args.image_memory_layout
+            args.image_memory_layout,
+            args.show_predictions_on_eval
         )
 
     def download_dataset(self):
@@ -400,6 +411,32 @@ class OpenImagesDatasetV6(Dataset):
         return samples
 
     def evaluate(self, predictions, truth):
+        # TODO add metrics
+        if self.show_on_eval:
+            img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]
+            fig, ax = plt.subplots()
+            ax.imshow(img.transpose(1, 2, 0))
+            for bbox in predictions[0]:
+                rect = patches.Rectangle(
+                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
+                    (bbox.xmax - bbox.xmin) * img.shape[1],
+                    (bbox.ymax - bbox.ymin) * img.shape[2],
+                    linewidth=3,
+                    edgecolor='r',
+                    facecolor='none'
+                )
+                ax.add_patch(rect)
+            for bbox in truth[0]:
+                rect = patches.Rectangle(
+                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
+                    (bbox.xmax - bbox.xmin) * img.shape[1],
+                    (bbox.ymax - bbox.ymin) * img.shape[2],
+                    linewidth=2,
+                    edgecolor='g',
+                    facecolor='none'
+                )
+                ax.add_patch(rect)
+            plt.show()
         return Measurements()
 
 

@@ -15,7 +15,7 @@ from edge_ai_tester.datasets.open_images_dataset import DectObject
 
 class TVMDarknetCOCOYOLOV3(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
-        self.thresh = 0.2
+        self.thresh = 0.5
         self.iouthresh = 0.5
         super().__init__(modelpath, dataset, from_file)
 
@@ -67,8 +67,17 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
 
     def parse_outputs(self, data):
         # get all bounding boxes with objectness score over given threshold
-        boxdata = np.asarray(np.where(data[:, :, 4, :, :] > self.thresh))[0]
-        boxdata = np.transpose(boxdata)
+        boxdata = []
+        for i in range(len(data)):
+            ids = np.asarray(np.where(data[i][:, 4, :, :] > self.thresh))
+            ids = np.transpose(ids)
+            if ids.shape[0] > 0:
+                ids = np.append([[i]] * ids.shape[0], ids, axis=1)
+                boxdata.append(ids)
+
+        if len(boxdata) > 0:
+            boxdata = np.concatenate(boxdata)
+
         # each entry in boxdata contains:
         # - layer id
         # - det id
@@ -80,25 +89,26 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             # x and y values from network are coordinates in a chunk
             # to get the actual coordinates, we need to compute
             # new_coords = (chunk_coords + out_coords) / out_resolution
-            x = (box[3] + data[box[0], box[1], 0, box[2], box[3]]) / data.shape[3]
-            y = (box[2] + data[box[0], box[1], 1, box[2], box[3]]) / data.shape[4]
+            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[box[0]].shape[2]
+            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[box[0]].shape[3]
 
             # width and height are computed using following formula:
             # w = anchor_w * exp(out_w) / input_w
+            # h = anchor_h * exp(out_h) / input_h
             # anchors are computed based on dataset analysis
-            maskid = self.perlayerparams['mask'][box[0]]
-            anchors = self.perlayerparams['anchors'][2 * maskid:2 * maskid + 2]
-            w = anchors[0] * np.exp(data[box[0], box[1], 2, box[2], box[3]]) / self.keyparams['width']
-            h = anchors[1] * np.exp(data[box[0], box[1], 3, box[2], box[3]]) / self.keyparams['height']
+            maskid = self.perlayerparams['mask'][2 - box[0]][box[1]]
+            anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]
+            w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']
+            h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']
 
             # get objectness score
-            objectness = data[box[0], box[1], 4, box[2], box[3]]
+            objectness = data[box[0]][box[1], 4, box[2], box[3]]
 
             # get class with highest probability
-            classid = np.argmax(data[box[0], box[1], 5:, box[2], box[3]])
+            classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
 
             # compute final class score (objectness * class probability
-            score = objectness * data[box[0], box[1], classid, box[2], box[3]]
+            score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]
 
             # drop the bounding box if final score is below threshold
             if score < self.thresh:
@@ -114,11 +124,11 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
         # group bboxes by class to perform NMS sorting
         grouped_bboxes = defaultdict(list)
         for item in bboxes:
-            grouped_bboxes[item.clsname] = item
+            grouped_bboxes[item.clsname].append(item)
 
         # perform NMS sort to drop overlapping predictions for the same class
         cleaned_bboxes = []
-        for clsbboxes in groupbed_bboxes.values():
+        for clsbboxes in grouped_bboxes.values():
             for i in range(len(clsbboxes)):
                 # if score equals 0, the bbox is dropped
                 if clsbboxes[i].score == 0:
@@ -130,10 +140,10 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
                     if self.dataset.compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:
-                        clsbboxes[j].score = 0
+                        clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 
-    def postprocess_output(self, y):
+    def postprocess_outputs(self, y):
         # YOLOv3 has three stages of outputs
         # each one contains:
         # - real output
@@ -169,14 +179,14 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             # objectness prediction and per-class predictions
             outshape = (
                 self.dataset.batch_size,
-                len(self.perlayerparams['mask'][i][0]),
+                len(self.perlayerparams['mask'][i]),
                 4 + 1 + self.dataset.numclasses,
-                self.keyparams['width'] // (8 * (i + 1)),
-                self.keyparams['height'] // (8 * (i + 1))
+                self.keyparams['width'] // (8 * 2 ** i),
+                self.keyparams['height'] // (8 * 2 ** i)
             )
 
             outputs.append(
-                y[lastid:(lastid + np.prod(outshape))]
+                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
             )
 
             # drop additional info provided in the TVM output
@@ -185,16 +195,21 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
                 np.prod(outshape)
                     + len(self.perlayerparams['mask'][i])
                     + len(self.perlayerparams['anchors'][i])
-                    + len(self.perlayerparams['num'][i])
+                    + 6  # layer parameters
             )
 
         # change the dimensions so the output format is
         # batches layerouts dets params width height
-        outputs = np.translate(np.asarray(outputs), [1, 0, 2, 3, 4, 5])
+        perbatchoutputs = []
+        for i in range(outputs[0].shape[0]):
+            perbatchoutputs.append([
+                outputs[0][i],
+                outputs[1][i],
+                outputs[2][i]
+            ])
         result = []
-
         # parse the combined outputs for each image in batch, and return result
-        for out in outputs:
+        for out in perbatchoutputs:
             result.append(self.parse_outputs(out))
 
         return result

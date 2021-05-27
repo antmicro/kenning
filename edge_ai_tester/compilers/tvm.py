@@ -117,8 +117,6 @@ class TVMCompiler(ModelCompiler):
         group.add_argument(
             '--target',
             help='The kind or tag of the target device',
-            choices=(tvm.target.Target.list_kinds() +
-                     [key for key, _ in tvm.target.list_tags().items()]),
             required=True
         )
         group.add_argument(

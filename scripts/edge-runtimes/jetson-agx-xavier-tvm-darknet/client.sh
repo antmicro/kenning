@@ -9,7 +9,7 @@ python3 -m edge_ai_tester.scenarios.inference_tester \
     --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
     --model-path ./edge_ai_tester/resources/models/detection/yolov3.weights \
     --model-framework darknet \
-    --target "nvidia/jetson-agx-xavier" \
+    --target "cuda -libs=cudnn,cublas -arch=sm_72" \
     --target-host "llvm -mtriple=aarch64-linux-gnu" \
     --compiled-model-path ./build/compiled-model.tar \
     --opt-level 3 \

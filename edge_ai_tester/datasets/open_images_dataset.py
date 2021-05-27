@@ -34,7 +34,7 @@ from PIL import Image
 
 from edge_ai_tester.core.dataset import Dataset
 from edge_ai_tester.core.measurements import Measurements
-from edge_ai_tester.utils.logger import download_url
+from edge_ai_tester.utils.logger import download_url, get_logger
 from edge_ai_tester.resources import coco_detection
 
 from matplotlib import pyplot as plt
@@ -411,33 +411,75 @@ class OpenImagesDatasetV6(Dataset):
         return samples
 
     def evaluate(self, predictions, truth):
-        # TODO add metrics
+        MIN_IOU = 0.5
+        measurements = Measurements()
+        
+        # adding measurements:
+        # - cls -> conf / tp-fp / iou
+
+        for pred, groundtruth in zip(predictions, truth):
+            used = set()
+            for p in pred:
+                foundgt = False
+                maxiou = 0
+                for gt in groundtruth:
+                    if not gt in used:
+                        iou = self.compute_iou(p, gt)
+                        maxiou = iou if iou > maxiou else maxiou
+                        if p.clsname == gt.clsname and iou > MIN_IOU:
+                            used.add(gt)
+                            foundgt = True
+                            measurements.add_measurement(
+                                f'eval_det/{p.clsname}',
+                                [[
+                                    float(p.score),
+                                    float(1),
+                                    float(iou)
+                                ]],
+                                lambda: list()
+                            )
+                            break
+                if not foundgt:
+                    measurements.add_measurement(
+                        f'eval_det/{p.clsname}',
+                        [[
+                            float(p.score),
+                            float(0),
+                            float(maxiou)
+                        ]],
+                        lambda: list()
+                    )
+
         if self.show_on_eval:
-            img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]
-            fig, ax = plt.subplots()
-            ax.imshow(img.transpose(1, 2, 0))
-            for bbox in predictions[0]:
-                rect = patches.Rectangle(
-                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                    (bbox.xmax - bbox.xmin) * img.shape[1],
-                    (bbox.ymax - bbox.ymin) * img.shape[2],
-                    linewidth=3,
-                    edgecolor='r',
-                    facecolor='none'
-                )
-                ax.add_patch(rect)
-            for bbox in truth[0]:
-                rect = patches.Rectangle(
-                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                    (bbox.xmax - bbox.xmin) * img.shape[1],
-                    (bbox.ymax - bbox.ymin) * img.shape[2],
-                    linewidth=2,
-                    edgecolor='g',
-                    facecolor='none'
-                )
-                ax.add_patch(rect)
-            plt.show()
-        return Measurements()
+            log = get_logger()
+            log.info(f'\ntruth\n{truth}')
+            log.info(f'\npredictions\n{predictions}')
+            for pred, gt in zip(predictions, truth):
+                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]
+                fig, ax = plt.subplots()
+                ax.imshow(img.transpose(1, 2, 0))
+                for bbox in pred:
+                    rect = patches.Rectangle(
+                        (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
+                        (bbox.xmax - bbox.xmin) * img.shape[1],
+                        (bbox.ymax - bbox.ymin) * img.shape[2],
+                        linewidth=3,
+                        edgecolor='r',
+                        facecolor='none'
+                    )
+                    ax.add_patch(rect)
+                for bbox in gt:
+                    rect = patches.Rectangle(
+                        (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
+                        (bbox.xmax - bbox.xmin) * img.shape[1],
+                        (bbox.ymax - bbox.ymin) * img.shape[2],
+                        linewidth=2,
+                        edgecolor='g',
+                        facecolor='none'
+                    )
+                    ax.add_patch(rect)
+                plt.show()
+        return measurements
 
     def get_class_names(self):
         return self.classnames

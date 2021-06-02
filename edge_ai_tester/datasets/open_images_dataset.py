@@ -21,7 +21,7 @@ import boto3
 import pandas as pd
 import shutil
 from pathlib import Path
-from typing import Tuple, List
+from typing import Tuple, List, Dict
 import re
 from collections import namedtuple
 import numpy as np
@@ -514,14 +514,15 @@ class OpenImagesDatasetV6(Dataset):
 
         for pred, groundtruth in zip(predictions, truth):
             used = set()
+            predlist = []
             for p in pred:
                 foundgt = False
                 maxiou = 0
                 for gt in groundtruth:
-                    if not gt in used:
+                    if p.clsname == gt.clsname:
                         iou = self.compute_iou(p, gt)
                         maxiou = iou if iou > maxiou else maxiou
-                        if p.clsname == gt.clsname and iou > MIN_IOU:
+                        if iou > MIN_IOU and gt not in used:
                             used.add(gt)
                             foundgt = True
                             measurements.add_measurement(
@@ -544,6 +545,12 @@ class OpenImagesDatasetV6(Dataset):
                         ]],
                         lambda: list()
                     )
+            for gt in groundtruth:
+                measurements.accumulate(
+                    f'eval_gtcount/{gt.clsname}',
+                    1,
+                    lambda: 0
+                )
 
         if self.show_on_eval:
             log = get_logger()

@@ -15,7 +15,7 @@ from edge_ai_tester.datasets.open_images_dataset import DectObject
 
 class TVMDarknetCOCOYOLOV3(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
-        self.thresh = 0.5
+        self.thresh = 0.2
         self.iouthresh = 0.5
         super().__init__(modelpath, dataset, from_file)
 

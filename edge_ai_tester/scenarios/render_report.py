@@ -39,9 +39,26 @@ def performance_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         reportpath: Path,
-        rootdir: Optional[Path] = None):
+        rootdir: Optional[Path] = None) -> str:
     """
     Creates performance section of the report.
+
+    Parameters
+    ----------
+    reportname : str
+        Name of the report
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    reportpath : Path
+        Path to the output report
+    rootdir : Optional[Path]
+        Path to the root of the RST project involving this report
+
+    Returns
+    -------
+    str : content of the report in RST format
     """
     log.info('Running performance_report')
 
@@ -166,6 +183,23 @@ def classification_report(
         rootdir: Optional[Path] = None):
     """
     Creates classification quality section of the report.
+
+    Parameters
+    ----------
+    reportname : str
+        Name of the report
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    reportpath : Path
+        Path to the output report
+    rootdir : Optional[Path]
+        Path to the root of the RST project involving this report
+
+    Returns
+    -------
+    str : content of the report in RST format
     """
     log.info('Running classification report')
 
@@ -198,7 +232,7 @@ def detection_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         reportpath: Path,
-        rootdir: Optional[Path] = None):
+        rootdir: Optional[Path] = None) -> str:
     """
     Creates detection quality section of the report.
 
@@ -285,7 +319,31 @@ def generate_report(
         outputpath: Path,
         imgdir: Path,
         report_types: List[str],
-        rootdir: Optional[Path]):
+        rootdir: Optional[Path]) -> str:
+    """
+    Generates an RST report based on Measurements data.
+
+    The report is saved to the file in ``outputpath``.
+
+    Parameters
+    ----------
+    reportname : str
+        Name for the report
+    data : Dict
+        Data coming from the Measurements object, loaded i.e. from JSON file
+    outputpath : Path
+        Path to the RST file where the report will be saved
+    imgdir : Path
+        Path to the directory where the report plots should be stored
+    report_types : List[str]
+        List of report types that define the project, i.e.
+        performance, classification
+    rootdir : Optional[Path]
+        When the report is a part of a larger RST document (i.e. Sphinx docs),
+        the rootdir parameter defines thte root directory of the document.
+        It is used to compute relative paths in the document's references.
+    """
+
     reptypes = {
         'performance': performance_report,
         'classification': classification_report,

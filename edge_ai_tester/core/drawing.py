@@ -409,3 +409,53 @@ def recall_precision_gradients(
         plt.show()
     else:
         plt.savefig(outpath)
+
+
+def draw_plot(
+        outpath: Optional[Path],
+        title: str,
+        xtitle: str,
+        xunit: str,
+        ytitle: str,
+        yunit: str,
+        line: Tuple[List, List],
+        figsize: Tuple = (15, 15)):
+    """
+    Draws plot.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xtitle : str
+        Name of the X axis
+    xuint : str
+        Unit for the X axis
+    ytitle : str
+        Name of the Y axis
+    yunit : str
+        Unit for the Y axis
+    line : Tuple[List, List]
+        Per-class list of tuples with list of recall values and precision values
+    figsize: Tuple
+        The size of the figure
+    """
+    plt.figure(figsize=figsize)
+    plt.plot(line[0], line[1], c='purple', linewidth=3)
+    xlabel = xtitle
+    if xunit is not None:
+        xlabel += f' [{xunit}]'
+    ylabel = ytitle
+    if yunit is not None:
+        ylabel += f' [{yunit}]'
+    plt.xlabel(xlabel, fontsize='large')
+    plt.ylabel(ylabel, fontsize='large')
+    plt.grid()
+    plt.title(title)
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)

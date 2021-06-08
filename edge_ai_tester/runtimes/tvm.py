@@ -115,5 +115,7 @@ class TVMRuntime(Runtime):
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
-        out = self.model.get_output(0).asnumpy().tobytes()
+        out = b''
+        for i in range(self.model.get_num_outputs()):
+            out += self.model.get_output(i).asnumpy().tobytes()
         return out

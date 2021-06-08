@@ -8,11 +8,12 @@ import tvm.relay as relay
 from pathlib import Path
 import re
 
-from edge_ai_tester.core.compiler import ModelCompiler
+from edge_ai_tester.core.compiler import ModelCompiler, CompilationError
 from edge_ai_tester.core.dataset import Dataset
+from edge_ai_tester.utils.logger import get_logger
 
 
-def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
+def onnxconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
     onnxmodel = onnx.load(modelpath)
     return relay.frontend.from_onnx(
         onnxmodel,
@@ -21,7 +22,7 @@ def onnxconversion(modelpath: Path, input_shapes, dtype='float32'):
         dtype=dtype)
 
 
-def kerasconversion(modelpath: Path, input_shapes, dtype='float32'):
+def kerasconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
     import tensorflow as tf
     tf.keras.backend.clear_session()
     model = tf.keras.models.load_model(str(modelpath))
@@ -33,6 +34,27 @@ def kerasconversion(modelpath: Path, input_shapes, dtype='float32'):
     )
 
 
+def darknetconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
+    from tvm.relay.testing.darknet import __darknetffi__
+    if not compiler.libdarknetpath:
+        log = get_logger()
+        log.fatal(
+            'The darknet converter requires libdarknet.so library. ' +
+            'Provide the path to it using --libdarknet-path flag')
+        raise CompilationError('Provide libdarknet.so library')
+    lib = __darknetffi__.dlopen(str(compiler.libdarknetpath))
+    net = lib.load_network(
+        str(modelpath.with_suffix('.cfg')).encode('utf-8'),
+        str(modelpath).encode('utf-8'),
+        0
+    )
+    return relay.frontend.from_darknet(
+        net,
+        dtype=dtype,
+        shape=input_shapes['data']
+    )
+
+
 class TVMCompiler(ModelCompiler):
     """
     The TVM compiler.
@@ -40,7 +62,8 @@ class TVMCompiler(ModelCompiler):
 
     inputtypes = {
         'onnx': onnxconversion,
-        'keras': kerasconversion
+        'keras': kerasconversion,
+        'darknet': darknetconversion
     }
 
     def __init__(
@@ -50,12 +73,15 @@ class TVMCompiler(ModelCompiler):
             modelframework: str,
             target: str,
             target_host: str,
-            opt_level: int = 2):
+            opt_level: int = 2,
+            libdarknetpath: str = '/usr/local/lib/libdarknet.so'):
         """
         A TVM Compiler wrapper.
 
         Parameters
         ----------
+        dataset : Dataset
+            Dataset object
         compiled_model_path : Path
             Path where compiled model will be saved
         modelframework : str
@@ -66,6 +92,9 @@ class TVMCompiler(ModelCompiler):
             CPU architecture of the target (used when target has a host).
         opt_level : int
             optimization level of compilation
+        libdarknetpath : str
+            path to the libdarknet.so library, used only during conversion
+            of darknet model
         """
         self.set_input_type(modelframework)
         self.target = tvm.target.Target(target)
@@ -73,6 +102,7 @@ class TVMCompiler(ModelCompiler):
                 tvm.target.Target(target_host) if target_host else None
         )
         self.opt_level = opt_level
+        self.libdarknetpath = libdarknetpath
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -87,8 +117,6 @@ class TVMCompiler(ModelCompiler):
         group.add_argument(
             '--target',
             help='The kind or tag of the target device',
-            choices=(tvm.target.Target.list_kinds() +
-                     [key for key, _ in tvm.target.list_tags().items()]),
             required=True
         )
         group.add_argument(
@@ -101,6 +129,11 @@ class TVMCompiler(ModelCompiler):
             default=2,
             type=int
         )
+        group.add_argument(
+            '--libdarknet-path',
+            help='Path to the libdarknet.so library, for darknet models',
+            type=str
+        )
         return parser, group
 
     @classmethod
@@ -111,7 +144,8 @@ class TVMCompiler(ModelCompiler):
             args.model_framework,
             args.target,
             args.target_host,
-            args.opt_level
+            args.opt_level,
+            args.libdarknet_path
         )
 
     def set_input_type(self, inputtype: str):
@@ -139,6 +173,7 @@ class TVMCompiler(ModelCompiler):
             inputshapes,
             dtype='float32'):
         mod, params = self.inputtypes[self.inputtype](
+            self,
             inputmodelpath,
             inputshapes,
             dtype

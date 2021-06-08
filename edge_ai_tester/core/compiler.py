@@ -9,6 +9,10 @@ from typing import Dict, Tuple
 from edge_ai_tester.core.dataset import Dataset
 
 
+class CompilationError(Exception):
+    pass
+
+
 class ModelCompiler(object):
     """
     Compiles the given model to a different format or runtime.

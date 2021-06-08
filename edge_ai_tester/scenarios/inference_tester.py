@@ -120,7 +120,7 @@ def main(argv):
     # TODO add method for providing metadata to dataset
     if hasattr(dataset, 'classnames'):
         MeasurementsCollector.measurements += {
-            'class_names': [val for val in dataset.classnames.values()]
+            'class_names': [val for val in dataset.get_class_names()]
         }
 
     compiler.compile(modelpath, inputspec, inputdtype)
@@ -133,7 +133,8 @@ def main(argv):
     if not ret:
         return 1
 
-    MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+    if 'eval_confusion_matrix' in MeasurementsCollector.measurements.data:
+        MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
     with open(args.output, 'w') as measurementsfile:
         json.dump(
             MeasurementsCollector.measurements.data,

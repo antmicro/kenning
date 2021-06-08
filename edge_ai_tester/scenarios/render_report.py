@@ -20,9 +20,15 @@ else:
 from edge_ai_tester.resources import reports
 from edge_ai_tester.core.drawing import time_series_plot
 from edge_ai_tester.core.drawing import draw_confusion_matrix
+from edge_ai_tester.core.drawing import recall_precision_curves
+from edge_ai_tester.core.drawing import recall_precision_gradients
+from edge_ai_tester.core.drawing import draw_plot
 from edge_ai_tester.utils import logger
 from edge_ai_tester.core.report import create_report_from_measurements
 from edge_ai_tester.utils.class_loader import get_command
+from edge_ai_tester.datasets.open_images_dataset import compute_ap11
+from edge_ai_tester.datasets.open_images_dataset import get_recall_precision
+from edge_ai_tester.datasets.open_images_dataset import compute_map_per_threshold  # noqa: E501
 
 
 log = logger.get_logger()
@@ -33,9 +39,26 @@ def performance_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         reportpath: Path,
-        rootdir: Optional[Path] = None):
+        rootdir: Optional[Path] = None) -> str:
     """
     Creates performance section of the report.
+
+    Parameters
+    ----------
+    reportname : str
+        Name of the report
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    reportpath : Path
+        Path to the output report
+    rootdir : Optional[Path]
+        Path to the root of the RST project involving this report
+
+    Returns
+    -------
+    str : content of the report in RST format
     """
     log.info('Running performance_report')
 
@@ -160,6 +183,23 @@ def classification_report(
         rootdir: Optional[Path] = None):
     """
     Creates classification quality section of the report.
+
+    Parameters
+    ----------
+    reportname : str
+        Name of the report
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    reportpath : Path
+        Path to the output report
+    rootdir : Optional[Path]
+        Path to the root of the RST project involving this report
+
+    Returns
+    -------
+    str : content of the report in RST format
     """
     log.info('Running classification report')
 
@@ -187,16 +227,127 @@ def classification_report(
         )
 
 
+def detection_report(
+        reportname: str,
+        measurementsdata: Dict[str, List],
+        imgdir: Path,
+        reportpath: Path,
+        rootdir: Optional[Path] = None) -> str:
+    """
+    Creates detection quality section of the report.
+
+    Parameters
+    ----------
+    reportname : str
+        Name of the report
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    reportpath : Path
+        Path to the output report
+    rootdir : Optional[Path]
+        Path to the root of the RST project involving this report
+
+    Returns
+    -------
+    str : content of the report in RST format
+    """
+    log.info('Running detection report')
+
+    if rootdir is None:
+        rootdir = reportpath.parent
+        
+    lines = get_recall_precision(measurementsdata, 0.5)
+        
+    aps = []
+    for line in lines:
+        aps.append(compute_ap11(line[0], line[1]))
+
+    measurementsdata['mAP'] = np.mean(aps)
+
+    curvepath = imgdir / f'{reportpath.stem}_recall_precision_curves.png'
+    recall_precision_curves(
+        str(curvepath),
+        'Recall-Precision curves',
+        lines,
+        measurementsdata['class_names']
+    )
+    measurementsdata['curvepath'] = str(
+        curvepath.relative_to(rootdir)
+    )
+
+    gradientpath = imgdir / f'{reportpath.stem}_recall_precision_gradients.png'
+    recall_precision_gradients(
+        str(gradientpath),
+        'Average precision plots',
+        lines,
+        measurementsdata['class_names'],
+        aps
+    )
+    measurementsdata['gradientpath'] = str(
+        gradientpath.relative_to(rootdir)
+    )
+
+    thresholds = np.arange(0.2, 1.05, 0.05)
+    mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
+
+    mappath = imgdir / f'{reportpath.stem}_map.png'
+    draw_plot(
+        str(mappath),
+        'Average precision plots',
+        'threshold',
+        None,
+        'mAP',
+        None,
+        [thresholds, mapvalues]
+    )
+    measurementsdata['mappath'] = str(
+        mappath.relative_to(rootdir)
+    )
+
+    with path(reports, 'detection.rst') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            measurementsdata
+        )
+
+
 def generate_report(
         reportname: str,
         data: Dict,
         outputpath: Path,
         imgdir: Path,
         report_types: List[str],
-        rootdir: Optional[Path]):
+        rootdir: Optional[Path]) -> str:
+    """
+    Generates an RST report based on Measurements data.
+
+    The report is saved to the file in ``outputpath``.
+
+    Parameters
+    ----------
+    reportname : str
+        Name for the report
+    data : Dict
+        Data coming from the Measurements object, loaded i.e. from JSON file
+    outputpath : Path
+        Path to the RST file where the report will be saved
+    imgdir : Path
+        Path to the directory where the report plots should be stored
+    report_types : List[str]
+        List of report types that define the project, i.e.
+        performance, classification
+    rootdir : Optional[Path]
+        When the report is a part of a larger RST document (i.e. Sphinx docs),
+        the rootdir parameter defines thte root directory of the document.
+        It is used to compute relative paths in the document's references.
+    """
+
     reptypes = {
         'performance': performance_report,
-        'classification': classification_report
+        'classification': classification_report,
+        'detection': detection_report
     }
 
     content = ''

@@ -10,6 +10,7 @@ import itertools
 from pathlib import Path
 import matplotlib.colors as colors
 from matplotlib import gridspec
+from matplotlib.collections import LineCollection
 
 
 def time_series_plot(
@@ -76,8 +77,14 @@ def time_series_plot(
     )
     fig.suptitle(title, fontsize='x-large')
     axplot.scatter(xdata, ydata, c='purple', alpha=0.5)
-    axplot.set_xlabel(f'{xtitle} [{xunit}]', fontsize='large')
-    axplot.set_ylabel(f'{ytitle} [{yunit}]', fontsize='large')
+    xlabel = xtitle
+    if xunit is not None:
+        xlabel += f' [{xunit}]'
+    ylabel = ytitle
+    if yunit is not None:
+        ylabel += f' [{yunit}]'
+    axplot.set_xlabel(xlabel, fontsize='large')
+    axplot.set_ylabel(ylabel, fontsize='large')
     axplot.grid()
 
     axhist.hist(ydata, bins=bins, orientation='horizontal', color='purple')
@@ -304,3 +311,151 @@ def draw_confusion_matrix(
             bbox_extra_artists=[suptitlehandle],
             pad_inches=0.1
         )
+
+
+def recall_precision_curves(
+        outpath: Optional[Path],
+        title: str,
+        lines: List[Tuple[List, List]],
+        class_names: List[str],
+        figsize: Tuple = (15, 15)):
+    """
+    Draws Recall-Precision curves for AP measurements.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    lines : List[List[List]]
+        Per-class list of tuples with list of recall values and precision values
+    class_names : List[str]
+        List of the class names
+    figsize: Tuple
+        The size of the figure
+    """
+    fig = plt.figure(figsize=figsize)
+    ax = fig.add_subplot(111)
+    colormap = plt.cm.nipy_spectral #nipy_spectral, Set1,Paired   
+    colors = [colormap(i) for i in np.linspace(0, 1,len(class_names))]
+    linestyles = ['-', '--', '-.', ':']
+    for i, (cls, line) in enumerate(zip(class_names, lines)):
+        ax.plot(line[0], line[1], label=cls, c=colors[i], linewidth=3, linestyle=linestyles[i % len(linestyles)], alpha=0.8)
+    legendhandle = ax.legend(bbox_to_anchor=(0.5, -0.3), loc='lower center', ncol=10)
+    ax.set_xlabel('recall')
+    ax.set_ylabel('precision')
+    ax.set_xlim((0.0, 1.01))
+    ax.set_ylim((0.0, 1.01))
+    ax.grid('on')
+    ax.set_xticks(np.arange(0, 1.1, 0.1))
+    ax.set_yticks(np.arange(0, 1.1, 0.1))
+    ax.set_title(title)
+
+    if outpath is None:
+        plt.show()
+    else:
+        fig.savefig(outpath, bbox_extra_artists=[legendhandle], bbox_inches='tight')
+
+
+def recall_precision_gradients(
+        outpath: Optional[Path],
+        title: str,
+        lines: List[Tuple[List, List]],
+        class_names: List[str],
+        aps: List[float],
+        figsize: Tuple = (10, 25)):
+    """
+    Draws per-class gradients of precision dependent to recall.
+    
+    Provides per-class AP and mAP values.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    lines : List[Tuple[List, List]]
+        Per-class list of tuples with list of recall values and precision values
+    class_names : List[str]
+        List of the class names
+    aps: List[float]
+        Per-class AP values
+    figsize: Tuple
+        The size of the figure
+    """
+    plt.figure(figsize=figsize)
+    clsticks = []
+    for i, (cls, line, averageprecision) in enumerate(zip(class_names, lines, aps)):
+        clscoords = np.ones(len(line[0])) * i
+        points = np.array([line[0], clscoords]).T.reshape(-1, 1, 2)
+        segments = np.concatenate([points[:-1], points[1:]], axis=1)
+        lc = LineCollection(segments, cmap='RdYlGn', norm=plt.Normalize(0, 1.0))
+        lc.set_array(line[1])
+        lc.set_linewidth(10)
+        plt.gca().add_collection(lc)
+        clsticks.append(f'{cls} (AP={averageprecision})')
+    plt.ylim((-1, len(class_names)))
+    plt.yticks(np.arange(0, len(clsticks)), labels=clsticks)
+    plt.xticks(np.arange(0, 1.1, 0.1))
+    plt.xlabel('recall')
+    plt.ylabel('classes')
+    plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap='RdYlGn'), orientation='horizontal', label='precision', fraction=0.1, pad=0.05)
+    plt.title(f'{title} (mAP={np.mean(aps)})')
+    plt.tight_layout()
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
+def draw_plot(
+        outpath: Optional[Path],
+        title: str,
+        xtitle: str,
+        xunit: str,
+        ytitle: str,
+        yunit: str,
+        line: Tuple[List, List],
+        figsize: Tuple = (15, 15)):
+    """
+    Draws plot.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xtitle : str
+        Name of the X axis
+    xuint : str
+        Unit for the X axis
+    ytitle : str
+        Name of the Y axis
+    yunit : str
+        Unit for the Y axis
+    line : Tuple[List, List]
+        Per-class list of tuples with list of recall values and precision values
+    figsize: Tuple
+        The size of the figure
+    """
+    plt.figure(figsize=figsize)
+    plt.plot(line[0], line[1], c='purple', linewidth=3)
+    xlabel = xtitle
+    if xunit is not None:
+        xlabel += f' [{xunit}]'
+    ylabel = ytitle
+    if yunit is not None:
+        ylabel += f' [{yunit}]'
+    plt.xlabel(xlabel, fontsize='large')
+    plt.ylabel(ylabel, fontsize='large')
+    plt.grid()
+    plt.title(title)
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)

@@ -257,9 +257,9 @@ def detection_report(
 
     if rootdir is None:
         rootdir = reportpath.parent
-        
+
     lines = get_recall_precision(measurementsdata, 0.5)
-        
+
     aps = []
     for line in lines:
         aps.append(compute_ap11(line[0], line[1]))

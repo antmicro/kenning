@@ -30,7 +30,6 @@ if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
-from PIL import Image
 
 from edge_ai_tester.core.dataset import Dataset
 from edge_ai_tester.core.measurements import Measurements
@@ -70,7 +69,7 @@ def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
     ----------
     image : str
         image entry in format split/id.
-    
+
     Returns
     -------
     Tuple[str, str]: tuple containing split and image ID
@@ -127,7 +126,7 @@ def download_one_image(
         )
     except botocore.exceptions.ClientError as exception:
         sys.exit(
-            f'ERROR when downloading image `{split}/{image_id}`: ' + 
+            f'ERROR when downloading image `{split}/{image_id}`: ' +
             f'{str(exception)}'
         )
 
@@ -222,8 +221,8 @@ def get_recall_precision(
     """
     lines = []
     for cls in measurementsdata['class_names']:
-        gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else []
-        dets = measurementsdata[f'eval_det/{cls}'] if f'eval_det/{cls}' in measurementsdata else []
+        gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else []  # noqa: E501
+        dets = measurementsdata[f'eval_det/{cls}'] if f'eval_det/{cls}' in measurementsdata else []  # noqa: E501
         dets = [d for d in dets if d[0] >= scorethresh]
         dets.sort(reverse=True, key=lambda x: x[0])
         truepositives = np.array([entry[1] for entry in dets])
@@ -275,7 +274,8 @@ class OpenImagesDatasetV6(Dataset):
 
     *License*: Creative Commons Attribution 4.0 International License.
 
-    *Page*: `Open Images Dataset V6 site <https://storage.googleapis.com/openimages/web/index.html>`_.
+    *Page*: `Open Images Dataset V6 site
+    <https://storage.googleapis.com/openimages/web/index.html>`_.
     """
     def __init__(
             self,
@@ -320,7 +320,7 @@ class OpenImagesDatasetV6(Dataset):
         )
         group.add_argument(
             '--classes',
-            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using edge_ai_tester.scenarios.open_images_classes_extractor) or class type',
+            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using edge_ai_tester.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
             type=str,
             default='coco'
         )
@@ -373,7 +373,7 @@ class OpenImagesDatasetV6(Dataset):
         else:
             classnamesurl = 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv'  # noqa: E501
             download_url(classnamesurl, classnamespath)
-        
+
         # prepare annotations
         annotationsurls = {
             'train': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
@@ -385,7 +385,7 @@ class OpenImagesDatasetV6(Dataset):
             annotationsurls[self.download_annotations_type],
             origannotationspath
         )
-        
+
         # load classes
         self.classmap = {}
         with open(classnamespath, 'r') as clsfile:
@@ -460,12 +460,12 @@ class OpenImagesDatasetV6(Dataset):
             self.dataX.append(k)
             self.dataY.append(v)
         self.numclasses = len(self.classmap)
-    
+
     def prepare_input_samples(self, samples):
         result = []
         for sample in samples:
             img = cv2.imread(str(self.root / 'img' / f'{sample}.jpg'))
-            img = cv2.resize(img, (416, 416))  # this may be moved to specific model
+            img = cv2.resize(img, (416, 416))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.image_memory_layout == 'NCHW':
@@ -508,13 +508,12 @@ class OpenImagesDatasetV6(Dataset):
     def evaluate(self, predictions, truth):
         MIN_IOU = 0.5
         measurements = Measurements()
-        
+
         # adding measurements:
         # - cls -> conf / tp-fp / iou
 
         for pred, groundtruth in zip(predictions, truth):
             used = set()
-            predlist = []
             for p in pred:
                 foundgt = False
                 maxiou = 0
@@ -557,7 +556,7 @@ class OpenImagesDatasetV6(Dataset):
             log.info(f'\ntruth\n{truth}')
             log.info(f'\npredictions\n{predictions}')
             for pred, gt in zip(predictions, truth):
-                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]
+                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
                 fig, ax = plt.subplots()
                 ax.imshow(img.transpose(1, 2, 0))
                 for bbox in pred:

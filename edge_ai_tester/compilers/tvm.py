@@ -13,7 +13,11 @@ from edge_ai_tester.core.dataset import Dataset
 from edge_ai_tester.utils.logger import get_logger
 
 
-def onnxconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
+def onnxconversion(
+        compiler: 'TVMCompiler',
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
     onnxmodel = onnx.load(modelpath)
     return relay.frontend.from_onnx(
         onnxmodel,
@@ -22,7 +26,11 @@ def onnxconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype
         dtype=dtype)
 
 
-def kerasconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
+def kerasconversion(
+        compiler: 'TVMCompiler',
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
     import tensorflow as tf
     tf.keras.backend.clear_session()
     model = tf.keras.models.load_model(str(modelpath))
@@ -34,7 +42,11 @@ def kerasconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtyp
     )
 
 
-def darknetconversion(compiler: 'TVMCompiler', modelpath: Path, input_shapes, dtype='float32'):
+def darknetconversion(
+        compiler: 'TVMCompiler',
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
     from tvm.relay.testing.darknet import __darknetffi__
     if not compiler.libdarknetpath:
         log = get_logger()

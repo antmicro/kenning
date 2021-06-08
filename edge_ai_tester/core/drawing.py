@@ -329,7 +329,8 @@ def recall_precision_curves(
     title : str
         Title of the plot
     lines : List[List[List]]
-        Per-class list of tuples with list of recall values and precision values
+        Per-class list of tuples with list of recall values and precision
+        values
     class_names : List[str]
         List of the class names
     figsize: Tuple
@@ -337,12 +338,21 @@ def recall_precision_curves(
     """
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
-    colormap = plt.cm.nipy_spectral #nipy_spectral, Set1,Paired   
-    colors = [colormap(i) for i in np.linspace(0, 1,len(class_names))]
+    colormap = plt.cm.nipy_spectral
+    colors = [colormap(i) for i in np.linspace(0, 1, len(class_names))]
     linestyles = ['-', '--', '-.', ':']
     for i, (cls, line) in enumerate(zip(class_names, lines)):
-        ax.plot(line[0], line[1], label=cls, c=colors[i], linewidth=3, linestyle=linestyles[i % len(linestyles)], alpha=0.8)
-    legendhandle = ax.legend(bbox_to_anchor=(0.5, -0.3), loc='lower center', ncol=10)
+        ax.plot(
+            line[0], line[1],
+            label=cls, c=colors[i], linewidth=3,
+            linestyle=linestyles[i % len(linestyles)],
+            alpha=0.8
+        )
+    legendhandle = ax.legend(
+        bbox_to_anchor=(0.5, -0.3),
+        loc='lower center',
+        ncol=10
+    )
     ax.set_xlabel('recall')
     ax.set_ylabel('precision')
     ax.set_xlim((0.0, 1.01))
@@ -355,7 +365,11 @@ def recall_precision_curves(
     if outpath is None:
         plt.show()
     else:
-        fig.savefig(outpath, bbox_extra_artists=[legendhandle], bbox_inches='tight')
+        fig.savefig(
+            outpath,
+            bbox_extra_artists=[legendhandle],
+            bbox_inches='tight'
+        )
 
 
 def recall_precision_gradients(
@@ -367,7 +381,7 @@ def recall_precision_gradients(
         figsize: Tuple = (10, 25)):
     """
     Draws per-class gradients of precision dependent to recall.
-    
+
     Provides per-class AP and mAP values.
 
     Parameters
@@ -377,7 +391,8 @@ def recall_precision_gradients(
     title : str
         Title of the plot
     lines : List[Tuple[List, List]]
-        Per-class list of tuples with list of recall values and precision values
+        Per-class list of tuples with list of recall values and precision
+        values
     class_names : List[str]
         List of the class names
     aps: List[float]
@@ -387,11 +402,16 @@ def recall_precision_gradients(
     """
     plt.figure(figsize=figsize)
     clsticks = []
-    for i, (cls, line, averageprecision) in enumerate(zip(class_names, lines, aps)):
+    for i, (cls, line, averageprecision) \
+            in enumerate(zip(class_names, lines, aps)):
         clscoords = np.ones(len(line[0])) * i
         points = np.array([line[0], clscoords]).T.reshape(-1, 1, 2)
         segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap='RdYlGn', norm=plt.Normalize(0, 1.0))
+        lc = LineCollection(
+            segments,
+            cmap='RdYlGn',
+            norm=plt.Normalize(0, 1.0)
+        )
         lc.set_array(line[1])
         lc.set_linewidth(10)
         plt.gca().add_collection(lc)
@@ -401,7 +421,13 @@ def recall_precision_gradients(
     plt.xticks(np.arange(0, 1.1, 0.1))
     plt.xlabel('recall')
     plt.ylabel('classes')
-    plt.colorbar(plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap='RdYlGn'), orientation='horizontal', label='precision', fraction=0.1, pad=0.05)
+    plt.colorbar(
+        plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap='RdYlGn'),
+        orientation='horizontal',
+        label='precision',
+        fraction=0.1,
+        pad=0.05
+    )
     plt.title(f'{title} (mAP={np.mean(aps)})')
     plt.tight_layout()
 
@@ -438,7 +464,8 @@ def draw_plot(
     yunit : str
         Unit for the Y axis
     line : Tuple[List, List]
-        Per-class list of tuples with list of recall values and precision values
+        Per-class list of tuples with list of recall values and precision
+        values
     figsize: Tuple
         The size of the figure
     """

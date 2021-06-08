@@ -4,7 +4,6 @@ Contains methods for YOLOv3 models for object detection.
 Trained on COCO dataset.
 """
 
-import cv2
 import re
 import numpy as np
 from collections import defaultdict
@@ -37,7 +36,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
                     self.perlayerparams[res.group(1)].append(res.group(2))
         self.perlayerparams = {
             k: [np.array([int(x) for x in s.split(',')]) for s in v]
-                for k, v in self.perlayerparams.items()
+            for k, v in self.perlayerparams.items()
         }
 
     def prepare_model(self):
@@ -89,17 +88,17 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             # x and y values from network are coordinates in a chunk
             # to get the actual coordinates, we need to compute
             # new_coords = (chunk_coords + out_coords) / out_resolution
-            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[box[0]].shape[2]
-            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[box[0]].shape[3]
+            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[box[0]].shape[2]  # noqa: E501
+            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[box[0]].shape[3]  # noqa: E501
 
             # width and height are computed using following formula:
             # w = anchor_w * exp(out_w) / input_w
             # h = anchor_h * exp(out_h) / input_h
             # anchors are computed based on dataset analysis
             maskid = self.perlayerparams['mask'][2 - box[0]][box[1]]
-            anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]
-            w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']
-            h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']
+            anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]  # noqa: E501
+            w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']  # noqa: E501
+            h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']  # noqa: E501
 
             # get objectness score
             objectness = data[box[0]][box[1], 4, box[2], box[3]]
@@ -108,7 +107,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
 
             # compute final class score (objectness * class probability
-            score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]
+            score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]  # noqa: E501
 
             # drop the bounding box if final score is below threshold
             if score < self.thresh:
@@ -120,7 +119,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
         bboxes.sort(key=lambda x: x[5], reverse=True)
 
         bboxes = [self.convert_to_dectobject(b) for b in bboxes]
-        
+
         # group bboxes by class to perform NMS sorting
         grouped_bboxes = defaultdict(list)
         for item in bboxes:
@@ -139,7 +138,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
                 # look for overlapping bounding boxes with lower probability
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
-                    if self.dataset.compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:
+                    if self.dataset.compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 
@@ -149,7 +148,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
         # - real output
         # - masks
         # - biases
-        
+
         # TVM-based model output provides 12 arrays
         # Those are subdivided into three groups containing
         # - actual YOLOv3 output
@@ -193,9 +192,9 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             # since it's all 4-bytes values, ignore the insides
             lastid += (
                 np.prod(outshape)
-                    + len(self.perlayerparams['mask'][i])
-                    + len(self.perlayerparams['anchors'][i])
-                    + 6  # layer parameters
+                + len(self.perlayerparams['mask'][i])
+                + len(self.perlayerparams['anchors'][i])
+                + 6  # layer parameters
             )
 
         # change the dimensions so the output format is

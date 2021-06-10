@@ -3,7 +3,7 @@ Kenning
 
 Copyright (c) 2020-2021 `Antmicro <https://www.antmicro.com>`_
 
-This is a project for implementing testing pipelines for deploying deep learning models on edge devices.
+This is a project for implementing and testing pipelines for deploying deep learning models on edge devices.
 
 Deployment flow
 ---------------
@@ -44,7 +44,7 @@ Model preparation
 -----------------
 
 The ``kenning.core.dataset.Dataset`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Classes that implement the methods from ``kenning.core.dataset.Dataset`` are responsible for:
 
@@ -61,7 +61,7 @@ The datasets are included in the ``kenning.datasets`` submodule.
 Check out the `Pet Dataset wrapper <https://github.com/antmicro/kenning/blob/master/kenning/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
 
 The ``kenning.core.model.ModelWrapper`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``ModelWrapper`` class requires implementing methods for:
 
@@ -82,7 +82,7 @@ The ``kenning.modelwrappers.frameworks`` submodule contains framework-wise speci
 For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
 
 The ``kenning.core.compiler.ModelCompiler`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Objects of this class implement compilation and optional hardware-specific optimization.
 For the latter, the ``ModelCompiler`` may require a dataset, for example to perform quantization or pruning.
@@ -132,7 +132,7 @@ The way of determining the message type and sending data between the server and 
 The implementation of running inference on the given target is implemented in the ``kenning.core.runtime.Runtime`` class.
 
 The ``kenning.core.runtimeprotocol.RuntimeProtocol`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``RuntimeProtocol`` class conducts the communication between the client (host) and the server (target).
 
@@ -155,7 +155,7 @@ Based on the above-mentioned methods, the ``kenning.core.runtime.Runtime`` conne
 Look at the `TCP runtime protocol <https://github.com/antmicro/kenning/blob/master/kenning/runtimeprotocols/network.py>`_ for an example.
 
 The ``kenning.core.runtime.Runtime`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``Runtime`` objects provide an API for the host and (optionally) the target device.
 If the target device does not support Python, the runtime needs to be implemented in a different language, and the host API needs to support it.

@@ -26,9 +26,6 @@ from kenning.core.drawing import draw_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
-from kenning.datasets.open_images_dataset import compute_ap11
-from kenning.datasets.open_images_dataset import get_recall_precision
-from kenning.datasets.open_images_dataset import compute_map_per_threshold  # noqa: E501
 
 
 log = logger.get_logger()
@@ -253,6 +250,11 @@ def detection_report(
     -------
     str : content of the report in RST format
     """
+
+    from kenning.datasets.open_images_dataset import compute_ap11
+    from kenning.datasets.open_images_dataset import get_recall_precision
+    from kenning.datasets.open_images_dataset import compute_map_per_threshold
+
     log.info('Running detection report')
 
     if rootdir is None:

@@ -103,7 +103,7 @@ jobs:
           mkdir -p docs/source/generated
           find .
           cp onnxconversion/onnx-support.rst docs/source/generated/onnx-support.rst
-          python -m edge_ai_tester.scenarios.render_report \
+          python -m kenning.scenarios.render_report \
             inferencetest/local-cpu-tvm-tensorflow-classification.json \
             "Pet Dataset classification using TVM-compiled TensorFlow model" \
             docs/source/generated/local-cpu-tvm-tensorflow-classification.rst \

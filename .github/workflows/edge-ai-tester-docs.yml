@@ -63,9 +63,10 @@ jobs:
           python -m pip install --upgrade onnx
       - name: Install TVM
         run: |
-          git clone --recursive https://github.com/apache/tvm tvm
+          git clone https://github.com/apache/tvm tvm
           cd tvm
           git checkout 83baec3
+          git submodule update --init --recursive
           mkdir build
           cp cmake/config.cmake build/config.cmake
           sed -i 's/set(USE_LLVM OFF)/set(USE_LLVM ON)/g' build/config.cmake

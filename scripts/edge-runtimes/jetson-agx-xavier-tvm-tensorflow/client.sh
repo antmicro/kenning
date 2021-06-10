@@ -1,13 +1,13 @@
 #!/bin/bash
 
-python3 -m edge_ai_tester.scenarios.inference_tester \
-    edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    edge_ai_tester.compilers.tvm.TVMCompiler \
-    edge_ai_tester.runtimes.tvm.TVMRuntime \
-    edge_ai_tester.datasets.pet_dataset.PetDataset \
+python3 -m kenning.scenarios.inference_tester \
+    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    kenning.compilers.tvm.TVMCompiler \
+    kenning.runtimes.tvm.TVMRuntime \
+    kenning.datasets.pet_dataset.PetDataset \
     ./build/jetson-agx-xavier-tvm-tensorflow.json \
-    --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "nvidia/jetson-agx-xavier" \
     --target-host "llvm -mtriple=aarch64-linux-gnu" \

@@ -2,12 +2,12 @@
 
 set -e
 
-python -m edge_ai_tester.scenarios.onnx_conversion \
+python -m kenning.scenarios.onnx_conversion \
     build/models-directory \
     build/onnx-support.rst \
     --converters-list \
-        edge_ai_tester.onnxconverters.mxnet.MXNetONNXConversion \
-        edge_ai_tester.onnxconverters.pytorch.PyTorchONNXConversion \
-        edge_ai_tester.onnxconverters.tensorflow.TensorFlowONNXConversion
+        kenning.onnxconverters.mxnet.MXNetONNXConversion \
+        kenning.onnxconverters.pytorch.PyTorchONNXConversion \
+        kenning.onnxconverters.tensorflow.TensorFlowONNXConversion
 
 cat build/onnx-support.rst

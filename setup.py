@@ -4,7 +4,7 @@ with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name='edge_ai_tester',
+    name='kenning',
     version='0.0.1',
     packages=setuptools.find_packages(),
     long_description=long_description,

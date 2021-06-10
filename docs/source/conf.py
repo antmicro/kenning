@@ -21,8 +21,8 @@ theme_path = get_html_theme_path() + "/sphinx_antmicro_theme"
 
 # -- Project information -----------------------------------------------------
 
-project = 'Edge AI tester'
-basic_filename = 'edge-ai-tester'
+project = 'Kenning'
+basic_filename = 'kenning'
 copyright = '2020-2021, Antmicro'
 author = 'Antmicro'
 
@@ -48,7 +48,7 @@ extensions = [
     'sphinx.ext.extlinks',
 ]
 
-dev = 'https://github.com/antmicro/edge-ai-tester'
+dev = 'https://github.com/antmicro/kenning'
 
 extlinks = {
     'issue': (dev + 'issues/%s', '#')

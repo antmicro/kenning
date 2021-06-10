@@ -1,13 +1,13 @@
 #!/bin/bash
 
-python3 -m edge_ai_tester.scenarios.inference_tester \
-    edge_ai_tester.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    edge_ai_tester.compilers.tflite.TFLiteCompiler \
-    edge_ai_tester.runtimes.tflite.TFLiteRuntime \
-    edge_ai_tester.datasets.pet_dataset.PetDataset \
+python3 -m kenning.scenarios.inference_tester \
+    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
+    kenning.compilers.tflite.TFLiteCompiler \
+    kenning.runtimes.tflite.TFLiteRuntime \
+    kenning.datasets.pet_dataset.PetDataset \
     ./build/google-coral-devboard-tflite-pytorch.json \
-    --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./edge_ai_tester/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
+    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --model-path ./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \
     --model-framework onnx \
     --target "edgetpu" \

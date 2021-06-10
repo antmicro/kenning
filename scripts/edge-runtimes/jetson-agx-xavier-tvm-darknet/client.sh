@@ -1,13 +1,13 @@
 #!/bin/bash
 
-python3 -m edge_ai_tester.scenarios.inference_tester \
-    edge_ai_tester.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
-    edge_ai_tester.compilers.tvm.TVMCompiler \
-    edge_ai_tester.runtimes.tvm.TVMRuntime \
-    edge_ai_tester.datasets.open_images_dataset.OpenImagesDatasetV6 \
+python3 -m kenning.scenarios.inference_tester \
+    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
+    kenning.compilers.tvm.TVMCompiler \
+    kenning.runtimes.tvm.TVMRuntime \
+    kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \
     ./build/jetson-agx-xavier-tvm-darknet.json \
-    --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./edge_ai_tester/resources/models/detection/yolov3.weights \
+    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --model-path ./kenning/resources/models/detection/yolov3.weights \
     --model-framework darknet \
     --target "cuda -libs=cudnn,cublas -arch=sm_72" \
     --target-host "llvm -mtriple=aarch64-linux-gnu" \

@@ -1,2 +1,2 @@
-edge_ai_tester/resources/models/**/*.h5 filter=lfs diff=lfs merge=lfs -text
-edge_ai_tester/resources/models/**/*.pth filter=lfs diff=lfs merge=lfs -text
+kenning/resources/models/**/*.h5 filter=lfs diff=lfs merge=lfs -text
+kenning/resources/models/**/*.pth filter=lfs diff=lfs merge=lfs -text

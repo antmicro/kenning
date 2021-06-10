@@ -1,5 +1,5 @@
-Edge AI tester
-==============
+Kenning
+=======
 
 Copyright (c) 2020-2021 `Antmicro <https://www.antmicro.com>`_
 
@@ -25,10 +25,10 @@ This framework introduces interfaces for those above-mentioned steps that can be
 Based on the implemented interfaces, the framework can measure the inference duration and quality on a given target.
 It also verifies the compatibility between various training, compilation and optimization frameworks.
 
-Edge AI tester structure
-------------------------
+Kenning structure
+-----------------
 
-The ``edge_ai_tester`` module consists of the following submodules:
+The ``kenning`` module consists of the following submodules:
 
 * ``core`` - provides interface APIs for datasets, models, compilers, runtimes and runtime protocols,
 * ``datasets`` - provides implementations for datasets,
@@ -43,10 +43,10 @@ The ``edge_ai_tester`` module consists of the following submodules:
 Model preparation
 -----------------
 
-The ``edge_ai_tester.core.dataset.Dataset`` classes
+The ``kenning.core.dataset.Dataset`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Classes that implement the methods from ``edge_ai_tester.core.dataset.Dataset`` are responsible for:
+Classes that implement the methods from ``kenning.core.dataset.Dataset`` are responsible for:
 
 * preparing the dataset, including the download routines (use ``--download-dataset`` flag to download the dataset data),
 * preprocessing the inputs into the format expected by most of the models for a given task,
@@ -56,11 +56,11 @@ Classes that implement the methods from ``edge_ai_tester.core.dataset.Dataset`` 
 
 Based on the above methods, the ``Dataset`` class provides data to the model wrappers, compilers and runtimes to train and test the models.
 
-The datasets are included in the ``edge_ai_tester.datasets`` submodule.
+The datasets are included in the ``kenning.datasets`` submodule.
 
-Check out the `Pet Dataset wrapper <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
+Check out the `Pet Dataset wrapper <https://github.com/antmicro/kenning/blob/master/kenning/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
 
-The ``edge_ai_tester.core.model.ModelWrapper`` classes
+The ``kenning.core.model.ModelWrapper`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``ModelWrapper`` class requires implementing methods for:
@@ -73,22 +73,22 @@ The ``ModelWrapper`` class requires implementing methods for:
 * providing metadata (framework name and version),
 * model training,
 * input format specification,
-* conversion of model inputs and outputs to bytes for the ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol`` objects.
+* conversion of model inputs and outputs to bytes for the ``kenning.core.runtimeprotocol.RuntimeProtocol`` objects.
 
 The ``ModelWrapper`` provides methods for running the inference in a loop from data from dataset and measures both the quality and inferenceperformance of the model.
 
-The ``edge_ai_tester.modelwrappers.frameworks`` submodule contains framework-wise specifications of ``ModelWrapper`` class - they implement all methods that are common for all the models implemented in this framework.
+The ``kenning.modelwrappers.frameworks`` submodule contains framework-wise specifications of ``ModelWrapper`` class - they implement all methods that are common for all the models implemented in this framework.
 
-For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
+For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
 
-The ``edge_ai_tester.core.compiler.ModelCompiler`` classes
+The ``kenning.core.compiler.ModelCompiler`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Objects of this class implement compilation and optional hardware-specific optimization.
 For the latter, the ``ModelCompiler`` may require a dataset, for example to perform quantization or pruning.
 
-The implementations for compiler wrappers are in ``edge_ai_tester.compilers``.
-For example, `TFLiteCompiler <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/compilers/tflite.py>`_ class wraps the TensorFlow Lite routines for compiling the model to a specified target.
+The implementations for compiler wrappers are in ``kenning.compilers``.
+For example, `TFLiteCompiler <https://github.com/antmicro/kenning/blob/master/kenning/compilers/tflite.py>`_ class wraps the TensorFlow Lite routines for compiling the model to a specified target.
 
 Model deployment and benchmarking on target devices
 ---------------------------------------------------
@@ -109,7 +109,7 @@ There are:
 * ``OUTPUT`` messages - request results of processing,
 * ``STATS`` messages - request statistics from the target device.
 
-The message types and enclosed data are encoded in format implemented in the ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol``-based class.
+The message types and enclosed data are encoded in format implemented in the ``kenning.core.runtimeprotocol.RuntimeProtocol``-based class.
 
 The communication during inference benchmark session is as follows:
 
@@ -128,10 +128,10 @@ The communication during inference benchmark session is as follows:
 * If server provides any statistics, it sends the ``OK`` message with the data,
 * The same process applies to the rest of input samples.
 
-The way of determining the message type and sending data between the server and the client depends on the implementation of the ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol`` class.
-The implementation of running inference on the given target is implemented in the ``edge_ai_tester.core.runtime.Runtime`` class.
+The way of determining the message type and sending data between the server and the client depends on the implementation of the ``kenning.core.runtimeprotocol.RuntimeProtocol`` class.
+The implementation of running inference on the given target is implemented in the ``kenning.core.runtime.Runtime`` class.
 
-The ``edge_ai_tester.core.runtimeprotocol.RuntimeProtocol`` classes
+The ``kenning.core.runtimeprotocol.RuntimeProtocol`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``RuntimeProtocol`` class conducts the communication between the client (host) and the server (target).
@@ -150,11 +150,11 @@ The ``RuntimeProtocol`` class requires implementing methods for:
 * notifying of success or failure by the server,
 * parsing messages.
 
-Based on the above-mentioned methods, the ``edge_ai_tester.core.runtime.Runtime`` connects the host with the target.
+Based on the above-mentioned methods, the ``kenning.core.runtime.Runtime`` connects the host with the target.
 
-Look at the `TCP runtime protocol <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/runtimeprotocols/network.py>`_ for an example.
+Look at the `TCP runtime protocol <https://github.com/antmicro/kenning/blob/master/kenning/runtimeprotocols/network.py>`_ for an example.
 
-The ``edge_ai_tester.core.runtime.Runtime`` classes
+The ``kenning.core.runtime.Runtime`` classes
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``Runtime`` objects provide an API for the host and (optionally) the target device.
@@ -169,7 +169,7 @@ The server (target) side of the ``Runtime`` class requires implementing methods 
 * preparing outputs to be delivered to the client,
 * (optionally) sending inference statistics.
 
-Look at the `TVM runtime <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/runtimes/tvm.py>`_ for an example.
+Look at the `TVM runtime <https://github.com/antmicro/kenning/blob/master/kenning/runtimes/tvm.py>`_ for an example.
 
 ONNX conversion
 ---------------
@@ -179,7 +179,7 @@ It allows conversion of models from one representation to another.
 
 The ONNX API and format is constantly evolving, and there are more and more operators in new state-of-the-art models that need to be supported.
 
-The ``edge_ai_tester.core.onnxconversion.ONNXConversion`` class provides an API for writing compatibility tests between ONNX and deep learning frameworks.
+The ``kenning.core.onnxconversion.ONNXConversion`` class provides an API for writing compatibility tests between ONNX and deep learning frameworks.
 
 It requires implementing:
 
@@ -190,21 +190,21 @@ It requires implementing:
 The ``ONNXConversion`` class implements a method for converting the models.
 It catches exceptions and any issues in the import/export methods, and provides the report on conversion status per model.
 
-Look at the `TensorFlowONNXConversion class <https://github.com/antmicro/edge-ai-tester/blob/master/edge_ai_tester/onnxconverters/tensorflow.py>`_ for an example of API usage.
+Look at the `TensorFlowONNXConversion class <https://github.com/antmicro/kenning/blob/master/kenning/onnxconverters/tensorflow.py>`_ for an example of API usage.
 
 Running the benchmarks
 ----------------------
 
-All executable Python scripts are available in the ``edge_ai_tester.scenarios`` submodule.
+All executable Python scripts are available in the ``kenning.scenarios`` submodule.
 
 Running model training on host
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``edge_ai_tester.scenarios.model_training`` script is run as follows::
+The ``kenning.scenarios.model_training`` script is run as follows::
 
-    python -m edge_ai_tester.scenarios.model_training \
-        edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        edge_ai_tester.datasets.pet_dataset.PetDataset \
+    python -m kenning.scenarios.model_training \
+        kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+        kenning.datasets.pet_dataset.PetDataset \
         --logdir build/logs \
         --dataset-root build/pet-dataset \
         --model-path build/trained-model.h5 \
@@ -212,7 +212,7 @@ The ``edge_ai_tester.scenarios.model_training`` script is run as follows::
         --learning-rate 0.0001 \
         --num-epochs 50
 
-By default, ``edge_ai_tester.scenarios.model_training`` script requires two classes:
+By default, ``kenning.scenarios.model_training`` script requires two classes:
 
 * ``ModelWrapper``-based class that describes model architecture and provides training routines,
 * ``Dataset``-based class that provides training data for the model.
@@ -220,9 +220,9 @@ By default, ``edge_ai_tester.scenarios.model_training`` script requires two clas
 The remaining arguments are provided by the ``form_argparse`` class methods in each class, and may be different based on selected dataset and model.
 In order to get full help for the training scenario for the above case, run::
 
-    python -m edge_ai_tester.scenarios.model_training \
-        edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        edge_ai_tester.datasets.pet_dataset.PetDataset \
+    python -m kenning.scenarios.model_training \
+        kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+        kenning.datasets.pet_dataset.PetDataset \
         -h
 
 This will load all the available arguments for a given model and dataset.
@@ -241,17 +241,17 @@ If the dataset files are not present, use ``--download-dataset`` flag in order t
 Benchmarking trained model on host
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``edge_ai_tester.scenarios.inference_performance`` script runs the model using the deep learning framework used for training on a host device.
+The ``kenning.scenarios.inference_performance`` script runs the model using the deep learning framework used for training on a host device.
 It runs the inference on a given dataset, computes model quality metrics and performance metrics.
 The results from the script can be used as a reference point for benchmarking of the compiled models on target devices.
 
 The example usage of the script is as follows::
 
-    python -m edge_ai_tester.scenarios.inference_performance \
-        edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        edge_ai_tester.datasets.pet_dataset.PetDataset \
+    python -m kenning.scenarios.inference_performance \
+        kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+        kenning.datasets.pet_dataset.PetDataset \
         build/result.json \
-        --model-path edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+        --model-path kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --dataset-root build/pet-dataset
 
 The obligatory arguments for the script are:
@@ -265,15 +265,15 @@ The remaining parameters are specific to the ``ModelWrapper``-based class and ``
 Testing ONNX conversions
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``edge_ai_tester.scenarios.onnx_conversion`` runs as follows::
+The ``kenning.scenarios.onnx_conversion`` runs as follows::
 
-    python -m edge_ai_tester.scenarios.onnx_conversion \
+    python -m kenning.scenarios.onnx_conversion \
         build/models-directory \
         build/onnx-support.rst \
         --converters-list \
-            edge_ai_tester.onnxconverters.pytorch.PyTorchONNXConversion \
-            edge_ai_tester.onnxconverters.tensorflow.TensorFlowONNXConversion \
-            edge_ai_tester.onnxconverters.mxnet.MXNetONNXConversion
+            kenning.onnxconverters.pytorch.PyTorchONNXConversion \
+            kenning.onnxconverters.tensorflow.TensorFlowONNXConversion \
+            kenning.onnxconverters.mxnet.MXNetONNXConversion
 
 The first argument is the directory, where the generated ONNX models will be stored.
 The second argument is the RST file with import/export support table for each model for each framework.
@@ -284,18 +284,18 @@ The third argument is the list of ``ONNXConversion`` classes implementing list o
 Running compilation and deployment of models on target hardware
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-There are two scripts - ``edge_ai_tester.scenarios.inference_tester`` and ``edge_ai_tester.scenarios.inference_server``.
+There are two scripts - ``kenning.scenarios.inference_tester`` and ``kenning.scenarios.inference_server``.
 
 The example call for the first script is following::
 
-    python -m edge_ai_tester.scenarios.inference_tester \
-        edge_ai_tester.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        edge_ai_tester.compilers.tflite.TFLiteCompiler \
-        edge_ai_tester.runtimes.tflite.TFLiteRuntime \
-        edge_ai_tester.datasets.pet_dataset.PetDataset \
+    python -m kenning.scenarios.inference_tester \
+        kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+        kenning.compilers.tflite.TFLiteCompiler \
+        kenning.runtimes.tflite.TFLiteRuntime \
+        kenning.datasets.pet_dataset.PetDataset \
         ./build/google-coral-devboard-tflite-tensorflow.json \
-        --protocol-cls edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-        --model-path ./edge_ai_tester/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+        --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+        --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --model-framework keras \
         --target "edgetpu" \
         --compiled-model-path build/compiled-model.tflite \
@@ -339,9 +339,9 @@ Their meaning is following:
 
 The example call for the second script is as follows::
 
-    python -m edge_ai_tester.scenarios.inference_server \
-        edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-        edge_ai_tester.runtimes.tflite.TFLiteRuntime \
+    python -m kenning.scenarios.inference_server \
+        kenning.runtimeprotocols.network.NetworkProtocol \
+        kenning.runtimes.tflite.TFLiteRuntime \
         --host 0.0.0.0 \
         --port 12345 \
         --packet-size 32768 \
@@ -368,7 +368,7 @@ In addition, it generates plots with performance changes over time.
 Render report from benchmarks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``edge_ai_tester.scenarios.inference_performance`` and ``edge_ai_tester.scenarios.inference_tester`` create JSON files that contain:
+The ``kenning.scenarios.inference_performance`` and ``kenning.scenarios.inference_tester`` create JSON files that contain:
 
 * command string that was used to generate the JSON file,
 * frameworks along with their versions used to train the model and compile the model,
@@ -380,11 +380,11 @@ The ``edge_ai_tester.scenarios.inference_performance`` and ``edge_ai_tester.scen
     * GPU memory usage over time,
 * predictions and ground truth to compute quality metrics, i.e. in form of confusion matrix and top-5 accuracy for classification task.
 
-The ``edge_ai_tester.scenarios.render_report`` renders the report RST file along with plots for metrics for a given JSON file based on selected templates.
+The ``kenning.scenarios.render_report`` renders the report RST file along with plots for metrics for a given JSON file based on selected templates.
 
 For example, for the file ``./build/google-coral-devboard-tflite-tensorflow.json`` created in :ref:`compilation-and-deployment` the report can be rendered as follows::
 
-    python -m edge_ai_tester.scenarios.render_report \
+    python -m kenning.scenarios.render_report \
         build/google-coral-devboard-tflite-tensorflow.json \
         "Pet Dataset classification using TFLite-compiled TensorFlow model" \
         docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst \
@@ -429,7 +429,7 @@ The above metrics can be used to determine any quality losses resulting from opt
 Adding new implementations
 --------------------------
 
-``Dataset``, ``ModelWrapper``, ``ModelCompiler``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``edge_ai_tester.core`` module have dedicated directories for their implementations.
+``Dataset``, ``ModelWrapper``, ``ModelCompiler``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``kenning.core`` module have dedicated directories for their implementations.
 Each method in base classes that requires implementation raises ``NotImplementedError`` exception.
 Implemented methods can be also overriden, if neccessary.
 

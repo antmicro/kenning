@@ -1,8 +1,8 @@
 #!/bin/bash
 
-python3 -m edge_ai_tester.scenarios.inference_server \
-    edge_ai_tester.runtimeprotocols.network.NetworkProtocol \
-    edge_ai_tester.runtimes.tflite.TFLiteRuntime \
+python3 -m kenning.scenarios.inference_server \
+    kenning.runtimeprotocols.network.NetworkProtocol \
+    kenning.runtimes.tflite.TFLiteRuntime \
     --host 0.0.0.0 \
     --port 12345 \
     --packet-size 32768 \

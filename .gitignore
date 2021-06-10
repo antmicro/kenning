@@ -143,3 +143,4 @@ tags
 
 # generated resources for docs
 docs/source/generated/*
+kenning/resources/models/detection/yolov3.weights

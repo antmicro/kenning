@@ -47,3 +47,4 @@ The possible values are:
 * ``unsupported`` if export or import is not implemented for a given framework,
 * ``ERROR`` if export or import ended up with error for a given framework,
 * ``unverified`` if import could not be tested due to lack of support for export or error during export.
+* ``Not provided`` if the model was not provided for the framework.

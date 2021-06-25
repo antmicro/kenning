@@ -9,7 +9,7 @@ python3 -m kenning.scenarios.inference_tester \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/detection/yolov3.weights \
     --model-framework darknet \
-    --target "cuda -libs=cudnn,cublas -arch=sm_72" \
+    --target "cuda -keys=cuda,gpu -libs=cudnn,cublas -arch=sm_72 -max_num_threads=1024 -max_threads_per_block=1024 -registers_per_block=65536 -shared_memory_per_block=49152 -thread_warp_size=32" \
     --target-host "llvm -mtriple=aarch64-linux-gnu" \
     --compiled-model-path ./build/compiled-model.tar \
     --opt-level 3 \

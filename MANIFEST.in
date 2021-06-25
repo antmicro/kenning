@@ -1,0 +1,5 @@
+include kenning/resources/reports/*.rst
+include kenning/resources/coco_detection/*.classes
+include kenning/resources/coco_detection/*.json
+
+include LICENSE

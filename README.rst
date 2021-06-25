@@ -3,6 +3,8 @@ Kenning
 
 Copyright (c) 2020-2021 `Antmicro <https://www.antmicro.com>`_
 
+.. image:: img/kenninglogo.png
+
 This is a project for implementing and testing pipelines for deploying deep learning models on edge devices.
 
 Deployment flow

@@ -297,7 +297,7 @@ def detection_report(
     mappath = imgdir / f'{reportpath.stem}_map.png'
     draw_plot(
         str(mappath),
-        'Average precision plots',
+        'mAP value change over objectness threshold values',
         'threshold',
         None,
         'mAP',

@@ -11,10 +11,10 @@
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
-#
-# import os
-# import sys
-# sys.path.insert(0, os.path.abspath('.'))
+
+import os
+import sys
+sys.path.insert(0, os.path.abspath('../..'))
 
 from sphinx_antmicro_theme import get_html_theme_path
 theme_path = get_html_theme_path() + "/sphinx_antmicro_theme"
@@ -46,6 +46,7 @@ extensions = [
     'sphinx.ext.todo',
     'sphinx.ext.ifconfig',
     'sphinx.ext.extlinks',
+    'sphinx.ext.napoleon',
 ]
 
 dev = 'https://github.com/antmicro/kenning'
@@ -196,6 +197,8 @@ epub_title = project
 # A list of files that should not be packed into the epub file.
 epub_exclude_files = ['search.html']
 
+
+# -- Napoleon settings -------------------------------------------------------
 
 # -- Extension configuration -------------------------------------------------
 rst_epilog = """

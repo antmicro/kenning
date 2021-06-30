@@ -10,3 +10,4 @@
    project-readme
    onnx-conversion-support
    sample-report
+   kenning-api

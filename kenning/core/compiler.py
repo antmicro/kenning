@@ -87,7 +87,8 @@ class ModelCompiler(object):
         ----------
         dataset : Dataset
             The dataset object that is optionally used for optimization
-        args : arguments from ArgumentParser object
+        args : Dict
+            arguments from ArgumentParser object
 
         Returns
         -------

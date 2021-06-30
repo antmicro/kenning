@@ -80,8 +80,10 @@ class Runtime(object):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol object
-        args : arguments from RuntimeProtocol object
+        protocol : RuntimeProtocol
+            RuntimeProtocol object
+        args : Dict
+            arguments from ArgumentParser object
 
         Returns
         -------

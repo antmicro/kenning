@@ -177,7 +177,8 @@ class RuntimeProtocol(object):
 
         Parameters
         ----------
-        args : arguments from RuntimeProtocol object
+        args : Dict
+            arguments from RuntimeProtocol object
 
         Returns
         -------

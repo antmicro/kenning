@@ -11,7 +11,20 @@ from .measurements import Measurements
 
 class Dataset(object):
     """
-    Prepares data for training and testing of deep learning models.
+    Wraps the datasets for training, evaluation and optimization.
+
+    This class provides an API for datasets used by models, compilers (i.e. for
+    calibration) and benchmarking scripts.
+
+    Each Dataset object should implement methods for:
+
+    * processing inputs and outputs from dataset files,
+    * downloading the dataset,
+    * evaluating the model based on dataset's inputs and outputs.
+
+    The Dataset object provides routines for iterating over dataset samples
+    with configured batch size, splitting the dataset into subsets and
+    extracting loaded data from dataset files for training purposes.
 
     Attributes
     ----------
@@ -31,7 +44,12 @@ class Dataset(object):
             batch_size: int = 1,
             download_dataset: bool = False):
         """
+        Initializes dataset object.
+
         Prepares all structures and data required for providing data samples.
+
+        If download_dataset is True, the dataset is downloaded first using
+        download_dataset method.
 
         Parameters
         ----------
@@ -55,6 +73,10 @@ class Dataset(object):
     def form_argparse(cls):
         """
         Creates argparse parser for the Dataset object.
+
+        This method is used to create a list of arguments for the object so
+        it is possible to configure the object from the level of command
+        line.
 
         Returns
         -------
@@ -89,9 +111,13 @@ class Dataset(object):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
+        This method takes the arguments created in form_argparse and uses them
+        to create the object.
+
         Parameters
         ----------
-        args : arguments from ArgumentParser object
+        args : Dict
+            arguments from ArgumentParser object
 
         Returns
         -------
@@ -173,6 +199,10 @@ class Dataset(object):
         """
         Preprocesses output samples.
 
+        By default the method returns data as is.
+        It can be used i.e. to create the one-hot output vector with class
+        association based on a given sample.
+
         Parameters
         ----------
         samples : List
@@ -199,9 +229,10 @@ class Dataset(object):
         """
         Returns the tuple of all inputs and outputs for the dataset.
 
-        *WARNING*: It loads all entries with prepare_input_samples and
-        prepare_output_samples to the memory - for large datasets it may result
-        in filling the whole space.
+        .. warning::
+            It loads all entries with prepare_input_samples and
+            prepare_output_samples to the memory - for large datasets it may
+            result in filling the whole memory.
 
         Returns
         -------
@@ -273,19 +304,30 @@ class Dataset(object):
 
     def download_dataset(self):
         """
-        Downloads the dataset to the root directory.
+        Downloads the dataset to the root directory defined in the constructor.
         """
         raise NotImplementedError
 
     def prepare(self):
         """
-        Prepares dataX and dataY attributes based on the dataset directory.
+        Prepares dataX and dataY attributes based on the dataset contents.
+
+        This can i.e. store file paths in dataX and classes in dataY that
+        will be later loaded using prepare_input_samples and
+        prepare_output_samples.
         """
         raise NotImplementedError
 
     def evaluate(self, predictions: List, truth: List) -> 'Measurements':
         """
         Evaluates the model based on the predictions.
+
+        The method should compute various quality metrics fitting for the
+        problem the model solves - i.e. for classification it may be
+        accuracy, precision, G-mean, for detection it may be IoU and mAP.
+
+        The evaluation results should be returned in a form of Measurements
+        object.
 
         Parameters
         ----------

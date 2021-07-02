@@ -467,7 +467,7 @@ class OpenImagesDatasetV6(Dataset):
             img = cv2.imread(str(self.root / 'img' / f'{sample}.jpg'))
             img = cv2.resize(img, (416, 416))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
-            npimg = np.array(img, dtype=np.float32) / 255.0
+            npimg = np.array(img).astype(np.float32) / 255.0
             if self.image_memory_layout == 'NCHW':
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)

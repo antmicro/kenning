@@ -21,12 +21,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y gcc g++ build-essential cmake llvm protobuf-compiler libprotoc-dev
           python -m pip install --upgrade pip==21.0.1 setuptools
-          python -m pip install --upgrade numpy matplotlib tensorflow==2.4.1 tensorflow-addons tf-models-official==2.4.0
+          python -m pip install --upgrade matplotlib tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
           python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
           python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
           python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install --upgrade mxnet gluoncv
           python -m pip install --upgrade jinja2
+          python -m pip install --upgrade numpy
       - name: Run ONNX conversion tests
         run: |
           ./scripts/onnxconversions.sh
@@ -57,10 +58,11 @@ jobs:
              libprotoc-dev libtinfo-dev zlib1g-dev libedit-dev libxml2-dev \
              llvm curl wget
           python -m pip install --upgrade pip==21.0.1 setuptools
-          python -m pip install --upgrade numpy tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
+          python -m pip install --upgrade tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
           python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
           python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
           python -m pip install --upgrade onnx
+          python -m pip install --upgrade numpy
       - name: Install TVM
         run: |
           git clone https://github.com/apache/tvm tvm

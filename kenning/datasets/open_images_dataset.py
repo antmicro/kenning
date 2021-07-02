@@ -282,7 +282,7 @@ class OpenImagesDatasetV6(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            task: str = 'object_detection',
+            task: str = 'instance_segmentation',
             classes: str = 'coco',
             download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation',
@@ -376,13 +376,22 @@ class OpenImagesDatasetV6(Dataset):
 
         # prepare annotations
         annotationsurls = {
-            'train': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
-            'validation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
-            'test': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv'  # noqa: E501
+            'train': {
+                'object_detection': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
+                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv'  # noqa: E501
+                },
+            'validation': {
+                'object_detection': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
+                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv'  # noqa: E501
+                },
+            'test': {
+                'object_detection': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv',  # noqa: E501
+                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv'  # noqa: E501
+                }
         }
         origannotationspath = self.root / 'original-annotations.csv'
         download_url(
-            annotationsurls[self.download_annotations_type],
+            annotationsurls[self.download_annotations_type][self.task],
             origannotationspath
         )
 
@@ -397,7 +406,8 @@ class OpenImagesDatasetV6(Dataset):
 
         # drop grouped bboxes (where one bbox covers multiple examples of a
         # class)
-        annotations = annotations[annotations.IsGroupOf == 0]
+        if self.task == 'object_detection':
+            annotations = annotations[annotations.IsGroupOf == 0]
 
         # filter only entries with desired classes
         filtered = annotations[annotations.LabelName.isin(

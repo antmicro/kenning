@@ -98,6 +98,7 @@ jobs:
         run: |
           python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
           python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
+          python -m pip install sphinxcontrib-napoleon
       - name: Generate documentation
         run: |
           mkdir -p docs/source/generated

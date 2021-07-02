@@ -27,6 +27,40 @@ This framework introduces interfaces for those above-mentioned steps that can be
 Based on the implemented interfaces, the framework can measure the inference duration and quality on a given target.
 It also verifies the compatibility between various training, compilation and optimization frameworks.
 
+Kenning installation
+--------------------
+
+Module installation with pip
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To install Kenning with its basic dependencies with pip, run::
+
+    pip install -U git+https://github.com/antmicro/kenning.git
+
+Since Kenning can support various frameworks, and not all of them are required for user's use cases, the optional requirements are available as extra requirements.
+The groups of extra requirements are following:
+
+* ``tensorflow`` - modules for working with TensorFlow models (ONNX conversions, addons, and TensorFlow framework),
+* ``torch`` - modules for working with PyTorch models,
+* ``mxnet`` - modules for working with MXNet models,
+* ``nvidia_perf`` - modules for performance measurements for NVIDIA GPUs,
+* ``object_detection`` - modules for working with YOLOv3 object detection and Open Images Dataset V6 computer vision dataset.
+
+To install the extra requirements, i.e. ``tensorflow``, run::
+
+    sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorflow]
+
+Working directly with the repository
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+For development purposes, and for usage of additional resources (as sample scripts or trained models), clone repository with::
+
+    git clone https://github.com/antmicro/kenning.git
+
+To download model weights, install `Git Large File Storage <https://git-lfs.github.com>`_ (if not installed) and run::
+
+    git lfs pull
+
 Kenning structure
 -----------------
 

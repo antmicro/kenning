@@ -460,9 +460,9 @@ class OpenImagesDatasetV6(Dataset):
         # if the task is instance_segmentation download required masks
         if self.task == 'instance_segmentation':
             imageidprefix = []
-            zipdir = self.root / 'zip/'
-            zipdir.mkdir(parents=True, exist_ok=True)
-            zipdir = self.root / 'zip/file.zip'
+            maskdir = self.root / 'masks'
+            maskdir.mkdir(parents=True, exist_ok=True)
+
             # extract all first characters of ImageIDs into a set
             imageidprefix = set([i[0] for i in final_annotations.ImageID])
 
@@ -474,13 +474,30 @@ class OpenImagesDatasetV6(Dataset):
                     desc="Downloading zip files",
                     leave=1
                     )
-            zip_url_template = "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip"  # noqa: E501
+            zip_url_template = {
+                    'train': "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip",  # noqa: E501
+                    'validation': "https://storage.googleapis.com/openimages/v5/validation-masks/validation-masks-{}.zip",  # noqa: E501
+                    'test': "https://storage.googleapis.com/openimages/v5/test-masks/test-masks-{}.zip"  # noqa: E501
+                    }
+
             for i in sorted(imageidprefix):
-                print("Downloading file", zip_url_template.format(i))
+                zipdir = self.root / 'zip/'
+                zipdir.mkdir(parents=True, exist_ok=True)
+                zipdir = self.root / 'zip/file.zip'
+
+                pattern = '^{}.*png'.format(i)
                 download_instance_segmentation_zip_file(
                         zipdir,
-                        zip_url_template.format(i)
+                        zip_url_template[
+                            self.download_annotations_type
+                            ].format(i)
                         )
+                # for each file matching the current zip file's prefix
+                # copy this file  into mask directory
+                for j in final_annotations.MaskPath:
+                    if re.match(pattern, j):
+                        shutil.copy(zipdir.parent / j, maskdir)
+                shutil.rmtree(zipdir.parent)
                 zip_progress_bar.update(1)
 
         # prepare download entries

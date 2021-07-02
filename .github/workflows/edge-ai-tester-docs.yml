@@ -101,7 +101,7 @@ jobs:
           python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
           python -m pip install --upgrade onnx Jinja2 tqdm psutil scikit_learn
           python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
-          python -m pip install sphinxcontrib-napoleon
+          python -m pip install sphinxcontrib-napoleon docutils==0.16
       - name: Generate documentation
         run: |
           mkdir -p docs/source/generated

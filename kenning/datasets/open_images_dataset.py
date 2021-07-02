@@ -39,6 +39,7 @@ from kenning.resources import coco_detection
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 
+import zipfile
 
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
@@ -176,6 +177,28 @@ def download_all_images(
             future.result()
             progress_bar.update(1)
     progress_bar.close()
+
+
+def download_instance_segmentation_zip_file(
+        zipdir: Path,
+        url: str):
+    '''
+    Downloads OpenImagesDatasetV6 segmentation mask zip files
+    and extracts the contents
+
+    Parameters
+    ----------
+    zipdir: Path
+        Directory to download and extract the zip file into
+    url: str
+        Download URL
+
+    Returns
+    -------
+    '''
+    download_url(url, zipdir)
+    with zipfile.ZipFile(zipdir, 'r') as zip_ref:
+        zip_ref.extractall(zipdir.parent)
 
 
 def compute_ap11(
@@ -433,6 +456,32 @@ class OpenImagesDatasetV6(Dataset):
         # save annotations
         annotationspath = self.root / 'annotations.csv'
         final_annotations.to_csv(annotationspath, index=False)
+
+        # if the task is instance_segmentation download required masks
+        if self.task == 'instance_segmentation':
+            imageidprefix = []
+            zipdir = self.root / 'zip/'
+            zipdir.mkdir(parents=True, exist_ok=True)
+            zipdir = self.root / 'zip/file.zip'
+            # extract all first characters of ImageIDs into a set
+            imageidprefix = set([i[0] for i in final_annotations.ImageID])
+
+            # download the corresponding
+            # zip and extract the needed masks from it
+            # for each prefix in imageidprefix
+            zip_progress_bar = tqdm.tqdm(
+                    total=len(imageidprefix),
+                    desc="Downloading zip files",
+                    leave=1
+                    )
+            zip_url_template = "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip"  # noqa: E501
+            for i in sorted(imageidprefix):
+                print("Downloading file", zip_url_template.format(i))
+                download_instance_segmentation_zip_file(
+                        zipdir,
+                        zip_url_template.format(i)
+                        )
+                zip_progress_bar.update(1)
 
         # prepare download entries
         download_entries = [

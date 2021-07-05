@@ -328,7 +328,7 @@ class OpenImagesDatasetV6(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            task: str = 'instance_segmentation',
+            task: str = 'object_detection',
             classes: str = 'coco',
             download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation',
@@ -425,15 +425,15 @@ class OpenImagesDatasetV6(Dataset):
             'train': {
                 'object_detection': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
                 'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv'  # noqa: E501
-                },
+            },
             'validation': {
                 'object_detection': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
                 'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv'  # noqa: E501
-                },
+            },
             'test': {
                 'object_detection': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv',  # noqa: E501
                 'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv'  # noqa: E501
-                }
+            }
         }
         origannotationspath = self.root / 'original-annotations.csv'
         download_url(
@@ -493,15 +493,15 @@ class OpenImagesDatasetV6(Dataset):
             # zip and extract the needed masks from it
             # for each prefix in imageidprefix
             zip_progress_bar = tqdm.tqdm(
-                    total=len(imageidprefix),
-                    desc="Downloading zip files",
-                    leave=1
-                    )
+                total=len(imageidprefix),
+                desc="Downloading zip files",
+                leave=1
+            )
             zip_url_template = {
-                    'train': "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip",  # noqa: E501
-                    'validation': "https://storage.googleapis.com/openimages/v5/validation-masks/validation-masks-{}.zip",  # noqa: E501
-                    'test': "https://storage.googleapis.com/openimages/v5/test-masks/test-masks-{}.zip"  # noqa: E501
-                    }
+                'train': "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip",  # noqa: E501
+                'validation': "https://storage.googleapis.com/openimages/v5/validation-masks/validation-masks-{}.zip",  # noqa: E501
+                'test': "https://storage.googleapis.com/openimages/v5/test-masks/test-masks-{}.zip"  # noqa: E501
+            }
 
             for i in sorted(imageidprefix):
                 zipdir = self.root / 'zip/'
@@ -510,11 +510,11 @@ class OpenImagesDatasetV6(Dataset):
 
                 pattern = '^{}.*png'.format(i)
                 download_instance_segmentation_zip_file(
-                        zipdir,
-                        zip_url_template[
-                            self.download_annotations_type
-                            ].format(i)
-                        )
+                    zipdir,
+                    zip_url_template[
+                        self.download_annotations_type
+                        ].format(i)
+                )
                 # for each file matching the current zip file's prefix
                 # copy this file  into mask directory
                 for j in final_annotations.MaskPath:

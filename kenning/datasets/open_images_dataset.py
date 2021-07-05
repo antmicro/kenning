@@ -205,7 +205,7 @@ def download_all_images(
 def download_instance_segmentation_zip_file(
         zipdir: Path,
         url: str):
-    '''
+    """
     Downloads OpenImagesDatasetV6 segmentation mask zip files
     and extracts the contents
 
@@ -218,7 +218,7 @@ def download_instance_segmentation_zip_file(
 
     Returns
     -------
-    '''
+    """
     download_url(url, zipdir)
     with zipfile.ZipFile(zipdir, 'r') as zip_ref:
         zip_ref.extractall(zipdir.parent)
@@ -492,18 +492,14 @@ class OpenImagesDatasetV6(Dataset):
             # download the corresponding
             # zip and extract the needed masks from it
             # for each prefix in imageidprefix
-            zip_progress_bar = tqdm.tqdm(
-                total=len(imageidprefix),
-                desc="Downloading zip files",
-                leave=1
-            )
             zip_url_template = {
                 'train': "https://storage.googleapis.com/openimages/v5/train-masks/train-masks-{}.zip",  # noqa: E501
                 'validation': "https://storage.googleapis.com/openimages/v5/validation-masks/validation-masks-{}.zip",  # noqa: E501
                 'test': "https://storage.googleapis.com/openimages/v5/test-masks/test-masks-{}.zip"  # noqa: E501
             }
-
-            for i in sorted(imageidprefix):
+            for i in tqdm.tqdm(
+                    sorted(imageidprefix),
+                    desc="Downloading zip files"):
                 zipdir = self.root / 'zip/'
                 zipdir.mkdir(parents=True, exist_ok=True)
                 zipdir = self.root / 'zip/file.zip'
@@ -521,7 +517,6 @@ class OpenImagesDatasetV6(Dataset):
                     if re.match(pattern, j):
                         shutil.copy(zipdir.parent / j, maskdir)
                 shutil.rmtree(zipdir.parent)
-                zip_progress_bar.update(1)
 
         # prepare download entries
         download_entries = [

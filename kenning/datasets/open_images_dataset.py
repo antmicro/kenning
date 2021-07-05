@@ -349,7 +349,7 @@ class OpenImagesDatasetV6(Dataset):
         group.add_argument(
             '--task',
             help='The task type',  # noqa: E501
-            choices=['object_detection'],
+            choices=['object_detection', 'instance_segmentation'],
             default='object_detection'
         )
         group.add_argument(
@@ -614,8 +614,35 @@ class OpenImagesDatasetV6(Dataset):
 
         return iou
 
+    def prepare_instance_segmentation_output_samples(self, samples):
+        """
+        Loads instance segmentation masks.
+
+        Parameters
+        ----------
+        samples : List[SegmObject]
+            List of SegmObjects containing data about masks
+            and their path
+
+        Returns
+        -------
+        masks : List[np.array]
+            List of masks loaded as np.arrays containing uint8-encoded
+            masks
+        """
+        masks = []
+        for sample in samples:
+            mask_img = cv2.imread(str(sample[0][1]))
+            mask_img = cv2.resize(mask_img, (416, 416))
+            npmask = np.array(mask_img, dtype=np.uint8)
+            masks.append(npmask)
+        return masks
+
     def prepare_output_samples(self, samples):
-        return samples
+        if self.task == "instance_segmentation":
+            return self.prepare_instance_segmentation_output_samples(samples)
+        else:
+            return samples
 
     def evaluate(self, predictions, truth):
         MIN_IOU = 0.5

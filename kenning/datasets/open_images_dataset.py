@@ -61,6 +61,23 @@ score : float
     the probability of correctness of the detected object
 """
 
+SegmObject = namedtuple(
+    'SegmObject',
+    ['clsname', 'mask', 'score']
+)
+SegmObject.__doc__ = """
+Represents single segmentable mask in an image.
+
+Attributes
+----------
+class : str
+    class of the object
+mask : Path
+    path to mask file
+score : float
+    the probability of correctness of the detected object
+"""
+
 
 def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
     """
@@ -512,15 +529,20 @@ class OpenImagesDatasetV6(Dataset):
         imgdir.mkdir(parents=True, exist_ok=True)
         download_all_images(imgdir, download_entries, psutil.cpu_count())
 
-    def prepare(self):
-        classnamespath = self.root / 'classnames.csv'
-        self.classmap = {}
-        with open(classnamespath, 'r') as clsfile:
-            for line in clsfile:
-                clsid, clsname = line.strip().split(',')
-                self.classmap[clsid] = clsname
-                self.classnames.append(clsname)
+    def prepare_instance_segmentation(self):
+        annotations = defaultdict(list)
+        annotationsfile = pd.read_csv(self.root / 'annotations.csv')
+        for index, row in annotationsfile.iterrows():
+            annotations[row['ImageID']].append(SegmObject(
+                clsname=self.classmap[row['LabelName']],
+                mask=self.root / 'masks' / row['MaskPath'],
+                score=1.0
+            ))
+        for k, v in annotations.items():
+            self.dataX.append(k)
+            self.dataY.append(v)
 
+    def prepare_object_detection(self):
         annotations = defaultdict(list)
         annotationsfile = pd.read_csv(self.root / 'annotations.csv')
         for index, row in annotationsfile.iterrows():
@@ -535,6 +557,20 @@ class OpenImagesDatasetV6(Dataset):
         for k, v in annotations.items():
             self.dataX.append(k)
             self.dataY.append(v)
+
+    def prepare(self):
+        classnamespath = self.root / 'classnames.csv'
+        self.classmap = {}
+        with open(classnamespath, 'r') as clsfile:
+            for line in clsfile:
+                clsid, clsname = line.strip().split(',')
+                self.classmap[clsid] = clsname
+                self.classnames.append(clsname)
+
+        if self.task == 'object_detection':
+            self.prepare_object_detection()
+        elif self.task == 'instance_segmentation':
+            self.prepare_instance_segmentation()
         self.numclasses = len(self.classmap)
 
     def prepare_input_samples(self, samples):

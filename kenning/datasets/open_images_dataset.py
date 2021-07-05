@@ -697,7 +697,10 @@ class OpenImagesDatasetV6(Dataset):
                 maxiou = 0
                 for gt in groundtruth:
                     if p.clsname == gt.clsname:
-                        iou = self.compute_iou(p, gt)
+                        if self.task == 'object_detection':
+                            iou = self.compute_iou(p, gt)
+                        elif self.task == 'instance_segmentation':
+                            iou = self.compute_mask_iou(p.mask, gt.mask)
                         maxiou = iou if iou > maxiou else maxiou
                         if iou > MIN_IOU and gt not in used:
                             used.add(gt)
@@ -728,8 +731,9 @@ class OpenImagesDatasetV6(Dataset):
                     1,
                     lambda: 0
                 )
+        #TODO: abstract this code to account for instance_segmentation
 
-        if self.show_on_eval:
+        if self.show_on_eval and self.task == 'object_detection':
             log = get_logger()
             log.info(f'\ntruth\n{truth}')
             log.info(f'\npredictions\n{predictions}')

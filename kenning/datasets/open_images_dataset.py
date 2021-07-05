@@ -63,7 +63,7 @@ score : float
 
 SegmObject = namedtuple(
     'SegmObject',
-    ['clsname', 'mask', 'score']
+    ['clsname', 'maskpath', 'xmin', 'ymin', 'xmax', 'ymax', 'mask', 'score']
 )
 SegmObject.__doc__ = """
 Represents single segmentable mask in an image.
@@ -72,8 +72,12 @@ Attributes
 ----------
 class : str
     class of the object
-mask : Path
+maskpath : Path
     path to mask file
+xmin,ymin,xmax,ymax : float
+    coordinates of the bounding box
+mask : np.array
+    loaded mask image
 score : float
     the probability of correctness of the detected object
 """
@@ -535,7 +539,12 @@ class OpenImagesDatasetV6(Dataset):
         for index, row in annotationsfile.iterrows():
             annotations[row['ImageID']].append(SegmObject(
                 clsname=self.classmap[row['LabelName']],
-                mask=self.root / 'masks' / row['MaskPath'],
+                maskpath=self.root / 'masks' / row['MaskPath'],
+                xmin=row['BoxXMin'],
+                ymin=row['BoxYMin'],
+                xmax=row['BoxXMax'],
+                ymax=row['BoxYMax'],
+                mask=None,
                 score=1.0
             ))
         for k, v in annotations.items():
@@ -620,23 +629,32 @@ class OpenImagesDatasetV6(Dataset):
 
         Parameters
         ----------
-        samples : List[SegmObject]
+        samples : List[List[SegmObject]]
             List of SegmObjects containing data about masks
             and their path
 
         Returns
         -------
-        masks : List[np.array]
-            List of masks loaded as np.arrays containing uint8-encoded
-            masks
+        List[List[SegmObject]] : prepared sample data
         """
-        masks = []
+        result = []
         for sample in samples:
-            mask_img = cv2.imread(str(sample[0][1]))
-            mask_img = cv2.resize(mask_img, (416, 416))
-            npmask = np.array(mask_img, dtype=np.uint8)
-            masks.append(npmask)
-        return masks
+            result.append([])
+            for subsample in sample:
+                mask_img = cv2.imread(str(subsample[1]), cv2.IMREAD_GRAYSCALE)
+                mask_img = cv2.resize(mask_img, (416, 416))
+                new_subsample = SegmObject(
+                    clsname=subsample.clsname,
+                    maskpath=subsample.maskpath,
+                    xmin=subsample.xmin,
+                    ymin=subsample.ymax,
+                    xmax=subsample.xmax,
+                    ymax=subsample.ymax,
+                    mask=np.array(mask_img, dtype=np.uint8),
+                    score=1.0
+                )
+                result[-1].append(new_subsample)
+        return result
 
     def prepare_output_samples(self, samples):
         if self.task == "instance_segmentation":

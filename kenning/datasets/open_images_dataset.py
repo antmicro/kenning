@@ -623,6 +623,27 @@ class OpenImagesDatasetV6(Dataset):
 
         return iou
 
+    def compute_mask_iou(self, mask1: np.array, mask2: np.array) -> float:
+        """
+        Computes IoU between two masks
+
+        Parameters
+        ----------
+        mask1 : np.array
+            First mask
+        mask2 : np.array
+            Second mask
+
+        Returns
+        -------
+        float : IoU value
+        """
+
+        mask_i = np.logical_and(mask1, mask2)
+        mask_u = np.logical_or(mask1, mask2)
+        align = np.count_nonzero(mask_i)/np.count_nonzero(mask_u)
+        return align
+
     def prepare_instance_segmentation_output_samples(self, samples):
         """
         Loads instance segmentation masks.

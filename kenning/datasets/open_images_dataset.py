@@ -41,6 +41,8 @@ from matplotlib import patches as patches
 
 import zipfile
 
+from typing import Union
+
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
 
@@ -689,6 +691,39 @@ class OpenImagesDatasetV6(Dataset):
         else:
             return samples
 
+    def get_hashable(
+            self,
+            unhashable: Union['DectObject', 'SegmObject']
+            ) -> Union['DectObject', 'SegmObject']:
+
+        """
+        Returns hashable versions of objects depending on self.task
+
+        Parameters
+        ----------
+        unhashable : Union['DectObject', 'SegmObject']
+            Object to be made hashable
+
+        Returns
+        -------
+        Union['DectObject', 'SegmObject'] : the hashable object
+        """
+
+        if self.task == 'object_detection':
+            hashable = unhashable
+        elif self.task == 'instance_segmentation':
+            hashable = SegmObject(
+                    clsname=unhashable.clsname,
+                    maskpath=unhashable.maskpath,
+                    xmin=unhashable.xmin,
+                    ymin=unhashable.ymax,
+                    xmax=unhashable.xmax,
+                    ymax=unhashable.ymax,
+                    mask=None,
+                    score=1.0
+                )
+        return hashable
+
     def evaluate(self, predictions, truth):
         MIN_IOU = 0.5
         measurements = Measurements()
@@ -708,15 +743,8 @@ class OpenImagesDatasetV6(Dataset):
                         elif self.task == 'instance_segmentation':
                             iou = self.compute_mask_iou(p.mask, gt.mask)
                         maxiou = iou if iou > maxiou else maxiou
-                        if iou > MIN_IOU and (
-                            (self.task == 'object_detection' and
-                                gt not in used) or
-                                (self.task == 'instance_segmentation' and
-                                    gt.maskpath not in used)):
-                            if self.task == 'object_detection':
-                                used.add(gt)
-                            else:
-                                used.add(gt.maskpath)
+                        if iou > MIN_IOU and self.get_hashable(gt) not in used:
+                            used.add(self.get_hashable(gt))
                             foundgt = True
                             measurements.add_measurement(
                                 f'eval_det/{p.clsname}',

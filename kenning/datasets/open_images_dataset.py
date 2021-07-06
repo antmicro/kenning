@@ -641,7 +641,13 @@ class OpenImagesDatasetV6(Dataset):
 
         mask_i = np.logical_and(mask1, mask2)
         mask_u = np.logical_or(mask1, mask2)
-        align = np.count_nonzero(mask_i)/np.count_nonzero(mask_u)
+
+        mask_u_nonzero = np.count_nonzero(mask_u)
+        # in empty masks union is zero
+        if mask_u_nonzero != 0:
+            align = np.count_nonzero(mask_i) / mask_u_nonzero
+        else:
+            align = 0.0
         return align
 
     def prepare_instance_segmentation_output_samples(self, samples):
@@ -702,8 +708,15 @@ class OpenImagesDatasetV6(Dataset):
                         elif self.task == 'instance_segmentation':
                             iou = self.compute_mask_iou(p.mask, gt.mask)
                         maxiou = iou if iou > maxiou else maxiou
-                        if iou > MIN_IOU and gt not in used:
-                            used.add(gt)
+                        if iou > MIN_IOU and (
+                            (self.task == 'object_detection' and
+                                gt not in used) or
+                                (self.task == 'instance_segmentation' and
+                                    gt.maskpath not in used)):
+                            if self.task == 'object_detection':
+                                used.add(gt)
+                            else:
+                                used.add(gt.maskpath)
                             foundgt = True
                             measurements.add_measurement(
                                 f'eval_det/{p.clsname}',
@@ -731,7 +744,6 @@ class OpenImagesDatasetV6(Dataset):
                     1,
                     lambda: 0
                 )
-        #TODO: abstract this code to account for instance_segmentation
 
         if self.show_on_eval and self.task == 'object_detection':
             log = get_logger()
@@ -762,6 +774,34 @@ class OpenImagesDatasetV6(Dataset):
                     )
                     ax.add_patch(rect)
                 plt.show()
+        # if show_on_eval then use cv2 to apply truth and prediction masks
+        # on different color channels
+        elif self.show_on_eval and self.task == 'instance_segmentation':
+            log = get_logger()
+            log.info(f'\ntruth\n{truth}')
+            log.info(f'\npredictions\n{predictions}')
+            evaldir = self.root / 'eval'
+            evaldir.mkdir(parents=True, exist_ok=True)
+            for pred, gt in zip(predictions, truth):
+                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
+                int_img = np.multiply(img, 255).astype('uint8')
+                int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2RGB)
+                for i in gt:
+                    mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
+                    mask_img = mask_img.astype('float32') / 255.0
+                    mask_img *= np.array([0.1, 0.1, 0.5])
+                    mask_img = np.multiply(mask_img, 255).astype('uint8')
+                    int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
+                for i in pred:
+                    mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
+                    mask_img = mask_img.astype('float32') / 255.0
+                    mask_img *= np.array([0.1, 0.5, 0.1])
+                    mask_img = np.multiply(mask_img, 255).astype('uint8')
+                    int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
+                cv2.imwrite(
+                    str(evaldir / self.dataX[self._dataindex - 1])+".jpg",
+                    int_img
+                )
         return measurements
 
     def get_class_names(self):

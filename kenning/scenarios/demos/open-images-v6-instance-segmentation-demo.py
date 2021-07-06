@@ -1,3 +1,11 @@
+"""
+
+This program was used to test and debug the process of
+downloading and preparation of the data from
+OpenImagesV6 dataset for instance segmentation problem
+
+"""
+
 from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
 import numpy as np
 import cv2

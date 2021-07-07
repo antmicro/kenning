@@ -11,6 +11,7 @@ import torch
 from torchvision import models
 
 from kenning.core.dataset import Dataset
+from kenning.datasets.open_images_dataset import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
 
@@ -35,3 +36,18 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
     def run_model(self, torch_data: torch.Tensor):
         self.model.eval()
         return self.model([torch_data])
+
+    def parse_output(self,out: dict) -> list[SegmObject]:
+        ret = []
+        for i in range(len(out['labels'])):
+            ret.append(SegmObject(
+                clsname=self.dataset.classnames[int(out['labels'][i])],
+                maskpath=None,
+                xmin=None,
+                ymin=None,
+                xmax=None,
+                ymax=None,
+                mask=out['masks'][i].detach().numpy().transpose(1,2,0),
+                score=1.0
+            ))
+        return ret

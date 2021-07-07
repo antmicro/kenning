@@ -18,16 +18,24 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
     def __init__(self, modelpath: Path, dataset: Dataset, from_file=False):
         self.threshold = 0.7
         self.numclasses = dataset.numclasses
-        print(self.numclasses)
         super().__init__(modelpath, dataset, from_file)
 
     def prepare_model(self):
-        self.model = models.detection.maskrcnn_resnet50_fpn(
-            pretrained=True,
-            progress=True,
-            num_classes=91,
-            pretrained_backbone=True
-        )
+        if self.from_file:
+            self.model = models.detection.maskrcnn_resnet50_fpn(
+                pretrained=False,
+                progress=True,
+                num_classes=91,
+                pretrained_backbone=True  # downloads backbone to torchhub dir
+            )
+            self.load_model(self.modelpath)
+        else:
+            self.model = models.detection.maskrcnn_resnet50_fpn(
+                pretrained=True,  # downloads mask r-cnn model to torchhub dir
+                progress=True,
+                num_classes=91,
+                pretrained_backbone=True  # downloads backbone to torchhub dir
+            )
         self.model.to(self.device)
         self.model.eval()
         self.custom_classnames = [

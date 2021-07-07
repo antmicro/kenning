@@ -7,7 +7,6 @@ Prerained on Coco classes
 import numpy as np
 from pathlib import Path
 
-import torch
 from torchvision import models
 
 from kenning.core.dataset import Dataset
@@ -16,14 +15,11 @@ from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
-    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
+    def __init__(self, modelpath: Path, dataset: Dataset, from_file=False):
         self.threshold = 0.7
         self.numclasses = dataset.numclasses
         print(self.numclasses)
         super().__init__(modelpath, dataset, from_file)
-
-    def prepare_input_data(self, data: np.array):
-        return torch.Tensor(data)
 
     def prepare_model(self):
         self.model = models.detection.maskrcnn_resnet50_fpn(
@@ -32,6 +28,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             num_classes=91,
             pretrained_backbone=True
         )
+        self.model.to(self.device)
+        self.model.eval()
         self.custom_classnames = [
             '__background__', 'person', 'bicycle',
             'car', 'motorcycle', 'airplane', 'bus',
@@ -57,10 +55,6 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             'N/A', 'book', 'clock', 'vase', 'scissors', 'teddy bear',
             'hair drier', 'toothbrush'
         ]
-
-    def run_model(self, torch_data: torch.Tensor):
-        self.model.eval()
-        return self.model([torch_data])
 
     def parse_output(self, out: dict) -> list[SegmObject]:
         ret = []

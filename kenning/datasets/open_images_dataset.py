@@ -812,8 +812,11 @@ class OpenImagesDatasetV6(Dataset):
             evaldir.mkdir(parents=True, exist_ok=True)
             for pred, gt in zip(predictions, truth):
                 img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
+                if self.image_memory_layout == 'NCHW':
+                    img = img.transpose(1,2,0)
                 int_img = np.multiply(img, 255).astype('uint8')
-                int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2RGB)
+                int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
+                int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
                 for i in gt:
                     mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
                     mask_img = mask_img.astype('float32') / 255.0

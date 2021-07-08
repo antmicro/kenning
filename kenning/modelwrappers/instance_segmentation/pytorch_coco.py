@@ -71,18 +71,17 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             out = out_all[i]
             if type(out) == type({}):
                 for i in range(len(out['labels'])):
-                    if float(out['scores'][i]) > self.threshold:
-                        ret[-1].append(SegmObject(
-                            clsname=self.custom_classnames[int(out['labels'][i])],
-                            maskpath=None,
-                            xmin=float(out['boxes'][i][0]),
-                            ymin=float(out['boxes'][i][1]),
-                            xmax=float(out['boxes'][i][2]),
-                            ymax=float(out['boxes'][i][3]),
-                            mask=np.multiply(
-                                out['masks'][i].detach().cpu().numpy().transpose(1, 2, 0),
-                                255
-                            ).astype('uint8'),
-                            score=1.0
-                        ))
+                    ret[-1].append(SegmObject(
+                        clsname=self.custom_classnames[int(out['labels'][i])],
+                        maskpath=None,
+                        xmin=float(out['boxes'][i][0]),
+                        ymin=float(out['boxes'][i][1]),
+                        xmax=float(out['boxes'][i][2]),
+                        ymax=float(out['boxes'][i][3]),
+                        mask=np.multiply(
+                            out['masks'][i].detach().cpu().numpy().transpose(1, 2, 0),
+                            255
+                        ).astype('uint8'),
+                        score=float(out['scores'][i])
+                    ))
                 return ret

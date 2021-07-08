@@ -1,7 +1,7 @@
 """
 Load a pre-trained PyTorch Mask R-CNN model
 
-Prerained on Coco classes
+Prerained on COCO dataset
 """
 
 import numpy as np

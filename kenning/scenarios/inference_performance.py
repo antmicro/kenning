@@ -37,13 +37,6 @@ def test_inference(modelwrapper: ModelWrapper):
     Measurements : the benchmark results
     """
 
-    frameworktuple = modelwrapper.get_framework_and_version()
-
-    MeasurementsCollector.measurements += {
-        'framework': frameworktuple[0],
-        'version': frameworktuple[1]
-    }
-
     return modelwrapper.test_inference()
 
 
@@ -92,11 +85,19 @@ def main(argv):
     dataset = datasetcls.from_argparse(args)
     inferenceobj = modelwrappercls.from_argparse(dataset, args)
 
-    test_inference(inferenceobj)
+    modelframeworktuple = inferenceobj.get_framework_and_version()
 
     MeasurementsCollector.measurements += {
+        'model_framework': modelframeworktuple[0],
+        'model_version': modelframeworktuple[1],
         'command': command
     }
+    if hasattr(dataset, 'classnames'):
+        MeasurementsCollector.measurements += {
+            'class_names': [val for val in dataset.get_class_names()]
+        }
+
+    test_inference(inferenceobj)
 
     if 'eval_confusion_matrix' in MeasurementsCollector.measurements.data:
         MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501

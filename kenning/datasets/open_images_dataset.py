@@ -267,7 +267,7 @@ def get_recall_precision(
     """
     lines = []
     for cls in measurementsdata['class_names']:
-        gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else []  # noqa: E501
+        gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else 0  # noqa: E501
         dets = measurementsdata[f'eval_det/{cls}'] if f'eval_det/{cls}' in measurementsdata else []  # noqa: E501
         dets = [d for d in dets if d[0] >= scorethresh]
         dets.sort(reverse=True, key=lambda x: x[0])

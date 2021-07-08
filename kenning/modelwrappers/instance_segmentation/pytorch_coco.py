@@ -64,23 +64,25 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             'hair drier', 'toothbrush'
         ]
 
-    def parse_output(self, out: dict) -> list[SegmObject]:
+    def postprocess_outputs(self, out_all: list[dict]) -> list[SegmObject]:
         ret = []
-        for i in range(len(out['labels'])):
-            if float(out['scores'][i]) > self.threshold:
-                ret.append(SegmObject(
-                    clsname=self.custom_classnames[int(out['labels'][i])],
-                    maskpath=None,
-                    xmin=float(out['boxes'][i][0]),
-                    ymin=float(out['boxes'][i][1]),
-                    xmax=float(out['boxes'][i][2]),
-                    ymax=float(out['boxes'][i][3]),
-                    mask=np.multiply(
-                        self.postprocess_outputs(
-                            out['masks'][i]
-                        ).transpose(1, 2, 0),
-                        255
-                    ).astype('uint8'),
-                    score=1.0
-                ))
-        return ret
+        for i in range(len(out_all)):
+            ret.append([])
+            out = out_all[i]
+            if type(out) == type({}):
+                for i in range(len(out['labels'])):
+                    if float(out['scores'][i]) > self.threshold:
+                        ret[-1].append(SegmObject(
+                            clsname=self.custom_classnames[int(out['labels'][i])],
+                            maskpath=None,
+                            xmin=float(out['boxes'][i][0]),
+                            ymin=float(out['boxes'][i][1]),
+                            xmax=float(out['boxes'][i][2]),
+                            ymax=float(out['boxes'][i][3]),
+                            mask=np.multiply(
+                                out['masks'][i].detach().cpu().numpy().transpose(1, 2, 0),
+                                255
+                            ).astype('uint8'),
+                            score=1.0
+                        ))
+                return ret

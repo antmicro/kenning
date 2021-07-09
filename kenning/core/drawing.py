@@ -395,7 +395,7 @@ def true_positive_iou_histogram(
         The size of the figure
     """
     plt.figure(figsize=figsize)
-    plt.barh(class_names,np.array(lines),orientation='horizontal')
+    plt.barh(class_names, np.array(lines), orientation='horizontal')
     plt.ylim((-1, len(class_names)))
     plt.yticks(np.arange(0, len(class_names)))
     plt.xticks(np.arange(0, 1.1, 0.1))
@@ -408,6 +408,7 @@ def true_positive_iou_histogram(
         plt.show()
     else:
         plt.savefig(outpath)
+
 
 def recall_precision_gradients(
         outpath: Optional[Path],

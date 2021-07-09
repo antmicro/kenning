@@ -13,7 +13,12 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.open_images_dataset import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
-from kenning.resources.coco_instance_segmentation.pytorch_coco_classnames import pytorch_coco_classnames  # noqa: E501
+from kenning.resources import coco_instance_segmentation
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
@@ -40,7 +45,11 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             )
         self.model.to(self.device)
         self.model.eval()
-        self.custom_classnames = pytorch_coco_classnames
+        self.custom_classnames = []
+        with path(coco_instance_segmentation, 'pytorch_classnames.txt') as p:
+            with open(p, 'r') as f:
+                for line in f:
+                    self.custom_classnames.append(line.strip())
 
     def postprocess_outputs(self, out_all: list[dict]) -> list[SegmObject]:
         ret = []

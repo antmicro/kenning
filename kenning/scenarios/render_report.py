@@ -22,6 +22,7 @@ from kenning.core.drawing import time_series_plot
 from kenning.core.drawing import draw_confusion_matrix
 from kenning.core.drawing import recall_precision_curves
 from kenning.core.drawing import recall_precision_gradients
+from kenning.core.drawing import true_positive_iou_histogram
 from kenning.core.drawing import draw_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
@@ -291,6 +292,27 @@ def detection_report(
         gradientpath.relative_to(rootdir)
     )
 
+    tp_iou = []
+    for i in measurementsdata['class_names']:
+        dets = measurementsdata[f'eval_det/{i}'] if f'eval_det/{i}' in measurementsdata else [] # noqa: E501
+        det_tp_iou = [i[2] for i in dets if i[1]]
+        if len(det_tp_iou) > 0:
+            tp_iou.append(sum(det_tp_iou)/len(det_tp_iou))
+        else:
+            tp_iou.append(0)
+    tpioupath = imgdir / f'{reportpath.stem}_true_positive_iou_histogram.png'
+    int_names = [i for i in range(len(measurementsdata['class_names']))]
+    
+    true_positive_iou_histogram(
+        str(tpioupath),
+        'Average True Positive IoU values',
+        tp_iou,
+        measurementsdata['class_names'],
+    )
+    measurementsdata['tpioupath'] = str(
+        tpioupath.relative_to(rootdir)
+    )
+
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
 
@@ -307,6 +329,8 @@ def detection_report(
     measurementsdata['mappath'] = str(
         mappath.relative_to(rootdir)
     )
+    measurementsdata['max_mAP'] = max(mapvalues)
+    measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)
 
     with path(reports, 'detection.rst') as reporttemplate:
         return create_report_from_measurements(

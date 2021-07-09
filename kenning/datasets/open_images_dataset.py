@@ -10,6 +10,7 @@ The downloader part of the script is based on Open Images Dataset V6::
 # - provide images with no detectable objects.
 # - add support for instance segmentation and other scenarios.
 
+from math import floor, ceil
 import os
 import cv2
 import sys
@@ -333,7 +334,8 @@ class OpenImagesDatasetV6(Dataset):
             download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation',
             image_memory_layout: str = 'NCHW',
-            show_on_eval: bool = False):
+            show_on_eval: bool = True,
+            crop_input_to_bboxes: bool = True):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
@@ -347,6 +349,7 @@ class OpenImagesDatasetV6(Dataset):
         self.image_memory_layout = image_memory_layout
         self.classnames = []
         self.show_on_eval = show_on_eval
+        self.crop_input_to_bboxes = crop_input_to_bboxes
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -591,6 +594,44 @@ class OpenImagesDatasetV6(Dataset):
             result.append(npimg)
         return result
 
+    def crop_samples_to_bboxes(self, sample_x, sample_y):
+        new_sample_x = []
+        new_sample_y = []
+        for x in range(len(sample_x)):
+            # since images are cropped to 416,416
+            # there will never be a min value above 416
+            minx, miny, maxx, maxy = 500, 500, 0, 0
+            for sample in sample_y[x]:
+                minx = sample.xmin * 415 if sample.xmin * 415 < minx else minx
+                maxx = sample.xmax * 415 if sample.xmax * 415 > maxx else maxx
+                miny = sample.ymin * 415 if sample.ymin * 415 < miny else miny
+                maxy = sample.ymax * 415 if sample.ymax * 415 > maxy else maxy
+            minx = int(floor(minx))
+            maxx = int(ceil(maxx))
+            miny = int(floor(miny))
+            maxy = int(ceil(maxy))
+            sample_x[x] = np.transpose(sample_x[x], (1, 2, 0))
+            sample_x[x] = sample_x[x][miny:maxy, minx:maxx]
+            sample_x[x] = cv2.resize(sample_x[x], (416, 416))
+            sample_x[x] = np.transpose(sample_x[x], (2, 0, 1))
+            new_sample_x.append(sample_x[x])
+            new_sample_y.append([])
+            for sample in sample_y[x]:
+                mask = sample.mask[miny:maxy, minx:maxx]
+                mask = cv2.resize(mask, (416, 416))
+                new_sample = SegmObject(
+                    clsname=sample.clsname,
+                    maskpath=sample.maskpath,
+                    xmin=sample.xmin,
+                    ymin=sample.ymin,
+                    xmax=sample.xmax,
+                    ymax=sample.ymax,
+                    mask=mask,
+                    score=1.0
+                )
+                new_sample_y[-1].append(new_sample)
+        return new_sample_x, new_sample_y
+
     def compute_iou(self, b1: DectObject, b2: DectObject) -> float:
         """
         Computes the IoU between two bounding boxes.
@@ -671,7 +712,7 @@ class OpenImagesDatasetV6(Dataset):
                     clsname=subsample.clsname,
                     maskpath=subsample.maskpath,
                     xmin=subsample.xmin,
-                    ymin=subsample.ymax,
+                    ymin=subsample.ymin,
                     xmax=subsample.xmax,
                     ymax=subsample.ymax,
                     mask=np.array(mask_img, dtype=np.uint8),
@@ -808,7 +849,20 @@ class OpenImagesDatasetV6(Dataset):
             for pred, gt in zip(predictions, truth):
                 img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
                 if self.image_memory_layout == 'NCHW':
-                    img = img.transpose(1,2,0)
+                    img = img.transpose(1, 2, 0)
+                if self.crop_samples_to_bboxes:
+                    minx, miny, maxx, maxy = 500, 500, 0, 0
+                    for sample in gt:
+                        minx = sample.xmin * 415 if sample.xmin * 415 < minx else minx  # noqa: E501
+                        maxx = sample.xmax * 415 if sample.xmax * 415 > maxx else maxx  # noqa: E501
+                        miny = sample.ymin * 415 if sample.ymin * 415 < miny else miny  # noqa: E501
+                        maxy = sample.ymax * 415 if sample.ymax * 415 > maxy else maxy  # noqa: E501
+                    minx = int(floor(minx))
+                    maxx = int(ceil(maxx))
+                    miny = int(floor(miny))
+                    maxy = int(ceil(maxy))
+                    img = img[miny:maxy, minx:maxx]
+                    img = cv2.resize(img, (416, 416))
                 int_img = np.multiply(img, 255).astype('uint8')
                 int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
                 int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)

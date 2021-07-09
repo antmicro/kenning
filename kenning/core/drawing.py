@@ -372,6 +372,43 @@ def recall_precision_curves(
         )
 
 
+def true_positive_iou_histogram(
+        outpath: Optional[Path],
+        title: str,
+        lines: List[float],
+        class_names: List[str],
+        figsize: Tuple = (10, 25)):
+    """
+    Draws per-class True Positive IoU precision plot
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    lines : List[float]
+        Per-class list of floats with IoU values
+    class_names : List[str]
+        List of the class names
+    figsize: Tuple
+        The size of the figure
+    """
+    plt.figure(figsize=figsize)
+    plt.barh(class_names,np.array(lines),orientation='horizontal')
+    plt.ylim((-1, len(class_names)))
+    plt.yticks(np.arange(0, len(class_names)))
+    plt.xticks(np.arange(0, 1.1, 0.1))
+    plt.xlabel('IoU precision')
+    plt.ylabel('classes')
+    plt.title(f'{title}')
+    plt.tight_layout()
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
 def recall_precision_gradients(
         outpath: Optional[Path],
         title: str,

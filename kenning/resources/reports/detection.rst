@@ -26,8 +26,8 @@ Object detection metrics
 * Best *Mean Average Precision* occurs at threshold {{data['max_mAP_index']}}  and it is: {{data['max_mAP']}}
 
 .. figure:: {{data["tpioupath"]}}
-   :name: {{data["reportname"][0]}}_map
-   :alt: True Positive IoU values
+   :name: {{data["reportname"][0]}}_tpiou
+   :alt: Histogram of IoU values for correctly labeled objects
    :align: center
    
-   True Positive IoU values
+   Histogram of IoU values for correctly labeled objects

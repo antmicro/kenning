@@ -7,6 +7,7 @@ Prerained on COCO dataset
 import numpy as np
 from pathlib import Path
 
+import torch
 from torchvision import models
 
 from kenning.core.dataset import Dataset
@@ -74,3 +75,12 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                         score=float(out['scores'][i])
                     ))
                 return ret
+
+    def convert_input_to_bytes(self, input_data):
+        data = bytes()
+        for i in input_data.detach().cpu().numpy():
+            data += i.tobytes()
+        return data
+
+    def convert_output_from_bytes(self, output_data):
+        return torch.load(output_data)  # this may not work, in fact it probably will not

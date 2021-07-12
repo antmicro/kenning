@@ -335,7 +335,8 @@ class OpenImagesDatasetV6(Dataset):
             download_annotations_type: str = 'validation',
             image_memory_layout: str = 'NCHW',
             show_on_eval: bool = True,
-            crop_input_to_bboxes: bool = True):
+            crop_input_to_bboxes: bool = True,
+            crop_input_margin_size: float = 0.1):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
@@ -352,6 +353,7 @@ class OpenImagesDatasetV6(Dataset):
         self.crop_input_to_bboxes = crop_input_to_bboxes
         if self.crop_input_to_bboxes:
             self.crop_dict = {}
+            self.crop_input_margin_size = crop_input_margin_size
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -564,10 +566,16 @@ class OpenImagesDatasetV6(Dataset):
                         if sample.ymin * 415 < miny else miny
                     maxy = sample.ymax * 415 \
                         if sample.ymax * 415 > maxy else maxy
-                minx = int(floor(minx))
-                maxx = int(ceil(maxx))
-                miny = int(floor(miny))
-                maxy = int(ceil(maxy))
+                span_x = maxx-minx
+                span_y = maxy-miny
+                minx = int(floor(minx-span_x*self.crop_input_margin_size/2))
+                minx = minx if minx > 0 else 0
+                maxx = int(ceil(maxx+span_x*self.crop_input_margin_size/2))
+                maxx = maxx if maxx < 416 else 415
+                miny = int(floor(miny-span_y*self.crop_input_margin_size/2))
+                miny = miny if miny > 0 else 0
+                maxy = int(ceil(maxy+span_y*self.crop_input_margin_size/2))
+                maxy = maxy if maxy < 416 else 415
                 self.crop_dict[self.dataX[x]] = [minx, miny, maxx, maxy]
 
     def prepare_object_detection(self):

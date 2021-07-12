@@ -23,6 +23,7 @@ from kenning.core.drawing import draw_confusion_matrix
 from kenning.core.drawing import recall_precision_curves
 from kenning.core.drawing import recall_precision_gradients
 from kenning.core.drawing import true_positive_iou_histogram
+from kenning.core.drawing import true_positives_per_iou_range_histogram
 from kenning.core.drawing import draw_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
@@ -293,16 +294,19 @@ def detection_report(
     )
 
     tp_iou = []
+    all_tp_ious = []
+
     for i in measurementsdata['class_names']:
-        dets = measurementsdata[f'eval_det/{i}'] if f'eval_det/{i}' in measurementsdata else [] # noqa: E501
+        dets = measurementsdata[f'eval_det/{i}'] if f'eval_det/{i}' in measurementsdata else []  # noqa: E501
         det_tp_iou = [i[2] for i in dets if i[1]]
         if len(det_tp_iou) > 0:
             tp_iou.append(sum(det_tp_iou)/len(det_tp_iou))
+            all_tp_ious.extend(det_tp_iou)
         else:
             tp_iou.append(0)
     tpioupath = imgdir / f'{reportpath.stem}_true_positive_iou_histogram.png'
-    int_names = [i for i in range(len(measurementsdata['class_names']))]
-    
+    iouhistpath = imgdir / f'{reportpath.stem}_histogram_tp_iou_values.png'
+
     true_positive_iou_histogram(
         str(tpioupath),
         'Average True Positive IoU values',
@@ -311,6 +315,15 @@ def detection_report(
     )
     measurementsdata['tpioupath'] = str(
         tpioupath.relative_to(rootdir)
+    )
+
+    true_positives_per_iou_range_histogram(
+        str(iouhistpath),
+        "Histogram of True Positive IoU values",
+        all_tp_ious
+    )
+    measurementsdata['iouhistpath'] = str(
+        iouhistpath.relative_to(rootdir)
     )
 
     thresholds = np.arange(0.2, 1.05, 0.05)
@@ -330,7 +343,7 @@ def detection_report(
         mappath.relative_to(rootdir)
     )
     measurementsdata['max_mAP'] = max(mapvalues)
-    measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)
+    measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
 
     with path(reports, 'detection.rst') as reporttemplate:
         return create_report_from_measurements(

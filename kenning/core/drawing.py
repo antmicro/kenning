@@ -11,6 +11,7 @@ from pathlib import Path
 import matplotlib.colors as colors
 from matplotlib import gridspec
 from matplotlib.collections import LineCollection
+from math import floor
 
 
 def time_series_plot(
@@ -395,12 +396,59 @@ def true_positive_iou_histogram(
         The size of the figure
     """
     plt.figure(figsize=figsize)
-    plt.barh(class_names, np.array(lines), orientation='horizontal')
+    plt.barh(
+        class_names,
+        np.array(lines),
+        orientation='horizontal',
+        color='purple'
+    )
     plt.ylim((-1, len(class_names)))
     plt.yticks(np.arange(0, len(class_names)))
     plt.xticks(np.arange(0, 1.1, 0.1))
     plt.xlabel('IoU precision')
     plt.ylabel('classes')
+    plt.title(f'{title}')
+    plt.tight_layout()
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
+def true_positives_per_iou_range_histogram(
+        outpath: Optional[Path],
+        title: str,
+        lines: List[float],
+        range_fraction: float = 0.05,
+        figsize: Tuple = (10, 10)):
+    """
+    Draws histogram of True Positive IoU values
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    lines : List[float]
+        All True Positive IoU values
+    range_fraction : float
+        Fraction by which the range should be divided (1/number_of_segments)
+    figsize: Tuple
+        The size of the figure
+    """
+    lower_bound = floor(min(lines)*10)/10
+    x_range = np.arange(lower_bound, 1.01, (1-lower_bound)*range_fraction)
+    plt.figure(figsize=figsize)
+    plt.hist(
+        lines,
+        x_range,
+        color='purple'
+    )
+    plt.xlabel('IoU ranges')
+    plt.xticks(x_range, rotation=45)
+    plt.ylabel('Number of masks in IoU range')
     plt.title(f'{title}')
     plt.tight_layout()
 

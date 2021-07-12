@@ -335,7 +335,7 @@ class OpenImagesDatasetV6(Dataset):
             download_annotations_type: str = 'validation',
             image_memory_layout: str = 'NCHW',
             show_on_eval: bool = True,
-            crop_input_to_bboxes: bool = True,
+            crop_input_to_bboxes: bool = False,
             crop_input_margin_size: float = 0.1):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
@@ -400,6 +400,17 @@ class OpenImagesDatasetV6(Dataset):
             help='Show predictions during evaluation',
             action='store_true'
         )
+        group.add_argument(
+            '--crop-samples-to-bboxes',
+            help='Crop input samples and masks to show only an area with ground truths',  # noqa: E501
+            action='store_true'
+        )
+        group.add_argument(
+            '--crop-margin',
+            help='Crop margin',
+            type=float,
+            default=0.1
+        )
         return parser, group
 
     @classmethod
@@ -413,7 +424,9 @@ class OpenImagesDatasetV6(Dataset):
             args.download_num_bboxes_per_class,
             args.download_annotations_type,
             args.image_memory_layout,
-            args.show_predictions_on_eval
+            args.show_predictions_on_eval,
+            args.crop_samples_to_bboxes,
+            args.crop_margin
         )
 
     def download_dataset(self):

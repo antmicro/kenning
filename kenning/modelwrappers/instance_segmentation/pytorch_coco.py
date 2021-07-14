@@ -30,13 +30,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     def prepare_model(self):
         if self.from_file:
-            self.model = models.detection.maskrcnn_resnet50_fpn(
-                pretrained=False,
-                progress=True,
-                num_classes=91,
-                pretrained_backbone=True  # downloads backbone to torchhub dir
-            )
-            self.load_model(self.modelpath)
+            self.model = torch.load(self.modelpath)
+            self.model.eval()
         else:
             self.model = models.detection.maskrcnn_resnet50_fpn(
                 pretrained=True,  # downloads mask r-cnn model to torchhub dir
@@ -52,7 +47,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                 for line in f:
                     self.custom_classnames.append(line.strip())
 
-    def postprocess_outputs(self, out_all: list[dict]) -> list[SegmObject]:
+    def postprocess_outputs(self, out_all: list) -> list:
         ret = []
         for i in range(len(out_all)):
             ret.append([])

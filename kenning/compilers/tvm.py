@@ -42,6 +42,56 @@ def kerasconversion(
     )
 
 
+def torchconversion(
+        compiler: 'TVMCompiler',
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
+    import torch
+    import numpy as np
+
+    def dict_to_tuple(out_dict):
+        if "masks" in out_dict.keys():
+            return \
+                out_dict["boxes"],\
+                out_dict["scores"],\
+                out_dict["labels"],\
+                out_dict["masks"]
+
+        return out_dict["boxes"], out_dict["scores"], out_dict["labels"]
+
+    def do_trace(model, inp):
+        model_trace = torch.jit.trace(model, inp)
+        model_trace.eval()
+        return model_trace
+
+    class TraceWrapper(torch.nn.Module):
+        def __init__(self, model):
+            super().__init__()
+            self.model = model
+
+        def forward(self, inp):
+            out = self.model(inp)
+            return dict_to_tuple(out[0])
+
+    model_func = torch.load
+    model = TraceWrapper(model_func(modelpath))
+    model.eval()
+    inp = torch.Tensor(
+        np.random.uniform(0.0, 250.0, size=input_shapes['input.1'])
+    )
+
+    with torch.no_grad():
+        model(inp)
+        model_trace = torch.jit.trace(model, inp)
+        model_trace.eval()
+
+    return relay.frontend.from_pytorch(
+        model_trace,
+        list(input_shapes.items())
+    )
+
+
 def darknetconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
@@ -75,7 +125,8 @@ class TVMCompiler(ModelCompiler):
     inputtypes = {
         'onnx': onnxconversion,
         'keras': kerasconversion,
-        'darknet': darknetconversion
+        'darknet': darknetconversion,
+        'torch': torchconversion
     }
 
     def __init__(
@@ -115,6 +166,7 @@ class TVMCompiler(ModelCompiler):
         )
         self.opt_level = opt_level
         self.libdarknetpath = libdarknetpath
+        self.use_tvm_vm = True
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -170,14 +222,28 @@ class TVMCompiler(ModelCompiler):
             arch = archmatch.group(1) if archmatch else None
             if arch:
                 tvm.autotvm.measure.measure_methods.set_cuda_target_arch(arch)
-        with tvm.transform.PassContext(opt_level=self.opt_level):
-            lib = relay.build(
-                mod,
-                target=self.target,
-                target_host=self.target_host,
-                params=params
-            )
-        lib.export_library(outputpath)
+        if self.use_tvm_vm:
+            with tvm.transform.PassContext(
+                    opt_level=3,
+                    disabled_pass=["FoldScaleAxis"]):
+                vm_exec = relay.vm.compile(
+                    mod,
+                    target=self.target,
+                    params=params
+                )
+                bytecode, lib = vm_exec.save()
+                with open(str(outputpath)+'.ro', 'wb') as file:
+                    file.write(bytecode)
+                lib.export_library(str(outputpath)+'.so')
+        else:
+            with tvm.transform.PassContext(opt_level=self.opt_level):
+                lib = relay.build(
+                    mod,
+                    target=self.target,
+                    target_host=self.target_host,
+                    params=params
+                )
+            lib.export_library(outputpath)
 
     def compile(
             self,

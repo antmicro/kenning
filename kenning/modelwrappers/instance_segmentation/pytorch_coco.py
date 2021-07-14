@@ -76,6 +76,16 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                     ))
                 return ret
 
+    def save_to_onnx(self, modelpath):
+        x = torch.randn(1, 3, 416, 416).to(device='cpu')
+        torch.onnx.export(
+            self.model.to(device='cpu'),
+            x,
+            modelpath,
+            opset_version=11,
+            input_names=["input.1"]
+        )
+
     def convert_input_to_bytes(self, input_data):
         data = bytes()
         for i in input_data.detach().cpu().numpy():
@@ -83,4 +93,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return data
 
     def convert_output_from_bytes(self, output_data):
-        return torch.load(output_data)  # this may not work, in fact it probably will not
+        return torch.load(output_data)
+
+    def get_input_spec(self):
+        return {'input.1': (1, 3, 416, 416)}, 'float32'

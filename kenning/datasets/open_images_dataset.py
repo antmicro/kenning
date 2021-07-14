@@ -334,7 +334,7 @@ class OpenImagesDatasetV6(Dataset):
             download_num_bboxes_per_class: int = 200,
             download_annotations_type: str = 'validation',
             image_memory_layout: str = 'NCHW',
-            show_on_eval: bool = True,
+            show_on_eval: bool = False,
             crop_input_to_bboxes: bool = False,
             crop_input_margin_size: float = 0.1):
         assert image_memory_layout in ['NHWC', 'NCHW']

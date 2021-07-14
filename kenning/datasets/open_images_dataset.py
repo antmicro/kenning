@@ -348,6 +348,8 @@ class OpenImagesDatasetV6(Dataset):
         self.download_annotations_type = download_annotations_type
         self.classmap = {}
         self.image_memory_layout = image_memory_layout
+        self.image_width = 416
+        self.image_height = 416
         self.classnames = []
         self.show_on_eval = show_on_eval
         self.crop_input_to_bboxes = crop_input_to_bboxes
@@ -569,26 +571,31 @@ class OpenImagesDatasetV6(Dataset):
             self.dataY.append(v)
         if self.crop_input_to_bboxes:
             for x in range(len(self.dataX)):
-                minx, miny, maxx, maxy = 500, 500, 0, 0
+                minx, miny = self.image_width+1, self.image_height+1
+                maxx, maxy = 0, 0
                 for sample in self.dataY[x]:
-                    minx = sample.xmin * 415 \
-                        if sample.xmin * 415 < minx else minx
-                    maxx = sample.xmax * 415 \
-                        if sample.xmax * 415 > maxx else maxx
-                    miny = sample.ymin * 415 \
-                        if sample.ymin * 415 < miny else miny
-                    maxy = sample.ymax * 415 \
-                        if sample.ymax * 415 > maxy else maxy
+                    minx = sample.xmin * self.image_width-1 \
+                        if sample.xmin * self.image_width-1 < minx else minx
+                    maxx = sample.xmax * self.image_width-1 \
+                        if sample.xmax * self.image_width-1 > maxx else maxx
+                    miny = sample.ymin * self.image_height-1 \
+                        if sample.ymin * self.image_height-1 < miny else miny
+                    maxy = sample.ymax * self.image_height-1 \
+                        if sample.ymax * self.image_height-1 > maxy else maxy
                 span_x = maxx-minx
                 span_y = maxy-miny
                 minx = int(floor(minx-span_x*self.crop_input_margin_size/2))
-                minx = minx if minx > 0 else 0
+                minx = minx \
+                    if minx > 0 else 0
                 maxx = int(ceil(maxx+span_x*self.crop_input_margin_size/2))
-                maxx = maxx if maxx < 416 else 415
+                maxx = maxx \
+                    if maxx < self.image_width else self.image_width-1
                 miny = int(floor(miny-span_y*self.crop_input_margin_size/2))
-                miny = miny if miny > 0 else 0
+                miny = miny \
+                    if miny > 0 else 0
                 maxy = int(ceil(maxy+span_y*self.crop_input_margin_size/2))
-                maxy = maxy if maxy < 416 else 415
+                maxy = maxy \
+                    if maxy < self.image_height else self.image_height-1
                 self.crop_dict[self.dataX[x]] = [minx, miny, maxx, maxy]
 
     def prepare_object_detection(self):
@@ -626,7 +633,7 @@ class OpenImagesDatasetV6(Dataset):
         result = []
         for sample in samples:
             img = cv2.imread(str(self.root / 'img' / f'{sample}.jpg'))
-            img = cv2.resize(img, (416, 416))
+            img = cv2.resize(img, (self.image_width, self.image_height))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             npimg = np.array(img).astype(np.float32) / 255.0
             if self.image_memory_layout == 'NCHW':
@@ -710,12 +717,18 @@ class OpenImagesDatasetV6(Dataset):
             result.append([])
             for subsample in sample:
                 mask_img = cv2.imread(str(subsample[1]), cv2.IMREAD_GRAYSCALE)
-                mask_img = cv2.resize(mask_img, (416, 416))
+                mask_img = cv2.resize(
+                    mask_img,
+                    (self.image_width, self.image_height)
+                )
                 if self.crop_input_to_bboxes:
                     img_id = str(subsample[1].name).split('_')[0]
                     minx, miny, maxx, maxy = self.crop_dict[img_id]
                     mask_img = mask_img[miny:maxy, minx:maxx]
-                    mask_img = cv2.resize(mask_img, (416, 416))
+                    mask_img = cv2.resize(
+                        mask_img,
+                        (self.image_width, self.image_height)
+                    )
                 mask_img = np.array(mask_img, dtype=np.uint8)
                 new_subsample = SegmObject(
                     clsname=subsample.clsname,

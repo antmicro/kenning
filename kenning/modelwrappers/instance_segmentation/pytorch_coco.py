@@ -88,7 +88,42 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return data
 
     def convert_output_from_bytes(self, output_data):
-        return torch.load(output_data)
+        import json
+        from base64 import b64decode
+        out = json.loads(output_data.decode("ascii"))
+        all_masks = np.frombuffer(
+            b64decode(bytes(out['3'], 'ascii')),
+            dtype='float32'
+        )
+        all_boxes = np.frombuffer(
+            b64decode(bytes(out['0'], 'ascii')),
+            dtype='float32'
+        )
+        all_scores = np.frombuffer(
+            b64decode(bytes(out['1'], 'ascii')),
+            dtype='float32'
+        )
+        all_labels = np.frombuffer(
+            b64decode(bytes(out['2'], 'ascii')),
+            dtype='int64'
+        )
+        return [{
+            "boxes":
+                np.reshape(
+                    all_boxes, (int(np.size(all_boxes)/4), 4)
+                ),
+            "scores":
+                all_scores,
+            "labels":
+                all_labels,
+            "masks":
+                torch.from_numpy(
+                    np.reshape(
+                        all_masks,
+                        (int(np.size(all_masks)/(416**2)), 1, 416, 416)
+                    )
+                )
+        }]
 
     def get_input_spec(self):
         return {'input.1': (1, 3, 416, 416)}, 'float32'

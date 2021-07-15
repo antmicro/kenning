@@ -7,6 +7,7 @@ import numpy as np
 
 import tvm
 from tvm.contrib import graph_executor
+from tvm.runtime.vm import VirtualMachine, Executable
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
@@ -44,6 +45,7 @@ class TVMRuntime(Runtime):
         self.func = None
         self.ctx = None
         self.model = None
+        self.use_tvm_vm = True
         super().__init__(protocol)
 
     @classmethod
@@ -88,10 +90,20 @@ class TVMRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         try:
-            self.model.set_input(
-                0,
-                tvm.nd.array(np.frombuffer(input_data, dtype=self.inputdtype))
-            )
+            if self.use_tvm_vm:
+                self.model.set_input(
+                    "main",
+                    [tvm.nd.array(
+                        np.frombuffer(input_data, dtype=self.inputdtype)
+                    )]
+                )
+            else:
+                self.model.set_input(
+                    0,
+                    tvm.nd.array(
+                        np.frombuffer(input_data, dtype=self.inputdtype)
+                    )
+                )
             self.log.debug('Inputs are ready')
             return True
         except (TypeError, ValueError, tvm.TVMError) as ex:
@@ -100,13 +112,24 @@ class TVMRuntime(Runtime):
 
     def prepare_model(self, input_data):
         self.log.info('Loading model')
-        if input_data:
-            with open(self.modelpath, 'wb') as outmodel:
-                outmodel.write(input_data)
-        self.module = tvm.runtime.load_module(str(self.modelpath))
-        self.func = self.module.get_function('default')
-        self.ctx = tvm.runtime.device(self.contextname, self.contextid)
-        self.model = graph_executor.GraphModule(self.func(self.ctx))
+        if self.use_tvm_vm:
+            self.module = tvm.runtime.load_module(str(self.modelpath)+'.so')
+            loaded_bytecode = bytearray(
+                open(str(self.modelpath)+'.ro', "rb").read()
+            )
+            loaded_vm_exec = Executable.load_exec(loaded_bytecode, self.module)
+
+            self.ctx = tvm.cpu()
+
+            self.model = VirtualMachine(loaded_vm_exec, self.ctx)
+        else:
+            if input_data:
+                with open(self.modelpath, 'wb') as outmodel:
+                    outmodel.write(input_data)
+            self.module = tvm.runtime.load_module(str(self.modelpath))
+            self.func = self.module.get_function('default')
+            self.ctx = tvm.runtime.device(self.contextname, self.contextid)
+            self.model = graph_executor.GraphModule(self.func(self.ctx))
         self.log.info('Model loading ended successfully')
         return True
 
@@ -116,6 +139,17 @@ class TVMRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         out = b''
-        for i in range(self.model.get_num_outputs()):
-            out += self.model.get_output(i).asnumpy().tobytes()
+        if self.use_tvm_vm:
+            from base64 import b64encode
+            import json
+            out_dict = {}
+            for i in range(len(self.model.get_outputs())):
+                out_dict[i] = b64encode(
+                    self.model.get_outputs()[i].asnumpy().tobytes()
+                ).decode("ascii")
+            json_str = json.dumps(out_dict)
+            out = bytes(json_str, "ascii")
+        else:
+            for i in range(self.model.get_num_outputs()):
+                out += self.model.get_output(i).asnumpy().tobytes()
         return out

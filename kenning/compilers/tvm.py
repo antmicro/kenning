@@ -42,28 +42,33 @@ def kerasconversion(
     )
 
 
+def dict_to_tuple(out_dict):
+    return \
+        out_dict["boxes"],\
+        out_dict["scores"],\
+        out_dict["labels"],\
+        out_dict["masks"]
+
+
 def torchconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtype='float32',
+        wrapper_function=dict_to_tuple):
     import torch
     import numpy as np
-
-    def dict_to_tuple(out_dict):
-        if "masks" in out_dict.keys():
-            return \
-                out_dict["boxes"],\
-                out_dict["scores"],\
-                out_dict["labels"],\
-                out_dict["masks"]
-
-        return out_dict["boxes"], out_dict["scores"], out_dict["labels"]
 
     def do_trace(model, inp):
         model_trace = torch.jit.trace(model, inp)
         model_trace.eval()
         return model_trace
+
+    def mul(x: tuple) -> int:
+        ret = 1
+        for i in list(x):
+            ret *= i
+        return ret
 
     class TraceWrapper(torch.nn.Module):
         def __init__(self, model):
@@ -71,14 +76,20 @@ def torchconversion(
             self.model = model
 
         def forward(self, inp):
-            out = self.model(inp)
-            return dict_to_tuple(out[0])
+            out = self.model(
+                inp.reshape(input_shapes[list(input_shapes.keys())[0]])
+            )
+            return wrapper_function(out[0])
 
     model_func = torch.load
     model = TraceWrapper(model_func(modelpath))
     model.eval()
     inp = torch.Tensor(
-        np.random.uniform(0.0, 250.0, size=input_shapes['input.1'])
+        np.random.uniform(
+            0.0,
+            250.0,
+            (mul(input_shapes[list(input_shapes.keys())[0]]))
+        )
     )
 
     with torch.no_grad():
@@ -88,7 +99,15 @@ def torchconversion(
 
     return relay.frontend.from_pytorch(
         model_trace,
-        list(input_shapes.items())
+        # this is a list of input infos where there is a dict
+        # constructed from {input_name: (n-dim tuple-shape)}
+        # into {input_name: [product_of_the_dimmensions]}
+        list(
+            {
+                list(input_shapes.keys())[0]:
+                [mul(input_shapes[list(input_shapes.keys())[0]])]
+            }.items()
+        )
     )
 
 

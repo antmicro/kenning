@@ -50,12 +50,18 @@ def dict_to_tuple(out_dict):
         out_dict["masks"]
 
 
+def default(out_dict):
+    return out_dict
+
+
+wrapper_function = None
+
+
 def torchconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32',
-        wrapper_function=dict_to_tuple):
+        dtype='float32'):
     import torch
     import numpy as np
 
@@ -148,6 +154,11 @@ class TVMCompiler(ModelCompiler):
         'torch': torchconversion
     }
 
+    output_converters = {
+        'default': default,
+        'dict_to_tuple': dict_to_tuple
+    }
+
     def __init__(
             self,
             dataset: Dataset,
@@ -156,7 +167,9 @@ class TVMCompiler(ModelCompiler):
             target: str,
             target_host: str,
             opt_level: int = 2,
-            libdarknetpath: str = '/usr/local/lib/libdarknet.so'):
+            libdarknetpath: str = '/usr/local/lib/libdarknet.so',
+            use_tvm_vm: bool = False,
+            conversion_func: str = 'default'):
         """
         A TVM Compiler wrapper.
 
@@ -186,6 +199,7 @@ class TVMCompiler(ModelCompiler):
         self.opt_level = opt_level
         self.libdarknetpath = libdarknetpath
         self.use_tvm_vm = True
+
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -217,6 +231,17 @@ class TVMCompiler(ModelCompiler):
             help='Path to the libdarknet.so library, for darknet models',
             type=str
         )
+        group.add_argument(
+            '--compile-use-vm',
+            help='At compilation stage use the TVM Relay VirtualMachine',
+            action='store_true'
+        )
+        group.add_argument(
+            '--output-conversion-function',
+            help='The type of output conversion function used for PyTorch conversion',  # noqa: E501
+            choices=cls.output_converters.keys(),
+            default='default'
+        )
         return parser, group
 
     @classmethod
@@ -228,7 +253,9 @@ class TVMCompiler(ModelCompiler):
             args.target,
             args.target_host,
             args.opt_level,
-            args.libdarknet_path
+            args.libdarknet_path,
+            args.compile_use_vm,
+            args.output_conversion_function
         )
 
     def set_input_type(self, inputtype: str):

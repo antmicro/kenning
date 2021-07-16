@@ -36,7 +36,8 @@ class Runtime(object):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol):
+            protocol: RuntimeProtocol,
+            collect_performance_data: bool = True):
         """
         Creates Runtime object.
 
@@ -56,6 +57,7 @@ class Runtime(object):
         }
         self.statsmeasurements = None
         self.log = get_logger()
+        self.collect_performance_data = collect_performance_data
 
     @classmethod
     def form_argparse(cls):
@@ -71,6 +73,11 @@ class Runtime(object):
         """
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_argument_group(title='Runtime arguments')
+        group.add_argument(
+            '--disable-performance-measurements',
+            help='Disable collection and processing of performance metrics',
+            action='store_false'
+        )
         return parser, group
 
     @classmethod
@@ -89,7 +96,7 @@ class Runtime(object):
         -------
         RuntimeProtocol : object of class ModelCompiler
         """
-        return cls(protocol)
+        return cls(protocol, args.disable_performance_measurements)
 
     def inference_session_start(self):
         """
@@ -99,11 +106,14 @@ class Runtime(object):
 
         This will enable performance tracking.
         """
-        if self.statsmeasurements is None:
-            self.statsmeasurements = SystemStatsCollector(
-                'session_utilization'
-            )
-        self.statsmeasurements.start()
+        if self.collect_performance_data:
+            if self.statsmeasurements is None:
+                self.statsmeasurements = SystemStatsCollector(
+                    'session_utilization'
+                )
+            self.statsmeasurements.start()
+        else:
+            self.statsmeasurements = None
 
     def inference_session_end(self):
         """

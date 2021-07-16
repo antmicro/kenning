@@ -4,6 +4,8 @@ Runtime implementation for TVM-compiled models.
 
 from pathlib import Path
 import numpy as np
+from base64 import b64encode
+import json
 
 import tvm
 from tvm.contrib import graph_executor
@@ -20,7 +22,9 @@ class TVMRuntime(Runtime):
             modelpath: Path,
             contextname: str = 'cpu',
             contextid: int = 0,
-            inputdtype: str = 'float32'):
+            inputdtype: str = 'float32',
+            use_tvm_vm: bool = False,
+            use_json_out: bool = False):
         """
         Constructs TVM runtime.
 
@@ -45,7 +49,8 @@ class TVMRuntime(Runtime):
         self.func = None
         self.ctx = None
         self.model = None
-        self.use_tvm_vm = True
+        self.use_tvm_vm = use_tvm_vm
+        self.use_json_out = use_json_out
         super().__init__(protocol)
 
     @classmethod
@@ -75,6 +80,16 @@ class TVMRuntime(Runtime):
             type=str,
             default='float32'
         )
+        group.add_argument(
+            '--runtime-use-vm',
+            help='At runtime use the TVM Relay VirtualMachine',
+            action='store_true'
+        )
+        group.add_argument(
+            '--use-json-at-output',
+            help='Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
+            action='store_true'
+        )
         return parser, group
 
     @classmethod
@@ -84,7 +99,9 @@ class TVMRuntime(Runtime):
             args.save_model_path,
             args.target_device_context,
             args.target_device_context_id,
-            args.input_dtype
+            args.input_dtype,
+            args.runtime_use_vm,
+            args.use_json_at_output
         )
 
     def prepare_input(self, input_data):
@@ -140,15 +157,17 @@ class TVMRuntime(Runtime):
         self.log.debug('Uploading output')
         out = b''
         if self.use_tvm_vm:
-            from base64 import b64encode
-            import json
-            out_dict = {}
-            for i in range(len(self.model.get_outputs())):
-                out_dict[i] = b64encode(
-                    self.model.get_outputs()[i].asnumpy().tobytes()
-                ).decode("ascii")
-            json_str = json.dumps(out_dict)
-            out = bytes(json_str, "ascii")
+            if self.use_json_out:
+                out_dict = {}
+                for i in range(len(self.model.get_outputs())):
+                    out_dict[i] = b64encode(
+                        self.model.get_outputs()[i].asnumpy().tobytes()
+                    ).decode("ascii")
+                json_str = json.dumps(out_dict)
+                out = bytes(json_str, "ascii")
+            else:
+                for i in range(len(self.model.get_outputs())):
+                    out += self.model.get_outputs()[i].asnumpy().tobytes()
         else:
             for i in range(self.model.get_num_outputs()):
                 out += self.model.get_output(i).asnumpy().tobytes()

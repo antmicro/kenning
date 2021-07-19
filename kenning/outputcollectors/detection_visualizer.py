@@ -25,7 +25,16 @@ class DetectionVisualizer(OutputCollector):
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
-        if not save_to_file:
+        self.save_path = Path(save_path)
+        if save_to_file:
+            codec = cv2.VideoWriter_fourcc(*'mp4v')
+            self.out = cv2.VideoWriter(
+                str(self.save_path),
+                codec,
+                25,
+                (self.output_width, self.output_height)
+            )
+        else:
             try:
                 cv2.namedWindow(
                     self.window_name,

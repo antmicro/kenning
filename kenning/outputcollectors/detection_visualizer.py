@@ -25,6 +25,17 @@ class DetectionVisualizer(OutputCollector):
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
+        if not save_to_file:
+            try:
+                cv2.namedWindow(
+                    self.window_name,
+                    cv2.WINDOW_OPENGL+cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
+                )
+            except cv2.error:
+                cv2.namedWindow(
+                    self.window_name,
+                    cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
+                )
         self.save_path = Path(save_path)
         self.out = None
         if save_to_file:

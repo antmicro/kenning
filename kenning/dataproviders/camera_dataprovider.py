@@ -43,16 +43,18 @@ class CameraDataProvider(DataProvider):
         self.memory_layout = memory_layout
         self.batch_size = 1
 
+        self.device = None
+
         super().__init__()
 
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
         group.add_argument(
-            '--camera-device-id',
-            help='Numeric ID of the camera device to be used',
-            type=int,
-            default=-1
+            '--video-file-path',
+            help='Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)',  # noqa: E501
+            type=Path,
+            required=True
         )
         group.add_argument(
             '--image-memory-layout',
@@ -90,7 +92,7 @@ class CameraDataProvider(DataProvider):
         else:
             return np.array(data, dtype=np.float32) / 255.0
 
-    def get_input(self):
+    def fetch_input(self):
         ret, frame = self.device.read()
         if ret:
             return frame

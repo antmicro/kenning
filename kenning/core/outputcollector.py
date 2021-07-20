@@ -50,12 +50,19 @@ class OutputCollector(object):
         """
         return cls()
 
-    def return_output(self, input_data: Any, output_data: Any):
+    def process_output(self, input_data: Any, output_data: Any):
         """
         Returns the infered data back to the specific place/device/connection
 
         Eg. it can save a video file with bounding boxes on objects or stream
         it via a TCP connection, or just show it on screen
+
+        Parameters
+        ----------
+        input_data : Any
+            Data collected from Datacollector that was processed by the model
+        output_data : Any
+            Data returned from the model
         """
         raise NotImplementedError
 

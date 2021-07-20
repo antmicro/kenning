@@ -15,7 +15,6 @@ class DataProvider(object):
         ----------
 
         """
-        self.device = None
         self.prepare()
 
     @classmethod
@@ -68,15 +67,19 @@ class DataProvider(object):
         """
         raise NotImplementedError
 
-    def get_input(self):
+    def fetch_input(self) -> Any:
         """
         Gets the sample from device
+
+        Returns
+        -------
+        Any : data to be processed by the model
         """
         raise NotImplementedError
 
     def preprocess_input(self, data: Any) -> Any:
         """
-        Processes the input for inference
+        Performs provider-specific preprocessing of inputs
 
         Parameters
         ----------

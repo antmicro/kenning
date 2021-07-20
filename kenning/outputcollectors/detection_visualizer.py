@@ -27,6 +27,7 @@ class DetectionVisualizer(Outputcollector):
         self.output_height = output_height
         self.save_to_file = save_to_file
         self.save_path = Path(save_path)
+        self.out = None
         if save_to_file:
             codec = cv2.VideoWriter_fourcc(*'mp4v')
             self.out = cv2.VideoWriter(
@@ -59,19 +60,13 @@ class DetectionVisualizer(Outputcollector):
             '--output-width',
             help='Width of the output window or file',
             type=int,
-            default=1920/2
+            default=int(1920/2)
         )
         group.add_argument(
             '--output-height',
             help='Height of the output window or file',
             type=int,
-            default=1080/2
-        )
-        group.add_argument(
-            '--image-memory-layout',
-            help='Determines if images should be interpreted in NHWC or NCHW format',  # noqa: E501
-            choices=['NHWC', 'NCHW'],
-            default='NCHW'
+            default=int(1080/2)
         )
         group.add_argument(
             '--save-to-file',
@@ -82,7 +77,8 @@ class DetectionVisualizer(Outputcollector):
             '--save-path',
             help='Path to save the output images',
             required='--save-to-file' in sys.argv,  # TODO: test this StackOverflow solution  # noqa: E501
-            type=Path
+            type=Path,
+            default='./'
         )
         return parser, group
 
@@ -162,7 +158,7 @@ class DetectionVisualizer(Outputcollector):
             )
             out_img = cv2.putText(
                 out_img,
-                "score: {}".format(i.score),
+                "score: {:.2f}".format(i.score),
                 (low_pair[0]+5, high_pair[1]-5),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 self.font_scale,
@@ -174,8 +170,10 @@ class DetectionVisualizer(Outputcollector):
     def return_output(self, input_data, output_data):
         # assume that output_data is provided as DectObjects,
         # TBD by actually running everything later
+        output_data = output_data[0]
         if self.layout == 'NCHW':
             input_data = np.transpose(input_data, (1, 2, 0))
+        input_data = np.multiply(input_data, 255).astype('uint8')
         input_data = cv2.resize(
             input_data,
             (self.output_width, self.output_height)

@@ -50,7 +50,7 @@ def dict_to_tuple(out_dict):
         out_dict["masks"]
 
 
-def default(out_dict):
+def no_conversion(out_dict):
     return out_dict
 
 
@@ -65,12 +65,21 @@ def torchconversion(
     import torch
     import numpy as np
 
-    def do_trace(model, inp):
-        model_trace = torch.jit.trace(model, inp)
-        model_trace.eval()
-        return model_trace
-
     def mul(x: tuple) -> int:
+        """
+        Method used to convert shape-representing tuple
+        to a 1-dimmensional size to allow the model to be inferred with
+        an 1-dimmensional byte array
+
+        Parameters
+        ----------
+        x : tuple
+            tuple describing the regular input shape
+
+        Returns
+        -------
+        int : the size of a 1-dimmensional input matching the original shape
+        """
         ret = 1
         for i in list(x):
             ret *= i
@@ -155,7 +164,7 @@ class TVMCompiler(ModelCompiler):
     }
 
     output_converters = {
-        'default': default,
+        'default': no_conversion,
         'dict_to_tuple': dict_to_tuple
     }
 

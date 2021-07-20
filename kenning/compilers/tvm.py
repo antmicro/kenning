@@ -42,19 +42,8 @@ def kerasconversion(
     )
 
 
-def dict_to_tuple(out_dict):
-    return \
-        out_dict["boxes"],\
-        out_dict["scores"],\
-        out_dict["labels"],\
-        out_dict["masks"]
-
-
 def no_conversion(out_dict):
     return out_dict
-
-
-wrapper_function = None
 
 
 def torchconversion(
@@ -64,6 +53,15 @@ def torchconversion(
         dtype='float32'):
     import torch
     import numpy as np
+
+    # This is a model-specific selector of output conversion functions.
+    # It defaults to a no_conversion function that just returns its input
+    # It is easily expandable in case it is needed for other models
+    if compiler.wrapper_function == 'dict_to_tuple':  # For PyTorch Mask R-CNN Model  # noqa: E501
+        from kenning.modelwrappers.instance_segmentation.pytorch_coco import dict_to_tuple  # noqa: E501
+        wrapper = dict_to_tuple
+    else:  # General case- no conversion is happening
+        wrapper = no_conversion
 
     def mul(x: tuple) -> int:
         """
@@ -94,7 +92,7 @@ def torchconversion(
             out = self.model(
                 inp.reshape(input_shapes[list(input_shapes.keys())[0]])
             )
-            return wrapper_function(out[0])
+            return wrapper(out[0])
 
     model_func = torch.load
     model = TraceWrapper(model_func(modelpath))
@@ -163,11 +161,6 @@ class TVMCompiler(ModelCompiler):
         'torch': torchconversion
     }
 
-    output_converters = {
-        'default': no_conversion,
-        'dict_to_tuple': dict_to_tuple
-    }
-
     def __init__(
             self,
             dataset: Dataset,
@@ -207,7 +200,9 @@ class TVMCompiler(ModelCompiler):
         )
         self.opt_level = opt_level
         self.libdarknetpath = libdarknetpath
-        self.use_tvm_vm = True
+        self.use_tvm_vm = use_tvm_vm
+
+        self.wrapper_function = conversion_func
 
         super().__init__(dataset, compiled_model_path)
 
@@ -248,7 +243,7 @@ class TVMCompiler(ModelCompiler):
         group.add_argument(
             '--output-conversion-function',
             help='The type of output conversion function used for PyTorch conversion',  # noqa: E501
-            choices=cls.output_converters.keys(),
+            choices=['default', 'dict_to_tuple'],
             default='default'
         )
         return parser, group

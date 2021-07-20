@@ -127,3 +127,11 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     def get_input_spec(self):
         return {'input.1': (1, 3, 416, 416)}, 'float32'
+
+
+def dict_to_tuple(out_dict):
+    return \
+        out_dict["boxes"],\
+        out_dict["scores"],\
+        out_dict["labels"],\
+        out_dict["masks"]

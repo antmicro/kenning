@@ -5,21 +5,43 @@ camera or a dummy video device
 """
 
 from kenning.core.dataprovider import Dataprovider
+from kenning.datasets.open_images_dataset import DectObject
+from kenning.resources import coco_detection
 import cv2
 import numpy as np
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
+from pathlib import Path
 
 
 class CameraDataprovider(Dataprovider):
     def __init__(
             self,
             camera_device_id: int = -1,
-            memory_layout: str = "NCHW"):
+            memory_layout: str = "NCHW",
+            class_names: str = 'coco'):
 
         self.device_id = camera_device_id
+        self.classnames = []
+        if class_names == 'coco':
+            with path(coco_detection, 'cocov6.classes') as p:
+                with open(p, 'r') as f:
+                    for line in f:
+                        self.classnames.append(line.split(',')[1].strip())
+        else:
+            with Path(class_names) as p:
+                with open(p, 'r') as f:
+                    for line in f:
+                        self.classnames.append(line.split(',')[1].strip())
 
+        self.numclasses = len(self.classnames)
         self.image_width = 416
         self.image_height = 416
         self.memory_layout = memory_layout
+        self.batch_size = 1
 
         super().__init__()
 
@@ -38,13 +60,20 @@ class CameraDataprovider(Dataprovider):
             choices=['NHWC', 'NCHW'],
             default='NCHW'
         )
+        group.add_argument(
+            '--classes',
+            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
+            type=str,
+            default='coco'
+        )
         return parser, group
 
     @classmethod
     def from_argparse(cls, args):
         return cls(
             args.camera_device_id,
-            args.image_memory_layout
+            args.image_memory_layout,
+            args.classes
         )
 
     def prepare(self):
@@ -56,9 +85,10 @@ class CameraDataprovider(Dataprovider):
             (self.image_width, self.image_height)
         )
         if self.memory_layout == "NCHW":
-            return np.transpose(data, (2, 0, 1))
+            img = np.transpose(data, (2, 0, 1))
+            return np.array(img, dtype=np.float32) / 255.0
         else:
-            return data
+            return np.array(data, dtype=np.float32) / 255.0
 
     def get_input(self):
         ret, frame = self.device.read()
@@ -66,3 +96,32 @@ class CameraDataprovider(Dataprovider):
             return self.preprocess_input(frame)
         else:
             return None
+
+    def compute_iou(self, b1: DectObject, b2: DectObject) -> float:
+        """
+        Computes the IoU between two bounding boxes.
+
+        Parameters
+        ----------
+        b1 : DectObject
+            First bounding box
+        b2 : DectObject
+            Second bounding box
+
+        Returns
+        -------
+        float : IoU value
+        """
+        xmn = max(b1.xmin, b2.xmin)
+        ymn = max(b1.ymin, b2.ymin)
+        xmx = min(b1.xmax, b2.xmax)
+        ymx = min(b1.ymax, b2.ymax)
+
+        intersectarea = max(0, xmx - xmn) * max(0, ymx - ymn)
+
+        b1area = (b1.xmax - b1.xmin) * (b1.ymax - b1.ymin)
+        b2area = (b2.xmax - b2.xmin) * (b2.ymax - b2.ymin)
+
+        iou = intersectarea / (b1area + b2area - intersectarea)
+
+        return iou

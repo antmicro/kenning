@@ -105,7 +105,7 @@ class DetectionVisualizer(Outputcollector):
         -------
         Tuple[int, int, int] : color in (r,g,b) format
         """
-        random.seed(clsname, version=2)
+        random.seed(hash(clsname), version=2)
         return (
             random.randint(0, 255),
             random.randint(0, 255),

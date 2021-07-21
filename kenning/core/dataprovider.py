@@ -88,3 +88,9 @@ class Dataprovider(object):
         Any : preprocessed data
         """
         return self.data
+
+    def detach_from_source(self):
+        """
+        Detaches from the source during shutdown
+        """
+        raise NotImplementedError

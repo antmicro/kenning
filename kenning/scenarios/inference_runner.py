@@ -84,10 +84,10 @@ def main(argv):
                 i.return_output(img_inp, res)
             keycode = cv2.waitKey(1)
     except KeyboardInterrupt:
-        dataprovider.device.release()
+        log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa E501
+        dataprovider.detach_from_source()
         for o in outputcollectors:
-            if o.out:
-                o.out.release()
+            o.detach_from_output()
 
 
 if __name__ == '__main__':

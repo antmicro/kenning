@@ -187,3 +187,9 @@ class DetectionVisualizer(Outputcollector):
                 self.window_name,
                 self.visualize_data(input_data, output_data)
             )
+
+    def detach_from_output(self):
+        if self.out:
+            self.out.release()
+        else:
+            cv2.destroyWindow(self.window_name)

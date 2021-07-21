@@ -67,3 +67,9 @@ class Outputcollector(object):
         detected objects in the corner of a frame
         """
         return input_data
+
+    def detach_from_output(self):
+        """
+        Detaches from the output during shutdown
+        """
+        raise NotImplementedError

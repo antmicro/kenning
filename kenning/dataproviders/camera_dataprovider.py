@@ -97,6 +97,10 @@ class CameraDataprovider(Dataprovider):
         else:
             return None
 
+    def detach_from_source(self):
+        if self.device:
+            self.device.release()
+
     def compute_iou(self, b1: DectObject, b2: DectObject) -> float:
         """
         Computes the IoU between two bounding boxes.

@@ -153,6 +153,23 @@ class DetectionVisualizer(OutputCollector):
             self,
             input_data: np.ndarray,
             output_data: List[DectObject]) -> np.ndarray:
+        """
+        Method used to add visualizations of the models output
+        It draws bounding boxes, class names and score onto
+        the original image
+
+        Parameters
+        ----------
+        input_data : np.ndarray
+            the original image
+        output_data : List[DectObject]
+            list of found objects represented as DectObjects
+
+        Returns
+        -------
+        np.ndarray : the modified image with visualizations drawn
+        """
+
         out_img = input_data
         for i in output_data:
             low_pair = self.compute_coordinates((i.xmin, i.ymin))

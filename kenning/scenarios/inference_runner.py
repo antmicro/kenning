@@ -9,6 +9,7 @@ It requires implementations of several classes as input:
 * Dataprovider : provides data for inference
 * Outputcollector : interprets and visualizes the output
 * Runtime : runs the model with provided data and returns the output
+* ModelWrapper : provides methods to convert and interpret input/output data
 
 Each class requires arguments to configure them and provide user settings
 """
@@ -16,7 +17,7 @@ import sys
 import argparse
 
 from kenning.utils.class_loader import load_class
-# import kenning.utils.logger as logger
+import kenning.utils.logger as logger
 import cv2
 
 
@@ -39,8 +40,17 @@ def main(argv):
         help='Outputcollector-based class for visualizing and gathering data',
         action='append'
     )
+    parser.add_argument(
+        '--verbosity',
+        help='Verbosity level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
+    )
 
     args, _ = parser.parse_known_args(argv[1:])
+
+    log = logger.set_verbosity(args.verbosity)
+    log = logger.get_logger()
 
     modelwrappercls = load_class(args.modelwrappercls)
     runtimecls = load_class(args.runtimecls)
@@ -71,17 +81,25 @@ def main(argv):
 
     runtime.prepare_model(None)
     keycode = 0
+    log.info("Starting inference session")
     try:
         while keycode != 27:
-            img_inp = dataprovider.get_input()
-            inp = model.convert_input_to_bytes(model.preprocess_input(img_inp))
+            log.debug("Fetching data")
+            unconverted_inp = dataprovider.get_input()
+            log.debug("Converting to bytes and setting up model input")
+            inp = model.convert_input_to_bytes(
+                model.preprocess_input(unconverted_inp)
+            )
             runtime.prepare_input(inp)
+            log.debug("Running inference")
             runtime.run()
+            log.debug("Converting output from bytes")
             res = model.postprocess_outputs(
                 model.convert_output_from_bytes(runtime.upload_output(inp))
             )
+            log.debug("Sending data to collectors")
             for i in outputcollectors:
-                i.return_output(img_inp, res)
+                i.return_output(unconverted_inp, res)
             keycode = cv2.waitKey(1)
     except KeyboardInterrupt:
         log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa E501

@@ -11,6 +11,21 @@ import numpy as np
 from typing import Tuple, List
 from pathlib import Path
 import sys
+from collections import defaultdict
+
+
+def generate_color() -> Tuple[int, int, int]:
+    """
+    Generates a random RGB color
+    Returns
+    -------
+    Tuple[int, int, int] : color in (r,g,b) format
+    """
+    return (
+        random.randint(0, 255),
+        random.randint(0, 255),
+        random.randint(0, 255)
+    )
 
 
 class DetectionVisualizer(OutputCollector):
@@ -19,19 +34,21 @@ class DetectionVisualizer(OutputCollector):
             output_width: int = int(1920/2),
             output_height: int = int(1080/2),
             save_to_file: bool = False,
-            save_path: Path = './'):
+            save_path: Path = './',
+            save_fps: int = 25):
 
         self.window_name = "Test-window"
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
         self.save_path = Path(save_path)
+        self.video_fps = save_fps
         if save_to_file:
-            codec = cv2.VideoWriter_fourcc(*'mp4v')
+            codec = cv2.VideoWriter_fourcc(*'avc1')
             self.out = cv2.VideoWriter(
                 str(self.save_path),
                 codec,
-                25,
+                self.video_fps,
                 (self.output_width, self.output_height)
             )
         else:
@@ -68,6 +85,7 @@ class DetectionVisualizer(OutputCollector):
                 )
         self.font_scale = 0.7
         self.font_thickness = 2
+        self.color_dict = defaultdict(generate_color)
 
         super().__init__()
 
@@ -187,7 +205,7 @@ class DetectionVisualizer(OutputCollector):
                 (low_pair[0], low_pair[1]-5),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 self.font_scale,
-                self.get_class_color(i.clsname),
+                self.color_dict[i.clsname],
                 self.font_thickness
             )
             out_img = cv2.putText(
@@ -196,7 +214,7 @@ class DetectionVisualizer(OutputCollector):
                 (low_pair[0]+5, high_pair[1]-5),
                 cv2.FONT_HERSHEY_SIMPLEX,
                 self.font_scale,
-                self.get_class_color(i.clsname),
+                self.color_dict[i.clsname],
                 self.font_thickness
             )
         return out_img

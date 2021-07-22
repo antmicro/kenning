@@ -85,6 +85,10 @@ class OutputCollector(object):
         """
         Checks if a specific exit condition was reached
         that will shutdown the program gracefully, like a specific
-        key being pressed
+        key being pressed and returns False to break the loop if so
+
+        Returns
+        -------
+        bool : False if exit condition was reached to break the loop
         """
         raise NotImplementedError

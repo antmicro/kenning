@@ -139,5 +139,5 @@ class VideoCaptureDeviceException(Exception):
     Exception to be raised when VideoCaptureDevice malfunctions
     during frame capture
     """
-    def __init__(self, device_id):
-        super().__init__("Video device {} read error".format(device_id))
+    def __init__(self, device_id, message="Video device {} read error"):
+        super().__init__(message.format(device_id))

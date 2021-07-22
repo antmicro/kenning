@@ -80,3 +80,11 @@ class OutputCollector(object):
         Detaches from the output during shutdown
         """
         raise NotImplementedError
+
+    def check_exit_condition(self) -> bool:
+        """
+        Checks if a specific exit condition was reached
+        that will shutdown the program gracefully, like a specific
+        key being pressed
+        """
+        raise NotImplementedError

@@ -15,7 +15,10 @@ class NamePrinter(OutputCollector):
     def detach_from_output(self):
         pass
 
-    def return_output(self, i: Any, o: DectObject):
+    def check_exit_condition(self):
+        pass
+
+    def process_output(self, i: Any, o: DectObject):
         o = o[0]
         print("Frame", self.frame_counter, end=": ")
         self.frame_counter += 1

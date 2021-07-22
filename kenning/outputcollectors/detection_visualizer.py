@@ -42,9 +42,9 @@ class DetectionVisualizer(OutputCollector):
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
-        self.save_path = Path(save_path)
         self.video_fps = save_fps
         if save_to_file:
+            self.save_path = Path(save_path)
             codec = cv2.VideoWriter_fourcc(*'avc1')
             self.out = cv2.VideoWriter(
                 str(self.save_path),
@@ -238,6 +238,9 @@ class DetectionVisualizer(OutputCollector):
                 self.window_name,
                 self.visualize_data(input_data, output_data)
             )
+
+    def check_exit_condition(self):
+        return cv2.waitKey(1) != 27
 
     def detach_from_output(self):
         if self.out:

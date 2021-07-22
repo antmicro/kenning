@@ -86,9 +86,11 @@ def main(argv):
     runtime.prepare_model(None)
     log.info("Starting inference session")
     try:
-        while True:
+        # check against the 'main' output collector
+        # if an exit condition was reached
+        while outputcollectors[0].check_exit_condition():
             log.debug("Fetching data")
-            unconverted_inp = dataprovider.get_input()
+            unconverted_inp = dataprovider.fetch_input()
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)
 
             log.debug("Converting to bytes and setting up model input")
@@ -107,7 +109,7 @@ def main(argv):
 
             log.debug("Sending data to collectors")
             for i in outputcollectors:
-                i.return_output(unconverted_inp, res)
+                i.process_output(unconverted_inp, res)
     except KeyboardInterrupt:
         log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa E501
         dataprovider.detach_from_source()

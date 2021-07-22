@@ -1,10 +1,10 @@
 """
-A Dataprovider-derived class used to interface with a
+A DataProvider-derived class used to interface with a
 camera or a dummy video device
 (consult ffmpeg and v4l2loopback for configuration for dummy video devices)
 """
 
-from kenning.core.dataprovider import Dataprovider
+from kenning.core.dataprovider import DataProvider
 from kenning.datasets.open_images_dataset import DectObject
 from kenning.resources import coco_detection
 import cv2
@@ -17,7 +17,7 @@ else:
 from pathlib import Path
 
 
-class CameraDataprovider(Dataprovider):
+class CameraDataProvider(DataProvider):
     def __init__(
             self,
             camera_device_id: int = -1,

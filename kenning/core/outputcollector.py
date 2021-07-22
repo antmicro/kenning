@@ -6,14 +6,14 @@ from typing import Any
 import argparse
 
 
-class Outputcollector(object):
+class OutputCollector(object):
     def __init__(self):
         pass
 
     @classmethod
     def form_argparse(cls):
         """
-        Creates argparse parser for the Outputcollector object.
+        Creates argparse parser for the OutputCollector object.
 
         This method is used to create a list of arguments for the object so
         it is possible to configure the object from the level of command
@@ -27,7 +27,7 @@ class Outputcollector(object):
             pointer
         """
         parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Dataprovider arguments')
+        group = parser.add_argument_group(title='OutputCollector arguments')
 
         return parser, group
 
@@ -46,7 +46,7 @@ class Outputcollector(object):
 
         Returns
         -------
-        Outputcollector : object of class Outputcollector
+        OutputCollector : object of class OutputCollector
         """
         return cls()
 

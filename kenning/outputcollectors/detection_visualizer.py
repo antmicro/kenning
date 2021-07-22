@@ -3,7 +3,7 @@ A OutputCollector-derived class used to visualize bounding box
 data on input images and display/save them.
 """
 
-from kenning.core.outputcollector import Outputcollector
+from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.open_images_dataset import DectObject
 import random
 import cv2
@@ -13,7 +13,7 @@ from pathlib import Path
 import sys
 
 
-class DetectionVisualizer(Outputcollector):
+class DetectionVisualizer(OutputCollector):
     def __init__(
             self,
             output_width: int = int(1920/2),

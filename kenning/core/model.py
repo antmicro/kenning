@@ -9,7 +9,7 @@ from collections import defaultdict
 from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
-from kenning.core.dataprovider import Dataprovider
+from kenning.core.dataprovider import DataProvider
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
@@ -24,7 +24,7 @@ class ModelWrapper(object):
     def __init__(
             self,
             modelpath: Path,
-            dataset: Union[Dataset, Dataprovider],
+            dataset: Union[Dataset, DataProvider],
             from_file: bool = True):
         """
         Creates the model wrapper.

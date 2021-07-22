@@ -1,13 +1,13 @@
 """
 A script that uses the model in inference-only mode with
-no performance data collection. It utilizes a Dataprovider and
+no performance data collection. It utilizes a DataProvider and
 one or more OutputCollectors to supply and gather data to and from the model
 and save them or visualize to the user.
 
 It requires implementations of several classes as input:
 
-* Dataprovider : provides data for inference
-* Outputcollector : interprets and visualizes the output
+* DataProvider : provides data for inference
+* OutputCollector : interprets and visualizes the output
 * Runtime : runs the model with provided data and returns the output
 * ModelWrapper : provides methods to convert and interpret input/output data
 
@@ -33,15 +33,15 @@ def main(argv):
     )
     parser.add_argument(
         'dataprovidercls',
-        help='Dataprovider-based class used for providing data',
+        help='DataProvider-based class used for providing data',
     )
     parser.add_argument(
         'outputcollectorcls',
-        help='Outputcollector-based class for visualizing and gathering data',
+        help='OutputCollector-based class for visualizing and gathering data',
     )
     parser.add_argument(
         '--additional-outputcollector',
-        help='Additonal outputcollector-based class (can be called multiple times)',  # noqa: E501
+        help='Additonal OutputCollector-based class (can be called multiple times)',  # noqa: E501
         action='append'
     )
     parser.add_argument(

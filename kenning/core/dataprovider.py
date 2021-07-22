@@ -6,10 +6,10 @@ from typing import Any
 import argparse
 
 
-class Dataprovider(object):
+class DataProvider(object):
     def __init__(self):
         """
-        Initializes dataprovider object.
+        Initializes DataProvider object.
 
         Parameters
         ----------
@@ -21,7 +21,7 @@ class Dataprovider(object):
     @classmethod
     def form_argparse(cls):
         """
-        Creates argparse parser for the Dataprovider object.
+        Creates argparse parser for the DataProvider object.
 
         This method is used to create a list of arguments for the object so
         it is possible to configure the object from the level of command
@@ -35,7 +35,7 @@ class Dataprovider(object):
             pointer
         """
         parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Dataprovider arguments')
+        group = parser.add_argument_group(title='DataProvider arguments')
 
         return parser, group
 
@@ -54,7 +54,7 @@ class Dataprovider(object):
 
         Returns
         -------
-        Dataprovider : object of class Dataprovider
+        DataProvider : object of class DataProvider
         """
         return cls()
 

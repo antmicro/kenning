@@ -1,13 +1,13 @@
 """
 A small, very basic OutputCollector-derived class used to test
-handling of multiple outputcollecotrs in inference_runner scenario
+handling of multiple OutputCollectors in inference_runner scenario
 """
-from kenning.core.outputcollector import Outputcollector
+from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.open_images_dataset import DectObject
 from typing import Any
 
 
-class NamePrinter(Outputcollector):
+class NamePrinter(OutputCollector):
     def __init__(self):
         self.frame_counter = 0
         super().__init__()

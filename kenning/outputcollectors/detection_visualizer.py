@@ -18,7 +18,6 @@ class DetectionVisualizer(OutputCollector):
             self,
             output_width: int = int(1920/2),
             output_height: int = int(1080/2),
-            image_layout: str = 'NCHW',
             save_to_file: bool = False,
             save_path: Path = './'):
 
@@ -49,7 +48,6 @@ class DetectionVisualizer(OutputCollector):
                 )
         self.font_scale = 0.7
         self.font_thickness = 2
-        self.layout = image_layout
 
         super().__init__()
 
@@ -87,7 +85,6 @@ class DetectionVisualizer(OutputCollector):
         return cls(
             args.output_width,
             args.output_height,
-            args.image_memory_layout,
             args.save_to_file,
             args.save_path
         )
@@ -167,13 +164,11 @@ class DetectionVisualizer(OutputCollector):
             )
         return out_img
 
-    def return_output(self, input_data, output_data):
-        # assume that output_data is provided as DectObjects,
-        # TBD by actually running everything later
+    def return_output(
+            self,
+            input_data: np.ndarray,  # since the original frames are passed in, this should always be HWC, uint8  # noqa: E501
+            output_data: List[List[DectObject]]):
         output_data = output_data[0]
-        if self.layout == 'NCHW':
-            input_data = np.transpose(input_data, (1, 2, 0))
-        input_data = np.multiply(input_data, 255).astype('uint8')
         input_data = cv2.resize(
             input_data,
             (self.output_width, self.output_height)

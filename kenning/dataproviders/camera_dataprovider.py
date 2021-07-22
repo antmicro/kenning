@@ -93,8 +93,9 @@ class CameraDataProvider(DataProvider):
     def get_input(self):
         ret, frame = self.device.read()
         if ret:
-            return self.preprocess_input(frame)
+            return frame
         else:
+            raise VideoCaptureDeviceException(self.device_id)
             return None
 
     def detach_from_source(self):
@@ -129,3 +130,12 @@ class CameraDataProvider(DataProvider):
         iou = intersectarea / (b1area + b2area - intersectarea)
 
         return iou
+
+
+class VideoCaptureDeviceException(Exception):
+    """
+    Exception to be raised when VideoCaptureDevice malfunctions
+    during frame capture
+    """
+    def __init__(self, device_id):
+        super().__init__("Video device {} read error".format(device_id))

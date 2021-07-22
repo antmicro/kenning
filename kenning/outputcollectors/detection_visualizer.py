@@ -35,9 +35,10 @@ class DetectionVisualizer(OutputCollector):
             output_height: int = int(1080/2),
             save_to_file: bool = False,
             save_path: Path = './',
-            save_fps: int = 25):
+            save_fps: int = 25,
+            window_name: str = "stream"):
 
-        self.window_name = "Test-window"
+        self.window_name = window_name
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
@@ -196,7 +197,7 @@ class DetectionVisualizer(OutputCollector):
                 out_img,
                 low_pair,
                 high_pair,
-                self.get_class_color(i.clsname),
+                self.color_dict[i.clsname],
                 2
             )
             out_img = cv2.putText(

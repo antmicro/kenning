@@ -62,7 +62,7 @@ def main(argv):
         argv[0],
         parents=[
             parser,
-            modelwrappercls.form_argparse()[0],
+            modelwrappercls.form_argparse(True)[0],
             runtimecls.form_argparse()[0],
             dataprovidercls.form_argparse()[0]
         ] + ([i.form_argparse()[0] for i in outputcollectorcls])
@@ -71,7 +71,7 @@ def main(argv):
     args = parser.parse_args(argv[1:])
 
     dataprovider = dataprovidercls.from_argparse(args)
-    model = modelwrappercls.from_argparse(dataprovider, args)
+    model = modelwrappercls.from_argparse(None, args)
     runtime = runtimecls.from_argparse(None, args)
     outputcollectors = [
         o.from_argparse(args) for o in outputcollectorcls

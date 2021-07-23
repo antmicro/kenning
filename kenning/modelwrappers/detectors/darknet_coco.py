@@ -9,14 +9,64 @@ import numpy as np
 from collections import defaultdict
 
 from kenning.core.model import ModelWrapper
-from kenning.datasets.open_images_dataset import DectObject
+from kenning.datasets.open_images_dataset import DectObject, compute_iou, Dataset  # noqa: E501
+
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
+from kenning.resources import coco_detection
+from pathlib import Path
 
 
 class TVMDarknetCOCOYOLOV3(ModelWrapper):
-    def __init__(self, modelpath, dataset, from_file):
+    def __init__(
+            self,
+            modelpath,
+            dataset,
+            from_file,
+            class_names: str = "coco"):
         self.thresh = 0.2
         self.iouthresh = 0.5
         super().__init__(modelpath, dataset, from_file)
+        # for work with dataproviders, this is handling dataset-less operation
+        if self.dataset is None:
+            self.batch_size = 1
+            self.classnames = []
+            if class_names == 'coco':
+                with path(coco_detection, 'cocov6.classes') as p:
+                    with open(p, 'r') as f:
+                        for line in f:
+                            self.classnames.append(line.split(',')[1].strip())
+            else:
+                with Path(class_names) as p:
+                    with open(p, 'r') as f:
+                        for line in f:
+                            self.classnames.append(line.split(',')[1].strip())
+        else:
+            self.batch_size = self.dataset.batch_size
+            self.classnames = self.dataset.classnames
+        self.numclasses = len(self.classnames)
+
+    @classmethod
+    def form_argparse(cls, no_dataset: bool = False):
+        parser, group = super().form_argparse(no_dataset)
+        group.add_argument(
+            '--classes',
+            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
+            type=str,
+            default='coco'
+        )
+        return parser, group
+
+    @classmethod
+    def from_argparse(
+            cls,
+            dataset: Dataset,
+            args,
+            from_file: bool = True):
+        return cls(args.model_path, dataset, from_file, args.classes)
 
     def load_model(self, modelpath):
         self.keyparams = {}
@@ -59,7 +109,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
         y1 = entry[1] - entry[3] / 2
         y2 = entry[1] + entry[3] / 2
         return DectObject(
-            self.dataset.classnames[entry[4]],
+            self.classnames[entry[4]],
             x1, y1, x2, y2,
             entry[5]
         )
@@ -138,7 +188,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
                 # look for overlapping bounding boxes with lower probability
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
-                    if self.dataset.compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
+                    if compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 
@@ -177,9 +227,9 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             # Each bounding box is described by its 4 coordinates,
             # objectness prediction and per-class predictions
             outshape = (
-                self.dataset.batch_size,
+                self.batch_size,
                 len(self.perlayerparams['mask'][i]),
-                4 + 1 + self.dataset.numclasses,
+                4 + 1 + self.numclasses,
                 self.keyparams['width'] // (8 * 2 ** i),
                 self.keyparams['height'] // (8 * 2 ** i)
             )

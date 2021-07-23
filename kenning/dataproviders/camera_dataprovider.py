@@ -5,15 +5,8 @@ camera or a dummy video device
 """
 
 from kenning.core.dataprovider import DataProvider
-from kenning.datasets.open_images_dataset import DectObject
-from kenning.resources import coco_detection
 import cv2
 import numpy as np
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import path
-else:
-    from importlib.resources import path
 from pathlib import Path
 
 
@@ -103,35 +96,6 @@ class CameraDataProvider(DataProvider):
     def detach_from_source(self):
         if self.device:
             self.device.release()
-
-    def compute_iou(self, b1: DectObject, b2: DectObject) -> float:
-        """
-        Computes the IoU between two bounding boxes.
-
-        Parameters
-        ----------
-        b1 : DectObject
-            First bounding box
-        b2 : DectObject
-            Second bounding box
-
-        Returns
-        -------
-        float : IoU value
-        """
-        xmn = max(b1.xmin, b2.xmin)
-        ymn = max(b1.ymin, b2.ymin)
-        xmx = min(b1.xmax, b2.xmax)
-        ymx = min(b1.ymax, b2.ymax)
-
-        intersectarea = max(0, xmx - xmn) * max(0, ymx - ymn)
-
-        b1area = (b1.xmax - b1.xmin) * (b1.ymax - b1.ymin)
-        b2area = (b2.xmax - b2.xmin) * (b2.ymax - b2.ymin)
-
-        iou = intersectarea / (b1area + b2area - intersectarea)
-
-        return iou
 
 
 class VideoCaptureDeviceException(Exception):

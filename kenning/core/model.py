@@ -2,14 +2,13 @@
 Provides a wrapper for deep learning models.
 """
 
-from typing import List, Any, Tuple, Dict, Union
+from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
 from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
-from kenning.core.dataprovider import DataProvider
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
@@ -24,7 +23,7 @@ class ModelWrapper(object):
     def __init__(
             self,
             modelpath: Path,
-            dataset: Union[Dataset, DataProvider],
+            dataset: Dataset,
             from_file: bool = True):
         """
         Creates the model wrapper.
@@ -48,7 +47,7 @@ class ModelWrapper(object):
         return self.modelpath
 
     @classmethod
-    def form_argparse(cls):
+    def form_argparse(cls, no_dataset: bool = False):
         """
         Creates argparse parser for the ModelWrapper object.
 

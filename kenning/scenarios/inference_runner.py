@@ -35,14 +35,12 @@ def main(argv):
         help='DataProvider-based class used for providing data',
     )
     parser.add_argument(
-        'outputcollectorcls',
-        help='OutputCollector-based class for visualizing and gathering data',
+        '--output-collectors',
+        help='List to the OutputCollector-based classes where the results will be passed',  # noqa: E501
+        required=True,
+        nargs='+'
     )
-    parser.add_argument(
-        '--additional-outputcollector',
-        help='Additonal OutputCollector-based class (can be called multiple times)',  # noqa: E501
-        action='append'
-    )
+
     parser.add_argument(
         '--verbosity',
         help='Verbosity level',
@@ -58,11 +56,7 @@ def main(argv):
     modelwrappercls = load_class(args.modelwrappercls)
     runtimecls = load_class(args.runtimecls)
     dataprovidercls = load_class(args.dataprovidercls)
-    outputcollectorcls = [load_class(args.outputcollectorcls)]
-
-    if args.additional_outputcollector:
-        for i in args.additional_outputcollector:
-            outputcollectorcls.append(load_class(i))
+    outputcollectorcls = [load_class(i) for i in args.output_collectors]
 
     parser = argparse.ArgumentParser(
         argv[0],

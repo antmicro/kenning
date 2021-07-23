@@ -82,7 +82,7 @@ def main(argv):
     try:
         # check against the 'main' output collector
         # if an exit condition was reached
-        while outputcollectors[0].check_exit_condition():
+        while outputcollectors[0].should_close():
             log.debug("Fetching data")
             unconverted_inp = dataprovider.fetch_input()
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)

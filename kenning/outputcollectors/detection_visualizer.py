@@ -239,7 +239,7 @@ class DetectionVisualizer(OutputCollector):
                 self.visualize_data(input_data, output_data)
             )
 
-    def check_exit_condition(self):
+    def should_close(self):
         return cv2.waitKey(1) != 27
 
     def detach_from_output(self):

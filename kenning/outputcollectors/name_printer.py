@@ -15,7 +15,7 @@ class NamePrinter(OutputCollector):
     def detach_from_output(self):
         pass
 
-    def check_exit_condition(self):
+    def should_close(self):
         return True
 
     def process_output(self, i: Any, o: DectObject):

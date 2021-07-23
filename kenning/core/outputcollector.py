@@ -81,7 +81,7 @@ class OutputCollector(object):
         """
         raise NotImplementedError
 
-    def check_exit_condition(self) -> bool:
+    def should_close(self) -> bool:
         """
         Checks if a specific exit condition was reached
         that will shutdown the program gracefully, like a specific

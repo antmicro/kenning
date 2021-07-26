@@ -52,12 +52,13 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
     @classmethod
     def form_argparse(cls, no_dataset: bool = False):
         parser, group = super().form_argparse(no_dataset)
-        group.add_argument(
-            '--classes',
-            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-            type=str,
-            default='coco'
-        )
+        if no_dataset:
+            group.add_argument(
+                '--classes',
+                help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
+                type=str,
+                default='coco'
+            )
         return parser, group
 
     @classmethod

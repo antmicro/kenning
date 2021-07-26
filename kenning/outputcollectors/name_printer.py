@@ -16,7 +16,7 @@ class NamePrinter(OutputCollector):
         pass
 
     def should_close(self):
-        return True
+        return False
 
     def process_output(self, i: Any, o: DectObject):
         o = o[0]

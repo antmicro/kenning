@@ -19,6 +19,28 @@ import argparse
 from kenning.utils.class_loader import load_class
 import kenning.utils.logger as logger
 
+from typing import List
+from kenning.core.outputcollector import OutputCollector
+
+
+def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:
+    """
+    Checks closing conditions of outputcollectors
+
+    Parameters
+    ----------
+    outputcollectors : List[OutputCollector]
+        list of outputcollectors to check
+
+    Returns
+    -------
+    bool : True any OutputCollector.should_close() method returned True
+    """
+    ret = False
+    for i in outputcollectors:
+        ret |= i.should_close()
+    return ret
+
 
 def main(argv):
     parser = argparse.ArgumentParser(argv[0], add_help=False)
@@ -80,9 +102,9 @@ def main(argv):
     runtime.prepare_model(None)
     log.info("Starting inference session")
     try:
-        # check against the 'main' output collector
-        # if an exit condition was reached
-        while outputcollectors[0].should_close():
+        # check against the output collectors
+        # if an exit condition was reached in any of them
+        while not check_closing_conditions(outputcollectors):
             log.debug("Fetching data")
             unconverted_inp = dataprovider.fetch_input()
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)

@@ -84,11 +84,12 @@ class OutputCollector(object):
     def should_close(self) -> bool:
         """
         Checks if a specific exit condition was reached
-        that will shutdown the program gracefully, like a specific
-        key being pressed and returns False to break the loop if so
+
+        This allows the OutputCollector to close gracefully if an exit
+        condition was reached, eg. when a key was pressed.
 
         Returns
         -------
-        bool : False if exit condition was reached to break the loop
+        bool : True if exit condition was reached to break the loop
         """
         raise NotImplementedError

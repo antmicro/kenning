@@ -36,10 +36,9 @@ def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:
     -------
     bool : True any OutputCollector.should_close() method returned True
     """
-    ret = False
-    for i in outputcollectors:
-        ret |= i.should_close()
-    return ret
+    if any(i.should_close() for i in outputcollectors):
+        return True
+    return False
 
 
 def main(argv):

@@ -46,24 +46,8 @@ def main(argv):
         help='Dataset-based class with dataset to import',
     )
     parser.add_argument(
-        'output',
-        help='The path to the output JSON file with measurements',
-        type=Path
-    )
-    parser.add_argument(
         '--protocol-cls',
         help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
-    )
-    parser.add_argument(
-        '--convert-to-onnx',
-        help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
-        type=Path
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
     )
 
     args, _ = parser.parse_known_args(argv[1:])
@@ -86,6 +70,23 @@ def main(argv):
             runtimecls.form_argparse()[0],
             datasetcls.form_argparse()[0]
         ] + ([protocolcls.form_argparse()[0]] if protocolcls else [])
+    )
+
+    parser.add_argument(
+        'output',
+        help='The path to the output JSON file with measurements',
+        type=Path
+    )
+    parser.add_argument(
+        '--convert-to-onnx',
+        help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
+        type=Path
+    )
+    parser.add_argument(
+        '--verbosity',
+        help='Verbosity level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
     )
 
     args = parser.parse_args(argv[1:])

@@ -292,6 +292,104 @@ The example call is as follows::
      For more examples of running ``inference_tester`` and ``inference_server``, check the `kenning/scripts <https://github.com/antmicro/kenning/tree/master/scripts>`_ directory.
      In the `kenning/scripts/edge-runtimes <https://github.com/antmicro/kenning/tree/master/scripts/edge-runtimes>`_ directory there are directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks.
 
+Running inference with 'live' data
+------------------------------------
+
+The ``kenning.scenarios.inference_runner`` is used to run inference locally on a pre-compiled model with data from sources other than Dataset-based classes.
+
+The ``kenning.scenarios.inference_runner`` requires:
+
+* :ref:`modelwrapper-api`-based class that I/O processing for its model,
+* :ref:`runtime-api`-based class that implements data processing and the inference method for the compiled model,
+* :ref:`datprovider-api`-based class that implements fetching of data samples from various sources,
+* :ref:`outputcollector-api`-based class (or classes) that implements output processing and return methods.
+
+To print the list of required arguments, run::
+
+    python3 -m kenning.scenarios.inference_runner \
+        kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
+        kenning.runtimes.tvm.TVMRuntime \
+        kenning.dataproviders.camera_dataprovider.CameraDataProvider \
+         --output-collectors kenning.outputcollectors.name_printer.NamePrinter \
+        -h
+
+With the above classes, the help can look as follows::
+
+   usage: /home/jbylicki/kenning/kenning/scenarios/inference_runner.py \
+      [-h] --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
+      [--verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}] --model-path MODEL_PATH
+      [--classes CLASSES] [--disable-performance-measurements]
+      [--save-model-path SAVE_MODEL_PATH]
+      [--target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}]
+      [--target-device-context-id TARGET_DEVICE_CONTEXT_ID] [--input-dtype INPUT_DTYPE]
+      [--runtime-use-vm] [--use-json-at-output] --video-file-path VIDEO_FILE_PATH
+      [--image-memory-layout {NHWC,NCHW}] [--image-width IMAGE_WIDTH]
+      [--image-height IMAGE_HEIGHT] [--print-type {detector,classificator}]
+      modelwrappercls runtimecls dataprovidercls
+
+positional arguments:
+  modelwrappercls       ModelWrapper-based class with inference implementation to import
+  runtimecls            Runtime-based class with the implementation of model runtime
+  dataprovidercls       DataProvider-based class used for providing data
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
+                        List to the OutputCollector-based classes where the results will be passed
+  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Verbosity level
+
+Inference model arguments:
+  --model-path MODEL_PATH
+                        Path to the model
+  --classes CLASSES     File containing Open Images class IDs and class names in CSV format to use (can be generated using
+                        kenning.scenarios.open_images_classes_extractor) or class type
+
+Runtime arguments:
+  --disable-performance-measurements
+                        Disable collection and processing of performance metrics
+  --save-model-path SAVE_MODEL_PATH
+                        Path where the model will be uploaded
+  --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
+                        What accelerator should be used on target device
+  --target-device-context-id TARGET_DEVICE_CONTEXT_ID
+                        ID of the device to run the inference on
+  --input-dtype INPUT_DTYPE
+                        Type of input tensor elements
+  --runtime-use-vm      At runtime use the TVM Relay VirtualMachine
+  --use-json-at-output  Encode outputs of models into a JSON file with base64-encoded arrays
+
+DataProvider arguments:
+  --video-file-path VIDEO_FILE_PATH
+                        Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)
+  --image-memory-layout {NHWC,NCHW}
+                        Determines if images should be delivered in NHWC or NCHW format
+  --image-width IMAGE_WIDTH
+                        Determines the width of the image for the model
+  --image-height IMAGE_HEIGHT
+                        Determines the height of the image for the model
+
+OutputCollector arguments:
+  --print-type {detector,classificator}
+                        What is the type of model that will input data to the NamePrinter
+
+The example script for ``inference_runner`` is::
+
+    python3 -m kenning.scenarios.inference_runner \
+        kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
+        kenning.runtimes.tvm.TVMRuntime \
+        kenning.dataproviders.camera_dataprovider.CameraDataProvider \
+        --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter\
+        --disable-performance-measurements \
+        --model-path ./kenning/resources/models/detection/yolov3.weights \
+        --save-model-path ../compiled-model.tar \
+        --target-device-context "cuda" \
+        --verbosity INFO \
+        --video-file-path /dev/video0
+
+
+This run was tested on a GTX 1080Ti-equipped workstation PC.
+
 .. _report-generation:
 
 Generating performance reports

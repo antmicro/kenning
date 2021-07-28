@@ -22,6 +22,21 @@ def main(argv):
         'datasetcls',
         help='Dataset-based class with dataset to import',
     )
+
+    args, _ = parser.parse_known_args(argv[1:])
+
+    modelwrappercls = load_class(args.modelwrappercls)
+    datasetcls = load_class(args.datasetcls)
+
+    parser = argparse.ArgumentParser(
+        argv[0],
+        parents=[
+            parser,
+            modelwrappercls.form_argparse()[0],
+            datasetcls.form_argparse()[0]
+        ]
+    )
+
     parser.add_argument(
         '--batch-size',
         help='The batch size for training',
@@ -53,25 +68,12 @@ def main(argv):
         default='INFO'
     )
 
-    args, _ = parser.parse_known_args(argv[1:])
-
-    modelwrappercls = load_class(args.modelwrappercls)
-    datasetcls = load_class(args.datasetcls)
-    args.logdir.mkdir(parents=True, exist_ok=True)
-
-    parser = argparse.ArgumentParser(
-        argv[0],
-        parents=[
-            parser,
-            modelwrappercls.form_argparse()[0],
-            datasetcls.form_argparse()[0]
-        ]
-    )
-
     args = parser.parse_args(argv[1:])
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args, from_file=False)
+
+    args.logdir.mkdir(parents=True, exist_ok=True)
 
     model.train_model(
         args.batch_size,

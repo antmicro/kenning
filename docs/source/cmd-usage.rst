@@ -315,7 +315,7 @@ To print the list of required arguments, run::
 
 With the above classes, the help can look as follows::
 
-   usage: /home/jbylicki/kenning/kenning/scenarios/inference_runner.py \
+  usage: /home/jbylicki/kenning/kenning/scenarios/inference_runner.py \
       [-h] --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
       [--verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}] --model-path MODEL_PATH
       [--classes CLASSES] [--disable-performance-measurements]
@@ -327,51 +327,51 @@ With the above classes, the help can look as follows::
       [--image-height IMAGE_HEIGHT] [--print-type {detector,classificator}]
       modelwrappercls runtimecls dataprovidercls
 
-positional arguments:
-  modelwrappercls       ModelWrapper-based class with inference implementation to import
-  runtimecls            Runtime-based class with the implementation of model runtime
-  dataprovidercls       DataProvider-based class used for providing data
-
-optional arguments:
-  -h, --help            show this help message and exit
-  --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
-                        List to the OutputCollector-based classes where the results will be passed
-  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Verbosity level
-
-Inference model arguments:
-  --model-path MODEL_PATH
-                        Path to the model
-  --classes CLASSES     File containing Open Images class IDs and class names in CSV format to use (can be generated using
-                        kenning.scenarios.open_images_classes_extractor) or class type
-
-Runtime arguments:
-  --disable-performance-measurements
-                        Disable collection and processing of performance metrics
-  --save-model-path SAVE_MODEL_PATH
-                        Path where the model will be uploaded
-  --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
-                        What accelerator should be used on target device
-  --target-device-context-id TARGET_DEVICE_CONTEXT_ID
-                        ID of the device to run the inference on
-  --input-dtype INPUT_DTYPE
-                        Type of input tensor elements
-  --runtime-use-vm      At runtime use the TVM Relay VirtualMachine
-  --use-json-at-output  Encode outputs of models into a JSON file with base64-encoded arrays
-
-DataProvider arguments:
-  --video-file-path VIDEO_FILE_PATH
-                        Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)
-  --image-memory-layout {NHWC,NCHW}
-                        Determines if images should be delivered in NHWC or NCHW format
-  --image-width IMAGE_WIDTH
-                        Determines the width of the image for the model
-  --image-height IMAGE_HEIGHT
-                        Determines the height of the image for the model
-
-OutputCollector arguments:
-  --print-type {detector,classificator}
-                        What is the type of model that will input data to the NamePrinter
+  positional arguments:
+    modelwrappercls       ModelWrapper-based class with inference implementation to import
+    runtimecls            Runtime-based class with the implementation of model runtime
+    dataprovidercls       DataProvider-based class used for providing data
+  
+  optional arguments:
+    -h, --help            show this help message and exit
+    --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
+                          List to the OutputCollector-based classes where the results will be passed
+    --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                          Verbosity level
+  
+  Inference model arguments:
+    --model-path MODEL_PATH
+                          Path to the model
+    --classes CLASSES     File containing Open Images class IDs and class names in CSV format to use (can be generated using
+                          kenning.scenarios.open_images_classes_extractor) or class type
+  
+  Runtime arguments:
+    --disable-performance-measurements
+                          Disable collection and processing of performance metrics
+    --save-model-path SAVE_MODEL_PATH
+                          Path where the model will be uploaded
+    --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
+                          What accelerator should be used on target device
+    --target-device-context-id TARGET_DEVICE_CONTEXT_ID
+                          ID of the device to run the inference on
+    --input-dtype INPUT_DTYPE
+                          Type of input tensor elements
+    --runtime-use-vm      At runtime use the TVM Relay VirtualMachine
+    --use-json-at-output  Encode outputs of models into a JSON file with base64-encoded arrays
+  
+  DataProvider arguments:
+    --video-file-path VIDEO_FILE_PATH
+                          Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)
+    --image-memory-layout {NHWC,NCHW}
+                          Determines if images should be delivered in NHWC or NCHW format
+    --image-width IMAGE_WIDTH
+                          Determines the width of the image for the model
+    --image-height IMAGE_HEIGHT
+                          Determines the height of the image for the model
+  
+  OutputCollector arguments:
+    --print-type {detector,classificator}
+                          What is the type of model that will input data to the NamePrinter
 
 The example script for ``inference_runner`` is::
 

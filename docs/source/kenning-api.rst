@@ -22,7 +22,9 @@ API overview
 * :ref:`modelwrapper-api` class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using native framework,
 * :ref:`modelcompiler-api` class - optimizes and compiles the model,
 * :ref:`runtime-api` class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
-* :ref:`runtimeprotocol-api` class - implements the communication protocol between the host and the target.
+* :ref:`runtimeprotocol-api` class - implements the communication protocol between the host and the target,
+* :ref:`dataprovider-api` class - implements providing data from such sources as camera, TCP connection or others for inference,
+* :ref:`outputcollector-api` class - implements parsing and utilizing data coming from inference (such as displaying the visualizations, sending the results to via TCP).
 
 Model processing
 ~~~~~~~~~~~~~~~~
@@ -203,4 +205,26 @@ ONNXConversion object contains methods for converting models in various framewor
 It also provides methods for testing the conversion process empirically on a list of deep learning models implemented in tested frameworks.
 
 .. autoclass:: kenning.core.onnxconversion.ONNXConversion
+   :members:
+
+.. _dataprovider-api:
+
+DataProvider
+------------
+
+The DataProvider classes are used during deployment for providing data to infer.
+They can provide data from such sources as camera, video files, microphone data or TCP connection.
+
+.. autoclass:: kenning.core.dataprovider.DataProvider
+   :members:
+
+.. _outputcollector-api:
+
+OutputCollector
+---------------
+
+The OutputCollector classes are used during deployment for receiving and processing inference results.
+They can display the results, send them, or store them in a file.
+
+.. autoclass:: kenning.core.outputcollector.OutputCollector
    :members:

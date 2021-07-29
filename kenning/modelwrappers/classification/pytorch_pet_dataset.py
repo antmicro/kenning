@@ -17,14 +17,45 @@ from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E50
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
-    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
-        self.numclasses = dataset.numclasses
+    def __init__(
+                self,
+                modelpath: Path,
+                dataset: Dataset,
+                from_file=True,
+                class_count: int = 37
+            ):
+        if dataset:
+            self.numclasses = dataset.numclasses
+        else:
+            self.numclasses = class_count
         super().__init__(modelpath, dataset, from_file)
+
+    @classmethod
+    def form_argparse(cls, no_dataset: bool = False):
+        parser, group = super().form_argparse(no_dataset)
+        if no_dataset:
+            group.add_argument(
+                '--num-classes',
+                help='number of classes that the model can classify',
+                type=int,
+                default=37
+            )
+        return parser, group
+
+    @classmethod
+    def from_argparse(
+            cls,
+            dataset: Dataset,
+            args,
+            from_file: bool = True):
+        return cls(args.model_path, dataset, from_file, args.num_classes)
 
     def get_input_spec(self):
         return {'input.1': (1, 3, 224, 224)}, 'float32'
 
     def preprocess_input(self, X):
+        if np.ndim(X) == 3:
+            X = np.array([X])
         return torch.Tensor(
             np.array(X, dtype=np.float32)
         ).to(self.device).permute(0, 3, 1, 2)

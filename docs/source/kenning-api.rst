@@ -14,7 +14,7 @@ API overview
    Kenning core classes and interactions between them.
    The green blocks represent the flow of the input data that is passed to the model for inference.
    The orange blocks represent the flow of model deployment flow, from training to inference on target device.
-   The gray blocks represent the inference results and metrics flow.
+   The grey blocks represent the inference results and metrics flow.
 
 |projecturl| provides:
 
@@ -27,7 +27,7 @@ API overview
 Model processing
 ~~~~~~~~~~~~~~~~
 
-The red blocks and arrows in the :numref:`class-flow` represent the model live cycle:
+The orange blocks and arrows in the :numref:`class-flow` represent the model live cycle:
 
 * the model is designed, trained, evaluated and improved - the training is implemented in the :ref:`modelwrapper-api`.
   This is an optional step - the already trained model can also be wrapped and used.

@@ -10,7 +10,7 @@ Runnable scripts in scenarios require providing implemented classes from ``kenni
 Command-line arguments for classes
 ----------------------------------
 
-Each class (for dataset, model, compilator, runtime and runtime protocol) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of the object of the class.
+Each class (:ref:`dataset-api`, :ref:`modelwrapper-api`, :ref:`modelcompiler-api` and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of the object of the class.
 
 Each class in the ``kenning.core`` implements ``form_argparse`` and ``from_argparse`` methods.
 The former creates an ``argparse`` group for a given class with its parameters.
@@ -28,8 +28,7 @@ To get the list of training parameters, select the model and training dataset to
         -h
 
 This will list the possible parameters that can be used to configure the dataset, the model, and the training parameters.
-
-The output is as follows::
+For the above call, the output is as follows::
 
     positional arguments:
       modelwrappercls       ModelWrapper-based class with inference implementation to import
@@ -64,7 +63,7 @@ The output is as follows::
 
 .. note:: The list of options depends on :ref:`modelwrapper-api` and :ref:`dataset-api`.
 
-The training can be configured as follows::
+In the end, the training can be configured as follows::
 
     python -m kenning.scenarios.model_training \
         kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
@@ -252,7 +251,7 @@ The example script for ``inference_tester`` is::
         --inference-batch-size 1 \
         --verbosity INFO
 
-The above runs with the following ``inference_server`` call::
+The above runs with the following ``inference_server`` setup::
 
     python -m kenning.scenarios.inference_server \
         kenning.runtimeprotocols.network.NetworkProtocol \
@@ -264,7 +263,7 @@ The above runs with the following ``inference_server`` call::
         --delegates-list libedgetpu.so.1 \
         --verbosity INFO
 
-This run was tested on Google Coral Devboard device.
+.. note:: This run was tested on Google Coral Devboard device.
 
 The ``kenning.scenarios.inference_tester`` can be also executed locally - in this case the ``--protocol-cls`` argument can be skipped.
 The example call is as follows::
@@ -292,17 +291,17 @@ The example call is as follows::
      For more examples of running ``inference_tester`` and ``inference_server``, check the `kenning/scripts <https://github.com/antmicro/kenning/tree/master/scripts>`_ directory.
      In the `kenning/scripts/edge-runtimes <https://github.com/antmicro/kenning/tree/master/scripts/edge-runtimes>`_ directory there are directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks.
 
-Running inference with 'live' data
-------------------------------------
+Running inference
+-----------------
 
-The ``kenning.scenarios.inference_runner`` is used to run inference locally on a pre-compiled model with data from sources other than Dataset-based classes.
+The ``kenning.scenarios.inference_runner`` is used to run inference locally on a pre-compiled model.
 
 The ``kenning.scenarios.inference_runner`` requires:
 
-* :ref:`modelwrapper-api`-based class that I/O processing for its model,
-* :ref:`runtime-api`-based class that implements data processing and the inference method for the compiled model,
-* :ref:`datprovider-api`-based class that implements fetching of data samples from various sources,
-* :ref:`outputcollector-api`-based class (or classes) that implements output processing and return methods.
+* :ref:`modelwrapper-api`-based class that performs I/O processing specific to the model,
+* :ref:`runtime-api`-based class that runs inference on target using the compiled model,
+* :ref:`dataprovider-api`-based class that implements fetching of data samples from various sources,
+* list of :ref:`outputcollector-api`-based classes that implement output processing for the specific use-case.
 
 To print the list of required arguments, run::
 
@@ -314,18 +313,6 @@ To print the list of required arguments, run::
         -h
 
 With the above classes, the help can look as follows::
-
-  usage: /home/jbylicki/kenning/kenning/scenarios/inference_runner.py \
-      [-h] --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
-      [--verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}] --model-path MODEL_PATH
-      [--classes CLASSES] [--disable-performance-measurements]
-      [--save-model-path SAVE_MODEL_PATH]
-      [--target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}]
-      [--target-device-context-id TARGET_DEVICE_CONTEXT_ID] [--input-dtype INPUT_DTYPE]
-      [--runtime-use-vm] [--use-json-at-output] --video-file-path VIDEO_FILE_PATH
-      [--image-memory-layout {NHWC,NCHW}] [--image-width IMAGE_WIDTH]
-      [--image-height IMAGE_HEIGHT] [--print-type {detector,classificator}]
-      modelwrappercls runtimecls dataprovidercls
 
   positional arguments:
     modelwrappercls       ModelWrapper-based class with inference implementation to import
@@ -379,16 +366,13 @@ The example script for ``inference_runner`` is::
         kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
         kenning.runtimes.tvm.TVMRuntime \
         kenning.dataproviders.camera_dataprovider.CameraDataProvider \
-        --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter\
+        --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter \
         --disable-performance-measurements \
         --model-path ./kenning/resources/models/detection/yolov3.weights \
         --save-model-path ../compiled-model.tar \
         --target-device-context "cuda" \
         --verbosity INFO \
         --video-file-path /dev/video0
-
-
-This run was tested on a GTX 1080Ti-equipped workstation PC.
 
 .. _report-generation:
 

@@ -9,7 +9,7 @@ from torch import FloatTensor
 
 
 class NamePrinter(OutputCollector):
-    def __init__(self, print_type: str = "detctor"):
+    def __init__(self, print_type: str = "detector"):
         self.frame_counter = 0
         self.print_type = print_type
         super().__init__()

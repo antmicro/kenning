@@ -27,10 +27,10 @@ API overview
 Model processing
 ~~~~~~~~~~~~~~~~
 
-The orange blocks and arrows in the :numref:`class-flow` represent the model live cycle:
+The orange blocks and arrows in the :numref:`class-flow` represent the model life cycle:
 
 * the model is designed, trained, evaluated and improved - the training is implemented in the :ref:`modelwrapper-api`.
-  This is an optional step - the already trained model can also be wrapped and used.
+  .. note:: This is an optional step - the already trained model can also be wrapped and used.
 * the model is passed to the :ref:`modelcompiler-api`, where it is optimized for a given hardware and later compiled,
 * during inference testing, the model is sent to the target using :ref:`runtimeprotocol-api`,
 * the model is loaded on target side and used for inference using :ref:`runtime-api`.
@@ -55,8 +55,8 @@ Reporting data flow
 The report rendering requires performance metrics and quality metrics.
 The flow for this is presented with grey lines and blocks in :numref:`class-flow`.
 
-On target side, the performance metrics are computed and sent using :ref:`runtimeprotocol-api` back to the host, and later passed to the report rending.
-After the output data goes through processing in the :ref:`runtime-api` and :ref:`modelwrapper-api`, it is compared to ground truth in the :ref:`dataset-api` during model evaluation.
+On target side, the performance metrics are computed and sent using :ref:`runtimeprotocol-api` back to the host, and later passed to the report rendering.
+After the output data goes through processing in the :ref:`runtime-api` and :ref:`modelwrapper-api`, it is compared to the ground truth in the :ref:`dataset-api` during model evaluation.
 In the end, the results of model evaluation are passsed to the report rendering.
 
 The final report is generated as an RST file with figures, as can be observed in the :doc:`sample-report`.

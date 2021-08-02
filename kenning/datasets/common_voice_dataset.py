@@ -11,13 +11,13 @@ class CommonVoiceDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            language: str = 'english',
+            language: str = 'en',
             annotations_type: str = "test"):
         self.language = language
         self.annotations_type = annotations_type
         super().__init__(root, batch_size, download_dataset)
 
-    def download_dataset(self, lang: str = 'english'):
+    def download_dataset(self, lang: str = 'en'):
         self.root.mkdir(parents=True, exist_ok=True)
         # Mozilla made sure that machines cannot download this dataset
         # in it's most recent form. however, the version 6.1 has a
@@ -31,12 +31,30 @@ class CommonVoiceDataset(Dataset):
             tarpath = Path(directory) / 'dataset.tar.gz'
             download_url(url_format.format('en'), tarpath)
             tf = tarfile.open(tarpath)
-            unpacked = (self.root / 'unpack')
+            unpacked = (self.root / 'unpacked')
             unpacked.mkdir(parents=True, exist_ok=True)
             tf.extractall(unpacked)
 
     def prepare(self):
-        pass
+        voice_folder = Path(self.root / "unpacked").glob("*")
+        # take the first found folder inside unpacked tar archive
+        # it will be the dataset
+        voice_folder = Path([i for i in voice_folder][0] / self.language)
+        metadata = pd.read_csv(
+            Path(voice_folder / "{}.tsv".format(self.annotations_type)),
+            sep='\t'
+        )
+
+        # since the data needs to be parsed into model's specific framework
+        # and for example TorchAudio does only load from a file path, there is
+        # no need to load data inside of the dataset and instead leave it to
+        # the modelwrapper and it's later conversion functions.
+        self.dataX, self.dataY = metadata['path'], metadata['sentence']
+        self.dataX = [
+            str(Path(voice_folder / 'clips' / i).absolute().resolve())
+            for i in self.dataX
+        ]
+        self.dataY = [str(i) for i in self.dataY]
 
     @classmethod
     def form_argparse(cls):
@@ -54,8 +72,8 @@ class CommonVoiceDataset(Dataset):
         group.add_argument(
             "--language",
             type=str,
-            choices=['english', 'polish'],
-            default='english'
+            choices=['en', 'pl'],
+            default='en'
         )
         group.add_argument(
             '--annotations-type',
@@ -70,5 +88,13 @@ class CommonVoiceDataset(Dataset):
         return cls(
             args.dataset_root,
             args.batch_size,
-            args.language
+            args.language,
+            args.annotations_type
         )
+
+    def evaluate(self, prediction, ground_truth):
+        # Due to poor documentation of the torchaudio framework, there
+        # is no way to determine what the exact shape and structure
+        # of the prediction is.
+        print(prediction)
+        print(ground_truth)

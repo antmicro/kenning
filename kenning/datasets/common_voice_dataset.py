@@ -3,6 +3,77 @@ from pathlib import Path
 import tarfile
 from kenning.utils.logger import download_url
 import pandas as pd
+import string
+from copy import copy
+
+# Since those methods used to evaluate the output are copied from
+# a python running script outside of the repository
+# (used while the ModelWrapper is incomplete)
+
+
+def dynamic_levenshtein_distance(a: str, b: str) -> int:
+    """
+    Computes the Levenshtein Distance metric between strings
+
+    Parameters
+    ----------
+    a : str
+        first string
+    b : str
+        second string
+
+    Returns
+    -------
+    int : Levenshtein Distance
+    """
+    la, lb = len(a), len(b)
+    dynamic_array = [0 for i in range(la+1)]
+    dynamic_array = [copy(dynamic_array) for i in range(lb+1)]
+    for i in range(1, la+1):
+        dynamic_array[0][i] = i
+
+    for i in range(1, lb+1):
+        dynamic_array[i][0] = i
+
+    for j in range(1, lb+1):
+        for i in range(1, la+1):
+            if a[i-1] == b[j-1]:
+                cost = 0
+            else:
+                cost = 1
+            dynamic_array[j][i] = min(
+                dynamic_array[j][i-1] + 1,
+                dynamic_array[j-1][i] + 1,
+                dynamic_array[j-1][i-1] + cost
+            )
+    return dynamic_array[lb][la]
+
+
+def char_eval(pred: str, gt: str) -> float:
+    """
+    Evaluates the prediction on a character basis
+
+    The algorithm used to determine the distance between the
+    strings is a dynamic programming implementation of the
+    Levenshtein Distance metric
+    Parameters
+    ----------
+    pred : str
+        Prediction string
+    gt : str
+        Ground truth string
+
+    Returns
+    -------
+    float : the ratio of the Levenshtein Distance to the ground truth length
+    """
+    # sanitize the Ground Truth from punctuation and uppercase letters
+    gt = gt.translate(
+        str.maketrans('', '', string.punctuation)
+    ).lower().strip()
+    pred = pred.strip()
+    dld = dynamic_levenshtein_distance(pred, gt)
+    return 1-float(dld)/float(len(gt))
 
 
 class CommonVoiceDataset(Dataset):

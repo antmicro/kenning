@@ -5,6 +5,7 @@ from kenning.utils.logger import download_url
 import pandas as pd
 import string
 from copy import copy
+from typing import Any, List, Tuple, Union
 
 # Since those methods used to evaluate the output are copied from
 # a python running script outside of the repository
@@ -83,9 +84,13 @@ class CommonVoiceDataset(Dataset):
             batch_size: int = 1,
             download_dataset: bool = False,
             language: str = 'en',
-            annotations_type: str = "test"):
+            annotations_type: str = "test",
+            sample_size: int = 1000,
+            selection_method: str = 'accent'):
         self.language = language
         self.annotations_type = annotations_type
+        self.selection_method = selection_method
+        self.sample_size = sample_size
         super().__init__(root, batch_size, download_dataset)
 
     def download_dataset(self, lang: str = 'en'):
@@ -152,6 +157,16 @@ class CommonVoiceDataset(Dataset):
             choices=['train', 'validated', 'test'],
             default='test'
         )
+        group.add_argument(
+            "--sample-size",
+            type=int,
+            default=1000
+        )
+        group.add_argument(
+            '--selection-metric',
+            help='Metric to group the data',
+            choices=['length', 'accent']
+        )
         return parser, group
 
     @classmethod
@@ -160,7 +175,9 @@ class CommonVoiceDataset(Dataset):
             args.dataset_root,
             args.batch_size,
             args.language,
-            args.annotations_type
+            args.annotations_type,
+            args.sample_size,
+            args.selection_method
         )
 
     def evaluate(self, prediction, ground_truth):

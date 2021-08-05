@@ -126,11 +126,52 @@ class CommonVoiceDataset(Dataset):
         # no need to load data inside of the dataset and instead leave it to
         # the modelwrapper and it's later conversion functions.
         self.dataX, self.dataY = metadata['path'], metadata['sentence']
+        self.dataY = [str(i) for i in self.dataY]
+
+        if self.selection_method:
+            if self.selection_method == 'length':
+                metric = [len(i.strip().split(' ')) for i in self.dataY]
+            elif self.selection_method == 'accent':
+                metric = metadata['accent']
+                metric = [str(i) for i in metric]
+                # filter empty values
+                new_dataX, new_dataY, new_metric = [], [], []
+                assert len(metric) == len(self.dataX)
+                for i, j, k in zip(self.dataX, self.dataY, metric):
+                    if k != 'nan':
+                        new_dataX.append(i)
+                        new_dataY.append(j)
+                        new_metric.append(k)
+                self.dataX = new_dataX
+                self.dataY = new_dataY
+                metric = new_metric
+
         self.dataX = [
             str(Path(voice_folder / 'clips' / i).absolute().resolve())
             for i in self.dataX
         ]
-        self.dataY = [str(i) for i in self.dataY]
+        if self.selection_method is not None:
+            assert self.sample_size <= len(self.dataX)
+            self.select_representative_sample(metric)
+
+    def select_representative_sample(self, metric: List[Any]):
+        # select the representative sample of the metric
+        from random import sample
+        metric_sample = sample(metric, self.sample_size)
+        tupled_data = zip(self.dataX, self.dataY, metric)
+        tupled_data = list(tupled_data)
+        sampled_dataset = []
+        print(set(metric_sample))
+        for i in set(metric_sample):
+            how_many_of_length = metric_sample.count(i)
+            matching = [x for x in tupled_data if x[2] == i]
+            chosen = sample(matching, how_many_of_length)
+            sampled_dataset += chosen
+        self.dataX = []
+        self.dataY = []
+        for i, j, k in sampled_dataset:
+            self.dataX.append(i)
+            self.dataY.append((j, k))
 
     @classmethod
     def form_argparse(cls):
@@ -180,9 +221,8 @@ class CommonVoiceDataset(Dataset):
             args.selection_method
         )
 
-    def evaluate(self, prediction, ground_truth):
-        # Due to poor documentation of the torchaudio framework, there
-        # is no way to determine what the exact shape and structure
-        # of the prediction is.
-        print(prediction)
-        print(ground_truth)
+    def evaluate(self, prediction, ground_truth: Union[str, Tuple[str, Any]]):
+        if isinstance(ground_truth, tuple):
+            ground_truth, metric = ground_truth
+        score = char_eval(prediction, ground_truth)
+        print(score)

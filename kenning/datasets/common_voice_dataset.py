@@ -1,4 +1,5 @@
 from kenning.core.dataset import Dataset
+from kenning.core.measurements import Measurements
 from pathlib import Path
 import tarfile
 from kenning.utils.logger import download_url
@@ -6,10 +7,6 @@ import pandas as pd
 import string
 from copy import copy
 from typing import Any, List, Tuple, Union
-
-# Since those methods used to evaluate the output are copied from
-# a python running script outside of the repository
-# (used while the ModelWrapper is incomplete)
 
 
 def dynamic_levenshtein_distance(a: str, b: str) -> int:
@@ -221,8 +218,37 @@ class CommonVoiceDataset(Dataset):
             args.selection_method
         )
 
-    def evaluate(self, prediction, ground_truth: Union[str, Tuple[str, Any]]):
-        if isinstance(ground_truth, tuple):
-            ground_truth, metric = ground_truth
-        score = char_eval(prediction, ground_truth)
-        print(score)
+    def evaluate(
+            self,
+            predictions: List[str],
+            ground_truths: List[Union[str, Tuple[str, Any]]]) -> Measurements:
+
+        # This minimal score is based on the assumption that a 'good'
+        # prediction for each word would have a Levenshtein Distance of at most
+        # 2 and the average word length in english is around 5 characters
+        # making 1-(2/5) = 0.6
+        MIN_SCORE_FOUNDGT = 0.6
+        measurements = Measurements()
+        for pred, gt in zip(predictions, ground_truths):
+            if isinstance(gt, tuple):
+                gt, metric = gt
+            else:
+                metric = hash(gt)
+            score = char_eval(pred, gt)
+            found_gt = 1 if score >= MIN_SCORE_FOUNDGT else 0
+            measurements.add_measurement(
+                f'eval_stt/{metric}',  # not a detector therefore no confidence score is given # noqa: E501
+                                       # so a new render report method will need to be added  # noqa: E501
+                                       # for STT Models
+                [[
+                    float(found_gt),
+                    float(score)
+                ]],
+                lambda: list()
+            )
+            measurements.accumulate(
+                f'eval_gtcount/{metric}',
+                1,
+                lambda: 0
+            )
+        return measurements

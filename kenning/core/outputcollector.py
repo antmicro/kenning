@@ -66,15 +66,6 @@ class OutputCollector(object):
         """
         raise NotImplementedError
 
-    def visualize_data(self, input_data: Any, output_data: Any) -> Any:
-        """
-        Method used to add visualizations of the models output
-
-        Eg. draw bounding boxes on frames of video or add a list of
-        detected objects in the corner of a frame
-        """
-        return input_data
-
     def detach_from_output(self):
         """
         Detaches from the output during shutdown

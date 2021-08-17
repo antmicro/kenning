@@ -9,11 +9,7 @@ import argparse
 class DataProvider(object):
     def __init__(self):
         """
-        Initializes DataProvider object.
-
-        Parameters
-        ----------
-
+        Initializes dataprovider object.
         """
         self.prepare()
 

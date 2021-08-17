@@ -1,6 +1,6 @@
 """
 A DataProvider-derived class used to interface with a
-camera or a dummy video device
+camera, video file or a dummy video device
 (consult ffmpeg and v4l2loopback for configuration for dummy video devices)
 """
 

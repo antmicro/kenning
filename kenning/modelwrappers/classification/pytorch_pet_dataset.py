@@ -36,7 +36,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         if no_dataset:
             group.add_argument(
                 '--num-classes',
-                help='number of classes that the model can classify',
+                help='Number of classes that the model can classify',
                 type=int,
                 default=37
             )

@@ -101,7 +101,7 @@ def main(argv):
 
     if 'eval_confusion_matrix' in MeasurementsCollector.measurements.data:
         MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
-    
+
     with open(args.output, 'w') as measurementsfile:
         json.dump(
             MeasurementsCollector.measurements.data,

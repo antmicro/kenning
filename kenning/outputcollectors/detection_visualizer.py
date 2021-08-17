@@ -31,8 +31,8 @@ def generate_color() -> Tuple[int, int, int]:
 class DetectionVisualizer(OutputCollector):
     def __init__(
             self,
-            output_width: int = int(1920/2),
-            output_height: int = int(1080/2),
+            output_width: int = 1024,
+            output_height: int = 576,
             save_to_file: bool = False,
             save_path: Path = './',
             save_fps: int = 25,
@@ -43,6 +43,7 @@ class DetectionVisualizer(OutputCollector):
         self.output_height = output_height
         self.save_to_file = save_to_file
         self.video_fps = save_fps
+        self.out = None
         if save_to_file:
             self.save_path = Path(save_path)
             codec = cv2.VideoWriter_fourcc(*'avc1')
@@ -50,27 +51,6 @@ class DetectionVisualizer(OutputCollector):
                 str(self.save_path),
                 codec,
                 self.video_fps,
-                (self.output_width, self.output_height)
-            )
-        else:
-            try:
-                cv2.namedWindow(
-                    self.window_name,
-                    cv2.WINDOW_OPENGL+cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
-                )
-            except cv2.error:
-                cv2.namedWindow(
-                    self.window_name,
-                    cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
-                )
-        self.save_path = Path(save_path)
-        self.out = None
-        if save_to_file:
-            codec = cv2.VideoWriter_fourcc(*'mp4v')
-            self.out = cv2.VideoWriter(
-                str(self.save_path),
-                codec,
-                25,
                 (self.output_width, self.output_height)
             )
         else:
@@ -97,13 +77,13 @@ class DetectionVisualizer(OutputCollector):
             '--output-width',
             help='Width of the output window or file',
             type=int,
-            default=int(1920/2)
+            default=1024
         )
         group.add_argument(
             '--output-height',
             help='Height of the output window or file',
             type=int,
-            default=int(1080/2)
+            default=576
         )
         group.add_argument(
             '--save-to-file',
@@ -113,9 +93,8 @@ class DetectionVisualizer(OutputCollector):
         group.add_argument(
             '--save-path',
             help='Path to save the output images',
-            required='--save-to-file' in sys.argv,  # TODO: test this StackOverflow solution  # noqa: E501
-            type=Path,
-            default='./'
+            required='--save-to-file' in sys.argv,
+            type=Path
         )
         return parser, group
 
@@ -126,26 +105,6 @@ class DetectionVisualizer(OutputCollector):
             args.output_height,
             args.save_to_file,
             args.save_path
-        )
-
-    def get_class_color(self, clsname: str) -> Tuple[int, int, int]:
-        """
-        Generates a random RGB color seeded by the class name
-
-        Parameters
-        ----------
-        clsname : str
-            the class name
-
-        Returns
-        -------
-        Tuple[int, int, int] : color in (r,g,b) format
-        """
-        random.seed(hash(clsname), version=2)
-        return (
-            random.randint(0, 255),
-            random.randint(0, 255),
-            random.randint(0, 255)
         )
 
     def compute_coordinates(
@@ -220,7 +179,7 @@ class DetectionVisualizer(OutputCollector):
             )
         return out_img
 
-    def return_output(
+    def process_output(
             self,
             input_data: np.ndarray,  # since the original frames are passed in, this should always be HWC, uint8  # noqa: E501
             output_data: List[List[DectObject]]):

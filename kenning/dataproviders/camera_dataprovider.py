@@ -13,28 +13,16 @@ from pathlib import Path
 class CameraDataProvider(DataProvider):
     def __init__(
             self,
-            camera_device_id: int = -1,
+            file_path: Path,
             memory_layout: str = "NCHW",
-            class_names: str = 'coco'):
+            image_w: int = 416,
+            image_h: int = 416):
 
-        self.device_id = camera_device_id
-        self.classnames = []
-        if class_names == 'coco':
-            with path(coco_detection, 'cocov6.classes') as p:
-                with open(p, 'r') as f:
-                    for line in f:
-                        self.classnames.append(line.split(',')[1].strip())
-        else:
-            with Path(class_names) as p:
-                with open(p, 'r') as f:
-                    for line in f:
-                        self.classnames.append(line.split(',')[1].strip())
+        self.device_id = str(file_path)
 
-        self.numclasses = len(self.classnames)
-        self.image_width = 416
-        self.image_height = 416
+        self.image_width = image_w
+        self.image_height = image_h
         self.memory_layout = memory_layout
-        self.batch_size = 1
 
         self.device = None
 
@@ -56,19 +44,26 @@ class CameraDataProvider(DataProvider):
             default='NCHW'
         )
         group.add_argument(
-            '--classes',
-            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-            type=str,
-            default='coco'
+            '--image-width',
+            help='Determines the width of the image for the model',
+            type=int,
+            default=416
+        )
+        group.add_argument(
+            '--image-height',
+            help='Determines the height of the image for the model',
+            type=int,
+            default=416
         )
         return parser, group
 
     @classmethod
     def from_argparse(cls, args):
         return cls(
-            args.camera_device_id,
+            args.video_file_path,
             args.image_memory_layout,
-            args.classes
+            args.image_width,
+            args.image_height
         )
 
     def prepare(self):

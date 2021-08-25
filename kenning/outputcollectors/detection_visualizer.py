@@ -53,17 +53,6 @@ class DetectionVisualizer(OutputCollector):
                 self.video_fps,
                 (self.output_width, self.output_height)
             )
-        else:
-            try:
-                cv2.namedWindow(
-                    self.window_name,
-                    cv2.WINDOW_OPENGL+cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
-                )
-            except cv2.error:
-                cv2.namedWindow(
-                    self.window_name,
-                    cv2.WINDOW_GUI_NORMAL+cv2.WINDOW_AUTOSIZE
-                )
         self.font_scale = 0.7
         self.font_thickness = 2
         self.color_dict = defaultdict(generate_color)

@@ -86,10 +86,13 @@ class TFLiteRuntime(Runtime):
         if input_data:
             with open(self.modelpath, 'wb') as outmodel:
                 outmodel.write(input_data)
-        delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
+        delegates = None
+        if self.delegates:
+            delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
         self.interpreter = tflite.Interpreter(
             str(self.modelpath),
-            experimental_delegates=delegates
+            experimental_delegates=delegates,
+            num_threads=4
         )
         self.interpreter.allocate_tensors()
         self.log.info('Model loading ended successfully')

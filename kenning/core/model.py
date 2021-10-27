@@ -6,7 +6,6 @@ from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
-from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -207,6 +206,7 @@ class ModelWrapper(object):
         -------
         List : The inference results
         """
+        from tqdm import tqdm
 
         measurements = Measurements()
 

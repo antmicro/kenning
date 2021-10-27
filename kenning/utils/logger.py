@@ -3,7 +3,6 @@ Module for preparing the logging structures.
 """
 
 import logging
-from tqdm import tqdm
 import io
 import urllib
 
@@ -61,14 +60,15 @@ class LoggerProgressBar(io.StringIO):
         self.logger.log(logging.INFO, '\r' + self.buf)
 
 
-class DownloadProgressBar(tqdm):
-    def update_to(self, b=1, bsize=1, tsize=None):
-        if tsize is not None:
-            self.total = tsize
-        self.update(b * bsize - self.n)
-
-
 def download_url(url, output_path):
+    from tqdm import tqdm
+
+    class DownloadProgressBar(tqdm):
+        def update_to(self, b=1, bsize=1, tsize=None):
+            if tsize is not None:
+                self.total = tsize
+            self.update(b * bsize - self.n)
+
     with DownloadProgressBar(
             unit='B',
             unit_scale=True,

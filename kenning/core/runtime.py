@@ -5,7 +5,6 @@ Runtimes implement running and testing deployed models on target devices.
 """
 
 import argparse
-from tqdm import tqdm
 from pathlib import Path
 from typing import Optional
 import json
@@ -334,6 +333,7 @@ class Runtime(object):
         -------
         bool : True if executed successfully
         """
+        from tqdm import tqdm
         measurements = Measurements()
         try:
             self.inference_session_start()
@@ -386,6 +386,7 @@ class Runtime(object):
         -------
         bool : True if executed successfully
         """
+        from tqdm import tqdm
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
         self.prepare_client()

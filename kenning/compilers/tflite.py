@@ -160,12 +160,11 @@ class TFLiteCompiler(ModelCompiler):
         converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)
         converter.inference_output_type = tf.as_dtype(self.inferenceoutputtype)
 
-        if self.dataset is not None:
+        if self.dataset is not None and self.target != 'default':
             def generator():
                 for entry in self.dataset.calibration_dataset_generator(
                         self.dataset_percentage):
                     yield [np.array(entry, dtype=np.float32)]
-
             converter.representative_dataset = generator
 
         tflite_model = converter.convert()

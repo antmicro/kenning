@@ -100,3 +100,10 @@ class RandomizedClassificationDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         return Measurements()
+
+    def calibration_dataset_generator(
+            self,
+            percentage: float = 0.25,
+            seed: int = 12345):
+        for _ in range(int(self.samplescount * percentage)):
+            yield [np.random.randint(0, 255, size=self.inputdims)]

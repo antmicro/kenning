@@ -410,10 +410,11 @@ The ``kenning.scenarios.inference_performance`` and ``kenning.scenarios.inferenc
 * frameworks along with their versions used to train the model and compile the model,
 * performance metrics, including:
 
-    * CPU usage over time,
-    * RAM usage over time,
-    * GPU usage over time,
-    * GPU memory usage over time,
+  * CPU usage over time,
+  * RAM usage over time,
+  * GPU usage over time,
+  * GPU memory usage over time,
+
 * predictions and ground truth to compute quality metrics, i.e. in form of confusion matrix and top-5 accuracy for classification task.
 
 The ``kenning.scenarios.render_report`` renders the report RST file along with plots for metrics for a given JSON file based on selected templates.

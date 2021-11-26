@@ -6,8 +6,8 @@
    :maxdepth: 2
 
    introduction
-   dl-deployment-stack
    project-readme
+   dl-deployment-stack
    cmd-usage
    onnx-conversion-support
    sample-report

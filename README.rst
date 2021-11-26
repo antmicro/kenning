@@ -5,27 +5,28 @@ Copyright (c) 2020-2021 `Antmicro <https://www.antmicro.com>`_
 
 .. image:: img/kenninglogo.png
 
-This is a project for implementing and testing pipelines for deploying deep learning models on edge devices.
+Kenning is a framework for creating deployment flows and runtimes for Deep Neural Network applications on various target hardware.
 
-Deployment flow
----------------
+It aims towards providing modular execution blocks for:
 
-Deploying deep learning models on edge devices usually involves the following steps:
+* dataset management,
+* model training,
+* model compilation,
+* model evaluation and performance reports,
+* model runtime on target device,
+* model input and output processing (i.e. fetching frames from camera and computing final predictions from model outputs).
 
-* Preparation and analysis of the dataset, preparation of data preprocessing and output postprocessing routines,
-* Model training (usually transfer learning), if necessary,
-* Evaluation and improvement of the model until its quality is satisfactory,
-* Model optimization, usually hardware-specific optimizations (e.g. operator fusion, quantization, neuron-wise or connection-wise pruning),
-* Model compilation to a given target,
-* Model execution on a given target.
+that can be used seamlessly regardless of underlying frameworks for above-mentioned steps.
 
-There are different frameworks for most of the above steps (training, optimization, compilation and runtime). 
-The cooperation between those frameworks differs and may provide different results.
+Kenning does not aim towards bringing yet another training or compilation framework for deep learning models - there are lots of mature and versatile frameworks that support certain models, training routines, optimization techniques, hardware platforms and other components crucial to the deployment flow.
+Still, there is no framework that would support all of the models or target hardware devices - especially the support matrix between compilation frameworks and target hardware is extremely sparse.
+This means that any change in the application, especially in hardware, may end up with a necessity to change the whole or significant part of the application flow.
 
-This framework introduces interfaces for those above-mentioned steps that can be implemented using specific deep learning frameworks.
+Kenning addresses this issue by providing an unified API that focuses more on deployment tasks rather than their implementation - the developer decides which implementation for each task should be used, and Kenning allows to do it in a seamless way.
+This way switching to another target platform results in most cases in very small change in the code, instead of reimplementing large parts of the project.
+This way the Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
-Based on the implemented interfaces, the framework can measure the inference duration and quality on a given target.
-It also verifies the compatibility between various training, compilation and optimization frameworks.
+For more details regarding the Kenning framework, Deep Neural Network deployment flow and its API check `Kenning documentation <https://antmicro.github.io/kenning/>`_.
 
 Kenning installation
 --------------------
@@ -59,6 +60,7 @@ For development purposes, and for usage of additional resources (as sample scrip
 
 To download model weights, install `Git Large File Storage <https://git-lfs.github.com>`_ (if not installed) and run::
 
+    cd kenning/
     git lfs pull
 
 Kenning structure
@@ -72,165 +74,97 @@ The ``kenning`` module consists of the following submodules:
 * ``compilers`` - provides implementations for compilers of deep learning models,
 * ``runtimes`` - provides implementations of runtime on target devices,
 * ``runtimeprotocols`` - provides implementations for communication protocols between host and tested target,
+* ``dataproviders`` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
+* ``outputcollectors`` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * ``onnxconverters`` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
 * ``resources`` - contains project's resources, like RST templates, or trained models,
-* ``scenarios`` - contains executable scripts for running training, inference, benchmarks and other tests on target devices.
+* ``scenarios`` - contains executable scripts for running training, inference, benchmarks and other tests on target devices,
+* ``utils`` - various functions and classes used in all above-mentioned submodules.
 
-Model preparation
------------------
+Using Kenning as a library in Python scripts
+--------------------------------------------
 
-The ``kenning.core.dataset.Dataset`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Kenning is a regular Python module - after pip installation it can be used in Python scripts.
+The example compilation of the model can look as follows:
 
-Classes that implement the methods from ``kenning.core.dataset.Dataset`` are responsible for:
+.. code-block:: python
 
-* preparing the dataset, including the download routines (use ``--download-dataset`` flag to download the dataset data),
-* preprocessing the inputs into the format expected by most of the models for a given task,
-* postprocessing the outputs for the evaluation process,
-* evaluating a given model based on its predictions,
-* subdividing the samples into training and validation datasets.
+    from kenning.datasets.pet_dataset import PetDataset
+    from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
+    from kenning.compilers.tflite import TFLiteCompiler
+    from kenning.runtimes.tflite import TFLiteRuntime
+    from kenning.core.measurements import MeasurementsCollector
 
-Based on the above methods, the ``Dataset`` class provides data to the model wrappers, compilers and runtimes to train and test the models.
+    dataset = PetDataset(
+        root='./build/pet-dataset/',
+        download_dataset=True
+    )
+    model = TensorFlowPetDatasetMobileNetV2(
+        modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
+        dataset=dataset
+    )
+    compiler = TFLiteCompiler(
+        dataset=dataset,
+        compiled_model_path='./build/compiled-model.tflite',
+        modelframework='keras',
+        target='default',
+        inferenceinputtype='float32',
+        inferenceoutputtype='float32'
+    )
+    compiler.compile(
+        inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
+        inputshapes=model.get_input_spec()[0],
+        dtype=model.get_input_spec()[1]
+    )
 
-The datasets are included in the ``kenning.datasets`` submodule.
+The above script downloads the dataset and compiles the model using TensorFlow Lite to the model with FP32 inputs and outputs.
 
-Check out the `Pet Dataset wrapper <https://github.com/antmicro/kenning/blob/master/kenning/datasets/pet_dataset.py>`_ for an example of ``Dataset`` class implementation.
+To get a quantized model, replace ``target``, ``inferenceinputtype`` and ``inferenceoutputtype`` to ``int8``:
 
-The ``kenning.core.model.ModelWrapper`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. code-block:: python
 
-The ``ModelWrapper`` class requires implementing methods for:
+    ...
 
-* model preparation,
-* model saving and loading,
-* model saving to the ONNX format,
-* model-specific preprocessing of inputs and postprocessing of outputs, if neccessary,
-* model inference,
-* providing metadata (framework name and version),
-* model training,
-* input format specification,
-* conversion of model inputs and outputs to bytes for the ``kenning.core.runtimeprotocol.RuntimeProtocol`` objects.
+    compiler = TFLiteCompiler(
+        dataset=dataset,
+        compiled_model_path='./build/compiled-model.tflite',
+        modelframework='keras',
+        target='int8',
+        inferenceinputtype='int8',
+        inferenceoutputtype='int8',
+        dataset_percentage=0.3
+    )
+    compiler.compile(
+        inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
+        inputshapes=model.get_input_spec()[0],
+        dtype=model.get_input_spec()[1]
+    )
 
-The ``ModelWrapper`` provides methods for running the inference in a loop from data from dataset and measures both the quality and inferenceperformance of the model.
+To check how the compiled model is performing, create ``TFLiteRuntime`` object and run local model evaluation:
 
-The ``kenning.modelwrappers.frameworks`` submodule contains framework-wise specifications of ``ModelWrapper`` class - they implement all methods that are common for all the models implemented in this framework.
+.. code-block:: python
+   
+    ...
 
-For the `Pet Dataset wrapper`_ object there is example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
+    runtime = TFLiteRuntime(
+        protocol=None,
+        modelpath='./build/compiled-model.tflite'
+    )
 
-The ``kenning.core.compiler.ModelCompiler`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    runtime.run_locally(
+        dataset,
+        model,
+        './build/compiled-model.tflite'
+    )
+    MeasurementsCollector.save_measurements('out.json')
 
-Objects of this class implement compilation and optional hardware-specific optimization.
-For the latter, the ``ModelCompiler`` may require a dataset, for example to perform quantization or pruning.
+Method ``runtime.run_locally`` runs benchmarks of the model on the current device.
+The ``MeasurementsCollector`` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in :ref:`render-report`. 
 
-The implementations for compiler wrappers are in ``kenning.compilers``.
-For example, `TFLiteCompiler <https://github.com/antmicro/kenning/blob/master/kenning/compilers/tflite.py>`_ class wraps the TensorFlow Lite routines for compiling the model to a specified target.
+Using Kenning scenarios
+-----------------------
 
-Model deployment and benchmarking on target devices
----------------------------------------------------
-
-Benchmarks of compiled models are performed in a client-server manner, where the target device acts as a server that accepts the compiled model and waits for the input data to infer, and the host device sends the input data and waits for the outputs to evaluate the quality of models.
-
-The general communication protocol
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The communication protocol is message-based.
-There are:
-
-* ``OK`` messages - indicate success, and may come with additional information,
-* ``ERROR`` messages - indicate failure,
-* ``DATA`` messages - provide input data for inference,
-* ``MODEL`` messages - provide model to load for inference,
-* ``PROCESS`` messages - request processing inputs delivered in ``DATA`` message,
-* ``OUTPUT`` messages - request results of processing,
-* ``STATS`` messages - request statistics from the target device.
-
-The message types and enclosed data are encoded in format implemented in the ``kenning.core.runtimeprotocol.RuntimeProtocol``-based class.
-
-The communication during inference benchmark session is as follows:
-
-* The client (host) connects to the server (target),
-* The client sends the ``MODEL`` request along with the compiled model,
-* The server loads the model from request, prepares everything for running the model and sends the ``OK`` response,
-* After receiving the ``OK`` response from the server, the client starts reading input samples from the dataset, preprocesses the inputs, and sends ``DATA`` request with the preprocessed input,
-* Upon receiving the ``DATA`` request, the server stores the input for inference, and sends the ``OK`` message,
-* Upon receiving confirmation, the client sends the ``PROCESS`` request,
-* Just after receiving the ``PROCESS`` request, the server should send the ``OK`` message to confirm that it starts the inference, and just after finishing the inference the server should send another ``OK`` message to confirm that the inference is finished,
-* After receiving the first ``OK`` message, the client starts measuring inference time until the second ``OK`` response is received,
-* The client sends the ``OUTPUT`` request in order to receive the outputs from the server,
-* Server sends the ``OK`` message along with the output data,
-* The client parses the output and evaluates model performance,
-* The client sends ``STATS`` request to obtain additional statistics (inference time, CPU/GPU/Memory utilization) from the server,
-* If server provides any statistics, it sends the ``OK`` message with the data,
-* The same process applies to the rest of input samples.
-
-The way of determining the message type and sending data between the server and the client depends on the implementation of the ``kenning.core.runtimeprotocol.RuntimeProtocol`` class.
-The implementation of running inference on the given target is implemented in the ``kenning.core.runtime.Runtime`` class.
-
-The ``kenning.core.runtimeprotocol.RuntimeProtocol`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``RuntimeProtocol`` class conducts the communication between the client (host) and the server (target).
-
-The ``RuntimeProtocol`` class requires implementing methods for:
-
-* initializing the server and the client (communication-wise),
-* waiting for the incoming data,
-* sending the data,
-* receiving the data,
-* uploading the model inputs to the server,
-* uploading the model to the server,
-* requesting the inference on target,
-* downloading the outputs from the server,
-* (optionally) downloading the statistics from the server (i.e. performance speed, CPU/GPU utilization, power consumption),
-* notifying of success or failure by the server,
-* parsing messages.
-
-Based on the above-mentioned methods, the ``kenning.core.runtime.Runtime`` connects the host with the target.
-
-Look at the `TCP runtime protocol <https://github.com/antmicro/kenning/blob/master/kenning/runtimeprotocols/network.py>`_ for an example.
-
-The ``kenning.core.runtime.Runtime`` classes
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The ``Runtime`` objects provide an API for the host and (optionally) the target device.
-If the target device does not support Python, the runtime needs to be implemented in a different language, and the host API needs to support it.
-
-The client (host) side of the ``Runtime`` class utilizes the methods from ``Dataset``, ``ModelWrapper`` and ``RuntimeProtocol`` classes to run inference on the target device.
-The server (target) side of the ``Runtime`` class requires implementing methods for:
-
-* loading model delivered by the client,
-* preparing inputs delivered by the client,
-* running inference,
-* preparing outputs to be delivered to the client,
-* (optionally) sending inference statistics.
-
-Look at the `TVM runtime <https://github.com/antmicro/kenning/blob/master/kenning/runtimes/tvm.py>`_ for an example.
-
-ONNX conversion
----------------
-
-Most of the frameworks for training, compiling and optimizing deep learning algorithms support ONNX format.
-It allows conversion of models from one representation to another.
-
-The ONNX API and format is constantly evolving, and there are more and more operators in new state-of-the-art models that need to be supported.
-
-The ``kenning.core.onnxconversion.ONNXConversion`` class provides an API for writing compatibility tests between ONNX and deep learning frameworks.
-
-It requires implementing:
-
-* method for importing ONNX model for a given framework,
-* method for exporting ONNX model from a given framework,
-* list of models implemented in a given framework, where each model will be exported to ONNX, and then imported back to the framework.
-
-The ``ONNXConversion`` class implements a method for converting the models.
-It catches exceptions and any issues in the import/export methods, and provides the report on conversion status per model.
-
-Look at the `TensorFlowONNXConversion class <https://github.com/antmicro/kenning/blob/master/kenning/onnxconverters/tensorflow.py>`_ for an example of API usage.
-
-Running the benchmarks
-----------------------
-
+One can also use ready-to-use Kenning scenarios.
 All executable Python scripts are available in the ``kenning.scenarios`` submodule.
 
 Running model training on host
@@ -400,6 +334,8 @@ First, the client compiles the model and sends it to the server using the runtim
 Then, it sends next batches of data to process to the server.
 In the end, it collects the benchmark metrics and saves them to JSON file.
 In addition, it generates plots with performance changes over time.
+
+.. _render-report:
 
 Render report from benchmarks
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

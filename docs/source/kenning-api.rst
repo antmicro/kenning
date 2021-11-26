@@ -3,8 +3,8 @@ Kenning API
 
 .. _api-overview:
 
-API overview
-------------
+Deployment API overview
+-----------------------
 
 .. figure:: img/class-flow.png
    :name: class-flow
@@ -68,11 +68,13 @@ The final report is generated as an RST file with figures, as can be observed in
 Dataset
 -------
 
-Dataset-based classes are responsible for:
+``kennning.core.dataset.Dataset``-based classes are responsible for:
 
-* preparing the dataset - downloading the dataset and preparing the data required to work with the dataset,
-* preparing the inputs and outpus - loading images, creating output one-hot vectors (classification) or lists of bounding boxes (detection) or masks (segmentation),
-* evaluating the model.
+* preparing the dataset, including the download routines (use ``--download-dataset`` flag to download the dataset data),
+* preprocessing the inputs into the format expected by most of the models for a given task,
+* postprocessing the outputs for the evaluation process,
+* evaluating a given model based on its predictions,
+* subdividing the samples into training and validation datasets.
 
 The Dataset objects are used by:
 
@@ -80,7 +82,8 @@ The Dataset objects are used by:
 * :ref:`modelcompiler-api` - can be used i.e. for extracting calibration dataset for quantization purposes,
 * :ref:`runtime-api` - is used for evaluating the model on target hardware.
 
-The example subclasess:
+The available implementations of datasets are included in the ``kenning.datasets`` submodule.
+The example implementations:
 
 * `PetDataset <https://github.com/antmicro/kenning/blob/master/kenning/datasets/pet_dataset.py>`_ for classification,
 * `OpenImagesDatasetV6 <https://github.com/antmicro/kenning/blob/master/kenning/datasets/open_images_dataset.py>`_ for object detection,
@@ -94,15 +97,25 @@ The example subclasess:
 ModelWrapper
 ------------
 
-ModelWrapper-based objects wrap functions for:
+``kenning.core.model.ModelWrapper`` base class requires implementing methods for:
 
 * model preparation,
 * model saving and loading,
-* model inference in native framework,
-* model-specific input and output processing,
-* model conversion to the ONNX format.
+* model saving to the ONNX format,
+* model-specific preprocessing of inputs and postprocessing of outputs, if neccessary,
+* model inference,
+* providing metadata (framework name and version),
+* model training,
+* input format specification,
+* conversion of model inputs and outputs to bytes for the ``kenning.core.runtimeprotocol.RuntimeProtocol`` objects.
 
-Example model wrappers:
+The ``ModelWrapper`` provides methods for running the inference in a loop for data from dataset and measuring both the quality and inference performance of the model.
+
+The ``kenning.modelwrappers.frameworks`` submodule contains framework-wise implementations of ``ModelWrapper`` class - they implement all methods that are common for given frameworks regardless of used model.
+
+For the `Pet Dataset wrapper`_ object there is an example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
+
+Examples of model wrappers:
 
 * `PyTorchWrapper <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/frameworks/pytorch.py>`_ and `TensorFlowWrapper <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/frameworks/tensorflow.py>`_ implement common methods for all models in PyTorch and TensorFlow frameworks,
 * `PyTorchPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/pytorch_pet_dataset.py>`_ wraps the MobileNetV2 model for Pet classification implemented in PyTorch,
@@ -117,7 +130,7 @@ Example model wrappers:
 ModelCompiler
 -------------
 
-ModelCompiler objects wrap the deep learning compilation process.
+``kenning.core.compiler.ModelCompiler`` objects wrap the deep learning compilation process.
 They can perform the optimization of models (operation fusion, quantization) as well.
 
 All ModelCompiler objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
@@ -135,7 +148,7 @@ Example model compilers:
 Runtime
 -------
 
-The Runtime classes provide methods for running compiled models locally or remotely on target device.
+``kenning.core.runtime.Runtime`` class provides interfaces for methods for running compiled models locally or remotely on target device.
 Runtimes are usually compiler-specific (frameworks for deep learning compilers provide runtime libraries to run compiled models on a given hardware).
 
 The client (host) side of the ``Runtime`` class utilizes the methods from :ref:`dataset-api`, :ref:`modelwrapper-api` and :ref:`runtimeprotocol-api` classes to run inference on the target device.
@@ -160,7 +173,7 @@ The examples for runtimes are:
 RuntimeProtocol
 ---------------
 
-The RuntimeProtocol class conducts the communication between the client (host) and the server (target).
+``kenning.core.runtimeprotocol.RuntimeProtocol`` class conducts the communication between the client (host) and the server (target).
 
 The RuntimeProtocol class requires implementing methods for:
 
@@ -176,9 +189,61 @@ The RuntimeProtocol class requires implementing methods for:
 * notifying of success or failure by the server,
 * parsing messages.
 
+Based on the above-mentioned methods, the ``kenning.core.runtime.Runtime`` connects the host with the target.
+
 The examples of RuntimeProtocol:
 
 * `NetworkProtocol <https://github.com/antmicro/kenning/blob/master/kenning/runtimeprotocols/network.py>`_ - implements a TCP-based communication between the host and the client.
+
+.. _runtime-protocol-spec:
+
+Runtime protocol specification
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The communication protocol is message-based.
+There are:
+
+* ``OK`` messages - indicate success, and may come with additional information,
+* ``ERROR`` messages - indicate failure,
+* ``DATA`` messages - provide input data for inference,
+* ``MODEL`` messages - provide model to load for inference,
+* ``PROCESS`` messages - request processing inputs delivered in ``DATA`` message,
+* ``OUTPUT`` messages - request results of processing,
+* ``STATS`` messages - request statistics from the target device.
+
+The message types and enclosed data are encoded in format implemented in the ``kenning.core.runtimeprotocol.RuntimeProtocol``-based class.
+
+The communication during inference benchmark session is as follows:
+
+* The client (host) connects to the server (target),
+* The client sends the ``MODEL`` request along with the compiled model,
+* The server loads the model from request, prepares everything for running the model and sends the ``OK`` response,
+* After receiving the ``OK`` response from the server, the client starts reading input samples from the dataset, preprocesses the inputs, and sends ``DATA`` request with the preprocessed input,
+* Upon receiving the ``DATA`` request, the server stores the input for inference, and sends the ``OK`` message,
+* Upon receiving confirmation, the client sends the ``PROCESS`` request,
+* Just after receiving the ``PROCESS`` request, the server should send the ``OK`` message to confirm that it starts the inference, and just after finishing the inference the server should send another ``OK`` message to confirm that the inference is finished,
+* After receiving the first ``OK`` message, the client starts measuring inference time until the second ``OK`` response is received,
+* The client sends the ``OUTPUT`` request in order to receive the outputs from the server,
+* Server sends the ``OK`` message along with the output data,
+* The client parses the output and evaluates model performance,
+* The client sends ``STATS`` request to obtain additional statistics (inference time, CPU/GPU/Memory utilization) from the server,
+* If server provides any statistics, it sends the ``OK`` message with the data,
+* The same process applies to the rest of input samples.
+
+The way of determining the message type and sending data between the server and the client depends on the implementation of the ``kenning.core.runtimeprotocol.RuntimeProtocol`` class.
+The implementation of running inference on the given target is implemented in the ``kenning.core.runtime.Runtime`` class.
+
+RuntimeProtocol API
+~~~~~~~~~~~~~~~~~~~
+
+``kenning.core.runtimeprotocol.RuntimeProtocol``-based classes implement the :ref:`runtime-protocol-spec` in a given mean of transport, i.e. TCP connection, or UART.
+It requires implementing methods for:
+
+* initializing server (target hardware) and client (compiling host),
+* sending and receiving data,
+* connecting and disconnecting,
+* uploading (host) and downloading (target hardware) the model,
+* parsing and creating messages.
 
 .. autoclass:: kenning.core.runtimeprotocol.RuntimeProtocol
    :members:
@@ -188,7 +253,7 @@ The examples of RuntimeProtocol:
 Measurements
 ------------
 
-The ``kenning.core.measurements`` module contains ``Measurements`` and ``MeasurementsCollector`` classes for collecting performance and quality metrics.
+``kenning.core.measurements`` module contains ``Measurements`` and ``MeasurementsCollector`` classes for collecting performance and quality metrics.
 ``Measurements`` is a dict-like object that provides various methods for adding the performance metrics, adding values for time series, and updating existing values.
 
 The dictionary held by ``Measurements`` needs to have serializable data, since most of the scripts save the performance results later in the JSON format for later report generation.

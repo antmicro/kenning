@@ -9,6 +9,8 @@ import psutil
 import subprocess
 import re
 import numpy as np
+from pathlib import Path
+import json
 
 try:
     from pynvml.smi import nvidia_smi
@@ -190,6 +192,25 @@ class MeasurementsCollector(object):
     It is a 'static' class collecting measurements from various sources.
     """
     measurements = Measurements()
+
+    @classmethod
+    def save_measurements(cls, resultpath: Path):
+        """
+        Saves measurements to JSON file.
+
+        Parameters
+        ----------
+        resultpath : Path
+            Path to the saved JSON file
+        """
+        if 'eval_confusion_matrix' in cls.measurements.data:
+            cls.measurements.data['eval_confusion_matrix'] = cls.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+        with open(resultpath, 'w') as measurementsfile:
+            json.dump(
+                cls.measurements.data,
+                measurementsfile,
+                indent=2
+            )
 
 
 def timemeasurements(measurementname: str):

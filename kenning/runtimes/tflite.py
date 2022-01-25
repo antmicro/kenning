@@ -81,7 +81,10 @@ class TFLiteRuntime(Runtime):
         )
 
     def prepare_model(self, input_data):
-        import tflite_runtime.interpreter as tflite
+        try:
+            import tflite_runtime.interpreter as tflite
+        except ModuleNotFoundError:
+            from tensorflow import lite as tflite
         self.log.info('Loading model')
         if input_data:
             with open(self.modelpath, 'wb') as outmodel:

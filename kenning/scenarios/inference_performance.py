@@ -13,7 +13,6 @@ This test is only for performance tests.
 import sys
 import argparse
 from pathlib import Path
-import json
 
 from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import load_class, get_command
@@ -99,15 +98,7 @@ def main(argv):
 
     test_inference(inferenceobj)
 
-    if 'eval_confusion_matrix' in MeasurementsCollector.measurements.data:
-        MeasurementsCollector.measurements.data['eval_confusion_matrix'] = MeasurementsCollector.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
-
-    with open(args.output, 'w') as measurementsfile:
-        json.dump(
-            MeasurementsCollector.measurements.data,
-            measurementsfile,
-            indent=2
-        )
+    MeasurementsCollector.save_measurements(args.output)
 
 
 if __name__ == '__main__':

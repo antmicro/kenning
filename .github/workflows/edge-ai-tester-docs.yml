@@ -22,8 +22,8 @@ jobs:
           sudo apt-get install -y gcc g++ build-essential cmake llvm protobuf-compiler libprotoc-dev
           python -m pip install --upgrade pip==21.0.1 setuptools
           python -m pip install --upgrade matplotlib tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
-          python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
-          python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
+          python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git@v1.9.2
+          python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git@v1.8.0
           python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install --upgrade mxnet gluoncv
           python -m pip install --upgrade jinja2

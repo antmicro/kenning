@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from typing import Dict, Tuple
 
-from kenning.core.compiler import ModelCompiler
+from kenning.core.compiler import Optimizer
 from kenning.core.dataset import Dataset
 
 
@@ -43,7 +43,7 @@ def onnxconversion(modelpath: Path):
     return converter
 
 
-class TFLiteCompiler(ModelCompiler):
+class TFLiteCompiler(Optimizer):
     """
     The TFLite and EdgeTPU compiler.
     """

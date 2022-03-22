@@ -13,7 +13,7 @@ class CompilationError(Exception):
     pass
 
 
-class ModelCompiler(object):
+class Optimizer(object):
     """
     Compiles the given model to a different format or runtime.
     """
@@ -24,7 +24,7 @@ class ModelCompiler(object):
             compiled_model_path: str,
             dataset_percentage: float = 1.0):
         """
-        Prepares the ModelCompiler object.
+        Prepares the Optimizer object.
 
         Parameters
         ----------
@@ -45,7 +45,7 @@ class ModelCompiler(object):
     @classmethod
     def form_argparse(cls, quantizes_model: bool = False):
         """
-        Creates argparse parser for the ModelCompiler object.
+        Creates argparse parser for the Optimizer object.
 
         Parameters
         ----------
@@ -92,7 +92,7 @@ class ModelCompiler(object):
 
         Returns
         -------
-        ModelCompiler : object of class ModelCompiler
+        Optimizer : object of class Optimizer
         """
         if hasattr(args, 'dataset_percentage'):
             return cls(

@@ -8,7 +8,7 @@ import tvm.relay as relay
 from pathlib import Path
 import re
 
-from kenning.core.compiler import Optimizer, CompilationError
+from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 

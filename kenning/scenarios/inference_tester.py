@@ -34,7 +34,7 @@ def main(argv):
     )
     parser.add_argument(
         'modelcompilercls',
-        help='ModelCompiler-based class with compiling routines to import'
+        help='Optimizer-based class with compiling routines to import'
     )
     parser.add_argument(
         'runtimecls',

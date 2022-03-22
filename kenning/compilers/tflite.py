@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from typing import Dict, Tuple
 
-from kenning.core.compiler import Optimizer
+from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
 

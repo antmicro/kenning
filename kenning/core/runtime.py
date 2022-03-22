@@ -93,7 +93,7 @@ class Runtime(object):
 
         Returns
         -------
-        RuntimeProtocol : object of class ModelCompiler
+        RuntimeProtocol : object of class RuntimeProtocol
         """
         return cls(protocol, args.disable_performance_measurements)
 

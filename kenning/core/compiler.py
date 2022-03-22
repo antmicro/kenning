@@ -155,6 +155,26 @@ class Optimizer(object):
         raise NotImplementedError
 
     def consult_model_type(self, previous_block) -> str:
+        """
+        Finds output format of the previous block in the chain
+        matching with an input format of the current block.
+
+        Parameters
+        ----------
+        previous_block : Optimizer or ModelWrapper
+            Previous block in the optimization chain.
+
+        Raises
+        ------
+        ValueError
+            Raised if there is no matching format.
+
+        Returns
+        -------
+        str
+            Matching format.
+        """
+
         possible_outputs = previous_block.get_output_formats()
 
         for input in self.get_input_formats():

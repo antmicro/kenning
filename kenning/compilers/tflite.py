@@ -205,4 +205,4 @@ class TFLiteCompiler(Optimizer):
         return self.outputtypes
 
     def get_input_formats(self):
-        return self.inputtypes.keys()
+        return list(self.inputtypes.keys())

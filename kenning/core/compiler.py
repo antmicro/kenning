@@ -153,3 +153,14 @@ class Optimizer(object):
         Returns list of names of possible output formats.
         """
         raise NotImplementedError
+
+    def consult_model_type(self, previous_block) -> str:
+        possible_outputs = previous_block.get_output_formats()
+
+        for input in self.get_input_formats():
+            if input in possible_outputs:
+                return input
+
+        raise ValueError(
+            f'No matching formats between two objects: {self} and {previous_block}'
+        )

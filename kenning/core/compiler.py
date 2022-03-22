@@ -162,5 +162,6 @@ class Optimizer(object):
                 return input
 
         raise ValueError(
-            f'No matching formats between two objects: {self} and {previous_block}'
+            f'No matching formats between two objects: {self} and ' +
+            f'{previous_block}'
         )

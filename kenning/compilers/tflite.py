@@ -48,8 +48,8 @@ class TFLiteCompiler(Optimizer):
     The TFLite and EdgeTPU compiler.
     """
 
-    outputtypes = [ 
-        'tflite' 
+    outputtypes = [
+        'tflite'
     ]
 
     inputtypes = {

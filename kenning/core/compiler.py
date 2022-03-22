@@ -4,7 +4,7 @@ Provides an API for model compilers.
 
 import argparse
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import List, Dict, Tuple
 
 from kenning.core.dataset import Dataset
 
@@ -139,5 +139,17 @@ class Optimizer(object):
     def get_framework_and_version(self) -> Tuple[str, str]:
         """
         Returns name of the framework and its version in a form of a tuple.
+        """
+        raise NotImplementedError
+
+    def get_input_formats(self) -> List[str]:
+        """
+        Returns list of names of possible input formats.
+        """
+        raise NotImplementedError
+
+    def get_output_formats(self) -> List[str]:
+        """
+        Returns list of names of possible output formats.
         """
         raise NotImplementedError

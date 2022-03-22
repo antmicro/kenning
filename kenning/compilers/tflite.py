@@ -48,6 +48,10 @@ class TFLiteCompiler(Optimizer):
     The TFLite and EdgeTPU compiler.
     """
 
+    outputtypes = [ 
+        'tflite' 
+    ]
+
     inputtypes = {
         'tensorflow': tensorflowconversion,
         'keras': kerasconversion,
@@ -196,3 +200,9 @@ class TFLiteCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
+
+    def get_output_formats(self):
+        return self.outputtypes
+
+    def get_input_formats(self):
+        return self.inputtypes.keys()

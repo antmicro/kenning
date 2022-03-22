@@ -154,6 +154,8 @@ class TVMCompiler(Optimizer):
     The TVM compiler.
     """
 
+    outputtypes = []
+
     inputtypes = {
         'onnx': onnxconversion,
         'keras': kerasconversion,
@@ -310,3 +312,9 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
+
+    def get_output_formats(self):
+        return self.outputtypes
+
+    def get_input_formats(self):
+        return self.inputtypes.keys()

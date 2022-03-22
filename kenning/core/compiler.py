@@ -166,13 +166,11 @@ class Optimizer(object):
 
         Raises
         ------
-        ValueError
-            Raised if there is no matching format.
+        ValueError : Raised if there is no matching format.
 
         Returns
         -------
-        str
-            Matching format.
+        str : Matching format.
         """
 
         possible_outputs = previous_block.get_output_formats()

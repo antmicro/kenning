@@ -9,7 +9,7 @@ from pathlib import Path
 import numpy as np
 from typing import Dict, Tuple
 
-from kenning.core.compiler import ModelCompiler
+from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
 
@@ -43,10 +43,14 @@ def onnxconversion(modelpath: Path):
     return converter
 
 
-class TFLiteCompiler(ModelCompiler):
+class TFLiteCompiler(Optimizer):
     """
     The TFLite and EdgeTPU compiler.
     """
+
+    outputtypes = [
+        'tflite'
+    ]
 
     inputtypes = {
         'tensorflow': tensorflowconversion,
@@ -196,3 +200,9 @@ class TFLiteCompiler(ModelCompiler):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
+
+    def get_output_formats(self):
+        return self.outputtypes
+
+    def get_input_formats(self):
+        return list(self.inputtypes.keys())

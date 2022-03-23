@@ -20,7 +20,7 @@ Deployment API overview
 
 * :ref:`dataset-api` class - performs dataset downloading, preparation, input preprocessing, output postprocessing and model evaluation,
 * :ref:`modelwrapper-api` class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using native framework,
-* :ref:`modelcompiler-api` class - optimizes and compiles the model,
+* :ref:`optimizer-api` class - optimizes and compiles the model,
 * :ref:`runtime-api` class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
 * :ref:`runtimeprotocol-api` class - implements the communication protocol between the host and the target,
 * :ref:`dataprovider-api` class - implements providing data from such sources as camera, TCP connection or others for inference,
@@ -33,7 +33,7 @@ The orange blocks and arrows in the :numref:`class-flow` represent the model lif
 
 * the model is designed, trained, evaluated and improved - the training is implemented in the :ref:`modelwrapper-api`.
   .. note:: This is an optional step - the already trained model can also be wrapped and used.
-* the model is passed to the :ref:`modelcompiler-api`, where it is optimized for a given hardware and later compiled,
+* the model is passed to the :ref:`optimizer-api`, where it is optimized for a given hardware and later compiled,
 * during inference testing, the model is sent to the target using :ref:`runtimeprotocol-api`,
 * the model is loaded on target side and used for inference using :ref:`runtime-api`.
 
@@ -79,7 +79,7 @@ Dataset
 The Dataset objects are used by:
 
 * :ref:`modelwrapper-api` - for training purposes and model evaluation,
-* :ref:`modelcompiler-api` - can be used i.e. for extracting calibration dataset for quantization purposes,
+* :ref:`optimizer-api` - can be used i.e. for extracting calibration dataset for quantization purposes,
 * :ref:`runtime-api` - is used for evaluating the model on target hardware.
 
 The available implementations of datasets are included in the ``kenning.datasets`` submodule.
@@ -125,22 +125,22 @@ Examples of model wrappers:
 .. autoclass:: kenning.core.model.ModelWrapper
    :members:
 
-.. _modelcompiler-api:
+.. _optimizer-api:
 
-ModelCompiler
--------------
+Optimizer
+---------
 
-``kenning.core.compiler.ModelCompiler`` objects wrap the deep learning compilation process.
+``kenning.core.optimizer.Optimizer`` objects wrap the deep learning compilation process.
 They can perform the optimization of models (operation fusion, quantization) as well.
 
-All ModelCompiler objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
+All Optimizer objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
 
 Example model compilers:
 
 * `TFLiteCompiler <https://github.com/antmicro/kenning/blob/master/kenning/compilers/tflite.py>`_ - wraps TensorFlow Lite compilation,
 * `TVMCompiler <https://github.com/antmicro/kenning/blob/master/kenning/compilers/tvm.py>`_ - wraps TVM compilation.
 
-.. autoclass:: kenning.core.compiler.ModelCompiler
+.. autoclass:: kenning.core.optimizer.Optimizer
    :members:
 
 .. _runtime-api:

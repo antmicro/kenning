@@ -6,7 +6,7 @@ A script that runs inference client.
 It requires implementations of several classes as input:
 
 * ModelWrapper - wraps the model that will be compiled and executed on hardware
-* ModelCompiler - wraps the compiling routines for the deep learning model
+* Optimizer - wraps the compiling routines for the deep learning model
 * RuntimeProtocol - describes the protocol over which the communication is
   performed
 * Dataset - provides data for benchmarking
@@ -34,7 +34,7 @@ def main(argv):
     )
     parser.add_argument(
         'modelcompilercls',
-        help='ModelCompiler-based class with compiling routines to import'
+        help='Optimizer-based class with compiling routines to import'
     )
     parser.add_argument(
         'runtimecls',

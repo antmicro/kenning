@@ -192,6 +192,16 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
+    def get_output_formats(self) -> List[str]:
+        """
+        Returns list consisting of a model format.
+        """
+        # for now framework = format, but it could probably change
+        # maybe introduce some simple local dictionary
+
+        framework = self.get_framework_and_version()[0]
+        return [framework]
+
     @timemeasurements('inference_step')
     def _run_inference(self, X):
         return self.run_inference(X)

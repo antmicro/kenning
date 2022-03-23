@@ -8,7 +8,7 @@ import tvm.relay as relay
 from pathlib import Path
 import re
 
-from kenning.core.compiler import ModelCompiler, CompilationError
+from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 
@@ -149,10 +149,12 @@ def darknetconversion(
     )
 
 
-class TVMCompiler(ModelCompiler):
+class TVMCompiler(Optimizer):
     """
     The TVM compiler.
     """
+
+    outputtypes = []
 
     inputtypes = {
         'onnx': onnxconversion,
@@ -310,3 +312,9 @@ class TVMCompiler(ModelCompiler):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
+
+    def get_output_formats(self):
+        return self.outputtypes
+
+    def get_input_formats(self):
+        return list(self.inputtypes.keys())

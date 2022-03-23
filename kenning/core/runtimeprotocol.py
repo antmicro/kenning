@@ -182,7 +182,7 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        RuntimeProtocol : object of class ModelCompiler
+        RuntimeProtocol : object of class RuntimeProtocol
         """
         return cls()
 

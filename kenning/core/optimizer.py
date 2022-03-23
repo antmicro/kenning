@@ -4,7 +4,7 @@ Provides an API for model compilers.
 
 import argparse
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import List, Dict, Tuple
 
 from kenning.core.dataset import Dataset
 
@@ -13,7 +13,7 @@ class CompilationError(Exception):
     pass
 
 
-class ModelCompiler(object):
+class Optimizer(object):
     """
     Compiles the given model to a different format or runtime.
     """
@@ -24,7 +24,7 @@ class ModelCompiler(object):
             compiled_model_path: str,
             dataset_percentage: float = 1.0):
         """
-        Prepares the ModelCompiler object.
+        Prepares the Optimizer object.
 
         Parameters
         ----------
@@ -45,7 +45,7 @@ class ModelCompiler(object):
     @classmethod
     def form_argparse(cls, quantizes_model: bool = False):
         """
-        Creates argparse parser for the ModelCompiler object.
+        Creates argparse parser for the Optimizer object.
 
         Parameters
         ----------
@@ -92,7 +92,7 @@ class ModelCompiler(object):
 
         Returns
         -------
-        ModelCompiler : object of class ModelCompiler
+        Optimizer : object of class Optimizer
         """
         if hasattr(args, 'dataset_percentage'):
             return cls(
@@ -141,3 +141,45 @@ class ModelCompiler(object):
         Returns name of the framework and its version in a form of a tuple.
         """
         raise NotImplementedError
+
+    def get_input_formats(self) -> List[str]:
+        """
+        Returns list of names of possible input formats.
+        """
+        raise NotImplementedError
+
+    def get_output_formats(self) -> List[str]:
+        """
+        Returns list of names of possible output formats.
+        """
+        raise NotImplementedError
+
+    def consult_model_type(self, previous_block) -> str:
+        """
+        Finds output format of the previous block in the chain
+        matching with an input format of the current block.
+
+        Parameters
+        ----------
+        previous_block : Optimizer or ModelWrapper
+            Previous block in the optimization chain.
+
+        Raises
+        ------
+        ValueError : Raised if there is no matching format.
+
+        Returns
+        -------
+        str : Matching format.
+        """
+
+        possible_outputs = previous_block.get_output_formats()
+
+        for input in self.get_input_formats():
+            if input in possible_outputs:
+                return input
+
+        raise ValueError(
+            f'No matching formats between two objects: {self} and ' +
+            f'{previous_block}'
+        )

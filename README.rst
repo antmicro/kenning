@@ -68,10 +68,10 @@ Kenning structure
 
 The ``kenning`` module consists of the following submodules:
 
-* ``core`` - provides interface APIs for datasets, models, compilers, runtimes and runtime protocols,
+* ``core`` - provides interface APIs for datasets, models, optimizers, runtimes and runtime protocols,
 * ``datasets`` - provides implementations for datasets,
 * ``modelwrappers`` - provides implementations for models for various problems implemented in various frameworks,
-* ``compilers`` - provides implementations for compilers of deep learning models,
+* ``optimizers`` - provides implementations for compilers of deep learning models,
 * ``runtimes`` - provides implementations of runtime on target devices,
 * ``runtimeprotocols`` - provides implementations for communication protocols between host and tested target,
 * ``dataproviders`` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
@@ -282,7 +282,7 @@ The example call for the first script is following::
 The script requires:
 
 * ``ModelWrapper``-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* ``ModelCompiler``-based class for compiling the model for a given target,
+* ``Optimizer``-based class for compiling the model for a given target,
 * ``Runtime``-based class that implements data processing and the inference method for the compiled model on the target hardware,
 * ``Dataset``-based class that implements fetching of data samples and evaluation of the model,
 * ``./build/google-coral-devboard-tflite-tensorflow.json``, which is the path to the output JSON file with performance and quality metrics.
@@ -402,7 +402,7 @@ The above metrics can be used to determine any quality losses resulting from opt
 Adding new implementations
 --------------------------
 
-``Dataset``, ``ModelWrapper``, ``ModelCompiler``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``kenning.core`` module have dedicated directories for their implementations.
+``Dataset``, ``ModelWrapper``, ``Optimizer``, ``RuntimeProtocol``, ``Runtime`` and other classes from ``kenning.core`` module have dedicated directories for their implementations.
 Each method in base classes that requires implementation raises ``NotImplementedError`` exception.
 Implemented methods can be also overriden, if neccessary.
 

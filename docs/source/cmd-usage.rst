@@ -10,7 +10,7 @@ Runnable scripts in scenarios require providing implemented classes from ``kenni
 Command-line arguments for classes
 ----------------------------------
 
-Each class (:ref:`dataset-api`, :ref:`modelwrapper-api`, :ref:`modelcompiler-api` and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of the object of the class.
+Each class (:ref:`dataset-api`, :ref:`modelwrapper-api`, :ref:`optimizer-api` and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of the object of the class.
 
 Each class in the ``kenning.core`` implements ``form_argparse`` and ``from_argparse`` methods.
 The former creates an ``argparse`` group for a given class with its parameters.
@@ -139,7 +139,7 @@ In the end, the ``inference_tester`` returns the benchmark data in a form of a J
 The ``kenning.scenarios.inference_tester`` requires:
 
 * :ref:`modelwrapper-api`-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* :ref:`modelcompiler-api`-based class for compiling the model for a given target,
+* :ref:`optimizer-api`-based class for compiling the model for a given target,
 * :ref:`runtime-api`-based class that implements data processing and the inference method for the compiled model on the target hardware,
 * :ref:`dataset-api`-based class that implements fetching of data samples and evaluation of the model,
 * path to the output JSON file with performance and quality metrics.
@@ -160,7 +160,7 @@ With the above classes, the help can look as follows::
 
     positional arguments:                                               
       modelwrappercls       ModelWrapper-based class with inference implementation to import                                                 
-      modelcompilercls      ModelCompiler-based class with compiling routines to import                                                                                                                                                                                               
+      modelcompilercls      Optimizer-based class with compiling routines to import                                                                                                                                                                                               
       runtimecls            Runtime-based class with the implementation of model runtime                                                     
       datasetcls            Dataset-based class with dataset to import
       output                The path to the output JSON file with measurements                                                               
@@ -179,7 +179,7 @@ With the above classes, the help can look as follows::
       --model-path MODEL_PATH                                           
                             Path to the model
 
-    Compiler arguments:                                                 
+    Optimizer arguments:                                                 
       --compiled-model-path COMPILED_MODEL_PATH
                             The path to the compiled model output
       --model-framework {onnx,keras,darknet}

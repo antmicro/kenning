@@ -155,11 +155,10 @@ def tfliteconversion(
         modelpath: Path,
         input_shapes,
         dtype='float32'):
-    # TODO: read the model, can't find API for this class.
+
     tflite_model_buf = open(modelpath, "rb").read()
 
     try:
-        # from __future__ import absolute_import
         import tflite
         tflite_model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
     except AttributeError:
@@ -169,7 +168,7 @@ def tfliteconversion(
     return relay.frontend.from_tflite(
         tflite_model,
         dtype_dict=input_shapes,
-        shape_dict={"input":dtype}
+        shape_dict={"input": dtype}
     )
 
 

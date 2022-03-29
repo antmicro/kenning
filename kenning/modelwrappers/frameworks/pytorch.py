@@ -29,3 +29,6 @@ class PyTorchWrapper(ModelWrapper):
 
     def get_framework_and_version(self):
         return ('torch', torch.__version__)
+
+    def get_output_formats(self):
+        return ['torch']

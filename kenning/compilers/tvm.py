@@ -23,7 +23,8 @@ def onnxconversion(
         onnxmodel,
         shape=input_shapes,
         freeze_params=True,
-        dtype=dtype)
+        dtype=dtype
+    )
 
 
 def kerasconversion(
@@ -149,6 +150,29 @@ def darknetconversion(
     )
 
 
+def tfliteconversion(
+        compiler: "TVMCompiler",
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
+    # TODO: read the model, can't find API for this class.
+    tflite_model_buf = open(modelpath, "rb").read()
+
+    try:
+        # from __future__ import absolute_import
+        import tflite
+        tflite_model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
+    except AttributeError:
+        import tflite.Model
+        tflite_model = tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
+
+    return relay.frontend.from_tflite(
+        tflite_model,
+        dtype_dict=input_shapes,
+        shape_dict={"input":dtype}
+    )
+
+
 class TVMCompiler(Optimizer):
     """
     The TVM compiler.
@@ -157,10 +181,11 @@ class TVMCompiler(Optimizer):
     outputtypes = []
 
     inputtypes = {
-        'onnx': onnxconversion,
         'keras': kerasconversion,
+        'onnx': onnxconversion,
         'darknet': darknetconversion,
-        'torch': torchconversion
+        'torch': torchconversion,
+        'tflite': tfliteconversion
     }
 
     def __init__(

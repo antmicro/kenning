@@ -106,6 +106,12 @@ class Optimizer(object):
                 args.compiled_model_path
             )
 
+    def set_input_type(self, inputtype: str):
+        """
+        Sets input type of the model for the compiler.
+        """
+        raise NotImplementedError
+
     def compile(
             self,
             inputmodelpath: Path,

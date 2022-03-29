@@ -248,6 +248,3 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             )
             result.append(arr)
         return torch.FloatTensor(result)
-
-    def get_output_formats(self):
-        return ['torch', 'onnx']

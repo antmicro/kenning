@@ -31,4 +31,4 @@ class PyTorchWrapper(ModelWrapper):
         return ('torch', torch.__version__)
 
     def get_output_formats(self):
-        return ['torch']
+        return ['onnx', 'torch']

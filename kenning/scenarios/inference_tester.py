@@ -17,6 +17,7 @@ compilation and benchmark process.
 
 import sys
 import argparse
+import tempfile
 from pathlib import Path
 
 from kenning.utils.class_loader import load_class, get_command
@@ -100,10 +101,7 @@ def main(argv):
     runtime = runtimecls.from_argparse(protocol, args)
 
     modelpath = model.get_path()
-    if args.convert_to_onnx:
-        model.save_to_onnx(args.convert_to_onnx)
-        modelpath = args.convert_to_onnx
-
+    
     inputspec, inputdtype = model.get_input_spec()
 
     modelframeworktuple = model.get_framework_and_version()
@@ -123,6 +121,15 @@ def main(argv):
             'class_names': [val for val in dataset.get_class_names()]
         }
 
+    # for now ignoring --model-framework parameter
+    format = compiler.consult_model_type(model)
+    if format == 'onnx' or args.convert_to_onnx:
+        format = 'onnx'
+        modelpath = args.convert_to_onnx if args.convert_to_onnx else tempfile.NamedTemporaryFile().name
+
+        model.save_to_onnx(modelpath)
+
+    compiler.set_input_type(format)
     compiler.compile(modelpath, inputspec, inputdtype)
 
     if protocol:

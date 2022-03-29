@@ -288,10 +288,6 @@ class TVMCompiler(Optimizer):
             args.output_conversion_function
         )
 
-    def set_input_type(self, inputtype: str):
-        assert inputtype in self.inputtypes.keys()
-        self.inputtype = inputtype
-
     def compile_model(self, mod, params, outputpath):
         if str(self.target).startswith('cuda'):
             archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target))
@@ -336,9 +332,3 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
-
-    def get_output_formats(self):
-        return self.outputtypes
-
-    def get_input_formats(self):
-        return list(self.inputtypes.keys())

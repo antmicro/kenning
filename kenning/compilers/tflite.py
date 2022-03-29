@@ -142,10 +142,6 @@ class TFLiteCompiler(Optimizer):
             args.dataset_percentage,
         )
 
-    def set_input_type(self, inputtype: str):
-        assert inputtype in self.inputtypes.keys()
-        self.inputtype = inputtype
-
     def compile(
             self,
             inputmodelpath: Path,
@@ -200,9 +196,3 @@ class TFLiteCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
-
-    def get_output_formats(self):
-        return self.outputtypes
-
-    def get_input_formats(self):
-        return list(self.inputtypes.keys())

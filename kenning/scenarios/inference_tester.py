@@ -101,7 +101,7 @@ def main(argv):
     runtime = runtimecls.from_argparse(protocol, args)
 
     modelpath = model.get_path()
-    
+
     inputspec, inputdtype = model.get_input_spec()
 
     modelframeworktuple = model.get_framework_and_version()
@@ -125,7 +125,8 @@ def main(argv):
     format = compiler.consult_model_type(model)
     if format == 'onnx' or args.convert_to_onnx:
         format = 'onnx'
-        modelpath = args.convert_to_onnx if args.convert_to_onnx else tempfile.NamedTemporaryFile().name
+        modelpath = args.convert_to_onnx if args.convert_to_onnx \
+            else tempfile.NamedTemporaryFile().name
 
         model.save_to_onnx(modelpath)
 

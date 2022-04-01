@@ -125,16 +125,16 @@ class TensorFlowPruningCompiler(Optimizer):
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
-        Xt = self.dataset.prepare_input_samples(Xt[:100])
-        Yt = self.dataset.prepare_output_samples(Yt[:100])
+        Xt = self.dataset.prepare_input_samples(Xt)
+        Yt = self.dataset.prepare_output_samples(Yt)
         traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
         traindataset = traindataset.map(
             preprocess_output,
             num_parallel_calls=tf.data.experimental.AUTOTUNE
         ).batch(32)
 
-        Xv = self.dataset.prepare_input_samples(Xv[:100])
-        Yv = self.dataset.prepare_output_samples(Yv[:100])
+        Xv = self.dataset.prepare_input_samples(Xv)
+        Yv = self.dataset.prepare_output_samples(Yv)
         validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
         validdataset = validdataset.map(
             preprocess_output,

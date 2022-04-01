@@ -35,7 +35,7 @@ class TensorFlowPruningCompiler(Optimizer):
             epochs: int,
             prune_dense: bool,
             target_sparsity: float,
-            dataset_percentage: float = 1.0):
+            batch_size: int):
         """
         The TensorFlowPruning compiler.
 
@@ -50,20 +50,21 @@ class TensorFlowPruningCompiler(Optimizer):
             Path where compiled model will be saved
         modelframework : str
             Framework of the input model, used to select a proper backend
-        dataset_percentage : float
-            If the dataset is used for optimization (quantization), the
-            dataset_percentage determines how much of data samples is going
-            to be used
         epochs : int
             Number of epochs used to fine-tune the model
         prune_dense : bool
             Determines if only dense layers should be pruned
+        target_sparsity : float
+            Target weights sparsity of the model after pruning
+        batch_size : int
+            The size of a batch used for the fine-tuning
         """
-        super().__init__(dataset, compiled_model_path, dataset_percentage)
+        super().__init__(dataset, compiled_model_path)
         self.set_input_type(modelframework)
         self.epochs = epochs
         self.prune_dense = prune_dense
         self.target_sparsity = target_sparsity
+        self.batch_size = batch_size
 
         self.outputtypes = [
             'keras'
@@ -84,20 +85,26 @@ class TensorFlowPruningCompiler(Optimizer):
         )
         group.add_argument(
             '--epochs',
-            help="The number of epochs for the fine-tuning",
+            help='Number of epochs for the fine-tuning',
             type=int,
             default=10
         )
         group.add_argument(
             '--prune-dense',
-            help="Determines whether should prune only dense layers",
+            help='Determines whether should prune only dense layers',
             action='store_true'
         )
         group.add_argument(
             '--target-sparsity',
-            help='The target sparsisty of the model after pruning',
+            help='Target weights sparsity of the model after pruning',
             type=float,
             default=0.1
+        )
+        group.add_argument(
+            '--batch_size',
+            help='The size of a batch for the fine-tuning',
+            type=int,
+            default=32
         )
         return parser, group
 
@@ -109,7 +116,8 @@ class TensorFlowPruningCompiler(Optimizer):
             args.model_framework,
             args.epochs,
             args.prune_dense,
-            args.target_sparsity
+            args.target_sparsity,
+            args.batch_size
         )
 
     def compile(
@@ -131,7 +139,7 @@ class TensorFlowPruningCompiler(Optimizer):
         traindataset = traindataset.map(
             preprocess_output,
             num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(32)
+        ).batch(self.batch_size)
 
         Xv = self.dataset.prepare_input_samples(Xv)
         Yv = self.dataset.prepare_output_samples(Yv)
@@ -139,7 +147,7 @@ class TensorFlowPruningCompiler(Optimizer):
         validdataset = validdataset.map(
             preprocess_output,
             num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(32)
+        ).batch(self.batch_size)
 
         pruning_params = {
             'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(

@@ -53,6 +53,9 @@ class TensorFlowWrapper(ModelWrapper):
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
 
+    def get_output_formats(self):
+        return ['onnx', 'keras']
+
     def save_to_onnx(self, modelpath):
         import tf2onnx
         modelproto, _ = tf2onnx.convert.from_keras(

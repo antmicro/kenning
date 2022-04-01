@@ -23,7 +23,8 @@ def onnxconversion(
         onnxmodel,
         shape=input_shapes,
         freeze_params=True,
-        dtype=dtype)
+        dtype=dtype
+    )
 
 
 def kerasconversion(
@@ -149,6 +150,29 @@ def darknetconversion(
     )
 
 
+def tfliteconversion(
+        compiler: 'TVMCompiler',
+        modelpath: Path,
+        input_shapes,
+        dtype='float32'):
+
+    with open(modelpath, 'rb') as f:
+        tflite_model_buf = f.read()
+
+    try:
+        import tflite
+        tflite_model = tflite.Model.GetRootAsModel(tflite_model_buf, 0)
+    except AttributeError:
+        import tflite.Model
+        tflite_model = tflite.Model.Model.GetRootAsModel(tflite_model_buf, 0)
+
+    return relay.frontend.from_tflite(
+        tflite_model,
+        dtype_dict=input_shapes,
+        shape_dict={"input": dtype}
+    )
+
+
 class TVMCompiler(Optimizer):
     """
     The TVM compiler.
@@ -157,10 +181,11 @@ class TVMCompiler(Optimizer):
     outputtypes = []
 
     inputtypes = {
-        'onnx': onnxconversion,
         'keras': kerasconversion,
+        'onnx': onnxconversion,
         'darknet': darknetconversion,
-        'torch': torchconversion
+        'torch': torchconversion,
+        'tflite': tfliteconversion
     }
 
     def __init__(
@@ -264,10 +289,6 @@ class TVMCompiler(Optimizer):
             args.output_conversion_function
         )
 
-    def set_input_type(self, inputtype: str):
-        assert inputtype in self.inputtypes.keys()
-        self.inputtype = inputtype
-
     def compile_model(self, mod, params, outputpath):
         if str(self.target).startswith('cuda'):
             archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target))
@@ -312,9 +333,3 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
-
-    def get_output_formats(self):
-        return self.outputtypes
-
-    def get_input_formats(self):
-        return list(self.inputtypes.keys())

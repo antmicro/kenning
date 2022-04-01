@@ -18,6 +18,10 @@ class Optimizer(object):
     Compiles the given model to a different format or runtime.
     """
 
+    outputtypes = []
+
+    inputtypes = {}
+
     def __init__(
             self,
             dataset: Dataset,
@@ -106,6 +110,13 @@ class Optimizer(object):
                 args.compiled_model_path
             )
 
+    def set_input_type(self, inputtype: str):
+        """
+        Sets input type of the model for the compiler.
+        """
+        assert inputtype in self.inputtypes.keys()
+        self.inputtype = inputtype
+
     def compile(
             self,
             inputmodelpath: Path,
@@ -146,13 +157,13 @@ class Optimizer(object):
         """
         Returns list of names of possible input formats.
         """
-        raise NotImplementedError
+        return list(self.inputtypes.keys())
 
     def get_output_formats(self) -> List[str]:
         """
         Returns list of names of possible output formats.
         """
-        raise NotImplementedError
+        return self.outputtypes
 
     def consult_model_type(self, previous_block) -> str:
         """

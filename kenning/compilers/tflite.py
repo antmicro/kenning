@@ -142,18 +142,14 @@ class TFLiteCompiler(Optimizer):
             args.dataset_percentage,
         )
 
-    def set_input_type(self, inputtype: str):
-        assert inputtype in self.inputtypes.keys()
-        self.inputtype = inputtype
-
     def compile(
             self,
             inputmodelpath: Path,
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         converter = self.inputtypes[self.inputtype](inputmodelpath)
-        converter.optimizations = [tf.lite.Optimize.DEFAULT]
         if self.target in ['int8', 'edgetpu']:
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]
             converter.target_spec.supported_opts = [
                 tf.lite.OpsSet.TFLITE_BUILTINS_INT8
             ]
@@ -200,9 +196,3 @@ class TFLiteCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
-
-    def get_output_formats(self):
-        return self.outputtypes
-
-    def get_input_formats(self):
-        return list(self.inputtypes.keys())

@@ -151,12 +151,13 @@ def darknetconversion(
 
 
 def tfliteconversion(
-        compiler: "TVMCompiler",
+        compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
         dtype='float32'):
 
-    tflite_model_buf = open(modelpath, "rb").read()
+    with open(modelpath, 'rb') as f:
+        tflite_model_buf = f.read()
 
     try:
         import tflite

@@ -1,5 +1,5 @@
 """
-Wrapper for TensorFlowPruning compiler.
+Wrapper for TensorFlowPruning optimizer.
 """
 import tensorflow as tf
 from pathlib import Path
@@ -15,9 +15,9 @@ def kerasconversion(modelpath: Path):
     return model
 
 
-class TensorFlowPruningCompiler(Optimizer):
+class TensorFlowPruningOptimizer(Optimizer):
     """
-    The TensorFlowPruning compiler.
+    The TensorFlowPruning optimizer.
     """
     outputtypes = [
         'keras'
@@ -37,7 +37,7 @@ class TensorFlowPruningCompiler(Optimizer):
             target_sparsity: float,
             batch_size: int):
         """
-        The TensorFlowPruning compiler.
+        The TensorFlowPruning optimizer.
 
         This compiler applies pruning optimization to the model.
 

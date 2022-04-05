@@ -194,3 +194,10 @@ class Optimizer(object):
             f'No matching formats between two objects: {self} and ' +
             f'{previous_block}'
         )
+
+    def get_inputdtype(self) -> str:
+        """
+        Returns dtype of the input of the compiled model.
+        Is set during compilation.
+        """
+        raise NotImplementedError

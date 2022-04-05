@@ -66,14 +66,6 @@ class TensorFlowPruningOptimizer(Optimizer):
         self.target_sparsity = target_sparsity
         self.batch_size = batch_size
 
-        self.outputtypes = [
-            'keras'
-        ]
-
-        self.inputtypes = {
-            'keras': kerasconversion,
-        }
-
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()

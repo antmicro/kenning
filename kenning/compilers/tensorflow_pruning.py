@@ -127,6 +127,7 @@ class TensorFlowPruningOptimizer(Optimizer):
             dtype: str = 'float32'):
 
         model = self.inputtypes[self.inputtype](inputmodelpath)
+        self.inputdtype = dtype
 
         def preprocess_output(input, output):
             return input, tf.convert_to_tensor(output)
@@ -200,3 +201,6 @@ class TensorFlowPruningOptimizer(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
+
+    def get_inputdtype(self) -> str:
+        return self.inputdtype

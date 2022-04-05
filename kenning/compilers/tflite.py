@@ -148,7 +148,10 @@ class TFLiteCompiler(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         converter = self.inputtypes[self.inputtype](inputmodelpath)
+        self.inputdtype = dtype
+
         if self.target in ['int8', 'edgetpu']:
+            self.inputdtype = 'int8'
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
             converter.target_spec.supported_opts = [
                 tf.lite.OpsSet.TFLITE_BUILTINS_INT8
@@ -196,3 +199,6 @@ class TFLiteCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
+
+    def get_inputdtype(self) -> str:
+        return self.inputdtype

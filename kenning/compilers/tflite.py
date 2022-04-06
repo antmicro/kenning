@@ -8,6 +8,7 @@ import subprocess
 from pathlib import Path
 import numpy as np
 from typing import Dict, Tuple
+import pickle
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
@@ -148,10 +149,9 @@ class TFLiteCompiler(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         converter = self.inputtypes[self.inputtype](inputmodelpath)
-        self.inputdtype = dtype
+        self.inputdtype = tf.as_dtype(self.inferenceinputtype)
 
         if self.target in ['int8', 'edgetpu']:
-            self.inputdtype = 'int8'
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
             converter.target_spec.supported_opts = [
                 tf.lite.OpsSet.TFLITE_BUILTINS_INT8
@@ -174,6 +174,16 @@ class TFLiteCompiler(Optimizer):
 
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
+
+        interpreter = tf.lite.Interpreter(model_content=tflite_model)
+        with open('io_details.pkl', 'wb') as f:
+            pickle.dump(
+                [
+                    interpreter.get_input_details(),
+                    interpreter.get_output_details()
+                ],
+                f
+            )
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')
@@ -200,5 +210,5 @@ class TFLiteCompiler(Optimizer):
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
 
-    def get_inputdtype(self) -> str:
+    def get_inputdtype(self):
         return self.inputdtype

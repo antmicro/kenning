@@ -323,6 +323,7 @@ class TVMCompiler(Optimizer):
             inputmodelpath: Path,
             inputshapes,
             dtype='float32'):
+        self.inputdtype = dtype
         mod, params = self.inputtypes[self.inputtype](
             self,
             inputmodelpath,
@@ -333,3 +334,6 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
+
+    def get_inputdtype(self):
+        return self.inputdtype

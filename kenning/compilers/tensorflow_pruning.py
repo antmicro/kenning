@@ -11,7 +11,7 @@ from kenning.core.dataset import Dataset
 
 
 def kerasconversion(modelpath: Path):
-    model = tf.keras.models.load_model(modelpath)
+    model = tf.keras.models.load_model(modelpath, compile=False)
     return model
 
 
@@ -83,7 +83,7 @@ class TensorFlowPruningOptimizer(Optimizer):
         )
         group.add_argument(
             '--prune-dense',
-            help='Determines whether should prune only dense layers',
+            help='Prune only dense layers',
             action='store_true'
         )
         group.add_argument(

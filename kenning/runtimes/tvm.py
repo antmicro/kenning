@@ -25,7 +25,8 @@ class TVMRuntime(Runtime):
             contextid: int = 0,
             inputdtype: str = 'float32',
             use_tvm_vm: bool = False,
-            use_json_out: bool = False):
+            use_json_out: bool = False,
+            io_details_path: Path = None):
         """
         Constructs TVM runtime.
 
@@ -41,6 +42,9 @@ class TVMRuntime(Runtime):
             ID of the runtime context device
         inputdtype : str
             Type of the input data
+        io_details_path : Path
+            Path for the quantization details file generated
+            by tflite optimizer. Can be None.
         """
         self.modelpath = modelpath
         self.contextname = contextname
@@ -55,6 +59,7 @@ class TVMRuntime(Runtime):
         self.model = None
         self.use_tvm_vm = use_tvm_vm
         self.use_json_out = use_json_out
+        self.io_details_path = io_details_path
         super().__init__(protocol)
 
     @classmethod
@@ -94,6 +99,12 @@ class TVMRuntime(Runtime):
             help='Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
             action='store_true'
         )
+        group.add_argument(
+            '--io-details-path',
+            help="Path where the quantization details are saved in pickle.",
+            type=Path,
+            default='io_details.pkl'
+        )
         return parser, group
 
     @classmethod
@@ -105,7 +116,8 @@ class TVMRuntime(Runtime):
             args.target_device_context_id,
             args.input_dtype,
             args.runtime_use_vm,
-            args.use_json_at_output
+            args.use_json_at_output,
+            args.io_details_path
         )
 
     def prepare_input(self, input_data):
@@ -140,7 +152,7 @@ class TVMRuntime(Runtime):
         self.log.info('Loading model')
 
         try:
-            with open('io_details.pkl', 'rb') as f:
+            with open(self.io_details_path, 'rb') as f:
                 # Assumption that model is tensor quantized
                 # ie. input and output have only one item
                 self.input_details, self.output_details = pickle.load(f)

@@ -67,7 +67,8 @@ class TFLiteCompiler(Optimizer):
             target: str,
             inferenceinputtype: str,
             inferenceoutputtype: str,
-            dataset_percentage: float = 1.0):
+            dataset_percentage: float = 1.0,
+            io_details_path: Path = None):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -94,11 +95,15 @@ class TFLiteCompiler(Optimizer):
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
             to be used
+        io_details_path : Path
+            Path where the quantization details are saved. It is used by
+            the runtimes later to quantize input and output during inference.
         """
         self.set_input_type(modelframework)
         self.target = target
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
+        self.io_details_path = io_details_path
         super().__init__(dataset, compiled_model_path, dataset_percentage)
 
     @classmethod
@@ -129,6 +134,12 @@ class TFLiteCompiler(Optimizer):
             choices=['float32', 'int8', 'uint8'],
             default='float32'
         )
+        group.add_argument(
+            '--io-details-path',
+            help='Path where to save quantization details in pickle.',
+            type=Path,
+            default='io_details.pkl'
+        )
         return parser, group
 
     @classmethod
@@ -141,6 +152,7 @@ class TFLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
+            args.io_details_path
         )
 
     def compile(
@@ -175,15 +187,16 @@ class TFLiteCompiler(Optimizer):
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
 
-        interpreter = tf.lite.Interpreter(model_content=tflite_model)
-        with open('io_details.pkl', 'wb') as f:
-            pickle.dump(
-                [
-                    interpreter.get_input_details(),
-                    interpreter.get_output_details()
-                ],
-                f
-            )
+        if self.io_details_path:
+            interpreter = tf.lite.Interpreter(model_content=tflite_model)
+            with open(self.io_details_path, 'wb') as f:
+                pickle.dump(
+                    [
+                        interpreter.get_input_details(),
+                        interpreter.get_output_details()
+                    ],
+                    f
+                )
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

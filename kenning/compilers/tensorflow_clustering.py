@@ -53,7 +53,8 @@ class TensorFlowClusteringOptimizer(Optimizer):
             Determines if only dense layers should be clusterized
         clusters_number : int
             Number of clusters for each weight array
-        preserve_sparsity : bool
+        disable_sparsity_preservation : bool
+            Determines whether to preserve sparsity of a given model
         """
         super().__init__(dataset, compiled_model_path)
         self.set_input_type(modelframework)

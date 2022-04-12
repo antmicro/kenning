@@ -2,11 +2,11 @@
 Runtime implementation for TVM-compiled models.
 """
 
+from typing import Optional
 from pathlib import Path
 import numpy as np
 from base64 import b64encode
 import json
-import pickle
 
 import tvm
 from tvm.contrib import graph_executor
@@ -26,7 +26,7 @@ class TVMRuntime(Runtime):
             inputdtype: str = 'float32',
             use_tvm_vm: bool = False,
             use_json_out: bool = False,
-            io_details_path: Path = None):
+            io_details_path: Optional[Path] = None):
         """
         Constructs TVM runtime.
 
@@ -42,7 +42,7 @@ class TVMRuntime(Runtime):
             ID of the runtime context device
         inputdtype : str
             Type of the input data
-        io_details_path : Path
+        io_details_path : Optional[Path]
             Path for the quantization details file generated
             by tflite optimizer. Can be None.
         """
@@ -103,7 +103,7 @@ class TVMRuntime(Runtime):
             '--io-details-path',
             help="Path where the quantization details are saved in pickle.",
             type=Path,
-            default='io_details.pkl'
+            required=False
         )
         return parser, group
 
@@ -125,7 +125,7 @@ class TVMRuntime(Runtime):
 
         input_data = np.frombuffer(input_data, dtype=self.inputdtype)
         if self.input_details:
-            if self.model_inputdtype != np.float32:
+            if self.model_inputdtype != 'float32':
                 scale, zero_point = self.input_details['quantization']
                 input_data = input_data / scale + zero_point
 
@@ -155,7 +155,7 @@ class TVMRuntime(Runtime):
             with open(self.io_details_path, 'rb') as f:
                 # Assumption that model is tensor quantized
                 # ie. input and output have only one item
-                self.input_details, self.output_details = pickle.load(f)
+                self.input_details, self.output_details = json.load(f)
             self.input_details = self.input_details[0]
             self.output_details = self.output_details[0]
             self.model_inputdtype = self.input_details['dtype']
@@ -190,16 +190,16 @@ class TVMRuntime(Runtime):
         self.log.debug('Uploading output')
         out = b''
 
-        quantize_output = (
+        dequantize_output = (
             self.output_details and
-            self.model_inputdtype != np.float32
+            self.model_inputdtype != 'float32'
         )
 
-        if quantize_output:
+        if dequantize_output:
             scale, zero_point = self.output_details['quantization']
 
         def convert(output):
-            if quantize_output:
+            if dequantize_output:
                 return (
                         (output.astype(self.inputdtype) - zero_point)
                         * scale

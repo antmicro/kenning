@@ -7,8 +7,8 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
-from typing import Dict, Tuple
-import pickle
+from typing import Dict, Tuple, Optional
+import json
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
@@ -68,7 +68,7 @@ class TFLiteCompiler(Optimizer):
             inferenceinputtype: str,
             inferenceoutputtype: str,
             dataset_percentage: float = 1.0,
-            io_details_path: Path = None):
+            io_details_path: Optional[Path] = None):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -95,7 +95,7 @@ class TFLiteCompiler(Optimizer):
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
             to be used
-        io_details_path : Path
+        io_details_path : Optional[Path]
             Path where the quantization details are saved. It is used by
             the runtimes later to quantize input and output during inference.
         """
@@ -138,7 +138,7 @@ class TFLiteCompiler(Optimizer):
             '--io-details-path',
             help='Path where to save quantization details in pickle.',
             type=Path,
-            default='io_details.pkl'
+            required=False
         )
         return parser, group
 
@@ -161,7 +161,7 @@ class TFLiteCompiler(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         converter = self.inputtypes[self.inputtype](inputmodelpath)
-        self.inputdtype = tf.as_dtype(self.inferenceinputtype)
+        self.inputdtype = self.inferenceinputtype
 
         if self.target in ['int8', 'edgetpu']:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
@@ -189,13 +189,25 @@ class TFLiteCompiler(Optimizer):
 
         if self.io_details_path:
             interpreter = tf.lite.Interpreter(model_content=tflite_model)
-            with open(self.io_details_path, 'wb') as f:
-                pickle.dump(
+
+            class NumpyEncoder(json.JSONEncoder):
+                def default(self, obj):
+                    if isinstance(obj, np.ndarray):
+                        return obj.tolist()
+                    if obj == np.float32:
+                        return 'float32'
+                    if obj == np.int8:
+                        return 'int8'
+                    return json.JSONEncoder.default(self, obj)
+
+            with open(self.io_details_path, 'w') as f:
+                json.dump(
                     [
                         interpreter.get_input_details(),
                         interpreter.get_output_details()
                     ],
-                    f
+                    f,
+                    cls=NumpyEncoder
                 )
 
         if self.target == 'edgetpu':

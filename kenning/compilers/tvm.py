@@ -5,8 +5,12 @@ Wrapper for TVM deep learning compiler.
 import tvm
 import onnx
 import tvm.relay as relay
+import tensorflow as tf
+import numpy as np
 from pathlib import Path
+from typing import Optional
 import re
+import json
 
 from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
@@ -198,7 +202,8 @@ class TVMCompiler(Optimizer):
             opt_level: int = 2,
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,
-            conversion_func: str = 'default'):
+            conversion_func: str = 'default',
+            quantization_details_path: Optional[Path] = None):
         """
         A TVM Compiler wrapper.
 
@@ -219,6 +224,9 @@ class TVMCompiler(Optimizer):
         libdarknetpath : str
             path to the libdarknet.so library, used only during conversion
             of darknet model
+        quantization_details_path : Optional[Path]
+            Path where the quantization details are saved. It is used by
+            the runtimes later to quantize input and output during inference.
         """
         self.set_input_type(modelframework)
         self.target = tvm.target.Target(target)
@@ -231,6 +239,7 @@ class TVMCompiler(Optimizer):
 
         self.wrapper_function = conversion_func
 
+        self.quantization_details_path = quantization_details_path
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -273,6 +282,12 @@ class TVMCompiler(Optimizer):
             choices=['default', 'dict_to_tuple'],
             default='default'
         )
+        group.add_argument(
+            '--quantization-details-path',
+            help='Path where to save quantization details in json.',
+            type=Path,
+            required=False
+        )
         return parser, group
 
     @classmethod
@@ -286,7 +301,8 @@ class TVMCompiler(Optimizer):
             args.opt_level,
             args.libdarknet_path,
             args.compile_use_vm,
-            args.output_conversion_function
+            args.output_conversion_function,
+            args.quantization_details_path
         )
 
     def compile_model(self, mod, params, outputpath):
@@ -318,12 +334,53 @@ class TVMCompiler(Optimizer):
                 )
             lib.export_library(outputpath)
 
+    def preprocess_tflite(self, inputmodelpath: Path):
+        interpreter = tf.lite.Interpreter(model_path=inputmodelpath)
+
+        input_details = interpreter.get_input_details()
+        output_details = interpreter.get_output_details()
+
+        if (all([det['dtype'] == np.float32 for det in input_details]) and
+                all([det['dtype'] == np.float32 for det in output_details])):
+            return
+
+        if self.quantization_details_path:
+            path = self.quantization_details_path
+        else:
+            path = self.compiled_model_path.with_suffix('.quantparams')
+
+        class NumpyEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, np.ndarray):
+                    return obj.tolist()
+                if obj == np.float32:
+                    return 'float32'
+                if obj == np.int8:
+                    return 'int8'
+                if obj == np.uint8:
+                    return 'uint8'
+                return json.JSONEncoder.default(self, obj)
+
+        with open(path, 'w') as f:
+            json.dump(
+                [
+                    input_details,
+                    output_details
+                ],
+                f,
+                cls=NumpyEncoder
+            )
+
     def compile(
             self,
             inputmodelpath: Path,
             inputshapes,
             dtype='float32'):
         self.inputdtype = dtype
+
+        if self.inputtype == 'tflite':
+            self.preprocess_tflite(inputmodelpath)
+
         mod, params = self.inputtypes[self.inputtype](
             self,
             inputmodelpath,

@@ -7,8 +7,7 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
-from typing import Dict, Tuple, Optional
-import json
+from typing import Dict, Tuple
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
@@ -67,8 +66,7 @@ class TFLiteCompiler(Optimizer):
             target: str,
             inferenceinputtype: str,
             inferenceoutputtype: str,
-            dataset_percentage: float = 1.0,
-            io_details_path: Optional[Path] = None):
+            dataset_percentage: float = 1.0):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -95,15 +93,11 @@ class TFLiteCompiler(Optimizer):
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
             to be used
-        io_details_path : Optional[Path]
-            Path where the quantization details are saved. It is used by
-            the runtimes later to quantize input and output during inference.
         """
         self.set_input_type(modelframework)
         self.target = target
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
-        self.io_details_path = io_details_path
         super().__init__(dataset, compiled_model_path, dataset_percentage)
 
     @classmethod
@@ -134,12 +128,6 @@ class TFLiteCompiler(Optimizer):
             choices=['float32', 'int8', 'uint8'],
             default='float32'
         )
-        group.add_argument(
-            '--io-details-path',
-            help='Path where to save quantization details in json.',
-            type=Path,
-            required=False
-        )
         return parser, group
 
     @classmethod
@@ -152,7 +140,6 @@ class TFLiteCompiler(Optimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.io_details_path
         )
 
     def compile(
@@ -186,31 +173,6 @@ class TFLiteCompiler(Optimizer):
 
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
-
-        if self.io_details_path:
-            interpreter = tf.lite.Interpreter(model_content=tflite_model)
-
-            class NumpyEncoder(json.JSONEncoder):
-                def default(self, obj):
-                    if isinstance(obj, np.ndarray):
-                        return obj.tolist()
-                    if obj == np.float32:
-                        return 'float32'
-                    if obj == np.int8:
-                        return 'int8'
-                    if obj == np.uint8:
-                        return 'uint8'
-                    return json.JSONEncoder.default(self, obj)
-
-            with open(self.io_details_path, 'w') as f:
-                json.dump(
-                    [
-                        interpreter.get_input_details(),
-                        interpreter.get_output_details()
-                    ],
-                    f,
-                    cls=NumpyEncoder
-                )
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

@@ -101,7 +101,7 @@ class TVMRuntime(Runtime):
         )
         group.add_argument(
             '--io-details-path',
-            help="Path where the quantization details are saved in pickle.",
+            help="Path where the quantization details are saved in json.",
             type=Path,
             required=False
         )

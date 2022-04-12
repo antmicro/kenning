@@ -136,7 +136,7 @@ class TFLiteCompiler(Optimizer):
         )
         group.add_argument(
             '--io-details-path',
-            help='Path where to save quantization details in pickle.',
+            help='Path where to save quantization details in json.',
             type=Path,
             required=False
         )
@@ -198,6 +198,8 @@ class TFLiteCompiler(Optimizer):
                         return 'float32'
                     if obj == np.int8:
                         return 'int8'
+                    if obj == np.uint8:
+                        return 'uint8'
                     return json.JSONEncoder.default(self, obj)
 
             with open(self.io_details_path, 'w') as f:

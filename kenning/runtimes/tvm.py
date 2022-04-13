@@ -151,16 +151,23 @@ class TVMRuntime(Runtime):
     def prepare_model(self, input_data):
         self.log.info('Loading model')
 
-        try:
-            with open(self.io_details_path, 'rb') as f:
-                # Assumption that model is tensor quantized
-                # ie. input and output have only one item
-                self.input_details, self.output_details = json.load(f)
-            self.input_details = self.input_details[0]
-            self.output_details = self.output_details[0]
-            self.model_inputdtype = self.input_details['dtype']
-        except FileNotFoundError:
-            pass
+        if not input_data:
+            if self.io_details_path:
+                path = self.io_details_path
+            else:
+                name = self.modelpath.stem.split('.')[0]
+                parent = self.modelpath.parent
+                path = parent.joinpath(name).with_suffix('.quantparams')
+            try:
+                with open(path, 'rb') as f:
+                    # Assumption that model is tensor quantized
+                    # ie. input and output have only one item
+                    self.input_details, self.output_details = json.load(f)
+                self.input_details = self.input_details[0]
+                self.output_details = self.output_details[0]
+                self.model_inputdtype = self.input_details['dtype']
+            except FileNotFoundError:
+                pass
 
         if self.use_tvm_vm:
             self.module = tvm.runtime.load_module(str(self.modelpath)+'.so')

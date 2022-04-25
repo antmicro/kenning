@@ -194,5 +194,5 @@ class TensorFlowPruningOptimizer(Optimizer):
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
 
-    def get_inputdtype(self) -> str:
+    def get_inputdtype(self):
         return self.inputdtype

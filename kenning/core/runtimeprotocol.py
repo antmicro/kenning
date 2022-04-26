@@ -76,6 +76,7 @@ class MessageType(Enum):
     PROCESS = 4
     OUTPUT = 5
     STATS = 6
+    QUANTIZATION = 7
 
     def to_bytes(self, endianness: str = 'little') -> str:
         """
@@ -294,6 +295,27 @@ class RuntimeProtocol(object):
         Returns
         -------
         bool : True if model upload finished successfully
+        """
+        raise NotImplementedError
+
+    def upload_quantization_details(self, path: Path) -> bool:
+        """
+        Uploads quantization details to the target device.
+
+        This method takes quantization details in json format from given
+        Path and sends it to the target device.
+
+        This method should receive the status of uploading the data to
+        the target.
+
+        Parameter
+        ---------
+        path : Path
+            Path to the json file
+
+        Returns
+        -------
+        bool : True if data upload finished successfully
         """
         raise NotImplementedError
 

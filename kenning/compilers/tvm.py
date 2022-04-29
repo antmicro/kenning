@@ -335,7 +335,7 @@ class TVMCompiler(Optimizer):
             lib.export_library(outputpath)
 
     def preprocess_tflite(self, inputmodelpath: Path):
-        interpreter = tf.lite.Interpreter(model_path=inputmodelpath)
+        interpreter = tf.lite.Interpreter(model_path=str(inputmodelpath))
 
         input_details = interpreter.get_input_details()
         output_details = interpreter.get_output_details()

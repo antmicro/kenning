@@ -311,9 +311,16 @@ class Runtime(object):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
-    def upload_essentials(self, compiledmodelpath):
+    def upload_essentials(self, compiledmodelpath: Path):
         """
-        Uploads model to the server by default.
+        Wrapper for uploading data to the server.
+        Uploads model by default.
+
+        Parameters
+        ----------
+        compiledmodelpath : Path
+            Path to the file with a compiled model
+
         """
         self.protocol.upload_model(compiledmodelpath)
 

@@ -67,6 +67,7 @@ class MessageType(Enum):
     PROCESS - message means the data is being processed
     OUTPUT - host requests the output from the target
     STATS - host requests the inference statistics from the target
+    QUANTIZATION - message contains quantization details to load
     """
 
     OK = 0

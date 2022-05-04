@@ -105,7 +105,7 @@ class TVMRuntime(Runtime):
         group.add_argument(
             '--io-details-path',
             help="Path where the quantization details are saved in json. \
-                By default save_model_path.quantparams is checked",
+                By default <save_model_path>.quantparams is checked",
             type=Path,
             required=False
         )
@@ -132,7 +132,7 @@ class TVMRuntime(Runtime):
         super().prepare_local()
         self.prepare_quantization_details(None)
 
-    def _get_quantization_details_path(
+    def get_quantization_details_path(
             self,
             modelpath: Path) -> Path:
         """
@@ -186,7 +186,7 @@ class TVMRuntime(Runtime):
         if input_data:
             self.input_details, self.output_details = json.loads(input_data)
         else:
-            path = self._get_quantization_details_path(self.modelpath)
+            path = self.get_quantization_details_path(self.modelpath)
 
             if not path.exists():
                 if self.io_details_path:
@@ -210,7 +210,7 @@ class TVMRuntime(Runtime):
         return True
 
     def upload_quantization_details(self, compiledmodelpath):
-        path = self._get_quantization_details_path(compiledmodelpath)
+        path = self.get_quantization_details_path(compiledmodelpath)
 
         if path.exists():
             self.protocol.upload_quantization_details(path)

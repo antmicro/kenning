@@ -311,6 +311,25 @@ class Runtime(object):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
+    def upload_essentials(self, compiledmodelpath: Path):
+        """
+        Wrapper for uploading data to the server.
+        Uploads model by default.
+
+        Parameters
+        ----------
+        compiledmodelpath : Path
+            Path to the file with a compiled model
+
+        """
+        self.protocol.upload_model(compiledmodelpath)
+
+    def prepare_local(self):
+        """
+        Runs initialization for the local inference.
+        """
+        self.prepare_model(None)
+
     @systemstatsmeasurements('full_run_statistics')
     def run_locally(
             self,
@@ -337,7 +356,7 @@ class Runtime(object):
         measurements = Measurements()
         try:
             self.inference_session_start()
-            self.prepare_model(None)
+            self.prepare_local()
             for X, y in tqdm(iter(dataset)):
                 prepX = modelwrapper._preprocess_input(X)
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
@@ -390,7 +409,7 @@ class Runtime(object):
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
         self.prepare_client()
-        self.protocol.upload_model(compiledmodelpath)
+        self.upload_essentials(compiledmodelpath)
         measurements = Measurements()
         try:
             for X, y in tqdm(iter(dataset)):

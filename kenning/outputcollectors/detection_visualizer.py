@@ -42,15 +42,15 @@ class DetectionVisualizer(OutputCollector):
         self.output_width = output_width
         self.output_height = output_height
         self.save_to_file = save_to_file
-        self.video_fps = save_fps
+        self.save_fps = save_fps
         self.out = None
+        self.save_path = Path(save_path)
         if save_to_file:
-            self.save_path = Path(save_path)
             codec = cv2.VideoWriter_fourcc(*'avc1')
             self.out = cv2.VideoWriter(
                 str(self.save_path),
                 codec,
-                self.video_fps,
+                self.save_fps,
                 (self.output_width, self.output_height)
             )
         self.font_scale = 0.7

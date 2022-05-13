@@ -103,7 +103,7 @@ class TensorFlowPruningOptimizer(Optimizer):
 
     @classmethod
     def form_argparse(cls):
-        parser, group = super().form_argparse()
+        parser, group = super().form_argparse(quantizes_model=True)
         add_argparse_argument(
             group,
             TensorFlowPruningOptimizer.arguments_structure

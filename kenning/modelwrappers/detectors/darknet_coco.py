@@ -29,6 +29,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             class_names: str = "coco"):
         self.thresh = 0.2
         self.iouthresh = 0.5
+        self.class_names = class_names
         super().__init__(modelpath, dataset, from_file)
         # for work with dataproviders, this is handling dataset-less operation
         if self.dataset is None:

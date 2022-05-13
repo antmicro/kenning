@@ -8,12 +8,12 @@ from pathlib import Path
 
 def serialize(obj: object) -> str:
     """
-    Serializes the given object into a JSON format. 
-    
-    It serialize all variables mentioned in the dictionary 
+    Serializes the given object into a JSON format.
+
+    It serializes all variables mentioned in the dictionary
     returned by a `form_parameterschema` function.
 
-    Note that object has to implement `form_parameterschema` 
+    Note that object has to implement `form_parameterschema`
     to be serializable.
 
     Parameters

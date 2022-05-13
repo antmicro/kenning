@@ -59,12 +59,13 @@ class TensorFlowPruningOptimizer(Optimizer):
         batch_size : int
             The size of a batch used for the fine-tuning
         """
-        super().__init__(dataset, compiled_model_path)
-        self.set_input_type(modelframework)
+        self.modelframework = modelframework
         self.epochs = epochs
         self.prune_dense = prune_dense
         self.target_sparsity = target_sparsity
         self.batch_size = batch_size
+        self.set_input_type(modelframework)
+        super().__init__(dataset, compiled_model_path)
 
     @classmethod
     def form_argparse(cls):

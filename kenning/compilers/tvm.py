@@ -62,7 +62,7 @@ def torchconversion(
     # This is a model-specific selector of output conversion functions.
     # It defaults to a no_conversion function that just returns its input
     # It is easily expandable in case it is needed for other models
-    if compiler.wrapper_function == 'dict_to_tuple':  # For PyTorch Mask R-CNN Model  # noqa: E501
+    if compiler.conversion_func == 'dict_to_tuple':  # For PyTorch Mask R-CNN Model  # noqa: E501
         from kenning.modelwrappers.instance_segmentation.pytorch_coco import dict_to_tuple  # noqa: E501
         wrapper = dict_to_tuple
     else:  # General case- no conversion is happening
@@ -228,18 +228,22 @@ class TVMCompiler(Optimizer):
             Path where the quantization details are saved. It is used by
             the runtimes later to quantize input and output during inference.
         """
-        self.set_input_type(modelframework)
-        self.target = tvm.target.Target(target)
-        self.target_host = (
+        self.modelframework = modelframework
+
+        self.target = target
+        self.target_obj = tvm.target.Target(target)
+
+        self.target_host = target_host
+        self.target_host_obj = (
                 tvm.target.Target(target_host) if target_host else None
         )
+
         self.opt_level = opt_level
         self.libdarknetpath = libdarknetpath
         self.use_tvm_vm = use_tvm_vm
-
-        self.wrapper_function = conversion_func
-
+        self.conversion_func = conversion_func
         self.quantization_details_path = quantization_details_path
+        self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -306,8 +310,8 @@ class TVMCompiler(Optimizer):
         )
 
     def compile_model(self, mod, params, outputpath):
-        if str(self.target).startswith('cuda'):
-            archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target))
+        if str(self.target_obj).startswith('cuda'):
+            archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target_obj))
             arch = archmatch.group(1) if archmatch else None
             if arch:
                 tvm.autotvm.measure.measure_methods.set_cuda_target_arch(arch)
@@ -317,7 +321,7 @@ class TVMCompiler(Optimizer):
                     disabled_pass=["FoldScaleAxis"]):
                 vm_exec = relay.vm.compile(
                     mod,
-                    target=self.target,
+                    target=self.target_obj,
                     params=params
                 )
                 bytecode, lib = vm_exec.save()
@@ -328,8 +332,8 @@ class TVMCompiler(Optimizer):
             with tvm.transform.PassContext(opt_level=self.opt_level):
                 lib = relay.build(
                     mod,
-                    target=self.target,
-                    target_host=self.target_host,
+                    target=self.target_obj,
+                    target_host=self.target_host_obj,
                     params=params
                 )
             lib.export_library(outputpath)

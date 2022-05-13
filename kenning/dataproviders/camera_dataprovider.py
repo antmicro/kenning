@@ -15,14 +15,15 @@ class CameraDataProvider(DataProvider):
             self,
             file_path: Path,
             memory_layout: str = "NCHW",
-            image_w: int = 416,
-            image_h: int = 416):
+            image_width: int = 416,
+            image_height: int = 416):
 
         self.device_id = str(file_path)
 
-        self.image_width = image_w
-        self.image_height = image_h
+        self.file_path = file_path
         self.memory_layout = memory_layout
+        self.image_width = image_width
+        self.image_height = image_height
 
         self.device = None
 

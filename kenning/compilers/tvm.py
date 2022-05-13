@@ -395,6 +395,3 @@ class TVMCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)
-
-    def get_inputdtype(self):
-        return self.inputdtype

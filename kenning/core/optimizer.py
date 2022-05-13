@@ -25,7 +25,7 @@ class Optimizer(object):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: str,
+            compiled_model_path: Path,
             dataset_percentage: float = 1.0):
         """
         Prepares the Optimizer object.
@@ -35,7 +35,7 @@ class Optimizer(object):
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
             during compilation stage
-        compiled_model_path : str
+        compiled_model_path : Path
             Path to file where the compiled model should be saved
         dataset_percentage : float
             If the dataset is used for optimization (quantization), the
@@ -198,6 +198,7 @@ class Optimizer(object):
     def get_inputdtype(self) -> str:
         """
         Returns dtype of the input of the compiled model.
-        Is set during compilation.
+        Should be set during compilation.
         """
-        raise NotImplementedError
+        assert hasattr(self, 'inputdtype')
+        return self.inputdtype

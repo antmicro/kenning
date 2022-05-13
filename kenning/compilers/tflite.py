@@ -11,6 +11,7 @@ from typing import Dict, Tuple
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class EdgeTPUCompilerError(Exception):
@@ -56,6 +57,33 @@ class TFLiteCompiler(Optimizer):
         'tensorflow': tensorflowconversion,
         'keras': kerasconversion,
         'onnx': onnxconversion,
+    }
+
+    arguments_structure = {
+        'modelframework': {
+            'argparse_name': '--model-framework',
+            'description': 'The input type of the model, framework-wise',
+            'default': 'onnx',
+            'enum': list(inputtypes.keys())
+        },
+        'target': {
+            'argparse_name': '--target',
+            'description': 'The TFLite target device scenario',
+            'required': True,
+            'enum': ['default', 'int8', 'edgetpu']
+        },
+        'inferenceinputtype': {
+            'argparse_name': '--inference-input-type',
+            'description': 'Data type of the input layer',
+            'default': 'float32',
+            'enum': ['float32', 'int8', 'uint8']
+        },
+        'inferenceoutputtype': {
+            'argparse_name': '--inference-output-type',
+            'description': 'Data type of the output layer',
+            'default': 'float32',
+            'enum': ['float32', 'int8', 'uint8']
+        }
     }
 
     def __init__(
@@ -104,30 +132,9 @@ class TFLiteCompiler(Optimizer):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse(quantizes_model=True)
-        group.add_argument(
-            '--model-framework',
-            help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys(),
-            default='onnx'
-        )
-        group.add_argument(
-            '--target',
-            help='The TFLite target device scenario',
-            # TODO this may require some alterations
-            choices=['default', 'int8', 'edgetpu'],
-            required=True
-        )
-        group.add_argument(
-            '--inference-input-type',
-            help='Data type of the input layer',
-            choices=['float32', 'int8', 'uint8'],
-            default='float32'
-        )
-        group.add_argument(
-            '--inference-output-type',
-            help='Data type of the output layer',
-            choices=['float32', 'int8', 'uint8'],
-            default='float32'
+        add_argparse_argument(
+            group,
+            TFLiteCompiler.arguments_structure
         )
         return parser, group
 
@@ -142,6 +149,15 @@ class TFLiteCompiler(Optimizer):
             args.inference_output_type,
             args.dataset_percentage,
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema(quantizes_model=True)
+        add_parameterschema_argument(
+            parameterschema,
+            TFLiteCompiler.arguments_structure
+        )
+        return parameterschema
 
     def compile(
             self,

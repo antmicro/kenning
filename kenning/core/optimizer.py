@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 
 from kenning.core.dataset import Dataset
-from kenning.utils import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
 class CompilationError(Exception):

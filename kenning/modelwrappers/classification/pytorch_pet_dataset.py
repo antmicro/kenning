@@ -48,7 +48,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             dataset: Dataset,
             args,
             from_file: bool = True):
-        return cls(args.model_path, dataset, from_file, args.num_classes)
+        if dataset is None:
+            return cls(args.model_path, dataset, from_file, args.num_classes)
+        return cls(args.model_path, dataset, from_file, dataset.numclasses)
 
     def get_input_spec(self):
         return {'input.1': (1, 3, 224, 224)}, 'float32'

@@ -55,6 +55,8 @@ Supported keywords:
 argparse_name: Name that is prompted as an argparse argument.
 description: Description of the argument.
 type: Same as 'type' in argparse. The argument is converted to this value.
+    Possible values for type: [int, float, str, bool, Path]
+    Note that for bool types, the argument has to declare its default value.
 default: Default value of the argument.
 required: Defines whether argument is required.
 enum: List of possible values of the argument.
@@ -139,7 +141,13 @@ def add_argparse_argument(
         arguments = {}
 
         if 'type' in prop:
-            arguments['type'] = prop['type']
+            if prop['type'] is bool:
+                arguments['action'] = (
+                    'store_true' if not prop['default']
+                    else 'store_false'
+                )
+            else:
+                arguments['type'] = prop['type']
         if 'description' in prop:
             arguments['help'] = prop['description']
         if 'default' in prop:

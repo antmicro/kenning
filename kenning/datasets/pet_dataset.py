@@ -109,7 +109,7 @@ class PetDataset(Dataset):
             args.image_memory_layout
         )
 
-    def download_dataset(self):
+    def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
         imgs = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz'
         anns = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz'  # noqa: E501

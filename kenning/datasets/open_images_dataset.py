@@ -369,12 +369,13 @@ class OpenImagesDatasetV6(Dataset):
             crop_input_margin_size: float = 0.1):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
+        self.classes = classes
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
         if classes == 'coco':
             with path(coco_detection, 'cocov6.classes') as p:
-                self.classes = Path(p)
+                self.classes_path = Path(p)
         else:
-            self.classes = Path(classes)
+            self.classes_path = Path(classes)
         self.download_annotations_type = download_annotations_type
         self.classmap = {}
         self.image_memory_layout = image_memory_layout
@@ -383,9 +384,9 @@ class OpenImagesDatasetV6(Dataset):
         self.classnames = []
         self.show_on_eval = show_on_eval
         self.crop_input_to_bboxes = crop_input_to_bboxes
+        self.crop_input_margin_size = crop_input_margin_size
         if self.crop_input_to_bboxes:
             self.crop_dict = {}
-            self.crop_input_margin_size = crop_input_margin_size
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -461,13 +462,13 @@ class OpenImagesDatasetV6(Dataset):
             args.crop_margin
         )
 
-    def download_dataset(self):
+    def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
 
         # prepare class files
         classnamespath = self.root / 'classnames.csv'
-        if self.classes:
-            shutil.copy(self.classes, classnamespath)
+        if self.classes_path:
+            shutil.copy(self.classes_path, classnamespath)
         else:
             classnamesurl = 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv'  # noqa: E501
             download_url(classnamesurl, classnamespath)

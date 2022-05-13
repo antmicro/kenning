@@ -14,6 +14,7 @@ class NamePrinter(OutputCollector):
         self.frame_counter = 0
         self.print_type = print_type
         self.classnames = []
+        self.file_path = file_path
         if file_path:
             with open(file_path, 'r') as f:
                 for line in f:

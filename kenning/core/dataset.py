@@ -49,7 +49,7 @@ class Dataset(object):
         Prepares all structures and data required for providing data samples.
 
         If download_dataset is True, the dataset is downloaded first using
-        download_dataset method.
+        download_dataset_fun method.
 
         Parameters
         ----------
@@ -65,8 +65,9 @@ class Dataset(object):
         self.dataX = []
         self.dataY = []
         self.batch_size = batch_size
+        self.download_dataset = download_dataset
         if download_dataset:
-            self.download_dataset()
+            self.download_dataset_fun()
         self.prepare()
 
     @classmethod
@@ -302,7 +303,7 @@ class Dataset(object):
         for x in X:
             yield self.prepare_input_samples([x])
 
-    def download_dataset(self):
+    def download_dataset_fun(self):
         """
         Downloads the dataset to the root directory defined in the constructor.
         """

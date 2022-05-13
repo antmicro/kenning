@@ -56,11 +56,12 @@ class TensorFlowClusteringOptimizer(Optimizer):
         disable_sparsity_preservation : bool
             Determines whether to preserve sparsity of a given model
         """
-        super().__init__(dataset, compiled_model_path)
-        self.set_input_type(modelframework)
+        self.modelframework = modelframework
         self.cluster_dense = cluster_dense
         self.clusters_number = clusters_number
         self.disable_sparsity_preservation = disable_sparsity_preservation
+        self.set_input_type(modelframework)
+        super().__init__(dataset, compiled_model_path)
 
     @classmethod
     def form_argparse(cls):
@@ -146,6 +147,3 @@ class TensorFlowClusteringOptimizer(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
-
-    def get_inputdtype(self):
-        return self.inputdtype

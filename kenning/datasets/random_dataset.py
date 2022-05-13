@@ -81,7 +81,7 @@ class RandomizedClassificationDataset(Dataset):
         self.dataX = [i for i in range(self.samplescount)]
         self.dataY = [i for i in range(self.samplescount)]
 
-    def download_dataset(self):
+    def download_dataset_fun(self):
         pass
 
     def prepare_input_samples(self, samples):

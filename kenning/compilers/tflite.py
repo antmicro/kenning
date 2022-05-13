@@ -62,10 +62,10 @@ class TFLiteCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str,
             target: str,
-            inferenceinputtype: str,
-            inferenceoutputtype: str,
+            modelframework: str = 'onnx',
+            inferenceinputtype: str = 'float32',
+            inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 1.0):
         """
         The TFLite and EdgeTPU compiler.
@@ -94,10 +94,11 @@ class TFLiteCompiler(Optimizer):
             dataset_percentage determines how much of data samples is going
             to be used
         """
-        self.set_input_type(modelframework)
         self.target = target
+        self.modelframework = modelframework
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
+        self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path, dataset_percentage)
 
     @classmethod
@@ -135,8 +136,8 @@ class TFLiteCompiler(Optimizer):
         return cls(
             dataset,
             args.compiled_model_path,
-            args.model_framework,
             args.target,
+            args.model_framework,
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
@@ -198,6 +199,3 @@ class TFLiteCompiler(Optimizer):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
-
-    def get_inputdtype(self):
-        return self.inputdtype

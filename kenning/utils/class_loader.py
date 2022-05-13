@@ -36,7 +36,8 @@ def get_kenning_submodule_from_path(modulepath: str):
     str: Normalized module path
     """
     parts = Path(modulepath).parts
-    modulename = '.'.join(parts[parts.index('kenning'):]).rstrip('.py')
+    item_index = len(parts) - 1 - parts[::-1].index("kenning")
+    modulename = '.'.join(parts[item_index:]).rstrip('.py')
     return modulename
 
 

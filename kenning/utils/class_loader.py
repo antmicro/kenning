@@ -54,7 +54,7 @@ def get_command(argv: List[str]):
     -------
     str: Full string with command
     """
-    command = [ar.strip() for ar in argv]
+    command = [ar.strip() for ar in argv if ar.strip() != '']
     modulename = get_kenning_submodule_from_path(command[0])
     flagpresent = False
     for i in range(len(command)):
@@ -62,5 +62,8 @@ def get_command(argv: List[str]):
             flagpresent = True
         elif flagpresent:
             command[i] = '    ' + command[i]
-    command = [f'python -m {modulename} \\'] + [f'    {ar} \\' for ar in command[1:-1]] + [f'    {command[-1]}']  # noqa: E501
+    if (len(command) > 1):
+        command = [f'python -m {modulename} \\'] + [f'    {ar} \\' for ar in command[1:-1]] + [f'    {command[-1]}']  # noqa: E501
+    else:
+        command = [f'python -m {modulename}']
     return command

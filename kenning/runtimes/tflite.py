@@ -8,9 +8,38 @@ from typing import Optional, List
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class TFLiteRuntime(Runtime):
+
+    arguments_structure = {
+        'modelpath': {
+            'argparse_name': '--save-model-path',
+            'description': 'Path where the model will be uploaded',
+            'type': Path,
+            'default': 'model.tar'
+        },
+        'inputdtype': {
+            'argparse_name': '--input-dtype',
+            'description': 'Type of input tensor elements',
+            'type': str,
+            'default': 'float32'
+        },
+        'outputdtype': {
+            'argparse_name': '--output-dtype',
+            'description': 'Type of output tensor elements',
+            'type': str,
+            'default': 'float32'
+        },
+        'delegates': {
+            'argparse_name': '--delegates-list',
+            'description': 'List of runtime delegates for the TFLite runtime',
+            'default': None,
+            'is_list': True
+        }
+    }
+
     def __init__(
             self,
             protocol: RuntimeProtocol,
@@ -44,29 +73,9 @@ class TFLiteRuntime(Runtime):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--save-model-path',
-            help='Path where the model will be uploaded',
-            type=Path,
-            default='model.tar'
-        )
-        group.add_argument(
-            '--input-dtype',
-            help='Type of input tensor elements',
-            type=str,
-            default='float32'
-        )
-        group.add_argument(
-            '--output-dtype',
-            help='Type of output tensor elements',
-            type=str,
-            default='float32'
-        )
-        group.add_argument(
-            '--delegates-list',
-            help='List of runtime delegates for the TFLite runtime',
-            nargs='+',
-            default=None
+        add_argparse_argument(
+            group,
+            TFLiteRuntime.arguments_structure
         )
         return parser, group
 
@@ -79,6 +88,15 @@ class TFLiteRuntime(Runtime):
             args.output_dtype,
             args.delegates_list
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            TFLiteRuntime.arguments_structure
+        )
+        return parameterschema
 
     def prepare_model(self, input_data):
         try:

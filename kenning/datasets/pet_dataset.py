@@ -11,6 +11,7 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url
 from kenning.core.measurements import Measurements
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class PetDataset(Dataset):
@@ -39,6 +40,22 @@ class PetDataset(Dataset):
     The affinity of images to classes is taken from annotations, but the class
     IDs are starting from 0 instead of 1, as in the annotations.
     """
+
+    arguments_structure = {
+        'classify_by': {
+            'argparse_name': '--classify-by',
+            'description': 'Determines if classification should be performed by species or by breeds',  # noqa: E501
+            'default': 'breeds',
+            'enum': ['species', 'breeds']
+        },
+        'image_memory_layout': {
+            'argparse_name': '--image-memory-layout',
+            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
+            'default': 'NHWC',
+            'enum': ['NHWC', 'NCHW']
+        }
+    }
+
     def __init__(
             self,
             root: Path,
@@ -85,17 +102,9 @@ class PetDataset(Dataset):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--classify-by',
-            help='Determines if classification should be performed by species or by breeds',  # noqa: E501
-            choices=['species', 'breeds'],
-            default='breeds'
-        )
-        group.add_argument(
-            '--image-memory-layout',
-            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            choices=['NHWC', 'NCHW'],
-            default='NHWC'
+        add_argparse_argument(
+            group,
+            PetDataset.arguments_structure
         )
         return parser, group
 
@@ -108,6 +117,15 @@ class PetDataset(Dataset):
             args.classify_by,
             args.image_memory_layout
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            PetDataset.arguments_structure
+        )
+        return parameterschema
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)

@@ -2,11 +2,12 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List, Any
+from typing import Tuple, List, Any, Dict
 import argparse
 from pathlib import Path
 
 from .measurements import Measurements
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
 class Dataset(object):
@@ -37,6 +38,27 @@ class Dataset(object):
     _dataindex : int
         ID of the next data to be delivered for inference
     """
+
+    arguments_structure = {
+        'root': {
+            'argparse_name': '--dataset-root',
+            'description': 'Path to the dataset directory',
+            'type': Path,
+            'required': True
+        },
+        'batch_size': {
+            'argparse_name': '--inference-batch-size',
+            'description': 'The batch size for providing the input data',
+            'type': int,
+            'default': 1
+        },
+        'download_dataset': {
+            'argparse_name': '--download_dataset',
+            'description': 'Downloads the dataset before taking any action',
+            'type': bool,
+            'default': False
+        }
+    }
 
     def __init__(
             self,
@@ -88,22 +110,9 @@ class Dataset(object):
         """
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_argument_group(title='Dataset arguments')
-        group.add_argument(
-            '--dataset-root',
-            help='Path to the dataset directory',
-            required=True,
-            type=Path
-        )
-        group.add_argument(
-            '--download-dataset',
-            help='Downloads the dataset before taking any action',
-            action='store_true'
-        )
-        group.add_argument(
-            '--inference-batch-size',
-            help='The batch size for providing the input data',
-            type=int,
-            default=1
+        add_argparse_argument(
+            group,
+            Dataset.arguments_structure
         )
         return parser, group
 
@@ -128,6 +137,45 @@ class Dataset(object):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset
+        )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = {
+            "type": "object",
+            "additionalProperties": False
+        }
+
+        add_parameterschema_argument(
+            parameterschema,
+            Dataset.arguments_structure,
+        )
+
+        return parameterschema
+
+    @classmethod
+    def from_json(cls, json_dict: Dict):
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        This method takes the arguments created in form_argparse and uses them
+        to create the object.
+
+        Parameters
+        ----------
+        json_dict : Dict
+            arguments from ArgumentParser object
+
+        Returns
+        -------
+        Dataset : object of class Dataset
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            **parsed_json_dict
         )
 
     def __iter__(self) -> 'Dataset':

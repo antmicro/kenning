@@ -125,6 +125,19 @@ class Optimizer(object):
 
     @classmethod
     def form_parameterschema(cls, quantizes_model: bool = True):
+        """
+        Creates schema for the Optimizer class
+
+        Parameters
+        ----------
+        quantizes_model : bool
+            Tells if the compiler quantizes model - if so, flags for
+            calibration dataset are enabled
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
         parameterschema = {
             "type": "object",
             "additionalProperties": False

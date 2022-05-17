@@ -141,6 +141,13 @@ class Dataset(object):
 
     @classmethod
     def form_parameterschema(cls):
+        """
+        Creates schema for the Dataset class
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
         parameterschema = {
             "type": "object",
             "additionalProperties": False
@@ -156,15 +163,16 @@ class Dataset(object):
     @classmethod
     def from_json(cls, json_dict: Dict):
         """
-        Constructor wrapper that takes the parameters from argparse args.
+        Constructor wrapper that takes the parameters from json dict.
 
-        This method takes the arguments created in form_argparse and uses them
-        to create the object.
+        This function checks if the given dictionary is valid according
+        to the ``arguments_structure`` defined.
+        If it is then it invokes the constructor.
 
         Parameters
         ----------
         json_dict : Dict
-            arguments from ArgumentParser object
+            Arguments for the constructor
 
         Returns
         -------

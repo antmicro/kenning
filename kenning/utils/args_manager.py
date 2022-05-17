@@ -110,9 +110,9 @@ def get_parsed_json_dict(schema, json_dict):
 
             if 'type' in schema['properties'][name] and \
                schema['properties'][name]['type'] == 'array':
-                converted_json_dict[name] = [converter(str(v)) for v in value]
+                converted_json_dict[name] = [converter(v) for v in value]
             else:
-                converted_json_dict[name] = converter(str(value))
+                converted_json_dict[name] = converter(value)
         else:
             converted_json_dict[name] = value
 
@@ -210,7 +210,7 @@ def add_parameterschema_argument(
             Path: 'string',
             str: 'string',
             float: 'number',
-            int: 'number',
+            int: 'integer',
             bool: 'boolean'
         }
 

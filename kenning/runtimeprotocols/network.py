@@ -15,6 +15,7 @@ from kenning.core.runtimeprotocol import MessageType
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class NetworkProtocol(RuntimeProtocol):
@@ -35,6 +36,34 @@ class NetworkProtocol(RuntimeProtocol):
       MessageType enum from kenning.core.runtimeprotocol
     * <data> - optional data that comes with the message of MessageType
     """
+
+    arguments_structure = {
+        'host': {
+            'argparse_name': '--host',
+            'description': 'The address to the target device',
+            'type': str,
+            'required': True
+        },
+        'port': {
+            'argparse_name': '--port',
+            'description': 'The port for the target device',
+            'type': int,
+            'required': True
+        },
+        'packet_size': {
+            'argparse_name': '--packet-size',
+            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
+            'type': int,
+            'default': 4096
+        },
+        'endianness': {
+            'argparse_name': '--endianness',
+            'description': 'The endianness of data to transfer',
+            'default': 'little',
+            'enum': ['big', 'little']
+        }
+    }
+
     def __init__(
             self,
             host: str,
@@ -69,29 +98,9 @@ class NetworkProtocol(RuntimeProtocol):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--host',
-            help='The address to the target device',
-            type=str,
-            required=True
-        )
-        group.add_argument(
-            '--port',
-            help='The port for the target device',
-            type=int,
-            required=True
-        )
-        group.add_argument(
-            '--packet-size',
-            help='The maximum size of the received packets, in bytes.',
-            type=int,
-            default=4096
-        )
-        group.add_argument(
-            '--endianness',
-            help='The endianness of data to transfer',
-            choices=['big', 'little'],
-            default='little'
+        add_argparse_argument(
+            group,
+            NetworkProtocol.arguments_structure
         )
         return parser, group
 
@@ -103,6 +112,15 @@ class NetworkProtocol(RuntimeProtocol):
             args.packet_size,
             args.endianness
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            NetworkProtocol.arguments_structure
+        )
+        return parameterschema
 
     def accept_client(self, socket, mask) -> Tuple['ServerStatus', Optional[bytes]]:  # noqa: E501
         """

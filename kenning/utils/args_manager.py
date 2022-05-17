@@ -55,11 +55,17 @@ Supported keywords:
 argparse_name: Name that is prompted as an argparse argument.
 description: Description of the argument.
 type: Same as 'type' in argparse. The argument is converted to this value.
-    Possible values for type: [int, float, str, bool, Path]
+    Possible values for type: [int, float, str, bool, Path].
+
     Note that for bool types, the argument has to declare its default value.
 default: Default value of the argument.
-required: Defines whether argument is required.
+required: Determines whether argument is required.
 enum: List of possible values of the argument.
+is_list: Determines whether argument is a list of arguments.
+    Possible values for is_list: [True, False].
+    By default it is False.
+
+    List of bool arguments is not supported
 
 Example of an argument:
 'compiled_model_path': {
@@ -98,14 +104,17 @@ def get_parsed_json_dict(schema, json_dict):
         elif name in json_dict:
             converted_json_dict[name] = json_dict[name]
 
-    converted_json_dict = {
-        name: (
-            schema['properties'][name]['convert-type'](str(value))
-            if 'convert-type' in schema['properties'][name]
-            else value
-        )
-        for name, value in converted_json_dict.items()
-    }
+    for name, value in converted_json_dict.items():
+        if 'convert-type' in schema['properties'][name]:
+            converter = schema['properties'][name]['convert-type']
+
+            if 'type' in schema['properties'][name] and \
+               schema['properties'][name]['type'] == 'array':
+                converted_json_dict[name] = [converter(str(v)) for v in value]
+            else:
+                converted_json_dict[name] = converter(str(value))
+        else:
+            converted_json_dict[name] = value
 
     return converted_json_dict
 
@@ -142,9 +151,11 @@ def add_argparse_argument(
 
         if 'type' in prop:
             if prop['type'] is bool:
+                assert 'default' in prop and prop['default'] in [True, False]
+
                 arguments['action'] = (
-                    'store_true' if not prop['default']
-                    else 'store_false'
+                    'store_false' if prop['default']
+                    else 'store_true'
                 )
             else:
                 arguments['type'] = prop['type']
@@ -156,6 +167,8 @@ def add_argparse_argument(
             arguments['required'] = prop['required']
         if 'enum' in prop:
             arguments['choices'] = prop['enum']
+        if 'is_list' in prop and prop['is_list']:
+            arguments['nargs'] = '+'
 
         group.add_argument(argparse_name, **arguments)
 
@@ -201,9 +214,23 @@ def add_parameterschema_argument(
             bool: 'boolean'
         }
 
-        if 'type' in prop:
-            arguments['convert-type'] = prop['type']
-            arguments['type'] = type_to_jsontype[prop['type']]
+        # Case for a list of arguments
+        if 'is_list' in prop and prop['is_list']:
+            arguments['type'] = 'array'
+
+            if 'type' in prop:
+                assert prop['type'] is not bool
+
+                arguments['convert-type'] = prop['type']
+                arguments['items'] = {
+                    'type': type_to_jsontype[prop['type']]
+                }
+        # Case for a single argument
+        else:
+            if 'type' in prop:
+                arguments['convert-type'] = prop['type']
+                arguments['type'] = type_to_jsontype[prop['type']]
+
         if 'description' in prop:
             arguments['description'] = prop['description']
         if 'default' in prop:

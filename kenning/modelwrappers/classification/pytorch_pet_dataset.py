@@ -14,9 +14,20 @@ from tqdm import tqdm
 from torch.utils.tensorboard import SummaryWriter
 
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
+
+    arguments_structure = {
+        'class_count': {
+            'argparse_name': '--num-classes',
+            'description': 'Number of classes that the model can classify',
+            'type': int,
+            'default': 37
+        }
+    }
+
     def __init__(
                 self,
                 modelpath: Path,
@@ -35,11 +46,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def form_argparse(cls, no_dataset: bool = False):
         parser, group = super().form_argparse(no_dataset)
         if no_dataset:
-            group.add_argument(
-                '--num-classes',
-                help='Number of classes that the model can classify',
-                type=int,
-                default=37
+            add_argparse_argument(
+                group,
+                PyTorchPetDatasetMobileNetV2.arguments_structure,
+                'class_count'
             )
         return parser, group
 
@@ -50,6 +60,17 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             args,
             from_file: bool = True):
         return cls(args.model_path, dataset, from_file, args.num_classes)
+
+    @classmethod
+    def form_paramterschema(cls, no_dataset: bool = False):
+        parameterschema = super().form_parameterschema()
+        if no_dataset:
+            add_parameterschema_argument(
+                parameterschema,
+                PyTorchPetDatasetMobileNetV2.arguments_structure,
+                'class_count'
+            )
+        return parameterschema
 
     def get_input_spec(self):
         return {'input.1': (1, 3, 224, 224)}, 'float32'

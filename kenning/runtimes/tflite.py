@@ -46,7 +46,8 @@ class TFLiteRuntime(Runtime):
             modelpath: Path,
             inputdtype: str = 'float32',
             outputdtype: str = 'float32',
-            delegates: Optional[List] = None):
+            delegates: Optional[List] = None,
+            collect_performance_data: bool = True):
         """
         Constructs TFLite Runtime pipeline.
 
@@ -68,7 +69,7 @@ class TFLiteRuntime(Runtime):
         self.inputdtype = inputdtype
         self.outputdtype = outputdtype
         self.delegates = delegates
-        super().__init__(protocol)
+        super().__init__(protocol, collect_performance_data)
 
     @classmethod
     def form_argparse(cls):

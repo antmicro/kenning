@@ -75,7 +75,8 @@ class TVMRuntime(Runtime):
             inputdtype: str = 'float32',
             use_tvm_vm: bool = False,
             use_json_out: bool = False,
-            io_details_path: Optional[Path] = None):
+            io_details_path: Optional[Path] = None,
+            collect_performance_data: bool = True):
         """
         Constructs TVM runtime.
 
@@ -109,7 +110,7 @@ class TVMRuntime(Runtime):
         self.use_tvm_vm = use_tvm_vm
         self.use_json_out = use_json_out
         self.io_details_path = io_details_path
-        super().__init__(protocol)
+        super().__init__(protocol, collect_performance_data)
         self.callbacks[MessageType.QUANTIZATION] = \
             self._prepare_quantization_details
 

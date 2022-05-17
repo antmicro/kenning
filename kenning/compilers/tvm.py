@@ -218,6 +218,7 @@ class TVMCompiler(Optimizer):
         'libdarknetpath': {
             'argparse_name': '--libdarknet-path',
             'description': 'Path to the libdarknet.so library, for darknet models',  # noqa: E501
+            'default': '/usr/local/lib/libdarknet.so',
             'type': str
         },
         'use_tvm_vm': {

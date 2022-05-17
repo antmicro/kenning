@@ -3,6 +3,7 @@ from pathlib import Path
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class RandomizedClassificationDataset(Dataset):
@@ -14,13 +15,37 @@ class RandomizedClassificationDataset(Dataset):
     It can be used only for speed and utilization metrics, no quality metrics.
     """
 
+    arguments_structure = {
+        'samplescount': {
+            'argparse_name': '--num-samples',
+            'description': 'Number of samples to process',
+            'type': int,
+            'default': 1000
+        },
+        'inputdims': {
+            'argparse_name': '--input-dims',
+            'description': 'Dimensionality of the inputs',
+            'type': int,
+            'default': [224, 224, 3],
+            'is_list': True
+        },
+        'outputdims': {
+            'argparse_name': '--output-dims',
+            'description': 'Dimensionality of the outputs',
+            'type': int,
+            'default': [1000, ],
+            'is_list': True
+        }
+    }
+
     def __init__(
             self,
             root: Path,
             batch_size: int = 1,
             samplescount: int = 1000,
-            inputdims: list = (224, 224, 3),
-            outputdims: list = (1000,)):
+            inputdims: list = [224, 224, 3],
+            outputdims: list = [1000, ],
+            download_dataset: bool = False):
         """
         Creates randomized dataset.
 
@@ -40,30 +65,14 @@ class RandomizedClassificationDataset(Dataset):
         self.samplescount = samplescount
         self.inputdims = inputdims
         self.outputdims = outputdims
-        super().__init__(root, batch_size)
+        super().__init__(root, batch_size, download_dataset)
 
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--num-samples',
-            help='Number of samples to process',
-            type=int,
-            default=1000
-        )
-        group.add_argument(
-            '--input-dims',
-            help='Dimensionality of the inputs',
-            type=int,
-            nargs='+',
-            default=[224, 224, 3]
-        )
-        group.add_argument(
-            '--output-dims',
-            help='Dimensionality of the outputs',
-            type=int,
-            nargs='+',
-            default=[1000]
+        add_argparse_argument(
+            group,
+            RandomizedClassificationDataset.arguments_structure
         )
         return parser, group
 
@@ -76,6 +85,15 @@ class RandomizedClassificationDataset(Dataset):
             args.input_dims,
             args.output_dims
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            RandomizedClassificationDataset.arguments_structure
+        )
+        return parameterschema
 
     def prepare(self):
         self.dataX = [i for i in range(self.samplescount)]

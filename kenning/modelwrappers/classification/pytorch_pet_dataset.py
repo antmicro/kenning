@@ -62,7 +62,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return cls(args.model_path, dataset, from_file, args.num_classes)
 
     @classmethod
-    def form_paramterschema(cls, no_dataset: bool = False):
+    def form_parameterschema(cls, no_dataset: bool = False):
         parameterschema = super().form_parameterschema()
         if no_dataset:
             add_parameterschema_argument(

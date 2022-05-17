@@ -305,15 +305,6 @@ class TVMCompiler(Optimizer):
         return parser, group
 
     @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            TVMCompiler.arguments_structure
-        )
-        return parameterschema
-
-    @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
@@ -327,6 +318,15 @@ class TVMCompiler(Optimizer):
             args.output_conversion_function,
             args.quantization_details_path
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            TVMCompiler.arguments_structure
+        )
+        return parameterschema
 
     def compile_model(self, mod, params, outputpath):
         if str(self.target_obj).startswith('cuda'):

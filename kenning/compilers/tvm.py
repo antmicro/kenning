@@ -207,7 +207,8 @@ class TVMCompiler(Optimizer):
         },
         'target_host': {
             'argparse_name': '--target-host',
-            'description': 'The kind or tag of the host (CPU) target device'
+            'description': 'The kind or tag of the host (CPU) target device',
+            'default': None
         },
         'opt_level': {
             'argparse_name': '--opt-level',
@@ -247,7 +248,7 @@ class TVMCompiler(Optimizer):
             compiled_model_path: Path,
             modelframework: str,
             target: str,
-            target_host: str,
+            target_host: str = None,
             opt_level: int = 2,
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,
@@ -321,7 +322,7 @@ class TVMCompiler(Optimizer):
 
     @classmethod
     def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
+        parameterschema = super().form_parameterschema(quantizes_model=False)
         add_parameterschema_argument(
             parameterschema,
             TVMCompiler.arguments_structure

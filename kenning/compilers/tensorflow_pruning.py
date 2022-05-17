@@ -124,7 +124,7 @@ class TensorFlowPruningOptimizer(Optimizer):
 
     @classmethod
     def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema(quantizes_model=True)
+        parameterschema = super().form_parameterschema(quantizes_model=False)
         add_parameterschema_argument(
             parameterschema,
             TensorFlowPruningOptimizer.arguments_structure

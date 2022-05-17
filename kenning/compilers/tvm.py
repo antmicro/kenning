@@ -15,6 +15,7 @@ import json
 from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 def onnxconversion(
@@ -192,6 +193,53 @@ class TVMCompiler(Optimizer):
         'tflite': tfliteconversion
     }
 
+    arguments_structure = {
+        'modelframework': {
+            'argparse_name': '--model-framework',
+            'description': 'The input type of the model, framework-wise',
+            'default': 'onnx',
+            'enum': list(inputtypes.keys())
+        },
+        'target': {
+            'argparse_name': '--target',
+            'description': 'The kind or tag of the target device',
+            'required': True
+        },
+        'target_host': {
+            'argparse_name': '--target-host',
+            'description': 'The kind or tag of the host (CPU) target device'
+        },
+        'opt_level': {
+            'argparse_name': '--opt-level',
+            'description': 'The optimization level of the compilation',
+            'default': 2,
+            'type': int
+        },
+        'libdarknetpath': {
+            'argparse_name': '--libdarknet-path',
+            'description': 'Path to the libdarknet.so library, for darknet models',  # noqa: E501
+            'type': str
+        },
+        'use_tvm_vm': {
+            'argparse_name': '--compile-use-vm',
+            'description': 'At compilation stage use the TVM Relay VirtualMachine',  # noqa: E501
+            'type': bool,
+            'default': False
+        },
+        'conversion_func': {
+            'argparse_name': '--output-conversion-function',
+            'description': 'The type of output conversion function used for PyTorch conversion',  # noqa: E501
+            'default': 'default',
+            'enum': ['default', 'dict_to_tuple']
+        },
+        'quantization_details_path': {
+            'argparse_name': '--quantization-details-path',
+            'description': 'Path where to save quantization details in json',
+            'type': Path,
+            'required': False
+        }
+    }
+
     def __init__(
             self,
             dataset: Dataset,
@@ -249,50 +297,20 @@ class TVMCompiler(Optimizer):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--model-framework',
-            help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys(),
-            default='onnx'
-        )
-        group.add_argument(
-            '--target',
-            help='The kind or tag of the target device',
-            required=True
-        )
-        group.add_argument(
-            '--target-host',
-            help='The kind or tag of the host (CPU) target device',
-        )
-        group.add_argument(
-            '--opt-level',
-            help='The optimization level of the compilation',
-            default=2,
-            type=int
-        )
-        group.add_argument(
-            '--libdarknet-path',
-            help='Path to the libdarknet.so library, for darknet models',
-            type=str
-        )
-        group.add_argument(
-            '--compile-use-vm',
-            help='At compilation stage use the TVM Relay VirtualMachine',
-            action='store_true'
-        )
-        group.add_argument(
-            '--output-conversion-function',
-            help='The type of output conversion function used for PyTorch conversion',  # noqa: E501
-            choices=['default', 'dict_to_tuple'],
-            default='default'
-        )
-        group.add_argument(
-            '--quantization-details-path',
-            help='Path where to save quantization details in json.',
-            type=Path,
-            required=False
+        add_argparse_argument(
+            group,
+            TVMCompiler.arguments_structure
         )
         return parser, group
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            TVMCompiler.arguments_structure
+        )
+        return parameterschema
 
     @classmethod
     def from_argparse(cls, dataset, args):

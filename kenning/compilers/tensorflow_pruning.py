@@ -36,7 +36,7 @@ class TensorFlowPruningOptimizer(Optimizer):
             'enum': list(inputtypes.keys())
         },
         'epoch': {
-            'argparse_name': '--epoch',
+            'argparse_name': '--epochs',
             'description': 'Number of epochs for the fine-tuning',
             'type': int,
             'default': 10

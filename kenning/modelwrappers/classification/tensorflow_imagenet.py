@@ -7,11 +7,27 @@ Pretrained on ImageNet dataset.
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
+
 import tensorflow as tf
 import numpy as np
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
+
+    arguments_structure = {
+        'modelcls': {
+            'argparse_name': '--model-cls',
+            'description': 'The Keras model class',
+            'type': str
+        },
+        'numclasses': {
+            'argparse_name': '--num-classes',
+            'description': 'The number of classifier classes',
+            'type': int,
+        }
+    }
+
     def __init__(
             self,
             modelpath,
@@ -53,14 +69,9 @@ class TensorFlowImageNet(TensorFlowWrapper):
     @classmethod
     def form_argparse(cls):
         parser, group = super().form_argparse()
-        group.add_argument(
-            '--model-cls',
-            help='The Keras model class'
-        )
-        group.add_argument(
-            '--num-classes',
-            type=int,
-            help='The number of classifier classes'
+        add_argparse_argument(
+            group,
+            TensorFlowImageNet.arguments_structure
         )
         return parser, group
 
@@ -73,3 +84,12 @@ class TensorFlowImageNet(TensorFlowWrapper):
             args.num_classes,
             from_file
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        add_parameterschema_argument(
+            parameterschema,
+            TensorFlowImageNet.arguments_structure
+        )
+        return parameterschema

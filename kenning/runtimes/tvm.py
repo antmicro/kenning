@@ -58,7 +58,6 @@ class TVMRuntime(Runtime):
             'default': False
         },
         'io_details_path': {
-            'argparse_name': '--io-details-path',
             'description': "Path where the quantization details are saved in json. \
                 By default <save_model_path>.quantparams is checked",
             'type': Path,

@@ -53,7 +53,6 @@ class Dataset(object):
             'default': 1
         },
         'download_dataset': {
-            'argparse_name': '--download_dataset',
             'description': 'Downloads the dataset before taking any action',
             'type': bool,
             'default': False

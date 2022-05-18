@@ -39,25 +39,21 @@ class NetworkProtocol(RuntimeProtocol):
 
     arguments_structure = {
         'host': {
-            'argparse_name': '--host',
             'description': 'The address to the target device',
             'type': str,
             'required': True
         },
         'port': {
-            'argparse_name': '--port',
             'description': 'The port for the target device',
             'type': int,
             'required': True
         },
         'packet_size': {
-            'argparse_name': '--packet-size',
             'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
             'type': int,
             'default': 4096
         },
         'endianness': {
-            'argparse_name': '--endianness',
             'description': 'The endianness of data to transfer',
             'default': 'little',
             'enum': ['big', 'little']

@@ -35,26 +35,22 @@ class TensorFlowPruningOptimizer(Optimizer):
             'default': 'keras',
             'enum': list(inputtypes.keys())
         },
-        'epoch': {
-            'argparse_name': '--epochs',
+        'epochs': {
             'description': 'Number of epochs for the fine-tuning',
             'type': int,
             'default': 10
         },
         'prune_dense': {
-            'argparse_name': '--prune-dense',
             'description': 'Prune only dense layers',
             'type': bool,
             'default': False,
         },
         'target_sparsity': {
-            'argparse_name': '--target-sparsity',
             'description': 'Target weights sparsity of the model after pruning',  # noqa: E501
             'type': float,
             'default': 0.1
         },
         'batch_size': {
-            'argparse_name': '--batch-size',
             'description': 'The size of a batch for the fine-tuning',
             'type': int,
             'default': 32

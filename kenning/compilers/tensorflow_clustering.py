@@ -36,19 +36,16 @@ class TensorFlowClusteringOptimizer(Optimizer):
             'enum': list(inputtypes.keys()),
         },
         'cluster_dense': {
-            'argparse_name': '--cluster-dense',
             'description': 'Clusterize only dense layers',
             'type': bool,
             'default': False,
         },
         'clusters_number': {
-            'argparse_name': '--clusters-number',
             'description': 'Number of cluster centroids that split each layer',
             'type': int,
             'default': 10,
         },
         'disable_sparsity_preservation': {
-            'argparse_name': '--disable-sparsity-preservation',
             'description': 'Disable sparsity preservation of a given model',
             'type': bool,
             'default': True,

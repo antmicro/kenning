@@ -201,17 +201,14 @@ class TVMCompiler(Optimizer):
             'enum': list(inputtypes.keys())
         },
         'target': {
-            'argparse_name': '--target',
             'description': 'The kind or tag of the target device',
             'required': True
         },
         'target_host': {
-            'argparse_name': '--target-host',
             'description': 'The kind or tag of the host (CPU) target device',
             'default': None
         },
         'opt_level': {
-            'argparse_name': '--opt-level',
             'description': 'The optimization level of the compilation',
             'default': 2,
             'type': int
@@ -235,7 +232,6 @@ class TVMCompiler(Optimizer):
             'enum': ['default', 'dict_to_tuple']
         },
         'quantization_details_path': {
-            'argparse_name': '--quantization-details-path',
             'description': 'Path where to save quantization details in json',
             'type': Path,
             'required': False

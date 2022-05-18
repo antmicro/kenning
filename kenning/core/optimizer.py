@@ -25,13 +25,11 @@ class Optimizer(object):
 
     arguments_structure = {
         'compiled_model_path': {
-            'argparse_name': '--compiled-model-path',
             'description': 'The path to the compiled model output',
             'type': Path,
             'required': True
         },
         'dataset_percentage': {
-            'argparse_name': '--dataset-percentage',
             'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
             'type': float,
             'default': 1.0

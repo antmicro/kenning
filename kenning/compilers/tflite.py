@@ -67,7 +67,6 @@ class TFLiteCompiler(Optimizer):
             'enum': list(inputtypes.keys())
         },
         'target': {
-            'argparse_name': '--target',
             'description': 'The TFLite target device scenario',
             'required': True,
             'enum': ['default', 'int8', 'edgetpu']

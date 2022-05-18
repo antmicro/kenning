@@ -105,6 +105,48 @@ def serialize(obj: object) -> str:
     return json.dumps(serialized_dict, cls=ArgumentEncoder)
 
 
+def serialize_inference(
+        outputpath: Path,
+        dataset,
+        model,
+        optimizers,
+        runtimeprotocol,
+        runtime):
+
+    def object_to_module(obj):
+        return type(obj).__module__ + '.' + type(obj).__name__
+
+    serialized_dict = {}
+
+    for obj, name in zip(
+        [dataset, model, runtimeprotocol, runtime],
+        ['dataset', 'model_wrapper', 'runtime_protocol', 'runtime']
+    ):
+        if obj:
+            serialized_dict[name] = {}
+            serialized_dict[name]['type'] = object_to_module(obj)
+
+            serialized_obj = json.loads(serialize(obj))
+            serialized_dict[name]['parameters'] = serialized_obj
+
+    if optimizers:
+        if type(optimizers) is not list:
+            optimizers = [optimizers]
+
+        serialized_dict['optimizers'] = []
+        for optimizer in optimizers:
+            optimizer_dict = {}
+            optimizer_dict['type'] = object_to_module(optimizer)
+
+            serialized_obj = json.loads(serialize(optimizer))
+            optimizer_dict['parameters'] = serialized_obj
+
+            serialized_dict['optimizers'].append(optimizer_dict)
+
+    with open(outputpath, 'w') as f:
+        json.dump(serialized_dict, f)
+
+
 def get_parsed_json_dict(schema, json_dict):
     """
     Validates the given dictionary with the schema.
@@ -265,7 +307,7 @@ def add_parameterschema_argument(
 
         # Case for a list of keywords
         if 'is_list' in prop and prop['is_list']:
-            keywords['type'] = 'array'
+            keywords['type'] = ['array', 'null']
 
             if 'type' in prop:
                 assert prop['type'] is not bool

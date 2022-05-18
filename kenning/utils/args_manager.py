@@ -13,10 +13,14 @@ from pathlib import Path
 arguments_structure is a mapping (argument_name -> keywords)
 
 Supported keywords:
-argparse_name: Name that is prompted as an argparse argument. It is also
-    used for JSON arguments with hyphens stripped from the prefix and
-    changed to underscores.
-    E.g. --some-name becomes some_name
+argparse_name: Name that is prompted as an argparse argument.
+    If argparse_name is not specifed then JSON uses argument_name
+    and argparse adds -- prefix and change all underscores to hyphens.
+    E.g. model_path -> --model-path
+
+    If it is specified then argparse uses it and JSON uses argument with
+    hyphens stripped from the prefix and changed to underscores.
+    E.g. --some-name -> some_name
 description: Description of the argument.
 type: Same as 'type' in argparse. The argument is converted to this value.
     Possible values for type: [int, float, str, bool, Path].
@@ -30,19 +34,31 @@ is_list: Determines whether argument is a list of arguments.
     By default it is False.
     List of bool arguments is not supported
 
-Example of an argument:
+Examples of an argument:
 'compiled_model_path': {
-    'argparse_name': '--compiled-model-path',
+    'argparse_name': '--model-path',
     'description': 'The path to the compiled model output',
     'type': Path,
     'required': True,
     'enum': ['/home/Documents', '/tmp']
 }
+
+'inputdims': {
+    'argparse_name': '--input-dims',
+    'description': 'Dimensionality of the inputs',
+    'type': int,
+    'default': [224, 224, 3],
+    'is_list': True
+}
 """
 
 
-def convert_argparse_name(s):
+def from_argparse_name(s):
     return s.lstrip('-').replace('-', '_')
+
+
+def to_argparse_name(s):
+    return '--' + s.replace('_', '-')
 
 
 def serialize(obj: object) -> str:
@@ -168,9 +184,12 @@ def add_argparse_argument(
     for name in names:
         prop = struct[name]
 
-        argparse_name = prop['argparse_name']
-        keywords = {}
+        if 'argparse_name' in prop:
+            argparse_name = prop['argparse_name']
+        else:
+            argparse_name = to_argparse_name(name)
 
+        keywords = {}
         if 'type' in prop:
             if prop['type'] is bool:
                 assert 'default' in prop and prop['default'] in [True, False]
@@ -225,8 +244,11 @@ def add_parameterschema_argument(
     for name in names:
         prop = struct[name]
 
-        argparse_name = prop['argparse_name']
-        argschema_name = convert_argparse_name(argparse_name)
+        if 'argparse_name' in prop:
+            argparse_name = prop['argparse_name']
+            argschema_name = from_argparse_name(argparse_name)
+        else:
+            argschema_name = name
 
         schema['properties'][argschema_name] = {}
         keywords = schema['properties'][argschema_name]

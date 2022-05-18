@@ -4,7 +4,7 @@ Module for preparing the logging structures.
 
 import logging
 import io
-import urllib
+import urllib.request
 
 
 def string_to_verbosity(level: str):

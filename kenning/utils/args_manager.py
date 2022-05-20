@@ -5,9 +5,14 @@ Module for preparing and serializing class arguments.
 import json
 import jsonschema
 import argparse
-from typing import Dict
+from typing import Dict, List, Union
 from pathlib import Path
 
+from kenning.core.optimizer import Optimizer
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.core.runtime import Runtime
+from kenning.core.runtimeprotocol import RuntimeProtocol
 
 """
 arguments_structure is a mapping (argument_name -> keywords)
@@ -102,17 +107,39 @@ def serialize(obj: object) -> str:
                 return str(obj)
             return json.JSONEncoder.default(self, obj)
 
-    return json.dumps(serialized_dict, cls=ArgumentEncoder)
+    return json.dumps(serialized_dict, cls=ArgumentEncoder, indent=4)
 
 
 def serialize_inference(
-        outputpath: Path,
-        dataset,
-        model,
-        optimizers,
-        runtimeprotocol,
-        runtime):
+        dataset: Dataset,
+        model: ModelWrapper,
+        optimizers: Union[List[Optimizer], Optimizer],
+        runtimeprotocol: RuntimeProtocol,
+        runtime: Runtime,
+        indent: int = 4) -> str:
+    """
+    Serializes the given objects into a JSON file which 
+    is a valid input for `json_inference_tester.py`.
 
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset to serialize
+    model : ModelWrapper
+        ModelWrapper to serialize
+    optimizers : Union[List[Optimizer], Optimizer]
+        Optimizers to serialize
+    runtimeprotocol : RuntimeProtocol
+        RuntimeProtocol to serialize
+    runtime : Runtime
+        Runtime to serialize
+    indent: int
+        Indent which is used to format the JSON output.
+
+    Returns
+    -------
+    str: Serialized object in a JSON format.
+    """
     def object_to_module(obj):
         return type(obj).__module__ + '.' + type(obj).__name__
 
@@ -143,8 +170,7 @@ def serialize_inference(
 
             serialized_dict['optimizers'].append(optimizer_dict)
 
-    with open(outputpath, 'w') as f:
-        json.dump(serialized_dict, f)
+    return json.dumps(serialized_dict, indent=indent)
 
 
 def get_parsed_json_dict(schema, json_dict):

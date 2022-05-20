@@ -94,14 +94,14 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dataset : object of class Dataset
+        ModelWrapper : object of class ModelWrapper
         """
         return cls(args.model_path, dataset, from_file)
 
     @classmethod
     def form_parameterschema(cls, no_dataset: bool = False):
         """
-        Creates schema for the Model class
+        Creates schema for the ModelWrapper class
 
         Returns
         -------
@@ -143,7 +143,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dataset : object of class Dataset
+        ModelWrapper : object of class ModelWrapper
         """
 
         parameterschema = cls.form_parameterschema()

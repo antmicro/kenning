@@ -223,7 +223,7 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Runtime : object of class RuntimeProtocol
+        RuntimeProtocol : object of class RuntimeProtocol
         """
 
         parameterschema = cls.form_parameterschema()

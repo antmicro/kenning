@@ -32,7 +32,7 @@ class Optimizer(object):
         'dataset_percentage': {
             'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
             'type': float,
-            'default': 1.0
+            'default': 0.25
         }
     }
 

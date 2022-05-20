@@ -123,7 +123,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         model = self.inputtypes[self.inputtype](inputmodelpath)
-        self.get_inputdtype = dtype
+        self.inputdtype = dtype
 
         clustering_params = {
             'number_of_clusters': self.clusters_number,

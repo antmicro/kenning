@@ -34,7 +34,8 @@ is_list: Determines whether argument is a list of arguments.
     By default it is False.
     List of bool arguments is not supported
 
-Examples of an argument:
+Examples:
+
 'compiled_model_path': {
     'argparse_name': '--model-path',
     'description': 'The path to the compiled model output',
@@ -44,7 +45,6 @@ Examples of an argument:
 }
 
 'inputdims': {
-    'argparse_name': '--input-dims',
     'description': 'Dimensionality of the inputs',
     'type': int,
     'default': [224, 224, 3],

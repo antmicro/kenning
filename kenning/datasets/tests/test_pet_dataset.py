@@ -2,11 +2,11 @@ from kenning.datasets.pet_dataset import PetDataset
 import pytest
 from string import printable
 from random import choices, randint
-from PIL.Image import UnidentifiedImageError
+from PIL import Image
 
 
 class TestPetDataset:
-    def test_one(self, tmp_path, random_string):
+    def test_one(self, tmp_path):
         # Test constructor
         empty_path = f"'{str(tmp_path.absolute())}/annotations/list.txt'"
         with pytest.raises(FileNotFoundError) as execinfo:
@@ -15,10 +15,12 @@ class TestPetDataset:
         assert error_message in str(execinfo.value)
 
         with pytest.raises(AssertionError):
-            PetDataset(tmp_path, standardize=False, classify_by=random_string)
+            PetDataset(tmp_path, standardize=False,
+                       classify_by=random_string())
 
         with pytest.raises(AssertionError):
-            PetDataset(tmp_path, standardize=False, image_memory_layout=random_string)  # noqa: E501
+            PetDataset(tmp_path, standardize=False,
+                       image_memory_layout=random_string())
 
     def test_two(self, empty_annotations):
         # Provide dir with empty 'annotations/list.txt'
@@ -30,8 +32,10 @@ class TestPetDataset:
 
     def test_three(self, random_annotations):
         # Provide dir with random data in 'annotations/list.txt'
-        PetDataset(random_annotations)
-        pytest.fail(str(NotImplemented))
+        # TODO: Discuss whether there's a better way to distinguish
+        # if data is not valid
+        with pytest.raises((IndexError, ValueError)):
+            PetDataset(random_annotations)
 
     def test_four(self, fake_annotations):
         # Provide dir with valid data in list.txt
@@ -44,14 +48,13 @@ class TestPetDataset:
         assert error_message in str(execinfo.value)
 
     def test_five(self, fake_images):
-        # Provide dir with valid data in annotations/list.txt
-        # and empty image files in images/
-        with pytest.raises(UnidentifiedImageError) as execinfo:
-            dataset = PetDataset(fake_images)
+        # Provide valid data
+        with pytest.raises(AssertionError):
+            dataset = PetDataset(fake_images, standardize=False, batch_size=-1)
             dataset.get_data()
-        error_message = "cannot identify image file '"
-        error_message += str(fake_images.absolute())
-        assert error_message in str(execinfo.value)
+        with pytest.raises(AssertionError):
+            dataset = PetDataset(fake_images, standardize=False, batch_size=0)
+            dataset.get_data()
 
 
 @pytest.fixture(scope="function")
@@ -71,15 +74,18 @@ def fake_annotations(empty_annotations):
 @pytest.fixture(scope="function")
 def fake_images(fake_annotations):
     (fake_annotations / 'images').mkdir()
-    (fake_annotations / 'images' / 'Abyssinian_100.jpg').touch()
+    file = (fake_annotations / 'images' / 'Abyssinian_100.jpg')
+    img = Image.new(mode='RGB', size=(5, 5))
+    img.save(file, "JPEG")
     return fake_annotations
 
 
 @pytest.fixture(scope="function")
 def random_annotations(empty_annotations):
+    with open(empty_annotations / 'annotations' / 'list.txt', 'w') as f:
+        [print(random_string(), file=f) for _ in range(100)]
     return empty_annotations
 
 
-@pytest.fixture(scope="function")
 def random_string():
     return "".join(choices(printable, k=randint(0, 1000)))

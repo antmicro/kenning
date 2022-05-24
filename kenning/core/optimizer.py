@@ -122,7 +122,7 @@ class Optimizer(object):
             )
 
     @classmethod
-    def form_parameterschema(cls, quantizes_model: bool = True):
+    def form_parameterschema(cls, quantizes_model: bool = False):
         """
         Creates schema for the Optimizer class
 

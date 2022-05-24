@@ -5,14 +5,8 @@ Module for preparing and serializing class arguments.
 import json
 import jsonschema
 import argparse
-from typing import Dict, List, Union
+from typing import Dict
 from pathlib import Path
-
-from kenning.core.optimizer import Optimizer
-from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
 
 """
 arguments_structure is a mapping (argument_name -> keywords)
@@ -111,14 +105,14 @@ def serialize(obj: object) -> str:
 
 
 def serialize_inference(
-        dataset: Dataset,
-        model: ModelWrapper,
-        optimizers: Union[List[Optimizer], Optimizer],
-        runtimeprotocol: RuntimeProtocol,
-        runtime: Runtime,
+        dataset,
+        model,
+        optimizers,
+        runtimeprotocol,
+        runtime,
         indent: int = 4) -> str:
     """
-    Serializes the given objects into a JSON file which 
+    Serializes the given objects into a JSON file which
     is a valid input for `json_inference_tester.py`.
 
     Parameters

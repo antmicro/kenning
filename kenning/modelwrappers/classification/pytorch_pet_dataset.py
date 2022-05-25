@@ -25,7 +25,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 class_count: int = 37
             ):
         self.class_count = class_count
-        if dataset:
+        if hasattr(dataset, 'numclasses'):
             self.numclasses = dataset.numclasses
         else:
             self.numclasses = class_count

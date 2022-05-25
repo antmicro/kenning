@@ -9,18 +9,25 @@ else:
 
 
 class TestModelWrapperAndDatasetCompatibility:
-    def test_deliver_input(self, empty_dir):
+    def test_deliver_input(self):
         """
         Test to check if input of dataset is delivered
         to ModelWrapper
         """
         modelpath = str(path(kenning.resources.models, "classification")) +\
             "/pytorch_pet_dataset_mobilenetv2.pth"
-        dataset = datasets.RandomizedClassificationDataset(empty_dir)    # noqa: E501
-        wrappers.PyTorchPetDatasetMobileNetV2(       # noqa: E501
+        dataset = datasets.RandomizedClassificationDataset("")
+        wrappers.PyTorchPetDatasetMobileNetV2(
             modelpath,
             dataset
         )
+
+    def test_without_dataset(self):
+        """
+        Perform tests on ModelWrapper with provided dataset as None
+        """
+        modelpath = str(path(kenning.resources.models, "classification")) +\
+            "/pytorch_pet_dataset_mobilenetv2.pth"
         wrappers.PyTorchPetDatasetMobileNetV2(    # noqa: E501
             modelpath,
             None

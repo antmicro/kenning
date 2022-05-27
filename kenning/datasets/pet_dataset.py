@@ -7,6 +7,7 @@ from pathlib import Path
 import tarfile
 from PIL import Image
 import numpy as np
+from typing import Tuple, Any
 
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url
@@ -184,7 +185,19 @@ class PetDataset(Dataset):
         measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements
 
-    def compute_input_mean_std(self):
+    def compute_input_mean_std(self) -> Tuple[Any, Any]:
+        """
+        Computes mean and std values for a given dataset.
+
+        The input standardization values for a given model are computed based
+        on a train dataset.
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            the standardization values for a given train dataset.
+            Tuple of two variables describing mean and std values
+        """
         count = 0
         mean = np.zeros((3))
         std = np.zeros((3))

@@ -437,26 +437,6 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def compute_input_mean_std(self, samples: List) -> Tuple[Any, Any]:
-        """
-        Computes mean and std values for a given dataset.
-
-        The input standardization values for a given model are computed based
-        on a train dataset.
-
-        Parameters
-        ----------
-        samples : List
-            The list of input tensors from the train dataset
-
-        Returns
-        -------
-        Tuple[Any, Any] :
-            the standardization values for a given train dataset.
-            Tuple of two variables describing mean and std values
-        """
-        raise NotImplementedError
-
     def get_input_mean_std(self) -> Tuple[Any, Any]:
         """
         Returns mean and std values for input tensors.

@@ -30,9 +30,11 @@ def fake_images(empty_dir):
         [print(f'image_{i},xclick,/m/o0fd,1,{four_random_range()},0,0,0,0,0', file=f)
          for i in range(amount)]
     (empty_dir / 'images').mkdir()
+    (empty_dir / 'img').symlink_to(empty_dir / 'images')
     for i in range(amount):
         file = (empty_dir / 'images' / f'image_{i}.jpg')
         color = (randint(0, 255), randint(0, 255), randint(0, 255))
         img = Image.new(mode='RGB', size=(5, 5), color=color)
         img.save(file, 'JPEG')
+
     return empty_dir

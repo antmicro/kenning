@@ -40,6 +40,7 @@ class RandomizedClassificationDataset(Dataset):
         self.samplescount = samplescount
         self.inputdims = inputdims
         self.outputdims = outputdims
+        self.numclasses = 1
         super().__init__(root, batch_size)
 
     @classmethod
@@ -76,6 +77,9 @@ class RandomizedClassificationDataset(Dataset):
             args.input_dims,
             args.output_dims
         )
+
+    def get_class_names(self):
+        return ['random']
 
     def prepare(self):
         self.dataX = [[i for i in range(self.samplescount)] for _ in range(3)]

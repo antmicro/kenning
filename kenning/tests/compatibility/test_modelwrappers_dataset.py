@@ -1,4 +1,3 @@
-import kenning.modelwrappers.classification.pytorch_pet_dataset as wrappers
 import kenning.resources.models
 import sys
 if sys.version_info.minor < 9:
@@ -6,6 +5,7 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 from importlib import import_module
+from kenning.utils.class_loader import load_class
 
 
 class TestModelWrapperAndDatasetCompatibility:
@@ -36,7 +36,7 @@ class TestModelWrapperAndDatasetCompatibility:
             import types
 
             module = import_module('kenning.datasets.' + module_name)
-            dataset = getattr(module, module_package)(*args, batch_size=1)
+            dataset = getattr(module, module_package)(*args)
 
             Xt, Xv, Yt, Yv = dataset.train_test_split_representations(0.25)
 
@@ -84,6 +84,35 @@ class TestModelWrapperAndDatasetCompatibility:
 
         for dataset_value in dataset_dict.values():
             test_whole_functionality(*dataset_value)
+
+    def test_two(self, fake_images):
+        """
+        Test to check basic functionality of ModelWrappers.
+        """
+        modelwrapper_dict = {
+            'Pytorch_pet_dataset': [
+                'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',
+                ['classification',
+                 'pytorch_pet_dataset_mobilenetv2.pth'
+                 ],
+                'kenning.datasets.pet_dataset.PetDataset',
+                fake_images
+            ]
+        }
+
+        def test_model_wrapper(wrapper_name, model_path, dataset_name, root):
+            model_module = 'kenning.resources.models.' + model_path[0]
+            model = path(model_module, model_path[1])
+            wrapper_name = 'kenning.modelwrappers.' + wrapper_name
+            dataset = load_class(dataset_name)(root)
+            wrapper = load_class(wrapper_name)(model, dataset, from_file=True)
+            # module = import_module(module_name)
+            # module_dataset = import_module(dataset_name.rsplit('.', 1)[0])
+            # dataset = getattr(module_dataset, root)
+            # modelwrapper = getattr(module, module_package)(model, dataset)
+
+        for modelwrapper_value in modelwrapper_dict.values():
+            test_model_wrapper(*modelwrapper_value)
 
     # def test_without_dataset(self):
     #     """

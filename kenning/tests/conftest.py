@@ -8,14 +8,14 @@ def write_to_dirs(dir_path, amount):
     Creates files under provided 'dir_path' such as 'list.txt' for PetDataset,
     'annotations.csv' and 'classnames.csv' for OpenImagesDataset.
     """
-    def three_random_one_hot():
-        return f'{randint(0, 1)} {randint(0, 1)} {randint(0, 1)}'
+    def three_random_one_hot(i):
+        return f'{i%37+1} {randint(0, 1)} {randint(0, 1)}'
 
     def four_random():
         return f'{random()},{random()},{random()},{random()}'
 
     with open(dir_path / 'annotations' / 'list.txt', 'w') as f:
-        [print(f'image_{i} {three_random_one_hot()}', file=f)
+        [print(f'image_{i} {three_random_one_hot(i)}', file=f)
          for i in range(amount)]
     with open(dir_path / 'classnames.csv', 'w') as f:
         print('/m/o0fd,person', file=f)
@@ -42,7 +42,7 @@ def fake_images(empty_dir):
 
     Images are located under 'image/' folder.
     """
-    amount = 100
+    amount = 148
     write_to_dirs(empty_dir, amount)
     (empty_dir / 'images').mkdir()
     (empty_dir / 'img').symlink_to(empty_dir / 'images')

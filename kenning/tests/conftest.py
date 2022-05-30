@@ -3,6 +3,31 @@ from random import randint, random
 from PIL import Image
 
 
+def write_to_dirs(dir_path, amount):
+    """
+    Creates files under provided 'dir_path' such as 'list.txt' for PetDataset,
+    'annotations.csv' and 'classnames.csv' for OpenImagesDataset.
+    """
+    def three_random_one_hot():
+        return f'{randint(0, 1)} {randint(0, 1)} {randint(0, 1)}'
+
+    def four_random():
+        return f'{random()},{random()},{random()},{random()}'
+
+    with open(dir_path / 'annotations' / 'list.txt', 'w') as f:
+        [print(f'image_{i} {three_random_one_hot()}', file=f)
+         for i in range(amount)]
+    with open(dir_path / 'classnames.csv', 'w') as f:
+        print('/m/o0fd,person', file=f)
+    with open(dir_path / 'annotations.csv', 'w') as f:
+        title = 'ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,'
+        title += 'IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside'
+        print(title, file=f)
+        [print(f'image_{i},xclick,/m/o0fd,1,{four_random()},0,0,0,0,0', file=f)
+         for i in range(amount)]
+    return
+
+
 @pytest.fixture
 def empty_dir(tmp_path):
     (tmp_path / 'annotations').mkdir()
@@ -12,23 +37,13 @@ def empty_dir(tmp_path):
 
 @pytest.fixture
 def fake_images(empty_dir):
-    def three_random_one_hot():
-        return f'{randint(0, 1)} {randint(0, 1)} {randint(0, 1)}'
+    """
+    Creates a temporary dir with images.
 
-    def four_random_range():
-        # return f'{random()},{random()},{random()},{random()}'
-        return '0.3,0.9,0.2,0.7'
+    Images are located under 'image/' folder.
+    """
     amount = 100
-
-    with open(empty_dir / 'annotations' / 'list.txt', 'w') as f:
-        [print(f'image_{i} {three_random_one_hot()}', file=f)
-         for i in range(amount)]
-    with open(empty_dir / 'classnames.csv', 'w') as f:
-        print('/m/o0fd,person', file=f)
-    with open(empty_dir / 'annotations.csv', 'w') as f:
-        print('ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside', file=f)  # noqa: E501
-        [print(f'image_{i},xclick,/m/o0fd,1,{four_random_range()},0,0,0,0,0', file=f)
-         for i in range(amount)]
+    write_to_dirs(empty_dir, amount)
     (empty_dir / 'images').mkdir()
     (empty_dir / 'img').symlink_to(empty_dir / 'images')
     for i in range(amount):

@@ -204,13 +204,13 @@ class ModelWrapper(object):
 
     @systemstatsmeasurements('inferencesysstats')
     @timemeasurements('inference')
-    def test_inference(self) -> List:
+    def test_inference(self) -> 'Measurements':
         """
         Runs the inference with a given dataset.
 
         Returns
         -------
-        List : The inference results
+        Measurements : The inference results
         """
         from tqdm import tqdm
 

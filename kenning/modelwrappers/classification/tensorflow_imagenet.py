@@ -32,9 +32,27 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self,
             modelpath: Path,
             dataset: Dataset,
+            from_file: bool = True,
             modelcls: str = '',
-            numclasses: int = 1000,
-            from_file: bool = True):
+            numclasses: int = 1000):
+        """
+        Creates model wrapper for TensorFlow classification
+        model pretrained on ImageNet dataset.
+
+        Parameters
+        ----------
+        modelpath : Path
+            The path to the model
+        dataset : Dataset
+            The dataset to verify the inference
+        from_file: bool
+            True if model should be loaded from file
+        modelcls : str
+            The model class import path
+            Used for loading keras.applications pretrained models
+        numclasses: int
+            Number of classes in dataset
+        """
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)

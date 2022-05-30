@@ -81,6 +81,9 @@ class RandomizedClassificationDataset(Dataset):
     def get_class_names(self):
         return ['random']
 
+    def get_input_mean_std(self):
+        return (0.5, 0.4)
+
     def prepare(self):
         self.dataX = [[i for i in range(self.samplescount)] for _ in range(3)]
         self.dataY = [[i for i in range(self.samplescount)] for _ in range(3)]

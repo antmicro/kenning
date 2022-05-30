@@ -9,13 +9,11 @@ from importlib import import_module
 
 
 class TestModelWrapperAndDatasetCompatibility:
-    def test_deliver_input(self, fake_images):
+    def test_one(self, fake_images):
         """
-        Test to check if dataset's output is delivered
-        to ModelWrapper. That means that we have to test datasets here.
+        Test to check if dataset basic functionality works fine.
+        """
 
-        Test .train_test_split_representations() method.
-        """
         dataset_dict = {
             'random': [
                 'random_dataset',
@@ -34,9 +32,8 @@ class TestModelWrapperAndDatasetCompatibility:
             ],
         }
 
-        def test_random(module_name, module_package, *args):
+        def test_whole_functionality(module_name, module_package, *args):
             import types
-            import typing
 
             module = import_module('kenning.datasets.' + module_name)
             dataset = getattr(module, module_package)(*args, batch_size=1)
@@ -62,13 +59,31 @@ class TestModelWrapperAndDatasetCompatibility:
             assert next(generator)
 
             # Check if dataset's numclasses equals to class_names length
+            # and have right return types
             class_names = dataset.get_class_names()
             assert len(class_names) == dataset.numclasses
-            assert issubclass(class_names, list) and class_names[0] is str
-            return dataset
+            assert isinstance(class_names, list) and isinstance(class_names[0], str)    # noqa: E501
+
+            # OpenImagesDatasetV6 throws NotImplementedError
+            # assert isinstance(dataset.get_input_mean_std(), tuple)
+
+            dataset.prepare()
+
+            prepared = dataset.prepare_input_samples(dataset.dataX)
+            assert len(prepared) == len(dataset.dataX)
+            assert isinstance(prepared, list)
+
+            # Throws an error, most likely have to be used with ModelWrapper
+            # prepared = dataset.prepare_output_samples(dataset.dataX)
+            # assert isinstance(prepared, list)
+
+            dataset.set_batch_size(10)
+            assert dataset.batch_size == 10
+
+            return
 
         for dataset_value in dataset_dict.values():
-            test_random(*dataset_value)
+            test_whole_functionality(*dataset_value)
 
     # def test_without_dataset(self):
     #     """

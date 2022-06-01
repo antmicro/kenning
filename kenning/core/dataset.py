@@ -92,6 +92,26 @@ class Dataset(object):
         self.prepare()
 
     @classmethod
+    def _form_argparse(cls):
+        """
+        Wrapper for creating argparse structure for the Dataset class.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Dataset arguments')
+        add_argparse_argument(
+            group,
+            Dataset.arguments_structure
+        )
+        return parser, group
+
+    @classmethod
     def form_argparse(cls):
         """
         Creates argparse parser for the Dataset object.
@@ -107,12 +127,12 @@ class Dataset(object):
             program's argument parser, and the corresponding arguments' group
             pointer
         """
-        parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Dataset arguments')
-        add_argparse_argument(
-            group,
-            Dataset.arguments_structure
-        )
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != Dataset.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -139,9 +159,9 @@ class Dataset(object):
         )
 
     @classmethod
-    def form_parameterschema(cls):
+    def _form_parameterschema(cls):
         """
-        Creates schema for the Dataset class
+        Wrapper for creating argparse structure for the Dataset class.
 
         Returns
         -------
@@ -157,6 +177,23 @@ class Dataset(object):
             Dataset.arguments_structure,
         )
 
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the Dataset class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != Dataset.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
         return parameterschema
 
     @classmethod

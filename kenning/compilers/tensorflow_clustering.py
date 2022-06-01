@@ -44,10 +44,10 @@ class TensorFlowClusteringOptimizer(Optimizer):
             'type': int,
             'default': 10,
         },
-        'disable_sparsity_preservation': {
-            'description': 'Disable sparsity preservation of a given model',
+        'preserve_sparsity': {
+            'description': 'Enable sparsity preservation of a given model',
             'type': bool,
-            'default': True,
+            'default': False,
         }
     }
 
@@ -58,7 +58,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
             modelframework: str = 'keras',
             cluster_dense: bool = False,
             clusters_number: int = '10',
-            disable_sparsity_preservation: bool = True):
+            preserve_sparsity: bool = False):
         """
         The TensorFlowClustering optimizer.
 
@@ -83,7 +83,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
         self.modelframework = modelframework
         self.cluster_dense = cluster_dense
         self.clusters_number = clusters_number
-        self.disable_sparsity_preservation = disable_sparsity_preservation
+        self.preserve_sparsity = preserve_sparsity
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path)
 
@@ -95,7 +95,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
             args.model_framework,
             args.cluster_dense,
             args.clusters_number,
-            args.disable_sparsity_preservation
+            args.preserve_sparsity
         )
 
     def compile(
@@ -110,7 +110,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
             'number_of_clusters': self.clusters_number,
             'cluster_centroids_init':
                 tfmot.clustering.keras.CentroidInitialization.KMEANS_PLUS_PLUS,
-            'preserve_sparsity': not self.disable_sparsity_preservation
+            'preserve_sparsity': self.preserve_sparsity
         }
 
         if self.cluster_dense:

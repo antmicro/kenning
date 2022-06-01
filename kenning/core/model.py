@@ -42,7 +42,15 @@ class ModelWrapper(object):
         self.from_file = from_file
         self.prepare_model()
 
-    def get_path(self):
+    def get_path(self) -> Path:
+        """
+        Returns path to the model in a form of a Path object.
+
+        Returns
+        -------
+        modelpath : Path
+            The path to the model
+        """
         return self.modelpath
 
     @classmethod
@@ -53,7 +61,7 @@ class ModelWrapper(object):
         Returns
         -------
         ArgumentParser :
-            the argument parser object that can act as parent for program's
+            The argument parser object that can act as parent for program's
             argument parser
         """
         parser = argparse.ArgumentParser(add_help=False)
@@ -142,7 +150,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Any: the preprocessed inputs that are ready to be fed to the model
+        Any: The preprocessed inputs that are ready to be fed to the model
         """
         return X
 
@@ -163,7 +171,7 @@ class ModelWrapper(object):
         Returns
         -------
         List:
-            the postprocessed outputs from the model that need to be in
+            The postprocessed outputs from the model that need to be in
             format requested by the Dataset object.
         """
         return y
@@ -182,7 +190,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Any: the results of the inference.
+        Any: The results of the inference.
         """
         raise NotImplementedError
 
@@ -283,7 +291,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        bytes : input data as byte stream
+        bytes : Input data as byte stream
         """
         raise NotImplementedError
 
@@ -296,10 +304,10 @@ class ModelWrapper(object):
         Parameters
         ----------
         outputdata : bytes
-            output data in raw bytes
+            Output data in raw bytes
 
         Returns
         -------
-        Any : output data to feed to postprocess_outputs
+        Any : Output data to feed to postprocess_outputs
         """
         raise NotImplementedError

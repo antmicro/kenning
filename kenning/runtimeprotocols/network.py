@@ -15,7 +15,6 @@ from kenning.core.runtimeprotocol import MessageType
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class NetworkProtocol(RuntimeProtocol):
@@ -92,15 +91,6 @@ class NetworkProtocol(RuntimeProtocol):
         super().__init__()
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            NetworkProtocol.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, args):
         return cls(
             args.host,
@@ -108,15 +98,6 @@ class NetworkProtocol(RuntimeProtocol):
             args.packet_size,
             args.endianness
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            NetworkProtocol.arguments_structure
-        )
-        return parameterschema
 
     def accept_client(self, socket, mask) -> Tuple['ServerStatus', Optional[bytes]]:  # noqa: E501
         """

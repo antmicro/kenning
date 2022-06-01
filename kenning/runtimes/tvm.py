@@ -15,7 +15,6 @@ from tvm.runtime.vm import VirtualMachine, Executable
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import MessageType
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class TVMRuntime(Runtime):
@@ -114,15 +113,6 @@ class TVMRuntime(Runtime):
             self._prepare_quantization_details
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            TVMRuntime.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, protocol, args):
         return cls(
             protocol,
@@ -134,15 +124,6 @@ class TVMRuntime(Runtime):
             args.use_json_at_output,
             args.io_details_path
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            TVMRuntime.arguments_structure
-        )
-        return parameterschema
 
     def upload_essentials(self, compiledmodelpath):
         super().upload_essentials(compiledmodelpath)

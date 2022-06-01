@@ -8,7 +8,6 @@ from typing import Optional, List
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class TFLiteRuntime(Runtime):
@@ -72,15 +71,6 @@ class TFLiteRuntime(Runtime):
         super().__init__(protocol, collect_performance_data)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            TFLiteRuntime.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, protocol, args):
         return cls(
             protocol,
@@ -89,15 +79,6 @@ class TFLiteRuntime(Runtime):
             args.output_dtype,
             args.delegates_list
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            TFLiteRuntime.arguments_structure
-        )
-        return parameterschema
 
     def prepare_model(self, input_data):
         try:

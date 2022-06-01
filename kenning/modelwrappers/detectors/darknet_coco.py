@@ -82,7 +82,7 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
 
     @classmethod
     def form_parameterschema(cls, no_dataset: bool = False):
-        parameterschema = cls._form_paramterschema()
+        parameterschema = cls._form_parameterschema()
         if no_dataset:
             add_parameterschema_argument(
                 parameterschema,

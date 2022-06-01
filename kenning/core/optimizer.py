@@ -138,7 +138,7 @@ class Optimizer(object):
             )
 
     @classmethod
-    def _form_paramterchema(cls):
+    def _form_parameterschema(cls):
         """
         Wrapper for creating argparse structure for the Optimizer class.
 
@@ -175,7 +175,7 @@ class Optimizer(object):
         -------
         Dict : schema for the class
         """
-        parameterschema = cls._form_paramterchema()
+        parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != Optimizer.arguments_structure:
             add_parameterschema_argument(
                 parameterschema,

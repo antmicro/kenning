@@ -118,7 +118,7 @@ class ModelWrapper(object):
         return cls(args.model_path, dataset, from_file)
 
     @classmethod
-    def _form_paramterschema(cls):
+    def _form_parameterschema(cls):
         """
         Wrapper for creating argparse structure for the ModelWrapper class.
 
@@ -147,7 +147,7 @@ class ModelWrapper(object):
         -------
         Dict : schema for the class
         """
-        parameterschema = cls._form_paramterschema()
+        parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != ModelWrapper.arguments_structure:
             add_parameterschema_argument(
                 parameterschema,

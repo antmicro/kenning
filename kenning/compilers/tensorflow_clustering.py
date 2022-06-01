@@ -56,9 +56,9 @@ class TensorFlowClusteringOptimizer(Optimizer):
             dataset: Dataset,
             compiled_model_path: Path,
             modelframework: str = 'keras',
-            cluster_dense: bool = 'False',
+            cluster_dense: bool = False,
             clusters_number: int = '10',
-            disable_sparsity_preservation: bool = 'True'):
+            disable_sparsity_preservation: bool = True):
         """
         The TensorFlowClustering optimizer.
 

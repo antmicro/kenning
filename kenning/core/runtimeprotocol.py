@@ -10,7 +10,7 @@ import argparse
 from typing import Any, Tuple, List, Optional, Union, Dict
 
 from kenning.core.measurements import Measurements
-from kenning.utils.args_manager import get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import get_parsed_json_dict, add_argparse_argument, add_parameterschema_argument  # noqa: E501
 
 
 class RequestFailure(Exception):
@@ -160,6 +160,22 @@ class RuntimeProtocol(object):
         pass
 
     @classmethod
+    def _form_argparse(cls):
+        """
+        Wrapper for creating argparse structure for the RuntimeProtocol class.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Runtime protocol arguments')
+        return parser, group
+
+    @classmethod
     def form_argparse(cls):
         """
         Creates argparse parser for the RuntimeProtocol object.
@@ -171,8 +187,12 @@ class RuntimeProtocol(object):
             program's argument parser, and the corresponding arguments' group
             pointer
         """
-        parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Runtime protocol arguments')
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != RuntimeProtocol.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -192,9 +212,9 @@ class RuntimeProtocol(object):
         return cls()
 
     @classmethod
-    def form_parameterschema(cls):
+    def _form_parameterschema(cls):
         """
-        Creates schema for the RuntimeProtocol class
+        Wrapper for creating argparse structure for the RuntimeProtocol class.
 
         Returns
         -------
@@ -205,6 +225,23 @@ class RuntimeProtocol(object):
             "additionalProperties": False
         }
 
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the RuntimeProtocol class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != RuntimeProtocol.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
         return parameterschema
 
     @classmethod

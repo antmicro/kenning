@@ -56,9 +56,9 @@ class ModelWrapper(object):
         return self.modelpath
 
     @classmethod
-    def form_argparse(cls, no_dataset: bool = False):
+    def _form_argparse(cls):
         """
-        Creates argparse parser for the ModelWrapper object.
+        Wrapper for creating argparse structure for the ModelWrapper class.
 
         Returns
         -------
@@ -72,6 +72,25 @@ class ModelWrapper(object):
             group,
             ModelWrapper.arguments_structure
         )
+        return parser, group
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the ModelWrapper object.
+
+        Returns
+        -------
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
+        """
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != ModelWrapper.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -99,9 +118,9 @@ class ModelWrapper(object):
         return cls(args.model_path, dataset, from_file)
 
     @classmethod
-    def form_parameterschema(cls, no_dataset: bool = False):
+    def _form_paramterschema(cls):
         """
-        Creates schema for the ModelWrapper class
+        Wrapper for creating argparse structure for the ModelWrapper class.
 
         Returns
         -------
@@ -117,6 +136,23 @@ class ModelWrapper(object):
             ModelWrapper.arguments_structure,
         )
 
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the ModelWrapper class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_paramterschema()
+        if cls.arguments_structure != ModelWrapper.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
         return parameterschema
 
     @classmethod

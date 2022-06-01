@@ -44,7 +44,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
     @classmethod
     def form_argparse(cls, no_dataset: bool = False):
-        parser, group = super().form_argparse(no_dataset)
+        parser, group = cls._form_argparse()
         if no_dataset:
             add_argparse_argument(
                 group,
@@ -63,7 +63,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
     @classmethod
     def form_parameterschema(cls, no_dataset: bool = False):
-        parameterschema = super().form_parameterschema()
+        parameterschema = cls._form_paramterschema()
         if no_dataset:
             add_parameterschema_argument(
                 parameterschema,

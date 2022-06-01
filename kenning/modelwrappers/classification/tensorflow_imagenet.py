@@ -7,7 +7,6 @@ Pretrained on ImageNet dataset.
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 import tensorflow as tf
 import numpy as np
@@ -67,15 +66,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
         return ('tensorflow', tf.__version__)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            TensorFlowImageNet.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, dataset, args, from_file=False):
         return cls(
             args.model_path,
@@ -84,12 +74,3 @@ class TensorFlowImageNet(TensorFlowWrapper):
             args.num_classes,
             from_file
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            TensorFlowImageNet.arguments_structure
-        )
-        return parameterschema

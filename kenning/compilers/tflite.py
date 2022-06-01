@@ -11,7 +11,6 @@ from typing import Dict, Tuple
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class EdgeTPUCompilerError(Exception):
@@ -58,6 +57,8 @@ class TFLiteCompiler(Optimizer):
         'keras': kerasconversion,
         'onnx': onnxconversion,
     }
+
+    quantizes_model = True
 
     arguments_structure = {
         'modelframework': {
@@ -129,15 +130,6 @@ class TFLiteCompiler(Optimizer):
         super().__init__(dataset, compiled_model_path, dataset_percentage)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse(quantizes_model=True)
-        add_argparse_argument(
-            group,
-            TFLiteCompiler.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
@@ -148,15 +140,6 @@ class TFLiteCompiler(Optimizer):
             args.inference_output_type,
             args.dataset_percentage,
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema(quantizes_model=True)
-        add_parameterschema_argument(
-            parameterschema,
-            TFLiteCompiler.arguments_structure
-        )
-        return parameterschema
 
     def compile(
             self,

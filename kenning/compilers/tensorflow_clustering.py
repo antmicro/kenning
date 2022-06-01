@@ -8,7 +8,6 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 def kerasconversion(modelpath: Path):
@@ -89,15 +88,6 @@ class TensorFlowClusteringOptimizer(Optimizer):
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse(quantizes_model=True)
-        add_argparse_argument(
-            group,
-            TensorFlowClusteringOptimizer.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
@@ -107,15 +97,6 @@ class TensorFlowClusteringOptimizer(Optimizer):
             args.clusters_number,
             args.disable_sparsity_preservation
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema(quantizes_model=False)
-        add_parameterschema_argument(
-            parameterschema,
-            TensorFlowClusteringOptimizer.arguments_structure
-        )
-        return parameterschema
 
     def compile(
             self,

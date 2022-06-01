@@ -15,7 +15,6 @@ import json
 from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 def onnxconversion(
@@ -293,15 +292,6 @@ class TVMCompiler(Optimizer):
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            TVMCompiler.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
@@ -315,15 +305,6 @@ class TVMCompiler(Optimizer):
             args.output_conversion_function,
             args.quantization_details_path
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema(quantizes_model=False)
-        add_parameterschema_argument(
-            parameterschema,
-            TVMCompiler.arguments_structure
-        )
-        return parameterschema
 
     def compile_model(self, mod, params, outputpath):
         if str(self.target_obj).startswith('cuda'):

@@ -23,6 +23,8 @@ class Optimizer(object):
 
     inputtypes = {}
 
+    quantizes_model = False
+
     arguments_structure = {
         'compiled_model_path': {
             'description': 'The path to the compiled model output',
@@ -61,15 +63,9 @@ class Optimizer(object):
         self.dataset_percentage = dataset_percentage
 
     @classmethod
-    def form_argparse(cls, quantizes_model: bool = False):
+    def _form_argparse(cls):
         """
-        Creates argparse parser for the Optimizer object.
-
-        Parameters
-        ----------
-        quantizes_model : bool
-            Tells if the compiler quantizes model - if so, flags for
-            calibration dataset are enabled
+        Wrapper for creating argparse structure for the Optimizer class.
 
         Returns
         -------
@@ -85,11 +81,31 @@ class Optimizer(object):
             Optimizer.arguments_structure,
             'compiled_model_path',
         )
-        if quantizes_model:
+        if cls.quantizes_model:
             add_argparse_argument(
                 group,
                 Optimizer.arguments_structure,
                 'dataset_percentage'
+            )
+        return parser, group
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the Optimizer object.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != Optimizer.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
             )
         return parser, group
 
@@ -122,15 +138,9 @@ class Optimizer(object):
             )
 
     @classmethod
-    def form_parameterschema(cls, quantizes_model: bool = False):
+    def _form_paramterchema(cls):
         """
-        Creates schema for the Optimizer class
-
-        Parameters
-        ----------
-        quantizes_model : bool
-            Tells if the compiler quantizes model - if so, flags for
-            calibration dataset are enabled
+        Wrapper for creating argparse structure for the Optimizer class.
 
         Returns
         -------
@@ -147,13 +157,30 @@ class Optimizer(object):
             'compiled_model_path',
         )
 
-        if quantizes_model:
+        if cls.quantizes_model:
             add_parameterschema_argument(
                 parameterschema,
                 Optimizer.arguments_structure,
                 'dataset_percentage'
             )
 
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the Optimizer class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_paramterchema()
+        if cls.arguments_structure != Optimizer.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
         return parameterschema
 
     @classmethod

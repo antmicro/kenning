@@ -1,42 +1,33 @@
-import kenning.resources.models
+# import kenning.resources.models
 import sys
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
-from importlib import import_module
 from kenning.utils.class_loader import load_class
+from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2  # noqa: E501
 
 
 class TestModelWrapperAndDatasetCompatibility:
+    dataset_dict = {
+        'random':
+            'random_dataset.RandomizedClassificationDataset',
+        'pet_dataset':
+            'pet_dataset.PetDataset',
+        'open_images':
+            'open_images_dataset.OpenImagesDatasetV6',
+    }
+
     def test_one(self, fake_images):
         """
         Test to check if dataset basic functionality works fine.
         """
 
-        dataset_dict = {
-            'random': [
-                'random_dataset',
-                'RandomizedClassificationDataset',
-                fake_images,
-            ],
-            'pet_dataset': [
-                'pet_dataset',
-                'PetDataset',
-                fake_images,
-            ],
-            'open_images': [
-                'open_images_dataset',
-                'OpenImagesDatasetV6',
-                fake_images,
-            ],
-        }
-
-        def test_whole_functionality(module_name, module_package, *args):
+        def test_whole_functionality(module_name, fake_images):
             import types
 
-            module = import_module('kenning.datasets.' + module_name)
-            dataset = getattr(module, module_package)(*args)
+            fake_images = fake_images[0]
+            dataset = load_class('kenning.datasets.'+module_name)(fake_images)
 
             Xt, Xv, Yt, Yv = dataset.train_test_split_representations(0.25)
 
@@ -82,16 +73,17 @@ class TestModelWrapperAndDatasetCompatibility:
 
             return
 
-        for dataset_value in dataset_dict.values():
-            test_whole_functionality(*dataset_value)
+        for module in self.dataset_dict.values():
+            test_whole_functionality(module, fake_images)
 
     def test_two(self, fake_images):
         """
         Test to check basic functionality of ModelWrappers.
         """
+        fake_images = fake_images[0]
         modelwrapper_dict = {
             'Pytorch_pet_dataset': [
-                'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',
+                'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',  # noqa: E501
                 ['classification',
                  'pytorch_pet_dataset_mobilenetv2.pth'
                  ],
@@ -106,22 +98,27 @@ class TestModelWrapperAndDatasetCompatibility:
             wrapper_name = 'kenning.modelwrappers.' + wrapper_name
             dataset = load_class(dataset_name)(root)
             wrapper = load_class(wrapper_name)(model, dataset, from_file=True)
-            # module = import_module(module_name)
-            # module_dataset = import_module(dataset_name.rsplit('.', 1)[0])
-            # dataset = getattr(module_dataset, root)
-            # modelwrapper = getattr(module, module_package)(model, dataset)
+            wrapper
 
         for modelwrapper_value in modelwrapper_dict.values():
             test_model_wrapper(*modelwrapper_value)
 
-    # def test_without_dataset(self):
-    #     """
-    #     Perform tests on ModelWrapper with provided dataset as None
-    #     """
-    #     modelpath = str(path(kenning.resources.models, "classification")) +\
-    #         "/pytorch_pet_dataset_mobilenetv2.pth"
-    #     assert 0
-    #     wrappers.PyTorchPetDatasetMobileNetV2(    # noqa: E501
-    #         modelpath,
-    #         None
-    #     )
+    def test_without_model(self, fake_images):
+        """
+        Perform tests on ModelWrapper without and model
+        """
+
+        images_path, images_amount = fake_images
+        module_name = self.dataset_dict['pet_dataset']
+        dataset = load_class('kenning.datasets.'+module_name)(images_path)
+        modelwrapper = PyTorchPetDatasetMobileNetV2(
+            "",
+            dataset,
+            from_file=False
+        )
+
+        measurments = modelwrapper.test_inference()
+        assert measurments.data['total'] == images_amount
+
+        print(dataset.get_input_mean_std())
+        assert 0

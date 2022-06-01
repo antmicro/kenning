@@ -1,6 +1,7 @@
 import pytest
-from random import randint, random
+from random import randint, random, seed
 from PIL import Image
+seed(12345)
 
 
 def write_to_dirs(dir_path, amount):
@@ -52,4 +53,4 @@ def fake_images(empty_dir):
         img = Image.new(mode='RGB', size=(5, 5), color=color)
         img.save(file, 'JPEG')
 
-    return empty_dir
+    return (empty_dir, amount)

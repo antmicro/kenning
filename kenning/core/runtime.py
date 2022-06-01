@@ -69,16 +69,15 @@ class Runtime(object):
         self.collect_performance_data = collect_performance_data
 
     @classmethod
-    def form_argparse(cls):
+    def _form_argparse(cls):
         """
-        Creates argparse parser for the Runtime object.
+        Wrapper for creating argparse structure for the Runtime class.
 
         Returns
         -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
         """
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_argument_group(title='Runtime arguments')
@@ -86,6 +85,25 @@ class Runtime(object):
             group,
             Runtime.arguments_structure
         )
+        return parser, group
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the Runtime object.
+
+        Returns
+        -------
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
+        """
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != Runtime.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -107,9 +125,9 @@ class Runtime(object):
         return cls(protocol, args.disable_performance_measurements)
 
     @classmethod
-    def form_parameterschema(cls):
+    def _form_parameterschema(cls):
         """
-        Creates schema for the Runtime class
+        Wrapper for creating argparse structure for the Runtime class.
 
         Returns
         -------
@@ -125,6 +143,23 @@ class Runtime(object):
             Runtime.arguments_structure,
         )
 
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the Runtime class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != Runtime.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
         return parameterschema
 
     @classmethod

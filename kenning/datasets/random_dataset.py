@@ -3,7 +3,6 @@ from pathlib import Path
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 
 class RandomizedClassificationDataset(Dataset):
@@ -68,15 +67,6 @@ class RandomizedClassificationDataset(Dataset):
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        add_argparse_argument(
-            group,
-            RandomizedClassificationDataset.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, args):
         return cls(
             args.dataset_root,
@@ -85,15 +75,6 @@ class RandomizedClassificationDataset(Dataset):
             args.input_dims,
             args.output_dims
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-        add_parameterschema_argument(
-            parameterschema,
-            RandomizedClassificationDataset.arguments_structure
-        )
-        return parameterschema
 
     def prepare(self):
         self.dataX = [i for i in range(self.samplescount)]

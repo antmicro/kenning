@@ -4,6 +4,7 @@ Contains Tensorflow models for the classification problem.
 Pretrained on ImageNet dataset.
 """
 
+from pathlib import Path
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
@@ -14,16 +15,16 @@ import numpy as np
 class TensorFlowImageNet(TensorFlowWrapper):
     def __init__(
             self,
-            modelpath,
+            modelpath: Path,
             dataset: Dataset,
-            modelcls: str,
-            numclasses: int,
-            from_file=False):
+            modelcls: str = '',
+            numclasses: int = 1000,
+            from_file: bool = True):
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         self.modelcls = modelcls
-        self.numclasses = 1000
+        self.numclasses = numclasses
         super().__init__(
             modelpath,
             dataset,
@@ -39,7 +40,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self.load_model(self.modelpath)
         else:
             self.model = load_class(self.modelcls)()
-            self.save_model(self.modelpath)
+            self.save_model(self.modelpath / self.modelcls)
 
     def preprocess_input(self, X):
         return tf.keras.applications.resnet.preprocess_input(np.array(X))

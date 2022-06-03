@@ -10,9 +10,8 @@ from kenning.core.dataset import Dataset
 
 
 # TODO: Add support for tflite models
-# TODO: check for dtypes other than float32 (possibly tied to tflite)
 
-def keras_model_parse(model_path, input_shape, dtype):
+def keras_model_parse(model_path, input_shapes, dtype):
     import tensorflow as tf
 
     # Calling the .fit() method of keras model taints the state of the model in some way,
@@ -22,30 +21,42 @@ def keras_model_parse(model_path, input_shape, dtype):
     model.set_weights(original_model.get_weights())
     del original_model
 
-    # TODO: adapt predict signature for multi-input models
-    input_shape = list(input_shape.values())[0]
+    inputspec = []
+    for input_layer in model.inputs:
+        inputspec.append(tf.TensorSpec(input_shapes[input_layer.name], dtype))
 
     class WrapperModule(tf.Module):
         def __init__(self):
             super().__init__()
             self.m = model
-            self.m.predict = lambda x: self.m(x, training=False)
+            self.m.predict = lambda *args: self.m(*args, training=False)
             self.predict = tf.function(
-                input_signature=[tf.TensorSpec(input_shape, dtype)]
+                input_signature=inputspec
             )(self.m.predict)
 
     return WrapperModule()
 
 
-def tf_model_parse(model_path, input_shape, dtype):
+def tf_model_parse(model_path, input_shapes, dtype):
     import tensorflow as tf
     model = tf.saved_model.load(model_path)
-    # TODO: adapt predict signature for multi-input models
-    input_shape = list(input_shape.values())[0]
+
+    # Assuming that the names of input layers contains single ID number, and the order of the
+    # inputs are according to their IDs.
+    layer_order = {}
+    for name in input_shapes.keys():
+        layer_id = int(re.search(r"\d+", name).group(0))
+        layer_order[name] = layer_id
+    ordered_layers = sorted(list(input_shapes.keys()), key=layer_order.get)
+    ordered_shapes = [input_shapes[layer] for layer in ordered_layers]
+
+    inputspec = []
+    for shape in ordered_shapes:
+        inputspec.append(tf.TensorSpec(shape, dtype))
 
     model.predict = tf.function(
-        input_signature=[tf.TensorSpec(input_shape, dtype)]
-    )(lambda x: model(x))
+        input_signature=inputspec
+    )(lambda *args: model(*args))
     return model
 
 
@@ -123,9 +134,7 @@ class IREECompiler(Optimizer):
             or <option> for flags (example: 'iree-cuda-llvm-target-arch=sm_60').
             Full list of options can be listed by running 'iree-compile -h'.
         """
-        if modelframework == "keras":
-            from iree.compiler import tf as ireecmp
-        elif modelframework == 'tf':
+        if modelframework in ("keras", "tf"):
             from iree.compiler import tf as ireecmp
         elif modelframework == "tflite":
             from iree.compiler import tflite as ireecmp

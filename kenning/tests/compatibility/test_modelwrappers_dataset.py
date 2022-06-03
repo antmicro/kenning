@@ -8,6 +8,26 @@ class TestModelWrapperAndDatasetCompatibility:
         'open_images':
             'open_images_dataset.OpenImagesDatasetV6',
     }
+
+    modelwrapper_dict = {
+        'classification_pytorch_pet_dataset':
+        [
+            'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',
+            'pet_dataset.PetDataset',
+        ],
+
+        'classification_tensorflow_pet_dataset':
+        [
+            'classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
+            'pet_dataset.PetDataset'
+        ],
+
+        'classification_tensorflow_imagenet':
+        [
+            'classification.tensorflow_imagenet.TensorFlowImageNet',
+            'open_images_dataset.OpenImagesDatasetV6',
+        ],
+    }
     # 'random':
     #        'random_dataset.RandomizedClassificationDataset',
 
@@ -27,8 +47,8 @@ class TestModelWrapperAndDatasetCompatibility:
         fake_images - to generate images and feed them to datasets
         """
 
-        def run_tests(module, images_path):
-            dataset = load_class('kenning.datasets.' + module)(images_path)
+        def run_tests(dataset, images_path):
+            dataset = load_class('kenning.datasets.' + dataset)(images_path)
 
             # Test train_test_split_representations
             # this test should check the return type
@@ -64,5 +84,32 @@ class TestModelWrapperAndDatasetCompatibility:
             # this test has just check if output of method is a numerical value
             # mean, std = dataset.get_input_mean_std()
 
-        for module in self.dataset_dict.values():
-            run_tests(module, fake_images[0])
+        for dataset in self.dataset_dict.values():
+            run_tests(dataset, fake_images[0])
+
+    def test_deliver_output(self, fake_images):
+        """
+        Tests modelwrapper functions to deliver output to datasets
+
+        List of methods are being tested
+        -----------------------
+        modelwrapper.test_inference
+        dataset.evaluate
+
+        Used fixtures
+        -------------
+        fake_images - to generate images and feed them to datasets
+        """
+
+        def run_tests(wrapper_path, dataset_path, images_path, images_count):
+            datasetcls = load_class("kenning.datasets."+dataset_path)
+            dataset = datasetcls(images_path)
+            modelwrappercls = load_class("kenning.modelwrappers."+wrapper_path)
+            wrapper = modelwrappercls(images_path, dataset, from_file=False)
+
+            measurements = wrapper.test_inference()
+            print(measurements)
+
+        for wrapper, dataset in self.modelwrapper_dict.values():
+            run_tests(wrapper, dataset, fake_images[0], fake_images[1])
+        assert 0

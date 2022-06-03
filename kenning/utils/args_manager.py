@@ -60,7 +60,7 @@ def to_argparse_name(s):
     return '--' + s.replace('_', '-')
 
 
-def serialize(obj: object) -> str:
+def serialize(obj: object, indent: int = 4) -> str:
     """
     Serializes the given object into a JSON format.
 
@@ -101,7 +101,7 @@ def serialize(obj: object) -> str:
                 return str(obj)
             return json.JSONEncoder.default(self, obj)
 
-    return json.dumps(serialized_dict, cls=ArgumentEncoder, indent=4)
+    return json.dumps(serialized_dict, cls=ArgumentEncoder, indent=indent)
 
 
 def serialize_inference(

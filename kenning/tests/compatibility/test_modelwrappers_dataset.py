@@ -5,8 +5,6 @@ class TestModelWrapperAndDatasetCompatibility:
     dataset_dict = {
         'pet_dataset':
             'pet_dataset.PetDataset',
-        'open_images':
-            'open_images_dataset.OpenImagesDatasetV6',
     }
 
     modelwrapper_dict = {
@@ -15,21 +13,12 @@ class TestModelWrapperAndDatasetCompatibility:
             'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',
             'pet_dataset.PetDataset',
         ],
-
         'classification_tensorflow_pet_dataset':
         [
             'classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
             'pet_dataset.PetDataset'
         ],
-
-        'classification_tensorflow_imagenet':
-        [
-            'classification.tensorflow_imagenet.TensorFlowImageNet',
-            'open_images_dataset.OpenImagesDatasetV6',
-        ],
     }
-    # 'random':
-    #        'random_dataset.RandomizedClassificationDataset',
 
     def test_deliver_input(self, fake_images):
         """
@@ -82,7 +71,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
             # Test get_input_mean_std
             # this test has just check if output of method is a numerical value
-            # mean, std = dataset.get_input_mean_std()
+            mean, std = dataset.get_input_mean_std()
 
         for dataset in self.dataset_dict.values():
             run_tests(dataset, fake_images[0])
@@ -112,4 +101,3 @@ class TestModelWrapperAndDatasetCompatibility:
 
         for wrapper, dataset in self.modelwrapper_dict.values():
             run_tests(wrapper, dataset, fake_images[0], fake_images[1])
-        assert 0

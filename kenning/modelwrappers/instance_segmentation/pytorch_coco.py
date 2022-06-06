@@ -23,7 +23,7 @@ else:
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
-    def __init__(self, modelpath: Path, dataset: Dataset, from_file=False):
+    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
         self.threshold = 0.7
         self.numclasses = dataset.numclasses
         super().__init__(modelpath, dataset, from_file)

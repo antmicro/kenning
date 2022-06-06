@@ -9,7 +9,8 @@ import numpy as np
 from collections import defaultdict
 
 from kenning.core.model import ModelWrapper
-from kenning.datasets.open_images_dataset import DectObject, compute_iou, Dataset  # noqa: E501
+from kenning.core.dataset import Dataset
+from kenning.datasets.open_images_dataset import DectObject, compute_iou
 
 import sys
 if sys.version_info.minor < 9:
@@ -23,9 +24,9 @@ from pathlib import Path
 class TVMDarknetCOCOYOLOV3(ModelWrapper):
     def __init__(
             self,
-            modelpath,
-            dataset,
-            from_file,
+            modelpath: Path,
+            dataset: Dataset,
+            from_file: bool = True,
             class_names: str = "coco"):
         self.thresh = 0.2
         self.iouthresh = 0.5

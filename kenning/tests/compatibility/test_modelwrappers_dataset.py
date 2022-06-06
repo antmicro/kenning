@@ -59,7 +59,6 @@ class TestModelWrapperAndDatasetCompatibility:
             # Test prepare_output_samples
             # this test should check the return type
             # if length of output equals to length of provided data
-
             samples = dataset.prepare_output_samples(Yv)
             assert isinstance(samples, list)
             assert len(samples) == len(Yv)
@@ -71,7 +70,8 @@ class TestModelWrapperAndDatasetCompatibility:
 
             # Test get_input_mean_std
             # this test has just check if output of method is a numerical value
-            mean, std = dataset.get_input_mean_std()
+            mean_and_std = dataset.get_input_mean_std()
+            assert isinstance(mean_and_std, tuple)
 
         for dataset in self.dataset_dict.values():
             run_tests(dataset, fake_images[0])
@@ -91,13 +91,19 @@ class TestModelWrapperAndDatasetCompatibility:
         """
 
         def run_tests(wrapper_path, dataset_path, images_path, images_count):
+            from kenning.core.measurements import Measurements
+
             datasetcls = load_class("kenning.datasets."+dataset_path)
             dataset = datasetcls(images_path)
             modelwrappercls = load_class("kenning.modelwrappers."+wrapper_path)
             wrapper = modelwrappercls(images_path, dataset, from_file=False)
 
+            # Test modelwrapper.test_inference (includes dataset.evaluate)
+            # this test has to check if output is an istance of Measurements()
+            # and does the amount of counted images equals to provided ones
             measurements = wrapper.test_inference()
-            print(measurements)
+            assert isinstance(measurements, Measurements)
+            assert measurements.get_values('total') == images_count
 
         for wrapper, dataset in self.modelwrapper_dict.values():
             run_tests(wrapper, dataset, fake_images[0], fake_images[1])

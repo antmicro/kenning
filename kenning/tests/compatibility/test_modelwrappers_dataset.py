@@ -25,7 +25,7 @@ class TestModelWrapperAndDatasetCompatibility:
         Tests dataset functions used by modelwrappers for data delivering
 
         List of methods are being tested
-        -----------------------
+        --------------------------------
         dataset.prepare_input_samples
         dataset.prepare_output_samples
         dataset.get_input_mean_std
@@ -81,7 +81,7 @@ class TestModelWrapperAndDatasetCompatibility:
         Tests modelwrapper functions to deliver output to datasets
 
         List of methods are being tested
-        -----------------------
+        --------------------------------
         modelwrapper.test_inference
         dataset.evaluate
 

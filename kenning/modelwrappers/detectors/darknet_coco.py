@@ -34,9 +34,9 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
 
     def __init__(
             self,
-            modelpath,
-            dataset,
-            from_file,
+            modelpath: Path,
+            dataset: Dataset,
+            from_file: bool = True,
             class_names: str = "coco"):
         self.thresh = 0.2
         self.iouthresh = 0.5

@@ -81,6 +81,7 @@ class Dataset(object):
         download_dataset : bool
             True if dataset should be downloaded first
         """
+        assert batch_size > 0
         self.root = Path(root)
         self._dataindex = 0
         self.dataX = []
@@ -316,6 +317,7 @@ class Dataset(object):
         batch_size : int
             Number of input samples per batch
         """
+        assert batch_size > 0
         self.batch_size = batch_size
 
     def get_data(self) -> Tuple[List, List]:

@@ -120,7 +120,8 @@ class ModelWrapper(object):
     @classmethod
     def _form_parameterschema(cls):
         """
-        Wrapper for creating argparse structure for the ModelWrapper class.
+        Wrapper for creating parameterschema structure
+        for the ModelWrapper class.
 
         Returns
         -------

@@ -162,7 +162,7 @@ class Dataset(object):
     @classmethod
     def _form_parameterschema(cls):
         """
-        Wrapper for creating argparse structure for the Dataset class.
+        Wrapper for creating parameterschema structure for the Dataset class.
 
         Returns
         -------

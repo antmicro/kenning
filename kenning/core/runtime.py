@@ -127,7 +127,7 @@ class Runtime(object):
     @classmethod
     def _form_parameterschema(cls):
         """
-        Wrapper for creating argparse structure for the Runtime class.
+        Wrapper for creating parameterschema structure for the Runtime class.
 
         Returns
         -------

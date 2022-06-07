@@ -451,6 +451,9 @@ def main(argv):
     with open(args.measurements, 'r') as measurements:
         measurementsdata = json.load(measurements)
 
+    if 'json_cfg' in measurementsdata:
+        measurementsdata['json_cfg'] = measurementsdata['json_cfg'].split('\n')
+
     measurementsdata['command'] += [''] + command
 
     generate_report(

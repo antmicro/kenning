@@ -23,6 +23,7 @@ from pathlib import Path
 from kenning.utils.class_loader import load_class, get_command
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
+from kenning.utils.args_manager import serialize_inference
 
 
 def main(argv):
@@ -110,9 +111,20 @@ def main(argv):
     MeasurementsCollector.measurements += {
         'model_framework': modelframeworktuple[0],
         'model_version': modelframeworktuple[1],
-        'compiler_framework': compilerframeworktuple[0],
-        'compiler_version': compilerframeworktuple[1],
-        'command': command
+        'compilers': [
+            {
+                'compiler_framework': compilerframeworktuple[0],
+                'compiler_version': compilerframeworktuple[1]
+            }
+        ],
+        'command': command,
+        'json_cfg': serialize_inference(
+            dataset,
+            model,
+            compiler,
+            protocol,
+            runtime
+        )
     }
 
     # TODO add method for providing metadata to dataset

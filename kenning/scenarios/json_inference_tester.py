@@ -18,6 +18,7 @@ compilation and benchmark process.
 import sys
 import argparse
 import json
+import tempfile
 from pathlib import Path
 
 from kenning.utils.class_loader import load_class, get_command
@@ -113,6 +114,10 @@ def main(argv):
         next_block = optimizers[i]
 
         format = next_block.consult_model_type(prev_block)
+        if format == 'onnx' and prev_block == model:
+            modelpath = tempfile.NamedTemporaryFile().name
+            prev_block.save_to_onnx(modelpath)
+
         next_block.set_input_type(format)
         next_block.compile(modelpath, inputspec, inputdtype)
 

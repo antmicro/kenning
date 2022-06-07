@@ -13,8 +13,6 @@ from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
-# TODO: int dtype support
-
 class IREERuntime(Runtime):
 
     arguments_structure = {
@@ -85,7 +83,8 @@ class IREERuntime(Runtime):
         model_dict = ast.literal_eval(model_bytes.decode("utf-8"))
         self.dtype = model_dict['dtype']
         self.shapes = model_dict['shapes']
-        self.model = ireert.load_vm_flatbuffer(model_dict['model'], driver=self.driver)
+        self.model = ireert.load_vm_flatbuffer(
+            model_dict['model'], driver=self.driver)
 
         self.log.info('Model loading ended successfully')
         return True
@@ -97,4 +96,5 @@ class IREERuntime(Runtime):
         try:
             return self.output.to_host().tobytes()
         except AttributeError:
-            return functools.reduce(op.add, [out.to_host().tobytes() for out in self.output])
+            return functools.reduce(
+                op.add, [out.to_host().tobytes() for out in self.output])

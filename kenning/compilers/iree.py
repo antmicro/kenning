@@ -4,7 +4,6 @@ Wrapper for IREE compiler
 from pathlib import Path
 from typing import Dict, Tuple, List
 from iree.compiler import tools as ireecmp
-import functools
 import re
 
 from kenning.core.optimizer import Optimizer
@@ -14,9 +13,9 @@ from kenning.core.dataset import Dataset
 def input_shapes_dict_to_list(inputshapes):
     """
     Turn the dictionary of 'name':'shape' of every input layer to ordered list.
-    The order of input layers is inferred from names. It is assumed that the name
-    of every input layer contains single ID number, and the order of the inputs are
-    according to their IDs.
+    The order of input layers is inferred from names. It is assumed that the
+    name of every input layer contains single ID number, and the order of the
+    inputs are according to their IDs.
 
     Parameters
     ----------
@@ -41,7 +40,7 @@ def import_keras_model(model_path, input_shapes, dtype):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
-    # Calling the .fit() method of keras model taints the state of the model in some way,
+    # Calling the .fit() method of keras model taints the state of the model,
     # breaking the IREE compiler. Because of that, the workaround is needed.
     original_model = tf.keras.models.load_model(model_path)
     model = tf.keras.models.clone_model(original_model)
@@ -61,7 +60,8 @@ def import_keras_model(model_path, input_shapes, dtype):
                 input_signature=inputspec
             )(self.m.main)
 
-    return ireetf.compile_module(WrapperModule(), exported_names=['main'], import_only=True)
+    return ireetf.compile_module(
+        WrapperModule(), exported_names=['main'], import_only=True)
 
 
 def import_tf_model(model_path, input_shapes, dtype):
@@ -78,7 +78,8 @@ def import_tf_model(model_path, input_shapes, dtype):
     model.main = tf.function(
         input_signature=inputspec
     )(lambda *args: model(*args))
-    return ireetf.compile_module(model, exported_names=['main'], import_only=True)
+    return ireetf.compile_module(
+        model, exported_names=['main'], import_only=True)
 
 
 def import_tflite_model(model_path, input_shape, dtype):
@@ -154,9 +155,10 @@ class IREECompiler(Optimizer):
             Backend on which the model will be executed
         compiled_args : List[str]
             Additional arguments for the compiler. Every options should be in a
-            separate string, which should be formatted like this: <option>=<value>,
-            or <option> for flags (example: 'iree-cuda-llvm-target-arch=sm_60').
-            Full list of options can be listed by running 'iree-compile -h'.
+            separate string, which should be formatted like this:
+            <option>=<value>, or <option> for flags (example:
+            'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
+            listed by running 'iree-compile -h'.
         """
 
         self.model_load = self.inputtypes[modelframework]
@@ -197,10 +199,15 @@ class IREECompiler(Optimizer):
             target_backends=[self.backend]
         )
 
-        # When compiling TFLite model, IREE does not provide information regarding input signature
-        # from Python API. Manual passing of input shapes and dtype to the runtime is required.
+        # When compiling TFLite model, IREE does not provide information
+        # regarding input signature from Python API. Manual passing of input
+        # shapes and dtype to the runtime is required.
         shapes_list = input_shapes_dict_to_list(inputshapes)
-        model_dict = {'model': compiled_buffer, 'shapes': shapes_list, 'dtype': dtype}
+        model_dict = {
+            'model': compiled_buffer,
+            'shapes': shapes_list,
+            'dtype': dtype
+        }
         with open(self.compiled_model_path, "wb") as f:
             f.write(str(model_dict).encode("utf-8"))
 

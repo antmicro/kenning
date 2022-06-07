@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A script that runs inference server.
+A script that runs inference server based on a json file.
 
 It requires implementations of several classes as input:
 

@@ -3,16 +3,43 @@ Wrapper for IREE compiler
 """
 from pathlib import Path
 from typing import Dict, Tuple, List
+from iree.compiler import tools as ireecmp
+import functools
 import re
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
 
-# TODO: Add support for tflite models
+def input_shapes_dict_to_list(inputshapes):
+    """
+    Turn the dictionary of 'name':'shape' of every input layer to ordered list.
+    The order of input layers is inferred from names. It is assumed that the name
+    of every input layer contains single ID number, and the order of the inputs are
+    according to their IDs.
 
-def keras_model_parse(model_path, input_shapes, dtype):
+    Parameters
+    ----------
+    inputshapes : Dict[str, Tuple[int, ...]]
+        inputshapes argument of IREECompiler.compile method
+
+    Returns
+    -------
+    List[Tuple[int, ...]] :
+        Shapes of each input layer in order
+    """
+
+    layer_order = {}
+    for name in inputshapes.keys():
+        layer_id = int(re.search(r"\d+", name).group(0))
+        layer_order[name] = layer_id
+    ordered_layers = sorted(list(inputshapes.keys()), key=layer_order.get)
+    return [inputshapes[layer] for layer in ordered_layers]
+
+
+def import_keras_model(model_path, input_shapes, dtype):
     import tensorflow as tf
+    from iree.compiler import tf as ireetf
 
     # Calling the .fit() method of keras model taints the state of the model in some way,
     # breaking the IREE compiler. Because of that, the workaround is needed.
@@ -29,39 +56,35 @@ def keras_model_parse(model_path, input_shapes, dtype):
         def __init__(self):
             super().__init__()
             self.m = model
-            self.m.predict = lambda *args: self.m(*args, training=False)
-            self.predict = tf.function(
+            self.m.main = lambda *args: self.m(*args, training=False)
+            self.main = tf.function(
                 input_signature=inputspec
-            )(self.m.predict)
+            )(self.m.main)
 
-    return WrapperModule()
+    return ireetf.compile_module(WrapperModule(), exported_names=['main'], import_only=True)
 
 
-def tf_model_parse(model_path, input_shapes, dtype):
+def import_tf_model(model_path, input_shapes, dtype):
     import tensorflow as tf
+    from iree.compiler import tf as ireetf
     model = tf.saved_model.load(model_path)
 
-    # Assuming that the names of input layers contains single ID number, and the order of the
-    # inputs are according to their IDs.
-    layer_order = {}
-    for name in input_shapes.keys():
-        layer_id = int(re.search(r"\d+", name).group(0))
-        layer_order[name] = layer_id
-    ordered_layers = sorted(list(input_shapes.keys()), key=layer_order.get)
-    ordered_shapes = [input_shapes[layer] for layer in ordered_layers]
+    ordered_shapes = input_shapes_dict_to_list(input_shapes)
 
     inputspec = []
     for shape in ordered_shapes:
         inputspec.append(tf.TensorSpec(shape, dtype))
 
-    model.predict = tf.function(
+    model.main = tf.function(
         input_signature=inputspec
     )(lambda *args: model(*args))
-    return model
+    return ireetf.compile_module(model, exported_names=['main'], import_only=True)
 
 
-def tflite_model_parse(model, input_shape, dtype):
-    raise NotImplementedError  # TODO
+def import_tflite_model(model_path, input_shape, dtype):
+    from iree.compiler import tflite as ireetflite
+
+    return ireetflite.compile_file(model_path, import_only=True)
 
 
 backend_convert = {
@@ -73,15 +96,16 @@ backend_convert = {
     'cuda': 'cuda'
 }
 
+
 class IREECompiler(Optimizer):
     """
     IREE compiler
     """
 
     inputtypes = {
-        'keras': keras_model_parse,
-        'tf': tf_model_parse,
-        'tflite': tflite_model_parse
+        'keras': import_keras_model,
+        'tf': import_tf_model,
+        'tflite': import_tflite_model
     }
 
     outputtypes = []
@@ -115,7 +139,7 @@ class IREECompiler(Optimizer):
             backend: str,
             compiler_args: List[str] = None):
         """
-        IREE compiler
+        Wrapper for IREE compiler
 
         Parameters
         ----------
@@ -134,21 +158,20 @@ class IREECompiler(Optimizer):
             or <option> for flags (example: 'iree-cuda-llvm-target-arch=sm_60').
             Full list of options can be listed by running 'iree-compile -h'.
         """
-        if modelframework in ("keras", "tf"):
-            from iree.compiler import tf as ireecmp
-        elif modelframework == "tflite":
-            from iree.compiler import tflite as ireecmp
-        else:
-            raise RuntimeError(f"Unsupported model_framework. Choose from {list(self.inputtypes.keys())}.")
 
         self.model_load = self.inputtypes[modelframework]
-        self.ireecmp = ireecmp
         self.model_framework = modelframework
         self.backend = backend_convert.get(backend, backend)
         if compiler_args is not None:
             self.compiler_args = [f"--{option}" for option in compiler_args]
         else:
             self.compiler_args = []
+
+        if modelframework in ("keras", "tf"):
+            self.compiler_input_type = "mhlo"
+        elif modelframework == "tflite":
+            self.compiler_input_type = "tosa"
+
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -166,17 +189,23 @@ class IREECompiler(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
 
-        model = self.model_load(inputmodelpath, inputshapes, dtype)
-        self.ireecmp.compile_module(
-            model,
-            output_file=self.compiled_model_path,
+        imported_model = self.model_load(inputmodelpath, inputshapes, dtype)
+        compiled_buffer = ireecmp.compile_str(
+            imported_model,
+            input_type=self.compiler_input_type,
             extra_args=self.compiler_args,
-            exported_names=['predict'],
             target_backends=[self.backend]
         )
 
+        # When compiling TFLite model, IREE does not provide information regarding input signature
+        # from Python API. Manual passing of input shapes and dtype to the runtime is required.
+        shapes_list = input_shapes_dict_to_list(inputshapes)
+        model_dict = {'model': compiled_buffer, 'shapes': shapes_list, 'dtype': dtype}
+        with open(self.compiled_model_path, "wb") as f:
+            f.write(str(model_dict).encode("utf-8"))
+
     def get_framework_and_version(self):
-        module_path = Path(self.ireecmp.__file__)
+        module_path = Path(ireecmp.__file__)
         version_text = (module_path.parents[1] / "version.py").read_text()
         version = re.search(r'VERSION = "[\d.]+"', version_text)
         return "iree", version.group(0).split()[-1].strip('"')

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 from iree import runtime as ireert
 import functools
+import ast
 import operator as op
 
 from kenning.core.runtime import Runtime
@@ -64,8 +65,8 @@ class IREERuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.input = []
-        for shape, dtype in zip(self.shapes, self.dtypes):
-            dt = np.dtype(dtype)
+        dt = np.dtype(self.dtype)
+        for shape in self.shapes:
             siz = np.prod(shape) * dt.itemsize
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
@@ -78,27 +79,19 @@ class IREERuntime(Runtime):
         if input_data:
             with open(self.modelpath, 'wb') as outmodel:
                 outmodel.write(input_data)
-        self.model = ireert.load_vm_flatbuffer_file(self.modelpath, driver=self.driver)
-        module_function = self.model.vm_module.lookup_function("predict")
-        input_signatures = eval(module_function.reflection['iree.abi'])['a']
 
-        # reflection provides information regarding input ('a'), output ('r'), and a 'v' key,
-        # input_signatures == [['ndarray', dtype, rank, *shape], ...]
-        # output signature may be ['ndarray', ...] or [['stuple', ['ndarray', ...], ...] in case of multiple outputs
-        # dtype is represented as 'f32', 'i16' etc. Conversion to 'float32', 'int16' is required
-
-        self.shapes = [sign[3:] for sign in input_signatures]
-        encoded_dtypes = [sign[1] for sign in input_signatures]
-        self.dtypes = []
-        dtype_codes = {'f': 'float'}  # TODO: add more dtypes
-        for dtype in encoded_dtypes:
-            self.dtypes.append(dtype_codes[dtype[0]] + dtype[1:])
+        with open(self.modelpath, "rb") as outmodel:
+            model_bytes = outmodel.read()
+        model_dict = ast.literal_eval(model_bytes.decode("utf-8"))
+        self.dtype = model_dict['dtype']
+        self.shapes = model_dict['shapes']
+        self.model = ireert.load_vm_flatbuffer(model_dict['model'], driver=self.driver)
 
         self.log.info('Model loading ended successfully')
         return True
 
     def run(self):
-        self.output = self.model.predict(*self.input)
+        self.output = self.model.main(*self.input)
 
     def upload_output(self, input_data):
         try:

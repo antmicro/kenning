@@ -12,12 +12,22 @@ from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
 from kenning.core.measurements import systemstatsmeasurements
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
 class ModelWrapper(object):
     """
     Wraps the given model.
     """
+
+    arguments_structure = {
+        'modelpath': {
+            'argparse_name': '--model-path',
+            'description': 'Path to the model',
+            'type': Path,
+            'required': True
+        }
+    }
 
     def __init__(
             self,
@@ -46,9 +56,9 @@ class ModelWrapper(object):
         return self.modelpath
 
     @classmethod
-    def form_argparse(cls, no_dataset: bool = False):
+    def _form_argparse(cls):
         """
-        Creates argparse parser for the ModelWrapper object.
+        Wrapper for creating argparse structure for the ModelWrapper class.
 
         Returns
         -------
@@ -58,12 +68,29 @@ class ModelWrapper(object):
         """
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_argument_group(title='Inference model arguments')
-        group.add_argument(
-            '--model-path',
-            help='Path to the model',
-            required=True,
-            type=Path
+        add_argparse_argument(
+            group,
+            ModelWrapper.arguments_structure
         )
+        return parser, group
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the ModelWrapper object.
+
+        Returns
+        -------
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
+        """
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != ModelWrapper.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -86,9 +113,84 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dataset : object of class Dataset
+        ModelWrapper : object of class ModelWrapper
         """
         return cls(args.model_path, dataset, from_file)
+
+    @classmethod
+    def _form_parameterschema(cls):
+        """
+        Wrapper for creating parameterschema structure
+        for the ModelWrapper class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = {
+            "type": "object",
+            "additionalProperties": False
+        }
+
+        add_parameterschema_argument(
+            parameterschema,
+            ModelWrapper.arguments_structure,
+        )
+
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the ModelWrapper class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != ModelWrapper.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
+
+    @classmethod
+    def from_json(
+            cls,
+            dataset: Dataset,
+            json_dict: Dict,
+            from_file: bool = True):
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according
+        to the ``arguments_structure`` defined.
+        If it is then it invokes the constructor.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object to feed to the model
+        json_dict : Dict
+            Arguments for the constructor
+        from_file : bool
+            Determines if the model should be loaded from modelspath
+
+        Returns
+        -------
+        ModelWrapper : object of class ModelWrapper
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            dataset=dataset,
+            **parsed_json_dict,
+            from_file=from_file
+        )
 
     def prepare_model(self):
         """

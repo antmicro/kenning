@@ -354,6 +354,64 @@ class OpenImagesDatasetV6(Dataset):
     *Page*: `Open Images Dataset V6 site
     <https://storage.googleapis.com/openimages/web/index.html>`_.
     """
+
+    arguments_structure = {
+        'task': {
+            'argparse_name': '--task',
+            'description': 'he task type',
+            'default': 'object_detection',
+            'enum': ['object_detection', 'instance_segmentation']
+        },
+        'classes': {
+            'argparse_name': '--classes',
+            'description': 'File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
+            'type': str,
+            'default': 'coco'
+        },
+        'download_num_bboxes_per_class': {
+            'argparse_name': '--download-num-bboxes-per-class',
+            'description': 'Number of images per object class (this is a preferred value, there may be less or more values)',  # noqa: E501
+            'type': int,
+            'default': 200
+        },
+        'download_annotations_type': {
+            'argparse_name': '--download-annotations-type',
+            'description': 'Type of annotations to extract the images from',
+            'default': 'validation',
+            'enum': ['train', 'validation', 'test']
+        },
+        'image_memory_layout': {
+            'argparse_name': '--image-memory-layout',
+            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
+            'default': 'NCHW',
+            'enum': ['NHWC', 'NCHW']
+        },
+        'show_on_eval': {
+            'argparse_name': '--show-predictions-on-eval',
+            'description': 'Show predictions during evaluation',
+            'type': bool,
+            'default': False
+        },
+        'crop_input_to_bboxes': {
+            'argparse_name': '--crop-samples-to-bboxes',
+            'description': 'Crop input samples and masks to show only an area with ground truths',  # noqa: E501
+            'type': bool,
+            'default': False
+        },
+        'crop_input_margin_size': {
+            'argparse_name': '--crop-margin',
+            'description': 'Crop margin',
+            'type': float,
+            'default': 0.1
+        },
+        'download_seed': {
+            'argparse_name': '--download-seed',
+            'description': 'Seed for image sampling',
+            'type': int,
+            'default': 12345
+        }
+    }
+
     def __init__(
             self,
             root: Path,
@@ -366,7 +424,8 @@ class OpenImagesDatasetV6(Dataset):
             image_memory_layout: str = 'NCHW',
             show_on_eval: bool = False,
             crop_input_to_bboxes: bool = False,
-            crop_input_margin_size: float = 0.1):
+            crop_input_margin_size: float = 0.1,
+            download_seed: int = 12345):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.classes = classes
@@ -387,64 +446,8 @@ class OpenImagesDatasetV6(Dataset):
         self.crop_input_margin_size = crop_input_margin_size
         if self.crop_input_to_bboxes:
             self.crop_dict = {}
+        self.download_seed = download_seed
         super().__init__(root, batch_size, download_dataset)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--task',
-            help='The task type',  # noqa: E501
-            choices=['object_detection', 'instance_segmentation'],
-            default='object_detection'
-        )
-        group.add_argument(
-            '--download-num-bboxes-per-class',
-            help='Number of images per object class (this is a preferred value, there may be less or more values)',  # noqa: E501
-            type=int,
-            default=200
-        )
-        group.add_argument(
-            '--classes',
-            help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-            type=str,
-            default='coco'
-        )
-        group.add_argument(
-            '--download-annotations-type',
-            help='Type of annotations to extract the images from',
-            choices=['train', 'validation', 'test'],
-            default='validation'
-        )
-        group.add_argument(
-            '--download-seed',
-            help='Seed for image sampling',
-            type=int,
-            default=12345
-        )
-        group.add_argument(
-            '--image-memory-layout',
-            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            choices=['NHWC', 'NCHW'],
-            default='NCHW'
-        )
-        group.add_argument(
-            '--show-predictions-on-eval',
-            help='Show predictions during evaluation',
-            action='store_true'
-        )
-        group.add_argument(
-            '--crop-samples-to-bboxes',
-            help='Crop input samples and masks to show only an area with ground truths',  # noqa: E501
-            action='store_true'
-        )
-        group.add_argument(
-            '--crop-margin',
-            help='Crop margin',
-            type=float,
-            default=0.1
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):
@@ -459,7 +462,8 @@ class OpenImagesDatasetV6(Dataset):
             args.image_memory_layout,
             args.show_predictions_on_eval,
             args.crop_samples_to_bboxes,
-            args.crop_margin
+            args.crop_margin,
+            args.download_seed
         )
 
     def download_dataset_fun(self):

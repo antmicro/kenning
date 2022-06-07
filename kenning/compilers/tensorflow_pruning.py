@@ -27,15 +27,44 @@ class TensorFlowPruningOptimizer(Optimizer):
         'keras': kerasconversion,
     }
 
+    arguments_structure = {
+        'modelframework': {
+            'argparse_name': '--model-framework',
+            'description': 'The input type of the model, framework-wise',
+            'default': 'keras',
+            'enum': list(inputtypes.keys())
+        },
+        'epochs': {
+            'description': 'Number of epochs for the fine-tuning',
+            'type': int,
+            'default': 10
+        },
+        'prune_dense': {
+            'description': 'Prune only dense layers',
+            'type': bool,
+            'default': False,
+        },
+        'target_sparsity': {
+            'description': 'Target weights sparsity of the model after pruning',  # noqa: E501
+            'type': float,
+            'default': 0.1
+        },
+        'batch_size': {
+            'description': 'The size of a batch for the fine-tuning',
+            'type': int,
+            'default': 32
+        }
+    }
+
     def __init__(
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str,
-            epochs: int,
-            prune_dense: bool,
-            target_sparsity: float,
-            batch_size: int):
+            modelframework: str = 'keras',
+            epochs: int = 10,
+            prune_dense: bool = False,
+            target_sparsity: float = 0.1,
+            batch_size: int = 32):
         """
         The TensorFlowPruning optimizer.
 
@@ -66,40 +95,6 @@ class TensorFlowPruningOptimizer(Optimizer):
         self.batch_size = batch_size
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--model-framework',
-            help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys(),
-            default='keras'
-        )
-        group.add_argument(
-            '--epochs',
-            help='Number of epochs for the fine-tuning',
-            type=int,
-            default=10
-        )
-        group.add_argument(
-            '--prune-dense',
-            help='Prune only dense layers',
-            action='store_true'
-        )
-        group.add_argument(
-            '--target-sparsity',
-            help='Target weights sparsity of the model after pruning',
-            type=float,
-            default=0.1
-        )
-        group.add_argument(
-            '--batch_size',
-            help='The size of a batch for the fine-tuning',
-            type=int,
-            default=32
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, dataset, args):

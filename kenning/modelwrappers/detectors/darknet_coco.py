@@ -9,8 +9,8 @@ import numpy as np
 from collections import defaultdict
 
 from kenning.core.model import ModelWrapper
-from kenning.core.dataset import Dataset
-from kenning.datasets.open_images_dataset import DectObject, compute_iou
+from kenning.datasets.open_images_dataset import DectObject, compute_iou, Dataset  # noqa: E501
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 import sys
 if sys.version_info.minor < 9:
@@ -22,6 +22,16 @@ from pathlib import Path
 
 
 class TVMDarknetCOCOYOLOV3(ModelWrapper):
+
+    arguments_structure = {
+        'class_names': {
+            'argparse_name': '--classes',
+            'description': 'File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
+            'default': 'coco',
+            'type': str
+        }
+    }
+
     def __init__(
             self,
             modelpath: Path,
@@ -53,13 +63,12 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
 
     @classmethod
     def form_argparse(cls, no_dataset: bool = False):
-        parser, group = super().form_argparse(no_dataset)
+        parser, group = cls._form_argparse()
         if no_dataset:
-            group.add_argument(
-                '--classes',
-                help='File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-                type=str,
-                default='coco'
+            add_argparse_argument(
+                group,
+                TVMDarknetCOCOYOLOV3.arguments_structure,
+                'class_names'
             )
         return parser, group
 
@@ -70,6 +79,17 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             args,
             from_file: bool = True):
         return cls(args.model_path, dataset, from_file, args.classes)
+
+    @classmethod
+    def form_parameterschema(cls, no_dataset: bool = False):
+        parameterschema = cls._form_parameterschema()
+        if no_dataset:
+            add_parameterschema_argument(
+                parameterschema,
+                TVMDarknetCOCOYOLOV3.arguments_structure,
+                'class_names'
+            )
+        return parameterschema
 
     def load_model(self, modelpath):
         self.keyparams = {}

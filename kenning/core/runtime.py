@@ -6,7 +6,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 import argparse
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict
 import json
 
 from kenning.core.dataset import Dataset
@@ -22,6 +22,7 @@ from kenning.core.measurements import timemeasurements
 from kenning.core.measurements import SystemStatsCollector
 from kenning.utils.logger import get_logger
 from kenning.core.measurements import systemstatsmeasurements
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
 class Runtime(object):
@@ -32,6 +33,15 @@ class Runtime(object):
     (target) communication, during which the inference metrics are being
     analyzed.
     """
+
+    arguments_structure = {
+        'collect_performance_data': {
+            'argparse_name': '--disable-performance-measurements',
+            'description': 'Disable collection and processing of performance metrics',  # noqa: E501
+            'type': bool,
+            'default': True
+        }
+    }
 
     def __init__(
             self,
@@ -59,24 +69,41 @@ class Runtime(object):
         self.collect_performance_data = collect_performance_data
 
     @classmethod
+    def _form_argparse(cls):
+        """
+        Wrapper for creating argparse structure for the Runtime class.
+
+        Returns
+        -------
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Runtime arguments')
+        add_argparse_argument(
+            group,
+            Runtime.arguments_structure
+        )
+        return parser, group
+
+    @classmethod
     def form_argparse(cls):
         """
         Creates argparse parser for the Runtime object.
 
         Returns
         -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
+        ArgumentParser :
+            the argument parser object that can act as parent for program's
+            argument parser
         """
-        parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Runtime arguments')
-        group.add_argument(
-            '--disable-performance-measurements',
-            help='Disable collection and processing of performance metrics',
-            action='store_false'
-        )
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != Runtime.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -96,6 +123,73 @@ class Runtime(object):
         RuntimeProtocol : object of class RuntimeProtocol
         """
         return cls(protocol, args.disable_performance_measurements)
+
+    @classmethod
+    def _form_parameterschema(cls):
+        """
+        Wrapper for creating parameterschema structure for the Runtime class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = {
+            "type": "object",
+            "additionalProperties": False
+        }
+
+        add_parameterschema_argument(
+            parameterschema,
+            Runtime.arguments_structure,
+        )
+
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the Runtime class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != Runtime.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
+
+    @classmethod
+    def from_json(cls, protocol: RuntimeProtocol, json_dict: Dict):
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according
+        to the ``arguments_structure`` defined.
+        If it is then it invokes the constructor.
+
+        Parameters
+        ----------
+        protocol : RuntimeProtocol
+            RuntimeProtocol object
+        json_dict : Dict
+            Arguments for the constructor
+
+        Returns
+        -------
+        Runtime : object of class Runtime
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            protocol,
+            **parsed_json_dict
+        )
 
     def inference_session_start(self):
         """

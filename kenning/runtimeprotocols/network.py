@@ -35,6 +35,30 @@ class NetworkProtocol(RuntimeProtocol):
       MessageType enum from kenning.core.runtimeprotocol
     * <data> - optional data that comes with the message of MessageType
     """
+
+    arguments_structure = {
+        'host': {
+            'description': 'The address to the target device',
+            'type': str,
+            'required': True
+        },
+        'port': {
+            'description': 'The port for the target device',
+            'type': int,
+            'required': True
+        },
+        'packet_size': {
+            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
+            'type': int,
+            'default': 4096
+        },
+        'endianness': {
+            'description': 'The endianness of data to transfer',
+            'default': 'little',
+            'enum': ['big', 'little']
+        }
+    }
+
     def __init__(
             self,
             host: str,
@@ -65,35 +89,6 @@ class NetworkProtocol(RuntimeProtocol):
         self.socket = None
         self.packet_size = packet_size
         super().__init__()
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--host',
-            help='The address to the target device',
-            type=str,
-            required=True
-        )
-        group.add_argument(
-            '--port',
-            help='The port for the target device',
-            type=int,
-            required=True
-        )
-        group.add_argument(
-            '--packet-size',
-            help='The maximum size of the received packets, in bytes.',
-            type=int,
-            default=4096
-        )
-        group.add_argument(
-            '--endianness',
-            help='The endianness of data to transfer',
-            choices=['big', 'little'],
-            default='little'
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

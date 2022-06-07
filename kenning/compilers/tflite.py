@@ -58,6 +58,34 @@ class TFLiteCompiler(Optimizer):
         'onnx': onnxconversion,
     }
 
+    quantizes_model = True
+
+    arguments_structure = {
+        'modelframework': {
+            'argparse_name': '--model-framework',
+            'description': 'The input type of the model, framework-wise',
+            'default': 'onnx',
+            'enum': list(inputtypes.keys())
+        },
+        'target': {
+            'description': 'The TFLite target device scenario',
+            'required': True,
+            'enum': ['default', 'int8', 'edgetpu']
+        },
+        'inferenceinputtype': {
+            'argparse_name': '--inference-input-type',
+            'description': 'Data type of the input layer',
+            'default': 'float32',
+            'enum': ['float32', 'int8', 'uint8']
+        },
+        'inferenceoutputtype': {
+            'argparse_name': '--inference-output-type',
+            'description': 'Data type of the output layer',
+            'default': 'float32',
+            'enum': ['float32', 'int8', 'uint8']
+        }
+    }
+
     def __init__(
             self,
             dataset: Dataset,
@@ -100,36 +128,6 @@ class TFLiteCompiler(Optimizer):
         self.inferenceoutputtype = inferenceoutputtype
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path, dataset_percentage)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse(quantizes_model=True)
-        group.add_argument(
-            '--model-framework',
-            help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys(),
-            default='onnx'
-        )
-        group.add_argument(
-            '--target',
-            help='The TFLite target device scenario',
-            # TODO this may require some alterations
-            choices=['default', 'int8', 'edgetpu'],
-            required=True
-        )
-        group.add_argument(
-            '--inference-input-type',
-            help='Data type of the input layer',
-            choices=['float32', 'int8', 'uint8'],
-            default='float32'
-        )
-        group.add_argument(
-            '--inference-output-type',
-            help='Data type of the output layer',
-            choices=['float32', 'int8', 'uint8'],
-            default='float32'
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, dataset, args):

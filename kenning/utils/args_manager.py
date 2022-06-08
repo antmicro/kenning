@@ -196,15 +196,19 @@ def get_parsed_json_dict(schema, json_dict):
         elif name in json_dict:
             converted_json_dict[name] = json_dict[name]
 
-    # Converting arguments to the final types
+    # Converting arguments to the final types.
+    # Following argparse convention, if our value is None
+    # then we do not convert it.
     for name, value in converted_json_dict.items():
         keywords = schema['properties'][name]
 
-        if 'convert-type' in keywords:
+        if 'convert-type' in keywords and value:
             converter = keywords['convert-type']
 
             if 'type' in keywords and keywords['type'] == 'array':
-                converted_json_dict[name] = [converter(v) for v in value]
+                converted_json_dict[name] = [
+                    converter(v) if v else v for v in value
+                ]
             else:
                 converted_json_dict[name] = converter(value)
         else:

@@ -92,7 +92,6 @@ def serialize(obj: object, indent: int = 4) -> str:
     serialized_dict = {}
 
     for name, value in vars(obj).items():
-        print(name, value)
         if name in to_serialize and value:
             serialized_dict[to_serialize[name]] = value
 

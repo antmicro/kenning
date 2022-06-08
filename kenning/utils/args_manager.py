@@ -92,7 +92,8 @@ def serialize(obj: object, indent: int = 4) -> str:
     serialized_dict = {}
 
     for name, value in vars(obj).items():
-        if name in to_serialize:
+        print(name, value)
+        if name in to_serialize and value:
             serialized_dict[to_serialize[name]] = value
 
     class ArgumentEncoder(json.JSONEncoder):
@@ -327,7 +328,7 @@ def add_parameterschema_argument(
 
         # Case for a list of keywords
         if 'is_list' in prop and prop['is_list']:
-            keywords['type'] = ['array', 'null']
+            keywords['type'] = ['array']
 
             if 'type' in prop:
                 assert prop['type'] is not bool

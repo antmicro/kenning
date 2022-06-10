@@ -39,6 +39,22 @@ class PetDataset(Dataset):
     The affinity of images to classes is taken from annotations, but the class
     IDs are starting from 0 instead of 1, as in the annotations.
     """
+
+    arguments_structure = {
+        'classify_by': {
+            'argparse_name': '--classify-by',
+            'description': 'Determines if classification should be performed by species or by breeds',  # noqa: E501
+            'default': 'breeds',
+            'enum': ['species', 'breeds']
+        },
+        'image_memory_layout': {
+            'argparse_name': '--image-memory-layout',
+            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
+            'default': 'NHWC',
+            'enum': ['NHWC', 'NCHW']
+        }
+    }
+
     def __init__(
             self,
             root: Path,
@@ -81,23 +97,6 @@ class PetDataset(Dataset):
             self.mean, self.std = self.get_input_mean_std()
         self.image_memory_layout = image_memory_layout
         super().__init__(root, batch_size, download_dataset)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--classify-by',
-            help='Determines if classification should be performed by species or by breeds',  # noqa: E501
-            choices=['species', 'breeds'],
-            default='breeds'
-        )
-        group.add_argument(
-            '--image-memory-layout',
-            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            choices=['NHWC', 'NCHW'],
-            default='NHWC'
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple
 
 from kenning.core.dataset import Dataset
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
 class CompilationError(Exception):
@@ -21,6 +22,21 @@ class Optimizer(object):
     outputtypes = []
 
     inputtypes = {}
+
+    quantizes_model = False
+
+    arguments_structure = {
+        'compiled_model_path': {
+            'description': 'The path to the compiled model output',
+            'type': Path,
+            'required': True
+        },
+        'dataset_percentage': {
+            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
+            'type': float,
+            'default': 0.25
+        }
+    }
 
     def __init__(
             self,
@@ -47,15 +63,9 @@ class Optimizer(object):
         self.dataset_percentage = dataset_percentage
 
     @classmethod
-    def form_argparse(cls, quantizes_model: bool = False):
+    def _form_argparse(cls):
         """
-        Creates argparse parser for the Optimizer object.
-
-        Parameters
-        ----------
-        quantizes_model : bool
-            Tells if the compiler quantizes model - if so, flags for
-            calibration dataset are enabled
+        Wrapper for creating argparse structure for the Optimizer class.
 
         Returns
         -------
@@ -66,19 +76,36 @@ class Optimizer(object):
         """
         parser = argparse.ArgumentParser(add_help=False)
         group = parser.add_argument_group(title='Compiler arguments')
-        group.add_argument(
-            '--compiled-model-path',
-            help='The path to the compiled model output',
-            type=Path,
-            required=True
+        add_argparse_argument(
+            group,
+            Optimizer.arguments_structure,
+            'compiled_model_path',
         )
-        if quantizes_model:
-            group.add_argument(
-                '--dataset-percentage',
-                help='Tells how much data from dataset (from 0.0 to 1.0) ' +
-                     'will be used for calibration dataset',
-                type=float,
-                default=0.25
+        if cls.quantizes_model:
+            add_argparse_argument(
+                group,
+                Optimizer.arguments_structure,
+                'dataset_percentage'
+            )
+        return parser, group
+
+    @classmethod
+    def form_argparse(cls):
+        """
+        Creates argparse parser for the Optimizer object.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != Optimizer.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
             )
         return parser, group
 
@@ -109,6 +136,81 @@ class Optimizer(object):
                 dataset,
                 args.compiled_model_path
             )
+
+    @classmethod
+    def _form_parameterschema(cls):
+        """
+        Wrapper for creating parameterschema structure for the Optimizer class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = {
+            "type": "object",
+            "additionalProperties": False
+        }
+
+        add_parameterschema_argument(
+            parameterschema,
+            Optimizer.arguments_structure,
+            'compiled_model_path',
+        )
+
+        if cls.quantizes_model:
+            add_parameterschema_argument(
+                parameterschema,
+                Optimizer.arguments_structure,
+                'dataset_percentage'
+            )
+
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the Optimizer class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != Optimizer.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
+
+    @classmethod
+    def from_json(cls, dataset: Dataset, json_dict: Dict):
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according
+        to the ``arguments_structure`` defined.
+        If it is then it invokes the constructor.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object that is optionally used for optimization
+        json_dict : Dict
+            Arguments for the constructor
+
+        Returns
+        -------
+        Optimizer : object of class Optimizer
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            dataset=dataset,
+            **parsed_json_dict
+        )
 
     def set_input_type(self, inputtype: str):
         """

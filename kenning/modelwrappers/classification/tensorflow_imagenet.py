@@ -8,11 +8,26 @@ from pathlib import Path
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
+
 import tensorflow as tf
 import numpy as np
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
+
+    arguments_structure = {
+        'modelcls': {
+            'argparse_name': '--model-cls',
+            'description': 'The Keras model class',
+            'type': str
+        },
+        'numclasses': {
+            'argparse_name': '--num-classes',
+            'description': 'The number of classifier classes',
+            'type': int,
+        }
+    }
+
     def __init__(
             self,
             modelpath: Path,
@@ -50,20 +65,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--model-cls',
-            help='The Keras model class'
-        )
-        group.add_argument(
-            '--num-classes',
-            type=int,
-            help='The number of classifier classes'
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

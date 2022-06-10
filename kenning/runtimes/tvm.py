@@ -18,6 +18,52 @@ from kenning.core.runtimeprotocol import MessageType
 
 
 class TVMRuntime(Runtime):
+
+    arguments_structure = {
+        'modelpath': {
+            'argparse_name': '--save-model-path',
+            'description': 'Path where the model will be uploaded',
+            'type': Path,
+            'default': 'model.tar'
+        },
+        'contextname': {
+            'argparse_name': '--target-device-context',
+            'description': 'What accelerator should be used on target device',
+            'default': 'cpu',
+            'enum': list(tvm.runtime.Device.STR2MASK.keys())
+        },
+        'contextid': {
+            'argparse_name': '--target-device-context-id',
+            'description': 'ID of the device to run the inference on',
+            'type': int,
+            'default': 0
+        },
+        'inputdtype': {
+            'argparse_name': '--input-dtype',
+            'description': 'Type of input tensor elements',
+            'type': str,
+            'default': 'float32'
+        },
+        'use_tvm_vm': {
+            'argparse_name': '--runtime-use-vm',
+            'description': 'At runtime use the TVM Relay VirtualMachine',
+            'type': bool,
+            'default': False
+        },
+        'use_json_out': {
+            'argparse_name': '--use-json-at-output',
+            'description': 'Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
+            'type': bool,
+            'default': False
+        },
+        'io_details_path': {
+            'description': "Path where the quantization details are saved in json. \
+                By default <save_model_path>.quantparams is checked",
+            'type': Path,
+            'required': False
+        }
+    }
+
     def __init__(
             self,
             protocol: RuntimeProtocol,
@@ -27,7 +73,8 @@ class TVMRuntime(Runtime):
             inputdtype: str = 'float32',
             use_tvm_vm: bool = False,
             use_json_out: bool = False,
-            io_details_path: Optional[Path] = None):
+            io_details_path: Optional[Path] = None,
+            collect_performance_data: bool = True):
         """
         Constructs TVM runtime.
 
@@ -61,55 +108,9 @@ class TVMRuntime(Runtime):
         self.use_tvm_vm = use_tvm_vm
         self.use_json_out = use_json_out
         self.io_details_path = io_details_path
-        super().__init__(protocol)
+        super().__init__(protocol, collect_performance_data)
         self.callbacks[MessageType.QUANTIZATION] = \
             self._prepare_quantization_details
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--save-model-path',
-            help='Path where the model will be uploaded',
-            type=Path,
-            default='model.tar'
-        )
-        group.add_argument(
-            '--target-device-context',
-            help='What accelerator should be used on target device',
-            choices=list(tvm.runtime.Device.STR2MASK.keys()),
-            default='cpu'
-        )
-        group.add_argument(
-            '--target-device-context-id',
-            help='ID of the device to run the inference on',
-            type=int,
-            default=0
-        )
-        group.add_argument(
-            '--input-dtype',
-            help='Type of input tensor elements',
-            type=str,
-            default='float32'
-        )
-        group.add_argument(
-            '--runtime-use-vm',
-            help='At runtime use the TVM Relay VirtualMachine',
-            action='store_true'
-        )
-        group.add_argument(
-            '--use-json-at-output',
-            help='Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
-            action='store_true'
-        )
-        group.add_argument(
-            '--io-details-path',
-            help="Path where the quantization details are saved in json. \
-                By default <save_model_path>.quantparams is checked",
-            type=Path,
-            required=False
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, protocol, args):

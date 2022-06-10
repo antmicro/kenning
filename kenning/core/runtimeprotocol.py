@@ -7,9 +7,10 @@ from enum import Enum
 from pathlib import Path
 import argparse
 
-from typing import Any, Tuple, List, Optional, Union
+from typing import Any, Tuple, List, Optional, Union, Dict
 
 from kenning.core.measurements import Measurements
+from kenning.utils.args_manager import get_parsed_json_dict, add_argparse_argument, add_parameterschema_argument  # noqa: E501
 
 
 class RequestFailure(Exception):
@@ -153,8 +154,26 @@ class RuntimeProtocol(object):
     of the communication with the target device.
     """
 
+    arguments_structure = {}
+
     def __init__(self):
         pass
+
+    @classmethod
+    def _form_argparse(cls):
+        """
+        Wrapper for creating argparse structure for the RuntimeProtocol class.
+
+        Returns
+        -------
+        (ArgumentParser, ArgumentGroup) :
+            tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        parser = argparse.ArgumentParser(add_help=False)
+        group = parser.add_argument_group(title='Runtime protocol arguments')
+        return parser, group
 
     @classmethod
     def form_argparse(cls):
@@ -168,8 +187,12 @@ class RuntimeProtocol(object):
             program's argument parser, and the corresponding arguments' group
             pointer
         """
-        parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='Runtime protocol arguments')
+        parser, group = cls._form_argparse()
+        if cls.arguments_structure != RuntimeProtocol.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -187,6 +210,66 @@ class RuntimeProtocol(object):
         RuntimeProtocol : object of class RuntimeProtocol
         """
         return cls()
+
+    @classmethod
+    def _form_parameterschema(cls):
+        """
+        Wrapper for creating parameterschema structure
+        for the RuntimeProtocol class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = {
+            "type": "object",
+            "additionalProperties": False
+        }
+
+        return parameterschema
+
+    @classmethod
+    def form_parameterschema(cls):
+        """
+        Creates schema for the RuntimeProtocol class.
+
+        Returns
+        -------
+        Dict : schema for the class
+        """
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != RuntimeProtocol.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
+
+    @classmethod
+    def from_json(cls, json_dict: Dict):
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according
+        to the ``arguments_structure`` defined.
+        If it is then it invokes the constructor.
+
+        Parameters
+        ----------
+        json_dict : Dict
+            Arguments for the constructor
+
+        Returns
+        -------
+        RuntimeProtocol : object of class RuntimeProtocol
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            **parsed_json_dict
+        )
 
     def initialize_server(self) -> bool:
         """

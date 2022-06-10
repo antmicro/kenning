@@ -27,14 +27,38 @@ class TensorFlowClusteringOptimizer(Optimizer):
         'keras': kerasconversion
     }
 
+    arguments_structure = {
+        'modelframework': {
+            'argparse_name': '--model-framework',
+            'description': 'The input type of the model, framework-wise',
+            'default': 'keras',
+            'enum': list(inputtypes.keys()),
+        },
+        'cluster_dense': {
+            'description': 'Clusterize only dense layers',
+            'type': bool,
+            'default': False,
+        },
+        'clusters_number': {
+            'description': 'Number of cluster centroids that split each layer',
+            'type': int,
+            'default': 10,
+        },
+        'preserve_sparsity': {
+            'description': 'Enable sparsity preservation of a given model',
+            'type': bool,
+            'default': False,
+        }
+    }
+
     def __init__(
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str,
-            cluster_dense: bool,
-            clusters_number: int,
-            disable_sparsity_preservation: bool):
+            modelframework: str = 'keras',
+            cluster_dense: bool = False,
+            clusters_number: int = '10',
+            preserve_sparsity: bool = False):
         """
         The TensorFlowClustering optimizer.
 
@@ -59,36 +83,9 @@ class TensorFlowClusteringOptimizer(Optimizer):
         self.modelframework = modelframework
         self.cluster_dense = cluster_dense
         self.clusters_number = clusters_number
-        self.disable_sparsity_preservation = disable_sparsity_preservation
+        self.preserve_sparsity = preserve_sparsity
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--model-framework',
-            help='The input type of the model, framework-wise',
-            choices=cls.inputtypes.keys(),
-            default='keras'
-        )
-        group.add_argument(
-            '--cluster-dense',
-            help='Clusterize only dense layers',
-            action='store_true'
-        )
-        group.add_argument(
-            '--clusters-number',
-            help='Number of cluster centroids which split each layer.',
-            type=int,
-            default=10
-        )
-        group.add_argument(
-            '--disable-sparsity-preservation',
-            help="Do not preserve sparsity of a given model",
-            action='store_false',
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, dataset, args):
@@ -98,7 +95,7 @@ class TensorFlowClusteringOptimizer(Optimizer):
             args.model_framework,
             args.cluster_dense,
             args.clusters_number,
-            args.disable_sparsity_preservation
+            args.preserve_sparsity
         )
 
     def compile(
@@ -107,13 +104,13 @@ class TensorFlowClusteringOptimizer(Optimizer):
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
         model = self.inputtypes[self.inputtype](inputmodelpath)
-        self.get_inputdtype = dtype
+        self.inputdtype = dtype
 
         clustering_params = {
             'number_of_clusters': self.clusters_number,
             'cluster_centroids_init':
                 tfmot.clustering.keras.CentroidInitialization.KMEANS_PLUS_PLUS,
-            'preserve_sparsity': not self.disable_sparsity_preservation
+            'preserve_sparsity': self.preserve_sparsity
         }
 
         if self.cluster_dense:

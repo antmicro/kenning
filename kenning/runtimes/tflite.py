@@ -11,13 +11,42 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
 class TFLiteRuntime(Runtime):
+
+    arguments_structure = {
+        'modelpath': {
+            'argparse_name': '--save-model-path',
+            'description': 'Path where the model will be uploaded',
+            'type': Path,
+            'default': 'model.tar'
+        },
+        'inputdtype': {
+            'argparse_name': '--input-dtype',
+            'description': 'Type of input tensor elements',
+            'type': str,
+            'default': 'float32'
+        },
+        'outputdtype': {
+            'argparse_name': '--output-dtype',
+            'description': 'Type of output tensor elements',
+            'type': str,
+            'default': 'float32'
+        },
+        'delegates': {
+            'argparse_name': '--delegates-list',
+            'description': 'List of runtime delegates for the TFLite runtime',
+            'default': None,
+            'is_list': True
+        }
+    }
+
     def __init__(
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
             inputdtype: str = 'float32',
             outputdtype: str = 'float32',
-            delegates: Optional[List] = None):
+            delegates: Optional[List] = None,
+            collect_performance_data: bool = True):
         """
         Constructs TFLite Runtime pipeline.
 
@@ -39,36 +68,7 @@ class TFLiteRuntime(Runtime):
         self.inputdtype = inputdtype
         self.outputdtype = outputdtype
         self.delegates = delegates
-        super().__init__(protocol)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--save-model-path',
-            help='Path where the model will be uploaded',
-            type=Path,
-            default='model.tar'
-        )
-        group.add_argument(
-            '--input-dtype',
-            help='Type of input tensor elements',
-            type=str,
-            default='float32'
-        )
-        group.add_argument(
-            '--output-dtype',
-            help='Type of output tensor elements',
-            type=str,
-            default='float32'
-        )
-        group.add_argument(
-            '--delegates-list',
-            help='List of runtime delegates for the TFLite runtime',
-            nargs='+',
-            default=None
-        )
-        return parser, group
+        super().__init__(protocol, collect_performance_data)
 
     @classmethod
     def from_argparse(cls, protocol, args):

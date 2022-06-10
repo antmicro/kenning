@@ -69,7 +69,7 @@ class TFLiteCompiler(Optimizer):
         },
         'target': {
             'description': 'The TFLite target device scenario',
-            'required': True,
+            'default': 'default',
             'enum': ['default', 'int8', 'edgetpu']
         },
         'inferenceinputtype': {
@@ -90,7 +90,7 @@ class TFLiteCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            target: str,
+            target: str = 'default',
             modelframework: str = 'onnx',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
@@ -108,7 +108,7 @@ class TFLiteCompiler(Optimizer):
             Dataset used to train the model - may be used for quantization
             during compilation stage
         compiled_model_path : Path
-            Path where compiled model will be saved
+            The path in which the compiled model will be saved
         modelframework : str
             Framework of the input model, used to select a proper backend
         target : str

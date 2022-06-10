@@ -201,7 +201,7 @@ class TVMCompiler(Optimizer):
         },
         'target': {
             'description': 'The kind or tag of the target device',
-            'required': True
+            'default': 'llvm'
         },
         'target_host': {
             'description': 'The kind or tag of the host (CPU) target device',
@@ -241,8 +241,8 @@ class TVMCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str,
-            target: str,
+            modelframework: str = 'onnx',
+            target: str = 'llvm',
             target_host: str = None,
             opt_level: int = 2,
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',

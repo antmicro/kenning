@@ -108,6 +108,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     torch.nn.init.xavier_uniform_(m.weight)
                     torch.nn.init.zeros_(m.bias)
             self.model.classifier.apply(weights_init)
+        self.model.to(self.device)
 
     def train_model(
             self,

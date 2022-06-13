@@ -7,7 +7,7 @@ import copy
 
 class PyTorchWrapper(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')  # noqa: E501
+        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):

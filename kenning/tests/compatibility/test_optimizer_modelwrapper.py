@@ -99,7 +99,6 @@ class TestOptimizerModelWrapper:
 
             # Initialize classes
             dataset = datasetcls(images_path)
-            # wrapper=wrappercls(path_to_input_model, dataset, from_file=True)
             wrapper = wrappercls(images_path, dataset, from_file=False)
             optimizer = optimizercls(dataset, path_to_save_model, **kwargs)
 
@@ -107,4 +106,27 @@ class TestOptimizerModelWrapper:
             optimizer.compile(path_to_input_model, inputshapes, dtype=dtype)
 
         for optimizer_args, optimizer_kwargs in self.optimizer_dict.values():
-            run_tests(fake_images[0], *optimizer_args, **optimizer_kwargs)
+            run_tests(fake_images.path, *optimizer_args, **optimizer_kwargs)
+
+    def test_onnx_model_optimization(self, fake_images):
+        """
+        Tests saving models to onnx format by modelwrappers
+        and converting them using optimizers.
+
+        List of methods are being tested
+        --------------------------------
+        ModelWrapper.save_to_onnx()
+        Optimizer.consult_model_type()
+
+        Used fixtures
+        -------------
+        fake_images - to generate images and feed them to dataset
+        """
+
+        def save_to_onnx(warpper_path):
+            wrappercls = load_class("kenning.modelwrappers." + warpper_path)
+            # wrapper = wrappercls()
+            print(wrappercls)
+
+        for wrapper in self.modelwrapper_dict.values():
+            save_to_onnx(wrapper)

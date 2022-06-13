@@ -74,7 +74,7 @@ class TestModelWrapperAndDatasetCompatibility:
             assert isinstance(mean_and_std, tuple)
 
         for dataset in self.dataset_dict.values():
-            run_tests(dataset, fake_images[0])
+            run_tests(dataset, fake_images.path)
 
     def test_deliver_output(self, fake_images):
         """
@@ -106,4 +106,4 @@ class TestModelWrapperAndDatasetCompatibility:
             assert measurements.get_values('total') == images_count
 
         for wrapper, dataset in self.modelwrapper_dict.values():
-            run_tests(wrapper, dataset, fake_images[0], fake_images[1])
+            run_tests(wrapper, dataset, fake_images.path, fake_images.amount)

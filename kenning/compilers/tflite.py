@@ -98,7 +98,7 @@ class TFLiteCompiler(Optimizer):
         """
         The TFLite and EdgeTPU compiler.
 
-        This model wrapper converts input models to the .tflite models.
+        Compiler converts input models to the .tflite format.
         It also can adapt .tflite models to work with the EdgeTPU devices, i.e.
         Google Coral devboard.
 

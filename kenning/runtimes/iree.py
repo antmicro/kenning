@@ -23,8 +23,8 @@ class IREERuntime(Runtime):
             'default': 'model.vmfb'
         },
         'backend': {
-            'argaprse_name': '--backend',
-            'description': 'Name of the backend on the device',
+            'argaprse_name': '--driver',
+            'description': 'Name of the runtime target',
             'enum': ireert.HalDriver.query(),
             'required': True
         }
@@ -34,7 +34,7 @@ class IREERuntime(Runtime):
             self,
             protocol: RuntimeProtocol,
             modelpath: str,
-            backend: str,
+            driver: str,
             collect_performance_data: bool = True):
         """
         Constructs IREE runtime
@@ -45,11 +45,11 @@ class IREERuntime(Runtime):
             Communication protocol
         modelpath : Path
             Path for the model file.
-        backend : str
-            Name of the target backend on the device
+        driver : str
+            Name of the deployment target on the device
         """
         self.modelpath = modelpath
-        self.backend = backend
+        self.driver = driver
         super().__init__(protocol, collect_performance_data)
 
     @classmethod
@@ -57,7 +57,7 @@ class IREERuntime(Runtime):
         return cls(
             protocol,
             args.save_model_path,
-            args.backend,
+            args.driver,
             args.disable_performance_measurements
         )
 
@@ -74,14 +74,14 @@ class IREERuntime(Runtime):
         if input_data:
             with open(self.modelpath, 'wb') as outmodel:
                 outmodel.write(input_data)
-        self.model = ireert.load_vm_flatbuffer_file(self.modelpath, driver=self.backend)
+        self.model = ireert.load_vm_flatbuffer_file(self.modelpath, driver=self.driver)
         module_function = self.model.vm_module.lookup_function("predict")
         input_signatures = eval(module_function.reflection['iree.abi'])['a']
 
         # reflection provides information regarding input ('a'), output ('r'), and a 'v' key,
         # TODO: get information regarding 'v'
         # input_signatures == [['ndarray', dtype, rank, *shape], ...]
-        # dtype is of the 'f32', 'i16' etc. shape, conversion to 'float32', 'int16' is required
+        # dtype is represented as 'f32', 'i16' etc. Conversion to 'float32', 'int16' is required
 
         self.shapes = [sign[3:] for sign in input_signatures]
         encoded_dtypes = [sign[1] for sign in input_signatures]

@@ -2,11 +2,11 @@ Inference quality metrics
 -------------------------
 
 .. figure:: {{data["confusionpath"]}}
-   :name: {{data["reportname"][0]}}_confusionmatrix
-   :alt: Confusion matrix
-   :align: center
+    :name: {{data["reportname"][0]}}_confusionmatrix
+    :alt: Confusion matrix
+    :align: center
 
-   Confusion matrix
+    Confusion matrix
 
 * *Accuracy*:  {{ accuracy(data['eval_confusion_matrix']) }}
 * *Top-5 accuracy*: {{ data['top_5_count'] / data['total'] }}

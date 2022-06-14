@@ -3,25 +3,25 @@ Inference performance metrics
 
 {% if data['command']|length > 0 -%}
 .. note::
-    
-   This section was generated using:
-    
-   .. code-block:: bash
 
-      {% for line in data['command'] -%}
-      {{ line }}
-      {% endfor %}
+    This section was generated using:
+
+    .. code-block:: bash
+
+        {% for line in data['command'] -%}
+        {{ line }}
+        {% endfor %}
 {% endif -%}
 
 {% if 'json_cfg' in data -%}
 .. note::
-   Input JSON:
+    Input JSON:
 
-   .. code-block:: json
-        
-      {% for line in data['json_cfg'] -%}
-      {{ line }}
-      {% endfor %}
+    .. code-block:: json
+
+        {% for line in data['json_cfg'] -%}
+        {{ line }}
+        {% endfor %}
 {% endif -%}
 
 General information
@@ -31,14 +31,14 @@ General information
 
 * {{ data['model_framework'] }} ver. {{ data['model_version'] }}
 {% if data['compilers']|length > 0 %}
-   {% if data['compilers']|length == 1 %}
+    {% if data['compilers']|length == 1 %}
 *Compiler framework*:
-   {% else %}
+    {% else %}
 *Compiler frameworks*:
-   {%- endif %}
-   {% for line in data['compilers'] %}
+    {%- endif %}
+    {% for line in data['compilers'] %}
 * {{ line['compiler_framework'] }} ver. {{ line['compiler_version'] }}
-   {%- endfor %}
+    {%- endfor %}
 {% endif %}
 
 {% if 'inferencetime' in data -%}
@@ -46,11 +46,11 @@ Inference time
 ~~~~~~~~~~~~~~
 
 .. figure:: {{data["inferencetimepath"]}}
-   :name: {{data["reportname"][0]}}_inferencetime
-   :alt: Inference time
-   :align: center
+    :name: {{data["reportname"][0]}}_inferencetime
+    :alt: Inference time
+    :align: center
 
-   Inference time
+    Inference time
 
 * *First inference duration* (usually including allocation time): **{{ data['inferencetime'][0] }}**,
 * *Mean*: **{{ mean(data['inferencetime']) }} s**,
@@ -63,11 +63,11 @@ Mean CPU usage
 ~~~~~~~~~~~~~~
 
 .. figure:: {{data["cpuusagepath"]}}
-   :name: {{data["reportname"][0]}}_cpuusage
-   :alt: Mean CPU usage
-   :align: center
+    :name: {{data["reportname"][0]}}_cpuusage
+    :alt: Mean CPU usage
+    :align: center
 
-   Mean CPU usage during benchmark
+    Mean CPU usage during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_cpus_percent_avg']) }} %**,
 * *Standard deviation*: **{{ std(data['session_utilization_cpus_percent_avg']) }} %**,
@@ -79,11 +79,11 @@ Memory usage
 ~~~~~~~~~~~~
 
 .. figure:: {{data["memusagepath"]}}
-   :name: {{data["reportname"][0]}}_memusage
-   :alt: Memory usage
-   :align: center
+    :name: {{data["reportname"][0]}}_memusage
+    :alt: Memory usage
+    :align: center
 
-   Memory usage during benchmark
+    Memory usage during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_mem_percent']) }} %**,
 * *Standard deviation*: **{{ std(data['session_utilization_mem_percent']) }} %**,
@@ -95,11 +95,11 @@ GPU usage
 ~~~~~~~~~
 
 .. figure:: {{data["gpuusagepath"]}}
-   :name: {{data["reportname"][0]}}_gpuusage
-   :alt: GPU usage
-   :align: center
+    :name: {{data["reportname"][0]}}_gpuusage
+    :alt: GPU usage
+    :align: center
 
-   GPU utilization during benchmark
+    GPU utilization during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_gpu_utilization']) }} %**,
 * *Standard deviation*: **{{ std(data['session_utilization_gpu_utilization']) }} %**,
@@ -111,11 +111,11 @@ GPU memory usage
 ~~~~~~~~~~~~~~~~
 
 .. figure:: {{data["gpumemusagepath"]}}
-   :name: {{data["reportname"][0]}}_gpumemusage
-   :alt: GPU memory usage
-   :align: center
+    :name: {{data["reportname"][0]}}_gpumemusage
+    :alt: GPU memory usage
+    :align: center
 
-   GPU memory usage during benchmark
+    GPU memory usage during benchmark
 
 * *Mean*: **{{ mean(data['session_utilization_gpu_mem_utilization']) }} MB**,
 * *Standard deviation*: **{{ std(data['session_utilization_gpu_mem_utilization']) }} MB**,

@@ -2,7 +2,7 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List
 import re
 
 from kenning.core.optimizer import Optimizer
@@ -11,7 +11,7 @@ from kenning.core.dataset import Dataset
 
 # TODO: Docs
 # TODO: Add support for tflite models
-# TODO: Implement different backends (CUDA included)
+# TODO: check for dtypes other than float32 (possibly tied to tflite)
 
 def tf_model_parse(model_path, input_shape, dtype):
     import tensorflow as tf
@@ -38,14 +38,19 @@ def tflite_model_parse(model, input_shape, dtype):
     raise NotImplementedError  # TODO
 
 
+backend_convert = {
+    # CPU backends
+    'dylib': 'dylib-llvm-aot',
+    'vmvx': 'vmvx',
+    # GPU backends
+    'vulkan': 'vulkan-spirv',
+    'cuda': 'cuda'
+}
+
 class IREECompiler(Optimizer):
     """
     IREE compiler
     """
-
-    backend_convert = {
-        'dylib': 'dylib-llvm-aot'
-    }
 
     inputtypes = {
         'tf': tf_model_parse,

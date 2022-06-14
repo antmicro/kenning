@@ -9,7 +9,6 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
 
-# TODO: Docs
 # TODO: Add support for tflite models
 # TODO: check for dtypes other than float32 (possibly tied to tflite)
 
@@ -68,7 +67,7 @@ class IREECompiler(Optimizer):
         },
         'backend': {
             'argparse_name': '--backend',
-            'description': '',
+            'description': 'Name of the backend that will run the compiled module',
             'required': True,
             'enum': list(backend_convert.keys())
         },
@@ -83,12 +82,29 @@ class IREECompiler(Optimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: str,
+            compiled_model_path: Path,
             modelframework: str,
             backend: str,
             compiler_args: List[str] = None):
         """
         IREE compiler
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset used to train the model - may be used for quantization
+            during compilation stage
+        compiled_model_path : Path
+            Path where compiled model will be saved
+        modelframework : str
+            Framework of the input model
+        backend : str
+            Backend on which the model will be executed
+        compiled_args : List[str]
+            Additional arguments for the compiler. Every options should be in a
+            separate string, which should be formatted like this: <option>=<value>,
+            or <option> for flags (example: 'iree-cuda-llvm-target-arch=sm_60').
+            Full list of options can be listed by running 'iree-compile -h'.
         """
         if modelframework == "tf":
             from iree.compiler import tf as ireecmp

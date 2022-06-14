@@ -9,6 +9,7 @@ from iree import runtime as ireert
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
+
 # TODO: add support for multi-input/multi-output models
 # TODO: int dtype support
 
@@ -23,7 +24,7 @@ class IREERuntime(Runtime):
         },
         'backend': {
             'argaprse_name': '--backend',
-            'description': '',
+            'description': 'Name of the backend on the device',
             'enum': ireert.HalDriver.query(),
             'required': True
         }
@@ -35,6 +36,18 @@ class IREERuntime(Runtime):
             modelpath: str,
             backend: str,
             collect_performance_data: bool = True):
+        """
+        Constructs IREE runtime
+
+        Parameters
+        ----------
+        protocol : RuntimeProtocol
+            Communication protocol
+        modelpath : Path
+            Path for the model file.
+        backend : str
+            Name of the target backend on the device
+        """
         self.modelpath = modelpath
         self.backend = backend
         super().__init__(protocol, collect_performance_data)
@@ -73,7 +86,7 @@ class IREERuntime(Runtime):
         self.shapes = [sign[3:] for sign in input_signatures]
         encoded_dtypes = [sign[1] for sign in input_signatures]
         self.dtype = []
-        dtype_codes = {'f': 'float'} #TODO: add more dtypes
+        dtype_codes = {'f': 'float'}  # TODO: add more dtypes
         for dtype in encoded_dtypes:
             self.dtype.append(dtype_codes[dtype[0]] + dtype[1:])
 

@@ -37,6 +37,18 @@ def keras_model_parse(model_path, input_shape, dtype):
     return WrapperModule()
 
 
+def tf_model_parse(model_path, input_shape, dtype):
+    import tensorflow as tf
+    model = tf.saved_model.load(model_path)
+    # TODO: adapt predict signature for multi-input models
+    input_shape = list(input_shape.values())[0]
+
+    model.predict = tf.function(
+        input_signature=[tf.TensorSpec(input_shape, dtype)]
+    )(lambda x: model(x))
+    return model
+
+
 def tflite_model_parse(model, input_shape, dtype):
     raise NotImplementedError  # TODO
 
@@ -57,6 +69,7 @@ class IREECompiler(Optimizer):
 
     inputtypes = {
         'keras': keras_model_parse,
+        'tf': tf_model_parse,
         'tflite': tflite_model_parse
     }
 
@@ -112,6 +125,8 @@ class IREECompiler(Optimizer):
         """
         if modelframework == "keras":
             from iree.compiler import tf as ireecmp
+        elif modelframework == 'tf':
+            from iree.compiler import tf as ireecmp
         elif modelframework == "tflite":
             from iree.compiler import tflite as ireecmp
         else:
@@ -155,4 +170,4 @@ class IREECompiler(Optimizer):
         module_path = Path(self.ireecmp.__file__)
         version_text = (module_path.parents[1] / "version.py").read_text()
         version = re.search(r'VERSION = "[\d.]+"', version_text)
-        return ("iree", version.group(0).split()[-1].strip('"'))
+        return "iree", version.group(0).split()[-1].strip('"')

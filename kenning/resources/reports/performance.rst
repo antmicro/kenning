@@ -35,7 +35,7 @@ General information
 *Compiler framework*:
    {% else %}
 *Compiler frameworks*:
-   {% endif %}
+   {%- endif %}
    {% for line in data['compilers'] %}
 * {{ line['compiler_framework'] }} ver. {{ line['compiler_version'] }}
    {%- endfor %}

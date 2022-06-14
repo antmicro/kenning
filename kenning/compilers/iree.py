@@ -36,7 +36,7 @@ def input_shapes_dict_to_list(inputshapes):
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def import_keras_model(model_path, input_shapes, dtype):
+def kerasconversion(model_path, input_shapes, dtype):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
@@ -64,7 +64,7 @@ def import_keras_model(model_path, input_shapes, dtype):
         WrapperModule(), exported_names=['main'], import_only=True)
 
 
-def import_tf_model(model_path, input_shapes, dtype):
+def tfconversion(model_path, input_shapes, dtype):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
     model = tf.saved_model.load(model_path)
@@ -82,7 +82,7 @@ def import_tf_model(model_path, input_shapes, dtype):
         model, exported_names=['main'], import_only=True)
 
 
-def import_tflite_model(model_path, input_shape, dtype):
+def tfliteconversion(model_path, input_shape, dtype):
     from iree.compiler import tflite as ireetflite
 
     return ireetflite.compile_file(model_path, import_only=True)
@@ -104,9 +104,9 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = {
-        'keras': import_keras_model,
-        'tf': import_tf_model,
-        'tflite': import_tflite_model
+        'keras': kerasconversion,
+        'tf': tfconversion,
+        'tflite': tfliteconversion
     }
 
     outputtypes = []

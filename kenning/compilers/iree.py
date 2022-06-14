@@ -12,12 +12,16 @@ from kenning.core.dataset import Dataset
 # TODO: Add support for tflite models
 # TODO: check for dtypes other than float32 (possibly tied to tflite)
 
-def tf_model_parse(model_path, input_shape, dtype):
+def keras_model_parse(model_path, input_shape, dtype):
     import tensorflow as tf
-    try:
-        model = tf.saved_model.load(model_path)
-    except OSError:
-        model = tf.keras.models.load_model(model_path)
+
+    # Calling the .fit() method of keras model taints the state of the model in some way,
+    # breaking the IREE compiler. Because of that, the workaround is needed.
+    original_model = tf.keras.models.load_model(model_path)
+    model = tf.keras.models.clone_model(original_model)
+    model.set_weights(original_model.get_weights())
+    del original_model
+
     # TODO: adapt predict signature for multi-input models
     input_shape = list(input_shape.values())[0]
 
@@ -25,10 +29,10 @@ def tf_model_parse(model_path, input_shape, dtype):
         def __init__(self):
             super().__init__()
             self.m = model
-
-        @tf.function(input_signature=[tf.TensorSpec(input_shape, dtype)])
-        def predict(self, x):
-            return self.m(x, training=False)
+            self.m.predict = lambda x: self.m(x, training=False)
+            self.predict = tf.function(
+                input_signature=[tf.TensorSpec(input_shape, dtype)]
+            )(self.m.predict)
 
     return WrapperModule()
 
@@ -52,7 +56,7 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = {
-        'tf': tf_model_parse,
+        'keras': keras_model_parse,
         'tflite': tflite_model_parse
     }
 
@@ -62,7 +66,7 @@ class IREECompiler(Optimizer):
         'modelframework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
-            'default': 'tf',
+            'default': 'keras',
             'enum': list(inputtypes.keys())
         },
         'backend': {
@@ -106,15 +110,14 @@ class IREECompiler(Optimizer):
             or <option> for flags (example: 'iree-cuda-llvm-target-arch=sm_60').
             Full list of options can be listed by running 'iree-compile -h'.
         """
-        if modelframework == "tf":
+        if modelframework == "keras":
             from iree.compiler import tf as ireecmp
-            self.model_load = tf_model_parse
         elif modelframework == "tflite":
             from iree.compiler import tflite as ireecmp
-            self.model_load = tflite_model_parse
         else:
             raise RuntimeError(f"Unsupported model_framework. Choose from {list(self.inputtypes.keys())}.")
 
+        self.model_load = self.inputtypes[modelframework]
         self.ireecmp = ireecmp
         self.model_framework = modelframework
         self.backend = backend_convert.get(backend, backend)
@@ -152,4 +155,4 @@ class IREECompiler(Optimizer):
         module_path = Path(self.ireecmp.__file__)
         version_text = (module_path.parents[1] / "version.py").read_text()
         version = re.search(r'VERSION = "[\d.]+"', version_text)
-        return version.group(0).split()[-1].strip('"')
+        return ("iree", version.group(0).split()[-1].strip('"'))

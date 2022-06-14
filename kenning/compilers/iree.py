@@ -71,6 +71,12 @@ class IREECompiler(Optimizer):
             'description': '',
             'required': True,
             'enum': list(backend_convert.keys())
+        },
+        'compiler-args': {
+            'argaprse_name': '--compiler-args',
+            'description': 'Additional options that are passed to compiler',
+            'default': None,
+            'is_list': True
         }
     }
 
@@ -79,7 +85,8 @@ class IREECompiler(Optimizer):
             dataset: Dataset,
             compiled_model_path: str,
             modelframework: str,
-            backend: str):
+            backend: str,
+            compiler_args: List[str] = None):
         """
         IREE compiler
         """
@@ -94,7 +101,11 @@ class IREECompiler(Optimizer):
 
         self.ireecmp = ireecmp
         self.model_framework = modelframework
-        self.backend = self.backend_convert[backend]
+        self.backend = backend_convert.get(backend, backend)
+        if compiler_args is not None:
+            self.compiler_args = [f"--{option}" for option in compiler_args]
+        else:
+            self.compiler_args = []
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -116,6 +127,7 @@ class IREECompiler(Optimizer):
         self.ireecmp.compile_module(
             model,
             output_file=self.compiled_model_path,
+            extra_args=self.compiler_args,
             exported_names=['predict'],
             target_backends=[self.backend]
         )

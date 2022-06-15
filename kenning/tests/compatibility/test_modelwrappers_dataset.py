@@ -1,48 +1,26 @@
-from kenning.utils.class_loader import load_class
-
-
 class TestModelWrapperAndDatasetCompatibility:
-    dataset_dict = {
-        'pet_dataset':
-            'pet_dataset.PetDataset',
-    }
-
-    modelwrapper_dict = {
-        'classification_pytorch_pet_dataset':
-        [
-            'classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',
-            'pet_dataset.PetDataset',
-        ],
-        'classification_tensorflow_pet_dataset':
-        [
-            'classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
-            'pet_dataset.PetDataset'
-        ],
-    }
-
-    def test_deliver_input(self, fake_images):
+    def test_deliver_input(self, datasetSamples):
         """
         Tests dataset functions used by modelwrappers for data delivering
 
         List of methods are being tested
         --------------------------------
-        dataset.prepare_input_samples
-        dataset.prepare_output_samples
-        dataset.get_input_mean_std
-        dataset.train_test_split_representations
+        dataset.prepare_input_samples()
+        dataset.prepare_output_samples()
+        dataset.get_input_mean_std()
+        dataset.train_test_split_representations()
 
         Used fixtures
         -------------
-        fake_images - to generate images and feed them to datasets
+        datasetSamples - to get dataset instances.
         """
 
-        def run_tests(dataset, images_path):
-            dataset = load_class('kenning.datasets.' + dataset)(images_path)
-
+        def run_tests(dataset):
             # Test train_test_split_representations
             # this test should check the return type
             # if train or validation data is empty
             # and check that corresponding sets of data are equal in length
+            print(dataset)
             Xt, Xv, Yt, Yv = dataset.train_test_split_representations(
                 test_fraction=0.25)
             assert isinstance(Xt, list) and isinstance(Xv, list)
@@ -73,37 +51,33 @@ class TestModelWrapperAndDatasetCompatibility:
             mean_and_std = dataset.get_input_mean_std()
             assert isinstance(mean_and_std, tuple)
 
-        for dataset in self.dataset_dict.values():
-            run_tests(dataset, fake_images.path)
+        for dataset in datasetSamples:
+            run_tests(dataset)
 
-    def test_deliver_output(self, fake_images):
+    def test_deliver_output(self, fake_images, modelwrapperSamples):
         """
         Tests modelwrapper functions to deliver output to datasets
 
         List of methods are being tested
         --------------------------------
-        modelwrapper.test_inference
-        dataset.evaluate
+        modelwrapper.test_inference()
+        dataset.evaluate()
 
         Used fixtures
         -------------
-        fake_images - to generate images and feed them to datasets
+        fake_images - to get total amount of images.
+        modelwrapperSamples - to get modelwrapper instances.
         """
 
-        def run_tests(wrapper_path, dataset_path, images_path, images_count):
+        def run_tests(wrapper):
             from kenning.core.measurements import Measurements
-
-            datasetcls = load_class("kenning.datasets."+dataset_path)
-            dataset = datasetcls(images_path)
-            modelwrappercls = load_class("kenning.modelwrappers."+wrapper_path)
-            wrapper = modelwrappercls(images_path, dataset, from_file=False)
 
             # Test modelwrapper.test_inference (includes dataset.evaluate)
             # this test has to check if output is an istance of Measurements()
             # and does the amount of counted images equals to provided ones
             measurements = wrapper.test_inference()
             assert isinstance(measurements, Measurements)
-            assert measurements.get_values('total') == images_count
+            assert measurements.get_values('total') == fake_images.amount
 
-        for wrapper, dataset in self.modelwrapper_dict.values():
-            run_tests(wrapper, dataset, fake_images.path, fake_images.amount)
+        for wrapper in modelwrapperSamples:
+            run_tests(wrapper)

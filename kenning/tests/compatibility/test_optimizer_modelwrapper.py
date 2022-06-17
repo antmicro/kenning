@@ -53,8 +53,8 @@ class TestOptimizerModelWrapper:
     def test_onnx_model_optimization(self, modelwrapperSamples,
                                      optimizerSamples, fake_images):
         """
-        Tests saving models to onnx format with modelwrappers
-        and converting them using optimizers.
+        Tests saving model to onnx format with modelwrappers
+        and converting it using optimizers.
 
         List of methods are being tested
         --------------------------------

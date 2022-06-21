@@ -13,13 +13,13 @@ Inference performance metrics
         {% endfor %}
 {% endif -%}
 
-{% if 'json_cfg' in data -%}
+{% if 'build_cfg' in data -%}
 .. note::
     Input JSON:
 
     .. code-block:: json
 
-        {% for line in data['json_cfg'] -%}
+        {% for line in data['build_cfg'] -%}
         {{ line }}
         {% endfor %}
 {% endif -%}

@@ -34,9 +34,10 @@ class TestOptimizerModelWrapper:
             """
 
             wrapper = modelwrapperSamples.get(wrapper_name)
-            block_output_format = optimizer.consult_model_type(wrapper)
-            assert isinstance(block_output_format, list)
-            assert optimizer.modelframework in block_output_format
+            model_type = optimizer.consult_model_type(wrapper)
+            assert isinstance(model_type, str) and len(model_type) > 0
+            assert model_type in optimizer.get_input_formats()
+            assert model_type in wrapper.get_output_formats()
 
             filepath = tempfile.NamedTemporaryFile().name[5:]
             filepath = fake_images.path / filepath
@@ -47,8 +48,8 @@ class TestOptimizerModelWrapper:
             assert os.path.exists(filepath)
             os.remove(filepath)
 
-        for optimizer, modelframework in optimizerSamples:
-            run_tests(optimizer, *modelSamples.get(modelframework))
+        for optimizer in optimizerSamples:
+            run_tests(optimizer, *modelSamples.get(optimizer.inputtype))
 
     def test_onnx_model_optimization(self, modelwrapperSamples,
                                      optimizerSamples, fake_images):
@@ -75,14 +76,18 @@ class TestOptimizerModelWrapper:
             wrapper.save_to_onnx(filepath)
             assert os.path.exists(filepath)
 
-            for optimizer, modelframework in optimizerSamples:
+            for optimizer in optimizerSamples:
                 with pytest.raises(ValueError):
                     optimizer.consult_model_type(optimizer)
+                # TODO: In future there might be no shared model types,
+                # so method may throw an exception
                 model_type = optimizer.consult_model_type(wrapper)
-                assert 'onnx' in model_type
+                assert isinstance(model_type, str)
+                assert model_type in optimizer.get_input_formats()
+                assert model_type in wrapper.get_output_formats()
 
                 optimizer.set_input_type('onnx')
-                compiled_model_path = (filename + '_' + modelframework)
+                compiled_model_path = (filename + '_' + optimizer.inputtype)
                 compiled_model_path = fake_images.path / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
                 optimizer.compile(filepath, inputshapes, dtype=dtype)

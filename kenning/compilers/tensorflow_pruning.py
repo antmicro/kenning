@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 import tensorflow_model_optimization as tfmot
 
-from kenning.core.optimizer import Optimizer
+from kenning.compilers.tensorflow import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 
 
@@ -15,7 +15,7 @@ def kerasconversion(modelpath: Path):
     return model
 
 
-class TensorFlowPruningOptimizer(Optimizer):
+class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     """
     The TensorFlowPruning optimizer.
     """
@@ -34,11 +34,6 @@ class TensorFlowPruningOptimizer(Optimizer):
             'default': 'keras',
             'enum': list(inputtypes.keys())
         },
-        'epochs': {
-            'description': 'Number of epochs for the fine-tuning',
-            'type': int,
-            'default': 10
-        },
         'prune_dense': {
             'description': 'Prune only dense layers',
             'type': bool,
@@ -49,22 +44,19 @@ class TensorFlowPruningOptimizer(Optimizer):
             'type': float,
             'default': 0.1
         },
-        'batch_size': {
-            'description': 'The size of a batch for the fine-tuning',
-            'type': int,
-            'default': 32
-        }
     }
 
     def __init__(
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str = 'keras',
             epochs: int = 10,
+            batch_size: int = 32,
+            optimizer: str = 'adam',
+            disable_from_logits: bool = False,
+            modelframework: str = 'keras',
             prune_dense: bool = False,
-            target_sparsity: float = 0.1,
-            batch_size: int = 32):
+            target_sparsity: float = 0.1):
         """
         The TensorFlowPruning optimizer.
 
@@ -73,39 +65,42 @@ class TensorFlowPruningOptimizer(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model - may be used for quantization
-            during compilation stage
+            Dataset used to train the model - will be used for fine-tuning
         compiled_model_path : Path
             Path where compiled model will be saved
+        epochs : int
+            Number of epochs used for fine-tuning
+        batch_size : int
+            The size of a batch used for fine-tuning
+        optimizer : str
+            Optimizer used during the training
+        disable_from_logits
+            Determines whether output of the model is normalized
         modelframework : str
             Framework of the input model, used to select a proper backend
-        epochs : int
-            Number of epochs used to fine-tune the model
         prune_dense : bool
             Determines if only dense layers should be pruned
         target_sparsity : float
             Target weights sparsity of the model after pruning
-        batch_size : int
-            The size of a batch used for the fine-tuning
         """
         self.modelframework = modelframework
-        self.epochs = epochs
         self.prune_dense = prune_dense
         self.target_sparsity = target_sparsity
-        self.batch_size = batch_size
         self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
     @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
             args.compiled_model_path,
-            args.model_framework,
             args.epochs,
+            args.batch_size,
+            args.optimizer,
+            args.disable_from_logits,
+            args.model_framework,
             args.prune_dense,
-            args.target_sparsity,
-            args.batch_size
+            args.target_sparsity
         )
 
     def compile(
@@ -116,27 +111,6 @@ class TensorFlowPruningOptimizer(Optimizer):
 
         model = self.inputtypes[self.inputtype](inputmodelpath)
         self.inputdtype = dtype
-
-        def preprocess_output(input, output):
-            return input, tf.convert_to_tensor(output)
-
-        Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
-
-        Xt = self.dataset.prepare_input_samples(Xt)
-        Yt = self.dataset.prepare_output_samples(Yt)
-        traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
-        traindataset = traindataset.map(
-            preprocess_output,
-            num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(self.batch_size)
-
-        Xv = self.dataset.prepare_input_samples(Xv)
-        Yv = self.dataset.prepare_output_samples(Yv)
-        validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
-        validdataset = validdataset.map(
-            preprocess_output,
-            num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(self.batch_size)
 
         pruning_params = {
             'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(
@@ -154,38 +128,24 @@ class TensorFlowPruningOptimizer(Optimizer):
                     )
                 return layer
 
-            model_for_pruning = tf.keras.models.clone_model(
+            pruned_model = tf.keras.models.clone_model(
                 model,
-                clone_function=apply_pruning_to_dense,
+                clone_function=apply_pruning_to_dense
             )
         else:
-            model_for_pruning = tfmot.sparsity.keras.prune_low_magnitude(
+            pruned_model = tfmot.sparsity.keras.prune_low_magnitude(
                 model,
                 **pruning_params
             )
 
-        model_for_pruning.compile(
-            optimizer='adam',
-            loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-            metrics=[
-                tf.keras.metrics.CategoricalAccuracy()
-            ]
+        pruned_model = self.train_model(
+            pruned_model,
+            [tfmot.sparsity.keras.UpdatePruningStep()]
         )
 
-        model_for_pruning.fit(
-            traindataset,
-            epochs=self.epochs,
-            callbacks=[tfmot.sparsity.keras.UpdatePruningStep()],
-            verbose=1,
-            validation_data=validdataset
-        )
-
-        optimized_model = tfmot.sparsity.keras.strip_pruning(model_for_pruning)
+        optimized_model = tfmot.sparsity.keras.strip_pruning(pruned_model)
         optimized_model.save(
             self.compiled_model_path,
             include_optimizer=False,
             save_format='h5'
         )
-
-    def get_framework_and_version(self):
-        return ('tensorflow', tf.__version__)

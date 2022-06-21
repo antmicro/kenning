@@ -97,7 +97,7 @@ def main(argv):
             for optimizer in optimizers
         ],
         'command': command,
-        'json_cfg': json.dumps(json_cfg, indent=4)
+        'build_cfg': json_cfg
     }
 
     # TODO add method for providing metadata to dataset

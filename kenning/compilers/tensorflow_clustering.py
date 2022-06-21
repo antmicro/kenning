@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 import tensorflow_model_optimization as tfmot
 
-from kenning.core.optimizer import Optimizer
+from kenning.compilers.tensorflow import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 
 
@@ -15,7 +15,7 @@ def kerasconversion(modelpath: Path):
     return model
 
 
-class TensorFlowClusteringOptimizer(Optimizer):
+class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     """
     The TensorFlowClustering optimizer.
     """
@@ -45,9 +45,14 @@ class TensorFlowClusteringOptimizer(Optimizer):
             'default': 10,
         },
         'preserve_sparsity': {
-            'description': 'Enable sparsity preservation of a given model',
+            'description': 'Enable sparsity preservation of the given model',
             'type': bool,
             'default': False,
+        },
+        'fine_tune': {
+            'description': 'Fine-tune the model after clustering',
+            'type': bool,
+            'default': False
         }
     }
 
@@ -55,10 +60,15 @@ class TensorFlowClusteringOptimizer(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
+            epochs: int = 10,
+            batch_size: int = 32,
+            optimizer: str = 'adam',
+            disable_from_logits: bool = False,
             modelframework: str = 'keras',
             cluster_dense: bool = False,
-            clusters_number: int = '10',
-            preserve_sparsity: bool = False):
+            clusters_number: int = 10,
+            preserve_sparsity: bool = False,
+            fine_tune: bool = False):
         """
         The TensorFlowClustering optimizer.
 
@@ -67,10 +77,17 @@ class TensorFlowClusteringOptimizer(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model - may be used for quantization
-            during compilation stage
+            Dataset used to train the model - may be used for fine-tuning
         compiled_model_path : Path
             Path where compiled model will be saved
+        epochs : int
+            Number of epochs used for fine-tuning
+        batch_size : int
+            The size of a batch used for fine-tuning
+        optimizer : str
+            Optimizer used during the training
+        disable_from_logits
+            Determines whether output of the model is normalized
         modelframework : str
             Framework of the input model, used to select a proper backend
         cluster_dense : bool
@@ -79,23 +96,31 @@ class TensorFlowClusteringOptimizer(Optimizer):
             Number of clusters for each weight array
         disable_sparsity_preservation : bool
             Determines whether to preserve sparsity of a given model
+        fine_tune : bool
+            Determines whether to fine-tune the model after clustering
         """
         self.modelframework = modelframework
         self.cluster_dense = cluster_dense
         self.clusters_number = clusters_number
         self.preserve_sparsity = preserve_sparsity
+        self.fine_tune = fine_tune
         self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
     @classmethod
     def from_argparse(cls, dataset, args):
         return cls(
             dataset,
             args.compiled_model_path,
+            args.epochs,
+            args.batch_size,
+            args.optimizer,
+            args.disable_from_logits,
             args.model_framework,
             args.cluster_dense,
             args.clusters_number,
-            args.preserve_sparsity
+            args.preserve_sparsity,
+            args.fine_tune
         )
 
     def compile(
@@ -132,15 +157,14 @@ class TensorFlowClusteringOptimizer(Optimizer):
                 **clustering_params
             )
 
-        optimized_model = tfmot.clustering.keras.strip_clustering(
-            clustered_model
-        )
+        if self.fine_tune:
+            clustered_model = self.train_model(clustered_model)
 
+        optimized_model = tfmot.clustering.keras.strip_clustering(
+           clustered_model
+        )
         optimized_model.save(
             self.compiled_model_path,
             include_optimizer=False,
             save_format='h5'
         )
-
-    def get_framework_and_version(self):
-        return ('tensorflow', tf.__version__)

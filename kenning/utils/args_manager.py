@@ -2,7 +2,6 @@
 Module for preparing and serializing class arguments.
 """
 
-import json
 import jsonschema
 import argparse
 from typing import Dict
@@ -60,9 +59,24 @@ def to_argparse_name(s):
     return '--' + s.replace('_', '-')
 
 
-def serialize(obj: object, indent: int = 4) -> str:
+def convert_to_jsontype(v):
+    if isinstance(v, Path):
+        return str(v)
+    return v
+
+
+type_to_jsontype = {
+    Path: 'string',
+    str: 'string',
+    float: 'number',
+    int: 'integer',
+    bool: 'boolean'
+}
+
+
+def serialize(obj: object, normalize: bool = True) -> Dict:
     """
-    Serializes the given object into a JSON format.
+    Serializes the given object into a dictionary.
 
     It serializes all variables mentioned in the dictionary
     returned by a `form_parameterschema` function.
@@ -75,10 +89,12 @@ def serialize(obj: object, indent: int = 4) -> str:
     ----------
     obj : object
         Object to serialize
+    normalize : bool
+        Determines whether to convert value to JSON type
 
     Returns
     -------
-    str: Serialized object in a valid JSON format.
+    str: Serialized object
     """
     if hasattr(obj, 'form_parameterschema'):
         properties = obj.form_parameterschema()['properties']
@@ -87,21 +103,17 @@ def serialize(obj: object, indent: int = 4) -> str:
             for name, keywords in properties.items()
         }
     else:
-        return '{}'
+        return {}
 
     serialized_dict = {}
 
     for name, value in vars(obj).items():
-        if name in to_serialize and value:
-            serialized_dict[to_serialize[name]] = value
+        if name in to_serialize:
+            serialized_dict[to_serialize[name]] = (
+                convert_to_jsontype(value) if normalize else value
+            )
 
-    class ArgumentEncoder(json.JSONEncoder):
-        def default(self, obj):
-            if isinstance(obj, Path):
-                return str(obj)
-            return json.JSONEncoder.default(self, obj)
-
-    return json.dumps(serialized_dict, cls=ArgumentEncoder, indent=indent)
+    return serialized_dict
 
 
 def serialize_inference(
@@ -109,10 +121,9 @@ def serialize_inference(
         model,
         optimizers,
         runtimeprotocol,
-        runtime,
-        indent: int = 4) -> str:
+        runtime) -> Dict:
     """
-    Serializes the given objects into a JSON file which
+    Serializes the given objects into a dictionary which
     is a valid input for `json_inference_tester.py`.
 
     Parameters
@@ -127,12 +138,10 @@ def serialize_inference(
         RuntimeProtocol to serialize
     runtime : Runtime
         Runtime to serialize
-    indent: int
-        Indent which is used to format the JSON output.
 
     Returns
     -------
-    str: Serialized object in a JSON format.
+    Dict: Serialized inference
     """
     def object_to_module(obj):
         return type(obj).__module__ + '.' + type(obj).__name__
@@ -147,7 +156,7 @@ def serialize_inference(
             serialized_dict[name] = {}
             serialized_dict[name]['type'] = object_to_module(obj)
 
-            serialized_obj = json.loads(serialize(obj))
+            serialized_obj = serialize(obj)
             serialized_dict[name]['parameters'] = serialized_obj
 
     if optimizers:
@@ -159,12 +168,12 @@ def serialize_inference(
             optimizer_dict = {}
             optimizer_dict['type'] = object_to_module(optimizer)
 
-            serialized_obj = json.loads(serialize(optimizer))
+            serialized_obj = serialize(optimizer)
             optimizer_dict['parameters'] = serialized_obj
 
             serialized_dict['optimizers'].append(optimizer_dict)
 
-    return json.dumps(serialized_dict, indent=indent)
+    return serialized_dict
 
 
 def get_parsed_json_dict(schema, json_dict):
@@ -320,14 +329,6 @@ def add_parameterschema_argument(
         keywords = schema['properties'][argschema_name]
 
         keywords['real_name'] = name
-
-        type_to_jsontype = {
-            Path: 'string',
-            str: 'string',
-            float: 'number',
-            int: 'integer',
-            bool: 'boolean'
-        }
 
         # Case for a list of keywords
         if 'is_list' in prop and prop['is_list']:

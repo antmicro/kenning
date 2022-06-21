@@ -23,26 +23,18 @@ class Optimizer(object):
 
     inputtypes = {}
 
-    quantizes_model = False
-
     arguments_structure = {
         'compiled_model_path': {
             'description': 'The path to the compiled model output',
             'type': Path,
             'required': True
-        },
-        'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
-            'type': float,
-            'default': 1.0
         }
     }
 
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
-            dataset_percentage: float = 1.0):
+            compiled_model_path: Path):
         """
         Prepares the Optimizer object.
 
@@ -60,7 +52,6 @@ class Optimizer(object):
         """
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
-        self.dataset_percentage = dataset_percentage
 
     @classmethod
     def _form_argparse(cls):
@@ -78,15 +69,8 @@ class Optimizer(object):
         group = parser.add_argument_group(title='Compiler arguments')
         add_argparse_argument(
             group,
-            Optimizer.arguments_structure,
-            'compiled_model_path',
+            Optimizer.arguments_structure
         )
-        if cls.quantizes_model:
-            add_argparse_argument(
-                group,
-                Optimizer.arguments_structure,
-                'dataset_percentage'
-            )
         return parser, group
 
     @classmethod
@@ -125,17 +109,10 @@ class Optimizer(object):
         -------
         Optimizer : object of class Optimizer
         """
-        if hasattr(args, 'dataset_percentage'):
-            return cls(
-                dataset,
-                args.compiled_model_path,
-                args.dataset_percentage
-            )
-        else:
-            return cls(
-                dataset,
-                args.compiled_model_path
-            )
+        return cls(
+            dataset,
+            args.compiled_model_path
+        )
 
     @classmethod
     def _form_parameterschema(cls):
@@ -153,17 +130,8 @@ class Optimizer(object):
 
         add_parameterschema_argument(
             parameterschema,
-            Optimizer.arguments_structure,
-            'compiled_model_path',
+            Optimizer.arguments_structure
         )
-
-        if cls.quantizes_model:
-            add_parameterschema_argument(
-                parameterschema,
-                Optimizer.arguments_structure,
-                'dataset_percentage'
-            )
-
         return parameterschema
 
     @classmethod

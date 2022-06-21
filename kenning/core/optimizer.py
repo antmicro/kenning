@@ -212,6 +212,12 @@ class Optimizer(object):
             **parsed_json_dict
         )
 
+    def set_compiled_model_path(self, compiled_model_path: Path):
+        """
+        Sets path for compiled model.
+        """
+        self.compiled_model_path = compiled_model_path
+
     def set_input_type(self, inputtype: str):
         """
         Sets input type of the model for the compiler.

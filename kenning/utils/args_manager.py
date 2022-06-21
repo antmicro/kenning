@@ -92,7 +92,7 @@ def serialize(obj: object, indent: int = 4) -> str:
     serialized_dict = {}
 
     for name, value in vars(obj).items():
-        if name in to_serialize:
+        if name in to_serialize and value:
             serialized_dict[to_serialize[name]] = value
 
     class ArgumentEncoder(json.JSONEncoder):
@@ -196,15 +196,19 @@ def get_parsed_json_dict(schema, json_dict):
         elif name in json_dict:
             converted_json_dict[name] = json_dict[name]
 
-    # Converting arguments to the final types
+    # Converting arguments to the final types.
+    # Following argparse convention, if our value is None
+    # then we do not convert it.
     for name, value in converted_json_dict.items():
         keywords = schema['properties'][name]
 
-        if 'convert-type' in keywords:
+        if 'convert-type' in keywords and value:
             converter = keywords['convert-type']
 
             if 'type' in keywords and keywords['type'] == 'array':
-                converted_json_dict[name] = [converter(v) for v in value]
+                converted_json_dict[name] = [
+                    converter(v) if v else v for v in value
+                ]
             else:
                 converted_json_dict[name] = converter(value)
         else:
@@ -327,7 +331,7 @@ def add_parameterschema_argument(
 
         # Case for a list of keywords
         if 'is_list' in prop and prop['is_list']:
-            keywords['type'] = ['array', 'null']
+            keywords['type'] = ['array']
 
             if 'type' in prop:
                 assert prop['type'] is not bool

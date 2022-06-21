@@ -8,8 +8,9 @@ import subprocess
 from pathlib import Path
 import numpy as np
 from typing import Dict, Tuple
+import tensorflow_model_optimization as tfmot
 
-from kenning.core.optimizer import Optimizer
+from kenning.compilers.tensorflow import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 
 
@@ -43,7 +44,7 @@ def onnxconversion(modelpath: Path):
     return converter
 
 
-class TFLiteCompiler(Optimizer):
+class TFLiteCompiler(TensorFlowOptimizer):
     """
     The TFLite and EdgeTPU compiler.
     """
@@ -53,12 +54,10 @@ class TFLiteCompiler(Optimizer):
     ]
 
     inputtypes = {
-        'tensorflow': tensorflowconversion,
         'keras': kerasconversion,
+        'tensorflow': tensorflowconversion,
         'onnx': onnxconversion,
     }
-
-    quantizes_model = True
 
     arguments_structure = {
         'modelframework': {
@@ -83,6 +82,16 @@ class TFLiteCompiler(Optimizer):
             'description': 'Data type of the output layer',
             'default': 'float32',
             'enum': ['float32', 'int8', 'uint8']
+        },
+        'dataset_percentage': {
+            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
+            'type': float,
+            'default': 0.25
+        },
+        'quantization_aware_training': {
+            'description': 'Enable quantization aware training',
+            'type': bool,
+            'default': False
         }
     }
 
@@ -90,11 +99,16 @@ class TFLiteCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            target: str = 'default',
+            target: str,
+            epochs: int = 10,
+            batch_size: int = 32,
+            optimizer: str = 'adam',
+            disable_from_logits: bool = False,
             modelframework: str = 'onnx',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 1.0):
+            dataset_percentage: float = 1.0,
+            quantization_aware_training: bool = False):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -108,11 +122,19 @@ class TFLiteCompiler(Optimizer):
             Dataset used to train the model - may be used for quantization
             during compilation stage
         compiled_model_path : Path
-            The path in which the compiled model will be saved
-        modelframework : str
-            Framework of the input model, used to select a proper backend
+            Path where compiled model will be saved
         target : str
             Target accelerator on which the model will be executed
+        epochs : int
+            Number of epochs used for quantization aware training
+        batch_size : int
+            The size of a batch used for quantization aware training
+        optimizer : str
+            Optimizer used during the training
+        disable_from_logits
+            Determines whether output of the model is normalized
+        modelframework : str
+            Framework of the input model, used to select a proper backend
         inferenceinputtype : str
             Data type of the input layer
         inferenceoutputtype : str
@@ -121,13 +143,18 @@ class TFLiteCompiler(Optimizer):
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
             to be used
+        quantization_aware_training : bool
+            Enables quantization aware training instead of a post-training
+            quantization. If enabled the model has to be retrained.
         """
         self.target = target
         self.modelframework = modelframework
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
         self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path, dataset_percentage)
+        self.dataset_percentage = dataset_percentage
+        self.quantization_aware_training = quantization_aware_training
+        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
     @classmethod
     def from_argparse(cls, dataset, args):
@@ -135,10 +162,15 @@ class TFLiteCompiler(Optimizer):
             dataset,
             args.compiled_model_path,
             args.target,
+            args.epochs,
+            args.batch_size,
+            args.optimizer,
+            args.disable_from_logits,
             args.model_framework,
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
+            args.quantization_aware_training
         )
 
     def compile(
@@ -146,7 +178,33 @@ class TFLiteCompiler(Optimizer):
             inputmodelpath: Path,
             inputshapes: Dict[str, Tuple[int, ...]],
             dtype: str = 'float32'):
-        converter = self.inputtypes[self.inputtype](inputmodelpath)
+
+        if self.quantization_aware_training:
+            assert(self.inputtype == 'keras')
+            model = tf.keras.models.load_model(inputmodelpath)
+
+            def annotate_model(layer):
+                if isinstance(layer, tf.keras.layers.Dense):
+                    return tfmot.quantization.keras.quantize_annotate_layer(
+                        layer
+                    )
+                return layer
+
+            quant_aware_annotate_model = tf.keras.models.clone_model(
+                model,
+                clone_function=annotate_model
+            )
+
+            pcqat_model = tfmot.quantization.keras.quantize_apply(
+                quant_aware_annotate_model,
+                tfmot.experimental.combine.Default8BitClusterPreserveQuantizeScheme(preserve_sparsity=True)  # noqa: E501
+            )
+
+            pcqat_model = self.train_model(pcqat_model)
+            converter = tf.lite.TFLiteConverter.from_keras_model(pcqat_model)
+        else:
+            converter = self.inputtypes[self.inputtype](inputmodelpath)
+
         self.inputdtype = self.inferenceinputtype
 
         if self.target in ['int8', 'edgetpu']:
@@ -194,6 +252,3 @@ class TFLiteCompiler(Optimizer):
 
             return returncode
         return 0
-
-    def get_framework_and_version(self):
-        return ('tensorflow', tf.__version__)

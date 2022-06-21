@@ -454,7 +454,9 @@ class Runtime(object):
             for X, y in tqdm(iter(dataset)):
                 prepX = modelwrapper._preprocess_input(X)
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
-                self.prepare_input(prepX)
+                succeed = self.prepare_input(prepX)
+                if not succeed:
+                    return False
                 self._run()
                 outbytes = self.upload_output(None)
                 preds = modelwrapper.convert_output_from_bytes(outbytes)

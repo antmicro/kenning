@@ -118,7 +118,7 @@ def main(argv):
             }
         ],
         'command': command,
-        'json_cfg': serialize_inference(
+        'build_cfg': serialize_inference(
             dataset,
             model,
             compiler,

@@ -177,8 +177,8 @@ def optimizerSamples(fake_images, datasetSamples):
 
             Returns
             -------
-            Tuple[Optimizer, str]:
-                The tuple of Optimizer and its modelframework.
+            Optimizer:
+                Initialized optimizer object.
             """
             optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework
             file_name = optimizer_name + '.' + filesuffix
@@ -190,7 +190,7 @@ def optimizerSamples(fake_images, datasetSamples):
                                   modelframework=modelframework,
                                   dataset_percentage=dataset_percentage,
                                   **kwargs)
-            self.samples[optimizer_name] = (optimizer, modelframework)
+            self.samples[optimizer_name] = optimizer
             return optimizer
     return OptimizerData()
 

@@ -78,7 +78,7 @@ class RandomizedClassificationDataset(Dataset):
         )
 
     def get_class_names(self):
-        return ['random']
+        return [str(i) for i in range(self.numclasses)]
 
     def get_input_mean_std(self):
         return (0.5, 0.4)

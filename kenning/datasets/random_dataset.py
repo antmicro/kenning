@@ -68,31 +68,6 @@ class RandomizedClassificationDataset(Dataset):
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--num-samples',
-            help='Number of samples to process',
-            type=int,
-            default=1000
-        )
-        group.add_argument(
-            '--input-dims',
-            help='Dimensionality of the inputs',
-            type=int,
-            nargs='+',
-            default=[224, 224, 3]
-        )
-        group.add_argument(
-            '--output-dims',
-            help='Dimensionality of the outputs',
-            type=int,
-            nargs='+',
-            default=[1000]
-        )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, args):
         return cls(
             args.dataset_root,

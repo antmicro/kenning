@@ -52,6 +52,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
             Used for loading keras.applications pretrained models
         numclasses: int
             Number of classes in dataset
+        from_file: bool
+            True if model should be loaded from file
         """
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:

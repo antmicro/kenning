@@ -91,7 +91,7 @@ class RandomizedClassificationDataset(Dataset):
         return [str(i) for i in range(self.numclasses)]
 
     def get_input_mean_std(self):
-        return (0.5, 0.4)
+        return (0.0, 1.0)
 
     def prepare(self):
         self.dataX = [[i for i in range(self.numclasses)] for j in range(self.samplescount)]    # noqa: E501
@@ -104,7 +104,7 @@ class RandomizedClassificationDataset(Dataset):
         result = []
         for sample in samples:
             np.random.seed(sample)
-            result.append(np.random.randint(0, 255, size=self.inputdims))
+            result.append(np.random.randn(*self.inputdims))
         return result
 
     def prepare_output_samples(self, samples):

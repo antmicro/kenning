@@ -1,0 +1,58 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5" 
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./data/pet_dataset" 
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "default",
+                "compiled_model_path": "./build/compiled_tflite.tflite",
+                "inference_input_type": "float32",
+                "inference_output_type": "float32"
+            }
+        },
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": 
+            {
+                "target": "llvm -mcpu=core-avx2",
+                "compiled_model_path": "./build/compiled_tvm.tar",
+                "opt_level": 3
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters": 
+        {
+            "save_model_path": "./build/compiled_model.tar"
+        }
+    },
+    "runtime_protocol":
+    {
+        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "parameters": 
+        {
+            "host": "10.9.8.7",
+            "port": 12345,
+            "packet_size": 32768
+        }
+    }
+}

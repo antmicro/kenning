@@ -62,6 +62,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
                 outputs=output
             )
             print(self.model.summary())
+            self.save_model(self.modelpath)
 
     def train_model(
             self,

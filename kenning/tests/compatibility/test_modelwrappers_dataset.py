@@ -1,10 +1,12 @@
 from kenning.tests.conftest import DataFolder, Samples
-from kenning.core.dataset import Dataset
-from kenning.core.modelwrapper import ModelWrapper
+import pytest
 
 
 class TestModelWrapperAndDatasetCompatibility:
-    def test_deliver_input(self, datasetsamples: Samples):
+    @pytest.mark.parametrize("datasetname", [
+        ("PetDataset"),
+    ])
+    def test_deliver_input(self, datasetsamples: Samples, datasetname):
         """
         Tests dataset functions used by modelwrappers for data delivering
 
@@ -20,34 +22,31 @@ class TestModelWrapperAndDatasetCompatibility:
         datasetsamples - to get dataset instances.
         """
 
-        def run_tests(dataset: Dataset):
-            """
-            Parameters
-            ---------
-            dataset : Dataset
-                A Dataset object that is being tested
-            """
-            Xt, Xv, Yt, Yv = dataset.train_test_split_representations(
-                test_fraction=0.25)
-            assert isinstance(Xt, list) and isinstance(Xv, list)
-            assert len(Xt) > 0 and len(Xv) > 0
-            assert len(Xt) == len(Yt) and len(Xv) == len(Yv)
+        dataset = datasetsamples.get(datasetname)
 
-            samples = dataset.prepare_input_samples(Xv)
-            assert isinstance(samples, list)
-            assert len(samples) == len(Xv)
+        Xt, Xv, Yt, Yv = dataset.train_test_split_representations(
+            test_fraction=0.25)
+        assert isinstance(Xt, list) and isinstance(Xv, list)
+        assert len(Xt) > 0 and len(Xv) > 0
+        assert len(Xt) == len(Yt) and len(Xv) == len(Yv)
 
-            samples = dataset.prepare_output_samples(Yv)
-            assert isinstance(samples, list)
-            assert len(samples) == len(Yv)
+        samples = dataset.prepare_input_samples(Xv)
+        assert isinstance(samples, list)
+        assert len(samples) == len(Xv)
 
-            mean_and_std = dataset.get_input_mean_std()
-            assert isinstance(mean_and_std, tuple)
+        samples = dataset.prepare_output_samples(Yv)
+        assert isinstance(samples, list)
+        assert len(samples) == len(Yv)
 
-        for dataset in datasetsamples:
-            run_tests(dataset)
+        mean_and_std = dataset.get_input_mean_std()
+        assert isinstance(mean_and_std, tuple)
 
+    @pytest.mark.parametrize("wrappername", [
+        ('PyTorchPetDatasetMobileNetV2'),
+        ('TensorFlowPetDatasetMobileNetV2')
+    ])
     def test_deliver_output(self,
+                            wrappername: str,
                             datasetimages: DataFolder,
                             modelwrappersamples: Samples):
         """
@@ -64,18 +63,9 @@ class TestModelWrapperAndDatasetCompatibility:
         modelwrappersamples - to get modelwrapper instances.
         """
 
-        def run_tests(wrapper: ModelWrapper):
-            """
-            Parameters
-            ---------
-            wrapper: ModelWrapper
-                A ModelWrapper object that is being tested
-            """
-            from kenning.core.measurements import Measurements
+        wrapper = modelwrappersamples.get(wrappername)
+        from kenning.core.measurements import Measurements
 
-            measurements = wrapper.test_inference()
-            assert isinstance(measurements, Measurements)
-            assert measurements.get_values('total') == datasetimages.amount
-
-        for wrapper in modelwrappersamples:
-            run_tests(wrapper)
+        measurements = wrapper.test_inference()
+        assert isinstance(measurements, Measurements)
+        assert measurements.get_values('total') == datasetimages.amount

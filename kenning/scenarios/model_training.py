@@ -81,7 +81,7 @@ def main(argv):
         args.num_epochs,
         args.logdir
     )
-    model.save_model(model.modelpath)
+    model.save_model(model.get_path())
 
 
 if __name__ == '__main__':

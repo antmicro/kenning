@@ -21,7 +21,7 @@ class TestOptimizerModelWrapper:
         modelwrapperSamples - to get inputshape and data type.
         """
 
-        def run_tests(optimizer, model_path, wrapper_name, **kwargs):
+        def run_tests(optimizer, model_path, wrapper_name):
             """
             Parameters
             ---------

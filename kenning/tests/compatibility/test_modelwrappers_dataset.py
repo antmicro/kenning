@@ -1,4 +1,6 @@
 from kenning.tests.conftest import DataFolder, Samples
+from kenning.core.dataset import Dataset
+from kenning.core.modelwrapper import ModelWrapper
 
 
 class TestModelWrapperAndDatasetCompatibility:
@@ -18,7 +20,7 @@ class TestModelWrapperAndDatasetCompatibility:
         datasetsamples - to get dataset instances.
         """
 
-        def run_tests(dataset):
+        def run_tests(dataset: Dataset):
             """
             Parameters
             ---------
@@ -62,7 +64,7 @@ class TestModelWrapperAndDatasetCompatibility:
         modelwrappersamples - to get modelwrapper instances.
         """
 
-        def run_tests(wrapper):
+        def run_tests(wrapper: ModelWrapper):
             """
             Parameters
             ---------

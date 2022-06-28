@@ -1,6 +1,7 @@
 import pytest
 import tempfile
 import os
+from kenning.core.optimizer import Optimizer
 from kenning.tests.conftest import Samples
 from pathlib import Path
 
@@ -27,7 +28,9 @@ class TestOptimizerModelWrapper:
         modelwrappersamples - to get inputshape and data type.
         """
 
-        def run_tests(optimizer, model_path, wrapper_name):
+        def run_tests(optimizer: Optimizer,
+                      model_path: str,
+                      wrapper_name: str):
             """
             Parameters
             ---------

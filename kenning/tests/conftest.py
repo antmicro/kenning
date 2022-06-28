@@ -65,7 +65,7 @@ class Samples:
 
 
 @pytest.fixture()
-def modelSamples():
+def modelsamples():
     class ModelData(Samples):
         def __init__(self):
             """
@@ -112,7 +112,7 @@ def modelSamples():
 
 
 @pytest.fixture()
-def optimizerSamples(fake_images, datasetSamples):
+def optimizersamples(fake_images, datasetsamples):
     class OptimizerData(Samples):
         def __init__(self):
             """
@@ -124,21 +124,21 @@ def optimizerSamples(fake_images, datasetSamples):
                                 'default',
                                 'keras',
                                 'tflite',
-                                dataset=datasetSamples.get('PetDataset'),
+                                dataset=datasetsamples.get('PetDataset'),
                                 compiled_model_path=fake_images.path)
 
             self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
                                 'llvm',
                                 'keras',
                                 'so',
-                                dataset=datasetSamples.get('PetDataset'),
+                                dataset=datasetsamples.get('PetDataset'),
                                 compiled_model_path=fake_images.path)
 
             self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
                                 'llvm',
                                 'torch',
                                 'so',
-                                dataset=datasetSamples.get('PetDataset'),
+                                dataset=datasetsamples.get('PetDataset'),
                                 compiled_model_path=fake_images.path)
 
         def init_optimizer(self,
@@ -195,7 +195,7 @@ def optimizerSamples(fake_images, datasetSamples):
 
 
 @pytest.fixture()
-def modelwrapperSamples(datasetSamples, modelSamples):
+def modelwrappersamples(datasetsamples, modelsamples):
     class WrapperData(Samples):
         def __init__(self):
             """
@@ -208,14 +208,14 @@ def modelwrapperSamples(datasetSamples, modelSamples):
 
             self.init_modelwrapper(
                 torch_pet_mobilenet_import_path,
-                modelSamples.get('torch_weights')[0],
-                dataset=datasetSamples.get('PetDataset')
+                modelsamples.get('torch_weights')[0],
+                dataset=datasetsamples.get('PetDataset')
             )
 
             self.init_modelwrapper(
                 tensorflow_pet_mobilenet_import_path,
-                modelSamples.get('keras')[0],
-                dataset=datasetSamples.get('PetDataset')
+                modelsamples.get('keras')[0],
+                dataset=datasetsamples.get('PetDataset')
             )
 
         def init_modelwrapper(self,
@@ -252,7 +252,7 @@ def modelwrapperSamples(datasetSamples, modelSamples):
 
 
 @pytest.fixture()
-def datasetSamples(fake_images):
+def datasetsamples(fake_images):
     class DatasetData(Samples):
         def __init__(self):
             """

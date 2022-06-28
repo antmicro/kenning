@@ -4,8 +4,8 @@ import os
 
 
 class TestOptimizerModelWrapper:
-    def test_compile_existence_models(self, optimizerSamples, fake_images,
-                                      modelSamples, modelwrapperSamples):
+    def test_compile_existence_models(self, optimizersamples, fake_images,
+                                      modelsamples, modelwrappersamples):
         """
         Tests compilation process for models presented in Kenning docs.
 
@@ -16,9 +16,9 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        optimizerSamples - to get optimizer instances.
-        modelSamples - to get paths for models to compile.
-        modelwrapperSamples - to get inputshape and data type.
+        optimizersamples - to get optimizer instances.
+        modelsamples - to get paths for models to compile.
+        modelwrappersamples - to get inputshape and data type.
         """
 
         def run_tests(optimizer, model_path, wrapper_name):
@@ -33,7 +33,7 @@ class TestOptimizerModelWrapper:
                 The name of modelwrapper that is compatible with input model.
             """
 
-            wrapper = modelwrapperSamples.get(wrapper_name)
+            wrapper = modelwrappersamples.get(wrapper_name)
             model_type = optimizer.consult_model_type(wrapper)
             assert isinstance(model_type, str) and len(model_type) > 0
             assert model_type in optimizer.get_input_formats()
@@ -48,11 +48,11 @@ class TestOptimizerModelWrapper:
             assert os.path.exists(filepath)
             os.remove(filepath)
 
-        for optimizer in optimizerSamples:
-            run_tests(optimizer, *modelSamples.get(optimizer.inputtype))
+        for optimizer in optimizersamples:
+            run_tests(optimizer, *modelsamples.get(optimizer.inputtype))
 
-    def test_onnx_model_optimization(self, modelwrapperSamples,
-                                     optimizerSamples, fake_images):
+    def test_onnx_model_optimization(self, modelwrappersamples,
+                                     optimizersamples, fake_images):
         """
         Tests saving model to onnx format with modelwrappers
         and converting it using optimizers.
@@ -64,11 +64,11 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        modelwrapperSamples - to get modelwrappers instances.
-        optimizerSamples - to get optimizers instances.
+        modelwrappersamples - to get modelwrappers instances.
+        optimizersamples - to get optimizers instances.
         """
 
-        for wrapper in modelwrapperSamples:
+        for wrapper in modelwrappersamples:
             inputshapes, dtype = wrapper.get_input_spec()
 
             filename = tempfile.NamedTemporaryFile().name[5:]
@@ -76,7 +76,7 @@ class TestOptimizerModelWrapper:
             wrapper.save_to_onnx(filepath)
             assert os.path.exists(filepath)
 
-            for optimizer in optimizerSamples:
+            for optimizer in optimizersamples:
                 with pytest.raises(ValueError):
                     optimizer.consult_model_type(optimizer)
                 # TODO: In future there might be no shared model types,

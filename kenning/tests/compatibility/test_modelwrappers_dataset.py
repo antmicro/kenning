@@ -1,5 +1,5 @@
 class TestModelWrapperAndDatasetCompatibility:
-    def test_deliver_input(self, datasetSamples):
+    def test_deliver_input(self, datasetsamples):
         """
         Tests dataset functions used by modelwrappers for data delivering
 
@@ -12,7 +12,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
         Used fixtures
         -------------
-        datasetSamples - to get dataset instances.
+        datasetsamples - to get dataset instances.
         """
 
         def run_tests(dataset):
@@ -39,10 +39,10 @@ class TestModelWrapperAndDatasetCompatibility:
             mean_and_std = dataset.get_input_mean_std()
             assert isinstance(mean_and_std, tuple)
 
-        for dataset in datasetSamples:
+        for dataset in datasetsamples:
             run_tests(dataset)
 
-    def test_deliver_output(self, fake_images, modelwrapperSamples):
+    def test_deliver_output(self, fake_images, modelwrappersamples):
         """
         Tests modelwrapper functions to deliver output to datasets
 
@@ -54,7 +54,7 @@ class TestModelWrapperAndDatasetCompatibility:
         Used fixtures
         -------------
         fake_images - to get total amount of images.
-        modelwrapperSamples - to get modelwrapper instances.
+        modelwrappersamples - to get modelwrapper instances.
         """
 
         def run_tests(wrapper):
@@ -70,5 +70,5 @@ class TestModelWrapperAndDatasetCompatibility:
             assert isinstance(measurements, Measurements)
             assert measurements.get_values('total') == fake_images.amount
 
-        for wrapper in modelwrapperSamples:
+        for wrapper in modelwrappersamples:
             run_tests(wrapper)

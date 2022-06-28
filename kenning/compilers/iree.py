@@ -4,6 +4,7 @@ Wrapper for IREE compiler
 from pathlib import Path
 from typing import Dict, Tuple, List
 from iree.compiler import tools as ireecmp
+from iree.compiler import version
 import re
 
 from kenning.core.optimizer import Optimizer
@@ -212,7 +213,4 @@ class IREECompiler(Optimizer):
             f.write(str(model_dict).encode("utf-8"))
 
     def get_framework_and_version(self):
-        module_path = Path(ireecmp.__file__)
-        version_text = (module_path.parents[1] / "version.py").read_text()
-        version = re.search(r'VERSION = "[\d.]+"', version_text)
-        return "iree", version.group(0).split()[-1].strip('"')
+        return "iree", version.VERSION

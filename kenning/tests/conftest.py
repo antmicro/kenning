@@ -2,12 +2,11 @@ import pytest
 import shutil
 import kenning
 import tempfile
-from random import randint, random, seed
+from random import randint, random
 from pathlib import Path
 from PIL import Image
 from kenning.utils.class_loader import load_class
 from kenning.core.dataset import Dataset
-seed(12345)
 
 
 class Samples:

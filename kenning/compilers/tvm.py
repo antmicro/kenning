@@ -109,7 +109,8 @@ def torchconversion(
             (mul(input_shapes[list(input_shapes.keys())[0]]))
         )
     )
-    if torch.cuda.is_available():
+
+    if next(model.parameters()).is_cuda:
         inp = inp.to('cuda')
 
     with torch.no_grad():

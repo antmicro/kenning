@@ -1,0 +1,20 @@
+{
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters": 
+        {
+            "save_model_path": "./build/compiled_model_server.tar"
+        }
+    },
+    "runtime_protocol":
+    {
+        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "parameters": 
+        {
+            "host": "0.0.0.0",
+            "port": 12345,
+            "packet_size": 32768
+        }
+    }
+}

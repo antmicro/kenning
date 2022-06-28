@@ -7,6 +7,23 @@ from pathlib import Path
 from PIL import Image
 from kenning.utils.class_loader import load_class
 from kenning.core.dataset import Dataset
+from dataclasses import dataclass
+
+
+@dataclass
+class DataFolder:
+    """
+    A dataclass to store datasetimages fixture properties.
+
+    Parameters
+    --------
+    path: Path
+        A path to data files
+    amount: int
+        Amount of generated images
+    """
+    path: Path
+    amount: int
 
 
 class Samples:
@@ -112,7 +129,7 @@ def modelsamples():
 
 
 @pytest.fixture()
-def optimizersamples(fake_images, datasetsamples):
+def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
     class OptimizerData(Samples):
         def __init__(self):
             """
@@ -125,21 +142,21 @@ def optimizersamples(fake_images, datasetsamples):
                                 'keras',
                                 'tflite',
                                 dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=fake_images.path)
+                                compiled_model_path=datasetimages.path)
 
             self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
                                 'llvm',
                                 'keras',
                                 'so',
                                 dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=fake_images.path)
+                                compiled_model_path=datasetimages.path)
 
             self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
                                 'llvm',
                                 'torch',
                                 'so',
                                 dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=fake_images.path)
+                                compiled_model_path=datasetimages.path)
 
         def init_optimizer(self,
                            import_path: str,
@@ -147,7 +164,7 @@ def optimizersamples(fake_images, datasetsamples):
                            modelframework: str,
                            filesuffix: str,
                            dataset: Dataset = None,
-                           compiled_model_path: Path = fake_images.path,
+                           compiled_model_path: Path = datasetimages.path,
                            dataset_percentage: float = 1.0,
                            **kwargs):
             """
@@ -195,7 +212,7 @@ def optimizersamples(fake_images, datasetsamples):
 
 
 @pytest.fixture()
-def modelwrappersamples(datasetsamples, modelsamples):
+def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
     class WrapperData(Samples):
         def __init__(self):
             """
@@ -252,7 +269,7 @@ def modelwrappersamples(datasetsamples, modelsamples):
 
 
 @pytest.fixture()
-def datasetsamples(fake_images):
+def datasetsamples(datasetimages: DataFolder):
     class DatasetData(Samples):
         def __init__(self):
             """
@@ -264,7 +281,7 @@ def datasetsamples(fake_images):
 
         def init_dataset(self,
                          import_path: str,
-                         datapath: Path = fake_images.path,
+                         datapath: Path = datasetimages.path,
                          batch_size: int = 1,
                          download_dataset: bool = False,
                          **kwargs):
@@ -298,14 +315,14 @@ def datasetsamples(fake_images):
 
 
 @pytest.fixture(scope='class')
-def fake_images():
+def datasetimages():
     """
     Creates a temporary dir with images and data files.
     Images are located under 'image/' folder.
 
     Returns
     -------
-    DataFolder: Class that stores path to data and amount of images
+    DataFolder: A DataFolder object that stores path to data and images amount
     """
     images_amount = 148
     path = Path(tempfile.NamedTemporaryFile().name)
@@ -321,19 +338,6 @@ def fake_images():
         color = (randint(0, 255), randint(0, 255), randint(0, 255))
         img = Image.new(mode='RGB', size=(5, 5), color=color)
         img.save(file, 'JPEG')
-
-    class DataFolder:
-        def __init__(self, datapath: Path, amount: int):
-            """
-            Parameters
-            --------
-            datapath: Path
-                A path to data files
-            amount: int
-                Amount of generated images
-            """
-            self.path = datapath
-            self.amount = amount
 
     yield DataFolder(path, images_amount)
     shutil.rmtree(path)

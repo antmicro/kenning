@@ -1,11 +1,15 @@
 import pytest
 import tempfile
 import os
+from kenning.tests.conftest import Samples, DataFolder
 
 
 class TestOptimizerModelWrapper:
-    def test_compile_existence_models(self, optimizersamples, fake_images,
-                                      modelsamples, modelwrappersamples):
+    def test_compile_existence_models(self,
+                                      datasetimages: DataFolder,
+                                      modelsamples: Samples,
+                                      optimizersamples: Samples,
+                                      modelwrappersamples: Samples):
         """
         Tests compilation process for models presented in Kenning docs.
 
@@ -16,8 +20,9 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        optimizersamples - to get optimizer instances.
+        datasetimages - to get a folder where compiled model will be placed
         modelsamples - to get paths for models to compile.
+        optimizersamples - to get optimizer instances.
         modelwrappersamples - to get inputshape and data type.
         """
 
@@ -40,7 +45,7 @@ class TestOptimizerModelWrapper:
             assert model_type in wrapper.get_output_formats()
 
             filepath = tempfile.NamedTemporaryFile().name[5:]
-            filepath = fake_images.path / filepath
+            filepath = datasetimages.path / filepath
             inputshapes, dtype = wrapper.get_input_spec()
 
             optimizer.set_compiled_model_path(filepath)
@@ -51,8 +56,10 @@ class TestOptimizerModelWrapper:
         for optimizer in optimizersamples:
             run_tests(optimizer, *modelsamples.get(optimizer.inputtype))
 
-    def test_onnx_model_optimization(self, modelwrappersamples,
-                                     optimizersamples, fake_images):
+    def test_onnx_model_optimization(self,
+                                     datasetimages: DataFolder,
+                                     modelwrappersamples: Samples,
+                                     optimizersamples: Samples):
         """
         Tests saving model to onnx format with modelwrappers
         and converting it using optimizers.
@@ -64,15 +71,16 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        modelwrappersamples - to get modelwrappers instances.
+        datasetimages - to get a folder where compiled model will be placed
         optimizersamples - to get optimizers instances.
+        modelwrappersamples - to get modelwrappers instances.
         """
 
         for wrapper in modelwrappersamples:
             inputshapes, dtype = wrapper.get_input_spec()
 
             filename = tempfile.NamedTemporaryFile().name[5:]
-            filepath = fake_images.path / filename
+            filepath = datasetimages.path / filename
             wrapper.save_to_onnx(filepath)
             assert os.path.exists(filepath)
 
@@ -88,7 +96,7 @@ class TestOptimizerModelWrapper:
 
                 optimizer.set_input_type('onnx')
                 compiled_model_path = (filename + '_' + optimizer.inputtype)
-                compiled_model_path = fake_images.path / compiled_model_path
+                compiled_model_path = datasetimages.path / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
                 optimizer.compile(filepath, inputshapes, dtype=dtype)
 

@@ -2,6 +2,7 @@ import pytest
 import tempfile
 import string
 from kenning.datasets.pet_dataset import PetDataset
+from kenning.tests.conftest import DataFolder
 from pathlib import Path
 from random import choices, randint
 
@@ -59,7 +60,7 @@ class TestPetDataset:
             PetDataset(path, standardize=False,
                        image_memory_layout=random_string())
 
-    def test_empty_folder(self, annotations):
+    def test_empty_folder(self, annotations: Path):
         """
         Tests dataset behaviour if empty 'annotations/list.txt' is passed
         as argument to constructor.
@@ -79,7 +80,7 @@ class TestPetDataset:
         with pytest.raises(StopIteration):
             dataset.__next__()
 
-    def test_incorrect_data(self, annotations):
+    def test_incorrect_data(self, annotations: Path):
         """
         Tests dataset behaviour if incorrect data is passed to
         'annotations/list.txt'.
@@ -107,7 +108,7 @@ class TestPetDataset:
             dataset.get_data()
         assert 'image_0' in str(execinfo.value)
 
-    def test_correct_data(self, fake_images):
+    def test_correct_data(self, datasetimages: DataFolder):
         """
         Tests dataset behaviour if wrong parameters and correct data
         are passed.
@@ -119,13 +120,14 @@ class TestPetDataset:
 
         Used fixtures
         -------------
-        fake_images - to get folder with correct data.
+        datasetimages - to get folder with correct data.
         """
         with pytest.raises(AssertionError):
-            PetDataset(fake_images.path, batch_size=-1)
+            PetDataset(datasetimages.path, batch_size=-1)
         with pytest.raises(AssertionError):
-            PetDataset(fake_images.path, batch_size=0)
-        dataset = PetDataset(fake_images.path, batch_size=1, standardize=False)
+            PetDataset(datasetimages.path, batch_size=0)
+        dataset = PetDataset(datasetimages.path,
+                             batch_size=1, standardize=False)
         data = dataset.__next__()
         assert isinstance(data, tuple)
         assert len(data) > 0 and isinstance(data[0], list)

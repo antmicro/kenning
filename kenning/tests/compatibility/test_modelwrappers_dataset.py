@@ -1,5 +1,8 @@
+from kenning.tests.conftest import DataFolder, Samples
+
+
 class TestModelWrapperAndDatasetCompatibility:
-    def test_deliver_input(self, datasetsamples):
+    def test_deliver_input(self, datasetsamples: Samples):
         """
         Tests dataset functions used by modelwrappers for data delivering
 
@@ -42,7 +45,9 @@ class TestModelWrapperAndDatasetCompatibility:
         for dataset in datasetsamples:
             run_tests(dataset)
 
-    def test_deliver_output(self, fake_images, modelwrappersamples):
+    def test_deliver_output(self,
+                            datasetimages: DataFolder,
+                            modelwrappersamples: Samples):
         """
         Tests modelwrapper functions to deliver output to datasets
 
@@ -53,7 +58,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
         Used fixtures
         -------------
-        fake_images - to get total amount of images.
+        datasetimages - to get total amount of images.
         modelwrappersamples - to get modelwrapper instances.
         """
 
@@ -68,7 +73,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
             measurements = wrapper.test_inference()
             assert isinstance(measurements, Measurements)
-            assert measurements.get_values('total') == fake_images.amount
+            assert measurements.get_values('total') == datasetimages.amount
 
         for wrapper in modelwrappersamples:
             run_tests(wrapper)

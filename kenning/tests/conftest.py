@@ -32,13 +32,20 @@ class Samples:
         The base class for object samples.
         """
         self._data_index = 0
+        self._params = {}
         self.samples = {}
         self.kenning_path = kenning.__path__[0]
         pass
 
+    def add(self):
+        """
+        Adds object sample.
+        """
+        raise NotImplementedError
+
     def get(self, data_name: str):
         """
-        Returns data for specified key.
+        Returns object instance for specified key.
 
         Parameters
         ----------
@@ -48,9 +55,10 @@ class Samples:
         Returns
         -------
         Any:
-            Data associated with provided sample.
+            Object associated with provided sample.
         """
-        return self.samples[data_name]
+        args, kwargs = self._params[data_name]
+        return self.samples[data_name](*args, **kwargs)
 
     def __iter__(self):
         """
@@ -59,10 +67,10 @@ class Samples:
         Returns
         -------
         Samples:
-            this object.
+            This object.
         """
         self._data_index = 0
-        self._samples = tuple(self.samples.values())
+        self._samples = tuple(self.samples.keys())
         return self
 
     def __next__(self):
@@ -72,7 +80,7 @@ class Samples:
         Returns
         -------
         Any:
-            object sample.
+            Object sample.
         """
         if self._data_index < len(self._samples):
             prev = self._data_index
@@ -90,19 +98,17 @@ def modelsamples():
             Stores paths to models presented in Kenning docs.
             """
             super().__init__()
-            self.init_model("/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",  # noqa: E501
-                            'torch',
-                            'PyTorchPetDatasetMobileNetV2')
-            self.init_model("/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth",  # noqa: E501
-                            'torch_weights',
-                            'PyTorchPetDatasetMobileNetV2')
-            self.init_model("/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5",           # noqa: E501
-                            'keras',
-                            'TensorFlowPetDatasetMobileNetV2')
+            self.add("/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",   # noqa: E501
+                     'torch',
+                     'PyTorchPetDatasetMobileNetV2')
+            self.add("/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth",    # noqa: E501
+                     'torch_weights',
+                     'PyTorchPetDatasetMobileNetV2')
+            self.add("/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5",  # noqa: E501
+                     'keras',
+                     'TensorFlowPetDatasetMobileNetV2')
 
-        def init_model(self, model_path: str,
-                       modelframework: str,
-                       modelwrapper: str):
+        def add(self, model_path: str, modelframework: str, modelwrapper: str):
             """
             Adds path to model with associated framework
             and associated modelwrapper name to samples
@@ -115,16 +121,26 @@ def modelsamples():
                 The framework model is compatible with.
             modelwrapper: str
                 The name of ModelWrapper that is compatible with model.
+            """
+            model_path = self.kenning_path + model_path
+            self.samples[modelframework] = (model_path, modelwrapper)
+
+        def get(self, model_name: str):
+            """
+            Returns data associated with specified key.
+
+            Parameters
+            ----------
+            model_name: str
+                A key for the sample.
 
             Returns
             -------
             Tuple[str, str]:
-                Returns tuple with absolute path to model
-                and framework it compatible with.
+                Tuple with path to model and ModelWrapper name
+                it is compatible with.
             """
-            model_path = self.kenning_path + model_path
-            self.samples[modelframework] = (model_path, modelwrapper)
-            return (model_path, modelwrapper)
+            return self.samples[model_name]
     return ModelData()
 
 
@@ -137,39 +153,32 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             Stores basic Optimizer objects with its parameters.
             """
             super().__init__()
-            self.init_optimizer('kenning.compilers.tflite.TFLiteCompiler',
-                                'default',
-                                'keras',
-                                'tflite',
-                                dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=datasetimages.path)
+            self.add('kenning.compilers.tflite.TFLiteCompiler',
+                     'default', 'keras', 'tflite',
+                     dataset=datasetsamples.get('PetDataset'),
+                     compiled_model_path=datasetimages.path)
 
-            self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
-                                'llvm',
-                                'keras',
-                                'so',
-                                dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=datasetimages.path)
+            self.add('kenning.compilers.tvm.TVMCompiler',
+                     'llvm', 'keras', 'so',
+                     dataset='PetDataset',
+                     compiled_model_path=datasetimages.path)
 
-            self.init_optimizer('kenning.compilers.tvm.TVMCompiler',
-                                'llvm',
-                                'torch',
-                                'so',
-                                dataset=datasetsamples.get('PetDataset'),
-                                compiled_model_path=datasetimages.path)
+            self.add('kenning.compilers.tvm.TVMCompiler',
+                     'llvm', 'torch', 'so',
+                     dataset='PetDataset',
+                     compiled_model_path=datasetimages.path)
 
-        def init_optimizer(self,
-                           import_path: str,
-                           target: str,
-                           modelframework: str,
-                           filesuffix: str,
-                           dataset: Dataset = None,
-                           compiled_model_path: Path = datasetimages.path,
-                           dataset_percentage: float = 1.0,
-                           **kwargs):
+        def add(self,
+                import_path: str,
+                target: str,
+                modelframework: str,
+                filesuffix: str,
+                dataset: str = None,
+                compiled_model_path: Path = datasetimages.path,
+                dataset_percentage: float = 1.0,
+                **kwargs):
             """
-            Initializes Optimizer with its compilation arguments
-            Adds Optimizer, its target and modelframework to samples.
+            Adds Optimizer class to samples with its parameters.
 
             Parameters
             ----------
@@ -190,24 +199,17 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 If the dataset is used for optimization (quaantization), the
                 dataset percentage determines how much of data samples is going
                 to be used.
-
-            Returns
-            -------
-            Optimizer:
-                Initialized optimizer object.
             """
+            optimizer = load_class(import_path)
             optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework
             file_name = optimizer_name + '.' + filesuffix
             compiled_model_path = compiled_model_path / file_name
-            optimizer = load_class(import_path)
-            optimizer = optimizer(dataset,
-                                  compiled_model_path,
-                                  target=target,
-                                  modelframework=modelframework,
-                                  dataset_percentage=dataset_percentage,
-                                  **kwargs)
+            self._params[optimizer_name] = (
+                (dataset, compiled_model_path),
+                {'target': target, 'modelframework': modelframework,
+                 'dataset_percentage': dataset_percentage, **kwargs}
+                                            )
             self.samples[optimizer_name] = optimizer
-            return optimizer
     return OptimizerData()
 
 
@@ -217,32 +219,28 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
         def __init__(self):
             """
             ModelWrapper samples.
-            Stores basic ModelWrapper objects.
+            Stores parameters for ModelWrapper objects creation.
             """
             super().__init__()
             torch_pet_mobilenet_import_path = "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2"    # noqa: E501
             tensorflow_pet_mobilenet_import_path = "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2"  # noqa: E501
 
-            self.init_modelwrapper(
+            self.add(
                 torch_pet_mobilenet_import_path,
                 modelsamples.get('torch_weights')[0],
                 dataset=datasetsamples.get('PetDataset')
             )
 
-            self.init_modelwrapper(
+            self.add(
                 tensorflow_pet_mobilenet_import_path,
                 modelsamples.get('keras')[0],
                 dataset=datasetsamples.get('PetDataset')
             )
 
-        def init_modelwrapper(self,
-                              import_path: str,
-                              model: str,
-                              dataset: Dataset = None,
-                              from_file: bool = True,
-                              **kwargs):
+        def add(self, import_path: str, model: str,
+                dataset: Dataset = None, from_file: bool = True, **kwargs):
             """
-            Initializes ModelWrapper and adds it to samples.
+            Adds ModelWrapper class to samples with its parameters.
 
             Parameters
             ----------
@@ -254,17 +252,12 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
                 The dataset to verify inference.
             from_file: bool
                 True if model should be loaded from file.
-
-            Returns
-            -------
-            ModelWrapper:
-                initialized ModelWrapper.
             """
             wrapper = load_class(import_path)
-            wrapper = wrapper(model, dataset, from_file=from_file, **kwargs)
-            modelwrapper_name = import_path.rsplit('.')[-1]
-            self.samples[modelwrapper_name] = wrapper
-            return wrapper
+            wrapper_name = import_path.rsplit('.')[-1]
+            self._params[wrapper_name] = ((model, dataset),
+                                          {'from_file': from_file, **kwargs})
+            self.samples[wrapper_name] = wrapper
     return WrapperData()
 
 
@@ -274,19 +267,15 @@ def datasetsamples(datasetimages: DataFolder):
         def __init__(self):
             """
             Dataset samples.
-            Stores basic dataset objects.
+            Stores parameters for dataset objects creation.
             """
             super().__init__()
-            self.init_dataset("kenning.datasets.pet_dataset.PetDataset")
+            self.add("kenning.datasets.pet_dataset.PetDataset")
 
-        def init_dataset(self,
-                         import_path: str,
-                         datapath: Path = datasetimages.path,
-                         batch_size: int = 1,
-                         download_dataset: bool = False,
-                         **kwargs):
+        def add(self, import_path: str, datapath: Path = datasetimages.path,
+                batch_size: int = 1, download_dataset: bool = False, **kwargs):
             """
-            Initializes Dataset and adds it to samples.
+            Adds Dataset class to samples with its parameters.
 
             Parameters
             ----------
@@ -301,16 +290,16 @@ def datasetsamples(datasetimages: DataFolder):
 
             Returns
             -------
-            Dataset: initialized Dataset.
+            Dataset: Class Dataset.
             """
             dataset = load_class(import_path)
-            dataset = dataset(datapath,
-                              batch_size=batch_size,
-                              download_dataset=download_dataset,
-                              **kwargs)
             dataset_name = import_path.rsplit('.')[-1]
+            self._params[dataset_name] = ((datapath, ), {
+                'batch_size': batch_size,
+                'download_dataset': download_dataset,
+                **kwargs}
+            )
             self.samples[dataset_name] = dataset
-            return dataset
     return DatasetData()
 
 

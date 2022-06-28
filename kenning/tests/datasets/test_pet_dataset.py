@@ -41,7 +41,7 @@ class TestPetDataset:
         Tests dataset behaviour if incorrect arguments are passed
         to constructor.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         PetDataset.__init__()
         """
@@ -64,7 +64,7 @@ class TestPetDataset:
         Tests dataset behaviour if empty 'annotations/list.txt' is passed
         as argument to constructor.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         dataset.get()
         dataset.__next__()
@@ -84,7 +84,7 @@ class TestPetDataset:
         Tests dataset behaviour if incorrect data is passed to
         'annotations/list.txt'.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         PetDataset.prepare()
         PetDataset.get_data()
@@ -112,7 +112,7 @@ class TestPetDataset:
         Tests dataset behaviour if wrong parameters and correct data
         are passed.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         PetDataset.__init__()
         PetDataset.__next__()

@@ -4,12 +4,12 @@ import os
 
 
 class TestOptimizerModelWrapper:
-    def test_compile_existance_models(self, optimizerSamples, fake_images,
+    def test_compile_existence_models(self, optimizerSamples, fake_images,
                                       modelSamples, modelwrapperSamples):
         """
-        Tests compilation process for models presented in kenning.
+        Tests compilation process for models presented in Kenning docs.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         Optimizer.consult_model_type()
         Optimizer.compile()
@@ -17,13 +17,13 @@ class TestOptimizerModelWrapper:
         Used fixtures
         -------------
         optimizerSamples - to get optimizer instances.
-        modelSamples - to get pathes for models to compile.
+        modelSamples - to get paths for models to compile.
         modelwrapperSamples - to get inputshape and data type.
         """
 
         def run_tests(optimizer, model_path, wrapper_name, **kwargs):
             """
-            Arguments
+            Parameters
             ---------
             optimizer: Optimizer
                 The optimizer instance that being tested.
@@ -57,7 +57,7 @@ class TestOptimizerModelWrapper:
         Tests saving model to onnx format with modelwrappers
         and converting it using optimizers.
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         ModelWrapper.save_to_onnx()
         Optimizer.consult_model_type()

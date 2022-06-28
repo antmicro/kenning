@@ -3,7 +3,7 @@ class TestModelWrapperAndDatasetCompatibility:
         """
         Tests dataset functions used by modelwrappers for data delivering
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         dataset.prepare_input_samples()
         dataset.prepare_output_samples()
@@ -17,7 +17,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
         def run_tests(dataset):
             """
-            Arguments
+            Parameters
             ---------
             dataset : Dataset
                 A Dataset object that is being tested
@@ -46,7 +46,7 @@ class TestModelWrapperAndDatasetCompatibility:
         """
         Tests modelwrapper functions to deliver output to datasets
 
-        List of methods are being tested
+        List of methods that are being tested
         --------------------------------
         modelwrapper.test_inference()
         dataset.evaluate()
@@ -59,7 +59,7 @@ class TestModelWrapperAndDatasetCompatibility:
 
         def run_tests(wrapper):
             """
-            Arguments
+            Parameters
             ---------
             wrapper: ModelWrapper
                 A ModelWrapper object that is being tested

@@ -70,8 +70,8 @@ def modelSamples():
     class ModelData(Samples):
         def __init__(self):
             """
-            Models samples.
-            Stores pathes to models presented in kenning.
+            Model samples.
+            Stores paths to models presented in Kenning docs.
             """
             super().__init__()
             self.init_model("/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",  # noqa: E501
@@ -326,7 +326,7 @@ def fake_images():
     class DataFolder:
         def __init__(self, datapath: Path, amount: int):
             """
-            Arguments
+            Parameters
             --------
             datapath: Path
                 A path to data files
@@ -345,7 +345,7 @@ def write_to_dirs(path, amount):
     Creates files under provided 'path' such as 'list.txt' for PetDataset,
     'annotations.csv' and 'classnames.csv' for OpenImagesDataset.
 
-    Arguments
+    Parameters
     --------
     path: Path
         The Path to where data have to be located

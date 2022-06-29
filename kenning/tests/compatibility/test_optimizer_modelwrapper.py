@@ -40,8 +40,8 @@ class TestOptimizerModelWrapper:
         assert model_type in optimizer.get_input_formats()
         assert model_type in wrapper.get_output_formats()
 
-        filepath = tempfile.NamedTemporaryFile().name[5:]
-        filepath = tmp_path / filepath
+        import uuid
+        filepath = tmp_path / uuid.uuid4().hex
         inputshapes, dtype = wrapper.get_input_spec()
 
         optimizer.set_compiled_model_path(filepath)

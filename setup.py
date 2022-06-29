@@ -55,5 +55,11 @@ setuptools.setup(
         ":python_version<'3.9'": [
             'importlib_resources>=5.1.4'
         ],
+        'iree': [
+            'iree-compiler>=20220415.108',
+            'iree-runtime>=20220415.108',
+            'iree-tools-tf>=20220415.108',
+            'iree-tools-tflite>=20220415.108',
+        ]
     },
 )

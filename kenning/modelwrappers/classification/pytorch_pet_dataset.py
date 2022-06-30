@@ -249,7 +249,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         self.model.eval()
 
     def save_to_onnx(self, modelpath):
-        x = torch.randn(1, 3, 224, 224, requires_grad=True).cuda()
+        x = torch.randn(1, 3, 224, 224, requires_grad=True, device=self.device)
         torch.onnx.export(
             self.model,
             x,

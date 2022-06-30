@@ -11,8 +11,12 @@ class PyTorchWrapper(ModelWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):
-        self.model.load_state_dict(copy.deepcopy(torch.load(modelpath)))
-        self.model.to(self.device)
+        self.model.load_state_dict(
+            copy.deepcopy(torch.load(
+                modelpath,
+                map_location=self.device
+            ))
+        )
         self.model.eval()
 
     def save_model(self, modelpath):

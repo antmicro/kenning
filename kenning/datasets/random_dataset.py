@@ -21,6 +21,12 @@ class RandomizedClassificationDataset(Dataset):
             'type': int,
             'default': 1000
         },
+        'numclasses': {
+            'argparse_name': '--num-classes',
+            'description': 'Number of classes in inputs',
+            'type': int,
+            'default': 3
+        },
         'inputdims': {
             'argparse_name': '--input-dims',
             'description': 'Dimensionality of the inputs',
@@ -42,6 +48,7 @@ class RandomizedClassificationDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             samplescount: int = 1000,
+            numclasses: int = 3,
             inputdims: list = [224, 224, 3],
             outputdims: list = [1000, ],
             download_dataset: bool = False):
@@ -56,6 +63,8 @@ class RandomizedClassificationDataset(Dataset):
             The size of batches of data delivered during inference
         samplescount : int
             The number of samples in the dataset
+        numclasses : int
+            The number of classes in the dataset
         inputdims : list
             The dimensionality of the inputs
         outputdims : list
@@ -64,6 +73,7 @@ class RandomizedClassificationDataset(Dataset):
         self.samplescount = samplescount
         self.inputdims = inputdims
         self.outputdims = outputdims
+        self.numclasses = numclasses
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -72,13 +82,20 @@ class RandomizedClassificationDataset(Dataset):
             args.dataset_root,
             args.inference_batch_size,
             args.num_samples,
+            args.numclasses,
             args.input_dims,
             args.output_dims
         )
 
+    def get_class_names(self):
+        return [str(i) for i in range(self.numclasses)]
+
+    def get_input_mean_std(self):
+        return (0.0, 1.0)
+
     def prepare(self):
-        self.dataX = [i for i in range(self.samplescount)]
-        self.dataY = [i for i in range(self.samplescount)]
+        self.dataX = [[i for i in range(self.numclasses)] for j in range(self.samplescount)]    # noqa: E501
+        self.dataY = [[i for i in range(self.numclasses)] for j in range(self.samplescount)]    # noqa: E501
 
     def download_dataset_fun(self):
         pass
@@ -87,7 +104,7 @@ class RandomizedClassificationDataset(Dataset):
         result = []
         for sample in samples:
             np.random.seed(sample)
-            result.append(np.random.randint(0, 255, size=self.inputdims))
+            result.append(np.random.randn(*self.inputdims))
         return result
 
     def prepare_output_samples(self, samples):

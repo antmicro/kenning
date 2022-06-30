@@ -32,11 +32,12 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self,
             modelpath: Path,
             dataset: Dataset,
+            from_file: bool = True,
             modelcls: str = '',
-            numclasses: int = 1000,
-            from_file: bool = True):
+            numclasses: int = 1000):
         """
-        Creates the model wrapper.
+        Creates model wrapper for TensorFlow classification
+        model pretrained on ImageNet dataset.
 
         Parameters
         ----------
@@ -44,6 +45,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
             The path to the model
         dataset : Dataset
             The dataset to verify the inference
+        from_file: bool
+            True if model should be loaded from file
         modelcls : str
             The model class import path
             Used for loading keras.applications pretrained models

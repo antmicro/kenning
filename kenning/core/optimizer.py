@@ -34,7 +34,7 @@ class Optimizer(object):
         'dataset_percentage': {
             'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
             'type': float,
-            'default': 0.25
+            'default': 1.0
         }
     }
 
@@ -211,6 +211,12 @@ class Optimizer(object):
             dataset=dataset,
             **parsed_json_dict
         )
+
+    def set_compiled_model_path(self, compiled_model_path: Path):
+        """
+        Sets path for compiled model.
+        """
+        self.compiled_model_path = compiled_model_path
 
     def set_input_type(self, inputtype: str):
         """

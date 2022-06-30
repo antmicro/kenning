@@ -121,7 +121,7 @@ class IREECompiler(Optimizer):
         },
         'backend': {
             'argparse_name': '--backend',
-            'description': 'Name of the backend that will run the compiled module',
+            'description': 'Name of the backend that will run the compiled module',  # noqa: E501
             'required': True,
             'enum': list(backend_convert.keys())
         },

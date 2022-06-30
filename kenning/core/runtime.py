@@ -312,7 +312,7 @@ class Runtime(object):
         """
         raise NotImplementedError
 
-    def process_input(self, input_data):
+    def process_input(self, input_data: bytes):
         """
         Processes received input and measures the performance quality.
 

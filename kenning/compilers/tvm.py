@@ -99,7 +99,12 @@ def torchconversion(
             )
             return wrapper(out[0])
 
-    model_func = torch.load
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    def model_func(modelpath: Path):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        return torch.load(modelpath, map_location=device)
+
     model = TraceWrapper(model_func(modelpath))
     model.eval()
     inp = torch.Tensor(
@@ -107,11 +112,9 @@ def torchconversion(
             0.0,
             250.0,
             (mul(input_shapes[list(input_shapes.keys())[0]]))
-        )
+        ),
+        device=device
     )
-
-    if next(model.parameters()).is_cuda:
-        inp = inp.to('cuda')
 
     with torch.no_grad():
         model(inp)

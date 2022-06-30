@@ -22,7 +22,7 @@ import kenning.utils.logger as logger
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(argv[0], add_help=False)
+    parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'jsoncfg',
         help='The path to the input JSON file with configuration'

@@ -29,7 +29,7 @@ from kenning.core.measurements import MeasurementsCollector
 def main(argv):
     command = get_command(argv)
 
-    parser = argparse.ArgumentParser(argv[0], add_help=False)
+    parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'jsoncfg',
         help='The path to the input JSON file with configuration of the inference'  # noqa: E501

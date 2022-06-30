@@ -17,5 +17,5 @@ flake8:
 pytest:
     stage: tests
     script:
-        - pytest .
+        - PYTHONPATH=$(pwd):$PTHONPATH pytest .
     allow_failure: false

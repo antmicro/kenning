@@ -8,7 +8,7 @@ import tvm.relay as relay
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, Tuple
 import re
 import json
 
@@ -389,7 +389,7 @@ class TVMCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes,
+            inputshapes: Dict[str, Tuple[int, ...]],
             dtype='float32'):
         self.inputdtype = dtype
 

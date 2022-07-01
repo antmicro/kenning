@@ -6,6 +6,7 @@ from typing import Type
 import pytest
 
 
+@pytest.mark.fast
 @pytest.mark.parametrize("runtimecls", [(Runtime)])
 class TestCoreRuntime:
 

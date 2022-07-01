@@ -3,6 +3,7 @@ import pytest
 
 
 class TestModelWrapperAndDatasetCompatibility:
+    @pytest.mark.fast
     @pytest.mark.parametrize("datasetname", [
         ("PetDataset"),
     ])
@@ -41,6 +42,7 @@ class TestModelWrapperAndDatasetCompatibility:
         mean_and_std = dataset.get_input_mean_std()
         assert isinstance(mean_and_std, tuple)
 
+    @pytest.mark.slow
     @pytest.mark.parametrize("wrappername", [
         ('PyTorchPetDatasetMobileNetV2'),
         ('TensorFlowPetDatasetMobileNetV2')

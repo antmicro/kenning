@@ -5,6 +5,7 @@ import pytest
 import kenning.datasets.pet_dataset
 
 
+@pytest.mark.fast
 class TestLoadClass:
     def test_empty_string(self):
         error_message = "not enough values to unpack (expected 2, got 1)"
@@ -35,6 +36,7 @@ class TestLoadClass:
         assert error_message in str(execinfo.value)
 
 
+@pytest.mark.fast
 class TestGetKenningSubmoduleFromPath:
     def test_multiple_kenning(self):
         x = "/tmp/smth/anything/kenning/kenning/kenning/core/"
@@ -64,6 +66,7 @@ class TestGetKenningSubmoduleFromPath:
         assert "not in tuple" in str(execinfo.value)
 
 
+@pytest.mark.fast
 class TestGetCommand:
     def test_invalid_capitalization(self):
         with pytest.raises(ValueError) as execinfo:

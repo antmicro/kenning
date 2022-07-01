@@ -36,6 +36,7 @@ def annotations() -> Path:
     shutil.rmtree(path)
 
 
+@pytest.mark.fast
 class TestPetDataset:
     def test_not_exist(self):
         """

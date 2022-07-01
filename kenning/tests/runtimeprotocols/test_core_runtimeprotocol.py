@@ -1,6 +1,7 @@
 import pytest
 
 
+@pytest.mark.fast
 class TestRuntimeProtocol:
     @pytest.mark.xfail()
     def test_constructor(self):
@@ -67,18 +68,21 @@ class TestRuntimeProtocol:
         assert 0
 
 
+@pytest.mark.fast
 class TestCheckRequest:
     @pytest.mark.xfail()
     def test_one(self):
         assert 0
 
 
+@pytest.mark.fast
 class TestRequestFailure:
     @pytest.mark.xfail()
     def test_one(self):
         assert 0
 
 
+@pytest.mark.fast
 class TestMessageType:
     @pytest.mark.xfail()
     def test_to_bytes(self):
@@ -89,6 +93,7 @@ class TestMessageType:
         assert 0
 
 
+@pytest.mark.fast
 class TestServerStatus:
     @pytest.mark.xfail()
     def test_one(self):

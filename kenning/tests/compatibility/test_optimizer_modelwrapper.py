@@ -5,6 +5,7 @@ from kenning.tests.conftest import Samples
 from pathlib import Path
 
 
+@pytest.mark.slow
 class TestOptimizerModelWrapper:
     @pytest.mark.parametrize('optimizername', [('TFLiteCompiler_keras'),
                                                ('TVMCompiler_keras'),

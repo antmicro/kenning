@@ -99,7 +99,12 @@ def torchconversion(
             )
             return wrapper(out[0])
 
-    model_func = torch.load
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
+    def model_func(modelpath: Path):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+        return torch.load(modelpath, map_location=device)
+
     model = TraceWrapper(model_func(modelpath))
     model.eval()
     inp = torch.Tensor(
@@ -107,11 +112,9 @@ def torchconversion(
             0.0,
             250.0,
             (mul(input_shapes[list(input_shapes.keys())[0]]))
-        )
+        ),
+        device=device
     )
-
-    if next(model.parameters()).is_cuda:
-        inp = inp.to('cuda')
 
     with torch.no_grad():
         model(inp)
@@ -244,7 +247,6 @@ class TVMCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            dataset_percentage: float = 1.0,
             modelframework: str = 'onnx',
             target: str = 'llvm',
             target_host: str = None,
@@ -262,10 +264,6 @@ class TVMCompiler(Optimizer):
             Dataset object
         compiled_model_path : Path
             Path where compiled model will be saved
-        dataset_percentage : float
-            If the dataset is used for optimization (quantization), the
-            dataset_percentage determines how much of data samples is going
-            to be used
         modelframework : str
             Framework of the input model, used to select a proper backend
         target : str
@@ -297,7 +295,7 @@ class TVMCompiler(Optimizer):
         self.conversion_func = conversion_func
         self.quantization_details_path = quantization_details_path
         self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path, dataset_percentage)
+        super().__init__(dataset, compiled_model_path)
 
     @classmethod
     def from_argparse(cls, dataset, args):

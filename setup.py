@@ -26,14 +26,17 @@ setuptools.setup(
         'psutil>=5.8.0',
         'scikit_learn>=0.24.1',
         'sphinx_antmicro_theme @ git+https://github.com/antmicro/sphinx_antmicro_theme.git#egg=sphinx_antmicro_theme',  # noqa: E501
+        'docutils==0.16',
         'tqdm>=4.56.2',
+        'jsonschema'
     ],
     extras_require={
         'tensorflow': [
             'onnx_tf>=1.7.0',
             'tensorflow>=2.4.1',
             'tensorflow_addons>=0.12.1',
-            'tf2onnx>=1.8.3'
+            'tf2onnx>=1.8.3',
+            'tensorflow_probability'
             ],
         'torch': [
             'torch>=1.7.1'

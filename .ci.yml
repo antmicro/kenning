@@ -1,0 +1,42 @@
+image: $CI_IMAGE
+
+variables:
+    GIT_STRATEGY: clone
+    GIT_SUBMODULE_STRATEGY: recursive
+
+stages:
+    - lint
+    - tests
+
+flake8:
+    stage: lint
+    script:
+        - flake8 .
+    allow_failure: false
+
+pytest:
+    stage: tests
+    script:
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -rs .
+    allow_failure: false
+
+onnx-conversions:
+    stage: tests
+    script:
+        - ln /usr/bin/python3 /usr/bin/python
+        - ./scripts/onnxconversions.sh
+    artifacts:
+        paths:
+            - build/onnx-support.rst
+    allow_failure: false
+
+sample-compilation:
+    stage: tests
+    script:
+        - ln /usr/bin/python3 /usr/bin/python
+        - ./scripts/tvm-tensorflow-classification-cpu.sh
+    artifacts:
+        paths:
+            - build/local-cpu-tvm-tensorflow-classification.json
+            - docs
+    allow_failure: false

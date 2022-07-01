@@ -175,7 +175,6 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 filesuffix: str,
                 dataset: str = None,
                 compiled_model_path: Path = datasetimages.path,
-                dataset_percentage: float = 1.0,
                 **kwargs):
             """
             Adds Optimizer class to samples with its parameters.
@@ -195,10 +194,6 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 during compilation stage.
             compiled_model_path: Path
                 Path where compiled model will be saved.
-            dataset_percentage: float
-                If the dataset is used for optimization (quaantization), the
-                dataset percentage determines how much of data samples is going
-                to be used.
             """
             optimizer = load_class(import_path)
             optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework
@@ -206,9 +201,12 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             compiled_model_path = compiled_model_path / file_name
             self._params[optimizer_name] = (
                 (dataset, compiled_model_path),
-                {'target': target, 'modelframework': modelframework,
-                 'dataset_percentage': dataset_percentage, **kwargs}
-                                            )
+                {
+                    'target': target,
+                    'modelframework': modelframework,
+                    **kwargs
+                }
+            )
             self.samples[optimizer_name] = optimizer
     return OptimizerData()
 

@@ -89,6 +89,22 @@ class Samples:
         raise StopIteration
 
 
+@pytest.fixture(scope='class')
+def tmpfolder() -> Path:
+    """
+    Creates a temporary directory.
+
+    Returns
+    -------
+    Path: A Path object to temporary directory.
+    """
+    folder_name = tempfile.NamedTemporaryFile().name
+    tmp_folder = Path(folder_name)
+    tmp_folder.mkdir()
+    yield tmp_folder
+    shutil.rmtree(tmp_folder)
+
+
 @pytest.fixture()
 def modelsamples():
     class ModelData(Samples):
@@ -302,32 +318,34 @@ def datasetsamples(datasetimages: DataFolder):
 
 
 @pytest.fixture(scope='class')
-def datasetimages():
+def datasetimages(tmpfolder: Path) -> DataFolder:
     """
     Creates a temporary dir with images and data files.
     Images are located under 'image/' folder.
+
+    Parameters
+    ----------
+    tmpfolder: Path
+        A temporary folder
 
     Returns
     -------
     DataFolder: A DataFolder object that stores path to data and images amount
     """
     images_amount = 148
-    path = Path(tempfile.NamedTemporaryFile().name)
-    path.mkdir()
-    (path / 'images').mkdir()
-    (path / 'img').symlink_to(path / 'images')
-    (path / 'annotations').mkdir()
-    (path / 'annotations' / 'list.txt').touch()
-    write_to_dirs(path, images_amount)
+    (tmpfolder / 'images').mkdir()
+    (tmpfolder / 'img').symlink_to(tmpfolder / 'images')
+    (tmpfolder / 'annotations').mkdir()
+    (tmpfolder / 'annotations' / 'list.txt').touch()
+    write_to_dirs(tmpfolder, images_amount)
 
     for i in range(images_amount):
-        file = (path / 'images' / f'image_{i}.jpg')
+        file = (tmpfolder / 'images' / f'image_{i}.jpg')
         color = (randint(0, 255), randint(0, 255), randint(0, 255))
         img = Image.new(mode='RGB', size=(5, 5), color=color)
         img.save(file, 'JPEG')
 
-    yield DataFolder(path, images_amount)
-    shutil.rmtree(path)
+    return DataFolder(tmpfolder, images_amount)
 
 
 def write_to_dirs(path, amount):

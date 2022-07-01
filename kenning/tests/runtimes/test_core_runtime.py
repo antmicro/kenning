@@ -1,5 +1,6 @@
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.measurements import MeasurementsCollector
 from pytest_mock import MockerFixture
 from pytest import LogCaptureFixture
 from typing import Type
@@ -23,11 +24,13 @@ class TestCoreRuntime:
         runtime = runtimecls(RuntimeProtocol(), collect_performance_data=False)
         runtime.inference_session_start()
         assert runtime.statsmeasurements is None
+        MeasurementsCollector.clear()
 
         runtime = runtimecls(RuntimeProtocol(), collect_performance_data=True)
         runtime.inference_session_start()
         runtime.inference_session_end()
         assert runtime.statsmeasurements is None
+        MeasurementsCollector.clear()
 
     def test_inference_session_end(self, runtimecls: Type[Runtime]):
         """

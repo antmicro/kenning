@@ -43,12 +43,7 @@ class RuntimeTests:
 
     def test_close_server(self):
         """
-        Tests the `Runtime.test_close_server()` method.
-
-        Parameters
-        ----------
-        self.runtimecls: Type[Runtime]
-            Class to initialize Runtime object
+        Tests the `Runtime.close_server()` method.
         """
         runtime = self.initruntime()
         assert runtime.shouldwork is True
@@ -58,12 +53,7 @@ class RuntimeTests:
 
     def test_prepare_server(self):
         """
-        Tests the `Runtime.test_prepare_server()` method.
-
-        Parameters
-        ----------
-        self.runtimecls: Type[Runtime]
-            Class to initialize Runtime object
+        Tests the `Runtime.prepare_server()` method.
         """
         runtime = self.initruntime()
         with pytest.raises(NotImplementedError):
@@ -71,12 +61,7 @@ class RuntimeTests:
 
     def test_prepare_client(self):
         """
-        Tests the `Runtime.test_prepare_client()` method.
-
-        Parameters
-        ----------
-        self.runtimecls: Type[Runtime]
-            Class to initialize Runtime object
+        Tests the `Runtime.prepare_client()` method.
         """
         runtime = self.initruntime()
         with pytest.raises(NotImplementedError):
@@ -85,36 +70,17 @@ class RuntimeTests:
     def test_prepare_input(self):
         """
         Tests the `Runtime.prepare_input()` method.
-
-        Parameters
-        ----------
-        self.runtimecls: Type[Runtime]
-            Class to initialize Runtime object
         """
-        runtime = self.initruntime()
-        with pytest.raises(NotImplementedError):
-            runtime.prepare_input('kenning'.encode())
+        raise NotImplementedError
 
     def test_prepare_model(self):
         """
-        Tests the `Runtime.prepare_input()` method.
-
-        Parameters
-        ----------
-        self.runtimecls: Type[Runtime]
-            Class to initialize Runtime object
+        Tests the `Runtime.prepare_model()` method.
         """
-        runtime = self.initruntime()
-        with pytest.raises(NotImplementedError):
-            runtime.prepare_model('kenning'.encode())
+        raise NotImplementedError
 
-        with pytest.raises(NotImplementedError):
-            runtime.prepare_model(None)
-
-    def test_process_input(self,
-                           mocker: MockerFixture,
-                           caplog: LogCaptureFixture,
-                           ):
+    def test_process_input(self, mocker: MockerFixture,
+                           caplog: LogCaptureFixture):
         """
         Tests the `Runtime.process_input()` method.
 
@@ -124,8 +90,6 @@ class RuntimeTests:
             Fixture to provide changes to source code
         caplog: LogCaptureFixture
             Fixture to read logs
-
-            Class to initialize Runtime object
         """
         mocker.patch(
             'kenning.core.runtimeprotocol.RuntimeProtocol.request_success',
@@ -147,45 +111,24 @@ class RuntimeTests:
     def test_run(self):
         """
         Tests the `Runtime.run()` method.
-
-        Parameters
-        ----------
-
-            Class to initialize Runtime object
         """
-        runtime = self.initruntime()
-        with pytest.raises(NotImplementedError):
-            runtime.run()
+        raise NotImplementedError
 
     def test_upload_output(self):
         """
         Tests the `Runtime.upload_output()` method.
-
-        Parameters
-        ----------
-
-            Class to initialize Runtime object
         """
-        runtime = self.initruntime()
-        with pytest.raises(NotImplementedError):
-            runtime.upload_output('kenning'.encode())
+        raise NotImplementedError
 
     def test_upload_stats(self):
         """
         Tests the `Runtime.upload_stats()` method.
-
-        Parameters
-        ----------
-
-            Class to initialize Runtime object
         """
         # TODO: Test on real data with real output
         runtime = self.initruntime()
         assert b'{}' == runtime.upload_stats('kenning'.encode())
 
-    def test_upload_essentials(self,
-                               mocker: MockerFixture,
-                               ):
+    def test_upload_essentials(self, mocker: MockerFixture):
         """
         Tests the `Runtime.upload_essentials()` method.
 
@@ -193,8 +136,6 @@ class RuntimeTests:
         ----------
         mocker: MockerFixture
             Fixture to provide changes to source code
-
-            Class to initialize Runtime object
         """
         from pathlib import Path
         import uuid
@@ -214,15 +155,5 @@ class RuntimeTests:
     def test_prepare_local(self):
         """
         Tests the `Runtime.prepare_local()` method.
-
-        Parameters
-        ----------
-
-            Class to initialize Runtime object
         """
-        runtime = self.initruntime()
-        with pytest.raises(NotImplementedError):
-            runtime.prepare_model('kenning'.encode())
-
-        with pytest.raises(NotImplementedError):
-            runtime.prepare_model(None)
+        raise NotImplementedError

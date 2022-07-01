@@ -18,6 +18,52 @@ class TestCoreRuntime(RuntimeTests):
         runtime = self.runtimecls(self.runtimeprotocolcls(), *args, **kwargs)
         return runtime
 
+    def test_prepare_input(self):
+        """
+        Tests the `Runtime.prepare_input()` method.
+        """
+        runtime = self.initruntime()
+        with pytest.raises(NotImplementedError):
+            runtime.prepare_input('kenning'.encode())
+
+    def test_prepare_model(self):
+        """
+        Tests the `Runtime.prepare_input()` method.
+        """
+        runtime = self.initruntime()
+        with pytest.raises(NotImplementedError):
+            runtime.prepare_model('kenning'.encode())
+
+        with pytest.raises(NotImplementedError):
+            runtime.prepare_model(None)
+
+    def test_run(self):
+        """
+        Tests the `Runtime.run()` method.
+        """
+        runtime = self.initruntime()
+        with pytest.raises(NotImplementedError):
+            runtime.run()
+
+    def test_upload_output(self):
+        """
+        Tests the `Runtime.upload_output()` method.
+        """
+        runtime = self.initruntime()
+        with pytest.raises(NotImplementedError):
+            runtime.upload_output('kenning'.encode())
+
+    def test_prepare_local(self):
+        """
+        Tests the `Runtime.prepare_local()` method.
+        """
+        runtime = self.initruntime()
+        with pytest.raises(NotImplementedError):
+            runtime.prepare_model('kenning'.encode())
+
+        with pytest.raises(NotImplementedError):
+            runtime.prepare_model(None)
+
 
 @pytest.mark.fast
 @pytest.mark.usefixtures('runtimemodel')

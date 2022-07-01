@@ -186,6 +186,12 @@ class Measurements(object):
             self.data[measurementtype] = initvaluefunc()
         self.data[measurementtype] += valuetoadd
 
+    def clear(self):
+        """
+        Clears measurement data.
+        """
+        self.data.clear()
+
 
 class MeasurementsCollector(object):
     """
@@ -211,6 +217,13 @@ class MeasurementsCollector(object):
                 measurementsfile,
                 indent=2
             )
+
+    @classmethod
+    def clear(cls):
+        """
+        Clears measurement data.
+        """
+        cls.measurements.clear()
 
 
 def tagmeasurements(tagname: str):

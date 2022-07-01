@@ -17,7 +17,7 @@ flake8:
 pytest:
     stage: tests
     script:
-        - PYTHONPATH=$(pwd):$PTHONPATH pytest .
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -rs .
     allow_failure: false
 
 onnx-conversions:
@@ -35,13 +35,6 @@ sample-compilation:
     script:
         - ln /usr/bin/python3 /usr/bin/python
         - ./scripts/tvm-tensorflow-classification-cpu.sh
-        - python3 -m kenning.scenarios.render_report \
-            build/local-cpu-tvm-tensorflow-classification.json \
-            "Pet Dataset classification using TVM-compiled TensorFlow model" \
-            docs/source/generated/local-cpu-tvm-tensorflow-classification.rst \
-            --img-dir docs/source/generated/img \
-            --report-types performance classification \
-            --root-dir docs/source/
     artifacts:
         paths:
             - build/local-cpu-tvm-tensorflow-classification.json

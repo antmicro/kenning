@@ -247,7 +247,6 @@ class TVMCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            dataset_percentage: float = 1.0,
             modelframework: str = 'onnx',
             target: str = 'llvm',
             target_host: str = None,
@@ -265,10 +264,6 @@ class TVMCompiler(Optimizer):
             Dataset object
         compiled_model_path : Path
             Path where compiled model will be saved
-        dataset_percentage : float
-            If the dataset is used for optimization (quantization), the
-            dataset_percentage determines how much of data samples is going
-            to be used
         modelframework : str
             Framework of the input model, used to select a proper backend
         target : str
@@ -300,7 +295,7 @@ class TVMCompiler(Optimizer):
         self.conversion_func = conversion_func
         self.quantization_details_path = quantization_details_path
         self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path, dataset_percentage)
+        super().__init__(dataset, compiled_model_path)
 
     @classmethod
     def from_argparse(cls, dataset, args):

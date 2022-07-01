@@ -17,3 +17,11 @@ python3 -m kenning.scenarios.inference_tester \
     --inference-batch-size 1 \
     --download-dataset \
     --verbosity INFO
+
+python3 -m kenning.scenarios.render_report \
+    --img-dir docs/source/generated/img \
+    --report-types performance classification \
+    --root-dir docs/source/ \
+    build/local-cpu-tvm-tensorflow-classification.json \
+    "Pet Dataset classification using TVM-compiled TensorFlow model" \
+    docs/source/generated/local-cpu-tvm-tensorflow-classification.rst

@@ -118,8 +118,9 @@ def torchconversion(
             250.0,
             (mul(input_shapes[list(input_shapes.keys())[0]]))
         ),
-        device=device
     )
+
+    inp = inp.to(device)
 
     with torch.no_grad():
         model(inp)

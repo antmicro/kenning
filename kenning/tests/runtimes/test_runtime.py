@@ -83,20 +83,20 @@ class TestTFLiteRuntime(RuntimeTests):
         runtime = self.initruntime()
         runtime.prepare_model(None)
 
-    def test_prepare_model_bytes_one(self):
-        # Try to load from incorrect byte stream
-        runtime = self.initruntime()
-        with pytest.raises(ValueError):
-            runtime.prepare_model(b'Kenning')
-
-    def test_prepare_model_bytes_two(self):
         # Load from empty byte string
         runtime = self.initruntime()
         assert runtime.prepare_model(b'') is True
 
+        # Doesn't overwrites model file as bytestream is empty
         # Check if written file is empty
         with open(self.runtimemodel, 'rb') as modelfile:
             assert b'' != modelfile.read()
+
+        # Overwrites model file
+        # Try to load from incorrect byte stream
+        runtime = self.initruntime()
+        with pytest.raises(ValueError):
+            runtime.prepare_model(b'Kenning')
 
     def test_prepare_input(self):
         # Correct data, but with wrong shape and datatype
@@ -178,7 +178,7 @@ class TestTVMRuntime(RuntimeTests):
         runtime = self.initruntime()
         assert runtime.prepare_model(None) is True
 
-    def test_prepare_model_bytes_one(self):
+        # Doesn't overwrites model file because bytestream is empty
         # Load from empty byte stream
         runtime = self.initruntime()
         assert runtime.prepare_model(b'') is True
@@ -187,7 +187,8 @@ class TestTVMRuntime(RuntimeTests):
         with open(self.runtimemodel, 'rb') as modelfile:
             assert b'' != modelfile.read()
 
-    def test_prepare_model_bytes_two(self):
+    def test_prepare_model_bytes(self):
+        # Overwrites model file
         # Try to load from incorrect byte stream
         runtime = self.initruntime()
         with pytest.raises(TVMError):

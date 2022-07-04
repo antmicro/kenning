@@ -27,7 +27,7 @@ jobs:
           python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
           python -m pip install --upgrade mxnet gluoncv
           python -m pip install --upgrade jinja2
-          python -m pip install --upgrade numpy
+          python -m pip install --upgrade numpy jsonschema
       - name: Run ONNX conversion tests
         run: |
           ./scripts/onnxconversions.sh
@@ -62,7 +62,7 @@ jobs:
           python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
           python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
           python -m pip install --upgrade onnx
-          python -m pip install --upgrade numpy
+          python -m pip install --upgrade numpy jinja2 jsonschema
       - name: Install TVM
         run: |
           git clone https://github.com/apache/tvm tvm
@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
-          python -m pip install --upgrade onnx Jinja2 tqdm psutil scikit_learn
+          python -m pip install --upgrade onnx jinja2 tqdm psutil scikit_learn
           python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
           python -m pip install sphinxcontrib-napoleon docutils==0.16
       - name: Generate documentation

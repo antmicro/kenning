@@ -50,7 +50,7 @@ def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
 
 
 @pytest.fixture(scope='function')
-def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
+def runtimemodel(request: FixtureRequest, tmpfolder: Path):
     """
     Fixture that creates simple, runtime specific model.
 
@@ -60,7 +60,8 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
     The optimizer class for model compiling should be passed using:
     `@pytest.mark.parametrize('runtimemodel', [Optimizer], indirect=True)`
 
-    The returned Path object can be accessed using `self.runtimemodel`
+    Returned objects can be accessed using `self.objectname` variables
+
 
     Parameters
     ----------
@@ -72,8 +73,12 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
 
     Returns
     -------
-    Path:
+    runtimemodel: Path
         The path to created model for runtime
+    inputshapes: Tuple[int, ...]
+        The input shape of model
+    outputshapes: Tuple[int, ...]
+        The output shape of model
     """
 
     onnxmodel, inputshapes = create_onnx_model(tmpfolder)
@@ -84,3 +89,5 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
     optimizer = request.param(None, compiledmodelpath)
     optimizer.compile(onnxmodel, inputshapes, dtype='float32')
     request.cls.runtimemodel = compiledmodelpath
+    request.cls.inputshapes = (1, 1, 5, 5)
+    request.cls.outputshapes = (1, 1, 3, 3)

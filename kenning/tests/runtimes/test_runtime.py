@@ -107,7 +107,8 @@ class TestTFLiteRuntime(RuntimeTests):
         assert output is True
 
         # Correct input shape and datatype
-        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         assert runtime.prepare_input(data) is True
@@ -129,7 +130,8 @@ class TestTFLiteRuntime(RuntimeTests):
         runtime.run()
 
         # Run with prepared input
-        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         runtime.prepare_input(data)
@@ -150,12 +152,12 @@ class TestTFLiteRuntime(RuntimeTests):
             runtime.upload_output(b'')
 
         # Test with model and input
-        data = np.zeros((1, 1, 5, 5), dtype=np.float32).tobytes()
+        data = np.zeros(self.inputshapes, dtype=np.float32).tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         runtime.prepare_input(data)
         runtime.run()
-        expected_data = np.zeros((1, 1, 3, 3), dtype=np.float32).tobytes()
+        expected_data = np.zeros(self.outputshapes, dtype=np.float32).tobytes()
         assert runtime.upload_output(b'') == expected_data
 
 
@@ -206,14 +208,15 @@ class TestTVMRuntime(RuntimeTests):
         assert output is False
 
         # Correct input shape, but wrong datatype
-        data = np.arange(25).reshape(1, 1, 5, 5).tobytes()
+        data = np.arange(25).reshape(self.inputshapes).tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         output = runtime.prepare_input(data)
         assert output is False
 
         # Correct input shape and datatype
-        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         output = runtime.prepare_input(data)
@@ -244,7 +247,8 @@ class TestTVMRuntime(RuntimeTests):
         runtime.run()
 
         # Run with prepared input
-        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         runtime.prepare_input(data)
@@ -265,12 +269,12 @@ class TestTVMRuntime(RuntimeTests):
             runtime.upload_output(b'')
 
         # Test with model and input
-        data = np.zeros((1, 1, 5, 5), dtype=np.float32).tobytes()
+        data = np.zeros((self.inputshapes), dtype=np.float32).tobytes()
         runtime = self.initruntime()
         runtime.prepare_model(None)
         runtime.prepare_input(data)
         runtime.run()
-        expected_data = np.zeros((1, 1, 3, 3), dtype=np.float32).tobytes()
+        expected_data = np.zeros(self.outputshapes, dtype=np.float32).tobytes()
         assert runtime.upload_output(b'') == expected_data
 
 

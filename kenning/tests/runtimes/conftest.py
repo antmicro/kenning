@@ -1,6 +1,7 @@
 import pytest
 import uuid
 import torch
+from kenning.compilers.tvm import TVMCompiler
 from pathlib import Path
 from torch.autograd import Variable
 from typing import Dict, Tuple
@@ -77,6 +78,9 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
 
     onnxmodel, inputshapes = create_onnx_model(tmpfolder)
     compiledmodelname = (uuid.uuid4().hex)
+    if issubclass(request.param, TVMCompiler):
+        compiledmodelname += '.so'
+    print(request.param, ': ', compiledmodelname)
     compiledmodelpath = tmpfolder / compiledmodelname
     optimizer = request.param(None, compiledmodelpath)
     optimizer.compile(onnxmodel, inputshapes, dtype='float32')

@@ -143,6 +143,21 @@ class TestTFLiteRuntime(RuntimeTests):
         runtime.prepare_model(None)
         runtime.prepare_local()
 
+    def test_upload_output(self):
+        # Test on no model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.upload_output(b'')
+
+        # Test with model and input
+        data = np.zeros((1, 1, 5, 5), dtype=np.float32).tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
+        expected_data = np.zeros((1, 1, 3, 3), dtype=np.float32).tobytes()
+        assert runtime.upload_output(b'') == expected_data
+
 
 @pytest.mark.usefixtures('runtimemodel')
 @pytest.mark.parametrize('runtimemodel', [TVMCompiler], indirect=True)
@@ -242,6 +257,21 @@ class TestTVMRuntime(RuntimeTests):
         runtime = self.initruntime()
         runtime.prepare_model(None)
         runtime.prepare_local()
+
+    def test_upload_output(self):
+        # Test on no model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.upload_output(b'')
+
+        # Test with model and input
+        data = np.zeros((1, 1, 5, 5), dtype=np.float32).tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
+        expected_data = np.zeros((1, 1, 3, 3), dtype=np.float32).tobytes()
+        assert runtime.upload_output(b'') == expected_data
 
 
 @pytest.mark.xfail

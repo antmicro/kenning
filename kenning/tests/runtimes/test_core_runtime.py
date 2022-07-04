@@ -113,6 +113,24 @@ class TestTFLiteRuntime(RuntimeTests):
         with pytest.raises(AttributeError):
             runtime.prepare_input(b'')
 
+    def test_run(self):
+        # Run without model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.run()
+
+        # Run without any input
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.run()
+
+        # Run with prepared input
+        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
+
 
 @pytest.mark.usefixtures('runtimemodel')
 @pytest.mark.parametrize('runtimemodel', [TVMCompiler], indirect=True)
@@ -182,6 +200,24 @@ class TestTVMRuntime(RuntimeTests):
         runtime.prepare_model(None)
         with pytest.raises(ValueError):
             runtime.prepare_input(data)
+
+    def test_run(self):
+        # Run without model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.run()
+
+        # Run without any input
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.run()
+
+        # Run with prepared input
+        data = np.arange(25, dtype=np.float32).reshape(1, 1, 5, 5).tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
 
 
 @pytest.mark.xfail

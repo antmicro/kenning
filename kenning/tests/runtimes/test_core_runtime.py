@@ -135,6 +135,14 @@ class TestTFLiteRuntime(RuntimeTests):
         runtime.prepare_input(data)
         runtime.run()
 
+    def test_prepare_local(self):
+        runtime = self.initruntime()
+        runtime.prepare_local()
+
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_local()
+
 
 @pytest.mark.usefixtures('runtimemodel')
 @pytest.mark.parametrize('runtimemodel', [TVMCompiler], indirect=True)
@@ -226,6 +234,14 @@ class TestTVMRuntime(RuntimeTests):
         runtime.prepare_model(None)
         runtime.prepare_input(data)
         runtime.run()
+
+    def test_prepare_local(self):
+        runtime = self.initruntime()
+        runtime.prepare_local()
+
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_local()
 
 
 @pytest.mark.xfail

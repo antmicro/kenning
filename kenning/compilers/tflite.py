@@ -107,7 +107,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             modelframework: str = 'onnx',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 1.0,
+            dataset_percentage: float = 0.25,
             quantization_aware_training: bool = False):
         """
         The TFLite and EdgeTPU compiler.

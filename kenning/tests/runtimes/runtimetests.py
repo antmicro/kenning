@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from pytest import LogCaptureFixture
 
 
+@pytest.mark.fast
 class RuntimeTests:
     runtimecls: Type[Runtime]
     runtimeprotocolcls: Type[RuntimeProtocol]

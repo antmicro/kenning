@@ -49,7 +49,7 @@ def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
     return (modelpath, {'input.1': (1, 1, 5, 5)})
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope='function')
 def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
     """
     Fixture that creates simple, runtime specific model.
@@ -80,7 +80,6 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path) -> Path:
     compiledmodelname = (uuid.uuid4().hex)
     if issubclass(request.param, TVMCompiler):
         compiledmodelname += '.so'
-    print(request.param, ': ', compiledmodelname)
     compiledmodelpath = tmpfolder / compiledmodelname
     optimizer = request.param(None, compiledmodelpath)
     optimizer.compile(onnxmodel, inputshapes, dtype='float32')

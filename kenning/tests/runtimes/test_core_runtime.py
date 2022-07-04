@@ -94,6 +94,10 @@ class TestTFLiteRuntime(RuntimeTests):
         runtime = self.initruntime()
         assert runtime.prepare_model(b'') is True
 
+        # Check if written file is empty
+        with open(self.runtimemodel, 'rb') as modelfile:
+            assert b'' != modelfile.read()
+
     def test_prepare_input(self):
         # Correct data, but with wrong shape and datatype
         data = np.arange(100).tobytes()
@@ -153,6 +157,10 @@ class TestTVMRuntime(RuntimeTests):
         # Load from empty byte stream
         runtime = self.initruntime()
         assert runtime.prepare_model(b'') is True
+
+        # Check if written file is not empty
+        with open(self.runtimemodel, 'rb') as modelfile:
+            assert b'' != modelfile.read()
 
     def test_prepare_model_bytes_two(self):
         # Try to load from incorrect byte stream

@@ -12,7 +12,6 @@ from kenning.core.dataset import Dataset
 
 
 class TensorFlowOptimizer(Optimizer):
-
     arguments_structure = {
         'epochs': {
             'description': 'Number of epochs for the training',
@@ -48,7 +47,8 @@ class TensorFlowOptimizer(Optimizer):
         """
         TensorFlowOptimizer framework.
 
-        This class adds a functionality for models fine-tuning.
+        This class adds a functionality for classification models fine-tuning
+        using a given dataset and compiler options.
 
         Parameters
         ----------

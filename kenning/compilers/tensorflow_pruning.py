@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Dict, Tuple
 import tensorflow_model_optimization as tfmot
 
-from kenning.compilers.tensorflow import TensorFlowOptimizer
+from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 
 

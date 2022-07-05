@@ -1,100 +1,29 @@
+from runtimeprotocolbase import RuntimeProtocolTests
+from kenning.runtimeprotocols.network import NetworkProtocol
 import pytest
 
 
-@pytest.mark.fast
-class TestRuntimeProtocol:
-    @pytest.mark.xfail()
-    def test_constructor(self):
-        assert 0
+class TestNetworkProtocol(RuntimeProtocolTests):
+    runtimeprotocolcls = NetworkProtocol
+    host = '127.0.0.28'
+    port = 1234
 
-    @pytest.mark.xfail()
-    def test_initialize_server(self):
-        assert 0
+    @pytest.mark.xfail
+    def test_accept_client(self):
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
-    def test_initialize_client(self):
-        assert 0
+    @pytest.mark.xfail
+    def test_collect_messages(self):
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
-    def test_wait_for_activity(self):
-        assert 0
+    @pytest.mark.xfail
+    def test_wait_send(self):
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
-    def test_send_data(self):
-        assert 0
+    @pytest.mark.xfail
+    def test_send_message(self):
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
-    def test_receive_data(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_upload_input(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_upload_model(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_upload_quantization_details(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_request_processing(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_download_output(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_download_statistics(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_request_success(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_request_failure(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_parse_message(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_disconnect(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestCheckRequest:
-    @pytest.mark.xfail()
-    def test_one(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestRequestFailure:
-    @pytest.mark.xfail()
-    def test_one(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestMessageType:
-    @pytest.mark.xfail()
-    def test_to_bytes(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_from_bytes(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestServerStatus:
-    @pytest.mark.xfail()
-    def test_one(self):
-        assert 0
+    @pytest.mark.xfail
+    def test_recieve_confirmation(self):
+        raise NotImplementedError

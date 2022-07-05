@@ -1,7 +1,9 @@
 from runtimeprotocolbase import RuntimeProtocolTests
 from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
+from typing import Tuple, List
 import pytest
+import random
 import socket
 import multiprocessing
 
@@ -38,9 +40,54 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         protocol = self.initprotocol()
         assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
 
-    @pytest.mark.xfail
+        # Test attribute
+        protocol = self.initprotocol()
+        with pytest.raises(AttributeError):
+            protocol.accept_client(None, None)
+
     def test_collect_messages(self):
-        raise NotImplementedError
+
+        def generate_byte_data() -> Tuple[bytes, List[bytes]]:
+            """
+            Generates correct data for test.
+
+            Returns
+            -------
+            Tuple[bytes, List[bytes]]:
+                A tuple containing bytes stream and expected output
+            """
+            data = bytes()
+            answer = list()
+            for i in range(random.randint(1, 10)):
+                times = random.randint(0, 10)
+                data += (4*times).to_bytes(4, byteorder='little', signed=False)
+                answer.append(b'')
+                for j in range(times):
+                    number = (random.randint(0, 4294967295))
+                    num_bytes = number.to_bytes(4, byteorder='little',
+                                                signed=False)
+                    data += num_bytes
+                    answer[i] += num_bytes
+            return data, answer
+
+        # valid data
+        protocol = self.initprotocol()
+        assert not(protocol.collecteddata)
+        data, answer = generate_byte_data()
+        status, output = protocol.collect_messages(data)
+        assert output == answer and status == ServerStatus.DATA_READY
+
+        # empty data
+        protocol = self.initprotocol()
+        assert not(protocol.collecteddata)
+        status, output = protocol.collect_messages(b'')
+        assert output is None and status == ServerStatus.NOTHING
+
+        # wrong amount of bytes to be read
+        data = (10*4).to_bytes(4, 'little', signed=False)
+        data += (1).to_bytes(4, 'little', signed=False)
+        status, output = protocol.collect_messages(data)
+        assert output is None and status == ServerStatus.NOTHING
 
     @pytest.mark.xfail
     def test_wait_send(self):

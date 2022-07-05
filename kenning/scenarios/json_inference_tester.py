@@ -45,6 +45,11 @@ def main(argv):
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         default='INFO'
     )
+    parser.add_argument(
+        '--convert-to-onnx',
+        help='Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)',  # noqa: E501
+        type=Path
+    )
 
     args, _ = parser.parse_known_args(argv[1:])
 
@@ -53,7 +58,10 @@ def main(argv):
 
     datasetcfg = json_cfg['dataset']
     modelwrappercfg = json_cfg['model_wrapper']
-    optimizerscfg = json_cfg['optimizers']
+    optimizerscfg = (
+        json_cfg['optimizers']
+        if 'optimizers' in json_cfg else []
+    )
     runtimecfg = json_cfg['runtime']
     protocolcfg = (
         json_cfg['runtime_protocol']
@@ -110,11 +118,17 @@ def main(argv):
     inputspec, inputdtype = model.get_input_spec()
 
     prev_block = model
+
+    if args.convert_to_onnx:
+        modelpath = args.convert_to_onnx
+        prev_block.save_to_onnx(modelpath)
+
     for i in range(len(optimizers)):
         next_block = optimizers[i]
 
         format = next_block.consult_model_type(prev_block)
-        if format == 'onnx' and prev_block == model:
+        if (format == 'onnx' and prev_block == model) and \
+                not args.convert_to_onnx:
             modelpath = tempfile.NamedTemporaryFile().name
             prev_block.save_to_onnx(modelpath)
 
@@ -125,11 +139,10 @@ def main(argv):
         modelpath = prev_block.compiled_model_path
         inputdtype = prev_block.get_inputdtype()
 
-    compiler = next_block
     if protocol:
-        ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
+        ret = runtime.run_client(dataset, model, modelpath)
     else:
-        ret = runtime.run_locally(dataset, model, compiler.compiled_model_path)
+        ret = runtime.run_locally(dataset, model, modelpath)
     if not ret:
         return 1
 

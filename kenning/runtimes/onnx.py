@@ -82,9 +82,7 @@ class ONNXRuntime(Runtime):
 
         self.session = ort.InferenceSession(
             str(self.modelpath),
-            sess_options=None,
-            providers=self.execution_providers,
-            provider_options=None
+            providers=self.execution_providers
         )
 
         def onnx_to_np_dtype(s):

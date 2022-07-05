@@ -2,7 +2,7 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List, Any, Dict
+from typing import Callable, Tuple, List, Any, Dict
 import argparse
 from pathlib import Path
 
@@ -59,6 +59,8 @@ class Dataset(object):
         }
     }
 
+    actions: Dict[str, Callable]
+
     def __init__(
             self,
             root: Path,
@@ -91,6 +93,10 @@ class Dataset(object):
         if download_dataset:
             self.download_dataset_fun()
         self.prepare()
+
+        self.actions = {
+            'stream': self.action_stream
+        }
 
     @classmethod
     def _form_argparse(cls):
@@ -461,3 +467,7 @@ class Dataset(object):
         List[str] :  List of class names
         """
         raise NotImplementedError
+
+    def action_stream(self, _: Dict[str, Any]) -> Dict[str, Any]:
+        next = self.__next__()
+        return {'data_x': next[0], 'data_y': next[1]}

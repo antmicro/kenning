@@ -2,7 +2,7 @@
 Provides a wrapper for deep learning models.
 """
 
-from typing import List, Any, Tuple, Dict
+from typing import Callable, List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
@@ -29,6 +29,8 @@ class ModelWrapper(object):
         }
     }
 
+    actions: Dict[str, Callable]
+
     def __init__(
             self,
             modelpath: Path,
@@ -51,6 +53,10 @@ class ModelWrapper(object):
         self.data = defaultdict(list)
         self.from_file = from_file
         self.prepare_model()
+
+        self.actions = {
+            'infer': self.action_infer
+        }
 
     def get_path(self) -> Path:
         """
@@ -413,3 +419,8 @@ class ModelWrapper(object):
         Any : Output data to feed to postprocess_outputs
         """
         raise NotImplementedError
+
+    def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        default_name = list(self.get_input_spec()[0].items())[0][0]
+        return {'default':
+                self.run_inference(self.preprocess_input(input[default_name]))}

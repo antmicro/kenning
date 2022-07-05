@@ -1,0 +1,69 @@
+{
+    "dataset_pet":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/data/pet_dataset",
+            "download_dataset": false,
+            "inference_batch_size": 1024
+        },
+        "outputs":
+        {
+            "data_x": "pet_x",
+            "data_y": "pet_y"
+        },
+        "action": "stream"
+    },
+    "dataset_open":
+    {
+        "type": "kenning.datasets.open_images_dataset.OpenImagesDatasetV6",
+        "parameters":
+        {
+            "dataset_root": "./build/data/open_images_dataset",
+            "download_dataset": false,
+            "inference_batch_size": 1024,
+            "image_memory_layout": "NHWC"
+        },
+        "outputs":
+        {
+            "data_x": "open_x",
+            "data_y": "open_y"
+        },
+        "action": "stream"
+    },
+    "model_tf_open":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        },
+        "inputs":
+        {
+            "input_1": "open_x"
+        },
+        "outputs":
+        {
+            "default": "tf_out"
+        },
+        "action": "infer"
+    },
+    "model_pt_pet":
+    {
+        "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth"
+        },
+        "inputs":
+        {
+            "input.1": "pet_x"
+        },
+        "outputs":
+        {
+            "default": "pt_out"
+        },
+        "action": "infer"
+    }
+}

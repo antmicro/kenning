@@ -1,6 +1,6 @@
 import pytest
-import tempfile
 import os
+import uuid
 from kenning.tests.conftest import Samples
 from pathlib import Path
 
@@ -12,7 +12,7 @@ class TestOptimizerModelWrapper:
                                                ('TVMCompiler_torch')]
                              )
     def test_compile_existence_models(self,
-                                      tmp_path: Path,
+                                      tmpfolder: Path,
                                       optimizername: str,
                                       modelsamples: Samples,
                                       optimizersamples: Samples,
@@ -27,7 +27,7 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        tmp_path - to get a folder where compiled model will be placed
+        tmpfolder - to get a folder where compiled model will be placed
         modelsamples - to get paths for models to compile.
         optimizersamples - to get optimizer instances.
         modelwrappersamples - to get inputshape and data type.
@@ -41,8 +41,7 @@ class TestOptimizerModelWrapper:
         assert model_type in optimizer.get_input_formats()
         assert model_type in wrapper.get_output_formats()
 
-        import uuid
-        filepath = tmp_path / uuid.uuid4().hex
+        filepath = tmpfolder / uuid.uuid4().hex
         inputshapes, dtype = wrapper.get_input_spec()
 
         optimizer.set_compiled_model_path(filepath)
@@ -51,7 +50,7 @@ class TestOptimizerModelWrapper:
         os.remove(filepath)
 
     def test_onnx_model_optimization(self,
-                                     tmp_path: Path,
+                                     tmpfolder: Path,
                                      modelwrappersamples: Samples,
                                      optimizersamples: Samples):
         """
@@ -65,7 +64,7 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        tmp_path - to get a folder where compiled model will be placed
+        tmpfolder - to get a folder where compiled model will be placed
         optimizersamples - to get optimizers instances.
         modelwrappersamples - to get modelwrappers instances.
         """
@@ -74,8 +73,8 @@ class TestOptimizerModelWrapper:
             wrapper = modelwrappersamples.get(wrapper_name)
             inputshapes, dtype = wrapper.get_input_spec()
 
-            filename = tempfile.NamedTemporaryFile().name[5:]
-            filepath = tmp_path / filename
+            filename = uuid.uuid4().hex
+            filepath = tmpfolder / filename
             wrapper.save_to_onnx(filepath)
             assert os.path.exists(filepath)
 
@@ -92,7 +91,7 @@ class TestOptimizerModelWrapper:
 
                 optimizer.set_input_type('onnx')
                 compiled_model_path = (filename + '_' + optimizer.inputtype)
-                compiled_model_path = tmp_path / compiled_model_path
+                compiled_model_path = tmpfolder / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
                 optimizer.compile(filepath, inputshapes, dtype=dtype)
 

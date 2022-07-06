@@ -139,20 +139,21 @@ In the end, the ``inference_tester`` returns the benchmark data in a form of a J
 The ``kenning.scenarios.inference_tester`` requires:
 
 * :ref:`modelwrapper-api`-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* :ref:`optimizer-api`-based class for compiling the model for a given target,
 * :ref:`runtime-api`-based class that implements data processing and the inference method for the compiled model on the target hardware,
 * :ref:`dataset-api`-based class that implements fetching of data samples and evaluation of the model,
 * path to the output JSON file with performance and quality metrics.
+
+:ref:`optimizer-api`-based class can be provided to compile the model for a given target if needed.
 
 Optionally, it requires :ref:`runtimeprotocol-api`-based class when running remotely to communicate with the ``kenning.scenarios.inference_server``.
 
 To print the list of required arguments, run::
 
-    python3 -m kenning.scenarios.inference_tester \                                                                                                                                                                   1468ms  Wed 28 Jul 2021 08:39:21 AM UTC
+    python3 -m kenning.scenarios.inference_tester \
         kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        kenning.compilers.tvm.TVMCompiler \
         kenning.runtimes.tvm.TVMRuntime \
         kenning.datasets.pet_dataset.PetDataset \
+        --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
         --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
         -h
 
@@ -160,13 +161,14 @@ With the above classes, the help can look as follows::
 
     positional arguments:                                               
       modelwrappercls       ModelWrapper-based class with inference implementation to import                                                 
-      modelcompilercls      Optimizer-based class with compiling routines to import                                                                                                                                                                                               
       runtimecls            Runtime-based class with the implementation of model runtime                                                     
       datasetcls            Dataset-based class with dataset to import
       output                The path to the output JSON file with measurements                                                               
 
     optional arguments:
       -h, --help            show this help message and exit
+      --modelcompiler-cls MODELCOMPILER_CLS
+                            Optimizer-based class with compiling routines to import
       --protocol-cls PROTOCOL_CLS                                       
                             RuntimeProtocol-based class with the implementation of communication between inference tester and inference      
                             runner                                      
@@ -179,7 +181,7 @@ With the above classes, the help can look as follows::
       --model-path MODEL_PATH                                           
                             Path to the model
 
-    Optimizer arguments:                                                 
+    Compiler arguments:                                                 
       --compiled-model-path COMPILED_MODEL_PATH
                             The path to the compiled model output
       --model-framework {onnx,keras,darknet}
@@ -232,10 +234,10 @@ The example script for ``inference_tester`` is::
 
     python -m kenning.scenarios.inference_tester \
         kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        kenning.compilers.tflite.TFLiteCompiler \
         kenning.runtimes.tflite.TFLiteRuntime \
         kenning.datasets.pet_dataset.PetDataset \
         ./build/google-coral-devboard-tflite-tensorflow.json \
+        --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
         --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
         --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --model-framework keras \
@@ -270,10 +272,10 @@ The example call is as follows::
 
     python3 -m kenning.scenarios.inference_tester \
         kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        kenning.compilers.tvm.TVMCompiler \
         kenning.runtimes.tvm.TVMRuntime \
         kenning.datasets.pet_dataset.PetDataset \
         ./build/local-cpu-tvm-tensorflow-classification.json \
+        --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
         --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --model-framework keras \
         --target "llvm" \

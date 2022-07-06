@@ -260,10 +260,10 @@ The example call for the first script is following::
 
     python -m kenning.scenarios.inference_tester \
         kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-        kenning.compilers.tflite.TFLiteCompiler \
         kenning.runtimes.tflite.TFLiteRuntime \
         kenning.datasets.pet_dataset.PetDataset \
         ./build/google-coral-devboard-tflite-tensorflow.json \
+        --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
         --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
         --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
         --model-framework keras \
@@ -282,10 +282,11 @@ The example call for the first script is following::
 The script requires:
 
 * ``ModelWrapper``-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* ``Optimizer``-based class for compiling the model for a given target,
 * ``Runtime``-based class that implements data processing and the inference method for the compiled model on the target hardware,
 * ``Dataset``-based class that implements fetching of data samples and evaluation of the model,
 * ``./build/google-coral-devboard-tflite-tensorflow.json``, which is the path to the output JSON file with performance and quality metrics.
+
+``--modelcompiler-cls Optimizer`` can be additionaly provided to compile the model for a given target. If it is not provided, the ``inference_tester`` will run the model loaded by ``ModelWrapper``.
 
 In case of running inference on remote edge device, the ``--protocol-cls RuntimeProtocol`` also needs to be provided in order to provide communication protocol between the host and the target.
 If ``--protocol-cls`` is not provided, the ``inference_tester`` will run inference on the host machine (which is useful for testing and comparison).

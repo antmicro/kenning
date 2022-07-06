@@ -55,13 +55,11 @@ class RuntimeProtocolTests:
     def test_wait_for_activity(self):
         raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_send_data(self):
-        assert 0
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_receive_data(self):
-        assert 0
+        raise NotImplementedError
 
     @pytest.mark.xfail()
     def test_upload_input(self):
@@ -105,20 +103,6 @@ class RuntimeProtocolTests:
 
 
 @pytest.mark.fast
-class TestCheckRequest:
-    @pytest.mark.xfail()
-    def test_one(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestRequestFailure:
-    @pytest.mark.xfail()
-    def test_one(self):
-        assert 0
-
-
-@pytest.mark.fast
 class TestMessageType:
     @pytest.mark.xfail()
     def test_to_bytes(self):
@@ -126,11 +110,4 @@ class TestMessageType:
 
     @pytest.mark.xfail()
     def test_from_bytes(self):
-        assert 0
-
-
-@pytest.mark.fast
-class TestServerStatus:
-    @pytest.mark.xfail()
-    def test_one(self):
         assert 0

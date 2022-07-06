@@ -40,7 +40,6 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             data += length + tmp_order
         return data, answer
 
-    @pytest.mark.xfail
     def test_wait_for_activity(self, server, client):
         # Connect via Client
         status, received_data = server.wait_for_activity()[0]
@@ -68,7 +67,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         client.send_message(InvalidMessage(), b'')
         status, received_data = server.wait_for_activity()[0]
         assert received_data == [b'']
-        assert status == ServerStatus.DATA_INVALID
+        assert status == ServerStatus.DATA_READY
 
         # Disconnect with client
         client.disconnect()
@@ -79,6 +78,30 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         # Timeout is reached
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.NOTHING and received_data is None
+
+    def test_send_data(self, server, client):
+        data, _ = self.generate_byte_data()
+        assert client.send_data(data) is True
+
+    def test_receive_data(self, server, client):
+        data, _ = self.generate_byte_data()
+
+        # Not initialized on server side
+        with pytest.raises(AttributeError):
+            server.receive_data(None, None)
+
+        # Data is sent
+        server.accept_client(server.serversocket, None)
+        assert client.send_data(data) is True
+        status, received_data = server.receive_data(None, None)
+        assert status is ServerStatus.DATA_READY
+        assert [data] == received_data
+
+        # Client disconnected
+        client.disconnect()
+        status, received_data = server.receive_data(None, None)
+        assert status == ServerStatus.CLIENT_DISCONNECTED
+        assert received_data is None
 
     def test_accept_client(self):
         def connect():

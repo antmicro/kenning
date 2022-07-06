@@ -44,7 +44,6 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         def connect():
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             s.connect((self.host, self.port))
-            s.shutdown(socket.SHUT_RDWR)
             s.close()
 
         def run_test(protocol: RuntimeProtocol):
@@ -110,6 +109,9 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert server_status == ServerStatus.DATA_READY
             assert server_data == answer
 
+        client.disconnect()
+        server.disconnect()
+
     def test_send_message(self):
         server = self.initprotocol()
         client = self.initprotocol()
@@ -123,6 +125,47 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         with pytest.raises(ConnectionResetError):
             server.send_message(MessageType.OK, data=b'')
 
-    @pytest.mark.xfail
-    def test_recieve_confirmation(self):
-        raise NotImplementedError
+        server.disconnect()
+
+    def test_receive_confirmation(self):
+
+        def confirm(server: NetworkProtocol, return_list: list):
+            """
+            Waits for message and appends output to provided shared list.
+            """
+            output = server.receive_confirmation()
+            return_list.append(output)
+
+        manager = multiprocessing.Manager()
+        shared_list = manager.list()
+        server = self.initprotocol()
+        client = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
+        server.accept_client(server.serversocket, None)
+
+        cases = (((MessageType.OK, b''), (True, b'')),
+                 ((MessageType.ERROR, b''), (False, None)),
+                 ((MessageType.DATA, b''), (False, None)),
+                 ((MessageType.MODEL, b''), (False, None)),
+                 ((MessageType.PROCESS, b''), (False, None)),
+                 ((MessageType.OUTPUT, b''), (False, None)),
+                 ((MessageType.STATS, b''), (False, None)),
+                 ((MessageType.QUANTIZATION, b''), (False, None)),
+                 )
+
+        # Check for every presented MessageType
+        for message, expected in cases:
+            thread = multiprocessing.Process(target=confirm,
+                                             args=(server, shared_list))
+            thread.start()
+            client.send_message(*message)
+            thread.join()
+            assert shared_list[-1] == expected
+
+        # Check if client is disconnected
+        client.disconnect()
+        output = server.receive_confirmation()
+        assert output == (False, None)
+
+        server.disconnect()

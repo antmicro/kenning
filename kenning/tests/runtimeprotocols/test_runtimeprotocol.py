@@ -13,6 +13,32 @@ class TestNetworkProtocol(RuntimeProtocolTests):
     host = ''
     port = 1235
 
+    def generate_byte_data(self) -> Tuple[bytes, List[bytes]]:
+        """
+        Generates correct data for test.
+
+        Returns
+        -------
+        Tuple[bytes, List[bytes]]:
+            A tuple containing bytes stream and expected output
+        """
+        data = bytes()
+        answer = list()
+        for i in range(random.randint(1, 10)):
+            times = random.randint(1, 10)
+            answer.append(bytes())
+            tmp_order = bytes()
+            for j in range(times):
+                number = (random.randint(1, 4294967295))
+                num_bytes = number.to_bytes(4, byteorder='little',
+                                            signed=False)
+                tmp_order += num_bytes
+                answer[i] += num_bytes
+            length = len(tmp_order)
+            length = length.to_bytes(4, byteorder='little', signed=False)
+            data += length + tmp_order
+        return data, answer
+
     def test_accept_client(self):
         def connect():
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -46,34 +72,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             protocol.accept_client(None, None)
 
     def test_collect_messages(self):
-
-        def generate_byte_data() -> Tuple[bytes, List[bytes]]:
-            """
-            Generates correct data for test.
-
-            Returns
-            -------
-            Tuple[bytes, List[bytes]]:
-                A tuple containing bytes stream and expected output
-            """
-            data = bytes()
-            answer = list()
-            for i in range(random.randint(1, 10)):
-                times = random.randint(0, 10)
-                data += (4*times).to_bytes(4, byteorder='little', signed=False)
-                answer.append(b'')
-                for j in range(times):
-                    number = (random.randint(0, 4294967295))
-                    num_bytes = number.to_bytes(4, byteorder='little',
-                                                signed=False)
-                    data += num_bytes
-                    answer[i] += num_bytes
-            return data, answer
-
         # valid data
         protocol = self.initprotocol()
         assert not(protocol.collecteddata)
-        data, answer = generate_byte_data()
+        data, answer = self.generate_byte_data()
         status, output = protocol.collect_messages(data)
         assert output == answer and status == ServerStatus.DATA_READY
 
@@ -89,9 +91,23 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, output = protocol.collect_messages(data)
         assert output is None and status == ServerStatus.NOTHING
 
-    @pytest.mark.xfail
     def test_wait_send(self):
-        raise NotImplementedError
+        server = self.initprotocol()
+        client = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
+        server.accept_client(server.serversocket, None)
+        data, answer = self.generate_byte_data()
+
+        for i in range(10):
+            # Send the data
+            client_out = client.wait_send(data)
+            assert client_out == len(data)
+
+            # Recieve data
+            server_status, server_data = server.receive_data(None, None)
+            assert server_status == ServerStatus.DATA_READY
+            assert server_data == answer
 
     @pytest.mark.xfail
     def test_send_message(self):

@@ -43,7 +43,7 @@ def main(argv):
         help='Dataset-based class with dataset to import',
     )
     parser.add_argument(
-        '--modelcompilercls',
+        '--modelcompiler-cls',
         help='Optimizer-based class with compiling routines to import'
     )
     parser.add_argument(
@@ -56,8 +56,8 @@ def main(argv):
     modelwrappercls = load_class(args.modelwrappercls)
     runtimecls = load_class(args.runtimecls)
     datasetcls = load_class(args.datasetcls)
-    if args.modelcompilercls:
-        modelcompilercls = load_class(args.modelcompilercls)
+    if args.modelcompiler_cls:
+        modelcompilercls = load_class(args.modelcompiler_cls)
     else:
         modelcompilercls = None
     if args.protocol_cls:

@@ -12,7 +12,7 @@
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./data/pet_dataset" 
+            "dataset_root": "./build/pet-dataset" 
         }
     },
     "optimizers":

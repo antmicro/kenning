@@ -40,17 +40,9 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             data += length + tmp_order
         return data, answer
 
-    def test_wait_for_activity(self):
-        server = self.initprotocol()
-        server.initialize_server()
-
-        # Timeout is reached
-        status, received_data = server.wait_for_activity()[0]
-        assert status == ServerStatus.NOTHING and received_data is None
-
+    @pytest.mark.xfail
+    def test_wait_for_activity(self, server, client):
         # Connect via Client
-        client = self.initprotocol()
-        client.initialize_client()
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.CLIENT_CONNECTED
         assert received_data is None
@@ -83,7 +75,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.CLIENT_DISCONNECTED
         assert received_data is None
-        server.disconnect()
+
+        # Timeout is reached
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.NOTHING and received_data is None
 
     def test_accept_client(self):
         def connect():
@@ -136,11 +131,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, output = protocol.collect_messages(data)
         assert output is None and status == ServerStatus.NOTHING
 
-    def test_wait_send(self):
-        server = self.initprotocol()
-        client = self.initprotocol()
-        server.initialize_server()
-        client.initialize_client()
+    def test_wait_send(self, server, client):
         server.accept_client(server.serversocket, None)
         data, answer = self.generate_byte_data()
 
@@ -154,14 +145,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert server_status == ServerStatus.DATA_READY
             assert server_data == answer
 
-        client.disconnect()
-        server.disconnect()
-
-    def test_send_message(self):
-        server = self.initprotocol()
-        client = self.initprotocol()
-        server.initialize_server()
-        client.initialize_client()
+    def test_send_message(self, server, client):
         server.accept_client(server.serversocket, None)
         data, _ = self.generate_byte_data()
         assert client.send_message(MessageType.DATA, data=data) is True
@@ -170,9 +154,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         with pytest.raises(ConnectionResetError):
             server.send_message(MessageType.OK, data=b'')
 
-        server.disconnect()
-
-    def test_receive_confirmation(self):
+    def test_receive_confirmation(self, server):
 
         def confirm(server: NetworkProtocol, return_list: list):
             """
@@ -183,9 +165,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
 
         manager = multiprocessing.Manager()
         shared_list = manager.list()
-        server = self.initprotocol()
         client = self.initprotocol()
-        server.initialize_server()
         client.initialize_client()
         server.accept_client(server.serversocket, None)
 
@@ -212,5 +192,3 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         client.disconnect()
         output = server.receive_confirmation()
         assert output == (False, None)
-
-        server.disconnect()

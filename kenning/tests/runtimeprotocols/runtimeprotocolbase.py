@@ -5,6 +5,21 @@ import pytest
 
 @pytest.mark.fast
 class RuntimeProtocolTests:
+
+    @pytest.fixture
+    def server(self):
+        server = self.initprotocol()
+        server.initialize_server()
+        yield server
+        server.disconnect()
+
+    @pytest.fixture
+    def client(self):
+        client = self.initprotocol()
+        client.initialize_client()
+        yield client
+        client.disconnect()
+
     def initprotocol(self, *args, **kwargs) -> RuntimeProtocol:
         """
         Initializes protocol object.

@@ -1,6 +1,7 @@
 from runtimeprotocolbase import RuntimeProtocolTests
 from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
+from kenning.core.runtimeprotocol import MessageType
 from typing import Tuple, List
 import pytest
 import random
@@ -109,9 +110,18 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert server_status == ServerStatus.DATA_READY
             assert server_data == answer
 
-    @pytest.mark.xfail
     def test_send_message(self):
-        raise NotImplementedError
+        server = self.initprotocol()
+        client = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
+        server.accept_client(server.serversocket, None)
+        data, _ = self.generate_byte_data()
+        assert client.send_message(MessageType.DATA, data=data) is True
+        assert server.send_message(MessageType.DATA, data=data) is True
+        client.disconnect()
+        with pytest.raises(ConnectionResetError):
+            server.send_message(MessageType.OK, data=b'')
 
     @pytest.mark.xfail
     def test_recieve_confirmation(self):

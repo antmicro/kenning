@@ -211,7 +211,9 @@ class TVMCompiler(Optimizer):
         },
         'target_host': {
             'description': 'The kind or tag of the host (CPU) target device',
-            'default': None
+            'type': str,
+            'default': None,
+            'nullable': True
         },
         'opt_level': {
             'description': 'The optimization level of the compilation',
@@ -239,7 +241,8 @@ class TVMCompiler(Optimizer):
         'quantization_details_path': {
             'description': 'Path where to save quantization details in json',
             'type': Path,
-            'required': False
+            'required': False,
+            'nullable': True
         }
     }
 
@@ -249,7 +252,7 @@ class TVMCompiler(Optimizer):
             compiled_model_path: Path,
             modelframework: str = 'onnx',
             target: str = 'llvm',
-            target_host: str = None,
+            target_host: Optional[str] = None,
             opt_level: int = 2,
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,

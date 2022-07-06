@@ -2,7 +2,7 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import Dict, Tuple, List
+from typing import Dict, Tuple, List, Optional
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
@@ -129,7 +129,8 @@ class IREECompiler(Optimizer):
             'argaprse_name': '--compiler-args',
             'description': 'Additional options that are passed to compiler',
             'default': None,
-            'is_list': True
+            'is_list': True,
+            'nullable': True
         }
     }
 
@@ -139,7 +140,7 @@ class IREECompiler(Optimizer):
             compiled_model_path: Path,
             modelframework: str,
             backend: str,
-            compiler_args: List[str] = None):
+            compiler_args: Optional[List[str]] = None):
         """
         Wrapper for IREE compiler
 

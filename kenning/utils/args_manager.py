@@ -25,12 +25,18 @@ type: Same as 'type' in argparse. The argument is converted to this value.
 
     Note that for bool types, the argument has to declare its default value.
 default: Default value of the argument.
-required: Determines whether argument is required.
+required: Determines whether the argument is required.
 enum: List of possible values of the argument.
-is_list: Determines whether argument is a list of arguments.
+is_list: Determines whether the argument is a list of arguments.
     Possible values for is_list: [True, False].
     By default it is False.
     List of bool arguments is not supported
+nullable: Determines whether the argument can be None.
+    Possible values for nullable: [True, False].
+    By default it is False.
+    It is used only for JSON.
+    Note that for a property to be nullable it has to be either a list
+    or have a type defined.
 
 Examples:
 
@@ -46,7 +52,8 @@ Examples:
     'description': 'Dimensionality of the inputs',
     'type': int,
     'default': [224, 224, 3],
-    'is_list': True
+    'is_list': True,
+    'nullable': True
 }
 """
 
@@ -214,7 +221,7 @@ def get_parsed_json_dict(schema, json_dict):
         if 'convert-type' in keywords and value:
             converter = keywords['convert-type']
 
-            if 'type' in keywords and keywords['type'] == 'array':
+            if 'type' in keywords and 'array' in keywords['type']:
                 converted_json_dict[name] = [
                     converter(v) if v else v for v in value
                 ]
@@ -345,7 +352,7 @@ def add_parameterschema_argument(
         else:
             if 'type' in prop:
                 keywords['convert-type'] = prop['type']
-                keywords['type'] = type_to_jsontype[prop['type']]
+                keywords['type'] = [type_to_jsontype[prop['type']]]
 
         if 'description' in prop:
             keywords['description'] = prop['description']
@@ -357,3 +364,6 @@ def add_parameterschema_argument(
             schema['required'].append(argschema_name)
         if 'enum' in prop:
             keywords['enum'] = prop['enum']
+        if 'nullable' in prop and prop['nullable']:
+            if 'type' in keywords:
+                keywords['type'] += ['null']

@@ -35,16 +35,16 @@ def main(argv):
         help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
     )
     parser.add_argument(
-        'modelcompilercls',
-        help='Optimizer-based class with compiling routines to import'
-    )
-    parser.add_argument(
         'runtimecls',
         help='Runtime-based class with the implementation of model runtime'
     )
     parser.add_argument(
         'datasetcls',
         help='Dataset-based class with dataset to import',
+    )
+    parser.add_argument(
+        '--modelcompilercls',
+        help='Optimizer-based class with compiling routines to import'
     )
     parser.add_argument(
         '--protocol-cls',
@@ -54,9 +54,12 @@ def main(argv):
     args, _ = parser.parse_known_args(argv[1:])
 
     modelwrappercls = load_class(args.modelwrappercls)
-    modelcompilercls = load_class(args.modelcompilercls)
     runtimecls = load_class(args.runtimecls)
     datasetcls = load_class(args.datasetcls)
+    if args.modelcompilercls:
+        modelcompilercls = load_class(args.modelcompilercls)
+    else:
+        modelcompilercls = None
     if args.protocol_cls:
         protocolcls = load_class(args.protocol_cls)
     else:
@@ -67,10 +70,10 @@ def main(argv):
         parents=[
             parser,
             modelwrappercls.form_argparse()[0],
-            modelcompilercls.form_argparse()[0],
             runtimecls.form_argparse()[0],
-            datasetcls.form_argparse()[0]
+            datasetcls.form_argparse()[0],
         ] + ([protocolcls.form_argparse()[0]] if protocolcls else [])
+          + ([modelcompilercls.form_argparse()[0]] if modelcompilercls else [])
     )
 
     parser.add_argument(
@@ -97,26 +100,30 @@ def main(argv):
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
-    compiler = modelcompilercls.from_argparse(dataset, args)
+    compiler = modelcompilercls.from_argparse(dataset, args) if modelcompilercls else None   # noqa: E501
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args)
 
     modelpath = model.get_path()
-
     inputspec, inputdtype = model.get_input_spec()
 
     modelframeworktuple = model.get_framework_and_version()
-    compilerframeworktuple = compiler.get_framework_and_version()
 
-    MeasurementsCollector.measurements += {
-        'model_framework': modelframeworktuple[0],
-        'model_version': modelframeworktuple[1],
-        'compilers': [
+    if compiler:
+        compilerframeworktuple = compiler.get_framework_and_version()
+        compiler_info = [
             {
                 'compiler_framework': compilerframeworktuple[0],
                 'compiler_version': compilerframeworktuple[1]
             }
-        ],
+        ]
+    else:
+        compiler_info = []
+
+    MeasurementsCollector.measurements += {
+        'model_framework': modelframeworktuple[0],
+        'model_version': modelframeworktuple[1],
+        'compilers': compiler_info,
         'command': command,
         'build_cfg': serialize_inference(
             dataset,
@@ -133,22 +140,25 @@ def main(argv):
             'class_names': [val for val in dataset.get_class_names()]
         }
 
-    # for now ignoring --model-framework parameter
-    format = compiler.consult_model_type(model)
-    if format == 'onnx' or args.convert_to_onnx:
-        format = 'onnx'
-        modelpath = args.convert_to_onnx if args.convert_to_onnx \
-            else tempfile.NamedTemporaryFile().name
-
+    if args.convert_to_onnx:
+        modelpath = args.convert_to_onnx
         model.save_to_onnx(modelpath)
 
-    compiler.set_input_type(format)
-    compiler.compile(modelpath, inputspec, inputdtype)
+    if compiler:
+        # for now ignoring --model-framework parameter
+        format = compiler.consult_model_type(model)
+        if format == 'onnx' and not args.convert_to_onnx:
+            modelpath = tempfile.NamedTemporaryFile().name
+            model.save_to_onnx(modelpath)
+
+        compiler.set_input_type(format)
+        compiler.compile(modelpath, inputspec, inputdtype)
+        modelpath = compiler.compiled_model_path
 
     if protocol:
-        ret = runtime.run_client(dataset, model, compiler.compiled_model_path)
+        ret = runtime.run_client(dataset, model, modelpath)
     else:
-        ret = runtime.run_locally(dataset, model, compiler.compiled_model_path)
+        ret = runtime.run_locally(dataset, model, modelpath)
 
     if not ret:
         return 1

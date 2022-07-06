@@ -18,16 +18,27 @@ class RuntimeProtocolTests:
         return protocol
 
     def test_initialize_server(self):
-        protocol = self.initprotocol()
-        protocol.initialize_server()
+        server = self.initprotocol()
+        assert server.initialize_server() is True
+        with pytest.raises(OSError) as execinfo:
+            second_server = self.initprotocol()
+            second_server.initialize_server()
+        assert 'Address already in use' in str(execinfo.value)
+        server.disconnect()
 
     def test_initialize_client(self):
-        protocol = self.initprotocol()
-        protocol.initialize_client()
+        client = self.initprotocol()
+        with pytest.raises(ConnectionRefusedError):
+            client.initialize_client()
+        server = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
 
-    @pytest.mark.xfail()
+        client.disconnect()
+        server.disconnect()
+
     def test_wait_for_activity(self):
-        assert 0
+        raise NotImplementedError
 
     @pytest.mark.xfail()
     def test_send_data(self):

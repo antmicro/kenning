@@ -40,6 +40,51 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             data += length + tmp_order
         return data, answer
 
+    def test_wait_for_activity(self):
+        server = self.initprotocol()
+        server.initialize_server()
+
+        # Timeout is reached
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.NOTHING and received_data is None
+
+        # Connect via Client
+        client = self.initprotocol()
+        client.initialize_client()
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_CONNECTED
+        assert received_data is None
+
+        # Send data
+        data, _ = self.generate_byte_data()
+        client.send_data(data)
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.DATA_READY
+        assert received_data == [data]
+
+        # Send error message
+        client.send_message(MessageType.ERROR, b'')
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.DATA_READY
+        assert received_data == [MessageType.ERROR.to_bytes()]
+
+        # Send fully empty message
+        class InvalidMessage:
+            def to_bytes(self):
+                return b''
+
+        client.send_message(InvalidMessage(), b'')
+        status, received_data = server.wait_for_activity()[0]
+        assert received_data == [b'']
+        assert status == ServerStatus.DATA_INVALID
+
+        # Disconnect with client
+        client.disconnect()
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_DISCONNECTED
+        assert received_data is None
+        server.disconnect()
+
     def test_accept_client(self):
         def connect():
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

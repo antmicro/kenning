@@ -1,0 +1,25 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters": {
+            "classify_by": "breeds",
+            "image_memory_layout": "NHWC",
+            "dataset_root": "./build/pet-dataset",
+            "inference_batch_size": 1
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters": {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "optimizers": [],
+    "runtime": {
+        "type": "kenning.runtimes.onnx.ONNXRuntime",
+        "parameters": {
+            "save_model_path": "./build/converted_model.onnx",
+            "execution_providers": ["CUDAExecutionProvider", "CPUExecutionProvider"]
+        }
+    }
+}

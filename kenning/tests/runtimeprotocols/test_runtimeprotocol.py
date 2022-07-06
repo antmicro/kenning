@@ -215,3 +215,14 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         client.disconnect()
         output = server.receive_confirmation()
         assert output == (False, None)
+
+
+@pytest.mark.fast
+class TestMessageType:
+    def test_to_bytes(self):
+        byte_num = (1).to_bytes(2, 'little', signed=False)
+        assert MessageType.ERROR.to_bytes('little') == byte_num
+
+    def test_from_bytes(self):
+        byte_num = (1).to_bytes(2, 'little', signed=False)
+        assert MessageType.ERROR == MessageType.from_bytes(byte_num, 'little')

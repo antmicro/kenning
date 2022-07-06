@@ -100,14 +100,3 @@ class RuntimeProtocolTests:
     @pytest.mark.xfail()
     def test_disconnect(self):
         assert 0
-
-
-@pytest.mark.fast
-class TestMessageType:
-    @pytest.mark.xfail()
-    def test_to_bytes(self):
-        assert 0
-
-    @pytest.mark.xfail()
-    def test_from_bytes(self):
-        assert 0

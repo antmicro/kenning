@@ -226,10 +226,19 @@ class NetworkProtocol(RuntimeProtocol):
             return [(ServerStatus.NOTHING, None)]
         return results
 
-    def wait_send(self, data):
+    def wait_send(self, data: bytes):
         """
         Wrapper for sending method that waits until write buffer is ready for
         new data.
+
+        Parameters
+        ----------
+        data : bytes
+            Data to send
+
+        Returns
+        -------
+        int : The number of bytes sent
         """
         ret = self.socket.send(data)
         while True:
@@ -239,7 +248,7 @@ class NetworkProtocol(RuntimeProtocol):
                     return ret
         return ret
 
-    def send_data(self, data):
+    def send_data(self, data: bytes):
         length = (len(data)).to_bytes(4, self.endianness, signed=False)
         packet = length + data
         index = 0

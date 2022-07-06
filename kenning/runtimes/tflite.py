@@ -35,7 +35,8 @@ class TFLiteRuntime(Runtime):
             'argparse_name': '--delegates-list',
             'description': 'List of runtime delegates for the TFLite runtime',
             'default': None,
-            'is_list': True
+            'is_list': True,
+            'nullable': True
         }
     }
 

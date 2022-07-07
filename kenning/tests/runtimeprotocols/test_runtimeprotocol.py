@@ -1,14 +1,15 @@
-from runtimeprotocolbase import RuntimeProtocolTests
-from kenning.runtimeprotocols.network import NetworkProtocol
-from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
 from kenning.core.runtimeprotocol import MessageType
-from typing import Tuple, List
+from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
+from kenning.runtimeprotocols.network import NetworkProtocol
 from pathlib import Path
-import uuid
+from runtimeprotocolbase import RuntimeProtocolTests
+from typing import Tuple, List
+import json
+import multiprocessing
 import pytest
 import random
 import socket
-import multiprocessing
+import uuid
 
 
 class TestNetworkProtocol(RuntimeProtocolTests):
@@ -253,8 +254,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
                 file.write(data)
             return
 
-        def receive_model(server: RuntimeProtocol, model: bytes,
-                          shared_list: list):
+        def receive_model(server: RuntimeProtocol, shared_list: list):
             status, received_model = server.receive_data(None, None)
             shared_list.append((status, received_model))
             output = server.send_message(MessageType.OK, b'')
@@ -263,14 +263,40 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         write_model(path, data)
         shared_list = (multiprocessing.Manager()).list()
         thread_receive = multiprocessing.Process(target=receive_model,
-                                                 args=(server, data,
-                                                       shared_list))
+                                                 args=(server, shared_list))
         server.accept_client(server.serversocket, None)
         thread_receive.start()
         assert client.upload_model(path) is True
         thread_receive.join()
         answer = [(MessageType.MODEL).to_bytes() + data]
         assert shared_list[0] == (ServerStatus.DATA_READY, answer)
+        assert shared_list[1] is True
+
+    def test_upload_quantization_details(self, tmpfolder, server, client):
+        quantization_details = {1: 'one', 2: 'two', 3: 'three'}
+        path = tmpfolder / uuid.uuid4().hex
+        with open(path, 'w') as file:
+            json.dump(quantization_details, file)
+
+        def receive_quant(server: RuntimeProtocol, shared_list: list):
+            status, received_model = server.receive_data(None, None)
+            shared_list.append((status, received_model))
+            output = server.send_message(MessageType.OK, b'')
+            shared_list.append(output)
+
+        shared_list = (multiprocessing.Manager()).list()
+        args = (server, shared_list)
+        thread_receive = multiprocessing.Process(target=receive_quant,
+                                                 args=args)
+        server.accept_client(server.serversocket, None)
+        thread_receive.start()
+        assert client.upload_quantization_details(path) is True
+        thread_receive.join()
+
+        status, received_data = shared_list[0]
+        message, json_file = received_data[0][:2], received_data[0][2:]
+        assert message == (MessageType.QUANTIZATION).to_bytes()
+        assert json_file.decode() == json.dumps(quantization_details)
         assert shared_list[1] is True
 
 

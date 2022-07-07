@@ -223,7 +223,6 @@ class TestNetworkProtocol(RuntimeProtocolTests):
     def test_upload_input(self, server, client):
 
         def upload(client, data, shared_list):
-            client.send_message(MessageType.OK, b'')
             output = client.upload_input(data)
             shared_list.append(output)
 
@@ -235,7 +234,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         thread.start()
 
         # We have to wait somehow untill data is delivered
-        server.receive_confirmation()
+        import time
+        time.sleep(1)
         status, received_data = server.receive_data(None, None)
         server.send_message(MessageType.OK, b'')
         assert status == ServerStatus.DATA_READY

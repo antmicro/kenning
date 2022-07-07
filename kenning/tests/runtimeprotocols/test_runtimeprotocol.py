@@ -4,6 +4,7 @@ from kenning.runtimeprotocols.network import NetworkProtocol
 from pathlib import Path
 from runtimeprotocolbase import RuntimeProtocolTests
 from typing import Tuple, List
+import time
 import json
 import multiprocessing
 import pytest
@@ -234,7 +235,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         thread.start()
 
         # We have to wait somehow untill data is delivered
-        import time
+        # TODO: get rid of sleep
         time.sleep(1)
         status, received_data = server.receive_data(None, None)
         server.send_message(MessageType.OK, b'')
@@ -313,6 +314,29 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, downloaded_data = client.download_output()
         assert status is True
         assert downloaded_data == data
+
+    def test_download_statistics(self, server, client):
+        data = {'1': 'one', '2': 'two', '3': 'three'}
+        server.accept_client(server.serversocket, None)
+
+        def send_stats(server, data: dict, shared_list):
+            output = server.download_statistics()
+            shared_list.append(output)
+
+        shared_list = (multiprocessing.Manager()).list()
+        args = (client, data, shared_list)
+        thread_send = multiprocessing.Process(target=send_stats, args=args)
+        thread_send.start()
+        # TODO: Get rid of sleep
+        time.sleep(1)
+        status, message = server.receive_data(None, None)
+        message_type, message = server.parse_message(message[0])
+        if message_type == MessageType.STATS and message == b'':
+            to_send = json.dumps(data).encode()
+            output = server.send_message(MessageType.OK, to_send)
+            assert output is True
+        thread_send.join()
+        assert shared_list[0].data == data
 
 
 @pytest.mark.fast

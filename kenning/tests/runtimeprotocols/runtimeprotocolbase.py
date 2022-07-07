@@ -1,5 +1,6 @@
 from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.measurements import Measurements
 import pytest
 
 
@@ -73,9 +74,9 @@ class RuntimeProtocolTests:
     def test_download_output(self):
         raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_download_statistics(self):
-        assert 0
+        client = self.initprotocol()
+        assert isinstance(client.download_statistics(), Measurements)
 
     @pytest.mark.xfail()
     def test_request_processing(self):

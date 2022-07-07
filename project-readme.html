@@ -1,0 +1,622 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>Kenning &mdash; Kenning</title>
+  
+
+  
+  
+  
+  
+
+  
+  <script type="text/javascript" src="_static/js/modernizr.min.js"></script>
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Deep Learning deployment stack" href="dl-deployment-stack.html" />
+    <link rel="prev" title="Introduction" href="introduction.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html" class="icon icon-home"> Kenning
+          
+
+          
+            
+            <img src="_static/logo-400-html.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="introduction.html">Introduction</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Kenning</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#kenning-installation">Kenning installation</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#module-installation-with-pip">Module installation with pip</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#working-directly-with-the-repository">Working directly with the repository</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#kenning-structure">Kenning structure</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-kenning-as-a-library-in-python-scripts">Using Kenning as a library in Python scripts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#using-kenning-scenarios">Using Kenning scenarios</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#running-model-training-on-host">Running model training on host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#benchmarking-trained-model-on-host">Benchmarking trained model on host</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#testing-onnx-conversions">Testing ONNX conversions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#running-compilation-and-deployment-of-models-on-target-hardware">Running compilation and deployment of models on target hardware</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#render-report-from-benchmarks">Render report from benchmarks</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#adding-new-implementations">Adding new implementations</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dl-deployment-stack.html">Deep Learning deployment stack</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cmd-usage.html">Using Kenning from command-line</a></li>
+<li class="toctree-l1"><a class="reference internal" href="onnx-conversion-support.html">ONNX support in deep learning frameworks</a></li>
+<li class="toctree-l1"><a class="reference internal" href="sample-report.html">Sample autogenerated report</a></li>
+<li class="toctree-l1"><a class="reference internal" href="kenning-api.html">Kenning API</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+        <div class="wide-toggle">
+          <span class="wide-toggle-btn">
+            Toggle wide view
+          </span>
+        </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Kenning</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html">Docs</a> &raquo;</li>
+        
+      <li>Kenning</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/project-readme.rst.txt" rel="nofollow"> View source</a>
+          
+        
+      </li>
+      
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  <div class="section" id="kenning">
+<h1>Kenning<a class="headerlink" href="#kenning" title="Permalink to this heading">¶</a></h1>
+<p>Copyright (c) 2020-2022 <a class="reference external" href="https://www.antmicro.com">Antmicro</a></p>
+<img alt="_images/kenninglogo.png" src="_images/kenninglogo.png" />
+<p>Kenning is a framework for creating deployment flows and runtimes for Deep Neural Network applications on various target hardware.</p>
+<p>It aims towards providing modular execution blocks for:</p>
+<ul class="simple">
+<li><p>dataset management,</p></li>
+<li><p>model training,</p></li>
+<li><p>model compilation,</p></li>
+<li><p>model evaluation and performance reports,</p></li>
+<li><p>model runtime on target device,</p></li>
+<li><p>model input and output processing (i.e. fetching frames from camera and computing final predictions from model outputs).</p></li>
+</ul>
+<p>that can be used seamlessly regardless of underlying frameworks for above-mentioned steps.</p>
+<p>Kenning does not aim towards bringing yet another training or compilation framework for deep learning models - there are lots of mature and versatile frameworks that support certain models, training routines, optimization techniques, hardware platforms and other components crucial to the deployment flow.
+Still, there is no framework that would support all of the models or target hardware devices - especially the support matrix between compilation frameworks and target hardware is extremely sparse.
+This means that any change in the application, especially in hardware, may end up with a necessity to change the whole or significant part of the application flow.</p>
+<p>Kenning addresses this issue by providing an unified API that focuses more on deployment tasks rather than their implementation - the developer decides which implementation for each task should be used, and Kenning allows to do it in a seamless way.
+This way switching to another target platform results in most cases in very small change in the code, instead of reimplementing large parts of the project.
+This way the Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.</p>
+<p>For more details regarding the Kenning framework, Deep Neural Network deployment flow and its API check <a class="reference external" href="https://antmicro.github.io/kenning/">Kenning documentation</a>.</p>
+<div class="section" id="kenning-installation">
+<h2>Kenning installation<a class="headerlink" href="#kenning-installation" title="Permalink to this heading">¶</a></h2>
+<div class="section" id="module-installation-with-pip">
+<h3>Module installation with pip<a class="headerlink" href="#module-installation-with-pip" title="Permalink to this heading">¶</a></h3>
+<p>To install Kenning with its basic dependencies with pip, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="o">-</span><span class="n">U</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">antmicro</span><span class="o">/</span><span class="n">kenning</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>Since Kenning can support various frameworks, and not all of them are required for user’s use cases, the optional requirements are available as extra requirements.
+The groups of extra requirements are following:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tensorflow</span></code> - modules for working with TensorFlow models (ONNX conversions, addons, and TensorFlow framework),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">torch</span></code> - modules for working with PyTorch models,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">mxnet</span></code> - modules for working with MXNet models,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">nvidia_perf</span></code> - modules for performance measurements for NVIDIA GPUs,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">object_detection</span></code> - modules for working with YOLOv3 object detection and Open Images Dataset V6 computer vision dataset.</p></li>
+</ul>
+<p>To install the extra requirements, i.e. <code class="docutils literal notranslate"><span class="pre">tensorflow</span></code>, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">sudo</span> <span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">antmicro</span><span class="o">/</span><span class="n">kenning</span><span class="o">.</span><span class="n">git</span><span class="c1">#egg=kenning[tensorflow]</span>
+</pre></div>
+</div>
+</div>
+<div class="section" id="working-directly-with-the-repository">
+<h3>Working directly with the repository<a class="headerlink" href="#working-directly-with-the-repository" title="Permalink to this heading">¶</a></h3>
+<p>For development purposes, and for usage of additional resources (as sample scripts or trained models), clone repository with:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">git</span> <span class="n">clone</span> <span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">antmicro</span><span class="o">/</span><span class="n">kenning</span><span class="o">.</span><span class="n">git</span>
+</pre></div>
+</div>
+<p>To download model weights, install <a class="reference external" href="https://git-lfs.github.com">Git Large File Storage</a> (if not installed) and run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">cd</span> <span class="n">kenning</span><span class="o">/</span>
+<span class="n">git</span> <span class="n">lfs</span> <span class="n">pull</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="kenning-structure">
+<h2>Kenning structure<a class="headerlink" href="#kenning-structure" title="Permalink to this heading">¶</a></h2>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning</span></code> module consists of the following submodules:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">core</span></code> - provides interface APIs for datasets, models, optimizers, runtimes and runtime protocols,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">datasets</span></code> - provides implementations for datasets,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">modelwrappers</span></code> - provides implementations for models for various problems implemented in various frameworks,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">optimizers</span></code> - provides implementations for compilers of deep learning models,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtimes</span></code> - provides implementations of runtime on target devices,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">runtimeprotocols</span></code> - provides implementations for communication protocols between host and tested target,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dataproviders</span></code> - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">outputcollectors</span></code> - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">onnxconverters</span></code> - provides ONNX conversions for a given framework along with a list of models to test the conversion on,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">resources</span></code> - contains project’s resources, like RST templates, or trained models,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">scenarios</span></code> - contains executable scripts for running training, inference, benchmarks and other tests on target devices,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">utils</span></code> - various functions and classes used in all above-mentioned submodules.</p></li>
+</ul>
+</div>
+<div class="section" id="using-kenning-as-a-library-in-python-scripts">
+<h2>Using Kenning as a library in Python scripts<a class="headerlink" href="#using-kenning-as-a-library-in-python-scripts" title="Permalink to this heading">¶</a></h2>
+<p>Kenning is a regular Python module - after pip installation it can be used in Python scripts.
+The example compilation of the model can look as follows:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">kenning.datasets.pet_dataset</span> <span class="kn">import</span> <span class="n">PetDataset</span>
+<span class="kn">from</span> <span class="nn">kenning.modelwrappers.classification.tensorflow_pet_dataset</span> <span class="kn">import</span> <span class="n">TensorFlowPetDatasetMobileNetV2</span>
+<span class="kn">from</span> <span class="nn">kenning.compilers.tflite</span> <span class="kn">import</span> <span class="n">TFLiteCompiler</span>
+<span class="kn">from</span> <span class="nn">kenning.runtimes.tflite</span> <span class="kn">import</span> <span class="n">TFLiteRuntime</span>
+<span class="kn">from</span> <span class="nn">kenning.core.measurements</span> <span class="kn">import</span> <span class="n">MeasurementsCollector</span>
+
+<span class="n">dataset</span> <span class="o">=</span> <span class="n">PetDataset</span><span class="p">(</span>
+    <span class="n">root</span><span class="o">=</span><span class="s1">&#39;./build/pet-dataset/&#39;</span><span class="p">,</span>
+    <span class="n">download_dataset</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">TensorFlowPetDatasetMobileNetV2</span><span class="p">(</span>
+    <span class="n">modelpath</span><span class="o">=</span><span class="s1">&#39;./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5&#39;</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span>
+<span class="p">)</span>
+<span class="n">compiler</span> <span class="o">=</span> <span class="n">TFLiteCompiler</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+    <span class="n">compiled_model_path</span><span class="o">=</span><span class="s1">&#39;./build/compiled-model.tflite&#39;</span><span class="p">,</span>
+    <span class="n">modelframework</span><span class="o">=</span><span class="s1">&#39;keras&#39;</span><span class="p">,</span>
+    <span class="n">target</span><span class="o">=</span><span class="s1">&#39;default&#39;</span><span class="p">,</span>
+    <span class="n">inferenceinputtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">,</span>
+    <span class="n">inferenceoutputtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span>
+<span class="p">)</span>
+<span class="n">compiler</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="n">inputmodelpath</span><span class="o">=</span><span class="s1">&#39;./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5&#39;</span><span class="p">,</span>
+    <span class="n">inputshapes</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">get_input_spec</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">get_input_spec</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>The above script downloads the dataset and compiles the model using TensorFlow Lite to the model with FP32 inputs and outputs.</p>
+<p>To get a quantized model, replace <code class="docutils literal notranslate"><span class="pre">target</span></code>, <code class="docutils literal notranslate"><span class="pre">inferenceinputtype</span></code> and <code class="docutils literal notranslate"><span class="pre">inferenceoutputtype</span></code> to <code class="docutils literal notranslate"><span class="pre">int8</span></code>:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+
+<span class="n">compiler</span> <span class="o">=</span> <span class="n">TFLiteCompiler</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="o">=</span><span class="n">dataset</span><span class="p">,</span>
+    <span class="n">compiled_model_path</span><span class="o">=</span><span class="s1">&#39;./build/compiled-model.tflite&#39;</span><span class="p">,</span>
+    <span class="n">modelframework</span><span class="o">=</span><span class="s1">&#39;keras&#39;</span><span class="p">,</span>
+    <span class="n">target</span><span class="o">=</span><span class="s1">&#39;int8&#39;</span><span class="p">,</span>
+    <span class="n">inferenceinputtype</span><span class="o">=</span><span class="s1">&#39;int8&#39;</span><span class="p">,</span>
+    <span class="n">inferenceoutputtype</span><span class="o">=</span><span class="s1">&#39;int8&#39;</span><span class="p">,</span>
+    <span class="n">dataset_percentage</span><span class="o">=</span><span class="mf">0.3</span>
+<span class="p">)</span>
+<span class="n">compiler</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+    <span class="n">inputmodelpath</span><span class="o">=</span><span class="s1">&#39;./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5&#39;</span><span class="p">,</span>
+    <span class="n">inputshapes</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">get_input_spec</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span>
+    <span class="n">dtype</span><span class="o">=</span><span class="n">model</span><span class="o">.</span><span class="n">get_input_spec</span><span class="p">()[</span><span class="mi">1</span><span class="p">]</span>
+<span class="p">)</span>
+</pre></div>
+</div>
+<p>To check how the compiled model is performing, create <code class="docutils literal notranslate"><span class="pre">TFLiteRuntime</span></code> object and run local model evaluation:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="o">...</span>
+
+<span class="n">runtime</span> <span class="o">=</span> <span class="n">TFLiteRuntime</span><span class="p">(</span>
+    <span class="n">protocol</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+    <span class="n">modelpath</span><span class="o">=</span><span class="s1">&#39;./build/compiled-model.tflite&#39;</span>
+<span class="p">)</span>
+
+<span class="n">runtime</span><span class="o">.</span><span class="n">run_locally</span><span class="p">(</span>
+    <span class="n">dataset</span><span class="p">,</span>
+    <span class="n">model</span><span class="p">,</span>
+    <span class="s1">&#39;./build/compiled-model.tflite&#39;</span>
+<span class="p">)</span>
+<span class="n">MeasurementsCollector</span><span class="o">.</span><span class="n">save_measurements</span><span class="p">(</span><span class="s1">&#39;out.json&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Method <code class="docutils literal notranslate"><span class="pre">runtime.run_locally</span></code> runs benchmarks of the model on the current device.
+The <code class="docutils literal notranslate"><span class="pre">MeasurementsCollector</span></code> class collects all benchmarks’ data for the model inference and saves it in JSON format that can be later used to render results as described in <a class="reference internal" href="#render-report"><span class="std std-ref">Render report from benchmarks</span></a>.</p>
+</div>
+<div class="section" id="using-kenning-scenarios">
+<h2>Using Kenning scenarios<a class="headerlink" href="#using-kenning-scenarios" title="Permalink to this heading">¶</a></h2>
+<p>One can also use ready-to-use Kenning scenarios.
+All executable Python scripts are available in the <code class="docutils literal notranslate"><span class="pre">kenning.scenarios</span></code> submodule.</p>
+<div class="section" id="running-model-training-on-host">
+<h3>Running model training on host<a class="headerlink" href="#running-model-training-on-host" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.model_training</span></code> script is run as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">model_training</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">modelwrappers</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">tensorflow_pet_dataset</span><span class="o">.</span><span class="n">TensorFlowPetDatasetMobileNetV2</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">pet_dataset</span><span class="o">.</span><span class="n">PetDataset</span> \
+    <span class="o">--</span><span class="n">logdir</span> <span class="n">build</span><span class="o">/</span><span class="n">logs</span> \
+    <span class="o">--</span><span class="n">dataset</span><span class="o">-</span><span class="n">root</span> <span class="n">build</span><span class="o">/</span><span class="n">pet</span><span class="o">-</span><span class="n">dataset</span> \
+    <span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="n">build</span><span class="o">/</span><span class="n">trained</span><span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">h5</span> \
+    <span class="o">--</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="mi">32</span> \
+    <span class="o">--</span><span class="n">learning</span><span class="o">-</span><span class="n">rate</span> <span class="mf">0.0001</span> \
+    <span class="o">--</span><span class="n">num</span><span class="o">-</span><span class="n">epochs</span> <span class="mi">50</span>
+</pre></div>
+</div>
+<p>By default, <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.model_training</span></code> script requires two classes:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code>-based class that describes model architecture and provides training routines,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Dataset</span></code>-based class that provides training data for the model.</p></li>
+</ul>
+<p>The remaining arguments are provided by the <code class="docutils literal notranslate"><span class="pre">form_argparse</span></code> class methods in each class, and may be different based on selected dataset and model.
+In order to get full help for the training scenario for the above case, run:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">model_training</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">modelwrappers</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">tensorflow_pet_dataset</span><span class="o">.</span><span class="n">TensorFlowPetDatasetMobileNetV2</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">pet_dataset</span><span class="o">.</span><span class="n">PetDataset</span> \
+    <span class="o">-</span><span class="n">h</span>
+</pre></div>
+</div>
+<p>This will load all the available arguments for a given model and dataset.</p>
+<p>The arguments in the above command are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--logdir</span></code> - path to the directory where logs will be stored (this directory may be an argument for the TensorBoard software),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dataset-root</span></code> - path to the dataset directory, required by the <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>-based class,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--model-path</span></code> - path where the trained model will be saved,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--batch-size</span></code> - training batch size,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--learning-rate</span></code> - training learning rate,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--num-epochs</span></code> - number of epochs.</p></li>
+</ul>
+<p>If the dataset files are not present, use <code class="docutils literal notranslate"><span class="pre">--download-dataset</span></code> flag in order to let the Dataset API download the data.</p>
+</div>
+<div class="section" id="benchmarking-trained-model-on-host">
+<h3>Benchmarking trained model on host<a class="headerlink" href="#benchmarking-trained-model-on-host" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.inference_performance</span></code> script runs the model using the deep learning framework used for training on a host device.
+It runs the inference on a given dataset, computes model quality metrics and performance metrics.
+The results from the script can be used as a reference point for benchmarking of the compiled models on target devices.</p>
+<p>The example usage of the script is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">inference_performance</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">modelwrappers</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">tensorflow_pet_dataset</span><span class="o">.</span><span class="n">TensorFlowPetDatasetMobileNetV2</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">pet_dataset</span><span class="o">.</span><span class="n">PetDataset</span> \
+    <span class="n">build</span><span class="o">/</span><span class="n">result</span><span class="o">.</span><span class="n">json</span> \
+    <span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="n">kenning</span><span class="o">/</span><span class="n">resources</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">classification</span><span class="o">/</span><span class="n">tensorflow_pet_dataset_mobilenetv2</span><span class="o">.</span><span class="n">h5</span> \
+    <span class="o">--</span><span class="n">dataset</span><span class="o">-</span><span class="n">root</span> <span class="n">build</span><span class="o">/</span><span class="n">pet</span><span class="o">-</span><span class="n">dataset</span>
+</pre></div>
+</div>
+<p>The obligatory arguments for the script are:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code>-based class that implements the model loading, I/O processing and inference method,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Dataset</span></code>-based class that implements fetching of data samples and evaluation of the model,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">build/result.json</span></code>, which is the path to the output JSON file with benchmark results.</p></li>
+</ul>
+<p>The remaining parameters are specific to the <code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code>-based class and <code class="docutils literal notranslate"><span class="pre">Dataset</span></code>-based class.</p>
+</div>
+<div class="section" id="testing-onnx-conversions">
+<h3>Testing ONNX conversions<a class="headerlink" href="#testing-onnx-conversions" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.onnx_conversion</span></code> runs as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">onnx_conversion</span> \
+    <span class="n">build</span><span class="o">/</span><span class="n">models</span><span class="o">-</span><span class="n">directory</span> \
+    <span class="n">build</span><span class="o">/</span><span class="n">onnx</span><span class="o">-</span><span class="n">support</span><span class="o">.</span><span class="n">rst</span> \
+    <span class="o">--</span><span class="n">converters</span><span class="o">-</span><span class="nb">list</span> \
+        <span class="n">kenning</span><span class="o">.</span><span class="n">onnxconverters</span><span class="o">.</span><span class="n">pytorch</span><span class="o">.</span><span class="n">PyTorchONNXConversion</span> \
+        <span class="n">kenning</span><span class="o">.</span><span class="n">onnxconverters</span><span class="o">.</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">TensorFlowONNXConversion</span> \
+        <span class="n">kenning</span><span class="o">.</span><span class="n">onnxconverters</span><span class="o">.</span><span class="n">mxnet</span><span class="o">.</span><span class="n">MXNetONNXConversion</span>
+</pre></div>
+</div>
+<p>The first argument is the directory, where the generated ONNX models will be stored.
+The second argument is the RST file with import/export support table for each model for each framework.
+The third argument is the list of <code class="docutils literal notranslate"><span class="pre">ONNXConversion</span></code> classes implementing list of models, import method and export method.</p>
+</div>
+<div class="section" id="running-compilation-and-deployment-of-models-on-target-hardware">
+<span id="compilation-and-deployment"></span><h3>Running compilation and deployment of models on target hardware<a class="headerlink" href="#running-compilation-and-deployment-of-models-on-target-hardware" title="Permalink to this heading">¶</a></h3>
+<p>There are two scripts - <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.inference_tester</span></code> and <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.inference_server</span></code>.</p>
+<p>The example call for the first script is following:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">inference_tester</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">modelwrappers</span><span class="o">.</span><span class="n">classification</span><span class="o">.</span><span class="n">tensorflow_pet_dataset</span><span class="o">.</span><span class="n">TensorFlowPetDatasetMobileNetV2</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">compilers</span><span class="o">.</span><span class="n">tflite</span><span class="o">.</span><span class="n">TFLiteCompiler</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">runtimes</span><span class="o">.</span><span class="n">tflite</span><span class="o">.</span><span class="n">TFLiteRuntime</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">pet_dataset</span><span class="o">.</span><span class="n">PetDataset</span> \
+    <span class="o">./</span><span class="n">build</span><span class="o">/</span><span class="n">google</span><span class="o">-</span><span class="n">coral</span><span class="o">-</span><span class="n">devboard</span><span class="o">-</span><span class="n">tflite</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">json</span> \
+    <span class="o">--</span><span class="n">protocol</span><span class="o">-</span><span class="bp">cls</span> <span class="n">kenning</span><span class="o">.</span><span class="n">runtimeprotocols</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkProtocol</span> \
+    <span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="o">./</span><span class="n">kenning</span><span class="o">/</span><span class="n">resources</span><span class="o">/</span><span class="n">models</span><span class="o">/</span><span class="n">classification</span><span class="o">/</span><span class="n">tensorflow_pet_dataset_mobilenetv2</span><span class="o">.</span><span class="n">h5</span> \
+    <span class="o">--</span><span class="n">model</span><span class="o">-</span><span class="n">framework</span> <span class="n">keras</span> \
+    <span class="o">--</span><span class="n">target</span> <span class="s2">&quot;edgetpu&quot;</span> \
+    <span class="o">--</span><span class="n">compiled</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="n">build</span><span class="o">/</span><span class="n">compiled</span><span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">tflite</span> \
+    <span class="o">--</span><span class="n">inference</span><span class="o">-</span><span class="nb">input</span><span class="o">-</span><span class="nb">type</span> <span class="n">int8</span> \
+    <span class="o">--</span><span class="n">inference</span><span class="o">-</span><span class="n">output</span><span class="o">-</span><span class="nb">type</span> <span class="n">int8</span> \
+    <span class="o">--</span><span class="n">host</span> <span class="mf">192.168.188.35</span> \
+    <span class="o">--</span><span class="n">port</span> <span class="mi">12345</span> \
+    <span class="o">--</span><span class="n">packet</span><span class="o">-</span><span class="n">size</span> <span class="mi">32768</span> \
+    <span class="o">--</span><span class="n">save</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mendel</span><span class="o">/</span><span class="n">compiled</span><span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">tflite</span> \
+    <span class="o">--</span><span class="n">dataset</span><span class="o">-</span><span class="n">root</span> <span class="n">build</span><span class="o">/</span><span class="n">pet</span><span class="o">-</span><span class="n">dataset</span> \
+    <span class="o">--</span><span class="n">inference</span><span class="o">-</span><span class="n">batch</span><span class="o">-</span><span class="n">size</span> <span class="mi">1</span> \
+    <span class="o">--</span><span class="n">verbosity</span> <span class="n">INFO</span>
+</pre></div>
+</div>
+<p>The script requires:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code>-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Optimizer</span></code>-based class for compiling the model for a given target,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Runtime</span></code>-based class that implements data processing and the inference method for the compiled model on the target hardware,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Dataset</span></code>-based class that implements fetching of data samples and evaluation of the model,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">./build/google-coral-devboard-tflite-tensorflow.json</span></code>, which is the path to the output JSON file with performance and quality metrics.</p></li>
+</ul>
+<p>In case of running inference on remote edge device, the <code class="docutils literal notranslate"><span class="pre">--protocol-cls</span> <span class="pre">RuntimeProtocol</span></code> also needs to be provided in order to provide communication protocol between the host and the target.
+If <code class="docutils literal notranslate"><span class="pre">--protocol-cls</span></code> is not provided, the <code class="docutils literal notranslate"><span class="pre">inference_tester</span></code> will run inference on the host machine (which is useful for testing and comparison).</p>
+<p>The remaining arguments come from the above-mentioned classes.
+Their meaning is following:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--model-path</span></code> (<code class="docutils literal notranslate"><span class="pre">TensorFlowPetDatasetMobileNetV2</span></code> argument) is the path to the trained model that will be compiled and executed on the target hardware,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--model-framework</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code> argument) tells the compiler what is the format of the file with the saved model (it tells which backend to use for parsing the model by the compiler),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--target</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code> argument) is the name of the target hardware for which the compiler generates optimized binaries,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--compiled-model-path</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code> argument) is the path where the compiled model will be stored on host,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inference-input-type</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code> argument) tells TFLite compiler what will be the type of the input tensors,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inference-output-type</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteCompiler</span></code> argument) tells TFLite compiler what will be the type of the output tensors,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--host</span></code> tells the <code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> what is the IP address of the target device,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--port</span></code> tells the <code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> on what port the server application is listening,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--packet-size</span></code> tells the <code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> what the packet size during communication should be,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--save-model-path</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteRuntime</span></code> argument) is the path where the compiled model will be stored on the target device,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--dataset-root</span></code> (<code class="docutils literal notranslate"><span class="pre">PetDataset</span></code> argument) is the path to the dataset files,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--inference-batch-size</span></code> is the batch size for the inference on the target hardware,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--verbosity</span></code> is the verbosity of logs.</p></li>
+</ul>
+<p>The example call for the second script is as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">inference_server</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">runtimeprotocols</span><span class="o">.</span><span class="n">network</span><span class="o">.</span><span class="n">NetworkProtocol</span> \
+    <span class="n">kenning</span><span class="o">.</span><span class="n">runtimes</span><span class="o">.</span><span class="n">tflite</span><span class="o">.</span><span class="n">TFLiteRuntime</span> \
+    <span class="o">--</span><span class="n">host</span> <span class="mf">0.0.0.0</span> \
+    <span class="o">--</span><span class="n">port</span> <span class="mi">12345</span> \
+    <span class="o">--</span><span class="n">packet</span><span class="o">-</span><span class="n">size</span> <span class="mi">32768</span> \
+    <span class="o">--</span><span class="n">save</span><span class="o">-</span><span class="n">model</span><span class="o">-</span><span class="n">path</span> <span class="o">/</span><span class="n">home</span><span class="o">/</span><span class="n">mendel</span><span class="o">/</span><span class="n">compiled</span><span class="o">-</span><span class="n">model</span><span class="o">.</span><span class="n">tflite</span> \
+    <span class="o">--</span><span class="n">delegates</span><span class="o">-</span><span class="nb">list</span> <span class="n">libedgetpu</span><span class="o">.</span><span class="n">so</span><span class="mf">.1</span> \
+    <span class="o">--</span><span class="n">verbosity</span> <span class="n">INFO</span>
+</pre></div>
+</div>
+<p>This script only requires <code class="docutils literal notranslate"><span class="pre">Runtime</span></code>-based class and <code class="docutils literal notranslate"><span class="pre">RuntimeProtocol</span></code>-based class.
+It waits for a client using a given protocol, and later runs inference based on the implementation from the <code class="docutils literal notranslate"><span class="pre">Runtime</span></code> class.</p>
+<p>The additional arguments are as follows:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">--host</span></code> (<code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> argument) is the address where the server will listen,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--port</span></code> (<code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> argument) is the port on which the server will listen,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--packet-size</span></code> (<code class="docutils literal notranslate"><span class="pre">NetworkProtocol</span></code> argument) is the size of the packet,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--save-model-path</span></code> is the path where the received model will be saved,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--delegates-list</span></code> (<code class="docutils literal notranslate"><span class="pre">TFLiteRuntime</span></code> argument) is a TFLite-specific list of libraries for delegating the inference to deep learning accelerators (<code class="docutils literal notranslate"><span class="pre">libedgetpu.so.1</span></code> is the delegate for Google Coral TPUs).</p></li>
+</ul>
+<p>First, the client compiles the model and sends it to the server using the runtime protocol.
+Then, it sends next batches of data to process to the server.
+In the end, it collects the benchmark metrics and saves them to JSON file.
+In addition, it generates plots with performance changes over time.</p>
+</div>
+<div class="section" id="render-report-from-benchmarks">
+<span id="render-report"></span><h3>Render report from benchmarks<a class="headerlink" href="#render-report-from-benchmarks" title="Permalink to this heading">¶</a></h3>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.inference_performance</span></code> and <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.inference_tester</span></code> create JSON files that contain:</p>
+<ul class="simple">
+<li><p>command string that was used to generate the JSON file,</p></li>
+<li><p>frameworks along with their versions used to train the model and compile the model,</p></li>
+<li><p>performance metrics, including:</p>
+<ul>
+<li><p>CPU usage over time,</p></li>
+<li><p>RAM usage over time,</p></li>
+<li><p>GPU usage over time,</p></li>
+<li><p>GPU memory usage over time,</p></li>
+</ul>
+</li>
+<li><p>predictions and ground truth to compute quality metrics, i.e. in form of confusion matrix and top-5 accuracy for classification task.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">kenning.scenarios.render_report</span></code> renders the report RST file along with plots for metrics for a given JSON file based on selected templates.</p>
+<p>For example, for the file <code class="docutils literal notranslate"><span class="pre">./build/google-coral-devboard-tflite-tensorflow.json</span></code> created in <a class="reference internal" href="#compilation-and-deployment"><span class="std std-ref">Running compilation and deployment of models on target hardware</span></a> the report can be rendered as follows:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">python</span> <span class="o">-</span><span class="n">m</span> <span class="n">kenning</span><span class="o">.</span><span class="n">scenarios</span><span class="o">.</span><span class="n">render_report</span> \
+    <span class="n">build</span><span class="o">/</span><span class="n">google</span><span class="o">-</span><span class="n">coral</span><span class="o">-</span><span class="n">devboard</span><span class="o">-</span><span class="n">tflite</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">.</span><span class="n">json</span> \
+    <span class="s2">&quot;Pet Dataset classification using TFLite-compiled TensorFlow model&quot;</span> \
+    <span class="n">docs</span><span class="o">/</span><span class="n">source</span><span class="o">/</span><span class="n">generated</span><span class="o">/</span><span class="n">google</span><span class="o">-</span><span class="n">coral</span><span class="o">-</span><span class="n">devboard</span><span class="o">-</span><span class="n">tpu</span><span class="o">-</span><span class="n">tflite</span><span class="o">-</span><span class="n">tensorflow</span><span class="o">-</span><span class="n">classification</span><span class="o">.</span><span class="n">rst</span> \
+    <span class="o">--</span><span class="n">img</span><span class="o">-</span><span class="nb">dir</span> <span class="n">docs</span><span class="o">/</span><span class="n">source</span><span class="o">/</span><span class="n">generated</span><span class="o">/</span><span class="n">img</span><span class="o">/</span> \
+    <span class="o">--</span><span class="n">root</span><span class="o">-</span><span class="nb">dir</span> <span class="n">docs</span><span class="o">/</span><span class="n">source</span><span class="o">/</span> \
+    <span class="o">--</span><span class="n">report</span><span class="o">-</span><span class="n">types</span> \
+        <span class="n">performance</span> \
+        <span class="n">classification</span>
+</pre></div>
+</div>
+<p>Where:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">build/google-coral-devboard-tflite-tensorflow.json</span></code> is the input JSON file with benchmark results</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">&quot;Pet</span> <span class="pre">Dataset</span> <span class="pre">classification</span> <span class="pre">using</span> <span class="pre">TFLite-compiled</span> <span class="pre">TensorFlow</span> <span class="pre">model&quot;</span></code> is the report name that will be used as title in generated plots,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst</span></code> is the path to the output RST file,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--img-dir</span> <span class="pre">docs/source/generated/img/</span></code> is the path to the directory where generated plots will be stored,</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--root-dir</span> <span class="pre">docs/source</span></code> is the root directory for documentation sources (it will be used to compute relative paths in the RST file),</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">--report-types</span> <span class="pre">performance</span> <span class="pre">classification</span></code> is the list of report types that will form the final RST file.</p></li>
+</ul>
+<p>The <code class="docutils literal notranslate"><span class="pre">performance</span></code> type provides report sections for performance metrics, i.e.:</p>
+<ul class="simple">
+<li><p>Inference time changes over time,</p></li>
+<li><p>Mean CPU usage over time,</p></li>
+<li><p>RAM usage over time,</p></li>
+<li><p>GPU usage over time,</p></li>
+<li><p>GPU memory usage over time.</p></li>
+</ul>
+<p>It also computes mean, standard deviation and median values for the above time series.</p>
+<p>The <code class="docutils literal notranslate"><span class="pre">classification</span></code> type provides report section regarding quality metrics for classification task:</p>
+<ul class="simple">
+<li><p>Confusion matrics,</p></li>
+<li><p>Per-class precision,</p></li>
+<li><p>Per-class sensitivity,</p></li>
+<li><p>Accuracy,</p></li>
+<li><p>Top-5 accuracy,</p></li>
+<li><p>Mean precision,</p></li>
+<li><p>Mean sensitivity,</p></li>
+<li><p>G-Mean.</p></li>
+</ul>
+<p>The above metrics can be used to determine any quality losses resulting from optimizations (i.e. pruning or quantization).</p>
+</div>
+</div>
+<div class="section" id="adding-new-implementations">
+<h2>Adding new implementations<a class="headerlink" href="#adding-new-implementations" title="Permalink to this heading">¶</a></h2>
+<p><code class="docutils literal notranslate"><span class="pre">Dataset</span></code>, <code class="docutils literal notranslate"><span class="pre">ModelWrapper</span></code>, <code class="docutils literal notranslate"><span class="pre">Optimizer</span></code>, <code class="docutils literal notranslate"><span class="pre">RuntimeProtocol</span></code>, <code class="docutils literal notranslate"><span class="pre">Runtime</span></code> and other classes from <code class="docutils literal notranslate"><span class="pre">kenning.core</span></code> module have dedicated directories for their implementations.
+Each method in base classes that requires implementation raises <code class="docutils literal notranslate"><span class="pre">NotImplementedError</span></code> exception.
+Implemented methods can be also overriden, if neccessary.</p>
+<p>Most of the base classes implement <code class="docutils literal notranslate"><span class="pre">form_argparse</span></code> and <code class="docutils literal notranslate"><span class="pre">from_argparse</span></code> methods.
+The first one creates an argument parser and a group of arguments specific to the base class.
+The second one creates an object of the class based on the arguments from argument parser.</p>
+<p>Inheriting classes can modify <code class="docutils literal notranslate"><span class="pre">form_argparse</span></code> and <code class="docutils literal notranslate"><span class="pre">from_argparse</span></code> methods to provide better control over their processing, but they should always be based on the results of their base implementations.</p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          
+
+
+
+
+<footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="dl-deployment-stack.html" class="btn btn-neutral float-right" title="Deep Learning deployment stack" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right"></span></a>
+      
+      
+        <a href="introduction.html" class="btn btn-neutral float-left" title="Introduction" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2020-2021, Antmicro;
+      <span class="lastupdated">
+        Last updated on 2022-07-07.
+      </span>
+
+    </p>
+  </div> 
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

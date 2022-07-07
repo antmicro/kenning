@@ -264,6 +264,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         time.sleep(1)
         status, received_data = server.receive_data(None, None)
         server.send_message(MessageType.OK, b'')
+        thread.join()
         assert status == ServerStatus.DATA_READY
         assert received_data == [(MessageType.DATA).to_bytes() + data]
         assert shared_list[0] is True

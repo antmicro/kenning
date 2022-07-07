@@ -9,7 +9,6 @@ import multiprocessing
 import pytest
 import random
 import socket
-import time
 import uuid
 
 
@@ -249,6 +248,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
     def test_upload_input(self, server, client):
 
         def upload(client, data, shared_list):
+            client.send_message(MessageType.OK)
             output = client.upload_input(data)
             shared_list.append(output)
 
@@ -259,9 +259,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
                                          args=(client, data, shared_list))
         thread.start()
 
-        # We have to wait somehow untill data is delivered
-        # TODO: get rid of sleep
-        time.sleep(1)
+        assert server.receive_confirmation()[0] is True
         status, received_data = server.receive_data(None, None)
         server.send_message(MessageType.OK, b'')
         thread.join()
@@ -346,6 +344,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         server.accept_client(server.serversocket, None)
 
         def send_stats(server, data: dict, shared_list):
+            server.send_message(MessageType.OK)
             output = server.download_statistics()
             shared_list.append(output)
 
@@ -353,8 +352,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         args = (client, data, shared_list)
         thread_send = multiprocessing.Process(target=send_stats, args=args)
         thread_send.start()
-        # TODO: Get rid of sleep
-        time.sleep(1)
+
+        assert server.receive_confirmation()[0] is True
         status, message = server.receive_data(None, None)
         message_type, message = server.parse_message(message[0])
         if message_type == MessageType.STATS and message == b'':

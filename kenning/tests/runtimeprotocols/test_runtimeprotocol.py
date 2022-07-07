@@ -171,6 +171,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
     def test_send_message(self, server, client):
         server.accept_client(server.serversocket, None)
         data, _ = self.generate_byte_data()
+
         assert client.send_message(MessageType.DATA, data=data) is True
         assert server.send_message(MessageType.DATA, data=data) is True
         client.disconnect()
@@ -215,6 +216,28 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         client.disconnect()
         output = server.receive_confirmation()
         assert output == (False, None)
+
+    def test_upload_input(self, server, client):
+
+        def upload(client, data, shared_list):
+            client.send_message(MessageType.OK, b'')
+            output = client.upload_input(data)
+            shared_list.append(output)
+
+        server.accept_client(server.serversocket, None)
+        data, _ = self.generate_byte_data()
+        shared_list = (multiprocessing.Manager()).list()
+        thread = multiprocessing.Process(target=upload,
+                                         args=(client, data, shared_list))
+        thread.start()
+
+        # We have to wait somehow untill data is delivered
+        server.receive_confirmation()
+        status, received_data = server.receive_data(None, None)
+        server.send_message(MessageType.OK, b'')
+        assert status == ServerStatus.DATA_READY
+        assert received_data == [(MessageType.DATA).to_bytes() + data]
+        assert shared_list[0] is True
 
 
 @pytest.mark.fast

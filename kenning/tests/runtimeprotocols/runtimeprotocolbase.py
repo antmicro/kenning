@@ -61,9 +61,8 @@ class RuntimeProtocolTests:
     def test_receive_data(self):
         raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_upload_input(self):
-        assert 0
+        raise NotImplementedError
 
     @pytest.mark.xfail()
     def test_upload_model(self):

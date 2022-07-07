@@ -1,4 +1,3 @@
-from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.measurements import Measurements
 import pytest
@@ -30,28 +29,14 @@ class RuntimeProtocolTests:
         RuntimeProtocol:
             Initialized protocol object
         """
-        protocol = NetworkProtocol(self.host, self.port, *args, **kwargs)
+        protocol = self.runtimeprotocolcls(*args, **kwargs)
         return protocol
 
     def test_initialize_server(self):
-        server = self.initprotocol()
-        assert server.initialize_server() is True
-        with pytest.raises(OSError) as execinfo:
-            second_server = self.initprotocol()
-            second_server.initialize_server()
-        assert 'Address already in use' in str(execinfo.value)
-        server.disconnect()
+        raise NotImplementedError
 
     def test_initialize_client(self):
-        client = self.initprotocol()
-        with pytest.raises(ConnectionRefusedError):
-            client.initialize_client()
-        server = self.initprotocol()
-        server.initialize_server()
-        client.initialize_client()
-
-        client.disconnect()
-        server.disconnect()
+        raise NotImplementedError
 
     def test_wait_for_activity(self):
         raise NotImplementedError

@@ -299,6 +299,21 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert json_file.decode() == json.dumps(quantization_details)
         assert shared_list[1] is True
 
+    def test_download_output(self, server, client):
+        data, _ = self.generate_byte_data()
+        server.accept_client(server.serversocket, None)
+
+        def send_stats(server, data, shared_list):
+            server.send_message(MessageType.OK, data)
+
+        shared_list = (multiprocessing.Manager()).list()
+        args = (server, data, shared_list)
+        thread_send = multiprocessing.Process(target=send_stats, args=args)
+        thread_send.start()
+        status, downloaded_data = client.download_output()
+        assert status is True
+        assert downloaded_data == data
+
 
 @pytest.mark.fast
 class TestMessageType:

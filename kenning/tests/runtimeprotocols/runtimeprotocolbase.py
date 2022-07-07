@@ -70,9 +70,8 @@ class RuntimeProtocolTests:
     def test_upload_quantization_details(self):
         raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_download_output(self):
-        assert 0
+        raise NotImplementedError
 
     @pytest.mark.xfail()
     def test_download_statistics(self):

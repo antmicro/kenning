@@ -78,22 +78,17 @@ class RuntimeProtocolTests:
         client = self.initprotocol()
         assert isinstance(client.download_statistics(), Measurements)
 
-    @pytest.mark.xfail()
     def test_request_processing(self):
-        assert 0
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_request_success(self):
-        assert 0
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_request_failure(self):
-        assert 0
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_parse_message(self):
-        assert 0
+        raise NotImplementedError
 
-    @pytest.mark.xfail()
     def test_disconnect(self):
-        assert 0
+        raise NotImplementedError

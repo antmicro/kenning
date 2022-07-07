@@ -4,12 +4,12 @@ from kenning.runtimeprotocols.network import NetworkProtocol
 from pathlib import Path
 from runtimeprotocolbase import RuntimeProtocolTests
 from typing import Tuple, List
-import time
 import json
 import multiprocessing
 import pytest
 import random
 import socket
+import time
 import uuid
 
 
@@ -337,6 +337,74 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert output is True
         thread_send.join()
         assert shared_list[0].data == data
+
+    def test_parse_message(self):
+        data, _ = self.generate_byte_data()
+        protocol = self.initprotocol()
+        for i in range(8):
+            tmp = (i).to_bytes(2, byteorder='little', signed=False) + data
+            mt, output_data = protocol.parse_message(tmp)
+            assert mt.value == i and output_data == data
+        with pytest.raises(ValueError):
+            tmp = (100).to_bytes(2, byteorder='little', signed=False)
+            protocol.parse_message(tmp + data)
+
+    def test_disconnect(self):
+        server = self.initprotocol()
+        server.initialize_server()
+        client = self.initprotocol()
+        client.initialize_client()
+        server.accept_client(server.serversocket, None)
+        assert client.send_message(MessageType.OK)
+        assert server.send_message(MessageType.OK)
+        client.disconnect()
+        with pytest.raises(OSError):
+            client.send_message(MessageType.OK)
+        with pytest.raises(ConnectionResetError):
+            server.send_message(MessageType.OK)
+        server.disconnect()
+        with pytest.raises(OSError):
+            server.send_message(MessageType.OK)
+
+    def test_request_processing(self, server, client):
+        server.accept_client(server.serversocket, None)
+
+        def send_confirmation(client):
+            client.send_message(MessageType.OK)
+            client.send_message(MessageType.OK)
+
+        def send_reject_first(client):
+            client.send_message(MessageType.ERROR)
+
+        def send_reject_second(client):
+            client.send_message(MessageType.OK)
+            client.send_message(MessageType.ERROR)
+
+        functions = (send_confirmation, send_reject_first, send_reject_second)
+        expected = (True, False, False)
+        args = (client, )
+
+        for function, expected in zip(functions, expected):
+            thread_send = multiprocessing.Process(target=function,
+                                                  args=args)
+            thread_send.start()
+            assert server.request_processing() is expected
+            thread_send.join()
+
+    def test_request_failure(self, server, client):
+        server.accept_client(server.serversocket, None)
+        server.request_failure()
+        status, message = client.receive_data(None, None)
+        message_type, message = client.parse_message(message[0])
+        assert message_type == MessageType.ERROR and message == b''
+
+    def test_request_success(self, server, client):
+        server.accept_client(server.serversocket, None)
+        data, _ = self.generate_byte_data()
+        server.request_success(data)
+        status, message = client.receive_data(None, None)
+        message_type, message = client.parse_message(message[0])
+        assert message_type == MessageType.OK and message == data
 
 
 @pytest.mark.fast

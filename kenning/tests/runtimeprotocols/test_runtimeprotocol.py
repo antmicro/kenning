@@ -3,6 +3,8 @@ from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
 from kenning.core.runtimeprotocol import MessageType
 from typing import Tuple, List
+from pathlib import Path
+import uuid
 import pytest
 import random
 import socket
@@ -238,6 +240,38 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert status == ServerStatus.DATA_READY
         assert received_data == [(MessageType.DATA).to_bytes() + data]
         assert shared_list[0] is True
+
+    def test_upload_model(self, server, client, tmpfolder):
+        path = tmpfolder / uuid.uuid4().hex
+        data, _ = self.generate_byte_data()
+
+        def write_model(path: Path, data: bytes):
+            """
+            Writes bytes to file
+            """
+            with open(path, "wb") as file:
+                file.write(data)
+            return
+
+        def receive_model(server: RuntimeProtocol, model: bytes,
+                          shared_list: list):
+            status, received_model = server.receive_data(None, None)
+            shared_list.append((status, received_model))
+            output = server.send_message(MessageType.OK, b'')
+            shared_list.append(output)
+
+        write_model(path, data)
+        shared_list = (multiprocessing.Manager()).list()
+        thread_receive = multiprocessing.Process(target=receive_model,
+                                                 args=(server, data,
+                                                       shared_list))
+        server.accept_client(server.serversocket, None)
+        thread_receive.start()
+        assert client.upload_model(path) is True
+        thread_receive.join()
+        answer = [(MessageType.MODEL).to_bytes() + data]
+        assert shared_list[0] == (ServerStatus.DATA_READY, answer)
+        assert shared_list[1] is True
 
 
 @pytest.mark.fast

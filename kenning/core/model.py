@@ -55,7 +55,8 @@ class ModelWrapper(object):
         self.prepare_model()
 
         self.actions = {
-            'infer': self.action_infer
+            'infer': self.action_infer,
+            'preprocess': self.action_preprocess
         }
 
     def get_path(self) -> Path:
@@ -422,5 +423,10 @@ class ModelWrapper(object):
 
     def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
         default_name = list(self.get_input_spec()[0].items())[0][0]
-        return {'default':
+        return {'out_infer':
                 self.run_inference(self.preprocess_input(input[default_name]))}
+
+    def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        default_name = list(self.get_input_spec()[0].items())[0][0]
+        return {'out_pre':
+                self.preprocess_input(input[default_name])}

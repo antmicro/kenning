@@ -7,21 +7,25 @@ from kenning.utils.class_loader import load_class
 
 
 class KenningFlow:
-
-    # Following structure of comments is not final
-    # and meant for WIP purposes only
-    # modules is Map of module_name -> (module, action)
-    # inputs is Map module_name -> Map(global -> local_input)
-    # outputs is Map module_name -> Map(local_output -> global)
-
-    def find_input_module(self, name: str) -> str:
-        return [ds for ds in self.modules if
-                set(self.inputs[name]) &
-                set(self.outputs[ds].values()) != set()][0]
+    """
+    Allows for creation of non-linear flows.
+    """
 
     def __init__(self, modules: Dict[str, Tuple[Type, Any, str]],
                  inputs: Dict[str, Dict[str, str]],
                  outputs: Dict[str, Dict[str, str]]):
+        """
+        Creates and compiles a flow.
+
+        Parameters
+        ----------
+        modules : Dict
+            Mapping of module names to their types, config and action
+        inputs : Dict
+            Mapping of module names to (global input name -> local input name)
+        outputs : Dict
+            Mapping of module names to (local input name -> global input name)
+        """
 
         self.modules: Dict[str, Tuple[Any, str]] = dict()
         self.inputs = inputs
@@ -32,16 +36,33 @@ class KenningFlow:
                 self.modules[name] = (type.from_json(cfg), action)
 
             elif issubclass(type, ModelWrapper) or issubclass(type, Optimizer):
-                ds_name = self.find_input_module(name)
+                ds_name = self._find_input_module(name)
                 self.modules[name] = (type.from_json(
                     self.modules[ds_name][0], cfg), action)
 
         self.compile()
 
+    def _find_input_module(self, name: str) -> str:
+        """
+        Helper function returning name of a input module for given node.
+
+        Parameters
+        ----------
+        name : str
+            Name of module we are searching parent for
+
+        Returns
+        -------
+        str : Name of a module that provides input for given node
+        """
+        return [ds for ds in self.modules if
+                set(self.inputs[name]) &
+                set(self.outputs[ds].values()) != set()][0]
+
     def compile(self):
         for name, (module, action) in self.modules.items():
             if issubclass(type(module), Optimizer):
-                parent = self.find_input_module(name)
+                parent = self._find_input_module(name)
                 format = module.consult_model_type(self.modules[parent][0])
                 print(format)
 
@@ -73,6 +94,9 @@ class KenningFlow:
         return cls(modules, inputs, outputs)
 
     def process(self):
+        """
+        Main process function. Repeatedly fires constructed graph in a loop.
+        """
         current_outputs: Dict[str, Any] = dict()
         while True:
             try:

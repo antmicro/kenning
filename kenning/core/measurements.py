@@ -229,11 +229,11 @@ def tagmeasurements(tagname: str):
             returnvalue = function(*args)
             endtimestamp = time.perf_counter()
             logger.debug(
-                f'{function.__name__} start: {starttimestamp * 1000} ms end: {endtimestamp * 1000} ms'
+                f'{function.__name__} start: {starttimestamp * 1000} ms end: {endtimestamp * 1000} ms'  # noqa: E501
             )
             MeasurementsCollector.measurements += {
                 'tags': [
-                    {'name': tagname, 'start': starttimestamp, 'end': endtimestamp}
+                    {'name': tagname, 'start': starttimestamp, 'end': endtimestamp}  # noqa: E501
                 ]
             }
             return returnvalue

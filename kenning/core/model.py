@@ -56,7 +56,9 @@ class ModelWrapper(object):
 
         self.actions = {
             'infer': self.action_infer,
-            'preprocess': self.action_preprocess
+            'preprocess': self.action_preprocess,
+            'train': self.action_train,
+            'postprocess': self.action_postprocess
         }
 
     def get_path(self) -> Path:
@@ -430,3 +432,11 @@ class ModelWrapper(object):
         default_name = list(self.get_input_spec()[0].items())[0][0]
         return {'out_pre':
                 self.preprocess_input(input[default_name])}
+
+    def action_train(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        raise NotImplementedError
+
+    def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        default_name = list(self.get_input_spec()[0].items())[0][0]
+        return {'out_post':
+                self.postprocess_outputs(input[default_name])}

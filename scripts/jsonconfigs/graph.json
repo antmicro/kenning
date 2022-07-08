@@ -78,11 +78,11 @@
         },
         "inputs":
         {
-            
+            "default": "tf_out"
         },
         "outputs":
         {
-
+            "default": "opt_out"
         },
         "action": "compile"
     }

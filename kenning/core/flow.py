@@ -1,6 +1,7 @@
 from typing import Any, Dict, Tuple, Type
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
 
 from kenning.utils.class_loader import load_class
 
@@ -9,30 +10,40 @@ class KenningFlow:
 
     # Following structure of comments is not final
     # and meant for WIP purposes only
-    # modules is Map of module_name -> (Type, Type config, action)
+    # modules is Map of module_name -> (module, action)
     # inputs is Map module_name -> Map(global -> local_input)
     # outputs is Map module_name -> Map(local_output -> global)
+
+    def find_input_module(self, name: str) -> str:
+        return [ds for ds in self.modules if
+                set(self.inputs[name]) &
+                set(self.outputs[ds].values()) != set()][0]
+
     def __init__(self, modules: Dict[str, Tuple[Type, Any, str]],
                  inputs: Dict[str, Dict[str, str]],
                  outputs: Dict[str, Dict[str, str]]):
 
-        self.nodes: Dict[str, Tuple[Any, str]] = dict()
+        self.modules: Dict[str, Tuple[Any, str]] = dict()
         self.inputs = inputs
         self.outputs = outputs
 
         for name, (type, cfg, action) in modules.items():
             if issubclass(type, Dataset):
-                self.nodes[name] = (type.from_json(cfg), action)
+                self.modules[name] = (type.from_json(cfg), action)
 
-            elif issubclass(type, ModelWrapper):
-                ds_name = [ds for ds in self.nodes if
-                           set(inputs[name]) &
-                           set(outputs[ds].values()) != set()][0]
-                self.nodes[name] = (type.from_json(
-                    self.nodes[ds_name][0], cfg), action)
+            elif issubclass(type, ModelWrapper) or issubclass(type, Optimizer):
+                ds_name = self.find_input_module(name)
+                self.modules[name] = (type.from_json(
+                    self.modules[ds_name][0], cfg), action)
+
+        self.compile()
 
     def compile(self):
-        pass
+        for name, (module, action) in self.modules.items():
+            if issubclass(type(module), Optimizer):
+                parent = self.find_input_module(name)
+                format = module.consult_model_type(self.modules[parent][0])
+                print(format)
 
     @classmethod
     def from_json(cls, args: Dict[str, Any]):
@@ -65,14 +76,14 @@ class KenningFlow:
         current_outputs: Dict[str, Any] = dict()
         while True:
             try:
-                for name, (node, action) in self.nodes.items():
+                for name, (module, action) in self.modules.items():
                     input: Dict[str, Any] = {
                         local_name: current_outputs[global_name]
                         for global_name, local_name in
                         self.inputs[name].items()
                     } if name in self.inputs else {}
 
-                    output = node.actions[action](input)
+                    output = module.actions[action](input)
 
                     current_outputs.update({
                         self.outputs[name][local_output]: value
@@ -86,7 +97,7 @@ class KenningFlow:
                 break
 
             except StopIteration:
-                print(f'Processing interrupted due to stopped {name} stream.\
+                print(f'Processing interrupted due to empty {name} stream.\
                     Aborting.')
                 break
 

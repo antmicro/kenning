@@ -213,6 +213,34 @@ class MeasurementsCollector(object):
             )
 
 
+def tagmeasurements(tagname: str):
+    """
+    Decorator for adding tags for measurements and saving timestamps.
+
+    Parameters
+    ----------
+    tagname: str
+        The name of the phase where measurements are collected.
+    """
+    def statistics_decorator(function):
+        @wraps(function)
+        def statistics_wrapper(*args):
+            starttimestamp = time.perf_counter()
+            returnvalue = function(*args)
+            endtimestamp = time.perf_counter()
+            logger.debug(
+                f'{function.__name__} start: {starttimestamp * 1000} ms end: {endtimestamp * 1000} ms'
+            )
+            MeasurementsCollector.measurements += {
+                'tags': [
+                    {'name': tagname, 'start': starttimestamp, 'end': endtimestamp}
+                ]
+            }
+            return returnvalue
+        return statistics_wrapper
+    return statistics_decorator
+
+
 def timemeasurements(measurementname: str):
     """
     Decorator for measuring time of the function.

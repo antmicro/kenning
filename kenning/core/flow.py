@@ -62,7 +62,6 @@ class KenningFlow:
         return cls(modules, inputs, outputs)
 
     def process(self):
-        # Map global -> value
         current_outputs: Dict[str, Any] = dict()
         while True:
             try:
@@ -81,7 +80,18 @@ class KenningFlow:
                         output.items()
                     })
 
-            except (KeyboardInterrupt, StopIteration):
+            except KeyboardInterrupt:
+                print('Processing interrupted due to keyboard interrupt.\
+                      Aborting.')
+                break
+
+            except StopIteration:
+                print(f'Processing interrupted due to stopped {name} stream.\
+                    Aborting.')
+                break
+
+            except RuntimeError:
+                print(f'Processing interrupted from {name} module. Aborting.')
                 break
 
         return current_outputs

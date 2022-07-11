@@ -17,6 +17,21 @@ class TestNetworkProtocol(RuntimeProtocolTests):
     host = ''
     port = 1235
 
+    @pytest.fixture
+    def server_and_client(self):
+        while (True):
+            try:
+                server = self.initprotocol()
+                client = self.initprotocol()
+                server.initialize_server()
+                client.initialize_client()
+                break
+            except OSError:
+                self.port += 1
+        yield server, client
+        client.disconnect()
+        server.disconnect()
+
     def initprotocol(self, *args, **kwargs) -> NetworkProtocol:
         protocol = self.runtimeprotocolcls(self.host, self.port,
                                            *args, **kwargs)
@@ -68,7 +83,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         client.disconnect()
         server.disconnect()
 
-    def test_wait_for_activity(self, server, client):
+    def test_wait_for_activity(self, server_and_client):
+        server, client = server_and_client
         # Connect via Client
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.CLIENT_CONNECTED
@@ -107,11 +123,13 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.NOTHING and received_data is None
 
-    def test_send_data(self, server, client):
+    def test_send_data(self, server_and_client):
+        server, client = server_and_client
         data, _ = self.generate_byte_data()
         assert client.send_data(data) is True
 
-    def test_receive_data(self, server, client):
+    def test_receive_data(self, server_and_client):
+        server, client = server_and_client
         data, _ = self.generate_byte_data()
 
         # Not initialized on server side
@@ -182,7 +200,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         status, output = protocol.collect_messages(data)
         assert output is None and status == ServerStatus.NOTHING
 
-    def test_wait_send(self, server, client):
+    def test_wait_send(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
         data, answer = self.generate_byte_data()
 
@@ -196,7 +215,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert server_status == ServerStatus.DATA_READY
             assert server_data == answer
 
-    def test_send_message(self, server, client):
+    def test_send_message(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
         data, _ = self.generate_byte_data()
 
@@ -245,7 +265,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         output = server.receive_confirmation()
         assert output == (False, None)
 
-    def test_upload_input(self, server, client):
+    def test_upload_input(self, server_and_client):
+        server, client = server_and_client
 
         def upload(client, data, shared_list):
             client.send_message(MessageType.OK)
@@ -267,7 +288,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert received_data == [(MessageType.DATA).to_bytes() + data]
         assert shared_list[0] is True
 
-    def test_upload_model(self, server, client, tmpfolder):
+    def test_upload_model(self, server_and_client, tmpfolder):
+        server, client = server_and_client
         path = tmpfolder / uuid.uuid4().hex
         data, _ = self.generate_byte_data()
 
@@ -297,7 +319,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert shared_list[0] == (ServerStatus.DATA_READY, answer)
         assert shared_list[1] is True
 
-    def test_upload_quantization_details(self, tmpfolder, server, client):
+    def test_upload_quantization_details(self, tmpfolder, server_and_client):
+        server, client = server_and_client
         quantization_details = {1: 'one', 2: 'two', 3: 'three'}
         path = tmpfolder / uuid.uuid4().hex
         with open(path, 'w') as file:
@@ -324,7 +347,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert json_file.decode() == json.dumps(quantization_details)
         assert shared_list[1] is True
 
-    def test_download_output(self, server, client):
+    def test_download_output(self, server_and_client):
+        server, client = server_and_client
         data, _ = self.generate_byte_data()
         server.accept_client(server.serversocket, None)
 
@@ -339,7 +363,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         assert status is True
         assert downloaded_data == data
 
-    def test_download_statistics(self, server, client):
+    def test_download_statistics(self, server_and_client):
+        server, client = server_and_client
         data = {'1': 'one', '2': 'two', '3': 'three'}
         server.accept_client(server.serversocket, None)
 
@@ -391,7 +416,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         with pytest.raises(OSError):
             server.send_message(MessageType.OK)
 
-    def test_request_processing(self, server, client):
+    def test_request_processing(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
         def send_confirmation(client):
@@ -416,14 +442,16 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             assert server.request_processing() is expected
             thread_send.join()
 
-    def test_request_failure(self, server, client):
+    def test_request_failure(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
         server.request_failure()
         status, message = client.receive_data(None, None)
         message_type, message = client.parse_message(message[0])
         assert message_type == MessageType.ERROR and message == b''
 
-    def test_request_success(self, server, client):
+    def test_request_success(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
         data, _ = self.generate_byte_data()
         server.request_success(data)

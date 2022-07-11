@@ -145,7 +145,8 @@ def main(argv):
         model.save_to_onnx(modelpath)
 
     if compiler:
-        # for now ignoring --model-framework parameter
+        # TODO make use of --model-framework parameter or make it optional and
+        # use it only if specified
         format = compiler.consult_model_type(model)
         if format == 'onnx' and not args.convert_to_onnx:
             modelpath = tempfile.NamedTemporaryFile().name

@@ -19,15 +19,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
 
     @pytest.fixture
     def server_and_client(self):
-        while (True):
-            try:
-                server = self.initprotocol()
-                client = self.initprotocol()
-                server.initialize_server()
-                client.initialize_client()
-                break
-            except OSError:
-                self.port += 1
+        server = self.initprotocol()
+        client = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
         yield server, client
         client.disconnect()
         server.disconnect()

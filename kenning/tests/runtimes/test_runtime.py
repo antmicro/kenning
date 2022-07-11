@@ -1,14 +1,18 @@
-from runtimetests import RuntimeTests
-from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.runtimes.tflite import TFLiteRuntime
-from kenning.runtimes.tvm import TVMRuntime
-from kenning.runtimes.iree import IREERuntime
 from kenning.compilers.tflite import TFLiteCompiler
 from kenning.compilers.tvm import TVMCompiler
+from kenning.core.runtime import Runtime
+from kenning.core.runtimeprotocol import MessageType
+from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.runtimeprotocols.network import NetworkProtocol
+from kenning.runtimes.iree import IREERuntime
+from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.runtimes.tvm import TVMRuntime
+from runtimetests import RuntimeTests
 from tvm import TVMError
-import pytest
 import numpy as np
+import pytest
+import random
+import uuid
 
 
 class TestCoreRuntime(RuntimeTests):
@@ -277,6 +281,93 @@ class TestTVMRuntime(RuntimeTests):
         runtime.run()
         expected_data = np.zeros(self.outputshapes, dtype=np.float32).tobytes()
         assert runtime.upload_output(b'') == expected_data
+
+
+class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
+    runtimeprotocolcls = NetworkProtocol
+    host = ''
+    port = 1234
+
+    def initruntime(self, *args, **kwargs):
+        protocol = self.runtimeprotocolcls(self.host, self.port)
+        runtime = self.runtimecls(protocol, self.runtimemodel, *args, **kwargs)
+        return runtime
+
+    def generate_byte_data(self):
+        """
+        Generates random data in bytes.
+
+        Returns
+        ------
+        bytes: Generated sequence of bytes
+        """
+        data = bytes()
+        for i in range(random.randint(1, 1000)):
+            data += random.randint(0, 9999).to_bytes(4, 'little',
+                                                     signed=False)
+        return data
+
+    @pytest.fixture
+    def server(self):
+        server = self.runtimeprotocolcls(self.host, self.port)
+        server.initialize_server()
+        yield server
+        server.disconnect()
+
+    def test_upload_essentials(self, server, tmpfolder):
+        """
+        Tests the `Runtime.upload_essentials()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        tmpfolder : Path
+            Fixture to get temporary folder for model
+        """
+        runtime = self.initruntime()
+        path = tmpfolder / uuid.uuid4().hex
+        data = self.generate_byte_data()
+        with open(path, 'w') as model:
+            print(data, file=model)
+        runtime.prepare_client()
+        server.accept_client(server.serversocket, None)
+        server.send_message(MessageType.OK)
+        runtime.upload_essentials(path)
+
+    def test_process_input(self, server):
+        """
+        Tests the `Runtime.process_input()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        """
+        runtime = self.initruntime()
+        data = self.generate_byte_data()
+        runtime.prepare_client()
+        runtime.prepare_model(None)
+        runtime.process_input(data)
+
+    def test_prepare_client(self, server):
+        """
+        Tests the `Runtime.prepare_client()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        """
+        runtime = self.initruntime()
+        runtime.prepare_client()
+
+    def test_prepare_server(self):
+        """
+        Tests the `Runtime.prepare_server()` method.
+        """
+        runtime = self.initruntime()
+        runtime.prepare_server()
 
 
 @pytest.mark.xfail

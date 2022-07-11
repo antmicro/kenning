@@ -27,7 +27,7 @@ class TestOptimizerModelWrapper:
 
         Used fixtures
         -------------
-        tmpfolder - to get a folder where compiled model will be placed
+        tmpfolder - to get a folder where compiled model will be placed.
         modelsamples - to get paths for models to compile.
         optimizersamples - to get optimizer instances.
         modelwrappersamples - to get inputshape and data type.

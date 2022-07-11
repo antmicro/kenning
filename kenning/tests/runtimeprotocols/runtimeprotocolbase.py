@@ -5,7 +5,7 @@ import pytest
 
 @pytest.mark.fast
 class RuntimeProtocolTests:
-    def initprotocol(self, *args, **kwargs) -> RuntimeProtocol:
+    def initprotocol(self) -> RuntimeProtocol:
         """
         Initializes protocol object.
 
@@ -14,7 +14,7 @@ class RuntimeProtocolTests:
         RuntimeProtocol:
             Initialized protocol object
         """
-        protocol = self.runtimeprotocolcls(*args, **kwargs)
+        protocol = self.runtimeprotocolcls()
         return protocol
 
     def test_initialize_server(self):
@@ -45,6 +45,9 @@ class RuntimeProtocolTests:
         raise NotImplementedError
 
     def test_download_statistics(self):
+        """
+        Tests the `RuntimeProtocol.download_statistics()` method.
+        """
         client = self.initprotocol()
         assert isinstance(client.download_statistics(), Measurements)
 

@@ -389,11 +389,8 @@ class TestNetworkProtocol(RuntimeProtocolTests):
             tmp = (100).to_bytes(2, byteorder='little', signed=False)
             protocol.parse_message(tmp + data)
 
-    def test_disconnect(self):
-        server = self.initprotocol()
-        server.initialize_server()
-        client = self.initprotocol()
-        client.initialize_client()
+    def test_disconnect(self, server_and_client):
+        server, client = server_and_client
         server.accept_client(server.serversocket, None)
         assert client.send_message(MessageType.OK)
         assert server.send_message(MessageType.OK)

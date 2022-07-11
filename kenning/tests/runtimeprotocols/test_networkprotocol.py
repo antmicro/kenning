@@ -259,6 +259,7 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         server, client = server_and_client
 
         def upload(client, data, shared_list):
+            client.receive_confirmation()
             client.send_message(MessageType.OK)
             output = client.upload_input(data)
             shared_list.append(output)
@@ -270,12 +271,15 @@ class TestNetworkProtocol(RuntimeProtocolTests):
                                          args=(client, data, shared_list))
         thread.start()
 
+        server.send_message(MessageType.OK)
         assert server.receive_confirmation()[0] is True
-        status, received_data = server.receive_data(None, None)
+        status, message = server.wait_for_activity()[0]
+        assert status == ServerStatus.DATA_READY
+        message_status, received_data = server.parse_message(message[0])
         server.send_message(MessageType.OK, b'')
         thread.join()
         assert status == ServerStatus.DATA_READY
-        assert received_data == [(MessageType.DATA).to_bytes() + data]
+        assert received_data == data
         assert shared_list[0] is True
 
     def test_upload_model(self, server_and_client, tmpfolder):

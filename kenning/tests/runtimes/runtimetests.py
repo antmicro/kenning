@@ -21,7 +21,6 @@ class RuntimeTests:
         """
         Tests the `Runtime.inference_session_start()` method.
         """
-        # TODO: Test with data is being collected
         runtime = self.initruntime(collect_performance_data=False)
         runtime.inference_session_start()
         assert runtime.statsmeasurements is None
@@ -37,7 +36,6 @@ class RuntimeTests:
         """
         Tests the `Runtime.inference_session_end()` method.
         """
-        # TODO: Test with data is being collected
         runtime = self.initruntime()
         runtime.inference_session_end()
         assert runtime.statsmeasurements is None
@@ -105,7 +103,7 @@ class RuntimeTests:
         log_messages = ('Processing input', 'Input processed')
         runtime = self.initruntime()
         caplog.set_level(logging.DEBUG)
-        runtime.process_input('kenning'.encode())
+        runtime.process_input(b'')
         for i in range(len(log_messages)):
             assert caplog.records[i].msg == log_messages[i]
 
@@ -125,9 +123,8 @@ class RuntimeTests:
         """
         Tests the `Runtime.upload_stats()` method.
         """
-        # TODO: Test on real data with real output
         runtime = self.initruntime()
-        assert b'{}' == runtime.upload_stats('kenning'.encode())
+        assert b'{}' == runtime.upload_stats(b'')
 
     def test_upload_essentials(self, mocker: MockerFixture):
         """

@@ -94,9 +94,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `wait_for_activity()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
 
@@ -142,9 +143,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `send_data()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         data, _ = self.generate_byte_data()
@@ -154,9 +156,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `receive_data()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         data, _ = self.generate_byte_data()
@@ -250,9 +253,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `wait_send()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
@@ -272,9 +276,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `send_message()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
@@ -307,9 +312,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         expected : Tuple[bool, Any]
             Expected output
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         client.send_message(*message)
@@ -325,9 +331,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `upload_input()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
 
@@ -370,10 +377,12 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `upload_model()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
-        tmpfolder - to get folder for model.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        tmpfolder : Path
+            Fixture to get folder for model.
         """
         server, client = serverandclient
         path = tmpfolder / uuid.uuid4().hex
@@ -412,10 +421,12 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `upload_quantization_details()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
-        tmpfolder - to get folder for quantization_details.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        tmpfolder : Path
+            Fixture to get folder for quantization_details.
         """
         server, client = serverandclient
         quantization_details = {1: 'one', 2: 'two', 3: 'three'}
@@ -459,9 +470,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `download_output()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         data, _ = self.generate_byte_data()
@@ -476,9 +488,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `download_statistics()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         data = {'1': 'one', '2': 'two', '3': 'three'}
@@ -537,9 +550,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `disconnect()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
@@ -558,9 +572,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `request_processing()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
@@ -590,9 +605,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `request_failure()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
@@ -606,9 +622,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         """
         Tests the `request_success()` method.
 
-        Used fixtures
-        -------------
-        serverandclient - to get initialized server and client.
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)

@@ -226,39 +226,29 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         with pytest.raises(ConnectionResetError):
             server.send_message(MessageType.OK, data=b'')
 
-    def test_receive_confirmation(self, server):
+    @pytest.mark.parametrize('message,expected', [
+        ((MessageType.OK, b''), (True, b'')),
+        ((MessageType.ERROR, b''), (False, None)),
+        ((MessageType.DATA, b''), (False, None)),
+        ((MessageType.MODEL, b''), (False, None)),
+        ((MessageType.PROCESS, b''), (False, None)),
+        ((MessageType.OUTPUT, b''), (False, None)),
+        ((MessageType.STATS, b''), (False, None)),
+        ((MessageType.QUANTIZATION, b''), (False, None)),
+        ])
+    def test_receive_confirmation(self, server_and_client, message, expected):
 
-        def confirm(server: NetworkProtocol, return_list: list):
+        def send_message(client: NetworkProtocol, message):
             """
             Waits for message and appends output to provided shared list.
             """
-            output = server.receive_confirmation()
-            return_list.append(output)
-
-        manager = multiprocessing.Manager()
-        shared_list = manager.list()
-        client = self.initprotocol()
-        client.initialize_client()
-        server.accept_client(server.serversocket, None)
-
-        cases = (((MessageType.OK, b''), (True, b'')),
-                 ((MessageType.ERROR, b''), (False, None)),
-                 ((MessageType.DATA, b''), (False, None)),
-                 ((MessageType.MODEL, b''), (False, None)),
-                 ((MessageType.PROCESS, b''), (False, None)),
-                 ((MessageType.OUTPUT, b''), (False, None)),
-                 ((MessageType.STATS, b''), (False, None)),
-                 ((MessageType.QUANTIZATION, b''), (False, None)),
-                 )
-
-        # Check for every presented MessageType
-        for message, expected in cases:
-            thread = multiprocessing.Process(target=confirm,
-                                             args=(server, shared_list))
-            thread.start()
             client.send_message(*message)
-            thread.join()
-            assert shared_list[-1] == expected
+            return
+
+        server, client = server_and_client
+        client.send_message(*message)
+        output = server.receive_confirmation()
+        assert output == expected
 
         # Check if client is disconnected
         client.disconnect()

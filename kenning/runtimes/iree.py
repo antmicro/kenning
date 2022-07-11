@@ -14,6 +14,10 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
 class IREERuntime(Runtime):
+    """
+    Runtime subclass that provides an API
+    for testing inference on IREE models.
+    """
 
     arguments_structure = {
         'modelpath': {

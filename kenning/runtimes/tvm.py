@@ -18,6 +18,10 @@ from kenning.core.runtimeprotocol import MessageType
 
 
 class TVMRuntime(Runtime):
+    """
+    Runtime subclass that provides an API
+    for testing inference on TVM models.
+    """
 
     arguments_structure = {
         'modelpath': {

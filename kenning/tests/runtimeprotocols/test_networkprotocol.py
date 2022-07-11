@@ -358,9 +358,10 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         data = {'1': 'one', '2': 'two', '3': 'three'}
         server.accept_client(server.serversocket, None)
 
-        def send_stats(server, data: dict, shared_list):
-            server.send_message(MessageType.OK)
-            output = server.download_statistics()
+        def send_stats(client, data: dict, shared_list):
+            client.receive_confirmation()
+            client.send_message(MessageType.OK)
+            output = client.download_statistics()
             shared_list.append(output)
 
         shared_list = (multiprocessing.Manager()).list()
@@ -368,8 +369,9 @@ class TestNetworkProtocol(RuntimeProtocolTests):
         thread_send = multiprocessing.Process(target=send_stats, args=args)
         thread_send.start()
 
+        server.send_message(MessageType.OK)
         assert server.receive_confirmation()[0] is True
-        status, message = server.receive_data(None, None)
+        status, message = server.wait_for_activity()[0]
         message_type, message = server.parse_message(message[0])
         if message_type == MessageType.STATS and message == b'':
             to_send = json.dumps(data).encode()

@@ -347,7 +347,7 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         runtime = self.initruntime()
         data = self.generate_byte_data()
         runtime.prepare_client()
-        runtime.prepare_model(None)
+        assert runtime.prepare_model(None) is True
         runtime.process_input(data)
 
     def test_prepare_client(self, server):
@@ -361,6 +361,8 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         """
         runtime = self.initruntime()
         runtime.prepare_client()
+        assert runtime.protocol.serversocket is None
+        assert runtime.protocol.socket is not None
 
     def test_prepare_server(self):
         """
@@ -368,6 +370,99 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         """
         runtime = self.initruntime()
         runtime.prepare_server()
+        assert runtime.protocol.serversocket is not None
+        assert runtime.protocol.socket is None
+
+
+class TestTVMRuntimeNetwork(TestTVMRuntime):
+    runtimeprotocolcls = NetworkProtocol
+    host = ''
+    port = 1234
+
+    def initruntime(self, *args, **kwargs):
+        protocol = self.runtimeprotocolcls(self.host, self.port)
+        runtime = self.runtimecls(protocol, self.runtimemodel, *args, **kwargs)
+        return runtime
+
+    def generate_byte_data(self):
+        """
+        Generates random data in bytes.
+
+        Returns
+        ------
+        bytes: Generated sequence of bytes
+        """
+        data = bytes()
+        for i in range(random.randint(1, 1000)):
+            data += random.randint(0, 9999).to_bytes(4, 'little',
+                                                     signed=False)
+        return data
+
+    @pytest.fixture
+    def server(self):
+        server = self.runtimeprotocolcls(self.host, self.port)
+        server.initialize_server()
+        yield server
+        server.disconnect()
+
+    def test_upload_essentials(self, server, tmpfolder):
+        """
+        Tests the `Runtime.upload_essentials()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        tmpfolder : Path
+            Fixture to get temporary folder for model
+        """
+        runtime = self.initruntime()
+        path = tmpfolder / uuid.uuid4().hex
+        data = self.generate_byte_data()
+        with open(path, 'w') as model:
+            print(data, file=model)
+        runtime.prepare_client()
+        server.accept_client(server.serversocket, None)
+        server.send_message(MessageType.OK)
+        runtime.upload_essentials(path)
+
+    def test_process_input(self, server):
+        """
+        Tests the `Runtime.process_input()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        """
+        runtime = self.initruntime()
+        data = self.generate_byte_data()
+        runtime.prepare_client()
+        assert runtime.prepare_model(None) is True
+        runtime.process_input(data)
+
+    def test_prepare_client(self, server):
+        """
+        Tests the `Runtime.prepare_client()` method.
+
+        Parameters
+        ----------
+        server : RuntimeProtocol
+            Fixture to get NetworkProtocol server
+        """
+        runtime = self.initruntime()
+        runtime.prepare_client()
+        assert runtime.protocol.serversocket is None
+        assert runtime.protocol.socket is not None
+
+    def test_prepare_server(self):
+        """
+        Tests the `Runtime.prepare_server()` method.
+        """
+        runtime = self.initruntime()
+        runtime.prepare_server()
+        assert runtime.protocol.serversocket is not None
+        assert runtime.protocol.socket is None
 
 
 @pytest.mark.xfail

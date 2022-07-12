@@ -197,9 +197,9 @@ class TVMCompiler(Optimizer):
 
     inputtypes = {
         'keras': kerasconversion,
-        'torch': torchconversion,
         'onnx': onnxconversion,
         'darknet': darknetconversion,
+        'torch': torchconversion,
         'tflite': tfliteconversion
     }
 

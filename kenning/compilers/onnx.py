@@ -31,7 +31,7 @@ def kerasconversion(model_path, input_shapes, dtype):
 
 def torchconversion(model_path, input_shapes, dtype):
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-    model = torch.load('model_path', map_location=dev)
+    model = torch.load(model_path, map_location=dev)
 
     input = torch.randn(
         input_shapes[list(input_shapes.keys())[0]],

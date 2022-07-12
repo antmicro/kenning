@@ -12,6 +12,9 @@ from kenning.core.dataset import Dataset
 
 
 class TensorFlowOptimizer(Optimizer):
+    """
+    The TensorFlow optimizer.
+    """
     arguments_structure = {
         'epochs': {
             'description': 'Number of epochs for the training',

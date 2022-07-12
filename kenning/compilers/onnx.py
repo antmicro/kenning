@@ -9,7 +9,7 @@ import torch
 import onnx
 
 from kenning.core.dataset import Dataset
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import Optimizer, ReadingTorchModelError
 
 
 def kerasconversion(model_path, input_shapes, dtype):
@@ -32,6 +32,11 @@ def kerasconversion(model_path, input_shapes, dtype):
 def torchconversion(model_path, input_shapes, dtype):
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = torch.load(model_path, map_location=dev)
+
+    if not isinstance(model, torch.nn.Module):
+        raise ReadingTorchModelError(
+            f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}'  # noqa: E501
+        )
 
     input = torch.randn(
         input_shapes[list(input_shapes.keys())[0]],

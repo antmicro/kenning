@@ -12,7 +12,7 @@ from typing import Optional
 import re
 import json
 
-from kenning.core.optimizer import Optimizer, CompilationError
+from kenning.core.optimizer import Optimizer, CompilationError, ReadingTorchModelError  # noqa: E501
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 
@@ -103,7 +103,12 @@ def torchconversion(
 
     def model_func(modelpath: Path):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        return torch.load(modelpath, map_location=device)
+        loaded_model = torch.load(modelpath, map_location=device)
+        if not isinstance(loaded_model, torch.nn.Module):
+            raise ReadingTorchModelError(
+                f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(loaded_model).__name__}'  # noqa: E501
+            )
+        return loaded_model
 
     model = TraceWrapper(model_func(modelpath))
     model.eval()
@@ -192,9 +197,9 @@ class TVMCompiler(Optimizer):
 
     inputtypes = {
         'keras': kerasconversion,
+        'torch': torchconversion,
         'onnx': onnxconversion,
         'darknet': darknetconversion,
-        'torch': torchconversion,
         'tflite': tfliteconversion
     }
 

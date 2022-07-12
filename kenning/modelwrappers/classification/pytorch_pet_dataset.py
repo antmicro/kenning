@@ -84,7 +84,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             np.array(X, dtype=np.float32)
         ).to(self.device).permute(0, 3, 1, 2)
 
-    def prepare_model(self):
+    def create_model_structure(self):
         self.model = models.mobilenet_v2(pretrained=True)
         for param in self.model.parameters():
             param.requires_grad = False
@@ -100,9 +100,13 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             torch.nn.Dropout(0.5),
             torch.nn.Linear(128, self.numclasses)
         )
+
+    def prepare_model(self):
         if self.from_file:
             self.load_model(self.modelpath)
         else:
+            self.create_model_structure()
+
             def weights_init(m):
                 if isinstance(m, torch.nn.Linear):
                     torch.nn.init.xavier_uniform_(m.weight)

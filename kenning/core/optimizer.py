@@ -14,6 +14,10 @@ class CompilationError(Exception):
     pass
 
 
+class ReadingTorchModelError(Exception):
+    pass
+
+
 class Optimizer(object):
     """
     Compiles the given model to a different format or runtime.

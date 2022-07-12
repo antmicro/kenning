@@ -286,7 +286,7 @@ class TestTVMRuntime(RuntimeTests):
 class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
     runtimeprotocolcls = NetworkProtocol
     host = ''
-    port = 1234
+    port = 1235
 
     def initruntime(self, *args, **kwargs):
         protocol = self.runtimeprotocolcls(self.host, self.port)
@@ -308,13 +308,35 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         return data
 
     @pytest.fixture
-    def server(self):
-        server = self.runtimeprotocolcls(self.host, self.port)
-        server.initialize_server()
-        yield server
-        server.disconnect()
+    def runtime(self, *args, **kwargs):
+        """
+        Initializes runtime object.
 
-    def test_upload_essentials(self, server, tmpfolder):
+        Returns
+        -------
+        Runtime : Initialized runtime object.
+        """
+        protocol = self.runtimeprotocolcls(self.host, self.port + 1)
+        runtimeobj = self.runtimecls(protocol, self.runtimemodel,
+                                     *args, **kwargs)
+        yield runtimeobj
+        runtimeobj.protocol.disconnect()
+
+    @pytest.fixture
+    def server(self):
+        """
+        Initializes server object.
+
+        Returns
+        -------
+        RuntimeProtocol : Initialized NetworkProtocol server
+        """
+        serverobj = self.runtimeprotocolcls(self.host, self.port + 1)
+        serverobj.initialize_server()
+        yield serverobj
+        serverobj.disconnect()
+
+    def test_upload_essentials(self, server, runtime, tmpfolder):
         """
         Tests the `Runtime.upload_essentials()` method.
 
@@ -322,10 +344,11 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         tmpfolder : Path
             Fixture to get temporary folder for model
         """
-        runtime = self.initruntime()
         path = tmpfolder / uuid.uuid4().hex
         data = self.generate_byte_data()
         with open(path, 'w') as model:
@@ -335,7 +358,7 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         server.send_message(MessageType.OK)
         runtime.upload_essentials(path)
 
-    def test_process_input(self, server):
+    def test_process_input(self, server, runtime):
         """
         Tests the `Runtime.process_input()` method.
 
@@ -343,14 +366,15 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         data = self.generate_byte_data()
         runtime.prepare_client()
         assert runtime.prepare_model(None) is True
         runtime.process_input(data)
 
-    def test_prepare_client(self, server):
+    def test_prepare_client(self, server, runtime):
         """
         Tests the `Runtime.prepare_client()` method.
 
@@ -358,17 +382,22 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         runtime.prepare_client()
         assert runtime.protocol.serversocket is None
         assert runtime.protocol.socket is not None
 
-    def test_prepare_server(self):
+    def test_prepare_server(self, runtime):
         """
         Tests the `Runtime.prepare_server()` method.
+
+        Parameters
+        ----------
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         runtime.prepare_server()
         assert runtime.protocol.serversocket is not None
         assert runtime.protocol.socket is None
@@ -377,7 +406,7 @@ class TestTFLiteRuntimeNetwork(TestTFLiteRuntime):
 class TestTVMRuntimeNetwork(TestTVMRuntime):
     runtimeprotocolcls = NetworkProtocol
     host = ''
-    port = 1234
+    port = 1235
 
     def initruntime(self, *args, **kwargs):
         protocol = self.runtimeprotocolcls(self.host, self.port)
@@ -399,13 +428,35 @@ class TestTVMRuntimeNetwork(TestTVMRuntime):
         return data
 
     @pytest.fixture
-    def server(self):
-        server = self.runtimeprotocolcls(self.host, self.port)
-        server.initialize_server()
-        yield server
-        server.disconnect()
+    def runtime(self, *args, **kwargs):
+        """
+        Initializes runtime object.
 
-    def test_upload_essentials(self, server, tmpfolder):
+        Returns
+        -------
+        Runtime : Initialized runtime object.
+        """
+        protocol = self.runtimeprotocolcls(self.host, self.port + 1)
+        runtimeobj = self.runtimecls(protocol, self.runtimemodel,
+                                     *args, **kwargs)
+        yield runtimeobj
+        runtimeobj.protocol.disconnect()
+
+    @pytest.fixture
+    def server(self):
+        """
+        Initializes server object.
+
+        Returns
+        -------
+        RuntimeProtocol : Initialized NetworkProtocol server
+        """
+        serverobj = self.runtimeprotocolcls(self.host, self.port + 1)
+        serverobj.initialize_server()
+        yield serverobj
+        serverobj.disconnect()
+
+    def test_upload_essentials(self, server, runtime, tmpfolder):
         """
         Tests the `Runtime.upload_essentials()` method.
 
@@ -413,10 +464,11 @@ class TestTVMRuntimeNetwork(TestTVMRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         tmpfolder : Path
             Fixture to get temporary folder for model
         """
-        runtime = self.initruntime()
         path = tmpfolder / uuid.uuid4().hex
         data = self.generate_byte_data()
         with open(path, 'w') as model:
@@ -426,7 +478,7 @@ class TestTVMRuntimeNetwork(TestTVMRuntime):
         server.send_message(MessageType.OK)
         runtime.upload_essentials(path)
 
-    def test_process_input(self, server):
+    def test_process_input(self, server, runtime):
         """
         Tests the `Runtime.process_input()` method.
 
@@ -434,14 +486,15 @@ class TestTVMRuntimeNetwork(TestTVMRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         data = self.generate_byte_data()
         runtime.prepare_client()
         assert runtime.prepare_model(None) is True
         runtime.process_input(data)
 
-    def test_prepare_client(self, server):
+    def test_prepare_client(self, server, runtime):
         """
         Tests the `Runtime.prepare_client()` method.
 
@@ -449,17 +502,22 @@ class TestTVMRuntimeNetwork(TestTVMRuntime):
         ----------
         server : RuntimeProtocol
             Fixture to get NetworkProtocol server
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         runtime.prepare_client()
         assert runtime.protocol.serversocket is None
         assert runtime.protocol.socket is not None
 
-    def test_prepare_server(self):
+    def test_prepare_server(self, runtime):
         """
         Tests the `Runtime.prepare_server()` method.
+
+        Parameters
+        ----------
+        runtime : Runtime
+            Fixture to get Runtime object
         """
-        runtime = self.initruntime()
         runtime.prepare_server()
         assert runtime.protocol.serversocket is not None
         assert runtime.protocol.socket is None

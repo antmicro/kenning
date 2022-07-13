@@ -85,6 +85,22 @@ STD = np.array([57.38, 57.12, 58.40]).reshape(-1, 1, 1)
 
 
 class YOLACT(ModelWrapper):
+    arguments_structure = {
+        'top_k': {
+            'argparse_name': '--top-k',
+            'description': 'Maximum number of returned detected objects',
+            'type': int,
+            'default': None,
+            'nullable': True
+        },
+        'score_threshold': {
+            'argparse_name': '--score-threshold',
+            'description': 'Option to filter out detected objects with score lower than the threshold',  # noqa: E501
+            'type': float,
+            'default': 0.
+        }
+    }
+
     def __init__(
             self,
             modelpath: Path,
@@ -99,6 +115,16 @@ class YOLACT(ModelWrapper):
         self.interpolation_mode = interpolation_mode
         self.score_threshold = score_threshold
         super().__init__(modelpath, dataset, from_file)
+
+    @classmethod
+    def from_argparse(cls, dataset, args, from_file=True):
+        return cls(
+            args.model_path,
+            dataset,
+            from_file,
+            args.top_k,
+            args.score_threshold
+        )
 
     def get_input_spec(self):
         return {'input_1': (1, 3, 550, 550)}, 'float32'

@@ -71,7 +71,8 @@ class ONNXRuntime(Runtime):
                 self.input_dtypes,
                 self.input_shapes,
                 self.input_names):
-            siz = np.prod(shape) * dt.itemsize
+
+            siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
             self.input[name] = inp
@@ -89,7 +90,11 @@ class ONNXRuntime(Runtime):
             providers=self.execution_providers
         )
 
+        # Input dtype can come either as a valid np.dtype
+        # or as a string that need to be parsed
         def onnx_to_np_dtype(s):
+            if not isinstance(s, str):
+                return s
             if s == 'tensor(float)':
                 return np.dtype(np.float32)
             if s == 'tensor(float16)':

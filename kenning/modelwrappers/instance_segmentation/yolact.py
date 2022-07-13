@@ -16,70 +16,65 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.open_images_dataset import SegmObject
 from kenning.core.model import ModelWrapper
 
-import torch
-import torch.nn.functional as F
-
 
 def crop(masks, boxes, padding: int = 1):
     """
     "Crop" predicted masks by zeroing out everything not in
-    the predicted bbox. Vectorized by Chong (thanks Chong).
-
-    Args:
-        - masks should be a size [h, w, n] tensor of masks
-        - boxes should be a size [n, 4] tensor of bbox coords
-            in relative point form
+    the predicted bbox.
     """
-    h, w, n = masks.size()
+    h, w, n = masks.shape
     x1, x2 = sanitize_coordinates(
         boxes[:, 0],
         boxes[:, 2],
-        w, padding, cast=False
+        w, padding
     )
     y1, y2 = sanitize_coordinates(
         boxes[:, 1],
         boxes[:, 3],
-        h, padding, cast=False
+        h, padding,
     )
 
-    rows = torch.arange(
-        w, device=masks.device, dtype=x1.dtype
-    ).view(1, -1, 1).expand(h, w, n)
-    cols = torch.arange(
-        h, device=masks.device, dtype=x1.dtype
-    ).view(-1, 1, 1).expand(h, w, n)
+    rows = np.arange(
+        w, dtype=x1.dtype
+    ).reshape(1, -1, 1).repeat(h, axis=0).repeat(n, axis=2)
+    cols = np.arange(
+        h, dtype=x1.dtype
+    ).reshape(-1, 1, 1).repeat(w, axis=1).repeat(n, axis=2)
 
-    masks_left = rows >= x1.view(1, 1, -1)
-    masks_right = rows < x2.view(1, 1, -1)
-    masks_up = cols >= y1.view(1, 1, -1)
-    masks_down = cols < y2.view(1, 1, -1)
+    masks_left = rows >= x1.reshape(1, 1, -1)
+    masks_right = rows < x2.reshape(1, 1, -1)
+    masks_up = cols >= y1.reshape(1, 1, -1)
+    masks_down = cols < y2.reshape(1, 1, -1)
 
     crop_mask = masks_left * masks_right * masks_up * masks_down
 
-    return masks * crop_mask.float()
+    return masks * crop_mask.astype(np.float32)
 
 
-def sanitize_coordinates(_x1, _x2, img_size: int,
-                         padding: int = 0, cast: bool = True):
+def sanitize_coordinates(_x1, _x2, img_size: int, padding: int = 0):
     """
     Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
-    and x2 <= image_size. Also converts from relative to absolute coordinates
-    and casts the results to long tensors.
-
-    If cast is false, the result won't be cast to longs.
-    Warning: this does things in-place behind the scenes so copy if necessary.
+    and x2 <= image_size. Also converts from relative to absolute coordinates.
     """
     _x1 = _x1 * img_size
     _x2 = _x2 * img_size
-    if cast:
-        _x1 = _x1.long()
-        _x2 = _x2.long()
-    x1 = torch.min(_x1, _x2)
-    x2 = torch.max(_x1, _x2)
-    x1 = torch.clamp(x1 - padding, min=0)
-    x2 = torch.clamp(x2 + padding, max=img_size)
+    x1 = np.minimum(_x1, _x2)
+    x2 = np.maximum(_x1, _x2)
+    x1 = np.clip(x1 - padding, 0, None)
+    x2 = np.clip(x2 + padding, None, img_size)
 
     return x1, x2
+
+
+def sigmoid(x):
+    """
+    Numerically stable sigmoid function.
+    """
+    return np.where(
+        x >= 0,
+        1. / (1. + np.exp(-x)),
+        np.exp(x) / (1. + np.exp(x))
+    )
 
 
 MEANS = np.array([103.94, 116.78, 123.68]).reshape(-1, 1, 1)
@@ -110,11 +105,9 @@ class YOLACT(ModelWrapper):
             from_file=True,
             top_k: int = None,
             score_threshold: float = 0.2,
-            interpolation_mode: str = 'bilinear'
     ):
         self.model = None
         self.top_k = top_k
-        self.interpolation_mode = interpolation_mode
         self.score_threshold = score_threshold
         super().__init__(modelpath, dataset, from_file)
 
@@ -160,35 +153,29 @@ class YOLACT(ModelWrapper):
         return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
-        masks = torch.tensor(y['proto'] @ y['mask'].T)
-        masks = torch.sigmoid(masks)
-        masks = crop(masks, torch.tensor(y['box'])).permute(2, 0, 1)
+        masks = y['proto'] @ y['mask'].T
+        masks = sigmoid(masks)
+        masks = crop(masks, y['box'])
+        masks = cv2.resize(
+            masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
+        ).transpose(2, 0, 1)
+        y['mask'] = (masks >= 0.5).astype(np.float32) * 255.
 
-        masks = F.interpolate(
-            masks[None, ...],
-            (self.w, self.h),
-            mode=self.interpolation_mode,
-            align_corners=False
-        )[0]
-        masks.gt_(0.5)
-        masks = masks.numpy()
-
-        boxes = torch.tensor(y['box'])
+        boxes = y['box']
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
             boxes[:, 0],
             boxes[:, 2],
-            550, cast=False
+            550
         )
         boxes[:, 1], boxes[:, 3] = sanitize_coordinates(
             boxes[:, 1],
             boxes[:, 3],
-            550, cast=False
+            550
         )
-        y['box'] = (boxes / 550).numpy()
+        y['box'] = (boxes / 550)
 
         if self.top_k is not None:
-            idx = torch.argsort(torch.tensor(y['score']), 0, descending=True)
-            idx = idx[:self.top_k]
+            idx = np.argsort(y['score'], 0)[:-(self.top_k + 1):-1]
             for k in y:
                 if k != 'proto':
                     y[k] = y[k][idx]
@@ -208,7 +195,7 @@ class YOLACT(ModelWrapper):
                 ymin=y1,
                 xmax=x2,
                 ymax=y2,
-                mask=masks[i] * 255.,
+                mask=y['mask'][i],
                 score=y['score'][i]
             ))
         return [Y]
@@ -255,10 +242,13 @@ class YOLACT(ModelWrapper):
         result = {}
         for shape, dtype, name in output_parameters:
             tensorsize = reduce(operator.mul, shape) * np.dtype(dtype).itemsize
-            outputtensor = np.frombuffer(
+
+            # Copy of numpy array is needed because the result of np.frombuffer
+            # is not writeable, which breaks output postprocessing.
+            outputtensor = np.array(np.frombuffer(
                 outputdata[:tensorsize],
                 dtype=dtype
-            ).reshape(shape)
+            )).reshape(shape)
             result[name] = outputtensor
             outputdata = outputdata[tensorsize:]
 

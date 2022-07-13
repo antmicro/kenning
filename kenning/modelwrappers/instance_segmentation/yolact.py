@@ -9,6 +9,8 @@ from pathlib import Path
 import onnx
 import cv2
 import numpy as np
+from functools import reduce
+import operator
 
 from kenning.core.dataset import Dataset
 from kenning.datasets.open_images_dataset import SegmObject
@@ -158,9 +160,6 @@ class YOLACT(ModelWrapper):
         return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
-        if not isinstance(y, dict):
-            KEYS = ['box', 'mask', 'class', 'score', 'proto']
-            y = {k: y[i] for i, k in enumerate(KEYS)}
         masks = torch.tensor(y['proto'] @ y['mask'].T)
         masks = torch.sigmoid(masks)
         masks = crop(masks, torch.tensor(y['box'])).permute(2, 0, 1)
@@ -191,11 +190,13 @@ class YOLACT(ModelWrapper):
             idx = torch.argsort(torch.tensor(y['score']), 0, descending=True)
             idx = idx[:self.top_k]
             for k in y:
-                y[k] = y[k][idx]
+                if k != 'proto':
+                    y[k] = y[k][idx]
 
         keep = y['score'] >= self.score_threshold
         for k in y:
-            y[k] = y[k][keep]
+            if k != "proto":
+                y[k] = y[k][keep]
 
         Y = []
         for i in range(len(y['score'])):
@@ -216,7 +217,7 @@ class YOLACT(ModelWrapper):
         raise NotImplementedError
 
     def get_framework_and_version(self):
-        raise NotImplementedError
+        return ('onnx', onnx.__version__)
 
     def get_output_formats(self):
         raise NotImplementedError
@@ -225,7 +226,40 @@ class YOLACT(ModelWrapper):
         raise NotImplementedError
 
     def convert_input_to_bytes(self, inputdata):
-        raise NotImplementedError
+        return inputdata.tobytes()
 
     def convert_output_from_bytes(self, outputdata):
-        raise NotImplementedError
+        # Signatures of outputs of the model:
+        # BOX:   size=(num_dets, 4)  dtype=float32
+        # MASK:  size=(num_dets, 32) dtype=float32
+        # CLASS: size=(num_dets,)    dtype=int64
+        # SCORE: size=(num_dets,)    dtype=float32
+        # PROTO: size=(138, 138, 32) dtype=float32
+        # Where num_dets is a number of detected objects.
+        # Because it is a variable dependant on model input,
+        # some maths is required to retrieve it.
+
+        S = len(outputdata)
+        f = np.dtype(np.float32).itemsize
+        i = np.dtype(np.int64).itemsize
+        num_dets = (S - 138 * 138 * 32 * f) // (37 * f + i)
+
+        output_parameters = [
+            ((num_dets, 4), np.float32, 'box'),
+            ((num_dets, 32), np.float32, 'mask'),
+            ((num_dets,), np.int64, 'class'),
+            ((num_dets,), np.float32, 'score'),
+            ((138, 138, 32), np.float32, 'proto')
+        ]
+
+        result = {}
+        for shape, dtype, name in output_parameters:
+            tensorsize = reduce(operator.mul, shape) * np.dtype(dtype).itemsize
+            outputtensor = np.frombuffer(
+                outputdata[:tensorsize],
+                dtype=dtype
+            ).reshape(shape)
+            result[name] = outputtensor
+            outputdata = outputdata[tensorsize:]
+
+        return result

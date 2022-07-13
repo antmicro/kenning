@@ -14,26 +14,38 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.open_images_dataset import SegmObject
 from kenning.core.model import ModelWrapper
 
-# temporary
 import torch
 import torch.nn.functional as F
 
 
 def crop(masks, boxes, padding: int = 1):
     """
-    "Crop" predicted masks by zeroing out everything not in the predicted bbox.
-    Vectorized by Chong (thanks Chong).
+    "Crop" predicted masks by zeroing out everything not in
+    the predicted bbox. Vectorized by Chong (thanks Chong).
 
     Args:
         - masks should be a size [h, w, n] tensor of masks
-        - boxes should be a size [n, 4] tensor of bbox coords in relative point form
+        - boxes should be a size [n, 4] tensor of bbox coords
+            in relative point form
     """
     h, w, n = masks.size()
-    x1, x2 = sanitize_coordinates(boxes[:, 0], boxes[:, 2], w, padding, cast=False)
-    y1, y2 = sanitize_coordinates(boxes[:, 1], boxes[:, 3], h, padding, cast=False)
+    x1, x2 = sanitize_coordinates(
+        boxes[:, 0],
+        boxes[:, 2],
+        w, padding, cast=False
+    )
+    y1, y2 = sanitize_coordinates(
+        boxes[:, 1],
+        boxes[:, 3],
+        h, padding, cast=False
+    )
 
-    rows = torch.arange(w, device=masks.device, dtype=x1.dtype).view(1, -1, 1).expand(h, w, n)
-    cols = torch.arange(h, device=masks.device, dtype=x1.dtype).view(-1, 1, 1).expand(h, w, n)
+    rows = torch.arange(
+        w, device=masks.device, dtype=x1.dtype
+    ).view(1, -1, 1).expand(h, w, n)
+    cols = torch.arange(
+        h, device=masks.device, dtype=x1.dtype
+    ).view(-1, 1, 1).expand(h, w, n)
 
     masks_left = rows >= x1.view(1, 1, -1)
     masks_right = rows < x2.view(1, 1, -1)
@@ -45,10 +57,12 @@ def crop(masks, boxes, padding: int = 1):
     return masks * crop_mask.float()
 
 
-def sanitize_coordinates(_x1, _x2, img_size: int, padding: int = 0, cast: bool = True):
+def sanitize_coordinates(_x1, _x2, img_size: int,
+                         padding: int = 0, cast: bool = True):
     """
-    Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0, and x2 <= image_size.
-    Also converts from relative to absolute coordinates and casts the results to long tensors.
+    Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
+    and x2 <= image_size. Also converts from relative to absolute coordinates
+    and casts the results to long tensors.
 
     If cast is false, the result won't be cast to longs.
     Warning: this does things in-place behind the scenes so copy if necessary.
@@ -65,12 +79,21 @@ def sanitize_coordinates(_x1, _x2, img_size: int, padding: int = 0, cast: bool =
 
     return x1, x2
 
+
 MEANS = np.array([103.94, 116.78, 123.68]).reshape(-1, 1, 1)
 STD = np.array([57.38, 57.12, 58.40]).reshape(-1, 1, 1)
 
+
 class YOLACT(ModelWrapper):
-    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True, top_k: int = None,
-                 score_threshold: float = 0.2, interpolation_mode: str = 'bilinear'):
+    def __init__(
+            self,
+            modelpath: Path,
+            dataset: Dataset,
+            from_file=True,
+            top_k: int = None,
+            score_threshold: float = 0.2,
+            interpolation_mode: str = 'bilinear'
+    ):
         self.model = None
         self.top_k = top_k
         self.interpolation_mode = interpolation_mode
@@ -82,7 +105,9 @@ class YOLACT(ModelWrapper):
 
     def prepare_model(self):
         if not self.from_file:
-            raise NotImplementedError("Yolact ModelWrapper only supports loading model from a file.")
+            raise NotImplementedError(
+                "Yolact ModelWrapper only supports loading model from a file."
+            )
         self.load_model(self.modelpath)
 
     def load_model(self, modelpath):
@@ -95,13 +120,15 @@ class YOLACT(ModelWrapper):
 
     def preprocess_input(self, X):
         if len(X) > 1:
-            raise RuntimeError("YOLACT model expects only single image in a batch.")
+            raise RuntimeError(
+                "YOLACT model expects only single image in a batch."
+            )
         _, self.w, self.h = X[0].shape
 
         X = np.transpose(X[0], (1, 2, 0))
         X = cv2.resize(X, (550, 550))
         X = np.transpose(X, (2, 0, 1))
-        X = (X*255. - MEANS)/STD
+        X = (X * 255. - MEANS) / STD
         return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
@@ -112,17 +139,31 @@ class YOLACT(ModelWrapper):
         masks = torch.sigmoid(masks)
         masks = crop(masks, torch.tensor(y['box'])).permute(2, 0, 1)
 
-        masks = F.interpolate(masks[None, ...], (self.w, self.h), mode=self.interpolation_mode, align_corners=False)[0]
+        masks = F.interpolate(
+            masks[None, ...],
+            (self.w, self.h),
+            mode=self.interpolation_mode,
+            align_corners=False
+        )[0]
         masks.gt_(0.5)
         masks = masks.numpy()
 
         boxes = torch.tensor(y['box'])
-        boxes[:, 0], boxes[:, 2] = sanitize_coordinates(boxes[:, 0], boxes[:, 2], 550, cast=False)
-        boxes[:, 1], boxes[:, 3] = sanitize_coordinates(boxes[:, 1], boxes[:, 3], 550, cast=False)
-        y['box'] = (boxes/550).numpy()
+        boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
+            boxes[:, 0],
+            boxes[:, 2],
+            550, cast=False
+        )
+        boxes[:, 1], boxes[:, 3] = sanitize_coordinates(
+            boxes[:, 1],
+            boxes[:, 3],
+            550, cast=False
+        )
+        y['box'] = (boxes / 550).numpy()
 
         if self.top_k is not None:
-            idx = torch.argsort(torch.tensor(y['score']), 0, descending=True)[:self.top_k]
+            idx = torch.argsort(torch.tensor(y['score']), 0, descending=True)
+            idx = idx[:self.top_k]
             for k in y:
                 y[k] = y[k][idx]
 
@@ -140,7 +181,7 @@ class YOLACT(ModelWrapper):
                 ymin=y1,
                 xmax=x2,
                 ymax=y2,
-                mask=masks[i]*255.,
+                mask=masks[i] * 255.,
                 score=y['score'][i]
             ))
         return [Y]

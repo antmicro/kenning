@@ -12,6 +12,10 @@ from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer, ReadingTorchModelError
 
 
+def tensorflowconversion(model_path, input_shapes, dtype):
+    pass
+
+
 def kerasconversion(model_path, input_shapes, dtype):
     model = tf.keras.models.load_model(model_path)
 
@@ -52,7 +56,18 @@ def torchconversion(model_path, input_shapes, dtype):
 
 
 def tfliteconversion(model_path, input_shapes, dtype):
-    raise NotImplementedError
+    interpreter = tf.lite.Interpreter(model_path=str(model_path))
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    modelproto, _ = tf2onnx.convert.from_tflite(
+        str(model_path),
+        input_names=[input['name'] for input in input_details],
+        output_names=[output['name'] for output in output_details]
+    )
+
+    return modelproto
 
 
 class ONNXCompiler(Optimizer):
@@ -67,7 +82,8 @@ class ONNXCompiler(Optimizer):
     inputtypes = {
         'keras': kerasconversion,
         'torch': torchconversion,
-        'tflite': tfliteconversion
+        'tflite': tfliteconversion,
+        'tensorflow': tensorflowconversion
     }
 
     arguments_structure = {

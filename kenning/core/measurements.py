@@ -215,12 +215,12 @@ class MeasurementsCollector(object):
 
 def tagmeasurements(tagname: str):
     """
-    Decorator for adding tags for measurements and saving timestamps.
+    Decorator for adding tags for measurements and saving their timestamps.
 
     Parameters
     ----------
     tagname: str
-        The name of the phase where measurements are collected.
+        The name of tag.
     """
     def statistics_decorator(function):
         @wraps(function)

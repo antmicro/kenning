@@ -12,10 +12,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer, ReadingTorchModelError
 
 
-def tensorflowconversion(model_path, input_shapes, dtype):
-    pass
-
-
 def kerasconversion(model_path, input_shapes, dtype):
     model = tf.keras.models.load_model(model_path)
 
@@ -82,8 +78,7 @@ class ONNXCompiler(Optimizer):
     inputtypes = {
         'keras': kerasconversion,
         'torch': torchconversion,
-        'tflite': tfliteconversion,
-        'tensorflow': tensorflowconversion
+        'tflite': tfliteconversion
     }
 
     arguments_structure = {

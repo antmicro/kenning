@@ -327,7 +327,6 @@ class Runtime(object):
         self.protocol.request_success()
         self.log.debug('Input processed')
 
-    
     @timemeasurements('target_inference_step')
     @tagmeasurements('inference')
     def _run(self):

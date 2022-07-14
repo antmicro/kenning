@@ -19,6 +19,7 @@ from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.measurements import timemeasurements
+from kenning.core.measurements import tagmeasurements
 from kenning.core.measurements import SystemStatsCollector
 from kenning.utils.logger import get_logger
 from kenning.core.measurements import systemstatsmeasurements
@@ -452,7 +453,7 @@ class Runtime(object):
             self.inference_session_start()
             self.prepare_local()
             for X, y in tqdm(iter(dataset)):
-                prepX = modelwrapper._preprocess_input(X)
+                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 succeed = self.prepare_input(prepX)
                 if not succeed:
@@ -460,7 +461,7 @@ class Runtime(object):
                 self._run()
                 outbytes = self.upload_output(None)
                 preds = modelwrapper.convert_output_from_bytes(outbytes)
-                posty = modelwrapper._postprocess_outputs(preds)
+                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: 501
                 measurements += dataset.evaluate(posty, y)
         finally:
             self.inference_session_end()
@@ -509,7 +510,7 @@ class Runtime(object):
         measurements = Measurements()
         try:
             for X, y in tqdm(iter(dataset)):
-                prepX = modelwrapper._preprocess_input(X)
+                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(self.protocol.request_processing(), 'inference')
@@ -521,7 +522,7 @@ class Runtime(object):
                     f'Received output ({len(preds)} bytes)'
                 )
                 preds = modelwrapper.convert_output_from_bytes(preds)
-                posty = modelwrapper._postprocess_outputs(preds)
+                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: 501
                 measurements += dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()

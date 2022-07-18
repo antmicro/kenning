@@ -4,6 +4,7 @@ import jsonschema
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.utils import logger
 
 from kenning.utils.class_loader import load_class
 
@@ -36,6 +37,7 @@ class KenningFlow:
             Mapping of module names to (local input name -> global input name)
         """
 
+        log = logger.get_logger()
         self.modules: Dict[str, Tuple[Any, str]] = dict()
         self.inputs = inputs
         self.outputs = outputs
@@ -51,8 +53,7 @@ class KenningFlow:
                     self.modules[name] = (type.from_json(
                         self.modules[ds_name][0], cfg), action)
             except Exception as e:
-                # TODO impl. using logger
-                print(f'Error loading submodule {name}. {str(e)}')
+                log.error(f'Error loading submodule {name} : {str(e)}')
 
         self.compile()
 
@@ -123,11 +124,12 @@ class KenningFlow:
 
     @classmethod
     def from_json(cls, json_dict: Dict[str, Any]):
+        log = logger.get_logger()
+
         try:
             jsonschema.validate(json_dict, cls.form_parameterschema())
         except jsonschema.ValidationError:
-            # TODO impl. using logger
-            print('JSON description is invalid')
+            log.error('JSON description is invalid')
 
         modules: Dict[str, Tuple[Type, Any, str]] = dict()
         inputs: Dict[str, Dict[str, str]] = dict()
@@ -158,6 +160,7 @@ class KenningFlow:
         """
         Main process function. Repeatedly fires constructed graph in a loop.
         """
+        log = logger.get_logger()
         current_outputs: Dict[str, Any] = dict()
         while True:
             try:
@@ -177,17 +180,18 @@ class KenningFlow:
                     })
 
             except KeyboardInterrupt:
-                print('Processing interrupted due to keyboard interrupt.\
+                log.warn('Processing interrupted due to keyboard interrupt.\
                       Aborting.')
                 break
 
             except StopIteration:
-                print(f'Processing interrupted due to empty {name} stream.\
+                log.warn(f'Processing interrupted due to empty {name} stream.\
                     Aborting.')
                 break
 
             except RuntimeError:
-                print(f'Processing interrupted from {name} module. Aborting.')
+                log.warn(
+                    f'Processing interrupted from {name} module. Aborting.')
                 break
 
         return current_outputs

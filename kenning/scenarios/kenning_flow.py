@@ -2,6 +2,7 @@ import argparse
 import json
 import sys
 from kenning.core.flow import KenningFlow
+from kenning.utils import logger
 from kenning.utils.class_loader import get_command
 
 
@@ -22,14 +23,17 @@ def main(argv):
 
     args, _ = parser.parse_known_args(argv[1:])
 
+    logger.set_verbosity(args.verbosity)
+    log = logger.get_logger()
+
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
     flow: KenningFlow = KenningFlow.from_json(json_cfg)
     _ = flow.process()
 
-    print('done')
-    return 3
+    log.info('Processing has finished')
+    return 0
 
 
 if __name__ == '__main__':

@@ -156,28 +156,34 @@ class KenningFlow:
 
         return cls(modules, inputs, outputs)
 
+    def step(self):
+        current_outputs: Dict[str, Any] = dict()
+
+        for name, (module, action) in self.modules.items():
+            input: Dict[str, Any] = {
+                local_name: current_outputs[global_name]
+                for global_name, local_name in
+                self.inputs[name].items()
+            } if name in self.inputs else {}
+
+            output = module.actions[action](input)
+
+            current_outputs.update({
+                self.outputs[name][local_output]: value
+                for local_output, value in
+                output.items()
+            })
+
+        return current_outputs
+
     def process(self):
         """
         Main process function. Repeatedly fires constructed graph in a loop.
         """
         log = logger.get_logger()
-        current_outputs: Dict[str, Any] = dict()
         while True:
             try:
-                for name, (module, action) in self.modules.items():
-                    input: Dict[str, Any] = {
-                        local_name: current_outputs[global_name]
-                        for global_name, local_name in
-                        self.inputs[name].items()
-                    } if name in self.inputs else {}
-
-                    output = module.actions[action](input)
-
-                    current_outputs.update({
-                        self.outputs[name][local_output]: value
-                        for local_output, value in
-                        output.items()
-                    })
+                current_outputs = self.step()
 
             except KeyboardInterrupt:
                 log.warn('Processing interrupted due to keyboard interrupt.\
@@ -185,13 +191,13 @@ class KenningFlow:
                 break
 
             except StopIteration:
-                log.warn(f'Processing interrupted due to empty {name} stream.\
-                    Aborting.')
+                log.warn('Processing interrupted due to an empty stream.')
                 break
 
-            except RuntimeError:
+            except RuntimeError as e:
                 log.warn(
-                    f'Processing interrupted from {name} module. Aborting.')
+                    f'Processing interrupted from inside of module.\
+                        {(str(e))}')
                 break
 
         return current_outputs

@@ -12,6 +12,7 @@ import numpy as np
 from functools import reduce
 from typing import Tuple
 import operator
+import shutil
 
 from kenning.core.dataset import Dataset
 from kenning.datasets.open_images_dataset import SegmObject
@@ -166,11 +167,12 @@ class YOLACT(ModelWrapper):
             dataset: Dataset,
             from_file=True,
             top_k: int = None,
-            score_threshold: float = 0.2,
+            score_threshold: float = 0.,
     ):
         self.model = None
         self.top_k = top_k
         self.score_threshold = score_threshold
+        self.original_model_path = modelpath
         super().__init__(modelpath, dataset, from_file)
 
     @classmethod
@@ -199,7 +201,7 @@ class YOLACT(ModelWrapper):
         self.model = onnx.load_model(modelpath)
 
     def save_model(self, modelpath):
-        raise NotImplementedError
+        shutil.copy(self.original_model_path, modelpath)
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -262,17 +264,14 @@ class YOLACT(ModelWrapper):
             ))
         return [Y]
 
-    def run_inference(self, X):
-        raise NotImplementedError
-
     def get_framework_and_version(self):
         return ('onnx', onnx.__version__)
 
     def get_output_formats(self):
-        raise NotImplementedError
+        return ["onnx"]
 
     def save_to_onnx(self, modelpath):
-        raise NotImplementedError
+        self.save_model(modelpath)
 
     def convert_input_to_bytes(self, inputdata):
         return inputdata.tobytes()

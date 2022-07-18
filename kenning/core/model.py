@@ -424,19 +424,27 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
+        # get_input_spec returns dictionary with multiple possible inputs
+        # Currently we do not expect to support more than single input though
+        # Hence we assume every model will have its working input at index 0
         default_name = list(self.get_input_spec()[0].items())[0][0]
-        return {'out_infer':
-                self.run_inference(self.preprocess_input(input[default_name]))}
+        return {
+            'out_infer': self.run_inference(
+                self.preprocess_input(input[default_name])
+            )
+        }
 
     def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
         default_name = list(self.get_input_spec()[0].items())[0][0]
-        return {'out_pre':
-                self.preprocess_input(input[default_name])}
+        return {
+            'out_pre': self.preprocess_input(input[default_name])
+        }
 
     def action_train(self, input: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
 
     def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
         default_name = list(self.get_input_spec()[0].items())[0][0]
-        return {'out_post':
-                self.postprocess_outputs(input[default_name])}
+        return {
+            'out_post': self.postprocess_outputs(input[default_name])
+        }

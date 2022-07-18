@@ -470,4 +470,7 @@ class Dataset(object):
 
     def action_stream(self, _: Dict[str, Any]) -> Dict[str, Any]:
         next = self.__next__()
-        return {'data_x': next[0], 'data_y': next[1]}
+        return {
+            'data_x': next[0],
+            'data_y': next[1]
+        }

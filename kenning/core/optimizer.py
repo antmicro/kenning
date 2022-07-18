@@ -11,10 +11,9 @@ from kenning.utils.args_manager import add_parameterschema_argument, add_argpars
 
 
 class CompilationError(Exception):
-    pass
-
-
-class ReadingTorchModelError(Exception):
+    """
+    General purpose exception raised when the compilation proccess fails.
+    """
     pass
 
 

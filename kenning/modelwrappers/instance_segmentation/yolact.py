@@ -186,7 +186,7 @@ class YOLACT(ModelWrapper):
         )
 
     def get_input_spec(self):
-        return {'input_1': (1, 3, 550, 550)}, 'float32'
+        return {'input.1': (1, 3, 550, 550)}, 'float32'
 
     def prepare_model(self):
         if not self.from_file:

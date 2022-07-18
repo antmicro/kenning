@@ -1,4 +1,6 @@
 from typing import Any, Dict, Tuple, Type
+
+import jsonschema
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
@@ -39,13 +41,18 @@ class KenningFlow:
         self.outputs = outputs
 
         for name, (type, cfg, action) in modules.items():
-            if issubclass(type, Dataset):
-                self.modules[name] = (type.from_json(cfg), action)
+            try:
+                if issubclass(type, Dataset):
+                    self.modules[name] = (type.from_json(cfg), action)
 
-            elif issubclass(type, ModelWrapper) or issubclass(type, Optimizer):
-                ds_name = self._find_input_module(name)
-                self.modules[name] = (type.from_json(
-                    self.modules[ds_name][0], cfg), action)
+                elif (issubclass(type, ModelWrapper)
+                      or issubclass(type, Optimizer)):
+                    ds_name = self._find_input_module(name)
+                    self.modules[name] = (type.from_json(
+                        self.modules[ds_name][0], cfg), action)
+            except Exception as e:
+                # TODO impl. using logger
+                print(f'Error loading submodule {name}. {str(e)}')
 
         self.compile()
 
@@ -74,12 +81,59 @@ class KenningFlow:
                 print(format)
 
     @classmethod
-    def from_json(cls, args: Dict[str, Any]):
+    def form_parameterschema(cls):
+        """
+        Creates schema for the KenningFlow class
+
+        Returns
+        -------
+            Dict : Schema for the class
+        """
+        return {
+            'type': 'object',
+            'patternProperties': {
+                '.': {
+                    'type': 'object',
+                    'properties': {
+                        'type': {'type': 'string'},
+                        'inputs': {
+                            'type': 'object',
+                            'patternProperties': {
+                                '.': {'type': 'string'}
+                            }
+                        },
+                        'outputs': {
+                            'type': 'object',
+                            'patternProperties': {
+                                '.': {'type': 'string'}
+                            }
+                        },
+                        "properties": {
+                            "oneOf": [schema for schema in
+                                      [Dataset.form_parameterschema(),
+                                       ModelWrapper.form_parameterschema(),
+                                       Optimizer.form_parameterschema()]]
+                        },
+                        "additionalProperties": False
+                    },
+                    'required': ['type', 'parameters']
+                }
+            }
+        }
+
+    @classmethod
+    def from_json(cls, json_dict: Dict[str, Any]):
+        try:
+            jsonschema.validate(json_dict, cls.form_parameterschema())
+        except jsonschema.ValidationError:
+            # TODO impl. using logger
+            print('JSON description is invalid')
+
         modules: Dict[str, Tuple[Type, Any, str]] = dict()
         inputs: Dict[str, Dict[str, str]] = dict()
         outputs: Dict[str, Dict[str, str]] = dict()
 
-        for module_name, module_cfg in args.items():
+        for module_name, module_cfg in json_dict.items():
             modules[module_name] = (
                 load_class(module_cfg['type']),
                 module_cfg['parameters'],

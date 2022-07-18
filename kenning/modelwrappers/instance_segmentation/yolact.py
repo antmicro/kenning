@@ -10,6 +10,7 @@ import onnx
 import cv2
 import numpy as np
 from functools import reduce
+from typing import Tuple
 import operator
 
 from kenning.core.dataset import Dataset
@@ -17,10 +18,36 @@ from kenning.datasets.open_images_dataset import SegmObject
 from kenning.core.model import ModelWrapper
 
 
-def crop(masks, boxes, padding: int = 1):
+def crop(
+        masks: np.ndarray,
+        boxes: np.ndarray,
+        padding: int = 1
+) -> np.ndarray:
     """
     "Crop" predicted masks by zeroing out everything not in
     the predicted bbox.
+
+    Parameters
+    ----------
+    masks : numpy.ndarray
+        Array of (H, W, N) elements, (H, W) being the dimension of an image,
+        N being number of detected objects. Masks should contain elements
+        from [0, 1] range, whether the pixel is a part of detected object
+        or not.
+    boxes : numpy.ndarray
+        Boxes should be of (N, 4) shape, each box is defined by four numbers
+        (x1, y1, x2, y2), where (x1, y1) are coordinates of northwestern point
+        and (x2, y2) is coordinate for southeastern point. The coordinates are
+        given in a relative form, i.e. each number is from [0, 1] interval,
+        0 and 1 means point is on the margin of an image.
+    padding : int
+        Padding used for sanitize_coordinates function
+
+    Returns
+    -------
+    numpy.ndarray :
+        Masks for detected objects, each mask is cropped to the bounding box
+        (there are no non-zero pixels outside the bbox)
     """
     h, w, n = masks.shape
     x1, x2 = sanitize_coordinates(
@@ -51,10 +78,35 @@ def crop(masks, boxes, padding: int = 1):
     return masks * crop_mask.astype(np.float32)
 
 
-def sanitize_coordinates(_x1, _x2, img_size: int, padding: int = 0):
+def sanitize_coordinates(
+        _x1: np.ndarray,
+        _x2: np.ndarray,
+        img_size: int,
+        padding: int = 0
+) -> Tuple[np.ndarray, np.ndarray]:
     """
     Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
     and x2 <= image_size. Also converts from relative to absolute coordinates.
+
+    Parameters
+    ----------
+        _x1 : numpy.ndarray
+            Array of (N,) elements
+        _x2 : numpy.ndarray
+            Array of (N,) elements
+        img_size : int
+            Upper bound for elements in the resulting array. Conversion from
+            relative to absolute coordinates is done according to this number
+        padding : int
+            Margin how close the number can be to the margin before it is
+            cropped. Smaller number is cropped to the max(x - padding, 0),
+            higher number is min(x + padding, img_size).
+
+    Returns
+    -------
+    Tuple[numpy.ndarray, numpy.ndarray] :
+        Result is (x1, x2), each array has a (N,) shape, elementwise
+        each element from both arrays satisfy: 0 <= x1 <= x2 <= img_size
     """
     _x1 = _x1 * img_size
     _x2 = _x2 * img_size
@@ -66,9 +118,19 @@ def sanitize_coordinates(_x1, _x2, img_size: int, padding: int = 0):
     return x1, x2
 
 
-def sigmoid(x):
+def sigmoid(x: np.ndarray) -> np.ndarray:
     """
     Numerically stable sigmoid function.
+
+    Parameters
+    ----------
+    x : numpy.ndarray
+        Input array
+
+    Returns
+    -------
+    numpy.ndarray :
+        Result of elementwise sigmoid function
     """
     return np.where(
         x >= 0,
@@ -223,7 +285,7 @@ class YOLACT(ModelWrapper):
         # SCORE: size=(num_dets,)    dtype=float32
         # PROTO: size=(138, 138, 32) dtype=float32
         # Where num_dets is a number of detected objects.
-        # Because it is a variable dependant on model input,
+        # Because it is a variable dependent on model input,
         # some maths is required to retrieve it.
 
         S = len(outputdata)

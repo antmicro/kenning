@@ -8,7 +8,14 @@ from kenning.utils.class_loader import load_class
 
 class KenningFlow:
     """
-    Allows for creation of non-linear flows.
+    Allows for creation of custom flows using Kenning core classes.
+
+    KenningFlow class allowes for creation and execution of customized flows,
+    utilizing modules available in the framework (i.e. Dataset, ModelWrapper).
+    Designed flows may be formed into non-linear, graph-like structures.
+
+    The flow may be defined either directly via dictionaries or in a predefined
+    JSON format.
     """
 
     def __init__(self, modules: Dict[str, Tuple[Type, Any, str]],

@@ -1,4 +1,4 @@
-from typing import Any, Dict, Tuple, Type
+from typing import Any
 
 import jsonschema
 from kenning.core.dataset import Dataset
@@ -21,9 +21,9 @@ class KenningFlow:
     JSON format.
     """
 
-    def __init__(self, modules: Dict[str, Tuple[Type, Any, str]],
-                 inputs: Dict[str, Dict[str, str]],
-                 outputs: Dict[str, Dict[str, str]]):
+    def __init__(self, modules: dict[str, tuple[type, Any, str]],
+                 inputs: dict[str, dict[str, str]],
+                 outputs: dict[str, dict[str, str]]):
         """
         Creates and compiles a flow.
 
@@ -38,7 +38,7 @@ class KenningFlow:
         """
 
         log = logger.get_logger()
-        self.modules: Dict[str, Tuple[Any, str]] = dict()
+        self.modules: dict[str, tuple[Any, str]] = dict()
         self.inputs = inputs
         self.outputs = outputs
 
@@ -54,6 +54,9 @@ class KenningFlow:
                         self.modules[ds_name][0], cfg), action)
             except Exception as e:
                 log.error(f'Error loading submodule {name} : {str(e)}')
+
+        if self._has_cycles():
+            raise RuntimeError('Resulting graph has possible cycles')
 
         self.compile()
 
@@ -73,6 +76,62 @@ class KenningFlow:
         return [ds for ds in self.modules if
                 set(self.inputs[name]) &
                 set(self.outputs[ds].values()) != set()][0]
+
+    def _dfs(self, matrix: list[list], visited: list[bool], node: int) -> bool:
+        """
+        Depth first search helper function
+        Parameters
+        ----------
+        matrix : Adjacency matrix
+        visited : Local list noting visited nodes
+        node : Current node
+
+        Returns
+        -------
+            bool : Wheher a cycle was found
+        """
+        if visited[node]:
+            return True
+
+        visited[node] = True
+
+        for n, s in enumerate(matrix[node]):
+            if s != set():
+                if self._dfs(matrix, visited, n):
+                    return True
+
+        visited[node] = False
+        return False
+
+    def _has_cycles(self) -> bool:
+        """
+        Helper function that checks for possible cycles in a graph.
+        Possible cycles are deduced only from static description of
+        inputs and outputs. This means that not every possible cycle
+        has to actually occur during the processing. An example would be
+        a situation, where action defined within block does not yield
+        an output that would close the cycle inside the graph.
+        That also implies such defined connection would be redundant
+        and should be removed from graph description.
+
+        Returns
+        -------
+            bool : Whether graph has possible cycles
+        """
+        matrix = [[set() for _ in self.modules] for _ in self.modules]
+
+        for n1, m1 in enumerate(self.modules):
+            for n2, m2 in enumerate(self.modules):
+                if m1 in self.outputs and m2 in self.inputs:
+                    s1 = self.outputs[m1].values()
+                    s2 = self.inputs[m2].keys()
+                    matrix[n1][n2] = s1 & s2
+
+        for node in range(len(self.modules)):
+            if self._dfs(matrix, [False for _ in self.modules], node):
+                return True
+
+        return False
 
     def compile(self):
         for name, (module, action) in self.modules.items():
@@ -123,7 +182,7 @@ class KenningFlow:
         }
 
     @classmethod
-    def from_json(cls, json_dict: Dict[str, Any]):
+    def from_json(cls, json_dict: dict[str, Any]):
         log = logger.get_logger()
 
         try:
@@ -131,9 +190,9 @@ class KenningFlow:
         except jsonschema.ValidationError:
             log.error('JSON description is invalid')
 
-        modules: Dict[str, Tuple[Type, Any, str]] = dict()
-        inputs: Dict[str, Dict[str, str]] = dict()
-        outputs: Dict[str, Dict[str, str]] = dict()
+        modules: dict[str, tuple[type, Any, str]] = dict()
+        inputs: dict[str, dict[str, str]] = dict()
+        outputs: dict[str, dict[str, str]] = dict()
 
         for module_name, module_cfg in json_dict.items():
             modules[module_name] = (
@@ -157,10 +216,10 @@ class KenningFlow:
         return cls(modules, inputs, outputs)
 
     def step(self):
-        current_outputs: Dict[str, Any] = dict()
+        current_outputs: dict[str, Any] = dict()
 
         for name, (module, action) in self.modules.items():
-            input: Dict[str, Any] = {
+            input: dict[str, Any] = {
                 local_name: current_outputs[global_name]
                 for global_name, local_name in
                 self.inputs[name].items()

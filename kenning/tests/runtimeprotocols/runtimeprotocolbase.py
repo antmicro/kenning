@@ -24,7 +24,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
     def test_initialize_client(self):
         """
-        Tests the `initialize_server()` method.
+        Tests the `initialize_client()` method.
         """
         client = self.initprotocol()
         with pytest.raises(ConnectionRefusedError):

@@ -434,6 +434,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         tmpfolder : Path
             Fixture to get folder for quantization_details.
         """
+        # FIXME: Add actual example with quantization data
         server, client = serverandclient
         quantization_details = {1: 'one', 2: 'two', 3: 'three'}
         path = tmpfolder / uuid.uuid4().hex

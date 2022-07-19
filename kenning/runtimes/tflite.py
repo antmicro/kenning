@@ -112,12 +112,18 @@ class TFLiteRuntime(Runtime):
             dt = np.dtype(self.inputdtype)
             siz = np.prod(det['shape']) * dt.itemsize
             inp = np.frombuffer(input_data[:siz], dtype=dt)
-            inp = inp.reshape(det['shape'])
-            if det['dtype'] != np.float32:
-                scale, zero_point = det['quantization']
-                inp = inp / scale + zero_point
-            self.interpreter.tensor(det['index'])()[0] = inp.astype(det['dtype'])  # noqa: E501
-            input_data = input_data[siz:]
+            try:
+                inp = inp.reshape(det['shape'])
+                if det['dtype'] != np.float32:
+                    scale, zero_point = det['quantization']
+                    inp = inp / scale + zero_point
+                if siz != np.prod(inp.shape) * np.dtype(det['dtype']).itemsize:
+                    raise ValueError
+                self.interpreter.tensor(det['index'])()[0] = inp.astype(det['dtype'])  # noqa: E501
+                input_data = input_data[siz:]
+            except ValueError as ex:
+                self.log.error(f'Failed to load input: {ex}')
+                return False
         return True
 
     def run(self):

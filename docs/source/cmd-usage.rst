@@ -159,68 +159,68 @@ To print the list of required arguments, run::
 
 With the above classes, the help can look as follows::
 
-    positional arguments:                                               
-      modelwrappercls       ModelWrapper-based class with inference implementation to import                                                 
-      runtimecls            Runtime-based class with the implementation of model runtime                                                     
+    positional arguments:
+      modelwrappercls       ModelWrapper-based class with inference implementation to import
+      runtimecls            Runtime-based class with the implementation of model runtime
       datasetcls            Dataset-based class with dataset to import
-      output                The path to the output JSON file with measurements                                                               
+      output                The path to the output JSON file with measurements
 
     optional arguments:
       -h, --help            show this help message and exit
       --modelcompiler-cls MODELCOMPILER_CLS
                             Optimizer-based class with compiling routines to import
-      --protocol-cls PROTOCOL_CLS                                       
-                            RuntimeProtocol-based class with the implementation of communication between inference tester and inference      
-                            runner                                      
+      --protocol-cls PROTOCOL_CLS
+                            RuntimeProtocol-based class with the implementation of communication between inference tester and inference
+                            runner
       --convert-to-onnx CONVERT_TO_ONNX
-                            Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)              
+                            Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)
       --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                             Verbosity level
 
-    Inference model arguments:                                          
-      --model-path MODEL_PATH                                           
+    Inference model arguments:
+      --model-path MODEL_PATH
                             Path to the model
 
-    Compiler arguments:                                                 
+    Compiler arguments:
       --compiled-model-path COMPILED_MODEL_PATH
                             The path to the compiled model output
       --model-framework {onnx,keras,darknet}
                             The input type of the model, framework-wise
       --target TARGET       The kind or tag of the target device
-      --target-host TARGET_HOST                                         
-                            The kind or tag of the host (CPU) target device                                                                  
-      --opt-level OPT_LEVEL                                             
+      --target-host TARGET_HOST
+                            The kind or tag of the host (CPU) target device
+      --opt-level OPT_LEVEL
                             The optimization level of the compilation
       --libdarknet-path LIBDARKNET_PATH
-                            Path to the libdarknet.so library, for darknet models                                                            
+                            Path to the libdarknet.so library, for darknet models
 
-    Runtime arguments:                                                  
+    Runtime arguments:
       --save-model-path SAVE_MODEL_PATH
                             Path where the model will be uploaded
-      --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu} 
-                            What accelerator should be used on target device                                                                 
+      --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
+                            What accelerator should be used on target device
       --target-device-context-id TARGET_DEVICE_CONTEXT_ID
                             ID of the device to run the inference on
-      --input-dtype INPUT_DTYPE                                         
+      --input-dtype INPUT_DTYPE
                             Type of input tensor elements
 
-    Dataset arguments:                                                  
-      --dataset-root DATASET_ROOT                                       
+    Dataset arguments:
+      --dataset-root DATASET_ROOT
                             Path to the dataset directory
-      --download-dataset    Downloads the dataset before taking any action                                                                   
+      --download-dataset    Downloads the dataset before taking any action
       --inference-batch-size INFERENCE_BATCH_SIZE
                             The batch size for providing the input data
-      --classify-by {species,breeds}                                    
-                            Determines if classification should be performed by species or by breeds                                         
+      --classify-by {species,breeds}
+                            Determines if classification should be performed by species or by breeds
       --image-memory-layout {NHWC,NCHW}
-                            Determines if images should be delivered in NHWC or NCHW format                                                  
+                            Determines if images should be delivered in NHWC or NCHW format
 
-    Runtime protocol arguments:                                         
+    Runtime protocol arguments:
       --host HOST           The address to the target device
       --port PORT           The port for the target device
-      --packet-size PACKET_SIZE                                         
-                            The maximum size of the received packets, in bytes.                                                              
-      --endianness {big,little}                                         
+      --packet-size PACKET_SIZE
+                            The maximum size of the received packets, in bytes.
+      --endianness {big,little}
                             The endianness of data to transfer
 
 The ``kenning.scenarios.inference_server`` requires only:

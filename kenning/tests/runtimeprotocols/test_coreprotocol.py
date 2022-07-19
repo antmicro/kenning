@@ -42,10 +42,17 @@ class TestCoreRuntimeProtocol:
         Tuple[RuntimeProtocol, RuntimeProtocol] :
             A tuple containing initialized server and client objects
         """
-        server = self.initprotocol()
-        client = self.initprotocol()
-        server.initialize_server()
-        client.initialize_client()
+        while True:
+            try:
+                server = self.initprotocol()
+                client = self.initprotocol()
+                server.initialize_server()
+                client.initialize_client()
+                break
+            except OSError:
+                client.disconnect()
+                server.disconnect()
+                self.port += 1
         yield server, client
         client.disconnect()
         server.disconnect()

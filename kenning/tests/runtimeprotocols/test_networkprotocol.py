@@ -2,7 +2,7 @@ from kenning.core.runtimeprotocol import MessageType
 from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
 from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.measurements import Measurements
-from runtimeprotocolbase import RuntimeProtocolTests
+from test_runtimeprotocol import TestCoreRuntimeProtocol
 from typing import Tuple, List
 import json
 import multiprocessing
@@ -12,7 +12,7 @@ import socket
 import uuid
 
 
-class TestNetworkProtocol(RuntimeProtocolTests):
+class TestNetworkProtocol(TestCoreRuntimeProtocol):
     runtimeprotocolcls = NetworkProtocol
     host = ''
     port = 1234

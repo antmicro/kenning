@@ -1,5 +1,5 @@
 from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
-from runtimeprotocolbase import RuntimeProtocolTests
+from kenning.core.measurements import Measurements
 import pytest
 
 
@@ -14,10 +14,28 @@ class TestMessageType:
         assert MessageType.ERROR == MessageType.from_bytes(byte_num, 'little')
 
 
-class TestRuntimeProtocol(RuntimeProtocolTests):
+@pytest.mark.fast
+class TestCoreRuntimeProtocol:
     runtimeprotocolcls = RuntimeProtocol
-    host = ''
-    port = 1234
+
+    def initprotocol(self) -> RuntimeProtocol:
+        """
+        Initializes protocol object.
+
+        Returns
+        -------
+        RuntimeProtocol:
+            Initialized protocol object
+        """
+        protocol = self.runtimeprotocolcls()
+        return protocol
+
+    def test_download_statistics(self):
+        """
+        Tests the `RuntimeProtocol.download_statistics()` method.
+        """
+        client = self.initprotocol()
+        assert isinstance(client.download_statistics(), Measurements)
 
     def test_initialize_server(self):
         protocol = self.initprotocol()

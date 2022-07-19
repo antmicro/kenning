@@ -1,6 +1,8 @@
-from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
 from kenning.core.measurements import Measurements
+from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
+from typing import Tuple, List
 import pytest
+import random
 
 
 @pytest.mark.fast
@@ -29,6 +31,50 @@ class TestCoreRuntimeProtocol:
         """
         protocol = self.runtimeprotocolcls()
         return protocol
+
+    @pytest.fixture
+    def serverandclient(self):
+        """
+        Initializes server and client.
+
+        Returns
+        -------
+        Tuple[RuntimeProtocol, RuntimeProtocol] :
+            A tuple containing initialized server and client objects
+        """
+        server = self.initprotocol()
+        client = self.initprotocol()
+        server.initialize_server()
+        client.initialize_client()
+        yield server, client
+        client.disconnect()
+        server.disconnect()
+
+    def generate_byte_data(self) -> Tuple[bytes, List[bytes]]:
+        """
+        Generates random data in byte format for tests.
+
+        Returns
+        -------
+        Tuple[bytes, List[bytes]] :
+            A tuple containing bytes stream and expected output
+        """
+        data = bytes()
+        answer = list()
+        for i in range(random.randint(1, 10)):
+            times = random.randint(1, 10)
+            answer.append(bytes())
+            tmp_order = bytes()
+            for j in range(times):
+                number = (random.randint(1, 4294967295))
+                num_bytes = number.to_bytes(4, byteorder='little',
+                                            signed=False)
+                tmp_order += num_bytes
+                answer[i] += num_bytes
+            length = len(tmp_order)
+            length = length.to_bytes(4, byteorder='little', signed=False)
+            data += length + tmp_order
+        return data, answer
 
     def test_download_statistics(self):
         """

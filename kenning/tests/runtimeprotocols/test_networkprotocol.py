@@ -15,7 +15,7 @@ import uuid
 class TestNetworkProtocol(RuntimeProtocolTests):
     runtimeprotocolcls = NetworkProtocol
     host = ''
-    port = 1235
+    port = 1234
 
     @pytest.fixture
     def serverandclient(self):

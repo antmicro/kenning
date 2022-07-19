@@ -37,7 +37,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
     def test_wait_for_activity(self, serverandclient):
         """
-        Tests the `wait_for_activity()` method.
+        Tests client status using `wait_for_activity()` method.
 
         Parameters
         ----------
@@ -51,6 +51,30 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert status == ServerStatus.CLIENT_CONNECTED
         assert received_data is None
 
+        # Disconnect client
+        client.disconnect()
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_DISCONNECTED
+        assert received_data is None
+
+        # Timeout is reached
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.NOTHING and received_data is None
+
+    def test_wait_for_activity_send_data(self, serverandclient):
+        """
+        Tests the `wait_for_activity()` method by sending data.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        """
+        server, client = serverandclient
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_CONNECTED
+        assert received_data is None
+
         # Send data
         data, _ = self.generate_byte_data()
         client.send_data(data)
@@ -58,11 +82,39 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert status == ServerStatus.DATA_READY
         assert received_data == [data]
 
+    def test_wait_for_activity_send_error(self, serverandclient):
+        """
+        Tests the `wait_for_activity()` method by sending error message.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        """
+        server, client = serverandclient
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_CONNECTED
+        assert received_data is None
+
         # Send error message
         client.send_message(MessageType.ERROR, b'')
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.DATA_READY
         assert received_data == [MessageType.ERROR.to_bytes()]
+
+    def test_wait_for_activity_send_empty(self, serverandclient):
+        """
+        Tests the `wait_for_activity()` method by sending empty message.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        """
+        server, client = serverandclient
+        status, received_data = server.wait_for_activity()[0]
+        assert status == ServerStatus.CLIENT_CONNECTED
+        assert received_data is None
 
         # Send empty message
         class EmptyMessage:
@@ -73,16 +125,6 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         status, received_data = server.wait_for_activity()[0]
         assert received_data == [b'']
         assert status == ServerStatus.DATA_READY
-
-        # Disconnect client
-        client.disconnect()
-        status, received_data = server.wait_for_activity()[0]
-        assert status == ServerStatus.CLIENT_DISCONNECTED
-        assert received_data is None
-
-        # Timeout is reached
-        status, received_data = server.wait_for_activity()[0]
-        assert status == ServerStatus.NOTHING and received_data is None
 
     def test_send_data(self, serverandclient):
         """

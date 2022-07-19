@@ -141,7 +141,20 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
     def test_receive_data(self, serverandclient):
         """
-        Tests the `receive_data()` method.
+        Tests the `receive_data()` method with not initialized client.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        """
+        server, client = serverandclient
+        with pytest.raises(AttributeError):
+            server.receive_data(None, None)
+
+    def test_receive_data_data_sent(self, serverandclient):
+        """
+        Tests the `receive_data()` method with data being sent.
 
         Parameters
         ----------
@@ -150,19 +163,25 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         data, _ = self.generate_byte_data()
-
-        # Not initialized on server side
-        with pytest.raises(AttributeError):
-            server.receive_data(None, None)
-
-        # Data is sent
         server.accept_client(server.serversocket, None)
+
         assert client.send_data(data) is True
         status, received_data = server.receive_data(None, None)
         assert status is ServerStatus.DATA_READY
         assert [data] == received_data
 
-        # Client disconnected
+    def test_receive_client_disconnect(self, serverandclient):
+        """
+        Tests the `receive_data()` method with client being disconnected.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        """
+        server, client = serverandclient
+        server.accept_client(server.serversocket, None)
+
         client.disconnect()
         status, received_data = server.receive_data(None, None)
         assert status == ServerStatus.CLIENT_DISCONNECTED

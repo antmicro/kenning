@@ -71,11 +71,13 @@ class KenningFlow:
                         self.modules[ds_name][0], cfg), action)
             except Exception as e:
                 log.error(f'Error loading submodule {name} : {str(e)}')
+                raise
 
         if self._has_cycles():
             raise RuntimeError('Resulting graph has possible cycles')
 
-        self.compile()
+        # TODO implement compile function body
+        # self.compile()
 
     def _find_input_module(self, name: str) -> str:
         """
@@ -157,11 +159,11 @@ class KenningFlow:
         return False
 
     def compile(self):
-        for name, (module, action) in self.modules.items():
-            if issubclass(type(module), Optimizer):
-                parent = self._find_input_module(name)
-                format = module.consult_model_type(self.modules[parent][0])
-                print(format)
+        """
+        This function runs sequential optimizaions on models and
+        prepares all runtimes for deployment.
+        """
+        raise NotImplementedError('Compile function not yet implemented')
 
     @classmethod
     def form_parameterschema(cls):
@@ -212,6 +214,7 @@ class KenningFlow:
             jsonschema.validate(json_dict, cls.form_parameterschema())
         except jsonschema.ValidationError:
             log.error('JSON description is invalid')
+            raise
 
         modules = dict()
         inputs = dict()
@@ -268,8 +271,7 @@ class KenningFlow:
                 current_outputs = self.step()
 
             except KeyboardInterrupt:
-                log.warn('Processing interrupted due to keyboard interrupt.\
-                      Aborting.')
+                log.warn('Processing interrupted due to keyboard interrupt. Aborting.')  # noqa: E501
                 break
 
             except StopIteration:
@@ -277,9 +279,7 @@ class KenningFlow:
                 break
 
             except RuntimeError as e:
-                log.warn(
-                    f'Processing interrupted from inside of module.\
-                        {(str(e))}')
+                log.warn(f'Processing interrupted from inside of module. {(str(e))}')  # noqa: E501
                 break
 
         return current_outputs

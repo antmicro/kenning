@@ -306,4 +306,4 @@ class Optimizer(object):
         return self.inputdtype
 
     def action_compile(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        return dict()
+        raise NotImplementedError

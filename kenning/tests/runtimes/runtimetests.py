@@ -1,4 +1,6 @@
 import pytest
+import numpy as np
+from tvm import TVMError
 from typing import Type
 from abc import abstractmethod
 from kenning.core.runtime import Runtime
@@ -155,3 +157,112 @@ class RuntimeTests:
         Tests the `Runtime.prepare_local()` method.
         """
         raise NotImplementedError
+
+
+@pytest.mark.usefixtures('runtimemodel')
+class RuntimeWithModel(RuntimeTests):
+    runtimeprotocolcls = RuntimeProtocol
+
+    def initruntime(self, *args, **kwargs):
+        runtime = self.runtimecls(self.runtimeprotocolcls(),
+                                  self.runtimemodel,
+                                  *args, **kwargs)
+        return runtime
+
+    def test_prepare_model(self):
+        # Load from file
+        runtime = self.initruntime()
+        assert runtime.prepare_model(None) is True
+
+        # Doesn't overwrites model file because bytestream is empty
+        # Load from empty byte stream
+        runtime = self.initruntime()
+        assert runtime.prepare_model(b'') is True
+
+        # Check if written file is not empty
+        with open(self.runtimemodel, 'rb') as modelfile:
+            assert b'' != modelfile.read()
+
+    def test_prepare_model_bytes(self):
+        # Overwrites model file
+        # Try to load from incorrect byte stream
+        runtime = self.initruntime()
+        with pytest.raises((ValueError, TVMError)):
+            runtime.prepare_model(b'Kenning') is False
+
+    def test_prepare_input(self):
+        # No model initialized
+        data = np.arange(100).tobytes()
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.prepare_input(data)
+
+        # Model is initialized but input is with wrong shape and datatype
+        data = np.arange(99, dtype=np.int8).tobytes()
+        runtime = self.initruntime(inputdtype='float32')
+        runtime.prepare_model(None)
+        with pytest.raises(ValueError):
+            output = runtime.prepare_input(data)
+
+        # Correct input shape, but wrong datatype
+        data = np.arange(25, dtype='int64').reshape(self.inputshapes).tobytes()
+        runtime = self.initruntime(inputdtype='int8')
+        runtime.prepare_model(None)
+        output = runtime.prepare_input(data)
+        assert output is False
+
+        # Correct input shape and datatype
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        output = runtime.prepare_input(data)
+        assert output is True
+
+        # Input is empty
+        data = b''
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        assert runtime.prepare_input(data) is False
+
+    def test_run(self):
+        # Run without model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.run()
+
+        # Run without any input
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.run()
+
+        # Run with prepared input
+        data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
+        data = data.tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
+
+    def test_prepare_local(self):
+        runtime = self.initruntime()
+        runtime.prepare_local()
+
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_local()
+
+    def test_upload_output(self):
+        # Test on no model
+        runtime = self.initruntime()
+        with pytest.raises(AttributeError):
+            runtime.upload_output(b'')
+
+        # Test with model and input
+        data = np.zeros((self.inputshapes), dtype=np.float32).tobytes()
+        runtime = self.initruntime()
+        runtime.prepare_model(None)
+        runtime.prepare_input(data)
+        runtime.run()
+        expected_data = np.zeros(self.outputshapes, dtype=np.float32).tobytes()
+        assert runtime.upload_output(b'') == expected_data

@@ -14,7 +14,7 @@ class KenningFlow:
     Allows for creation of custom flows using Kenning core classes.
 
     KenningFlow class creates and executes customized flows consisting of
-    the blocks implemented based on kenning.core classes, such as
+    the modules implemented based on kenning.core classes, such as
     Dataset, ModelWrapper, Runtime.
     Designed flows may be formed into non-linear, graph-like structures.
 
@@ -22,22 +22,24 @@ class KenningFlow:
     JSON format.
 
     The JSON format must follow well defined structure.
-    Each block should be prefixed with a unique name and consist of
+    Each module should be prefixed with a unique name and consist of
     following entires:
 
-    type - Type of a Kenning class to use for this block
+    type - Type of a Kenning class to use for this module
     parameters - Inner parameters of chosen class
     inputs - Optional, set of pairs (local name, global name)
     outputs - Optional, set of pairs (local name, global name)
-    action - Singular string denoting intended action for a block
+    action - Singular string denoting intended action for a module
 
     All global names (inputs and outputs) must be unique.
     All local names are predefined for each class.
     """
 
-    def __init__(self, modules: dict[str, tuple[type, Any, str]],
-                 inputs: dict[str, dict[str, str]],
-                 outputs: dict[str, dict[str, str]]):
+    def __init__(
+            self,
+            modules: dict[str, tuple[type, Any, str]],
+            inputs: dict[str, dict[str, str]],
+            outputs: dict[str, dict[str, str]]):
         """
         Creates and compiles a flow.
 
@@ -52,7 +54,7 @@ class KenningFlow:
         """
 
         log = logger.get_logger()
-        self.modules: dict[str, tuple[Any, str]] = dict()
+        self.modules = dict()
         self.inputs = inputs
         self.outputs = outputs
 
@@ -61,6 +63,7 @@ class KenningFlow:
                 if issubclass(type, Dataset):
                     self.modules[name] = (type.from_json(cfg), action)
 
+                # TODO remove this after removing dataset from arguments
                 elif (issubclass(type, ModelWrapper)
                       or issubclass(type, Optimizer)):
                     ds_name = self._find_input_module(name)
@@ -87,11 +90,17 @@ class KenningFlow:
         -------
         str : Name of a module that provides input for given node
         """
-        return [ds for ds in self.modules if
-                set(self.inputs[name]) &
-                set(self.outputs[ds].values()) != set()][0]
+        return [
+            ds for ds in self.modules if
+            set(self.inputs[name]) &
+            set(self.outputs[ds].values()) != set()
+        ][0]
 
-    def _dfs(self, matrix: list[list], visited: list[bool], node: int) -> bool:
+    def _dfs(
+            self,
+            matrix: list[list],
+            visited: list[bool],
+            node: int) -> bool:
         """
         Depth first search helper function
         Parameters
@@ -123,7 +132,7 @@ class KenningFlow:
         Possible cycles are deduced only from static description of
         inputs and outputs. This means that not every possible cycle
         has to actually occur during the processing. An example would be
-        a situation, where action defined within block does not yield
+        a situation, where action defined within module does not yield
         an output that would close the cycle inside the graph.
         That also implies such defined connection would be redundant
         and should be removed from graph description.
@@ -204,9 +213,9 @@ class KenningFlow:
         except jsonschema.ValidationError:
             log.error('JSON description is invalid')
 
-        modules: dict[str, tuple[type, Any, str]] = dict()
-        inputs: dict[str, dict[str, str]] = dict()
-        outputs: dict[str, dict[str, str]] = dict()
+        modules = dict()
+        inputs = dict()
+        outputs = dict()
 
         for module_name, module_cfg in json_dict.items():
             modules[module_name] = (
@@ -230,10 +239,10 @@ class KenningFlow:
         return cls(modules, inputs, outputs)
 
     def step(self):
-        current_outputs: dict[str, Any] = dict()
+        current_outputs = dict()
 
         for name, (module, action) in self.modules.items():
-            input: dict[str, Any] = {
+            input = {
                 local_name: current_outputs[global_name]
                 for global_name, local_name in
                 self.inputs[name].items()

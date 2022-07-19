@@ -13,12 +13,26 @@ class KenningFlow:
     """
     Allows for creation of custom flows using Kenning core classes.
 
-    KenningFlow class allowes for creation and execution of customized flows,
-    utilizing modules available in the framework (i.e. Dataset, ModelWrapper).
+    KenningFlow class creates and executes customized flows consisting of
+    the blocks implemented based on kenning.core classes, such as
+    Dataset, ModelWrapper, Runtime.
     Designed flows may be formed into non-linear, graph-like structures.
 
     The flow may be defined either directly via dictionaries or in a predefined
     JSON format.
+
+    The JSON format must follow well defined structure.
+    Each block should be prefixed with a unique name and consist of
+    following entires:
+
+    type - Type of a Kenning class to use for this block
+    parameters - Inner parameters of chosen class
+    inputs - Optional, set of pairs (local name, global name)
+    outputs - Optional, set of pairs (local name, global name)
+    action - Singular string denoting intended action for a block
+
+    All global names (inputs and outputs) must be unique.
+    All local names are predefined for each class.
     """
 
     def __init__(self, modules: dict[str, tuple[type, Any, str]],

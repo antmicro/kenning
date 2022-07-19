@@ -322,11 +322,6 @@ class TVMCompiler(Optimizer):
         )
 
     def compile_model(self, mod, params, outputpath):
-        if str(self.target_obj).startswith('cuda'):
-            archmatch = re.search(r'-arch=(sm_\d\d)', str(self.target_obj))
-            arch = archmatch.group(1) if archmatch else None
-            if arch:
-                tvm.autotvm.measure.measure_methods.set_cuda_target_arch(arch)
         if self.use_tvm_vm:
             with tvm.transform.PassContext(
                     opt_level=3,

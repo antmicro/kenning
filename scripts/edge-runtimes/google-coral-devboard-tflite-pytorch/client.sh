@@ -2,7 +2,7 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    kenning.compilers.tflite.TFLiteCompiler \
+    --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
     kenning.runtimes.tflite.TFLiteRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/google-coral-devboard-tflite-pytorch.json \

@@ -2,7 +2,7 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    kenning.compilers.tvm.TVMCompiler \
+    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
     kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/jetson-agx-xavier-tvm-pytorch.json \

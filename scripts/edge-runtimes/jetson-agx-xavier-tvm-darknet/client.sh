@@ -2,7 +2,7 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
-    kenning.compilers.tvm.TVMCompiler \
+    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
     kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \
     ./build/jetson-agx-xavier-tvm-darknet.json \

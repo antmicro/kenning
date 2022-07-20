@@ -41,7 +41,7 @@ class KenningFlow:
             inputs: dict[str, dict[str, str]],
             outputs: dict[str, dict[str, str]]):
         """
-        Creates and compiles a flow.
+        Initializes the flow. This constructor only invokes helper functions.
 
         Parameters
         ----------
@@ -53,10 +53,29 @@ class KenningFlow:
             Mapping of module names to (local input name -> global input name)
         """
 
-        log = logger.get_logger()
+        self.log = logger.get_logger()
         self.modules = dict()
         self.inputs = inputs
         self.outputs = outputs
+
+        self._create_flow(modules)
+
+        if self._has_cycles():
+            raise RuntimeError('Resulting graph has possible cycles')
+
+        # TODO implement compile function body
+        # self.compile()
+
+    def _create_flow(self, modules: dict[str, tuple[type, Any, str]]):
+        """
+        This helper function creates the flow. It will call the constructors
+        of underlaying classes.
+
+        Parameters
+        ----------
+            modules : Dict
+                Mapping of module names to their types, config and action
+        """
 
         for name, (type, cfg, action) in modules.items():
             try:
@@ -70,14 +89,8 @@ class KenningFlow:
                     self.modules[name] = (type.from_json(
                         self.modules[ds_name][0], cfg), action)
             except Exception as e:
-                log.error(f'Error loading submodule {name} : {str(e)}')
+                self.log.error(f'Error loading submodule {name} : {str(e)}')
                 raise
-
-        if self._has_cycles():
-            raise RuntimeError('Resulting graph has possible cycles')
-
-        # TODO implement compile function body
-        # self.compile()
 
     def _find_input_module(self, name: str) -> str:
         """
@@ -265,21 +278,25 @@ class KenningFlow:
         """
         Main process function. Repeatedly fires constructed graph in a loop.
         """
-        log = logger.get_logger()
+        current_outputs = dict()
         while True:
             try:
                 current_outputs = self.step()
 
             except KeyboardInterrupt:
-                log.warn('Processing interrupted due to keyboard interrupt. Aborting.')  # noqa: E501
+                self.log.warn('Processing interrupted due to keyboard interrupt. Aborting.')  # noqa: E501
                 break
 
             except StopIteration:
-                log.warn('Processing interrupted due to an empty stream.')
+                self.log.warn('Processing interrupted due to an empty stream.')
+                break
+
+            except NotImplementedError:
+                self.log.error('Missing implementation of action from module')
                 break
 
             except RuntimeError as e:
-                log.warn(f'Processing interrupted from inside of module. {(str(e))}')  # noqa: E501
+                self.log.warn(f'Processing interrupted from inside of module. {(str(e))}')  # noqa: E501
                 break
 
         return current_outputs

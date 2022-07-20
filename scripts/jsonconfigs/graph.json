@@ -65,25 +65,5 @@
             "out_pre": "pt_out"
         },
         "action": "preprocess"
-    },
-    "opt":
-    {
-        "type": "kenning.compilers.tflite.TFLiteCompiler",
-        "parameters":
-        {
-            "target": "int8",
-            "compiled_model_path": "./build/quantized.tflite",
-            "inference_input_type": "int8",
-            "inference_output_type": "int8"
-        },
-        "inputs":
-        {
-            "default": "tf_out"
-        },
-        "outputs":
-        {
-            "default": "opt_out"
-        },
-        "action": "compile"
     }
 }

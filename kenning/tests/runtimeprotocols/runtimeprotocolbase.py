@@ -544,20 +544,33 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert isinstance(downloaded_stats, Measurements)
         assert downloaded_stats.data == data
 
-    def test_parse_message(self):
+    @pytest.mark.parametrize('messagetype', [MessageType.OK, MessageType.ERROR,
+                                             MessageType.DATA,
+                                             MessageType.MODEL,
+                                             MessageType.PROCESS,
+                                             MessageType.STATS,
+                                             MessageType.OUTPUT,
+                                             MessageType.QUANTIZATION])
+    def test_parse_message(self, serverandclient, messagetype):
         """
         Tests the `parse_message()` method.
+
+        Parameters
+        ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
+        messagetype : MessageType
+            A MessageType to send along with data
         """
         data, _ = self.generate_byte_data()
-        protocol = self.initprotocol()
+        server, client = serverandclient
+        server.accept_client(server.serversocket, None)
 
-        for i in range(8):
-            tmp = (i).to_bytes(2, byteorder='little', signed=False) + data
-            mt, output_data = protocol.parse_message(tmp)
-            assert mt.value == i and output_data == data
-        with pytest.raises(ValueError):
-            tmp = (100).to_bytes(2, byteorder='little', signed=False)
-            protocol.parse_message(tmp + data)
+        client.send_message(messagetype, data)
+        status, message = server.wait_for_activity()[0]
+        assert status == ServerStatus.DATA_READY
+        received_type, received_data = server.parse_message(message[0])
+        assert data == received_data and received_type == messagetype
 
     def test_disconnect(self, serverandclient):
         """

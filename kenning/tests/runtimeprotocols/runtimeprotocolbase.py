@@ -16,10 +16,9 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server = self.initprotocol()
         assert server.initialize_server() is True
-        with pytest.raises(OSError) as execinfo:
-            second_server = self.initprotocol()
-            second_server.initialize_server()
-        assert 'Address already in use' in str(execinfo.value)
+        second_server = self.initprotocol()
+        assert second_server.initialize_server() is False
+        assert second_server.serversocket is None
         server.disconnect()
 
     def test_initialize_client(self):

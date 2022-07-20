@@ -77,10 +77,11 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         # Send data
         data, _ = self.generate_byte_data()
-        client.send_data(data)
-        status, received_data = server.wait_for_activity()[0]
+        client.send_message(MessageType.OK, data)
+        status, message = server.wait_for_activity()[0]
         assert status == ServerStatus.DATA_READY
-        assert received_data == [data]
+        messagetype, received_data = server.parse_message(message[0])
+        assert received_data == data and messagetype == MessageType.OK
 
     def test_wait_for_activity_send_error(self, serverandclient):
         """
@@ -91,16 +92,18 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
             Fixture to get initialized server and client
         """
+        data, _ = self.generate_byte_data()
         server, client = serverandclient
         status, received_data = server.wait_for_activity()[0]
         assert status == ServerStatus.CLIENT_CONNECTED
         assert received_data is None
 
         # Send error message
-        client.send_message(MessageType.ERROR, b'')
-        status, received_data = server.wait_for_activity()[0]
+        client.send_message(MessageType.ERROR, data)
+        status, message = server.wait_for_activity()[0]
         assert status == ServerStatus.DATA_READY
-        assert received_data == [MessageType.ERROR.to_bytes()]
+        message_status, received_data = server.parse_message(message[0])
+        assert received_data == data and message_status == MessageType.ERROR
 
     def test_wait_for_activity_send_empty(self, serverandclient):
         """

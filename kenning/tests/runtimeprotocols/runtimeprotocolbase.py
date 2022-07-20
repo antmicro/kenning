@@ -419,9 +419,11 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         thread_receive.start()
         assert client.upload_model(path) is True
         thread_receive.join()
-        answer = [(MessageType.MODEL).to_bytes() + data]
-        assert shared_list[0] == (ServerStatus.DATA_READY, answer)
         assert shared_list[1] is True
+        receive_status, received_data = shared_list[0]
+        assert receive_status == ServerStatus.DATA_READY
+        answer = (MessageType.MODEL, data)
+        assert client.parse_message(received_data[0]) == answer
 
     def test_upload_quantization_details(self, serverandclient, tmpfolder):
         """
@@ -467,11 +469,13 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert client.upload_quantization_details(path) is True
         thread_receive.join()
 
-        status, received_data = shared_list[0]
-        assert shared_list[1] is True and status == ServerStatus.DATA_READY
-        message, json_file = received_data[0][:2], received_data[0][2:]
-        assert message == (MessageType.QUANTIZATION).to_bytes()
-        assert json_file.decode() == json.dumps(quantization_details)
+        receive_status, received_data = shared_list[0]
+        send_message_status = shared_list[1]
+        assert send_message_status is True
+        assert receive_status == ServerStatus.DATA_READY
+        encoded_data = (json.dumps(quantization_details)).encode()
+        answer = (MessageType.QUANTIZATION, encoded_data)
+        assert client.parse_message(received_data[0]) == answer
 
     def test_download_output(self, serverandclient):
         """
@@ -502,6 +506,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         data = {'1': 'one', '2': 'two', '3': 'three'}
+        to_send = json.dumps(data).encode()
         server.accept_client(server.serversocket, None)
 
         def download_stats(client, shared_list):
@@ -527,16 +532,17 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         server.send_message(MessageType.OK)
         assert server.receive_confirmation()[0] is True
+
         status, message = server.wait_for_activity()[0]
         assert status == ServerStatus.DATA_READY
         message_type, message = server.parse_message(message[0])
-        if message_type == MessageType.STATS and message == b'':
-            to_send = json.dumps(data).encode()
-            output = server.send_message(MessageType.OK, to_send)
-            assert output is True
+        assert message_type == MessageType.STATS and message == b''
+        assert server.send_message(MessageType.OK, to_send) is True
         thread_send.join()
-        assert isinstance(shared_list[0], Measurements)
-        assert shared_list[0].data == data
+
+        downloaded_stats = shared_list[0]
+        assert isinstance(downloaded_stats, Measurements)
+        assert downloaded_stats.data == data
 
     def test_parse_message(self):
         """

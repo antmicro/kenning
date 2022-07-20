@@ -113,7 +113,7 @@ class KenningFlow:
 
     def _dfs(
             self,
-            matrix: list[list],
+            matrix: list[list[int]],
             visited: list[bool],
             node: int) -> bool:
         """
@@ -134,7 +134,7 @@ class KenningFlow:
         visited[node] = True
 
         for n, s in enumerate(matrix[node]):
-            if s != set():
+            if s:
                 if self._dfs(matrix, visited, n):
                     return True
 
@@ -156,14 +156,14 @@ class KenningFlow:
         -------
             bool : Whether graph has possible cycles
         """
-        matrix = [[set() for _ in self.modules] for _ in self.modules]
+        matrix = [[0 for _ in self.modules] for _ in self.modules]
 
         for n1, m1 in enumerate(self.modules):
             for n2, m2 in enumerate(self.modules):
                 if m1 in self.outputs and m2 in self.inputs:
                     s1 = self.outputs[m1].values()
                     s2 = self.inputs[m2].keys()
-                    matrix[n1][n2] = s1 & s2
+                    matrix[n1][n2] = len(s1 & s2)
 
         for node in range(len(self.modules)):
             if self._dfs(matrix, [False for _ in self.modules], node):

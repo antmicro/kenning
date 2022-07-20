@@ -135,7 +135,12 @@ class NetworkProtocol(RuntimeProtocol):
         )
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.serversocket.setblocking(False)
-        self.serversocket.bind((self.host, self.port))
+        try:
+            self.serversocket.bind((self.host, self.port))
+        except OSError as execinfo:
+            self.log.error(f'{execinfo}')
+            self.serversocket = None
+            return False
         self.serversocket.listen(1)
         self.selector.register(
             self.serversocket,

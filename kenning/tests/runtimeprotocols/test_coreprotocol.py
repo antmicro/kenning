@@ -43,16 +43,13 @@ class TestCoreRuntimeProtocol:
             A tuple containing initialized server and client objects
         """
         while True:
-            try:
-                server = self.initprotocol()
-                client = self.initprotocol()
-                server.initialize_server()
-                client.initialize_client()
-                break
-            except OSError:
-                client.disconnect()
-                server.disconnect()
+            server = self.initprotocol()
+            client = self.initprotocol()
+            if server.initialize_server() is False:
                 self.port += 1
+                continue
+            client.initialize_client()
+            break
         yield server, client
         client.disconnect()
         server.disconnect()

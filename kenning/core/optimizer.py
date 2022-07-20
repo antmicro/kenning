@@ -4,7 +4,7 @@ Provides an API for model compilers.
 
 import argparse
 from pathlib import Path
-from typing import Any, Callable, List, Dict, Tuple, Union
+from typing import Any, List, Dict, Tuple, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -34,8 +34,6 @@ class Optimizer(object):
             'required': True
         }
     }
-
-    actions: Dict[str, Callable]
 
     def __init__(
             self,

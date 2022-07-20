@@ -2,7 +2,7 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Callable, Tuple, List, Any, Dict
+from typing import Tuple, List, Any, Dict
 import argparse
 from pathlib import Path
 
@@ -58,8 +58,6 @@ class Dataset(object):
             'default': False
         }
     }
-
-    actions: Dict[str, Callable]
 
     def __init__(
             self,

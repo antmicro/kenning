@@ -1,9 +1,6 @@
 from typing import Any
 
 import jsonschema
-from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
 from kenning.utils import logger
 
 from kenning.utils.class_loader import load_class
@@ -79,15 +76,14 @@ class KenningFlow:
 
         for name, (type, cfg, action) in modules.items():
             try:
-                if issubclass(type, Dataset):
-                    self.modules[name] = (type.from_json(cfg), action)
+                self.modules[name] = (type.from_json(cfg), action)
 
-                # TODO remove this after removing dataset from arguments
-                elif (issubclass(type, ModelWrapper)
-                      or issubclass(type, Optimizer)):
-                    ds_name = self._find_input_module(name)
-                    self.modules[name] = (type.from_json(
-                        self.modules[ds_name][0], cfg), action)
+            # TODO remove this after removing dataset from arguments
+            except TypeError:
+                ds_name = self._find_input_module(name)
+                self.modules[name] = (type.from_json(
+                    self.modules[ds_name][0], cfg), action)
+
             except Exception as e:
                 self.log.error(f'Error loading submodule {name} : {str(e)}')
                 raise
@@ -105,13 +101,16 @@ class KenningFlow:
         -------
         str : Name of a module that provides input for given node
         """
-        return [
-            ds for ds in self.modules if
-            set(self.inputs[name]) &
-            set(self.outputs[ds].values()) != set()
-        ][0]
+        try:
+            return [
+                module_name for module_name in self.modules if
+                set(self.inputs[name]) &
+                set(self.outputs[module_name].values()) != set()
+            ][0]
+        except IndexError:
+            raise IndexError('Module input connector not found')
 
-    def _dfs(
+    def _depth_first_search(
             self,
             matrix: list[list[int]],
             visited: list[bool],
@@ -133,9 +132,9 @@ class KenningFlow:
 
         visited[node] = True
 
-        for n, s in enumerate(matrix[node]):
-            if s:
-                if self._dfs(matrix, visited, n):
+        for n, conn in enumerate(matrix[node]):
+            if conn:
+                if self._depth_first_search(matrix, visited, n):
                     return True
 
         visited[node] = False
@@ -166,7 +165,9 @@ class KenningFlow:
                     matrix[n1][n2] = len(s1 & s2)
 
         for node in range(len(self.modules)):
-            if self._dfs(matrix, [False for _ in self.modules], node):
+            if self._depth_first_search(
+                    matrix, [False for _ in self.modules],
+                    node):
                 return True
 
         return False
@@ -206,13 +207,10 @@ class KenningFlow:
                                 '.': {'type': 'string'}
                             }
                         },
-                        "properties": {
-                            "oneOf": [schema for schema in
-                                      [Dataset.form_parameterschema(),
-                                       ModelWrapper.form_parameterschema(),
-                                       Optimizer.form_parameterschema()]]
+                        'properties': {
+                            'type': 'object'
                         },
-                        "additionalProperties": False
+                        'additionalProperties': False
                     },
                     'required': ['type', 'parameters']
                 }
@@ -276,7 +274,7 @@ class KenningFlow:
 
     def process(self):
         """
-        Main process function. Repeatedly fires constructed graph in a loop.
+        Main process function. Repeatedly runs constructed graph in a loop.
         """
         current_outputs = dict()
         while True:

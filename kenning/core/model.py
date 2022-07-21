@@ -425,6 +425,7 @@ class ModelWrapper(object):
         # get_input_spec returns dictionary with multiple possible inputs
         # Currently we do not expect to support more than single input though
         # Hence we assume every model will have its working input at index 0
+        # TODO add support for multiple inputs / outputs
         default_name = list(self.get_input_spec()[0].items())[0][0]
         return {
             'out_infer': self.run_inference(

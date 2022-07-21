@@ -3,12 +3,9 @@ import json
 import sys
 from kenning.core.flow import KenningFlow
 from kenning.utils import logger
-from kenning.utils.class_loader import get_command
 
 
 def main(argv):
-    _ = get_command(argv)
-
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'jsoncfg',

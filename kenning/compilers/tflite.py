@@ -99,7 +99,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            target: str,
+            target: str = 'default',
             epochs: int = 10,
             batch_size: int = 32,
             optimizer: str = 'adam',

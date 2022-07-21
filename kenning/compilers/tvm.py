@@ -9,7 +9,6 @@ import tensorflow as tf
 import numpy as np
 from pathlib import Path
 from typing import Optional, Dict, Tuple
-import re
 import json
 
 from kenning.core.optimizer import Optimizer, CompilationError

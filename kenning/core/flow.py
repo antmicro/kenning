@@ -76,18 +76,18 @@ class KenningFlow:
                 Mapping of module names to their types, config and action
         """
 
-        for name, (type, cfg, action) in modules.items():
+        for name, (cls, cfg, action) in modules.items():
             try:
                 # TODO remove this after removing dataset from arguments
-                if (issubclass(type, ModelWrapper) or
-                        issubclass(type, Optimizer)):
+                if (issubclass(cls, ModelWrapper) or
+                        issubclass(cls, Optimizer)):
                     ds_name = self._find_input_module(name)
                     self.modules[name] = (
-                        type.from_json(self.modules[ds_name][0], cfg),
+                        cls.from_json(self.modules[ds_name][0], cfg),
                         action)
 
                 else:
-                    self.modules[name] = (type.from_json(cfg), action)
+                    self.modules[name] = (cls.from_json(cfg), action)
 
             except Exception as e:
                 self.log.error(f'Error loading submodule {name} : {str(e)}')

@@ -1,6 +1,8 @@
 from typing import Any
 
 import jsonschema
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
 from kenning.utils import logger
 
 from kenning.utils.class_loader import load_class
@@ -76,13 +78,16 @@ class KenningFlow:
 
         for name, (type, cfg, action) in modules.items():
             try:
-                self.modules[name] = (type.from_json(cfg), action)
+                # TODO remove this after removing dataset from arguments
+                if (issubclass(type, ModelWrapper) or
+                        issubclass(type, Optimizer)):
+                    ds_name = self._find_input_module(name)
+                    self.modules[name] = (
+                        type.from_json(self.modules[ds_name][0], cfg),
+                        action)
 
-            # TODO remove this after removing dataset from arguments
-            except TypeError:
-                ds_name = self._find_input_module(name)
-                self.modules[name] = (type.from_json(
-                    self.modules[ds_name][0], cfg), action)
+                else:
+                    self.modules[name] = (type.from_json(cfg), action)
 
             except Exception as e:
                 self.log.error(f'Error loading submodule {name} : {str(e)}')

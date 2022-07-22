@@ -6,6 +6,7 @@ import json
 import multiprocessing
 import pytest
 import socket
+import time
 import uuid
 
 
@@ -359,8 +360,6 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             shared_list : List
                 Shared list to append output of `upload_input()` method
             """
-            client.receive_confirmation()
-            client.send_message(MessageType.OK)
             output = client.upload_input(data)
             shared_list.append(output)
 
@@ -371,8 +370,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
                                          args=(client, data, shared_list))
 
         thread.start()
-        server.send_message(MessageType.OK)
-        assert server.receive_confirmation()[0] is True
+        time.sleep(0.1)
         status, message = server.wait_for_activity()[0]
         message_status, received_data = server.parse_message(message[0])
         server.send_message(MessageType.OK, b'')
@@ -522,8 +520,8 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             shared_list : List
                 Shared list to append downloaded statistics
             """
-            client.receive_confirmation()
             client.send_message(MessageType.OK)
+            client.receive_confirmation()
             output = client.download_statistics()
             shared_list.append(output)
 
@@ -532,9 +530,11 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         thread_send = multiprocessing.Process(target=download_stats, args=args)
         thread_send.start()
 
+        output = server.receive_confirmation()
+        assert output == (True, b'')
         server.send_message(MessageType.OK)
-        assert server.receive_confirmation()[0] is True
 
+        time.sleep(0.1)
         status, message = server.wait_for_activity()[0]
         assert status == ServerStatus.DATA_READY
         message_type, message = server.parse_message(message[0])
@@ -610,6 +610,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         def send_confirmation(client):
             client.send_message(MessageType.OK)
+            time.sleep(0.1)
             client.send_message(MessageType.OK)
 
         def send_reject_first(client):

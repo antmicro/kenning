@@ -25,8 +25,11 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             (tf.TensorSpec((1, 224, 224, 3), name='input_1'),)
         )
 
-    def get_input_spec(self):
-        return {'input_1': (1, 224, 224, 3)}, 'float32'
+    def get_io_specs(self):
+        return {
+            'input': [{'name': 'input_1', 'shape': (1, 224, 224, 3), 'dtype': 'float32'}],  # noqa: E501
+            'output': [{'name': 'out_layer', 'shape': (1, 37), 'dtype': 'float32'}]  # noqa: E501
+        }
 
     def prepare_model(self):
         if self.from_file:

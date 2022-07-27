@@ -392,13 +392,18 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def dump_spec(self, modelpath):
+    def dump_spec(self, modelpath: Path):
         """
         Saves input/output model specification to a file named
         `modelpath` + `.json`. This function uses `get_input_spec()`
         and `get_output_spec()` functions to get the properties.
 
         It is later used in optimization and compilation steps.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path that is used to store the model input/output specification
         """
         spec_path = modelpath.parent / (modelpath.name + '.json')
         spec_path = Path(spec_path)

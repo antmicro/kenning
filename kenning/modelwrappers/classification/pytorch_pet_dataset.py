@@ -74,8 +74,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             )
         return parameterschema
 
-    def get_input_spec(self):
-        return {'input.1': (1, 3, 224, 224)}, 'float32'
+    def get_io_specs(self):
+        return {
+            'input': [{'name': 'input.1', 'shape': (1, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
+            'output': [{'shape': (1, 37), 'dtype': 'float32'}]
+        }
 
     def preprocess_input(self, X):
         if np.ndim(X) == 3:

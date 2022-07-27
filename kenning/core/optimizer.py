@@ -4,7 +4,8 @@ Provides an API for model compilers.
 
 import argparse
 from pathlib import Path
-from typing import Any, List, Dict, Tuple, Union
+from typing import Any, List, Dict, Tuple, Optional, Union
+import json
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -204,8 +205,7 @@ class Optimizer(object):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype: str = 'float32'):
+            io_specs: Optional[dict[list[dict]]] = None):
         """
         Compiles the given model to a target format.
 
@@ -214,9 +214,8 @@ class Optimizer(object):
         The model can be compiled to a binary, a different framework or a
         different programming language.
 
-        The additional compilation parameters that are not derivable from
-        the input and output format should be passed in the constructor or via
-        argument parsing.
+        If `io_specs` are passed, then the function uses it during the
+        compilation, otherwise `load_spec` is used to fetch the specification.
 
         The compiled model is saved to compiled_model_path
 
@@ -224,10 +223,10 @@ class Optimizer(object):
         ----------
         inputmodelpath : Path
             Path to the input model
-        inputshapes : Dict[str, Tuple[int, ...]]
-            The dictionary with mapping (input name) -> (input shape)
-        dtype : str
-            The type of input tensors
+        io_specs : Optional[dict[list[dict]]]
+            Dictionary that has `input` and `output` keys that contain list
+            of dictionaries mapping (property name) -> (property value)
+            for the layers
         """
         raise NotImplementedError
 
@@ -295,13 +294,98 @@ class Optimizer(object):
             f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
         )
 
-    def get_inputdtype(self) -> str:
+    def get_spec_path(self, modelpath: Path) -> Path:
         """
-        Returns dtype of the input of the compiled model.
-        Should be set during compilation.
+        Returns input/output specification path for the model
+        saved in `modelpath`. It concatenates `modelpath` and `.json`.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path where the model is saved
+
+        Returns
+        -------
+        Path : Path to the input/output specification of a given model.
         """
-        assert hasattr(self, 'inputdtype')
-        return self.inputdtype
+        spec_path = modelpath.parent / (modelpath.name + '.json')
+        return Path(spec_path)
 
     def action_compile(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
+
+    def dump_spec(
+            self,
+            inputmodelpath: Path,
+            io_specs: Optional[dict[list[dict]]] = None):
+        """
+        Saves input/output model specification which is used during both
+        inference and compilation. This function uses specification of an
+        input model stored in `inputmodelpath` and updates its properties
+        according to `io_specs` which has `input` and `output` keys.
+        The input/output specification is a list of dictionaries mapping
+        properties names to their values. Legal properties names are `dtype`,
+        `quantized_dtype`, `shape`, `name`, `scale`, `zero_point`.
+
+        The order of the layers has to be preserved.
+
+        Parameters
+        ----------
+        inputmodelpath : Path
+            Path to the input model
+        io_specs : Optional[dict[list[dict]]]
+            Specification of the input/ouput layers
+        """
+        model_spec = self.load_spec(inputmodelpath)
+
+        if not model_spec:
+            model_spec = {'input': [], 'output': []}
+        if 'input' not in model_spec:
+            model_spec['input'] = []
+        if 'output' not in model_spec:
+            model_spec['output'] = []
+
+        # If there is no specification for the input/output we use
+        # the data that we got from the previous block
+        # If there is, then we update the previous block with the new
+        # specification
+        def update(old_spec, new_spec):
+            if not new_spec:
+                return old_spec
+
+            for n_spec, o_spec in zip(new_spec, old_spec):
+                for prop, val in n_spec.items():
+                    o_spec[prop] = val
+            return old_spec
+
+        model_spec['input'] = update(model_spec['input'], io_specs['input'])
+        model_spec['output'] = update(model_spec['output'], io_specs['output'])
+
+        with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
+            json.dump(
+                model_spec,
+                f
+            )
+
+    def load_spec(self, modelpath: Path) -> dict[list[dict]]:
+        """
+        Returns saved input and output specification of a model
+        saved in `modelpath`, if there is one.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the model which specification the function should read
+
+        Returns
+        -------
+        Optional[dict] : Specification of a model saved
+            in `modelpath` if there is one. None otherwise
+        """
+        spec_path = self.get_spec_path(modelpath)
+        if spec_path.exists():
+            with open(spec_path, 'r') as f:
+                spec = json.load(f)
+
+            return spec
+        return None

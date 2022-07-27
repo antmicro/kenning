@@ -120,8 +120,8 @@ def main(argv):
         if runtimecls else None
     )
 
-    modelpath = model.get_path()
-    inputspec, inputdtype = model.get_input_spec()
+    logger.set_verbosity(args.verbosity)
+    logger.get_logger()
 
     modelframeworktuple = model.get_framework_and_version()
 
@@ -145,6 +145,8 @@ def main(argv):
             'class_names': [val for val in dataset.get_class_names()]
         }
 
+    modelpath = model.get_path()
+
     prev_block = model
     if args.convert_to_onnx:
         modelpath = args.convert_to_onnx
@@ -160,15 +162,18 @@ def main(argv):
 
         if (format == 'onnx' and prev_block == model) and \
                 not args.convert_to_onnx:
-            modelpath = tempfile.NamedTemporaryFile().name
+            modelpath = Path(tempfile.NamedTemporaryFile().name)
             prev_block.save_to_onnx(modelpath)
 
+        prev_block.dump_spec(modelpath)
         next_block.set_input_type(format)
-        next_block.compile(modelpath, inputspec, inputdtype)
+        next_block.compile(modelpath)
 
         prev_block = next_block
         modelpath = prev_block.compiled_model_path
-        inputdtype = prev_block.get_inputdtype()
+
+    if not optimizers:
+        model.dump_spec(modelpath)
 
     if runtime:
         if protocol:

@@ -117,9 +117,6 @@ def main(argv):
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
-    modelpath = model.get_path()
-    inputspec, inputdtype = model.get_input_spec()
-
     modelframeworktuple = model.get_framework_and_version()
 
     if compiler:
@@ -153,6 +150,8 @@ def main(argv):
             'class_names': [val for val in dataset.get_class_names()]
         }
 
+    modelpath = model.get_path()
+
     if args.convert_to_onnx:
         modelpath = args.convert_to_onnx
         model.save_to_onnx(modelpath)
@@ -169,9 +168,12 @@ def main(argv):
             modelpath = Path(tempfile.NamedTemporaryFile().name)
             model.save_to_onnx(modelpath)
 
+        model.dump_spec(modelpath)
         compiler.set_input_type(format)
-        compiler.compile(modelpath, inputspec, inputdtype)
+        compiler.compile(modelpath)
         modelpath = compiler.compiled_model_path
+    else:
+        model.dump_spec(modelpath)
 
     if runtime:
         if protocol:

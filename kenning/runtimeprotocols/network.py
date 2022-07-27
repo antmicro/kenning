@@ -334,11 +334,11 @@ class NetworkProtocol(RuntimeProtocol):
             self.send_message(MessageType.MODEL, data)
             return self.receive_confirmation()[0]
 
-    def upload_quantization_details(self, path):
-        self.log.debug('Uploading quantization details')
+    def upload_io_specification(self, path):
+        self.log.debug('Uploading io specification')
         with open(path, 'rb') as detfile:
             data = detfile.read()
-            self.send_message(MessageType.QUANTIZATION, data)
+            self.send_message(MessageType.IOSPEC, data)
             return self.receive_confirmation()[0]
 
     def request_processing(self):

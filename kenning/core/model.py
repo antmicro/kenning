@@ -6,6 +6,7 @@ from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
+import json
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -373,21 +374,40 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def get_input_spec(self) -> Tuple[Dict[str, Tuple[int, ...]], str]:
+    def get_io_specs(self) -> dict[list[dict]]:
         """
-        Returns a dictionary with shapes for each input and dtype.
+        Returns a dictionary with `input` and `output` keys that map to
+        input and output specifications.
 
-        Method returns a dictionary, where key is the name of the input, and
-        the value is its shape in a form of tuple.
+        A single specification is a list of dictionaries with
+        names, shapes and dtypes for each layer. The order of the
+        dictionaries is assumed to be expected by the `ModelWrapper`
 
-        It is later used in optimization and compilation steps.
+        It is later used in optimization and compilation steps
 
         Returns
         -------
-        Tuple[Dict[str, Tuple[int, ...]], str] : A tuple with dictionary
-            mapping input name to input dimensions, and with the dtype name
+        dict[list[dict]] : Dictionary that conveys input and output
+            layers specification
         """
         raise NotImplementedError
+
+    def dump_spec(self, modelpath):
+        """
+        Saves input/output model specification to a file named
+        `modelpath` + `.json`. This function uses `get_input_spec()`
+        and `get_output_spec()` functions to get the properties.
+
+        It is later used in optimization and compilation steps.
+        """
+        spec_path = modelpath.parent / (modelpath.name + '.json')
+        spec_path = Path(spec_path)
+
+        with open(spec_path, 'w') as f:
+            json.dump(
+                self.get_io_specs(),
+                f
+            )
 
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
         """

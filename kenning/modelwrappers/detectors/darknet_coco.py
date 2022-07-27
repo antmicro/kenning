@@ -86,5 +86,8 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
         return result
 
+    def get_output_formats(self):
+        return ['darknet']
+
     def get_framework_and_version(self):
         return ('darknet', 'alexeyab')

@@ -55,6 +55,8 @@ class Runtime(object):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication  protocol
+        collect_performance_data : bool
+            Disable collection and processing of performance metrics
         """
         self.protocol = protocol
         self.shouldwork = True
@@ -63,11 +65,15 @@ class Runtime(object):
             MessageType.MODEL: self._prepare_model,
             MessageType.PROCESS: self.process_input,
             MessageType.OUTPUT: self._upload_output,
-            MessageType.STATS: self._upload_stats
+            MessageType.STATS: self._upload_stats,
+            MessageType.IOSPEC: self._prepare_io_specification
         }
         self.statsmeasurements = None
         self.log = get_logger()
         self.collect_performance_data = collect_performance_data
+
+        self.input_spec = None
+        self.output_spec = None
 
     @classmethod
     def _form_argparse(cls):
@@ -123,7 +129,10 @@ class Runtime(object):
         -------
         RuntimeProtocol : object of class RuntimeProtocol
         """
-        return cls(protocol, args.disable_performance_measurements)
+        return cls(
+            protocol,
+            args.disable_performance_measurements
+        )
 
     @classmethod
     def _form_parameterschema(cls):
@@ -312,7 +321,102 @@ class Runtime(object):
         """
         raise NotImplementedError
 
-    def process_input(self, input_data: bytes):
+    def _prepare_io_specification(
+            self,
+            input_data: Optional[bytes]) -> bool:
+        """
+        Wrapper for preparing input/output specification.
+
+        Parameters
+        ----------
+        input_data : Optional[bytes]
+            Input/output specification data or None, if the data
+            should be loaded from another source.
+
+        Returns
+        -------
+        bool : True if there is no data to send or if succeded
+        """
+        ret = self.prepare_io_specification(input_data)
+        if ret:
+            self.protocol.request_success()
+        else:
+            self.protocol.request_failure()
+        return ret
+
+    def read_io_specification(self, io_spec: Dict):
+        """
+        Parses the input/output specification and saves it
+        so that it can be used during the inference. `input_spec` and
+        `output_spec` are dictionaries mapping names to: `shape` and
+        if the model is quantized to `scale`, `zero_point`.
+
+        Parameters
+        ----------
+        io_spec : Dict
+            Specification of the input/output layers
+        """
+        self.input_spec = io_spec['input']
+        self.output_spec = io_spec['output']
+
+    def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
+        """
+        Receives the io_specification from the client in bytes and saves
+        it for later use.
+
+        ``input_data`` stores the io_specification representation in bytes.
+        If ``input_data`` is None, the io_specification is extracted
+        from another source (i.e. from existing file). If it can not be
+        found in this path, io_specification is not loaded.
+
+        The function returns True, as some Runtimes may not need
+        io_specification to run the inference.
+
+        Parameters
+        ----------
+        input_data : Optional[bytes]
+            io_specification or None, if it should be loaded
+            from another source.
+
+        Returns
+        -------
+        bool : True
+        """
+        if input_data is None:
+            path = self.get_io_spec_path(self.modelpath)
+            if not path.exists():
+                self.log.info("No Input/Output specification found")
+                return True
+
+            with open(path, 'rb') as f:
+                io_spec = json.load(f)
+        else:
+            io_spec = json.loads(input_data)
+
+        self.read_io_specification(io_spec)
+        self.log.info('Input/Output details loaded')
+        return True
+
+    def get_io_spec_path(
+            self,
+            modelpath: Path) -> Path:
+        """
+        Gets path to a input/output specification file which is
+        `modelpath` and `.json` concatenated.
+
+        Parameters
+        ----------
+        modelpath : Path
+            Path to the compiled model
+
+        Returns
+        -------
+        Path : Returns path to the specification
+        """
+        spec_path = modelpath.parent / (modelpath.name + '.json')
+        return Path(spec_path)
+
+    def process_input(self, input_data):
         """
         Processes received input and measures the performance quality.
 
@@ -418,12 +522,18 @@ class Runtime(object):
             Path to the file with a compiled model
 
         """
+        spec_path = self.get_io_spec_path(compiledmodelpath)
+        if spec_path.exists():
+            self.protocol.upload_io_specification(spec_path)
+        else:
+            self.log.info("No Input/Output details found")
         self.protocol.upload_model(compiledmodelpath)
 
     def prepare_local(self):
         """
         Runs initialization for the local inference.
         """
+        self.prepare_io_specification(None)
         self.prepare_model(None)
 
     @systemstatsmeasurements('full_run_statistics')

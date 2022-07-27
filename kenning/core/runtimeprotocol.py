@@ -68,7 +68,7 @@ class MessageType(Enum):
     PROCESS - message means the data is being processed
     OUTPUT - host requests the output from the target
     STATS - host requests the inference statistics from the target
-    QUANTIZATION - message contains quantization details to load
+    IOSPEC - message contains io specification to load
     """
 
     OK = 0
@@ -78,7 +78,7 @@ class MessageType(Enum):
     PROCESS = 4
     OUTPUT = 5
     STATS = 6
-    QUANTIZATION = 7
+    IOSPEC = 7
 
     def to_bytes(self, endianness: str = 'little') -> str:
         """
@@ -382,11 +382,11 @@ class RuntimeProtocol(object):
         """
         raise NotImplementedError
 
-    def upload_quantization_details(self, path: Path) -> bool:
+    def upload_io_specification(self, path: Path) -> bool:
         """
-        Uploads quantization details to the target device.
+        Uploads input/output specification to the target device.
 
-        This method takes quantization details in json format from given
+        This method takes the specification in a json format from the given
         Path and sends it to the target device.
 
         This method should receive the status of uploading the data to

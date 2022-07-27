@@ -15,7 +15,7 @@ import operator
 import shutil
 
 from kenning.core.dataset import Dataset
-from kenning.datasets.open_images_dataset import SegmObject
+from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.core.model import ModelWrapper
 
 

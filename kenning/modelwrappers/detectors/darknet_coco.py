@@ -9,7 +9,8 @@ import numpy as np
 from collections import defaultdict
 
 from kenning.core.model import ModelWrapper
-from kenning.datasets.open_images_dataset import DectObject, compute_iou, Dataset  # noqa: E501
+from kenning.core.dataset import Dataset
+from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_iou  # noqa: E501
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 import sys

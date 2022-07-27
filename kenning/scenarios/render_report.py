@@ -253,9 +253,10 @@ def detection_report(
     str : content of the report in RST format
     """
 
-    from kenning.datasets.open_images_dataset import compute_ap11
-    from kenning.datasets.open_images_dataset import get_recall_precision
-    from kenning.datasets.open_images_dataset import compute_map_per_threshold
+    from kenning.datasets.helpers.detection_and_segmentation import \
+        compute_ap11, \
+        get_recall_precision, \
+        compute_map_per_threshold
 
     log.info('Running detection report')
 

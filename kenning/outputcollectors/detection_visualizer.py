@@ -4,7 +4,7 @@ data on input images and display/save them.
 """
 
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.open_images_dataset import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DectObject
 import random
 import cv2
 import numpy as np

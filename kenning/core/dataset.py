@@ -413,7 +413,7 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def evaluate(self, predictions: List, truth: List) -> 'Measurements':
+    def evaluate(self, predictions: list, truth: list) -> 'Measurements':
         """
         Evaluates the model based on the predictions.
 
@@ -437,7 +437,7 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def get_input_mean_std(self) -> Tuple[Any, Any]:
+    def get_input_mean_std(self) -> tuple[Any, Any]:
         """
         Returns mean and std values for input tensors.
 
@@ -452,7 +452,7 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def get_class_names(self) -> List[str]:
+    def get_class_names(self) -> list[str]:
         """
         Returns list of class names in order of their IDs.
 

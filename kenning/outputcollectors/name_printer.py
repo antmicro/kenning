@@ -3,7 +3,7 @@ A small, very basic OutputCollector-derived class used to test
 handling of multiple OutputCollectors in inference_runner scenario
 """
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.open_images_dataset import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DectObject
 from typing import Any, Union
 import numpy as np
 from pathlib import Path

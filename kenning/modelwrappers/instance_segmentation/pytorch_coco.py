@@ -11,7 +11,7 @@ import torch
 from torchvision import models
 
 from kenning.core.dataset import Dataset
-from kenning.datasets.open_images_dataset import SegmObject
+from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
 from kenning.resources import coco_instance_segmentation

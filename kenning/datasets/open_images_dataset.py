@@ -30,22 +30,15 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 
-from kenning.core.dataset import Dataset
-from kenning.core.measurements import Measurements
-from kenning.utils.logger import download_url, get_logger
 from kenning.resources import coco_detection
-
-from matplotlib import pyplot as plt
-from matplotlib import patches as patches
+from kenning.utils.logger import download_url
 
 import zipfile
-
-from typing import Union
 
 from kenning.datasets.helpers.detection_and_segmentation import \
         DectObject, \
         SegmObject, \
-        compute_iou
+        ObjectDetectionSegmentationDataset
 
 BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
@@ -190,7 +183,7 @@ def download_instance_segmentation_zip_file(
         zip_ref.extractall(zipdir.parent)
 
 
-class OpenImagesDatasetV6(Dataset):
+class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
     """
     The Open Images Dataset V6
 
@@ -211,41 +204,17 @@ class OpenImagesDatasetV6(Dataset):
     """
 
     arguments_structure = {
-        'task': {
-            'argparse_name': '--task',
-            'description': 'he task type',
-            'default': 'object_detection',
-            'enum': ['object_detection', 'instance_segmentation']
-        },
         'classes': {
             'argparse_name': '--classes',
             'description': 'File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
             'type': str,
             'default': 'coco'
         },
-        'download_num_bboxes_per_class': {
-            'argparse_name': '--download-num-bboxes-per-class',
-            'description': 'Number of images per object class (this is a preferred value, there may be less or more values)',  # noqa: E501
-            'type': int,
-            'default': 200
-        },
         'download_annotations_type': {
             'argparse_name': '--download-annotations-type',
             'description': 'Type of annotations to extract the images from',
             'default': 'validation',
             'enum': ['train', 'validation', 'test']
-        },
-        'image_memory_layout': {
-            'argparse_name': '--image-memory-layout',
-            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            'default': 'NCHW',
-            'enum': ['NHWC', 'NCHW']
-        },
-        'show_on_eval': {
-            'argparse_name': '--show-predictions-on-eval',
-            'description': 'Show predictions during evaluation',
-            'type': bool,
-            'default': False
         },
         'crop_input_to_bboxes': {
             'argparse_name': '--crop-samples-to-bboxes',
@@ -282,7 +251,6 @@ class OpenImagesDatasetV6(Dataset):
             crop_input_margin_size: float = 0.1,
             download_seed: int = 12345):
         assert image_memory_layout in ['NHWC', 'NCHW']
-        self.task = task
         self.classes = classes
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
         if classes == 'coco':
@@ -292,17 +260,22 @@ class OpenImagesDatasetV6(Dataset):
             self.classes_path = Path(classes)
         self.download_annotations_type = download_annotations_type
         self.classmap = {}
-        self.image_memory_layout = image_memory_layout
         self.image_width = 416
         self.image_height = 416
         self.classnames = []
-        self.show_on_eval = show_on_eval
         self.crop_input_to_bboxes = crop_input_to_bboxes
         self.crop_input_margin_size = crop_input_margin_size
         if self.crop_input_to_bboxes:
             self.crop_dict = {}
         self.download_seed = download_seed
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            task,
+            image_memory_layout,
+            show_on_eval
+        )
 
     @classmethod
     def from_argparse(cls, args):
@@ -539,33 +512,6 @@ class OpenImagesDatasetV6(Dataset):
             result.append(npimg)
         return result
 
-    def compute_mask_iou(self, mask1: np.array, mask2: np.array) -> float:
-        """
-        Computes IoU between two masks
-
-        Parameters
-        ----------
-        mask1 : np.array
-            First mask
-        mask2 : np.array
-            Second mask
-
-        Returns
-        -------
-        float : IoU value
-        """
-
-        mask_i = np.logical_and(mask1, mask2)
-        mask_u = np.logical_or(mask1, mask2)
-
-        mask_u_nonzero = np.count_nonzero(mask_u)
-        # in empty masks union is zero
-        if mask_u_nonzero != 0:
-            align = np.count_nonzero(mask_i) / mask_u_nonzero
-        else:
-            align = 0.0
-        return align
-
     def prepare_instance_segmentation_output_samples(self, samples):
         """
         Loads instance segmentation masks.
@@ -616,150 +562,6 @@ class OpenImagesDatasetV6(Dataset):
             return self.prepare_instance_segmentation_output_samples(samples)
         else:
             return samples
-
-    def get_hashable(
-            self,
-            unhashable: Union['DectObject', 'SegmObject']
-            ) -> Union['DectObject', 'SegmObject']:
-
-        """
-        Returns hashable versions of objects depending on self.task
-
-        Parameters
-        ----------
-        unhashable : Union['DectObject', 'SegmObject']
-            Object to be made hashable
-
-        Returns
-        -------
-        Union['DectObject', 'SegmObject'] : the hashable object
-        """
-
-        if self.task == 'object_detection':
-            hashable = unhashable
-        elif self.task == 'instance_segmentation':
-            hashable = SegmObject(
-                    clsname=unhashable.clsname,
-                    maskpath=unhashable.maskpath,
-                    xmin=unhashable.xmin,
-                    ymin=unhashable.ymax,
-                    xmax=unhashable.xmax,
-                    ymax=unhashable.ymax,
-                    mask=None,
-                    score=1.0
-                )
-        return hashable
-
-    def evaluate(self, predictions, truth):
-        MIN_IOU = 0.5
-        measurements = Measurements()
-
-        # adding measurements:
-        # - cls -> conf / tp-fp / iou
-
-        for pred, groundtruth in zip(predictions, truth):
-            used = set()
-            for p in pred:
-                foundgt = False
-                maxiou = 0
-                for gt in groundtruth:
-                    if p.clsname == gt.clsname:
-                        if self.task == 'object_detection':
-                            iou = compute_iou(p, gt)
-                        elif self.task == 'instance_segmentation':
-                            iou = self.compute_mask_iou(p.mask, gt.mask)
-                        maxiou = iou if iou > maxiou else maxiou
-                        if iou > MIN_IOU and self.get_hashable(gt) not in used:
-                            used.add(self.get_hashable(gt))
-                            foundgt = True
-                            measurements.add_measurement(
-                                f'eval_det/{p.clsname}',
-                                [[
-                                    float(p.score),
-                                    float(1),
-                                    float(iou)
-                                ]],
-                                lambda: list()
-                            )
-                            break
-                if not foundgt:
-                    measurements.add_measurement(
-                        f'eval_det/{p.clsname}',
-                        [[
-                            float(p.score),
-                            float(0),
-                            float(maxiou)
-                        ]],
-                        lambda: list()
-                    )
-            for gt in groundtruth:
-                measurements.accumulate(
-                    f'eval_gtcount/{gt.clsname}',
-                    1,
-                    lambda: 0
-                )
-
-        if self.show_on_eval and self.task == 'object_detection':
-            log = get_logger()
-            log.info(f'\ntruth\n{truth}')
-            log.info(f'\npredictions\n{predictions}')
-            for pred, gt in zip(predictions, truth):
-                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
-                fig, ax = plt.subplots()
-                ax.imshow(img.transpose(1, 2, 0))
-                for bbox in pred:
-                    rect = patches.Rectangle(
-                        (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                        (bbox.xmax - bbox.xmin) * img.shape[1],
-                        (bbox.ymax - bbox.ymin) * img.shape[2],
-                        linewidth=3,
-                        edgecolor='r',
-                        facecolor='none'
-                    )
-                    ax.add_patch(rect)
-                for bbox in gt:
-                    rect = patches.Rectangle(
-                        (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                        (bbox.xmax - bbox.xmin) * img.shape[1],
-                        (bbox.ymax - bbox.ymin) * img.shape[2],
-                        linewidth=2,
-                        edgecolor='g',
-                        facecolor='none'
-                    )
-                    ax.add_patch(rect)
-                plt.show()
-        # if show_on_eval then use cv2 to apply truth and prediction masks
-        # on different color channels
-        elif self.show_on_eval and self.task == 'instance_segmentation':
-            log = get_logger()
-            log.info(f'\ntruth\n{truth}')
-            log.info(f'\npredictions\n{predictions}')
-            evaldir = self.root / 'eval'
-            evaldir.mkdir(parents=True, exist_ok=True)
-            for pred, gt in zip(predictions, truth):
-                img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
-                if self.image_memory_layout == 'NCHW':
-                    img = img.transpose(1, 2, 0)
-                int_img = np.multiply(img, 255).astype('uint8')
-                int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
-                int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
-                for i in gt:
-                    mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
-                    mask_img = mask_img.astype('float32') / 255.0
-                    mask_img *= np.array([0.1, 0.1, 0.5])
-                    mask_img = np.multiply(mask_img, 255).astype('uint8')
-                    int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
-                for i in pred:
-                    mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
-                    mask_img = mask_img.astype('float32') / 255.0
-                    mask_img *= np.array([0.1, 0.5, 0.1])
-                    mask_img = np.multiply(mask_img, 255).astype('uint8')
-                    int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
-                cv2.imwrite(
-                    str(evaldir / self.dataX[self._dataindex - 1])+".jpg",
-                    int_img
-                )
-        return measurements
 
     def get_class_names(self):
         return self.classnames

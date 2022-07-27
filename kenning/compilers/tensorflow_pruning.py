@@ -3,7 +3,7 @@ Wrapper for TensorFlowPruning optimizer.
 """
 import tensorflow as tf
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Optional
 import tensorflow_model_optimization as tfmot
 
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
@@ -106,11 +106,9 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype: str = 'float32'):
+            io_specs: Optional[dict[list[dict]]] = None):
 
         model = self.inputtypes[self.inputtype](inputmodelpath)
-        self.inputdtype = dtype
 
         pruning_params = {
             'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(
@@ -149,3 +147,5 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             include_optimizer=False,
             save_format='h5'
         )
+
+        self.dump_spec(inputmodelpath, input_spec, output_spec)

@@ -7,20 +7,20 @@ import tensorflow as tf
 import tf2onnx
 import torch
 import onnx
+from typing import Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer, CompilationError
 
 
-def kerasconversion(model_path, input_shapes, dtype):
+def kerasconversion(model_path, input_spec, output_spec):
     model = tf.keras.models.load_model(model_path)
 
     input_spec = [tf.TensorSpec(
-        input_shapes[list(input_shapes.keys())[0]],
-        dtype,
-        name=list(input_shapes.keys())[0]
-    )]
-
+        spec['shape'],
+        spec['dtype'],
+        name=spec['name']
+    ) for spec in input_spec]
     modelproto, _ = tf2onnx.convert.from_keras(
         model,
         input_signature=input_spec
@@ -29,7 +29,7 @@ def kerasconversion(model_path, input_shapes, dtype):
     return modelproto
 
 
-def torchconversion(model_path, input_shapes, dtype):
+def torchconversion(model_path, input_spec, output_spec):
     dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = torch.load(model_path, map_location=dev)
 
@@ -38,10 +38,11 @@ def torchconversion(model_path, input_shapes, dtype):
             f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}'  # noqa: E501
         )
 
-    input = torch.randn(
-        input_shapes[list(input_shapes.keys())[0]],
+    input = [torch.randn(
+        spec['shape'],
         device=dev
-    )
+    ) for spec in input_spec]
+
     traced_module = torch.jit.trace(model, input)
 
     import io
@@ -51,16 +52,11 @@ def torchconversion(model_path, input_shapes, dtype):
     return onnx_model
 
 
-def tfliteconversion(model_path, input_shapes, dtype):
-    interpreter = tf.lite.Interpreter(model_path=str(model_path))
-
-    input_details = interpreter.get_input_details()
-    output_details = interpreter.get_output_details()
-
+def tfliteconversion(model_path, input_spec, output_spec):
     modelproto, _ = tf2onnx.convert.from_tflite(
         str(model_path),
-        input_names=[input['name'] for input in input_details],
-        output_names=[output['name'] for output in output_details]
+        input_names=[input['name'] for input in input_spec],
+        output_names=[output['name'] for output in output_spec]
     )
 
     return modelproto
@@ -122,18 +118,31 @@ class ONNXCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes,
-            dtype: str = 'float32'):
-        self.inputdtype = dtype
+            io_specs: Optional[dict[list[dict]]] = None):
+
+        if io_specs:
+            input_spec = io_specs['input']
+            output_spec = io_specs['output']
+        else:
+            spec = self.load_spec(inputmodelpath)
+            input_spec = spec['input']
+            output_spec = spec['output']
 
         model = self.inputtypes[self.inputtype](
             inputmodelpath,
-            inputshapes,
-            dtype
+            input_spec,
+            output_spec
         )
 
         onnx.save(model, self.compiled_model_path)
 
+        for spec, input in zip(input_spec, model.graph.input):
+            spec['name'] = input.name
+
+        for spec, output in zip(output_spec, model.graph.output):
+            spec['name'] = output.name
+
+        self.dump_spec(inputmodelpath, input_spec, output_spec)
         return 0
 
     def get_framework_and_version(self):

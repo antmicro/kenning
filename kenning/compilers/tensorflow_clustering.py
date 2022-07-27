@@ -3,7 +3,7 @@ Wrapper for TensorFlowClustering optimizer.
 """
 import tensorflow as tf
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Optional
 import tensorflow_model_optimization as tfmot
 
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
@@ -126,10 +126,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype: str = 'float32'):
+            io_specs: Optional[dict[list[dict]]] = None):
         model = self.inputtypes[self.inputtype](inputmodelpath)
-        self.inputdtype = dtype
 
         clustering_params = {
             'number_of_clusters': self.clusters_number,
@@ -161,10 +159,12 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             clustered_model = self.train_model(clustered_model)
 
         optimized_model = tfmot.clustering.keras.strip_clustering(
-           clustered_model
+            clustered_model
         )
         optimized_model.save(
             self.compiled_model_path,
             include_optimizer=False,
             save_format='h5'
         )
+
+        self.dump_spec(inputmodelpath, input_spec, output_spec)

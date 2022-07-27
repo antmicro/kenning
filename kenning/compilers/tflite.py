@@ -7,7 +7,7 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
-from typing import Dict, Tuple
+from typing import Optional
 import tensorflow_model_optimization as tfmot
 
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
@@ -187,8 +187,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype: str = 'float32'):
+            io_specs: Optional[dict[list[dict]]] = None):
 
         if self.quantization_aware_training:
             assert self.inputtype == 'keras'
@@ -216,8 +215,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
         else:
             converter = self.inputtypes[self.inputtype](inputmodelpath)
 
-        self.inputdtype = self.inferenceinputtype
-
         if self.target in ['int8', 'edgetpu']:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
             converter.target_spec.supported_ops = [
@@ -242,6 +239,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             converter.representative_dataset = generator
 
         tflite_model = converter.convert()
+
+        # TODO: Save renamed and possibly quantized metadata about the layers
 
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)

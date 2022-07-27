@@ -5,11 +5,8 @@ Wrapper for TVM deep learning compiler.
 import tvm
 import onnx
 import tvm.relay as relay
-import tensorflow as tf
-import numpy as np
 from pathlib import Path
-from typing import Optional, Dict, Tuple
-import json
+from typing import Optional
 
 from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
@@ -20,7 +17,8 @@ def onnxconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtypes):
+    dtype = [dtypes.values()][0]
     onnxmodel = onnx.load(modelpath)
     return relay.frontend.from_onnx(
         onnxmodel,
@@ -34,7 +32,7 @@ def kerasconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtypes):
     import tensorflow as tf
     tf.keras.backend.clear_session()
     model = tf.keras.models.load_model(str(modelpath))
@@ -54,7 +52,7 @@ def torchconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtypes):
     import torch
     import numpy as np
 
@@ -144,7 +142,8 @@ def darknetconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtypes):
+    dtype = [dtypes.items()][0]
     from tvm.relay.testing.darknet import __darknetffi__
     if not compiler.libdarknetpath:
         log = get_logger()
@@ -161,7 +160,7 @@ def darknetconversion(
     return relay.frontend.from_darknet(
         net,
         dtype=dtype,
-        shape=input_shapes['data']
+        shape=input_shapes
     )
 
 
@@ -169,7 +168,7 @@ def tfliteconversion(
         compiler: 'TVMCompiler',
         modelpath: Path,
         input_shapes,
-        dtype='float32'):
+        dtypes):
 
     with open(modelpath, 'rb') as f:
         tflite_model_buf = f.read()
@@ -183,8 +182,8 @@ def tfliteconversion(
 
     return relay.frontend.from_tflite(
         tflite_model,
-        dtype_dict=input_shapes,
-        shape_dict={"input": dtype}
+        shape_dict=input_shapes,
+        dtype_dict=dtypes
     )
 
 
@@ -243,12 +242,6 @@ class TVMCompiler(Optimizer):
             'default': 'default',
             'enum': ['default', 'dict_to_tuple']
         },
-        'quantization_details_path': {
-            'description': 'Path where to save quantization details in json',
-            'type': Path,
-            'required': False,
-            'nullable': True
-        },
         'conv2d_data_layout': {
             'description': 'Configures the I/O layout for the CONV2D operations',  # noqa: E501
             'type': str,
@@ -272,7 +265,6 @@ class TVMCompiler(Optimizer):
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,
             conversion_func: str = 'default',
-            quantization_details_path: Optional[Path] = None,
             conv2d_data_layout: str = '',
             conv2d_kernel_layout: str = ''):
         """
@@ -295,9 +287,6 @@ class TVMCompiler(Optimizer):
         libdarknetpath : str
             path to the libdarknet.so library, used only during conversion
             of darknet model
-        quantization_details_path : Optional[Path]
-            Path where the quantization details are saved. It is used by
-            the runtimes later to quantize input and output during inference.
         conv2d_data_layout : str
             Data layout to convert the model to.
             Empty if no conversion is necessary.
@@ -320,7 +309,6 @@ class TVMCompiler(Optimizer):
         self.libdarknetpath = libdarknetpath
         self.use_tvm_vm = use_tvm_vm
         self.conversion_func = conversion_func
-        self.quantization_details_path = quantization_details_path
         self.set_input_type(modelframework)
         self.conv2d_data_layout = conv2d_data_layout
         self.conv2d_kernel_layout = conv2d_kernel_layout
@@ -338,7 +326,6 @@ class TVMCompiler(Optimizer):
             args.libdarknet_path,
             args.compile_use_vm,
             args.output_conversion_function,
-            args.quantization_details_path,
             args.conv2d_data_layout,
             args.conv2d_kernel_layout
         )
@@ -399,60 +386,27 @@ class TVMCompiler(Optimizer):
                 )
             lib.export_library(outputpath)
 
-    def preprocess_tflite(self, inputmodelpath: Path):
-        interpreter = tf.lite.Interpreter(model_path=str(inputmodelpath))
-
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
-
-        if (all([det['dtype'] == np.float32 for det in input_details]) and
-                all([det['dtype'] == np.float32 for det in output_details])):
-            return
-
-        if self.quantization_details_path:
-            path = self.quantization_details_path
-        else:
-            path = self.compiled_model_path.with_suffix('.quantparams')
-
-        class NumpyEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, np.ndarray):
-                    return obj.tolist()
-                if obj == np.float32:
-                    return 'float32'
-                if obj == np.int8:
-                    return 'int8'
-                if obj == np.uint8:
-                    return 'uint8'
-                return json.JSONEncoder.default(self, obj)
-
-        with open(path, 'w') as f:
-            json.dump(
-                [
-                    input_details,
-                    output_details
-                ],
-                f,
-                cls=NumpyEncoder
-            )
-
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype='float32'):
-        self.inputdtype = dtype
+            io_specs: Optional[dict[list[dict]]] = None):
 
-        if self.inputtype == 'tflite':
-            self.preprocess_tflite(inputmodelpath)
+        if io_specs:
+            input_spec = io_specs['input']
+        else:
+            input_spec = self.load_spec(inputmodelpath)['input']
+
+        inputshapes = {spec['name']: spec['shape'] for spec in input_spec}
+        dtypes = {spec['name']: spec['dtype'] for spec in input_spec}
 
         mod, params = self.inputtypes[self.inputtype](
             self,
             inputmodelpath,
             inputshapes,
-            dtype
+            dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path)
+        self.dump_spec(inputmodelpath, input_spec, output_spec)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

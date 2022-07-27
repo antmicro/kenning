@@ -2,8 +2,8 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import Dict, Tuple, List, Optional
-from iree.compiler import tools as ireecmp
+from typing import List, Optional
+# from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
 
@@ -190,28 +190,29 @@ class IREECompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            inputshapes: Dict[str, Tuple[int, ...]],
-            dtype: str = 'float32'):
+            io_specs: Optional[dict[list[dict]]] = None):
 
-        imported_model = self.model_load(inputmodelpath, inputshapes, dtype)
-        compiled_buffer = ireecmp.compile_str(
-            imported_model,
-            input_type=self.compiler_input_type,
-            extra_args=self.compiler_args,
-            target_backends=[self.backend]
-        )
+        # TODO: adapt it to the new serialization pipeline
 
-        # When compiling TFLite model, IREE does not provide information
-        # regarding input signature from Python API. Manual passing of input
-        # shapes and dtype to the runtime is required.
-        shapes_list = input_shapes_dict_to_list(inputshapes)
-        model_dict = {
-            'model': compiled_buffer,
-            'shapes': shapes_list,
-            'dtype': dtype
-        }
-        with open(self.compiled_model_path, "wb") as f:
-            f.write(str(model_dict).encode("utf-8"))
+        # imported_model = self.model_load(inputmodelpath, inputshapes, dtype)
+        # compiled_buffer = ireecmp.compile_str(
+        #     imported_model,
+        #     input_type=self.compiler_input_type,
+        #     extra_args=self.compiler_args,
+        #     target_backends=[self.backend]
+        # )
+
+        # # When compiling TFLite model, IREE does not provide information
+        # # regarding input signature from Python API. Manual passing of input
+        # # shapes and dtype to the runtime is required.
+        # shapes_list = input_shapes_dict_to_list(inputshapes)
+        # model_dict = {
+        #     'model': compiled_buffer,
+        #     'shapes': shapes_list,
+        #     'dtype': dtype
+        # }
+        # with open(self.compiled_model_path, "wb") as f:
+        #     f.write(str(model_dict).encode("utf-8"))
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

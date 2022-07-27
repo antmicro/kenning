@@ -63,7 +63,7 @@ class TFLiteRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            Communication protocol
+            The implementation of the host-target communication  protocol
         modelpath : Path
             Path for the model file.
         inputdtype : List[str]
@@ -72,6 +72,8 @@ class TFLiteRuntime(Runtime):
             Type of the output data
         delegates : List
             List of TFLite acceleration delegate libraries
+        collect_performance_data : bool
+            Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
         self.signature = None

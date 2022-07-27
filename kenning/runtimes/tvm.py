@@ -2,7 +2,7 @@
 Runtime implementation for TVM-compiled models.
 """
 
-from typing import Optional, List
+from typing import Optional
 from pathlib import Path
 import numpy as np
 from base64 import b64encode
@@ -42,13 +42,6 @@ class TVMRuntime(Runtime):
             'type': int,
             'default': 0
         },
-        'inputdtype': {
-            'argparse_name': '--input-dtype',
-            'description': 'Type of input tensor elements',
-            'type': str,
-            'default': 'float32',
-            'is_list': True
-        },
         'use_tvm_vm': {
             'argparse_name': '--runtime-use-vm',
             'description': 'At runtime use the TVM Relay VirtualMachine',
@@ -60,12 +53,6 @@ class TVMRuntime(Runtime):
             'description': 'Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
             'type': bool,
             'default': False
-        },
-        'io_details_path': {
-            'description': "Path where the quantization details are saved in json format. By default <save_model_path>.quantparams is checked",  # noqa: E501
-            'type': Path,
-            'required': False,
-            'nullable': True
         }
     }
 
@@ -75,10 +62,8 @@ class TVMRuntime(Runtime):
             modelpath: Path,
             contextname: str = 'cpu',
             contextid: int = 0,
-            inputdtype: List[str] = ('float32',),
             use_tvm_vm: bool = False,
             use_json_out: bool = False,
-            io_details_path: Optional[Path] = None,
             collect_performance_data: bool = True):
         """
         Constructs TVM runtime.
@@ -86,27 +71,24 @@ class TVMRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            Communication protocol.
+            The implementation of the host-target communication  protocol
         modelpath : Path
             Path for the model file.
         contextname : str
             Name of the runtime context on the target device
         contextid : int
             ID of the runtime context device
-        inputdtype : str
-            Type of the input data
-        io_details_path : Optional[Path]
-            Path for the quantization details file generated
-            by tflite optimizer. Can be None.
+        use_tvm_vm : bool
+            Use the TVM Relay VirtualMachine
+        use_json_out : bool
+            Encode outputs of models into a JSONfile with
+            base64-encoded arrays
+        collect_performance_data : bool
+            Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
         self.contextname = contextname
         self.contextid = contextid
-
-        # TODO: Adapt TVMRuntime for multiple inputs
-        self.inputdtype = inputdtype[0]
-        self.model_inputdtype = inputdtype[0]
-
         self.input_details = None
         self.output_details = None
         self.module = None
@@ -115,10 +97,10 @@ class TVMRuntime(Runtime):
         self.model = None
         self.use_tvm_vm = use_tvm_vm
         self.use_json_out = use_json_out
-        self.io_details_path = io_details_path
-        super().__init__(protocol, collect_performance_data)
-        self.callbacks[MessageType.QUANTIZATION] = \
-            self._prepare_quantization_details
+        super().__init__(
+            protocol,
+            collect_performance_data
+        )
 
     @classmethod
     def from_argparse(cls, protocol, args):
@@ -127,102 +109,10 @@ class TVMRuntime(Runtime):
             args.save_model_path,
             args.target_device_context,
             args.target_device_context_id,
-            args.input_dtype,
             args.runtime_use_vm,
             args.use_json_at_output,
-            args.io_details_path
+            args.disable_performance_measurements
         )
-
-    def upload_essentials(self, compiledmodelpath):
-        super().upload_essentials(compiledmodelpath)
-        self.upload_quantization_details(compiledmodelpath)
-
-    def prepare_local(self):
-        super().prepare_local()
-        self.prepare_quantization_details(None)
-
-    def get_quantization_details_path(
-            self,
-            modelpath: Path) -> Path:
-        """
-        Gets path to a preferred quantization details file.
-
-        If ``self.io_details_path`` is not specified, then the preferred path
-        is ``self.modelpath`` with '.quantparams' suffix.
-
-        Parameters
-        ----------
-        modelpath : Path
-            Path to the compiled model
-
-        Returns
-        -------
-        Path : Returns preferred path to a quantization details file
-        """
-        if self.io_details_path:
-            path = self.io_details_path
-        else:
-            name = modelpath.stem.split('.')[0]
-            parent = modelpath.parent
-            path = parent.joinpath(name).with_suffix('.quantparams')
-
-        return path
-
-    def _prepare_quantization_details(
-            self,
-            input_data: Optional[bytes]) -> bool:
-        """
-        Wrapper for preparing quantization details.
-
-        Parameters
-        ----------
-        input_data : Optional[bytes]
-            Quantization details data or None, if the data should be loaded
-            from another source.
-
-        Returns
-        -------
-        bool : True if there is no data to send or if succeded
-        """
-        ret = self.prepare_quantization_details(input_data)
-        if ret:
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
-        return ret
-
-    def prepare_quantization_details(self, input_data):
-        if input_data:
-            self.input_details, self.output_details = json.loads(input_data)
-        else:
-            path = self.get_quantization_details_path(self.modelpath)
-
-            if not path.exists():
-                if self.io_details_path:
-                    self.log.info(
-                        f'Could not find specified quantization details \
-                        file {path}'
-                    )
-                    return False
-
-                # The path was not specified by the user
-                # and there is no file in the preferred path
-                return True
-
-            with open(path, 'rb') as f:
-                self.input_details, self.output_details = json.load(f)
-
-        self.input_details = self.input_details[0]
-        self.output_details = self.output_details[0]
-        self.model_inputdtype = self.input_details['dtype']
-        self.log.info('Quantization details loaded')
-        return True
-
-    def upload_quantization_details(self, compiledmodelpath):
-        path = self.get_quantization_details_path(compiledmodelpath)
-
-        if path.exists():
-            self.protocol.upload_quantization_details(path)
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')

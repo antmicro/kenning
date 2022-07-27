@@ -43,16 +43,22 @@ class ONNXRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            Communication protocol
+            The implementation of the host-target communication  protocol
+        modelpath : Path
+            Path for the model file.
         execution_providers : List[str]
             List of execution providers ordered by priority
         modelpath : Path
             Path for the model file.
+        collect_performance_data : bool
+            Disable collection and processing of performance metrics
         """
-
         self.modelpath = modelpath
         self.execution_providers = execution_providers
-        super().__init__(protocol, collect_performance_data)
+        super().__init__(
+            protocol,
+            collect_performance_data
+        )
 
     @classmethod
     def from_argparse(cls, protocol, args):

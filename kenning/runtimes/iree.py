@@ -37,7 +37,7 @@ class IREERuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            modelpath: str,
+            modelpath: Path,
             driver: str,
             collect_performance_data: bool = True):
         """
@@ -46,15 +46,20 @@ class IREERuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            Communication protocol
+            The implementation of the host-target communication protocol
         modelpath : Path
             Path for the model file.
         driver : str
             Name of the deployment target on the device
+        collect_performance_data : bool
+            Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
         self.driver = driver
-        super().__init__(protocol, collect_performance_data)
+        super().__init__(
+            protocol,
+            collect_performance_data
+        )
 
     @classmethod
     def from_argparse(cls, protocol, args):

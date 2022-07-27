@@ -2,7 +2,6 @@
 Runtime implementation for TVM-compiled models.
 """
 
-from typing import Optional
 from pathlib import Path
 import numpy as np
 from base64 import b64encode
@@ -14,7 +13,6 @@ from tvm.runtime.vm import VirtualMachine, Executable
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.core.runtimeprotocol import MessageType
 
 
 class TVMRuntime(Runtime):
@@ -89,8 +87,6 @@ class TVMRuntime(Runtime):
         self.modelpath = modelpath
         self.contextname = contextname
         self.contextid = contextid
-        self.input_details = None
-        self.output_details = None
         self.module = None
         self.func = None
         self.ctx = None
@@ -116,25 +112,35 @@ class TVMRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        
+        # TODO: Adjust it to the new format of input_spec
+        input = {}
 
-        input_data = np.frombuffer(input_data, dtype=self.inputdtype)
-        if self.input_details:
-            if self.model_inputdtype != 'float32':
-                scale, zero_point = self.input_details['quantization']
-                input_data = input_data / scale + zero_point
+        dt = np.dtype(self.inputdtype)
+        for name, properties in self.input_spec.items():
+            shape = properties['shape']
+            siz = np.abs(np.prod(shape) * dt.itemsize)
+            inp = np.frombuffer(input_data[:siz], dtype=dt)
+            inp = inp.reshape(shape)
 
-                input_data = input_data.astype(self.model_inputdtype)
+            if self.model_inputdtype != np.float32:
+                scale = properties['scale']
+                zero_point = properties['zero_point']
+                inp = inp / scale + zero_point
+            input[name] = tvm.nd.array(
+                inp.astype(self.model_inputdtype).reshape(shape)
+            )
+            input_data = input_data[siz:]
 
         try:
             if self.use_tvm_vm:
                 self.model.set_input(
                     "main",
-                    [tvm.nd.array(input_data)]
+                    **input
                 )
             else:
                 self.model.set_input(
-                    0,
-                    tvm.nd.array(input_data)
+                    **input
                 )
             self.log.debug('Inputs are ready')
             return True
@@ -144,7 +150,6 @@ class TVMRuntime(Runtime):
 
     def prepare_model(self, input_data):
         self.log.info('Loading model')
-
         if self.use_tvm_vm:
             self.module = tvm.runtime.load_module(str(self.modelpath)+'.so')
             loaded_bytecode = bytearray(
@@ -173,35 +178,24 @@ class TVMRuntime(Runtime):
         self.log.debug('Uploading output')
         out = b''
 
-        dequantize_output = (
-            self.output_details and
-            self.model_inputdtype != 'float32'
-        )
-
-        if dequantize_output:
-            scale, zero_point = self.output_details['quantization']
+        # TODO: Check for a quantization
 
         def convert(output):
-            if dequantize_output:
-                return (
-                        (output.astype(self.inputdtype) - zero_point)
-                        * scale
-                    ).tobytes()
-            else:
-                return output.tobytes()
+            return output.tobytes()
 
         if self.use_tvm_vm:
             if self.use_json_out:
                 out_dict = {}
-                for i in range(len(self.model.get_outputs())):
+
+                for i, output in enumerate(self.model.get_outputs()):
                     out_dict[i] = b64encode(
-                        convert(self.model.get_outputs()[i].asnumpy())
+                        convert(output.asnumpy())
                     ).decode("ascii")
                 json_str = json.dumps(out_dict)
                 out = bytes(json_str, "ascii")
             else:
-                for i in range(len(self.model.get_outputs())):
-                    out += convert(self.model.get_outputs()[i].asnumpy())
+                for output in self.model.get_outputs():
+                    out += convert(output.asnumpy())
         else:
             for i in range(self.model.get_num_outputs()):
                 out += convert(self.model.get_output(i).asnumpy())

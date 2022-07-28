@@ -338,13 +338,6 @@ class Optimizer(object):
         """
         model_spec = self.load_spec(inputmodelpath)
 
-        if not model_spec:
-            model_spec = {'input': [], 'output': []}
-        if 'input' not in model_spec:
-            model_spec['input'] = []
-        if 'output' not in model_spec:
-            model_spec['output'] = []
-
         # If there is no specification for the input/output we use
         # the data that we got from the previous block
         # If there is, then we update the previous block with the new
@@ -358,8 +351,17 @@ class Optimizer(object):
                     o_spec[prop] = val
             return old_spec
 
-        model_spec['input'] = update(model_spec['input'], io_specs['input'])
-        model_spec['output'] = update(model_spec['output'], io_specs['output'])
+        if io_specs:
+            if 'input' in io_specs:
+                model_spec['input'] = update(
+                    model_spec['input'],
+                    io_specs['input']
+                )
+            if 'output' in io_specs:
+                model_spec['output'] = update(
+                    model_spec['output'],
+                    io_specs['output']
+                )
 
         with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
             json.dump(

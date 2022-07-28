@@ -370,7 +370,8 @@ class Optimizer(object):
     def load_spec(self, modelpath: Path) -> dict[list[dict]]:
         """
         Returns saved input and output specification of a model
-        saved in `modelpath`, if there is one.
+        saved in `modelpath` if there is one. Otherwise return an empty
+        template of a specification.
 
         Parameters
         ----------
@@ -380,7 +381,7 @@ class Optimizer(object):
         Returns
         -------
         Optional[dict] : Specification of a model saved
-            in `modelpath` if there is one. None otherwise
+            in `modelpath` if there is one. Empty template otherwise
         """
         spec_path = self.get_spec_path(modelpath)
         if spec_path.exists():
@@ -388,4 +389,4 @@ class Optimizer(object):
                 spec = json.load(f)
 
             return spec
-        return None
+        return {'input': [], 'output': []}

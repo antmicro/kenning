@@ -112,23 +112,24 @@ class TVMRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        
-        # TODO: Adjust it to the new format of input_spec
         input = {}
 
-        dt = np.dtype(self.inputdtype)
-        for name, properties in self.input_spec.items():
-            shape = properties['shape']
+        # TODO: Check for a quantization
+
+        for spec in self.input_spec:
+            dt = np.dtype(spec['dtype'])
+            shape = spec['shape']
             siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
 
-            if self.model_inputdtype != np.float32:
-                scale = properties['scale']
-                zero_point = properties['zero_point']
-                inp = inp / scale + zero_point
-            input[name] = tvm.nd.array(
-                inp.astype(self.model_inputdtype).reshape(shape)
+            # if self.model_inputdtype != np.float32:
+            #     scale = properties['scale']
+            #     zero_point = properties['zero_point']
+            #     inp = inp / scale + zero_point
+
+            input[spec['name']] = tvm.nd.array(
+                inp.astype(dt).reshape(shape)
             )
             input_data = input_data[siz:]
 

@@ -2,7 +2,7 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import List, Optional
+from typing import Dict, List, Optional
 # from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re

@@ -406,7 +406,7 @@ class TVMCompiler(Optimizer):
             dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path)
-        self.dump_spec(inputmodelpath, input_spec, output_spec)
+        self.dump_spec(inputmodelpath)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

@@ -136,6 +136,7 @@ class ONNXCompiler(Optimizer):
 
         onnx.save(model, self.compiled_model_path)
 
+        # Update the io specification with names
         for spec, input in zip(input_spec, model.graph.input):
             spec['name'] = input.name
 

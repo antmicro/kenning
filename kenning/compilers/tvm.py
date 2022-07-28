@@ -18,7 +18,7 @@ def onnxconversion(
         modelpath: Path,
         input_shapes,
         dtypes):
-    dtype = [dtypes.values()][0]
+    dtype = list(dtypes.values())[0]
     onnxmodel = onnx.load(modelpath)
     return relay.frontend.from_onnx(
         onnxmodel,
@@ -143,7 +143,7 @@ def darknetconversion(
         modelpath: Path,
         input_shapes,
         dtypes):
-    dtype = [dtypes.items()][0]
+    dtype = list(dtypes.values())[0]
     from tvm.relay.testing.darknet import __darknetffi__
     if not compiler.libdarknetpath:
         log = get_logger()

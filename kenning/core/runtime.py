@@ -356,8 +356,15 @@ class Runtime(object):
         io_spec : Dict
             Specification of the input/output layers
         """
+        from numpy import dtype
+
         self.input_spec = io_spec['input']
+        for spec in self.input_spec:
+            spec['dtype'] = dtype(spec['dtype'])
+
         self.output_spec = io_spec['output']
+        for spec in self.output_spec:
+            spec['dtype'] = dtype(spec['dtype'])
 
     def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
         """

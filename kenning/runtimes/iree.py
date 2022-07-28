@@ -6,7 +6,6 @@ from pathlib import Path
 import numpy as np
 from iree import runtime as ireert
 import functools
-import ast
 import operator as op
 
 from kenning.core.runtime import Runtime
@@ -72,8 +71,11 @@ class IREERuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.input = []
-        dt = np.dtype(self.dtype)
-        for shape in self.shapes:
+        # TODO: Check for a quantization
+
+        for spec in self.input_spec:
+            shape = spec['shape']
+            dt = spec['dtype']
             siz = np.prod(shape) * dt.itemsize
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
@@ -88,12 +90,11 @@ class IREERuntime(Runtime):
                 outmodel.write(input_data)
 
         with open(self.modelpath, "rb") as outmodel:
-            model_bytes = outmodel.read()
-        model_dict = ast.literal_eval(model_bytes.decode("utf-8"))
-        self.dtype = model_dict['dtype']
-        self.shapes = model_dict['shapes']
+            compiled_buffer = outmodel.read()
+
         self.model = ireert.load_vm_flatbuffer(
-            model_dict['model'], driver=self.driver)
+            compiled_buffer, driver=self.driver
+        )
 
         self.log.info('Model loading ended successfully')
         return True
@@ -102,6 +103,8 @@ class IREERuntime(Runtime):
         self.output = self.model.main(*self.input)
 
     def upload_output(self, input_data):
+        # TODO: Check for a quantization
+
         try:
             return self.output.to_host().tobytes()
         except AttributeError:

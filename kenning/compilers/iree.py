@@ -2,8 +2,8 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import Dict, List, Optional
-# from iree.compiler import tools as ireecmp
+from typing import List, Optional
+from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
 
@@ -37,7 +37,7 @@ def input_shapes_dict_to_list(inputshapes):
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def kerasconversion(model_path, input_shapes, dtype):
+def kerasconversion(model_path, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
@@ -48,9 +48,10 @@ def kerasconversion(model_path, input_shapes, dtype):
     model.set_weights(original_model.get_weights())
     del original_model
 
-    inputspec = []
-    for input_layer in model.inputs:
-        inputspec.append(tf.TensorSpec(input_shapes[input_layer.name], dtype))
+    inputspec = [tf.TensorSpec(
+        spec['shape'],
+        spec['dtype']
+    ) for spec in input_spec]
 
     class WrapperModule(tf.Module):
         def __init__(self):
@@ -65,16 +66,15 @@ def kerasconversion(model_path, input_shapes, dtype):
         WrapperModule(), exported_names=['main'], import_only=True)
 
 
-def tfconversion(model_path, input_shapes, dtype):
+def tfconversion(model_path, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
     model = tf.saved_model.load(model_path)
 
-    ordered_shapes = input_shapes_dict_to_list(input_shapes)
-
-    inputspec = []
-    for shape in ordered_shapes:
-        inputspec.append(tf.TensorSpec(shape, dtype))
+    inputspec = [tf.TensorSpec(
+        spec['shape'],
+        spec['dtype']
+    ) for spec in input_spec]
 
     model.main = tf.function(
         input_signature=inputspec
@@ -83,7 +83,7 @@ def tfconversion(model_path, input_shapes, dtype):
         model, exported_names=['main'], import_only=True)
 
 
-def tfliteconversion(model_path, input_shape, dtype):
+def tfliteconversion(model_path, input_spec):
     from iree.compiler import tflite as ireetflite
 
     return ireetflite.compile_file(model_path, import_only=True)
@@ -163,13 +163,18 @@ class IREECompiler(Optimizer):
             listed by running 'iree-compile -h'.
         """
 
-        self.model_load = self.inputtypes[modelframework]
-        self.model_framework = modelframework
-        self.backend = backend_convert.get(backend, backend)
+        self.modelframework = modelframework
+        self.set_input_type(modelframework)
+        self.backend = backend
+        self.compiler_args = compiler_args
+
+        self.converted_backend = backend_convert.get(backend, backend)
         if compiler_args is not None:
-            self.compiler_args = [f"--{option}" for option in compiler_args]
+            self.parsed_compiler_args = [
+                f"--{option}" for option in compiler_args
+            ]
         else:
-            self.compiler_args = []
+            self.parsed_compiler_args = []
 
         if modelframework in ("keras", "tf"):
             self.compiler_input_type = "mhlo"
@@ -191,28 +196,21 @@ class IREECompiler(Optimizer):
             self,
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
+        if not io_specs:
+            io_specs = self.load_spec(inputmodelpath)
 
-        # TODO: adapt it to the new serialization pipeline
+        self.model_load = self.inputtypes[self.inputtype]
+        imported_model = self.model_load(inputmodelpath, io_specs['input'])
+        compiled_buffer = ireecmp.compile_str(
+            imported_model,
+            input_type=self.compiler_input_type,
+            extra_args=self.parsed_compiler_args,
+            target_backends=[self.converted_backend]
+        )
 
-        # imported_model = self.model_load(inputmodelpath, inputshapes, dtype)
-        # compiled_buffer = ireecmp.compile_str(
-        #     imported_model,
-        #     input_type=self.compiler_input_type,
-        #     extra_args=self.compiler_args,
-        #     target_backends=[self.backend]
-        # )
-
-        # # When compiling TFLite model, IREE does not provide information
-        # # regarding input signature from Python API. Manual passing of input
-        # # shapes and dtype to the runtime is required.
-        # shapes_list = input_shapes_dict_to_list(inputshapes)
-        # model_dict = {
-        #     'model': compiled_buffer,
-        #     'shapes': shapes_list,
-        #     'dtype': dtype
-        # }
-        # with open(self.compiled_model_path, "wb") as f:
-        #     f.write(str(model_dict).encode("utf-8"))
+        with open(self.compiled_model_path, "wb") as f:
+            f.write(compiled_buffer)
+        self.dump_spec(inputmodelpath)
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

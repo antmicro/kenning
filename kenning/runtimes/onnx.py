@@ -73,10 +73,10 @@ class ONNXRuntime(Runtime):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         self.input = {}
 
-        for dt, shape, name in zip(
-                self.input_dtypes,
-                self.input_shapes,
-                self.input_names):
+        for spec in self.input_spec:
+            name = spec['name']
+            shape = spec['shape']
+            dt = spec['dtype']
             siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
@@ -103,26 +103,44 @@ class ONNXRuntime(Runtime):
             if s == 'tensor(float)':
                 return np.dtype(np.float32)
 
-        self.input_dtypes = [
-            onnx_to_np_dtype(input.type) for input in self.session.get_inputs()
-        ]
-        self.input_shapes = [
-            np.array([s if isinstance(s, int) else -1 for s in input.shape])
-            for input in self.session.get_inputs()
-        ]
-        self.input_names = [
-            input.name for input in self.session.get_inputs()
-        ]
-        self.output_names = [
-            output.name for output in self.session.get_outputs()
-        ]
+        def update_io_spec(read_spec, session_spec):
+            model_spec = []
+            for input in session_spec:
+                model_spec.append({
+                    'name': input.name,
+                    'shape': np.array([s if isinstance(s, int) else -1 for s in input.shape]),  # noqa: E501
+                    'dtype': onnx_to_np_dtype(input.type)
+                })
+
+            if not read_spec:
+                return model_spec
+            else:
+                for s, m in zip(read_spec, model_spec):
+                    if 'name' not in s:
+                        s['name'] = m['name']
+                    if 'shape' not in s:
+                        s['shape'] = m['shape']
+                    if 'dtype' not in s:
+                        s['dtype'] = m['dtype']
+
+            return read_spec
+
+        self.input_spec = update_io_spec(
+            self.input_spec,
+            self.session.get_inputs()
+        )
+
+        self.output_spec = update_io_spec(
+            self.output_spec,
+            self.session.get_outputs()
+        )
 
         self.log.info('Model loading ended successfully')
         return True
 
     def run(self):
         self.scores = self.session.run(
-            self.output_names,
+            [spec['name'] for spec in self.output_spec],
             self.input
         )
 
@@ -130,7 +148,7 @@ class ONNXRuntime(Runtime):
         self.log.debug('Uploading output')
         result = bytes()
 
-        for i, _ in enumerate(self.session.get_outputs()):
+        for i in range(len(self.session.get_outputs())):
             result += self.scores[i].tobytes()
 
         return result

@@ -318,14 +318,15 @@ def detection_report(
         tpioupath.relative_to(rootdir)
     )
 
-    true_positives_per_iou_range_histogram(
-        str(iouhistpath),
-        "Histogram of True Positive IoU values",
-        all_tp_ious
-    )
-    measurementsdata['iouhistpath'] = str(
-        iouhistpath.relative_to(rootdir)
-    )
+    if len(all_tp_ious) > 0:
+        true_positives_per_iou_range_histogram(
+            str(iouhistpath),
+            "Histogram of True Positive IoU values",
+            all_tp_ious
+        )
+        measurementsdata['iouhistpath'] = str(
+            iouhistpath.relative_to(rootdir)
+        )
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)

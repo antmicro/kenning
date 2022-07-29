@@ -437,7 +437,7 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def get_input_mean_std(self) -> tuple[Any, Any]:
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
         """
         Returns mean and std values for input tensors.
 
@@ -452,7 +452,7 @@ class Dataset(object):
         """
         raise NotImplementedError
 
-    def get_class_names(self) -> list[str]:
+    def get_class_names(self) -> List[str]:
         """
         Returns list of class names in order of their IDs.
 

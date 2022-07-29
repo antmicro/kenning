@@ -6,14 +6,12 @@ from zipfile import ZipFile
 from tqdm import tqdm
 from collections import defaultdict
 
-from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url, get_logger
 
 from pycocotools.coco import COCO
 
 from kenning.datasets.helpers.detection_and_segmentation import \
         DectObject, \
-        SegmObject, \
         ObjectDetectionSegmentationDataset
 
 
@@ -57,18 +55,18 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     annotationsurls = {
         'train2017': {
             'images': ['http://images.cocodataset.org/zips/train2017.zip'],
-            'object_detection': ['http://images.cocodataset.org/annotations/stuff_annotations_trainval2017.zip'],  # noqa: E501
+            'object_detection': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
         },
         'val2017': {
             'images': ['http://images.cocodataset.org/zips/val2017.zip'],
-            'object_detection': ['http://images.cocodataset.org/annotations/stuff_annotations_trainval2017.zip'],  # noqa: E501
+            'object_detection': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
         }
     }
 
     arguments_structure = {
         'task': {
             'argparse_name': '--task',
-            'description': 'he task type',
+            'description': 'The task type',
             'default': 'object_detection',
             'enum': [
                 key for dataset in annotationsurls.values()
@@ -106,11 +104,15 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             show_on_eval: bool = False):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.log = get_logger()
-        self.task = task
         self.dataset_type = dataset_type
-        self.image_memory_layout = image_memory_layout
-        self.show_on_eval = show_on_eval
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            task,
+            image_memory_layout,
+            show_on_eval
+        )
 
     @classmethod
     def from_argparse(cls, args):
@@ -133,23 +135,27 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
                 download_and_extract(url, self.root, Path(tmpdir) / 'data.zip')
 
     def prepare(self):
-        annotationspath = self.root / f'annotations/stuff_{self.dataset_type}.json'  # noqa: E501
+        annotationspath = self.root / f'annotations/instances_{self.dataset_type}.json'  # noqa: E501
         self.coco = COCO(annotationspath)
         self.classmap = {}
+        self.classnames = []
 
         for classid in self.coco.cats.keys():
             self.classmap[classid] = self.coco.cats[classid]['name']
+            self.classnames.append(self.coco.cats[classid]['name'])
 
         self.dataX = list(self.coco.imgs.keys())
         annotations = defaultdict(list)
         for annkey, anndata in self.coco.anns.items():
             bbox = anndata['bbox']
+            width = self.coco.imgs[anndata['image_id']]['width']
+            height = self.coco.imgs[anndata['image_id']]['height']
             annotations[anndata['image_id']].append(DectObject(
                 clsname=self.classmap[anndata['category_id']],
-                xmin=bbox[0],
-                ymin=bbox[1],
-                xmax=bbox[0] + bbox[2],
-                ymax=bbox[1] + bbox[3],
+                xmin=bbox[0] / width,
+                ymin=bbox[1] / height,
+                xmax=(bbox[0] + bbox[2]) / width,
+                ymax=(bbox[1] + bbox[3]) / height,
                 score=1.0
             ))
 

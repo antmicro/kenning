@@ -1,7 +1,7 @@
 import cv2
 import numpy as np
 from collections import namedtuple
-from typing import Union
+from typing import Union, List, Dict, Tuple
 from pathlib import Path
 
 from kenning.utils.logger import get_logger
@@ -51,8 +51,8 @@ score : float
 
 
 def compute_ap11(
-        recall: list[float],
-        precision: list[float]) -> float:
+        recall: List[float],
+        precision: List[float]) -> float:
     """
     Computes 11-point Average Precision for a single class.
 
@@ -73,8 +73,8 @@ def compute_ap11(
 
 
 def get_recall_precision(
-        measurementsdata: dict,
-        scorethresh: float = 0.5) -> list[tuple[list[float], list[float]]]:
+        measurementsdata: Dict,
+        scorethresh: float = 0.5) -> List[Tuple[List[float], List[float]]]:
     """
     Computes recall and precision values at a given objectness threshold.
 
@@ -106,8 +106,8 @@ def get_recall_precision(
 
 
 def compute_map_per_threshold(
-        measurementsdata: dict,
-        scorethresholds: list[float]) -> list[float]:
+        measurementsdata: Dict,
+        scorethresholds: List[float]) -> List[float]:
     """
     Computes mAP values depending on the objectness threshold.
 
@@ -222,8 +222,8 @@ class ObjectDetectionSegmentationDataset(Dataset):
         self.task = task
         self.classmap = {}
         self.image_memory_layout = image_memory_layout
-        self.image_width = 416
-        self.image_height = 416
+        self.image_width = 608
+        self.image_height = 608
         self.classnames = []
         self.show_on_eval = show_on_eval
         super().__init__(root, batch_size, download_dataset)

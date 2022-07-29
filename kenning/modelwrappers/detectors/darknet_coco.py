@@ -1,220 +1,19 @@
 """
-Contains methods for YOLOv3 models for object detection.
+A wrapper for the TVM runtime of the YOLOv3 algorithm.
 
-Trained on COCO dataset.
+This ModelWrapper handles specific outputs to the YOLOv3
+model compiled directly using TVM framework.
+Except for the actual model output, there is
+additional metadata from the CFG model definition stored in the outputs
+from TVM-compiled model.
 """
 
-import re
 import numpy as np
-from collections import defaultdict
 
-from kenning.core.model import ModelWrapper
-from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_iou  # noqa: E501
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
-
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import path
-else:
-    from importlib.resources import path
-from kenning.resources import coco_detection
-from pathlib import Path
+from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
 
 
-class TVMDarknetCOCOYOLOV3(ModelWrapper):
-
-    arguments_structure = {
-        'class_names': {
-            'argparse_name': '--classes',
-            'description': 'File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-            'default': 'coco',
-            'type': str
-        }
-    }
-
-    def __init__(
-            self,
-            modelpath: Path,
-            dataset: Dataset,
-            from_file: bool = True,
-            class_names: str = "coco"):
-        self.thresh = 0.2
-        self.iouthresh = 0.5
-        self.class_names = class_names
-        super().__init__(modelpath, dataset, from_file)
-        # for work with dataproviders, this is handling dataset-less operation
-        if self.dataset is None:
-            self.batch_size = 1
-            self.classnames = []
-            if class_names == 'coco':
-                with path(coco_detection, 'cocov6.classes') as p:
-                    with open(p, 'r') as f:
-                        for line in f:
-                            self.classnames.append(line.split(',')[1].strip())
-            else:
-                with Path(class_names) as p:
-                    with open(p, 'r') as f:
-                        for line in f:
-                            self.classnames.append(line.split(',')[1].strip())
-        else:
-            self.batch_size = self.dataset.batch_size
-            self.classnames = self.dataset.classnames
-        self.numclasses = len(self.classnames)
-
-    @classmethod
-    def form_argparse(cls, no_dataset: bool = False):
-        parser, group = cls._form_argparse()
-        if no_dataset:
-            add_argparse_argument(
-                group,
-                TVMDarknetCOCOYOLOV3.arguments_structure,
-                'class_names'
-            )
-        return parser, group
-
-    @classmethod
-    def from_argparse(
-            cls,
-            dataset: Dataset,
-            args,
-            from_file: bool = True):
-        return cls(args.model_path, dataset, from_file, args.classes)
-
-    @classmethod
-    def form_parameterschema(cls, no_dataset: bool = False):
-        parameterschema = cls._form_parameterschema()
-        if no_dataset:
-            add_parameterschema_argument(
-                parameterschema,
-                TVMDarknetCOCOYOLOV3.arguments_structure,
-                'class_names'
-            )
-        return parameterschema
-
-    def load_model(self, modelpath):
-        self.keyparams = {}
-        self.perlayerparams = defaultdict(list)
-        keyparamsrgx = re.compile(r'(width|height|classes)=(\d+)')
-        perlayerrgx = re.compile(r'(mask|anchors|num)=((\d+,?)+)')
-
-        with open(self.modelpath.with_suffix('.cfg'), 'r') as config:
-            for line in config:
-                line = line.replace(' ', '')
-                res = keyparamsrgx.match(line)
-                if res:
-                    self.keyparams[res.group(1)] = int(res.group(2))
-                    continue
-                res = perlayerrgx.match(line)
-                if res:
-                    self.perlayerparams[res.group(1)].append(res.group(2))
-        self.perlayerparams = {
-            k: [np.array([int(x) for x in s.split(',')]) for s in v]
-            for k, v in self.perlayerparams.items()
-        }
-
-    def prepare_model(self):
-        self.load_model(self.modelpath)
-
-    def get_input_spec(self):
-        return {
-            'data': (
-                1, 3, self.keyparams['width'], self.keyparams['height']
-            )
-        }, 'float32'
-
-    def preprocess_input(self, X):
-        return np.array(X)
-
-    def convert_to_dectobject(self, entry):
-        # array x, y, w, h, classid, score
-        x1 = entry[0] - entry[2] / 2
-        x2 = entry[0] + entry[2] / 2
-        y1 = entry[1] - entry[3] / 2
-        y2 = entry[1] + entry[3] / 2
-        return DectObject(
-            self.classnames[entry[4]],
-            x1, y1, x2, y2,
-            entry[5]
-        )
-
-    def parse_outputs(self, data):
-        # get all bounding boxes with objectness score over given threshold
-        boxdata = []
-        for i in range(len(data)):
-            ids = np.asarray(np.where(data[i][:, 4, :, :] > self.thresh))
-            ids = np.transpose(ids)
-            if ids.shape[0] > 0:
-                ids = np.append([[i]] * ids.shape[0], ids, axis=1)
-                boxdata.append(ids)
-
-        if len(boxdata) > 0:
-            boxdata = np.concatenate(boxdata)
-
-        # each entry in boxdata contains:
-        # - layer id
-        # - det id
-        # - y id
-        # - x id
-
-        bboxes = []
-        for box in boxdata:
-            # x and y values from network are coordinates in a chunk
-            # to get the actual coordinates, we need to compute
-            # new_coords = (chunk_coords + out_coords) / out_resolution
-            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[box[0]].shape[2]  # noqa: E501
-            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[box[0]].shape[3]  # noqa: E501
-
-            # width and height are computed using following formula:
-            # w = anchor_w * exp(out_w) / input_w
-            # h = anchor_h * exp(out_h) / input_h
-            # anchors are computed based on dataset analysis
-            maskid = self.perlayerparams['mask'][2 - box[0]][box[1]]
-            anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]  # noqa: E501
-            w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']  # noqa: E501
-            h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']  # noqa: E501
-
-            # get objectness score
-            objectness = data[box[0]][box[1], 4, box[2], box[3]]
-
-            # get class with highest probability
-            classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
-
-            # compute final class score (objectness * class probability
-            score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]  # noqa: E501
-
-            # drop the bounding box if final score is below threshold
-            if score < self.thresh:
-                continue
-
-            bboxes.append([x, y, w, h, classid, score])
-
-        # sort the bboxes by score descending
-        bboxes.sort(key=lambda x: x[5], reverse=True)
-
-        bboxes = [self.convert_to_dectobject(b) for b in bboxes]
-
-        # group bboxes by class to perform NMS sorting
-        grouped_bboxes = defaultdict(list)
-        for item in bboxes:
-            grouped_bboxes[item.clsname].append(item)
-
-        # perform NMS sort to drop overlapping predictions for the same class
-        cleaned_bboxes = []
-        for clsbboxes in grouped_bboxes.values():
-            for i in range(len(clsbboxes)):
-                # if score equals 0, the bbox is dropped
-                if clsbboxes[i].score == 0:
-                    continue
-                # add current bbox to final results
-                cleaned_bboxes.append(clsbboxes[i])
-
-                # look for overlapping bounding boxes with lower probability
-                # and IoU exceeding specified threshold
-                for j in range(i + 1, len(clsbboxes)):
-                    if compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
-                        clsbboxes[j] = clsbboxes[j]._replace(score=0)
-        return cleaned_bboxes
+class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
     def postprocess_outputs(self, y):
         # YOLOv3 has three stages of outputs
@@ -286,12 +85,6 @@ class TVMDarknetCOCOYOLOV3(ModelWrapper):
             result.append(self.parse_outputs(out))
 
         return result
-
-    def convert_input_to_bytes(self, inputdata):
-        return inputdata.tobytes()
-
-    def convert_output_from_bytes(self, outputdata):
-        return np.frombuffer(outputdata, dtype='float32')
 
     def get_framework_and_version(self):
         return ('darknet', 'alexeyab')

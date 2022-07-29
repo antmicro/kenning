@@ -1,0 +1,123 @@
+"""
+ModelWrapper for the YOLOv4 model generated from darknet repository using:
+
+https://github.com/Tianxiaomo/pytorch-YOLOv4
+
+To create an ONNX model from darknet yolov4.cfg and yolov4.weights files
+(check https://github.com/AlexeyAB/darknet for those files), follow
+repositories' README (Darknet2ONNX section).
+
+After this, to remove the embedded processing of outputs, run in Python shell::
+
+    from kenning.modelwrappers.detectors.yolov4 import \
+            yolov4_remove_postprocessing
+
+
+    yolov4_remove_postprocessing('<input_onnx_path>', '<output_onnx_path>')
+"""
+
+import onnx
+import numpy as np
+from pathlib import Path
+import shutil
+from typing import List
+
+from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+
+
+def yolov4_remove_postprocessing(
+        inputpath: Path,
+        outputpath: Path,
+        input_names: List[str] = ['input'],
+        output_names: List[str] = ['output', 'output.3', 'output.7']):
+    """
+    Extracts the actual model from the Darknet2ONNX output.
+
+    Darknet2ONNX tool (https://github.com/Tianxiaomo/pytorch-YOLOv4) creates
+    an ONNX file that contains a YOLOv4 model and postprocessing steps to
+    extract bounding boxes and scores.
+
+    To keep the model simple, this method extracts the actual model
+    and removes the postprocessing.
+
+    Parameters
+    ----------
+    inputpath: Path
+        Path to the ONNX file containing model with postprocessing
+    outputpath: Path
+        Path to the ONNX output file containing pure model
+    """
+    onnx.utils.extract_model(
+        str(inputpath),
+        str(outputpath),
+        input_names,
+        output_names
+    )
+
+
+class ONNXYOLOV4(YOLOWrapper):
+
+    maxscore = 100.0
+    thresh = 0.2
+    finthresh = 0.1
+
+    def postprocess_outputs(self, y):
+        # YOLOv4, as YOLOv3, has three outputs for three stages of computing.
+        # Each output layer has information about bounding boxes, scores and
+        # classes in a grid.
+
+        # iterate over each output
+        lastid = 0
+        outputs = []
+        for i in range(3):
+            # each output layer shape follows formula:
+            # (BS, B * (4 + 1 + C), w / (8 * (i + 1)), h / (8 * (i + 1)))
+            # BS is the batch size
+            # w, h are width and height of the input image
+            # the resolution is reduced over the network, and is 8 times
+            # smaller in each dimension for each output
+            # the "pixels" in the outputs are responsible for the chunks of
+            # image - in the first output each pixel is responsible for 8x8
+            # squares of input image, the second output covers objects from
+            # 16x16 chunks etc.
+            # Each "pixel" can predict up to B bounding boxes.
+            # Each bounding box is described by its 4 coordinates,
+            # objectness prediction and per-class predictions
+            outshape = (
+                self.batch_size,
+                len(self.perlayerparams['mask'][i]),
+                4 + 1 + self.numclasses,
+                self.keyparams['width'] // (8 * 2 ** i),
+                self.keyparams['height'] // (8 * 2 ** i)
+            )
+
+            outputs.append(
+                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
+            )
+
+            lastid += np.prod(outshape)
+
+        # change the dimensions so the output format is
+        # batches layerouts dets params width height
+        perbatchoutputs = []
+        for i in range(outputs[0].shape[0]):
+            perbatchoutputs.append([
+                outputs[0][i],
+                outputs[1][i],
+                outputs[2][i]
+            ])
+        result = []
+        # parse the combined outputs for each image in batch, and return result
+        for out in perbatchoutputs:
+            result.append(self.parse_outputs(out))
+
+        return result
+
+    def get_framework_and_version(self):
+        return ('onnx', str(onnx.__version__))
+
+    def get_output_formats(self):
+        return ['onnx']
+
+    def save_to_onnx(self, modelpath: Path):
+        shutil.copy(self.modelpath, modelpath)

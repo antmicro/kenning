@@ -48,6 +48,25 @@ class PyTorchWrapper(ModelWrapper):
         elif isinstance(input_data, torch.nn.Module):
             self.model = input_data
 
+    def save_to_onnx(self, modelpath):
+        x = tuple(torch.randn(
+            spec['shape'],
+            device='cpu'
+        ) for spec in self.get_io_specs()['input'])
+
+        torch.onnx.export(
+            self.model.to(device='cpu'),
+            x,
+            modelpath,
+            opset_version=11,
+            input_names=[
+                spec['name'] for spec in self.get_io_specs()['input']
+            ],
+            output_names=[
+                spec['name'] for spec in self.get_io_specs()['output']
+            ]
+        )
+
     def save_model(self, modelpath):
         torch.save(self.model.state_dict(), modelpath)
 

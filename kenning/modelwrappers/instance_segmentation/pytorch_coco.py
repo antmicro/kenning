@@ -6,9 +6,10 @@ Prerained on COCO dataset
 
 import numpy as np
 from pathlib import Path
-
 import torch
 from torchvision import models
+from functools import reduce
+import operator
 
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
@@ -39,6 +40,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                 num_classes=91,
                 pretrained_backbone=True  # downloads backbone to torchhub dir
             )
+            torch.save(self.model, self.modelpath)
         self.model.to(self.device)
         self.model.eval()
         self.custom_classnames = []
@@ -49,9 +51,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     def postprocess_outputs(self, out_all: list) -> list:
         ret = []
-        for i in range(len(out_all)):
+        for out in out_all:
             ret.append([])
-            out = out_all[i]
             if isinstance(out, dict):
                 for i in range(len(out['labels'])):
                     ret[-1].append(SegmObject(
@@ -64,22 +65,12 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                         xmax=float(out['boxes'][i][2]),
                         ymax=float(out['boxes'][i][3]),
                         mask=np.multiply(
-                            out['masks'][i].detach().cpu().numpy().transpose(1, 2, 0),  # noqa: E501
+                            out['masks'][i].transpose(1, 2, 0),  # noqa: E501
                             255
                         ).astype('uint8'),
                         score=float(out['scores'][i])
                     ))
                 return ret
-
-    def save_to_onnx(self, modelpath):
-        x = torch.randn(1, 3, 416, 416).to(device='cpu')
-        torch.onnx.export(
-            self.model.to(device='cpu'),
-            x,
-            modelpath,
-            opset_version=11,
-            input_names=["input.1"]
-        )
 
     def convert_input_to_bytes(self, input_data):
         data = bytes()
@@ -88,50 +79,48 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return data
 
     def convert_output_from_bytes(self, output_data):
-        import json
-        from base64 import b64decode
-        out = json.loads(output_data.decode("ascii"))
-        all_masks = np.frombuffer(
-            b64decode(bytes(out['3'], 'ascii')),
-            dtype='float32'
-        )
-        all_boxes = np.frombuffer(
-            b64decode(bytes(out['0'], 'ascii')),
-            dtype='float32'
-        )
-        all_scores = np.frombuffer(
-            b64decode(bytes(out['1'], 'ascii')),
-            dtype='float32'
-        )
-        all_labels = np.frombuffer(
-            b64decode(bytes(out['2'], 'ascii')),
-            dtype='int64'
-        )
-        return [{
-            "boxes":
-                np.reshape(
-                    all_boxes, (int(np.size(all_boxes)/4), 4)
-                ),
-            "scores":
-                all_scores,
-            "labels":
-                all_labels,
-            "masks":
-                torch.from_numpy(
-                    np.reshape(
-                        all_masks,
-                        (int(np.size(all_masks)/(416**2)), 1, 416, 416)
-                    )
-                )
-        }]
+        S = len(output_data)
+        f = np.dtype(np.float32).itemsize
+        i = np.dtype(np.int64).itemsize
+        num_dets = S // (416 * 416 * f + i)
 
-    def get_input_spec(self):
-        return {'input.1': (1, 3, 416, 416)}, 'float32'
+        output_parameters = [
+            ((num_dets, 4), np.float32, 'boxes'),
+            ((num_dets,), np.int64, 'labels'),
+            ((num_dets,), np.float32, 'scores'),
+            ((num_dets, 1, 416, 416), np.float32, 'masks')
+        ]
+
+        result = {}
+        for shape, dtype, name in output_parameters:
+            tensorsize = reduce(operator.mul, shape) * np.dtype(dtype).itemsize
+
+            # Copy of numpy array is needed because the result of np.frombuffer
+            # is not writeable, which breaks output postprocessing.
+            outputtensor = np.array(np.frombuffer(
+                output_data[:tensorsize],
+                dtype=dtype
+            )).reshape(shape)
+            result[name] = outputtensor
+            output_data = output_data[tensorsize:]
+
+        return [result]
+
+    def get_io_specs(self):
+        return {
+            'input': [{'name': 'input.1', 'shape': (1, 3, 416, 416), 'dtype': 'float32'}],  # noqa: E501
+            'output': [
+                {'name': 'boxes', 'shape': (-1, 4), 'dtype': 'float32'},
+                {'name': 'labels', 'shape': (-1), 'dtype': 'int64'},
+                {'name': 'scores', 'shape': (-1), 'dtype': 'float32'},
+                {'name': 'masks', 'shape': (-1, 1, 416, 416), 'dtype': 'float32'}  # noqa: E501
+            ]
+        }
 
 
 def dict_to_tuple(out_dict):
     return \
         out_dict["boxes"],\
-        out_dict["scores"],\
         out_dict["labels"],\
+        out_dict["scores"],\
         out_dict["masks"]

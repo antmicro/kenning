@@ -38,16 +38,22 @@ def torchconversion(model_path, input_spec, output_spec):
             f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}'  # noqa: E501
         )
 
-    input = [torch.randn(
+    model.eval()
+
+    input = tuple(torch.randn(
         spec['shape'],
         device=dev
-    ) for spec in input_spec]
-
-    traced_module = torch.jit.trace(model, input)
+    ) for spec in input_spec)
 
     import io
     mem_buffer = io.BytesIO()
-    torch.onnx.export(traced_module, input, mem_buffer)
+    torch.onnx.export(
+        model,
+        input,
+        mem_buffer,
+        input_names=[spec['name'] for spec in input_spec],
+        output_names=[spec['name'] for spec in output_spec]
+    )
     onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
     return onnx_model
 
@@ -137,13 +143,20 @@ class ONNXCompiler(Optimizer):
         onnx.save(model, self.compiled_model_path)
 
         # Update the io specification with names
+        # possibly with shapes as well.
         for spec, input in zip(input_spec, model.graph.input):
             spec['name'] = input.name
 
         for spec, output in zip(output_spec, model.graph.output):
             spec['name'] = output.name
 
-        self.dump_spec(inputmodelpath, input_spec, output_spec)
+        self.dump_spec(
+            inputmodelpath,
+            {
+                'input': input_spec,
+                'output': output_spec
+            }
+        )
         return 0
 
     def get_framework_and_version(self):

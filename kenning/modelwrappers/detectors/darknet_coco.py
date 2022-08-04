@@ -86,6 +86,12 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
         return result
 
+    def get_io_specs(self):
+        return {
+            'input': [{'name': 'data', 'shape': (1, 3, self.keyparams['width'], self.keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
+            'output': []
+        }
+
     def get_output_formats(self):
         return ['darknet']
 

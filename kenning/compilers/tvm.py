@@ -160,7 +160,7 @@ def darknetconversion(
     return relay.frontend.from_darknet(
         net,
         dtype=dtype,
-        shape=input_shapes
+        shape=input_shapes['data']
     )
 
 

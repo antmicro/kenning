@@ -30,7 +30,7 @@ def kerasconversion(model_path, input_spec, output_spec):
 
 
 def torchconversion(model_path, input_spec, output_spec):
-    dev = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    dev = 'cpu'
     model = torch.load(model_path, map_location=dev)
 
     if not isinstance(model, torch.nn.Module):
@@ -51,6 +51,7 @@ def torchconversion(model_path, input_spec, output_spec):
         model,
         input,
         mem_buffer,
+        opset_version=11,
         input_names=[spec['name'] for spec in input_spec],
         output_names=[spec['name'] for spec in output_spec]
     )

@@ -111,8 +111,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             'input': [{'name': 'input.1', 'shape': (1, 3, 416, 416), 'dtype': 'float32'}],  # noqa: E501
             'output': [
                 {'name': 'boxes', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': 'labels', 'shape': (-1), 'dtype': 'int64'},
-                {'name': 'scores', 'shape': (-1), 'dtype': 'float32'},
+                {'name': 'labels', 'shape': (-1,), 'dtype': 'int64'},
+                {'name': 'scores', 'shape': (-1,), 'dtype': 'float32'},
                 {'name': 'masks', 'shape': (-1, 1, 416, 416), 'dtype': 'float32'}  # noqa: E501
             ]
         }

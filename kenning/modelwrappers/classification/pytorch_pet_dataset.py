@@ -77,7 +77,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def get_io_specs(self):
         return {
             'input': [{'name': 'input.1', 'shape': (1, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
-            'output': [{'shape': (1, 37), 'dtype': 'float32'}]
+            'output': [{'name': '548', 'shape': (1, self.numclasses), 'dtype': 'float32'}]  # noqa: E501
         }
 
     def preprocess_input(self, X):
@@ -254,16 +254,6 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         writer.close()
         self.model.eval()
-
-    def save_to_onnx(self, modelpath):
-        x = torch.randn(1, 3, 224, 224, requires_grad=True, device=self.device)
-        torch.onnx.export(
-            self.model,
-            x,
-            modelpath,
-            export_params=True,
-            opset_version=11
-        )
 
     def convert_input_to_bytes(self, inputdata):
         data = bytes()

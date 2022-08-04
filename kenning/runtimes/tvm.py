@@ -4,8 +4,6 @@ Runtime implementation for TVM-compiled models.
 
 from pathlib import Path
 import numpy as np
-from base64 import b64encode
-import json
 
 import tvm
 from tvm.contrib import graph_executor
@@ -45,12 +43,6 @@ class TVMRuntime(Runtime):
             'description': 'At runtime use the TVM Relay VirtualMachine',
             'type': bool,
             'default': False
-        },
-        'use_json_out': {
-            'argparse_name': '--use-json-at-output',
-            'description': 'Encode outputs of models into a JSON file with base64-encoded arrays',  # noqa: E501
-            'type': bool,
-            'default': False
         }
     }
 
@@ -61,7 +53,6 @@ class TVMRuntime(Runtime):
             contextname: str = 'cpu',
             contextid: int = 0,
             use_tvm_vm: bool = False,
-            use_json_out: bool = False,
             collect_performance_data: bool = True):
         """
         Constructs TVM runtime.
@@ -78,9 +69,6 @@ class TVMRuntime(Runtime):
             ID of the runtime context device
         use_tvm_vm : bool
             Use the TVM Relay VirtualMachine
-        use_json_out : bool
-            Encode outputs of models into a JSONfile with
-            base64-encoded arrays
         collect_performance_data : bool
             Disable collection and processing of performance metrics
         """
@@ -92,7 +80,6 @@ class TVMRuntime(Runtime):
         self.ctx = None
         self.model = None
         self.use_tvm_vm = use_tvm_vm
-        self.use_json_out = use_json_out
         super().__init__(
             protocol,
             collect_performance_data
@@ -106,7 +93,6 @@ class TVMRuntime(Runtime):
             args.target_device_context,
             args.target_device_context_id,
             args.runtime_use_vm,
-            args.use_json_at_output,
             args.disable_performance_measurements
         )
 
@@ -117,8 +103,9 @@ class TVMRuntime(Runtime):
         # TODO: Check for a quantization
 
         for spec in self.input_spec:
-            dt = np.dtype(spec['dtype'])
             shape = spec['shape']
+            dt = np.dtype(spec['dtype'])
+
             siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
@@ -185,18 +172,8 @@ class TVMRuntime(Runtime):
             return output.tobytes()
 
         if self.use_tvm_vm:
-            if self.use_json_out:
-                out_dict = {}
-
-                for i, output in enumerate(self.model.get_outputs()):
-                    out_dict[i] = b64encode(
-                        convert(output.asnumpy())
-                    ).decode("ascii")
-                json_str = json.dumps(out_dict)
-                out = bytes(json_str, "ascii")
-            else:
-                for output in self.model.get_outputs():
-                    out += convert(output.asnumpy())
+            for output in self.model.get_outputs():
+                out += convert(output.asnumpy())
         else:
             for i in range(self.model.get_num_outputs()):
                 out += convert(self.model.get_output(i).asnumpy())

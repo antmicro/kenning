@@ -395,8 +395,8 @@ class ModelWrapper(object):
     def dump_spec(self, modelpath: Path):
         """
         Saves input/output model specification to a file named
-        `modelpath` + `.json`. This function uses `get_input_spec()`
-        and `get_output_spec()` functions to get the properties.
+        `modelpath` + `.json`. This function uses `get_io_specs()`
+        function to get the properties.
 
         It is later used in optimization and compilation steps.
 
@@ -447,11 +447,11 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        # get_input_spec returns dictionary with multiple possible inputs
+        # get_io_specs returns dictionary with multiple possible inputs
         # Currently we do not expect to support more than single input though
         # Hence we assume every model will have its working input at index 0
         # TODO add support for multiple inputs / outputs
-        default_name = list(self.get_input_spec()[0].items())[0][0]
+        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
         return {
             'out_infer': self.run_inference(
                 self.preprocess_input(input[default_name])
@@ -459,7 +459,7 @@ class ModelWrapper(object):
         }
 
     def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(self.get_input_spec()[0].items())[0][0]
+        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
         return {
             'out_pre': self.preprocess_input(input[default_name])
         }
@@ -468,7 +468,7 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(self.get_input_spec()[0].items())[0][0]
+        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
         return {
             'out_post': self.postprocess_outputs(input[default_name])
         }

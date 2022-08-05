@@ -6,7 +6,6 @@ Prerained on COCO dataset
 
 import numpy as np
 from pathlib import Path
-import torch
 from torchvision import models
 from functools import reduce
 import operator
@@ -29,18 +28,21 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         self.numclasses = dataset.numclasses
         super().__init__(modelpath, dataset, from_file)
 
+    def create_model_structure(self):
+        self.model = models.detection.maskrcnn_resnet50_fpn(
+            pretrained=True,  # downloads mask r-cnn model to torchhub dir
+            progress=True,
+            num_classes=91,
+            pretrained_backbone=True  # downloads backbone to torchhub dir
+        )
+
     def prepare_model(self):
         if self.from_file:
-            self.model = torch.load(self.modelpath)
-            self.model.eval()
+            self.load_model(self.modelpath)
         else:
-            self.model = models.detection.maskrcnn_resnet50_fpn(
-                pretrained=True,  # downloads mask r-cnn model to torchhub dir
-                progress=True,
-                num_classes=91,
-                pretrained_backbone=True  # downloads backbone to torchhub dir
-            )
-            torch.save(self.model, self.modelpath)
+            self.create_model_structure()
+            self.save_model(self.modelpath)
+
         self.model.to(self.device)
         self.model.eval()
         self.custom_classnames = []

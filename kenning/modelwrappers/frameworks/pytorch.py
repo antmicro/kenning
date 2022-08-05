@@ -67,8 +67,11 @@ class PyTorchWrapper(ModelWrapper):
             ]
         )
 
-    def save_model(self, modelpath):
-        torch.save(self.model.state_dict(), modelpath)
+    def save_model(self, modelpath, export_dict=True):
+        if export_dict:
+            torch.save(self.model.state_dict(), modelpath)
+        else:
+            torch.save(self.model, modelpath)
 
     def preprocess_input(self, X):
         return torch.Tensor(np.array(X)).to(self.device)

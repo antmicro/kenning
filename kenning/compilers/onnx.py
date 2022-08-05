@@ -35,7 +35,7 @@ def torchconversion(model_path, input_spec, output_spec):
 
     if not isinstance(model, torch.nn.Module):
         raise CompilationError(
-            f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}'  # noqa: E501
+            f'ONNX compiler expects the input data of type: torch.nn.Module, but got: {type(model).__name__}'  # noqa: E501
         )
 
     model.eval()

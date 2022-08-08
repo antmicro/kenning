@@ -167,4 +167,4 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             save_format='h5'
         )
 
-        self.dump_spec(inputmodelpath)
+        self.dump_spec(inputmodelpath, io_specs)

@@ -18,7 +18,11 @@ def onnxconversion(
         modelpath: Path,
         input_shapes,
         dtypes):
-    dtype = list(dtypes.values())[0]
+    try:
+        dtype = list(dtypes.values())[0]
+    except IndexError:
+        raise IndexError('No dtype in the input specification')
+
     onnxmodel = onnx.load(modelpath)
     return relay.frontend.from_onnx(
         onnxmodel,
@@ -143,7 +147,11 @@ def darknetconversion(
         modelpath: Path,
         input_shapes,
         dtypes):
-    dtype = list(dtypes.values())[0]
+    try:
+        dtype = list(dtypes.values())[0]
+    except IndexError:
+        raise IndexError('No dtype in the input specification')
+
     from tvm.relay.testing.darknet import __darknetffi__
     if not compiler.libdarknetpath:
         log = get_logger()
@@ -399,6 +407,9 @@ class TVMCompiler(Optimizer):
         inputshapes = {spec['name']: spec['shape'] for spec in input_spec}
         dtypes = {spec['name']: spec['dtype'] for spec in input_spec}
 
+        if not inputshapes:
+            raise ValueError('No shapes in the input specification')
+
         mod, params = self.inputtypes[self.inputtype](
             self,
             inputmodelpath,
@@ -406,7 +417,7 @@ class TVMCompiler(Optimizer):
             dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path)
-        self.dump_spec(inputmodelpath)
+        self.dump_spec(inputmodelpath, io_specs)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

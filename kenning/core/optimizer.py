@@ -214,10 +214,12 @@ class Optimizer(object):
         The model can be compiled to a binary, a different framework or a
         different programming language.
 
-        If `io_specs` are passed, then the function uses it during the
-        compilation, otherwise `load_spec` is used to fetch the specification.
+        If `io_specs` is passed, then the function uses it during the
+        compilation, otherwise `load_spec` is used to fetch the specification
+        saved in `inputmodelpath` + `.json`.
 
-        The compiled model is saved to compiled_model_path
+        The compiled model is saved to compiled_model_path and
+        the specification is saved to compiled_model_path + .json
 
         Parameters
         ----------
@@ -319,10 +321,11 @@ class Optimizer(object):
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
         """
-        Saves input/output model specification which is used during both
-        inference and compilation. This function uses specification of an
-        input model stored in `inputmodelpath` and updates its properties
-        according to `io_specs` which has `input` and `output` keys.
+        Internal function that saves input/output model specification
+        which is used during both inference and compilation. If `io_specs`
+        is None, the function uses specification of an input model
+        stored in `inputmodelpath` + `.json`. Otherwise `io_specs` is used.
+
         The input/output specification is a list of dictionaries mapping
         properties names to their values. Legal properties names are `dtype`,
         `quantized_dtype`, `shape`, `name`, `scale`, `zero_point`.
@@ -336,32 +339,10 @@ class Optimizer(object):
         io_specs : Optional[dict[list[dict]]]
             Specification of the input/ouput layers
         """
-        model_spec = self.load_spec(inputmodelpath)
-
-        # If there is no specification for the input/output we use
-        # the data that we got from the previous block
-        # If there is, then we update the previous block with the new
-        # specification
-        def update(old_spec, new_spec):
-            if not new_spec:
-                return old_spec
-
-            for n_spec, o_spec in zip(new_spec, old_spec):
-                for prop, val in n_spec.items():
-                    o_spec[prop] = val
-            return old_spec
-
         if io_specs:
-            if 'input' in io_specs:
-                model_spec['input'] = update(
-                    model_spec['input'],
-                    io_specs['input']
-                )
-            if 'output' in io_specs:
-                model_spec['output'] = update(
-                    model_spec['output'],
-                    io_specs['output']
-                )
+            model_spec = io_specs
+        else:
+            model_spec = self.load_spec(inputmodelpath)
 
         with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
             json.dump(

@@ -13,7 +13,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer, CompilationError
 
 
-def kerasconversion(model_path, input_spec, output_spec):
+def kerasconversion(model_path, input_spec, output_names):
     model = tf.keras.models.load_model(model_path)
 
     input_spec = [tf.TensorSpec(
@@ -29,7 +29,7 @@ def kerasconversion(model_path, input_spec, output_spec):
     return modelproto
 
 
-def torchconversion(model_path, input_spec, output_spec):
+def torchconversion(model_path, input_spec, output_names):
     dev = 'cpu'
     model = torch.load(model_path, map_location=dev)
 
@@ -53,17 +53,17 @@ def torchconversion(model_path, input_spec, output_spec):
         mem_buffer,
         opset_version=11,
         input_names=[spec['name'] for spec in input_spec],
-        output_names=[spec['name'] for spec in output_spec]
+        output_names=output_names
     )
     onnx_model = onnx.load_model_from_string(mem_buffer.getvalue())
     return onnx_model
 
 
-def tfliteconversion(model_path, input_spec, output_spec):
+def tfliteconversion(model_path, input_spec, output_names):
     modelproto, _ = tf2onnx.convert.from_tflite(
         str(model_path),
         input_names=[input['name'] for input in input_spec],
-        output_names=[output['name'] for output in output_spec]
+        output_names=output_names
     )
 
     return modelproto
@@ -135,10 +135,15 @@ class ONNXCompiler(Optimizer):
             input_spec = spec['input']
             output_spec = spec['output']
 
+        try:
+            output_names = [spec['name'] for spec in output_spec]
+        except KeyError:
+            output_names = None
+
         model = self.inputtypes[self.inputtype](
             inputmodelpath,
             input_spec,
-            output_spec
+            output_names
         )
 
         onnx.save(model, self.compiled_model_path)

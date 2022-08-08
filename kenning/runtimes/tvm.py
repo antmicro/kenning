@@ -101,25 +101,27 @@ class TVMRuntime(Runtime):
         input = {}
 
         # TODO: Check for a quantization
-
         for spec in self.input_spec:
             shape = spec['shape']
             dt = np.dtype(spec['dtype'])
 
-            siz = np.abs(np.prod(shape) * dt.itemsize)
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
-            inp = inp.reshape(shape)
+            try:
+                siz = np.abs(np.prod(shape) * dt.itemsize)
+                inp = np.frombuffer(input_data[:siz], dtype=dt)
+                inp = inp.reshape(shape)
 
-            # if self.model_inputdtype != np.float32:
-            #     scale = properties['scale']
-            #     zero_point = properties['zero_point']
-            #     inp = inp / scale + zero_point
+                # if self.model_inputdtype != np.float32:
+                #     scale = properties['scale']
+                #     zero_point = properties['zero_point']
+                #     inp = inp / scale + zero_point
 
-            input[spec['name']] = tvm.nd.array(
-                inp.astype(dt).reshape(shape)
-            )
-            input_data = input_data[siz:]
-
+                input[spec['name']] = tvm.nd.array(
+                    inp.astype(dt).reshape(shape)
+                )
+                input_data = input_data[siz:]
+            except Exception as ex:
+                self.log.error(f'Failed to load input: {ex}')
+                return False
         try:
             if self.use_tvm_vm:
                 self.model.set_input(

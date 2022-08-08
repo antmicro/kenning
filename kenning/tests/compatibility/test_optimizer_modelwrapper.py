@@ -42,10 +42,11 @@ class TestOptimizerModelWrapper:
         assert model_type in wrapper.get_output_formats()
 
         filepath = tmpfolder / uuid.uuid4().hex
-        inputshapes, dtype = wrapper.get_input_spec()
+        io_specs = wrapper.get_io_specs()
 
+        model_path = Path(model_path)
         optimizer.set_compiled_model_path(filepath)
-        optimizer.compile(model_path, inputshapes, dtype=dtype)
+        optimizer.compile(model_path, io_specs)
         assert os.path.exists(filepath)
         os.remove(filepath)
 
@@ -71,7 +72,7 @@ class TestOptimizerModelWrapper:
 
         for wrapper_name in modelwrappersamples:
             wrapper = modelwrappersamples.get(wrapper_name)
-            inputshapes, dtype = wrapper.get_input_spec()
+            io_specs = wrapper.get_io_specs()
 
             filename = uuid.uuid4().hex
             filepath = tmpfolder / filename
@@ -93,7 +94,7 @@ class TestOptimizerModelWrapper:
                 compiled_model_path = (filename + '_' + optimizer.inputtype)
                 compiled_model_path = tmpfolder / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
-                optimizer.compile(filepath, inputshapes, dtype=dtype)
+                optimizer.compile(filepath, io_specs)
 
                 assert os.path.exists(compiled_model_path)
                 os.remove(compiled_model_path)

@@ -122,10 +122,10 @@ class TestCoreRuntimeProtocol:
         with pytest.raises(NotImplementedError):
             protocol.upload_model(tmpfolder)
 
-    def test_upload_quantization_details(self, tmpfolder):
+    def test_upload_io_specification(self, tmpfolder):
         protocol = self.initprotocol()
         with pytest.raises(NotImplementedError):
-            protocol.upload_quantization_details(tmpfolder)
+            protocol.upload_io_specification(tmpfolder)
 
     def test_download_output(self):
         protocol = self.initprotocol()

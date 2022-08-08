@@ -46,7 +46,13 @@ def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
     modelpath = path / modelname
     torch.onnx.export(model, data, modelpath,
                       input_names=['input.1'], verbose=True)
-    return (modelpath, {'input.1': (1, 1, 5, 5)})
+    return (
+        modelpath,
+        {
+            'input': [{'name': 'input.1', 'shape': (1, 1, 5, 5), 'dtype': 'float32'}],  # noqa: E501
+            'output': []
+        }
+    )
 
 
 @pytest.fixture(scope='function')
@@ -81,13 +87,13 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path):
         The output shape of model
     """
 
-    onnxmodel, inputshapes = create_onnx_model(tmpfolder)
+    onnxmodel, io_specs = create_onnx_model(tmpfolder)
     compiledmodelname = (uuid.uuid4().hex)
     if issubclass(request.param, TVMCompiler):
         compiledmodelname += '.so'
     compiledmodelpath = tmpfolder / compiledmodelname
     optimizer = request.param(None, compiledmodelpath)
-    optimizer.compile(onnxmodel, inputshapes, dtype='float32')
+    optimizer.compile(onnxmodel, io_specs)
     request.cls.runtimemodel = compiledmodelpath
     request.cls.inputshapes = (1, 1, 5, 5)
     request.cls.outputshapes = (1, 1, 3, 3)

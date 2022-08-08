@@ -194,9 +194,10 @@ class RuntimeWithModel(RuntimeTests):
         # No model initialized
         data = np.arange(100).tobytes()
         runtime = self.initruntime()
-        with pytest.raises(AttributeError):
+        with pytest.raises((TypeError, AttributeError)):
             runtime.prepare_input(data)
 
+        # For now we got rid of inpudtype argument from runtimes
         # Model is initialized but input is with wrong shape and datatype
         data = np.arange(99, dtype=np.int8).tobytes()
         runtime = self.initruntime(inputdtype=['float32'])
@@ -208,14 +209,14 @@ class RuntimeWithModel(RuntimeTests):
         data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
         data = data.tobytes()
         runtime = self.initruntime()
-        runtime.prepare_model(None)
+        runtime.prepare_local()
         output = runtime.prepare_input(data)
         assert output is True
 
         # Input is empty
         data = b''
         runtime = self.initruntime()
-        runtime.prepare_model(None)
+        runtime.prepare_local()
         assert runtime.prepare_input(data) is False
 
     def test_run(self):
@@ -226,14 +227,14 @@ class RuntimeWithModel(RuntimeTests):
 
         # Run without any input
         runtime = self.initruntime()
-        runtime.prepare_model(None)
+        runtime.prepare_local()
         runtime.run()
 
         # Run with prepared input
         data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
         data = data.tobytes()
         runtime = self.initruntime()
-        runtime.prepare_model(None)
+        runtime.prepare_local()
         runtime.prepare_input(data)
         runtime.run()
 
@@ -254,7 +255,7 @@ class RuntimeWithModel(RuntimeTests):
         # Test with model and input
         data = np.zeros((self.inputshapes), dtype=np.float32).tobytes()
         runtime = self.initruntime()
-        runtime.prepare_model(None)
+        runtime.prepare_local()
         runtime.prepare_input(data)
         runtime.run()
         expected_data = np.zeros(self.outputshapes, dtype=np.float32).tobytes()

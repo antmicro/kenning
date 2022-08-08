@@ -308,7 +308,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         ((MessageType.PROCESS, b''), (False, None)),
         ((MessageType.OUTPUT, b''), (False, None)),
         ((MessageType.STATS, b''), (False, None)),
-        ((MessageType.QUANTIZATION, b''), (False, None)),
+        ((MessageType.IOSPEC, b''), (False, None)),
         ])
     def test_receive_confirmation(self, serverandclient, message, expected):
         """
@@ -425,34 +425,34 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         answer = (MessageType.MODEL, data)
         assert client.parse_message(received_data[0]) == answer
 
-    def test_upload_quantization_details(self, serverandclient, tmpfolder):
+    def test_upload_io_specification(self, serverandclient, tmpfolder):
         """
-        Tests the `upload_quantization_details()` method.
+        Tests the `upload_io_specification()` method.
 
         Parameters
         ----------
         serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
             Fixture to get initialized server and client
         tmpfolder : Path
-            Fixture to get folder for quantization_details.
+            Fixture to get folder for io_specification.
         """
-        # FIXME: Add actual example with quantization data
+        # FIXME: Add actual example with input/output data
         server, client = serverandclient
-        quantization_details = {1: 'one', 2: 'two', 3: 'three'}
+        io_specification = {1: 'one', 2: 'two', 3: 'three'}
         path = tmpfolder / uuid.uuid4().hex
         with open(path, 'w') as file:
-            json.dump(quantization_details, file)
+            json.dump(io_specification, file)
 
-        def receive_quant(server: RuntimeProtocol, shared_list: list):
+        def receive_io(server: RuntimeProtocol, shared_list: list):
             """
-            Receives quantization details.
+            Receives input/output details.
 
             Parameters
             ----------
             server : RuntimeProtocol
                 Initialized RuntimeProtocol server
             shared_list : List
-                Shared list to append received quantization details
+                Shared list to append received input/output details
             """
             status, received = server.receive_data(None, None)
             shared_list.append((status, received))
@@ -461,20 +461,20 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         shared_list = (multiprocessing.Manager()).list()
         args = (server, shared_list)
-        thread_receive = multiprocessing.Process(target=receive_quant,
+        thread_receive = multiprocessing.Process(target=receive_io,
                                                  args=args)
         server.accept_client(server.serversocket, None)
 
         thread_receive.start()
-        assert client.upload_quantization_details(path) is True
+        assert client.upload_io_specification(path) is True
         thread_receive.join()
 
         receive_status, received_data = shared_list[0]
         send_message_status = shared_list[1]
         assert send_message_status is True
         assert receive_status == ServerStatus.DATA_READY
-        encoded_data = (json.dumps(quantization_details)).encode()
-        answer = (MessageType.QUANTIZATION, encoded_data)
+        encoded_data = (json.dumps(io_specification)).encode()
+        answer = (MessageType.IOSPEC, encoded_data)
         assert client.parse_message(received_data[0]) == answer
 
     def test_download_output(self, serverandclient):
@@ -552,7 +552,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
                                              MessageType.PROCESS,
                                              MessageType.STATS,
                                              MessageType.OUTPUT,
-                                             MessageType.QUANTIZATION])
+                                             MessageType.IOSPEC])
     def test_parse_message(self, serverandclient, messagetype):
         """
         Tests the `parse_message()` method.

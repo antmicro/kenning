@@ -57,6 +57,17 @@ Examples:
 }
 """
 
+supported_keywords = [
+    'argparse_name',
+    'description',
+    'type',
+    'default',
+    'required',
+    'enum',
+    'is_list',
+    'nullable'
+]
+
 
 def from_argparse_name(s):
     return s.lstrip('-').replace('-', '_')
@@ -266,6 +277,10 @@ def add_argparse_argument(
     for name in names:
         prop = struct[name]
 
+        for p in prop:
+            if p not in supported_keywords:
+                raise KeyError(f'{p} is not a supported keyword')
+
         if 'argparse_name' in prop:
             argparse_name = prop['argparse_name']
         else:
@@ -325,6 +340,10 @@ def add_parameterschema_argument(
 
     for name in names:
         prop = struct[name]
+
+        for p in prop:
+            if p not in supported_keywords:
+                raise KeyError(f'{p} is not a supported keyword')
 
         if 'argparse_name' in prop:
             argparse_name = prop['argparse_name']

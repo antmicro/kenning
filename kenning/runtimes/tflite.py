@@ -128,8 +128,8 @@ class TFLiteRuntime(Runtime):
                 if expected_size != input_size:
                     self.log.error(f'Invalid input size:  {expected_size} != {input_size}')  # noqa E501
                     raise ValueError
-                if model_details['dtype'] != np.float32:
-                    scale, zero_point = model_details['quantization']
+                scale, zero_point = model_details['quantization']
+                if scale != 0 and zero_point != 0:
                     input = (input / scale + zero_point).astype(model_details['dtype'])  # noqa E501
                 self.interpreter.tensor(model_details['index'])()[0] = input
                 input_data = input_data[expected_size:]
@@ -147,8 +147,8 @@ class TFLiteRuntime(Runtime):
         for model_details, datatype in zip(self.interpreter.get_output_details(), self.outputdtype):
             output = self.interpreter.tensor(model_details['index'])()
             if datatype != model_details['dtype']:
-                if model_details['dtype'] != np.float32:
-                    scale, zero_point = model_details['quantization']
+                scale, zero_point = model_details['quantization']
+                if scale != 0 and zero_point != 0:
                     output = (output.astype(np.float32) - zero_point) * scale
                 output = output.astype(datatype)
             result += output.tobytes()

@@ -4,7 +4,7 @@ Runtime implementation for TFLite models.
 
 from pathlib import Path
 import numpy as np
-from typing import Optional, List
+from typing import Optional, List, Union
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
@@ -50,8 +50,8 @@ class TFLiteRuntime(Runtime):
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
-            inputdtype: str = 'float32',
-            outputdtype: str = 'float32',
+            inputdtype: Union[str, List[str]] = 'float32',
+            outputdtype: Union[str, List[str]] = 'float32',
             delegates: Optional[List] = None,
             collect_performance_data: bool = True):
         """
@@ -63,9 +63,9 @@ class TFLiteRuntime(Runtime):
             Communication protocol
         modelpath : Path
             Path for the model file.
-        inputdtype : str
+        inputdtype : Union[str, List[str]]
             Type of the input data
-        outputdtype : str
+        outputdtype : Union[str, List[str]]
             Type of the output data
         delegates : List
             List of TFLite acceleration delegate libraries
@@ -106,13 +106,20 @@ class TFLiteRuntime(Runtime):
             num_threads=4
         )
         self.interpreter.allocate_tensors()
+
+        if isinstance(self.outputdtype, str):
+            self.outputdtype = [self.outputdtype for _ in self.interpreter.get_output_details()]
+        self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
+        if isinstance(self.inputdtype, str):
+            self.inputdtype = [self.inputdtype for _ in self.interpreter.get_input_details()]
+        self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
+
         self.log.info('Model loading ended successfully')
         return True
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        for model_details in self.interpreter.get_input_details():
-            datatype = np.dtype(self.inputdtype)
+        for model_details, datatype in zip(self.interpreter.get_input_details(), self.inputdtype):
             expected_size = np.prod(model_details['shape']) * datatype.itemsize
             input = np.frombuffer(input_data[:expected_size], dtype=datatype)
             try:
@@ -137,12 +144,12 @@ class TFLiteRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         result = bytes()
-        datatype = np.dtype(self.outputdtype)
-        for model_details in self.interpreter.get_output_details():
+        for model_details, datatype in zip(self.interpreter.get_output_details(), self.outputdtype):
             output = self.interpreter.tensor(model_details['index'])()
-            if model_details['dtype'] != np.float32:
-                scale, zero_point = model_details['quantization']
-                output = (output.astype(np.float32) - zero_point) * scale
+            if datatype != model_details['dtype']:
+                if model_details['dtype'] != np.float32:
+                    scale, zero_point = model_details['quantization']
+                    output = (output.astype(np.float32) - zero_point) * scale
                 output = output.astype(datatype)
             result += output.tobytes()
         return result

@@ -92,6 +92,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
             'description': 'Enable quantization aware training',
             'type': bool,
             'default': False
+        },
+        'use_tf_select_ops': {
+            'description': 'Enable Tensorflow ops in model conversion (via SELECT_TF_OPS)',
+            'type': bool,
+            'default': False
         }
     }
 
@@ -108,7 +113,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 0.25,
-            quantization_aware_training: bool = False):
+            quantization_aware_training: bool = False,
+            use_tf_select_ops: bool = False):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -146,6 +152,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
         quantization_aware_training : bool
             Enables quantization aware training instead of a post-training
             quantization. If enabled the model has to be retrained.
+        use_tf_select_ops : bool
+            Enables adding SELECT_TF_OPS to the set of converter
+            supported ops
         """
         self.target = target
         self.modelframework = modelframework
@@ -154,6 +163,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         self.set_input_type(modelframework)
         self.dataset_percentage = dataset_percentage
         self.quantization_aware_training = quantization_aware_training
+        self.use_tf_select_ops = use_tf_select_ops
         super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
     @classmethod
@@ -216,6 +226,10 @@ class TFLiteCompiler(TensorFlowOptimizer):
             converter.target_spec.supported_opts = [
                 tf.lite.OpsSet.TFLITE_BUILTINS
             ]
+        if self.use_tf_select_ops:
+            converter.target_spec.supported_opts.append(
+                tf.lite.OpsSet.SELECT_TF_OPS
+            )
         converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)
         converter.inference_output_type = tf.as_dtype(self.inferenceoutputtype)
 

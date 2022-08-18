@@ -35,15 +35,15 @@ def main(argv):
         help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
     )
     parser.add_argument(
-        'runtimecls',
-        help='Runtime-based class with the implementation of model runtime'
-    )
-    parser.add_argument(
         'datasetcls',
         help='Dataset-based class with dataset to import',
     )
     parser.add_argument(
-        '--modelcompiler-cls',
+        '--runtime-cls',
+        help='Runtime-based class with the implementation of model runtime'
+    )
+    parser.add_argument(
+        '--compiler-cls',
         help='Optimizer-based class with compiling routines to import'
     )
     parser.add_argument(
@@ -54,26 +54,23 @@ def main(argv):
     args, _ = parser.parse_known_args(argv[1:])
 
     modelwrappercls = load_class(args.modelwrappercls)
-    runtimecls = load_class(args.runtimecls)
     datasetcls = load_class(args.datasetcls)
-    if args.modelcompiler_cls:
-        modelcompilercls = load_class(args.modelcompiler_cls)
-    else:
-        modelcompilercls = None
-    if args.protocol_cls:
-        protocolcls = load_class(args.protocol_cls)
-    else:
-        protocolcls = None
+    runtimecls = load_class(args.runtime_cls) if args.runtime_cls else None
+    compilercls = load_class(args.compiler_cls) if args.compiler_cls else None  # noqa: E501
+    protocolcls = load_class(args.protocol_cls) if args.protocol_cls else None
+
+    if (compilercls or protocolcls) and not runtimecls:
+        raise RuntimeError('Runtime is not provided')
 
     parser = argparse.ArgumentParser(
         argv[0],
         parents=[
             parser,
             modelwrappercls.form_argparse()[0],
-            runtimecls.form_argparse()[0],
-            datasetcls.form_argparse()[0],
-        ] + ([protocolcls.form_argparse()[0]] if protocolcls else [])
-          + ([modelcompilercls.form_argparse()[0]] if modelcompilercls else [])
+            datasetcls.form_argparse()[0]
+        ] + ([runtimecls.form_argparse()[0]] if runtimecls else [])
+          + ([compilercls.form_argparse()[0]] if compilercls else [])
+          + ([protocolcls.form_argparse()[0]] if protocolcls else [])
     )
 
     parser.add_argument(
@@ -100,9 +97,9 @@ def main(argv):
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
-    compiler = modelcompilercls.from_argparse(dataset, args) if modelcompilercls else None   # noqa: E501
+    compiler = compilercls.from_argparse(dataset, args) if compilercls else None  # noqa: E501
     protocol = protocolcls.from_argparse(args) if protocolcls else None
-    runtime = runtimecls.from_argparse(protocol, args)
+    runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
     modelpath = model.get_path()
     inputspec, inputdtype = model.get_input_spec()
@@ -147,19 +144,26 @@ def main(argv):
     if compiler:
         # TODO make use of --model-framework parameter or make it optional and
         # use it only if specified
-        format = compiler.consult_model_type(model)
-        if format == 'onnx' and not args.convert_to_onnx:
-            modelpath = tempfile.NamedTemporaryFile().name
-            model.save_to_onnx(modelpath)
+        if args.convert_to_onnx:
+            format = 'onnx'
+        else:
+            format = compiler.consult_model_type(model)
+            if format == 'onnx':
+                modelpath = Path(tempfile.NamedTemporaryFile().name)
+                model.save_to_onnx(modelpath)
 
         compiler.set_input_type(format)
         compiler.compile(modelpath, inputspec, inputdtype)
         modelpath = compiler.compiled_model_path
 
-    if protocol:
-        ret = runtime.run_client(dataset, model, modelpath)
+    if runtime:
+        if protocol:
+            ret = runtime.run_client(dataset, model, modelpath)
+        else:
+            ret = runtime.run_locally(dataset, model, modelpath)
     else:
-        ret = runtime.run_locally(dataset, model, modelpath)
+        model.test_inference()
+        ret = True
 
     if not ret:
         return 1

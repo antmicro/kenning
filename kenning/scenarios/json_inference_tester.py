@@ -56,26 +56,38 @@ def main(argv):
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
-    datasetcfg = json_cfg['dataset']
     modelwrappercfg = json_cfg['model_wrapper']
+    datasetcfg = json_cfg['dataset']
+    runtimecfg = (
+        json_cfg['runtime']
+        if 'runtime' in json_cfg else None
+    )
     optimizerscfg = (
         json_cfg['optimizers']
         if 'optimizers' in json_cfg else []
     )
-    runtimecfg = json_cfg['runtime']
     protocolcfg = (
         json_cfg['runtime_protocol']
         if 'runtime_protocol' in json_cfg else None
     )
 
-    datasetcls = load_class(datasetcfg['type'])
+    if (optimizerscfg or protocolcfg) and not runtimecfg:
+        raise RuntimeError('Runtime is not provided')
+
     modelwrappercls = load_class(modelwrappercfg['type'])
+    datasetcls = load_class(datasetcfg['type'])
+    runtimecls = (
+        load_class(runtimecfg['type'])
+        if runtimecfg else None
+    )
     optimizerscls = [load_class(cfg['type']) for cfg in optimizerscfg]
-    runtimecls = load_class(runtimecfg['type'])
     protocolcls = (
         load_class(protocolcfg['type'])
         if protocolcfg else None
     )
+
+    logger.set_verbosity(args.verbosity)
+    logger.get_logger()
 
     dataset = datasetcls.from_json(datasetcfg['parameters'])
     model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
@@ -87,10 +99,13 @@ def main(argv):
         protocolcls.from_json(protocolcfg['parameters'])
         if protocolcls else None
     )
-    runtime = runtimecls.from_json(protocol, runtimecfg['parameters'])
+    runtime = (
+        runtimecls.from_json(protocol, runtimecfg['parameters'])
+        if runtimecls else None
+    )
 
-    logger.set_verbosity(args.verbosity)
-    logger.get_logger()
+    modelpath = model.get_path()
+    inputspec, inputdtype = model.get_input_spec()
 
     modelframeworktuple = model.get_framework_and_version()
 
@@ -114,11 +129,7 @@ def main(argv):
             'class_names': [val for val in dataset.get_class_names()]
         }
 
-    modelpath = model.get_path()
-    inputspec, inputdtype = model.get_input_spec()
-
     prev_block = model
-
     if args.convert_to_onnx:
         modelpath = args.convert_to_onnx
         prev_block.save_to_onnx(modelpath)
@@ -143,10 +154,15 @@ def main(argv):
         modelpath = prev_block.compiled_model_path
         inputdtype = prev_block.get_inputdtype()
 
-    if protocol:
-        ret = runtime.run_client(dataset, model, modelpath)
+    if runtime:
+        if protocol:
+            ret = runtime.run_client(dataset, model, modelpath)
+        else:
+            ret = runtime.run_locally(dataset, model, modelpath)
     else:
-        ret = runtime.run_locally(dataset, model, modelpath)
+        model.test_inference()
+        ret = True
+
     if not ret:
         return 1
 

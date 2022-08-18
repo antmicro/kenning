@@ -48,7 +48,7 @@ class TensorFlowWrapper(ModelWrapper):
         return np.array(X, dtype='float32')
 
     def run_inference(self, X):
-        return self.model.predict(X)
+        return self.model.predict(X, verbose=0)
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)
@@ -61,7 +61,8 @@ class TensorFlowWrapper(ModelWrapper):
         modelproto, _ = tf2onnx.convert.from_keras(
             self.model,
             input_signature=self.inputspec,
-            output_path=modelpath
+            output_path=modelpath,
+            opset=11
         )
 
     def convert_input_to_bytes(self, inputdata):

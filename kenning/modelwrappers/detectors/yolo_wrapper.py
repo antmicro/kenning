@@ -169,7 +169,7 @@ class YOLOWrapper(ModelWrapper):
             # w = anchor_w * exp(out_w) / input_w
             # h = anchor_h * exp(out_h) / input_h
             # anchors are computed based on dataset analysis
-            maskid = self.perlayerparams['mask'][2 - box[0]][box[1]]
+            maskid = self.perlayerparams['mask'][box[0]][box[1]]
             anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]  # noqa: E501
             w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']  # noqa: E501
             h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']  # noqa: E501

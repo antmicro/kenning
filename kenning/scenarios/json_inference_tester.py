@@ -1,18 +1,34 @@
 #!/usr/bin/env python
 
 """
-A script that runs inference client based on a json file.
+A script that runs inference client.
 
-It requires implementations of several classes as input:
+It requires implementations of two classes as input:
 
 * ModelWrapper - wraps the model that will be compiled and executed on hardware
 * Optimizer - wraps the compiling routines for the deep learning model
+
+Three classes are optional. Not every combination is a valid configuration:
 * RuntimeProtocol - describes the protocol over which the communication is
   performed
 * Dataset - provides data for benchmarking
+* Runtime - provides a runtime to run the model
+
+If Runtime is not provided then providing either Optimizer or RuntimeProtocol
+raises an Exception, as this is not a valid scenario.
+
+If RuntimeProtocol is specified then it is expected that an instance of an
+inference server is running. Otherwise the inference is run locally.
+
+If Runtime is not specified then a native framework of the model is used to
+run the inference. Otherwise the provided Runtime is used.
+
+If Optimizer is not specified, then the script runs the input model either
+using provided Runtime or in its native framework. Otherwise the Optimizer
+compiles the model before passing it to the Runtime.
 
 Each of those classes require specific set or arguments to configure the
-compilation and benchmark process.
+compilation and benchmark process
 """
 
 import sys

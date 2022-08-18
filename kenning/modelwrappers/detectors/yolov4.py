@@ -57,10 +57,6 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
-    maxscore = 100.0
-    thresh = 0.2
-    finthresh = 0.1
-
     def postprocess_outputs(self, y):
         # YOLOv4, as YOLOv3, has three outputs for three stages of computing.
         # Each output layer has information about bounding boxes, scores and
@@ -71,7 +67,7 @@ class ONNXYOLOV4(YOLOWrapper):
         outputs = []
         for i in range(3):
             # each output layer shape follows formula:
-            # (BS, B * (4 + 1 + C), w / (8 * (i + 1)), h / (8 * (i + 1)))
+            # (BS, B, 4 + 1 + C, w / (8 * (i + 1)), h / (8 * (i + 1)))
             # BS is the batch size
             # w, h are width and height of the input image
             # the resolution is reduced over the network, and is 8 times
@@ -91,8 +87,20 @@ class ONNXYOLOV4(YOLOWrapper):
                 self.keyparams['height'] // (8 * 2 ** i)
             )
 
+            # Extract the output and reshape it to match actual form
+            outarr = \
+                y[lastid:(lastid + np.prod(outshape))].reshape(outshape).copy()
+            # x and y offsets need to be passed through sigmoid function
+            # NOTE: w and h are NOT passed through sigmoid function - they are
+            # later computed in parse_outputs methods using anchors and mask
+            # parameters.
+            outarr[:, :, :2, :, :] = \
+                1 / (1 + np.exp(-outarr[:, :, :2, :, :]))
+            # objectness and classes are also passed through sigmoid function
+            outarr[:, :, 4:, :, :] = \
+                1 / (1 + np.exp(-outarr[:, :, 4:, :, :]))
             outputs.append(
-                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
+                outarr
             )
 
             lastid += np.prod(outshape)

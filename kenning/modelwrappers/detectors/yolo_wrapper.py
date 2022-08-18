@@ -180,12 +180,8 @@ class YOLOWrapper(ModelWrapper):
             # get class with highest probability
             classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
 
-            # compute final class score (objectness * class probability
+            # compute final class score (objectness * class probability)
             score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]  # noqa: E501
-
-            # drop the bounding box if final score is below threshold
-            if score < self.thresh:
-                continue
 
             bboxes.append([x, y, w, h, classid, score])
 

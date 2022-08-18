@@ -2,10 +2,10 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
-    kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \
     ./build/jetson-agx-xavier-tvm-darknet.json \
+    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/detection/yolov3.weights \
     --model-framework darknet \

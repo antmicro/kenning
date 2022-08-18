@@ -2,10 +2,10 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
-    kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/jetson-agx-xavier-tvm-pytorch.json \
+    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \

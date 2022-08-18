@@ -2,10 +2,10 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
-    kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/jetson-agx-xavier-tvm-tensorflow.json \
+    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \

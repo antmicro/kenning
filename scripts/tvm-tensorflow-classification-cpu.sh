@@ -2,10 +2,10 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.runtimes.tvm.TVMRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/local-cpu-tvm-tensorflow-classification.json \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
+    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \

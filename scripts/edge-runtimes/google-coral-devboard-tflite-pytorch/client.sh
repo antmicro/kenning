@@ -2,10 +2,10 @@
 
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
-    --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
-    kenning.runtimes.tflite.TFLiteRuntime \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/google-coral-devboard-tflite-pytorch.json \
+    --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
+    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \

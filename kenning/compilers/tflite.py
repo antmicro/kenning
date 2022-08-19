@@ -94,7 +94,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             'default': False
         },
         'use_tf_select_ops': {
-            'description': 'Enable Tensorflow ops in model conversion (via SELECT_TF_OPS)',
+            'description': 'Enable Tensorflow ops in model conversion (via SELECT_TF_OPS)',  # noqa: E501
             'type': bool,
             'default': False
         }

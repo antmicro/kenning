@@ -109,12 +109,17 @@ class TFLiteRuntime(Runtime):
         )
         self.interpreter.allocate_tensors()
         self.signature = self.interpreter.get_signature_runner()
+        self.sginfo = self.interpreter.get_signature_list()['serving_default']
 
         if isinstance(self.outputdtype, str):
-            self.outputdtype = [self.outputdtype for _ in self.interpreter.get_output_details()]
+            self.outputdtype = [
+                self.outputdtype for _ in self.interpreter.get_output_details()
+            ]
         self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
         if isinstance(self.inputdtype, str):
-            self.inputdtype = [self.inputdtype for _ in self.interpreter.get_input_details()]
+            self.inputdtype = [
+                self.inputdtype for _ in self.interpreter.get_input_details()
+            ]
         self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
 
         self.log.info('Model loading ended successfully')
@@ -123,7 +128,7 @@ class TFLiteRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         self.inputs = {}
-        input_names = self.interpreter.get_signature_list()['serving_default']['inputs']
+        input_names = self.sginfo['inputs']
         for datatype, name in zip(self.inputdtype, input_names):
             model_details = self.signature.get_input_details()[name]
             expected_size = np.prod(model_details['shape']) * datatype.itemsize
@@ -150,7 +155,7 @@ class TFLiteRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         result = bytes()
-        output_names = self.interpreter.get_signature_list()['serving_default']['outputs']
+        output_names = self.sginfo['outputs']
         for datatype, name in zip(self.outputdtype, output_names):
             model_details = self.signature.get_output_details()[name]
             output = self.outputs[name]

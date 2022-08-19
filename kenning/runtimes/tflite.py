@@ -108,6 +108,7 @@ class TFLiteRuntime(Runtime):
             num_threads=4
         )
         self.interpreter.allocate_tensors()
+        self.signature = self.interpreter.get_signature_runner()
 
         if isinstance(self.outputdtype, str):
             self.outputdtype = [self.outputdtype for _ in self.interpreter.get_output_details()]
@@ -121,7 +122,10 @@ class TFLiteRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        for model_details, datatype in zip(self.interpreter.get_input_details(), self.inputdtype):
+        self.inputs = {}
+        input_names = self.interpreter.get_signature_list()['serving_default']['inputs']
+        for datatype, name in zip(self.inputdtype, input_names):
+            model_details = self.signature.get_input_details()[name]
             expected_size = np.prod(model_details['shape']) * datatype.itemsize
             input = np.frombuffer(input_data[:expected_size], dtype=datatype)
             try:
@@ -132,8 +136,8 @@ class TFLiteRuntime(Runtime):
                     raise ValueError
                 scale, zero_point = model_details['quantization']
                 if scale != 0 and zero_point != 0:
-                    input = (input / scale + zero_point).astype(model_details['dtype'])  # noqa E501
-                self.interpreter.tensor(model_details['index'])()[0] = input
+                    input = (input / scale + zero_point).astype(model_details['dtype']) # noqa E501
+                self.inputs[name] = input.astype(model_details['dtype'])
                 input_data = input_data[expected_size:]
             except ValueError as ex:
                 self.log.error(f'Failed to load input: {ex}')
@@ -141,13 +145,15 @@ class TFLiteRuntime(Runtime):
         return True
 
     def run(self):
-        self.interpreter.invoke()
+        self.outputs = self.signature(**self.inputs)
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         result = bytes()
-        for model_details, datatype in zip(self.interpreter.get_output_details(), self.outputdtype):
-            output = self.interpreter.tensor(model_details['index'])()
+        output_names = self.interpreter.get_signature_list()['serving_default']['outputs']
+        for datatype, name in zip(self.outputdtype, output_names):
+            model_details = self.signature.get_output_details()[name]
+            output = self.outputs[name]
             if datatype != model_details['dtype']:
                 scale, zero_point = model_details['quantization']
                 if scale != 0 and zero_point != 0:

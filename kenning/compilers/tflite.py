@@ -219,15 +219,15 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if self.target in ['int8', 'edgetpu']:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            converter.target_spec.supported_opts = [
+            converter.target_spec.supported_ops = [
                 tf.lite.OpsSet.TFLITE_BUILTINS_INT8
             ]
         else:
-            converter.target_spec.supported_opts = [
+            converter.target_spec.supported_ops = [
                 tf.lite.OpsSet.TFLITE_BUILTINS
             ]
         if self.use_tf_select_ops:
-            converter.target_spec.supported_opts.append(
+            converter.target_spec.supported_ops.append(
                 tf.lite.OpsSet.SELECT_TF_OPS
             )
         converter.inference_input_type = tf.as_dtype(self.inferenceinputtype)

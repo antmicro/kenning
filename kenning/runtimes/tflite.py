@@ -29,13 +29,15 @@ class TFLiteRuntime(Runtime):
             'argparse_name': '--input-dtype',
             'description': 'Type of input tensor elements',
             'enum': supported_types,
-            'default': 'float32'
+            'default': 'float32',
+            'is_list': True
         },
         'outputdtype': {
             'argparse_name': '--output-dtype',
             'description': 'Type of output tensor elements',
             'enum': supported_types,
-            'default': 'float32'
+            'default': 'float32',
+            'is_list': True
         },
         'delegates': {
             'argparse_name': '--delegates-list',

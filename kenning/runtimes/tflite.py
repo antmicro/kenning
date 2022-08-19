@@ -132,8 +132,8 @@ class TFLiteRuntime(Runtime):
                     self.log.error(f'Invalid input size:  {expected_size} != {input_size}')  # noqa E501
                     raise ValueError
                 scale, zero_point = model_details['quantization']
-                if scale != 0 and zero_point != 0:
-                    input = (input / scale + zero_point).astype(model_details['dtype']) # noqa E501
+                if scale != 0:
+                    input = (input / scale + zero_point)
                 self.inputs[name] = input.astype(model_details['dtype'])
                 input_data = input_data[expected_size:]
             except ValueError as ex:
@@ -153,7 +153,7 @@ class TFLiteRuntime(Runtime):
             output = self.outputs[name]
             if datatype != model_details['dtype']:
                 scale, zero_point = model_details['quantization']
-                if scale != 0 and zero_point != 0:
+                if scale != 0:
                     output = (output.astype(np.float32) - zero_point) * scale
                 output = output.astype(datatype)
             result += output.tobytes()

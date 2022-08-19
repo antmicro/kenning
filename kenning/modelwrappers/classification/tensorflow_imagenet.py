@@ -20,11 +20,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
             'argparse_name': '--model-cls',
             'description': 'The Keras model class',
             'type': str
-        },
-        'numclasses': {
-            'argparse_name': '--num-classes',
-            'description': 'The number of classifier classes',
-            'type': int,
         }
     }
 
@@ -33,8 +28,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             modelpath: Path,
             dataset: Dataset,
             from_file: bool = True,
-            modelcls: str = '',
-            numclasses: int = 1000):
+            modelcls: str = ''):
         """
         Creates model wrapper for TensorFlow classification
         model pretrained on ImageNet dataset.
@@ -50,8 +44,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
         modelcls : str
             The model class import path
             Used for loading keras.applications pretrained models
-        numclasses: int
-            Number of classes in dataset
         from_file: bool
             True if model should be loaded from file
         """
@@ -59,7 +51,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         self.modelcls = modelcls
-        self.numclasses = numclasses
+        self.numclasses = 1000
         super().__init__(
             modelpath,
             dataset,
@@ -75,16 +67,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self.load_model(self.modelpath)
         else:
             self.model = load_class(self.modelcls)()
-            self.save_model(self.modelpath / self.modelcls)
-
-    def preprocess_input(self, X):
-        return tf.keras.applications.resnet.preprocess_input(np.array(X))
-
-    def run_inference(self, X):
-        return self.model.predict(X)
-
-    def get_framework_and_version(self):
-        return ('tensorflow', tf.__version__)
+            self.save_model(self.modelpath)
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

@@ -180,7 +180,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             args.inference_input_type,
             args.inference_output_type,
             args.dataset_percentage,
-            args.quantization_aware_training
+            args.quantization_aware_training,
+            args.use_select_tf_ops
         )
 
     def compile(

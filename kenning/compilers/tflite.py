@@ -189,6 +189,12 @@ class TFLiteCompiler(TensorFlowOptimizer):
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
 
+        if not io_specs:
+            io_specs = self.load_spec(inputmodelpath)
+
+        if not io_specs or not io_specs['output'] or not io_specs['input']:
+            raise ValueError('No input/ouput specification found')
+
         if self.quantization_aware_training:
             assert self.inputtype == 'keras'
             model = tf.keras.models.load_model(inputmodelpath)
@@ -240,10 +246,23 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         tflite_model = converter.convert()
 
-        # TODO: Save renamed and possibly quantized metadata about the layers
+        interpreter = tf.lite.Interpreter(model_content=tflite_model)
+        signature = interpreter.get_signature_runner()
+
+        for spec in io_specs['input']:
+            old_name = spec['name']
+            new_name = signature.get_input_details()[old_name]['name']
+            spec['name'] = new_name
+
+        for spec in io_specs['output']:
+            old_name = spec['name']
+            new_name = signature.get_output_details()[old_name]['name']
+            spec['name'] = new_name
 
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
+
+        self.dump_spec(inputmodelpath, io_specs)
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

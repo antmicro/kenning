@@ -4,7 +4,7 @@ Runtime implementation for TFLite models.
 
 from pathlib import Path
 import numpy as np
-from typing import Optional, List, Union
+from typing import Optional, List
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
@@ -52,8 +52,8 @@ class TFLiteRuntime(Runtime):
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
-            inputdtype: Union[str, List[str]] = 'float32',
-            outputdtype: Union[str, List[str]] = 'float32',
+            inputdtype: List[str] = ('float32',),
+            outputdtype: List[str] = ('float32',),
             delegates: Optional[List] = None,
             collect_performance_data: bool = True):
         """
@@ -65,9 +65,9 @@ class TFLiteRuntime(Runtime):
             Communication protocol
         modelpath : Path
             Path for the model file.
-        inputdtype : Union[str, List[str]]
+        inputdtype : List[str]
             Type of the input data
-        outputdtype : Union[str, List[str]]
+        outputdtype : List[str]
             Type of the output data
         delegates : List
             List of TFLite acceleration delegate libraries
@@ -111,15 +111,7 @@ class TFLiteRuntime(Runtime):
         self.signature = self.interpreter.get_signature_runner()
         self.sginfo = self.interpreter.get_signature_list()['serving_default']
 
-        if isinstance(self.outputdtype, str):
-            self.outputdtype = [
-                self.outputdtype for _ in self.interpreter.get_output_details()
-            ]
         self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
-        if isinstance(self.inputdtype, str):
-            self.inputdtype = [
-                self.inputdtype for _ in self.interpreter.get_input_details()
-            ]
         self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
 
         self.log.info('Model loading ended successfully')

@@ -199,7 +199,7 @@ class RuntimeWithModel(RuntimeTests):
 
         # Model is initialized but input is with wrong shape and datatype
         data = np.arange(99, dtype=np.int8).tobytes()
-        runtime = self.initruntime(inputdtype='float32')
+        runtime = self.initruntime(inputdtype=['float32'])
         runtime.prepare_model(None)
         with pytest.raises(ValueError):
             output = runtime.prepare_input(data)

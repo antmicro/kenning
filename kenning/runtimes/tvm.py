@@ -2,7 +2,7 @@
 Runtime implementation for TVM-compiled models.
 """
 
-from typing import Optional
+from typing import Optional, List
 from pathlib import Path
 import numpy as np
 from base64 import b64encode
@@ -46,7 +46,8 @@ class TVMRuntime(Runtime):
             'argparse_name': '--input-dtype',
             'description': 'Type of input tensor elements',
             'type': str,
-            'default': 'float32'
+            'default': 'float32',
+            'is_list': True
         },
         'use_tvm_vm': {
             'argparse_name': '--runtime-use-vm',
@@ -74,7 +75,7 @@ class TVMRuntime(Runtime):
             modelpath: Path,
             contextname: str = 'cpu',
             contextid: int = 0,
-            inputdtype: str = 'float32',
+            inputdtype: List[str] = ('float32',),
             use_tvm_vm: bool = False,
             use_json_out: bool = False,
             io_details_path: Optional[Path] = None,
@@ -101,8 +102,11 @@ class TVMRuntime(Runtime):
         self.modelpath = modelpath
         self.contextname = contextname
         self.contextid = contextid
-        self.inputdtype = inputdtype
-        self.model_inputdtype = inputdtype
+
+        # TODO: Adapt TVMRuntime for multiple inputs
+        self.inputdtype = inputdtype[0]
+        self.model_inputdtype = inputdtype[0]
+
         self.input_details = None
         self.output_details = None
         self.module = None

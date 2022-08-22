@@ -73,10 +73,12 @@ class TFLiteRuntime(Runtime):
             List of TFLite acceleration delegate libraries
         """
         self.modelpath = modelpath
-        self.interpreter = None
+        self.signature = None
         self.inputdtype = inputdtype
         self.outputdtype = outputdtype
         self.delegates = delegates
+        self.inputs = None
+        self.outputs = None
         super().__init__(protocol, collect_performance_data)
 
     @classmethod
@@ -102,14 +104,14 @@ class TFLiteRuntime(Runtime):
         delegates = None
         if self.delegates:
             delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
-        self.interpreter = tflite.Interpreter(
+        interpreter = tflite.Interpreter(
             str(self.modelpath),
             experimental_delegates=delegates,
             num_threads=4
         )
-        self.interpreter.allocate_tensors()
-        self.signature = self.interpreter.get_signature_runner()
-        self.sginfo = self.interpreter.get_signature_list()['serving_default']
+        interpreter.allocate_tensors()
+        self.signature = interpreter.get_signature_runner()
+        self.sginfo = interpreter.get_signature_list()['serving_default']
 
         self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
         self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
@@ -139,13 +141,22 @@ class TFLiteRuntime(Runtime):
             except ValueError as ex:
                 self.log.error(f'Failed to load input: {ex}')
                 return False
+        if input_data:
+            self.log.error("Failed to load input: Received more data than model expected.")  # noqa: E501
+            return False
         return True
 
     def run(self):
-        self.outputs = self.signature(**self.inputs)
+        if self.signature is None:
+            raise AttributeError("You must prepare the model before running it.")  # noqa: E501
+        if self.inputs is not None:
+            self.outputs = self.signature(**self.inputs)
+            self.inputs = None
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
+        if self.outputs is None:
+            raise AttributeError("No outputs were found ")
         result = bytes()
         output_names = self.sginfo['outputs']
         for datatype, name in zip(self.outputdtype, output_names):
@@ -157,4 +168,5 @@ class TFLiteRuntime(Runtime):
                     output = (output.astype(np.float32) - zero_point) * scale
                 output = output.astype(datatype)
             result += output.tobytes()
+        self.outputs = None
         return result

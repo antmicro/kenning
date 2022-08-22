@@ -126,7 +126,7 @@ class IREECompiler(Optimizer):
             'enum': list(backend_convert.keys())
         },
         'compiler-args': {
-            'argaprse_name': '--compiler-args',
+            'argparse_name': '--compiler-args',
             'description': 'Additional options that are passed to compiler',
             'default': None,
             'is_list': True,

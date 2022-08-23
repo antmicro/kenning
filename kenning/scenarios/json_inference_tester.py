@@ -126,7 +126,11 @@ def main(argv):
     for i in range(len(optimizers)):
         next_block = optimizers[i]
 
-        format = next_block.consult_model_type(prev_block)
+        format = next_block.consult_model_type(
+            prev_block,
+            force_onnx=(args.convert_to_onnx and prev_block == model)
+        )
+
         if (format == 'onnx' and prev_block == model) and \
                 not args.convert_to_onnx:
             modelpath = tempfile.NamedTemporaryFile().name

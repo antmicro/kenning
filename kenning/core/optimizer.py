@@ -4,9 +4,10 @@ Provides an API for model compilers.
 
 import argparse
 from pathlib import Path
-from typing import List, Dict, Tuple
+from typing import List, Dict, Tuple, Union
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
@@ -244,14 +245,17 @@ class Optimizer(object):
         """
         return self.outputtypes
 
-    def consult_model_type(self, previous_block) -> str:
+    def consult_model_type(
+            self,
+            previous_block: Union['ModelWrapper', 'Optimizer'],
+            force_onnx=False) -> str:
         """
         Finds output format of the previous block in the chain
         matching with an input format of the current block.
 
         Parameters
         ----------
-        previous_block : Optimizer or ModelWrapper
+        previous_block : Union[ModelWrapper, Optimizer]
             Previous block in the optimization chain.
 
         Raises
@@ -265,13 +269,26 @@ class Optimizer(object):
 
         possible_outputs = previous_block.get_output_formats()
 
+        if force_onnx:
+            if (('onnx' in self.get_input_formats())
+                    and ('onnx' in possible_outputs)):
+                return 'onnx'
+            else:
+                raise ValueError(
+                    '"onnx" format is not supported by at least one block\n' +
+                    f'Input block supported formats: {", ".join(possible_outputs)}\n' +  # noqa: E501
+                    f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
+                )
+
         for input in self.get_input_formats():
             if input in possible_outputs:
                 return input
 
         raise ValueError(
             f'No matching formats between two objects: {self} and ' +
-            f'{previous_block}'
+            f'{previous_block}\n' +
+            f'Input block supported formats: {", ".join(possible_outputs)}\n' +  # noqa: E501
+            f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
         )
 
     def get_inputdtype(self) -> str:

@@ -10,7 +10,6 @@ from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
 
 import tensorflow as tf
-import numpy as np
 
 
 class TensorFlowImageNet(TensorFlowWrapper):

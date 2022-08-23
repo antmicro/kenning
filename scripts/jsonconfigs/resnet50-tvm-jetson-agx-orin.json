@@ -14,7 +14,7 @@
         "parameters":
         {
             "dataset_root": "./build/imagenet-dataset",
-            "image_memory_layout": "NCHW",
+            "image_memory_layout": "NHWC",
             "preprocess_type": "caffe"
         }
     },
@@ -33,12 +33,14 @@
         {
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters": {
-                "target": "cuda -arch=sm_87 -libs=cublas,tensorrt",
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
                 "target_host": null,
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/compiled_model_resnet50.tar"
+                "compiled_model_path": "./build/compiled_model_resnet50.tar",
+                "conv2d_data_layout": "NHWC",
+                "conv2d_kernel_layout": "OHWI"
             }
         }
     ],

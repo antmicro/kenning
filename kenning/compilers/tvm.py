@@ -248,6 +248,16 @@ class TVMCompiler(Optimizer):
             'type': Path,
             'required': False,
             'nullable': True
+        },
+        'conv2d_data_layout': {
+            'description': 'Configures the I/O layout for the CONV2D operations',
+            'type': str,
+            'default': 'default'
+        },
+        'conv2d_kernel_layout': {
+            'description': 'Configures the kernel layout for the CONV2D operations',
+            'type': str,
+            'default': 'default'
         }
     }
 
@@ -262,7 +272,9 @@ class TVMCompiler(Optimizer):
             libdarknetpath: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,
             conversion_func: str = 'default',
-            quantization_details_path: Optional[Path] = None):
+            quantization_details_path: Optional[Path] = None,
+            conv2d_data_layout: str = 'default',
+            conv2d_kernel_layout: str = 'default'):
         """
         A TVM Compiler wrapper.
 
@@ -303,6 +315,8 @@ class TVMCompiler(Optimizer):
         self.conversion_func = conversion_func
         self.quantization_details_path = quantization_details_path
         self.set_input_type(modelframework)
+        self.conv2d_data_layout = conv2d_data_layout
+        self.conv2d_kernel_layout = conv2d_kernel_layout
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -317,14 +331,30 @@ class TVMCompiler(Optimizer):
             args.libdarknet_path,
             args.compile_use_vm,
             args.output_conversion_function,
-            args.quantization_details_path
+            args.quantization_details_path,
+            args.conv2d_data_layout,
+            args.conv2d_kernel_layout
         )
 
     def compile_model(self, mod, params, outputpath):
+        # additional regular optimizations applied to models
+        transforms = [
+            relay.transform.RemoveUnusedFunctions(),
+            relay.transform.ConvertLayout({
+                "nn.conv2d": [
+                    self.conv2d_data_layout, self.conv2d_kernel_layout
+                ],
+                "qnn.conv2d": [
+                    self.conv2d_data_layout, self.conv2d_kernel_layout
+                ]
+            })
+        ]
+        additional_opts = tvm.transform.Sequential(transforms)
         if self.use_tvm_vm:
             with tvm.transform.PassContext(
                     opt_level=3,
                     disabled_pass=["FoldScaleAxis"]):
+                mod = additional_opts(mod)
                 vm_exec = relay.vm.compile(
                     mod,
                     target=self.target_obj,
@@ -336,6 +366,7 @@ class TVMCompiler(Optimizer):
                 lib.export_library(str(outputpath)+'.so')
         else:
             with tvm.transform.PassContext(opt_level=self.opt_level):
+                mod = additional_opts(mod)
                 lib = relay.build(
                     mod,
                     target=self.target_obj,

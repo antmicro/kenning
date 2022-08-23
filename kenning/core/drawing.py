@@ -8,7 +8,6 @@ from typing import List, Tuple, Optional
 import numpy as np
 import itertools
 from pathlib import Path
-import matplotlib.colors as colors
 from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 from math import floor
@@ -164,7 +163,9 @@ def draw_confusion_matrix(
     vectors = 1
     if len(class_names) >= 50:
         vectors = 0
-    gs = gridspec.GridSpec(len(class_names) + vectors, len(class_names) + vectors)
+    gs = gridspec.GridSpec(
+        len(class_names) + vectors, len(class_names) + vectors
+    )
     axConfMatrix = fig.add_subplot(gs[0:len(class_names), 0:len(class_names)])
     plots = [axConfMatrix]
     if len(class_names) < 50:
@@ -320,7 +321,7 @@ def draw_confusion_matrix(
         img,
         ax=plots,
         shrink=0.5,
-        ticks = np.linspace(0.0, 1.0, 11),
+        ticks=np.linspace(0.0, 1.0, 11),
         pad=0.1
     )
     for t in cbar.ax.get_yticklabels():

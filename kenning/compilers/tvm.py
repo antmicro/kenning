@@ -250,12 +250,12 @@ class TVMCompiler(Optimizer):
             'nullable': True
         },
         'conv2d_data_layout': {
-            'description': 'Configures the I/O layout for the CONV2D operations',
+            'description': 'Configures the I/O layout for the CONV2D operations',  # noqa: E501
             'type': str,
             'default': 'default'
         },
         'conv2d_kernel_layout': {
-            'description': 'Configures the kernel layout for the CONV2D operations',
+            'description': 'Configures the kernel layout for the CONV2D operations',  # noqa: E501
             'type': str,
             'default': 'default'
         }

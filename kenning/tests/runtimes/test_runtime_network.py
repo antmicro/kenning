@@ -99,7 +99,8 @@ class TestRuntimeNetwork:
         data = self.generate_byte_data()
         runtime.prepare_client()
         assert runtime.prepare_model(None) is True
-        runtime.process_input(data)
+        assert runtime.prepare_input(data) is True
+        runtime.process_input(b'')
 
     def test_prepare_client(self, server, runtime):
         """

@@ -252,12 +252,12 @@ class TVMCompiler(Optimizer):
         'conv2d_data_layout': {
             'description': 'Configures the I/O layout for the CONV2D operations',  # noqa: E501
             'type': str,
-            'default': 'default'
+            'default': ''
         },
         'conv2d_kernel_layout': {
             'description': 'Configures the kernel layout for the CONV2D operations',  # noqa: E501
             'type': str,
-            'default': 'default'
+            'default': ''
         }
     }
 
@@ -339,16 +339,31 @@ class TVMCompiler(Optimizer):
     def compile_model(self, mod, params, outputpath):
         # additional regular optimizations applied to models
         transforms = [
-            relay.transform.RemoveUnusedFunctions(),
-            relay.transform.ConvertLayout({
-                "nn.conv2d": [
-                    self.conv2d_data_layout, self.conv2d_kernel_layout
-                ],
-                "qnn.conv2d": [
-                    self.conv2d_data_layout, self.conv2d_kernel_layout
-                ]
-            })
+            relay.transform.RemoveUnusedFunctions()
         ]
+        if self.conv2d_data_layout != '' or self.conv2d_kernel_layout != '':
+            log = get_logger()
+            log.info(
+                'Applying ConvertLayout transform:\n' +
+                'DATA LAYOUT   : "{self.conv2d_data_layout}\n' +
+                'KERNEL LAYOUT : "{self.conv2d_kernel_layout}'
+            )
+
+            if self.conv2d_data_layout == '':
+                raise CompilationError(
+                    'conv2d_data_layout cannot be empty'
+                )
+            transforms.append(
+                relay.transform.ConvertLayout({
+                    "nn.conv2d": [
+                        self.conv2d_data_layout, self.conv2d_kernel_layout
+                    ],
+                    "qnn.conv2d": [
+                        self.conv2d_data_layout, self.conv2d_kernel_layout
+                    ]
+                })
+            )
+
         additional_opts = tvm.transform.Sequential(transforms)
         if self.use_tvm_vm:
             with tvm.transform.PassContext(

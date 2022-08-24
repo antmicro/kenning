@@ -180,7 +180,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             dtype: str = 'float32'):
 
         if self.quantization_aware_training:
-            assert(self.inputtype == 'keras')
+            assert self.inputtype == 'keras'
             model = tf.keras.models.load_model(inputmodelpath)
 
             def annotate_model(layer):

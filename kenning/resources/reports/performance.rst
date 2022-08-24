@@ -90,7 +90,7 @@ Memory usage
 * *Median*: **{{ median(data['session_utilization_mem_percent']) }} %**.
 {% endif %}
 
-{% if 'session_utilization_gpu_utilization' in data -%}
+{% if 'session_utilization_gpu_utilization' in data and data['session_utilization_gpu_utilization']|length > 0 -%}
 GPU usage
 ~~~~~~~~~
 
@@ -106,7 +106,7 @@ GPU usage
 * *Median*: **{{ median(data['session_utilization_gpu_utilization']) }} %**.
 {% endif %}
 
-{% if 'session_utilization_gpu_mem_utilization' in data -%}
+{% if 'session_utilization_gpu_mem_utilization' in data and data['session_utilization_gpu_mem_utilization']|length > 0 -%}
 GPU memory usage
 ~~~~~~~~~~~~~~~~
 

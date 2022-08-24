@@ -138,8 +138,11 @@ def performance_report(
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
         usepath = imgdir / f'{reportpath.stem}_gpu_memory_usage.png'
-        if len(measurementsdata['session_utilization_gpu_mem_utilization']) == 0:
-            log.warning('Incorrectly collected data for GPU memory utilization')
+        gpumemmetric = 'session_utilization_gpu_mem_utilization'
+        if len(measurementsdata[gpumemmetric]) == 0:
+            log.warning(
+                'Incorrectly collected data for GPU memory utilization'
+            )
         else:
             time_series_plot(
                 str(usepath),
@@ -147,7 +150,7 @@ def performance_report(
                 'Time', 's',
                 'GPU memory usage', 'MB',
                 measurementsdata['session_utilization_gpu_timestamp'],
-                measurementsdata['session_utilization_gpu_mem_utilization'])
+                measurementsdata[gpumemmetric])
             measurementsdata['gpumemusagepath'] = str(
                 usepath.relative_to(rootdir)
             )

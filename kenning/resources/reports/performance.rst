@@ -27,7 +27,7 @@ Inference performance metrics
 General information
 ~~~~~~~~~~~~~~~~~~~
 
-*Model framework*: 
+*Model framework*:
 
 * {{ data['model_framework'] }} ver. {{ data['model_version'] }}
 {% if data['compilers']|length > 0 %}

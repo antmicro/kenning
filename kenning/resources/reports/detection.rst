@@ -29,12 +29,12 @@ Object detection metrics
     :name: {{data["reportname"][0]}}_tpiou
     :alt: Per-Class mean IoU values for correctly labeled objects
     :align: center
-   
+
     Per-Class mean IoU values for correctly labeled objects
 
 .. figure:: {{data["iouhistpath"]}}
     :name: {{data["reportname"][0]}}_iouhist
     :alt: Histogram of IoU values for correctly labeled objects
     :align: center
-   
+
     Histogram of IoU values for correctly labeled objects

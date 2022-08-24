@@ -143,7 +143,7 @@ To get a quantized model, replace ``target``, ``inferenceinputtype`` and ``infer
 To check how the compiled model is performing, create ``TFLiteRuntime`` object and run local model evaluation:
 
 .. code-block:: python
-   
+
     ...
 
     runtime = TFLiteRuntime(
@@ -159,7 +159,7 @@ To check how the compiled model is performing, create ``TFLiteRuntime`` object a
     MeasurementsCollector.save_measurements('out.json')
 
 Method ``runtime.run_locally`` runs benchmarks of the model on the current device.
-The ``MeasurementsCollector`` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in :ref:`render-report`. 
+The ``MeasurementsCollector`` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in :ref:`render-report`.
 
 Using Kenning scenarios
 -----------------------

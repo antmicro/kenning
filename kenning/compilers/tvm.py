@@ -273,8 +273,8 @@ class TVMCompiler(Optimizer):
             use_tvm_vm: bool = False,
             conversion_func: str = 'default',
             quantization_details_path: Optional[Path] = None,
-            conv2d_data_layout: str = 'default',
-            conv2d_kernel_layout: str = 'default'):
+            conv2d_data_layout: str = '',
+            conv2d_kernel_layout: str = ''):
         """
         A TVM Compiler wrapper.
 
@@ -298,6 +298,13 @@ class TVMCompiler(Optimizer):
         quantization_details_path : Optional[Path]
             Path where the quantization details are saved. It is used by
             the runtimes later to quantize input and output during inference.
+        conv2d_data_layout : str
+            Data layout to convert the model to.
+            Empty if no conversion is necessary.
+            This value must be set if conv2d_kernel_layout is set
+        conv2d_kernel_layout : str
+            Kernel layout to convert the model to.
+            Empty if no conversion is necessary.
         """
         self.modelframework = modelframework
 
@@ -342,6 +349,8 @@ class TVMCompiler(Optimizer):
             relay.transform.RemoveUnusedFunctions()
         ]
         if self.conv2d_data_layout != '' or self.conv2d_kernel_layout != '':
+            if self.conv2d_kernel_layout == '':
+                self.conv2d_kernel_layout = 'default'
             log = get_logger()
             log.info(
                 'Applying ConvertLayout transform:\n' +

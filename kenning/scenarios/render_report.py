@@ -138,34 +138,40 @@ def performance_report(
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
         usepath = imgdir / f'{reportpath.stem}_gpu_memory_usage.png'
-        time_series_plot(
-            str(usepath),
-            f'GPU memory usage for {reportname}',
-            'Time', 's',
-            'GPU memory usage', 'MB',
-            measurementsdata['session_utilization_gpu_timestamp'],
-            measurementsdata['session_utilization_gpu_mem_utilization'])
-        measurementsdata['gpumemusagepath'] = str(
-            usepath.relative_to(rootdir)
-        )
+        if len(measurementsdata['session_utilization_gpu_mem_utilization']) == 0:
+            log.warning('Incorrectly collected data for GPU memory utilization')
+        else:
+            time_series_plot(
+                str(usepath),
+                f'GPU memory usage for {reportname}',
+                'Time', 's',
+                'GPU memory usage', 'MB',
+                measurementsdata['session_utilization_gpu_timestamp'],
+                measurementsdata['session_utilization_gpu_mem_utilization'])
+            measurementsdata['gpumemusagepath'] = str(
+                usepath.relative_to(rootdir)
+            )
     else:
         log.warning('No GPU memory usage measurements in the report')
 
     if 'session_utilization_gpu_utilization' in measurementsdata:
         log.info('Using target measurements GPU utilization')
         usepath = imgdir / f'{reportpath.stem}_gpu_usage.png'
-        time_series_plot(
-            str(usepath),
-            f'GPU Utilization for {reportname}',
-            'Time', 's',
-            'Utilization', '%',
-            measurementsdata['session_utilization_gpu_timestamp'],
-            measurementsdata['session_utilization_gpu_utilization'])
-        measurementsdata['gpuusagepath'] = str(
-            usepath.relative_to(rootdir)
-        )
+        if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
+            log.warning('Incorrectly collected data for GPU utilization')
+        else:
+            time_series_plot(
+                str(usepath),
+                f'GPU Utilization for {reportname}',
+                'Time', 's',
+                'Utilization', '%',
+                measurementsdata['session_utilization_gpu_timestamp'],
+                measurementsdata['session_utilization_gpu_utilization'])
+            measurementsdata['gpuusagepath'] = str(
+                usepath.relative_to(rootdir)
+            )
     else:
-        log.warning('No GPU memory usage measurements in the report')
+        log.warning('No GPU utilization measurements in the report')
 
     with path(reports, 'performance.rst') as reporttemplate:
         return create_report_from_measurements(

@@ -320,20 +320,20 @@ With the above classes, the help can look as follows::
     modelwrappercls       ModelWrapper-based class with inference implementation to import
     runtimecls            Runtime-based class with the implementation of model runtime
     dataprovidercls       DataProvider-based class used for providing data
-  
+
   optional arguments:
     -h, --help            show this help message and exit
     --output-collectors OUTPUT_COLLECTORS [OUTPUT_COLLECTORS ...]
                           List to the OutputCollector-based classes where the results will be passed
     --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                           Verbosity level
-  
+
   Inference model arguments:
     --model-path MODEL_PATH
                           Path to the model
     --classes CLASSES     File containing Open Images class IDs and class names in CSV format to use (can be generated using
                           kenning.scenarios.open_images_classes_extractor) or class type
-  
+
   Runtime arguments:
     --disable-performance-measurements
                           Disable collection and processing of performance metrics
@@ -347,7 +347,7 @@ With the above classes, the help can look as follows::
                           Type of input tensor elements
     --runtime-use-vm      At runtime use the TVM Relay VirtualMachine
     --use-json-at-output  Encode outputs of models into a JSON file with base64-encoded arrays
-  
+
   DataProvider arguments:
     --video-file-path VIDEO_FILE_PATH
                           Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)
@@ -357,7 +357,7 @@ With the above classes, the help can look as follows::
                           Determines the width of the image for the model
     --image-height IMAGE_HEIGHT
                           Determines the height of the image for the model
-  
+
   OutputCollector arguments:
     --print-type {detector,classificator}
                           What is the type of model that will input data to the NamePrinter

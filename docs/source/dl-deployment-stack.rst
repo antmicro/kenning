@@ -12,7 +12,7 @@ A deep learning application deployed on IoT devices usually goes through the fol
 * evaluation metrics are specified based on a given dataset and outputs,
 * data in the dataset goes through analysis, data loaders that perform the preprocessing are implemented,
 * deep learning model is either designed from scratch or the baseline is selected from a wide selection of existing pre-trained models for the given deep learning application (classification, detection, semantic segmentation, instance segmentation, etc.) and adjusted to a particular use case,
-* a loss function and learning algorithm is specified along with a deep learning model, 
+* a loss function and learning algorithm is specified along with a deep learning model,
 * the model is trained, evaluated and improved,
 * the model is compiled to a representation that is applicable to a given target,
 * the model is executed on a target device.

@@ -4,7 +4,7 @@
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5" 
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -12,7 +12,7 @@
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./build/pet-dataset" 
+            "dataset_root": "./build/pet-dataset"
         }
     },
     "optimizers":
@@ -29,7 +29,7 @@
         },
         {
             "type": "kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer",
-            "parameters": 
+            "parameters":
             {
                 "compiled_model_path": "./build/clustered.h5",
                 "cluster_dense": false,
@@ -63,7 +63,7 @@
     "runtime":
     {
         "type": "kenning.runtimes.tvm.TVMRuntime",
-        "parameters": 
+        "parameters":
         {
             "save_model_path": "./build/compiled_model.tar"
         }

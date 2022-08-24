@@ -241,14 +241,14 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         # Valid data
         protocol = self.initprotocol()
-        assert not(protocol.collecteddata)
+        assert not protocol.collecteddata
         data, answer = self.generate_byte_data()
         status, output = protocol.collect_messages(data)
         assert output == answer and status == ServerStatus.DATA_READY
 
         # Empty data
         protocol = self.initprotocol()
-        assert not(protocol.collecteddata)
+        assert not protocol.collecteddata
         status, output = protocol.collect_messages(b'')
         assert output is None and status == ServerStatus.NOTHING
 

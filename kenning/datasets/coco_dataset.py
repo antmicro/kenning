@@ -178,3 +178,27 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
 
     def get_class_names(self):
         return self.classnames
+
+    def evaluate(self, predictions, truth):
+        measurements = super().evaluate(predictions, truth)
+        currindex = self._dataindex - len(predictions)
+        for pred, groundtruth in zip(predictions, truth):
+            for p in pred:
+                width = self.coco.imgs[self.dataX[currindex]]['width']
+                height = self.coco.imgs[self.dataX[currindex]]['height']
+                xmin = max(min(p.xmin * width, width), 0)
+                xmax = max(min(p.xmax * width, width), 0)
+                ymin = max(min(p.ymin * height, height), 0)
+                ymax = max(min(p.ymax * height, height), 0)
+                w = xmax - xmin
+                h = ymax - ymin
+                measurements.add_measurement(
+                    'predictions',
+                    [{
+                        'image_name': self.coco.loadImgs([self.dataX[currindex]])[0]['file_name'],  # noqa: E501
+                        'category': p.clsname,
+                        'bbox': [xmin, ymin, w, h],
+                        'score': p.score
+                    }]
+                )
+        return measurements

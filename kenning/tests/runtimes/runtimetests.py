@@ -204,13 +204,6 @@ class RuntimeWithModel(RuntimeTests):
         with pytest.raises(ValueError):
             output = runtime.prepare_input(data)
 
-        # Correct input shape, but wrong datatype
-        data = np.arange(25, dtype='int64').reshape(self.inputshapes).tobytes()
-        runtime = self.initruntime(inputdtype='int8')
-        runtime.prepare_model(None)
-        output = runtime.prepare_input(data)
-        assert output is False
-
         # Correct input shape and datatype
         data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
         data = data.tobytes()

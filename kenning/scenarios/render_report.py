@@ -64,40 +64,31 @@ def performance_report(
     if rootdir is None:
         rootdir = reportpath.parent
 
+    inference_step = None
     if 'target_inference_step' in measurementsdata:
         log.info('Using target measurements for inference time')
-        usepath = imgdir / f'{reportpath.stem}_inference_time.png'
-        time_series_plot(
-            str(usepath),
-            f'Inference time for {reportname}',
-            'Time', 's',
-            'Inference time', 's',
-            measurementsdata['target_inference_step_timestamp'],
-            measurementsdata['target_inference_step'],
-            skipfirst=True)
-        measurementsdata['inferencetimepath'] = str(
-            usepath.relative_to(rootdir)
-        )
-        measurementsdata['inferencetime'] = \
-            measurementsdata['target_inference_step']
+        inference_step = 'target_inference_step'
     elif 'protocol_inference_step' in measurementsdata:
         log.info('Using protocol measurements for inference time')
+        inference_step = 'protocol_inference_step'
+    else:
+        log.warning('No inference time measurements in the report')
+
+    if inference_step:
         usepath = imgdir / f'{reportpath.stem}_inference_time.png'
         time_series_plot(
             str(usepath),
             f'Inference time for {reportname}',
             'Time', 's',
             'Inference time', 's',
-            measurementsdata['protocol_inference_step_timestamp'],
-            measurementsdata['protocol_inference_step'],
+            measurementsdata[f'{inference_step}_timestamp'],
+            measurementsdata[inference_step],
             skipfirst=True)
         measurementsdata['inferencetimepath'] = str(
             usepath.relative_to(rootdir)
         )
         measurementsdata['inferencetime'] = \
-            measurementsdata['protocol_inference_step']
-    else:
-        log.warning('No inference time measurements in the report')
+            measurementsdata[inference_step]
 
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')

@@ -99,7 +99,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
-          python -m pip install --upgrade onnx jinja2 tqdm psutil scikit_learn
+          python -m pip install --upgrade onnx jinja2 tqdm psutil scikit_learn jsonschema
           python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
           python -m pip install sphinxcontrib-napoleon docutils==0.16
       - name: Generate documentation

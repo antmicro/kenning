@@ -157,15 +157,23 @@ class ImageNetDataset(Dataset):
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))
         top_5_count = 0
+        currindex = self._dataindex - len(predictions)
+        top_5_results = []
         for prediction, label in zip(predictions, truth):
             confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
-            top_5_count += 1 if np.argmax(label) in np.argsort(prediction)[::-1][:5] else 0  # noqa: E501
+            top_5 = np.argsort(prediction)[::-1][:5]
+            top_5_count += 1 if np.argmax(label) in top_5 else 0
+            top_5_results.append(
+                {Path(self.dataX[currindex]).name: top_5.tolist()}
+            )
+            currindex += 1
         measurements = Measurements()
         measurements.accumulate(
             'eval_confusion_matrix',
             confusion_matrix,
             lambda: np.zeros((self.numclasses, self.numclasses))
         )
+        measurements.add_measurement('top_5', top_5_results)
         measurements.accumulate('top_5_count', top_5_count, lambda: 0)
         measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements

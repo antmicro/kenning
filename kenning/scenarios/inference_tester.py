@@ -160,13 +160,14 @@ def main(argv):
     if compiler:
         # TODO make use of --model-framework parameter or make it optional and
         # use it only if specified
-        if args.convert_to_onnx:
-            format = 'onnx'
-        else:
-            format = compiler.consult_model_type(model)
-            if format == 'onnx':
-                modelpath = Path(tempfile.NamedTemporaryFile().name)
-                model.save_to_onnx(modelpath)
+        format = compiler.consult_model_type(
+            model,
+            force_onnx=args.convert_to_onnx
+        )
+
+        if format == 'onnx' and not args.convert_to_onnx:
+            modelpath = Path(tempfile.NamedTemporaryFile().name)
+            model.save_to_onnx(modelpath)
 
         compiler.set_input_type(format)
         compiler.compile(modelpath, inputspec, inputdtype)

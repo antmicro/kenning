@@ -468,7 +468,8 @@ def main(argv):
             indent=4
         ).split('\n')
 
-    measurementsdata['command'] += [''] + command
+    if 'command' in measurementsdata:
+        measurementsdata['command'] += [''] + command
 
     generate_report(
         args.reportname,

@@ -308,11 +308,11 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    @timemeasurements('inference_step')
+    @timemeasurements('target_inference_step')
     def _run_inference(self, X):
         return self.run_inference(X)
 
-    @systemstatsmeasurements('inferencesysstats')
+    @systemstatsmeasurements('session_utilization')
     @timemeasurements('inference')
     def test_inference(self) -> 'Measurements':
         """

@@ -153,7 +153,7 @@ def draw_confusion_matrix(
     confusion_matrix = confusion_matrix.transpose()
 
     if figsize is None:
-        figsize = [12, 12]
+        figsize = [35, 35]
 
     if dpi is None:
         dpi = 216

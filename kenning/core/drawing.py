@@ -217,6 +217,8 @@ def draw_confusion_matrix(
         interpolation='nearest',
         cmap=cmap,
         aspect='auto',
+        vmin=0.0,
+        vmax=1.0
     )
 
     if len(class_names) < 50:

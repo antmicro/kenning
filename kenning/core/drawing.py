@@ -197,7 +197,6 @@ def draw_confusion_matrix(
         axConfMatrix.set_yticks(ticks)
         axConfMatrix.set_yticklabels(class_names, fontsize='large')
         axConfMatrix.xaxis.set_ticks_position('top')
-        axConfMatrix.xaxis.set_label_position('top')
     else:
         # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
         # plt.setp(axConfMatrix.get_xticklabels(), visible=False)
@@ -209,6 +208,7 @@ def draw_confusion_matrix(
             labelleft=False,
             labelbottom=False
         )
+    axConfMatrix.xaxis.set_label_position('top')
     axConfMatrix.set_xlabel('Actual class', fontsize='x-large')
     axConfMatrix.set_ylabel('Predicted class', fontsize='x-large')
     img = axConfMatrix.imshow(

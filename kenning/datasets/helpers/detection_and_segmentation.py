@@ -7,6 +7,7 @@ from pathlib import Path
 from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
+from kenning.utils.args_manager import add_parameterschema_argument
 
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -227,6 +228,16 @@ class ObjectDetectionSegmentationDataset(Dataset):
         self.classnames = []
         self.show_on_eval = show_on_eval
         super().__init__(root, batch_size, download_dataset)
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+        if cls != ObjectDetectionSegmentationDataset:
+            add_parameterschema_argument(
+                parameterschema,
+                ObjectDetectionSegmentationDataset.arguments_structure
+            )
+        return parameterschema
 
     def get_hashable(
             self,

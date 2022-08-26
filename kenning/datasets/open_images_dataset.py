@@ -24,6 +24,7 @@ import shutil
 from pathlib import Path
 import re
 import numpy as np
+from typing import Tuple, List
 from collections import defaultdict
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -44,7 +45,7 @@ BUCKET_NAME = 'open-images-dataset'
 REGEX = r'(test|train|validation|challenge2018)/([a-fA-F0-9]*)'
 
 
-def check_and_homogenize_one_image(image: str) -> tuple[str, str]:
+def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
     """
     Subdivides download entry to split type and image ID.
 
@@ -61,7 +62,7 @@ def check_and_homogenize_one_image(image: str) -> tuple[str, str]:
     yield split, image_id
 
 
-def check_and_homogenize_image_list(image_list: list[str]) -> tuple[str, str]:
+def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
     """
     Converts download entries using check_and_homogenize_one_image.
 
@@ -116,7 +117,7 @@ def download_one_image(
 
 def download_all_images(
         download_folder: Path,
-        image_list: list[str],
+        image_list: List[str],
         num_processes: int):
     """
     Downloads all images specified in list of images.

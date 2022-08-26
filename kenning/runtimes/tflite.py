@@ -29,14 +29,15 @@ class TFLiteRuntime(Runtime):
             'argparse_name': '--input-dtype',
             'description': 'Type of input tensor elements',
             'enum': supported_types,
-            'default': 'float32',
+            'type': str,
+            'default': ['float32'],
             'is_list': True
         },
         'outputdtype': {
             'argparse_name': '--output-dtype',
             'description': 'Type of output tensor elements',
             'enum': supported_types,
-            'default': 'float32',
+            'default': ['float32'],
             'is_list': True
         },
         'delegates': {
@@ -111,7 +112,7 @@ class TFLiteRuntime(Runtime):
         )
         interpreter.allocate_tensors()
         self.signature = interpreter.get_signature_runner()
-        self.sginfo = interpreter.get_signature_list()['serving_default']
+        self.signatureinfo = interpreter.get_signature_list()['serving_default']  # noqa: E501
 
         self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
         self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
@@ -122,7 +123,7 @@ class TFLiteRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         self.inputs = {}
-        input_names = self.sginfo['inputs']
+        input_names = self.signatureinfo['inputs']
         for datatype, name in zip(self.inputdtype, input_names):
             model_details = self.signature.get_input_details()[name]
             expected_size = np.prod(model_details['shape']) * datatype.itemsize
@@ -158,7 +159,7 @@ class TFLiteRuntime(Runtime):
         if self.outputs is None:
             raise AttributeError("No outputs were found ")
         result = bytes()
-        output_names = self.sginfo['outputs']
+        output_names = self.signatureinfo['outputs']
         for datatype, name in zip(self.outputdtype, output_names):
             model_details = self.signature.get_output_details()[name]
             output = self.outputs[name]

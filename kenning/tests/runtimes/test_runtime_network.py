@@ -21,16 +21,23 @@ class TestRuntimeNetwork:
     host = ''
     port = 1235
 
-    def generate_byte_data(self):
+    def generate_byte_data(self, length=None):
         """
         Generates random data in bytes.
+
+        Parameters
+        ----------
+        length : int
+            Optional number of four sized byte words to generate.
 
         Returns
         ------
         bytes: Generated sequence of bytes
         """
         data = bytes()
-        for i in range(random.randint(1, 1000)):
+        if length is None:
+            length = random.randint(1, 1000)
+        for i in range(length):
             data += random.randint(0, 9999).to_bytes(4, 'little',
                                                      signed=False)
         return data
@@ -96,7 +103,7 @@ class TestRuntimeNetwork:
         runtime : Runtime
             Fixture to get Runtime object
         """
-        data = self.generate_byte_data()
+        data = self.generate_byte_data(25)
         runtime.prepare_client()
         assert runtime.prepare_model(None) is True
         assert runtime.prepare_input(data) is True

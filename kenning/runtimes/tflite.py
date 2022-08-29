@@ -111,21 +111,21 @@ class TFLiteRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        for det in self.interpreter.get_input_details():
-            dt = np.dtype(self.inputdtype)
-            siz = np.prod(det['shape']) * dt.itemsize
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
+        for model_details in self.interpreter.get_input_details():
+            datatype = np.dtype(self.inputdtype)
+            expected_size = np.prod(model_details['shape']) * datatype.itemsize
+            input = np.frombuffer(input_data[:expected_size], dtype=datatype)
             try:
-                inp = inp.reshape(det['shape'])
-                inpsize = np.prod(inp.shape) * dt.itemsize
-                if siz != inpsize:
-                    self.log.error(f'Invalid input size:  {siz} != {inpsize}')
+                input = input.reshape(model_details['shape'])
+                input_size = np.prod(input.shape) * datatype.itemsize
+                if expected_size != input_size:
+                    self.log.error(f'Invalid input size:  {expected_size} != {input_size}')  # noqa E501
                     raise ValueError
-                if det['dtype'] != np.float32:
-                    scale, zero_point = det['quantization']
-                    inp = (inp / scale + zero_point).astype(det['dtype'])
-                self.interpreter.tensor(det['index'])()[0] = inp  # noqa: E501
-                input_data = input_data[siz:]
+                if model_details['dtype'] != np.float32:
+                    scale, zero_point = model_details['quantization']
+                    input = (input / scale + zero_point).astype(model_details['dtype'])  # noqa E501
+                self.interpreter.tensor(model_details['index'])()[0] = input
+                input_data = input_data[expected_size:]
             except ValueError as ex:
                 self.log.error(f'Failed to load input: {ex}')
                 return False
@@ -137,12 +137,12 @@ class TFLiteRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         result = bytes()
-        dt = np.dtype(self.outputdtype)
-        for det in self.interpreter.get_output_details():
-            out = self.interpreter.tensor(det['index'])()
-            if det['dtype'] != np.float32:
-                scale, zero_point = det['quantization']
-                out = (out.astype(np.float32) - zero_point) * scale
-                out = out.astype(dt)
-            result += out.tobytes()
+        datatype = np.dtype(self.outputdtype)
+        for model_details in self.interpreter.get_output_details():
+            output = self.interpreter.tensor(model_details['index'])()
+            if model_details['dtype'] != np.float32:
+                scale, zero_point = model_details['quantization']
+                output = (output.astype(np.float32) - zero_point) * scale
+                output = output.astype(datatype)
+            result += output.tobytes()
         return result

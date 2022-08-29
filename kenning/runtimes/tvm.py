@@ -8,7 +8,9 @@ import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import VirtualMachine, Executable
 
-from kenning.core.runtime import Runtime, ModelNotLoadedError
+from kenning.core.runtime import Runtime
+from kenning.core.runtime import ModelNotPreparedError
+from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
@@ -78,6 +80,7 @@ class TVMRuntime(Runtime):
         self.func = None
         self.ctx = None
         self.model = None
+        self._input_prepared = False
         self.use_tvm_vm = use_tvm_vm
         super().__init__(
             protocol,
@@ -98,7 +101,7 @@ class TVMRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         if self.model is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         input = {}
         try:
@@ -116,6 +119,7 @@ class TVMRuntime(Runtime):
                     **input
                 )
             self.log.debug('Inputs are ready')
+            self._input_prepared = True
             return True
         except (TypeError, ValueError, tvm.TVMError) as ex:
             self.log.error(f'Failed to load input:  {ex}')
@@ -146,13 +150,15 @@ class TVMRuntime(Runtime):
 
     def run(self):
         if self.model is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
+        if not self._input_prepared:
+            raise InputNotPreparedError
         self.model.run()
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         if self.model is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         results = []
         if self.use_tvm_vm:

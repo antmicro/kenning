@@ -7,7 +7,9 @@ import onnxruntime as ort
 from pathlib import Path
 import numpy as np
 
-from kenning.core.runtime import Runtime, ModelNotLoadedError
+from kenning.core.runtime import Runtime
+from kenning.core.runtime import ModelNotPreparedError
+from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
@@ -55,6 +57,7 @@ class ONNXRuntime(Runtime):
         """
         self.modelpath = modelpath
         self.session = None
+        self.input = None
         self.execution_providers = execution_providers
         super().__init__(
             protocol,
@@ -73,7 +76,7 @@ class ONNXRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         if self.session is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         try:
             ordered_input = self.preprocess_input(input_data)
@@ -142,7 +145,9 @@ class ONNXRuntime(Runtime):
 
     def run(self):
         if self.session is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
+        if self.input is None:
+            raise InputNotPreparedError
         self.scores = self.session.run(
             [spec['name'] for spec in self.output_spec],
             self.input
@@ -151,7 +156,7 @@ class ONNXRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         if self.session is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         results = []
         for i in range(len(self.session.get_outputs())):

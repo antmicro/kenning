@@ -5,7 +5,9 @@ Runtime implementation for TFLite models.
 from pathlib import Path
 from typing import Optional, List
 
-from kenning.core.runtime import Runtime, ModelNotLoadedError
+from kenning.core.runtime import Runtime
+from kenning.core.runtime import ModelNotPreparedError
+from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
@@ -53,6 +55,7 @@ class TFLiteRuntime(Runtime):
         """
         self.modelpath = modelpath
         self.interpreter = None
+        self._input_prepared = False
         self.delegates = delegates
         super().__init__(
             protocol,
@@ -92,7 +95,7 @@ class TFLiteRuntime(Runtime):
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         if self.interpreter is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         try:
             ordered_input = self.preprocess_input(input_data)
@@ -101,17 +104,20 @@ class TFLiteRuntime(Runtime):
         except ValueError as ex:
             self.log.error(f'Failed to load input: {ex}')
             return False
+        self._input_prepared = True
         return True
 
     def run(self):
         if self.interpreter is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
+        if not self._input_prepared:
+            raise InputNotPreparedError
         self.interpreter.invoke()
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         if self.interpreter is None:
-            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+            raise ModelNotPreparedError
 
         results = []
         for det in self.interpreter.get_output_details():

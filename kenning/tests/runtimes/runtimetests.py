@@ -3,7 +3,9 @@ import numpy as np
 from tvm import TVMError
 from typing import Type
 from abc import abstractmethod
-from kenning.core.runtime import Runtime, ModelNotLoadedError
+from kenning.core.runtime import Runtime
+from kenning.core.runtime import ModelNotPreparedError
+from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.measurements import MeasurementsCollector
 from pytest_mock import MockerFixture
@@ -194,7 +196,7 @@ class RuntimeWithModel(RuntimeTests):
         # No model initialized
         data = np.arange(100).tobytes()
         runtime = self.initruntime()
-        with pytest.raises(ModelNotLoadedError):
+        with pytest.raises(ModelNotPreparedError):
             runtime.prepare_input(data)
 
         # For now we got rid of inpudtype argument from runtimes
@@ -222,13 +224,15 @@ class RuntimeWithModel(RuntimeTests):
     def test_run(self):
         # Run without model
         runtime = self.initruntime()
-        with pytest.raises(ModelNotLoadedError):
+        with pytest.raises(ModelNotPreparedError):
             runtime.run()
 
         # Run without any input
         runtime = self.initruntime()
         runtime.prepare_local()
-        runtime.run()
+        runtime.prepare_model(None)
+        with pytest.raises(InputNotPreparedError):
+            runtime.run()
 
         # Run with prepared input
         data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
@@ -249,7 +253,7 @@ class RuntimeWithModel(RuntimeTests):
     def test_upload_output(self):
         # Test on no model
         runtime = self.initruntime()
-        with pytest.raises(ModelNotLoadedError):
+        with pytest.raises(ModelNotPreparedError):
             runtime.upload_output(b'')
 
         # Test with model and input

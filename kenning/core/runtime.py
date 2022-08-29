@@ -27,11 +27,28 @@ from kenning.core.measurements import systemstatsmeasurements
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
-class ModelNotLoadedError(Exception):
+class ModelNotPreparedError(Exception):
     """
-    Exception raised if trying to run the model without loading it first.
+    Exception raised when trying to run the model without loading it first.
     """
-    pass
+    def __init__(
+            self,
+            msg="Make sure to run `prepare_model` method before runnning it.",
+            *args, **kwargs
+    ):
+        super().__init__(msg, *args, **kwargs)
+
+
+class InputNotPreparedError(Exception):
+    """
+    Exception raised when trying to run the model without
+    loading the inputs first.
+    """
+    def __init__(
+            self,
+            msg="Make sure to run `prepare_input` method before running the model.",  # noqa: E501
+            *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
 
 
 class Runtime(object):

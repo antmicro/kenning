@@ -51,7 +51,8 @@ class RandomizedClassificationDataset(Dataset):
             numclasses: int = 3,
             inputdims: list = [224, 224, 3],
             outputdims: list = [1000, ],
-            download_dataset: bool = False):
+            download_dataset: bool = False,
+            dtype: type = np.float32):
         """
         Creates randomized dataset.
 
@@ -74,6 +75,7 @@ class RandomizedClassificationDataset(Dataset):
         self.inputdims = inputdims
         self.outputdims = outputdims
         self.numclasses = numclasses
+        self.dtype = dtype
         super().__init__(root, batch_size, download_dataset)
 
     @classmethod
@@ -82,7 +84,7 @@ class RandomizedClassificationDataset(Dataset):
             args.dataset_root,
             args.inference_batch_size,
             args.num_samples,
-            args.numclasses,
+            args.num_classes,
             args.input_dims,
             args.output_dims
         )
@@ -104,14 +106,14 @@ class RandomizedClassificationDataset(Dataset):
         result = []
         for sample in samples:
             np.random.seed(sample)
-            result.append(np.random.randn(*self.inputdims))
+            result.append(np.random.randn(*self.inputdims).astype(self.dtype))
         return result
 
     def prepare_output_samples(self, samples):
         result = []
         for sample in samples:
             np.random.seed(sample)
-            result.append(np.random.rand(*self.outputdims))
+            result.append(np.random.rand(*self.outputdims).astype(self.dtype))
         return result
 
     def evaluate(self, predictions, truth):

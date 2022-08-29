@@ -16,6 +16,8 @@ class TFLiteRuntime(Runtime):
     for testing inference on TFLite models.
     """
 
+    supported_types = ['float32', 'int8', 'uint8']
+
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',
@@ -26,13 +28,13 @@ class TFLiteRuntime(Runtime):
         'inputdtype': {
             'argparse_name': '--input-dtype',
             'description': 'Type of input tensor elements',
-            'type': str,
+            'enum': supported_types,
             'default': 'float32'
         },
         'outputdtype': {
             'argparse_name': '--output-dtype',
             'description': 'Type of output tensor elements',
-            'type': str,
+            'enum': supported_types,
             'default': 'float32'
         },
         'delegates': {
@@ -82,7 +84,8 @@ class TFLiteRuntime(Runtime):
             args.save_model_path,
             args.input_dtype,
             args.output_dtype,
-            args.delegates_list
+            args.delegates_list,
+            args.disable_performance_measurements
         )
 
     def prepare_model(self, input_data):

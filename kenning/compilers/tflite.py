@@ -181,7 +181,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             args.inference_output_type,
             args.dataset_percentage,
             args.quantization_aware_training,
-            args.use_select_tf_ops
+            args.use_tf_select_ops
         )
 
     def compile(
@@ -246,21 +246,34 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         tflite_model = converter.convert()
 
+        with open(self.compiled_model_path, 'wb') as f:
+            f.write(tflite_model)
+
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         signature = interpreter.get_signature_runner()
 
-        for spec in io_specs['input']:
-            old_name = spec['name']
-            new_name = signature.get_input_details()[old_name]['name']
-            spec['name'] = new_name
+        def update_io_names(dets, key):
+            for order, spec in enumerate(io_specs[key]):
+                old_name = spec['name']
+                new_name = dets[old_name]['name']
+                spec['name'] = new_name
+                spec['order'] = order
 
-        for spec in io_specs['output']:
-            old_name = spec['name']
-            new_name = signature.get_output_details()[old_name]['name']
-            spec['name'] = new_name
+        def update_io_order(dets, key):
+            new_specs = []
+            for det in dets:
+                spec = [
+                    spec for spec in io_specs[key]
+                    if det['name'] == spec['name']
+                ][0]
+                new_specs.append(spec)
+            io_specs[key] = new_specs
 
-        with open(self.compiled_model_path, 'wb') as f:
-            f.write(tflite_model)
+        update_io_names(signature.get_input_details(), 'input')
+        update_io_order(interpreter.get_input_details(), 'input')
+
+        update_io_names(signature.get_output_details(), 'output')
+        update_io_order(interpreter.get_output_details(), 'output')
 
         self.dump_spec(inputmodelpath, io_specs)
 

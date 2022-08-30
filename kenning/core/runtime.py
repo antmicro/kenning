@@ -345,10 +345,10 @@ class Runtime(object):
             self.protocol.request_failure()
         return ret
 
-    def preprocess_input_order(self, input_data: bytes) -> list[np.ndarray]:
+    def preprocess_input(self, input_data: bytes) -> list[np.ndarray]:
         reordered = any(['order' in spec for spec in self.input_spec])
         if reordered:
-            spec_by_order = sorted(self.input_spec, lambda spec: spec['order'])
+            spec_by_order = sorted(self.input_spec, key=lambda spec: spec['order'])  # noqa: E501
         else:
             spec_by_order = self.input_spec
 
@@ -359,6 +359,13 @@ class Runtime(object):
             siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
+
+            # quantization
+            if 'quantized_dtype' in spec:
+                scale = spec['scale']
+                zero_point = spec['zero_point']
+                inp = (inp / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
+
             inputs.append(inp)
             input_data = input_data[siz:]
 
@@ -371,7 +378,18 @@ class Runtime(object):
 
         return reordered_inputs
 
-    def postprocess_output_order(self, results: list) -> bytes:
+    def postprocess_output(self, results: list) -> bytes:
+        # dequantizaion
+        if any(['quanized_dtype' in spec for spec in self.output_spec]):
+            quantized_results = []
+            for res, spec in zip(results, self.output_spec):
+                if 'quantized_dtype' in spec:
+                    scale = spec['scale']
+                    zero_point = spec['zero_point']
+                    res = (res / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
+                quantized_results.append(res)
+            results = quantized_results
+
         reordered_results = [None] * len(results)
         if any(['order' in spec for spec in self.output_spec]):
             for spec, res in zip(self.output_spec, results):

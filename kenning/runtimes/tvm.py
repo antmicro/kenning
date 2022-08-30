@@ -97,7 +97,7 @@ class TVMRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        ordered_input = self.preprocess_input_order(input_data)
+        ordered_input = self.preprocess_input(input_data)
         input = {}
 
         for spec, inp in zip(self.input_spec, ordered_input):
@@ -156,4 +156,4 @@ class TVMRuntime(Runtime):
             for i in range(self.model.get_num_outputs()):
                 results.append(self.model.get_output(i).asnumpy().tobytes())
 
-        return self.postprocess_output_order(results)
+        return self.postprocess_output(results)

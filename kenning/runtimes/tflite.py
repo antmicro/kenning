@@ -92,7 +92,7 @@ class TFLiteRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        ordered_input = self.preprocess_input_order(input_data)
+        ordered_input = self.preprocess_input(input_data)
 
         for det, inp in zip(self.interpreter.get_input_details(), ordered_input):  # noqa: E501
             self.interpreter.tensor(det['index'])()[0] = inp
@@ -113,4 +113,4 @@ class TFLiteRuntime(Runtime):
                 out = out.astype(dt)
             results.append(out.tobytes())
 
-        return self.postprocess_output_order(results)
+        return self.postprocess_output(results)

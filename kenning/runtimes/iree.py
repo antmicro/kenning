@@ -67,7 +67,7 @@ class IREERuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.input = self.preprocess_input_order(input_data)
+        self.input = self.preprocess_input(input_data)
         # TODO: Check for a quantization
         return True
 
@@ -100,4 +100,4 @@ class IREERuntime(Runtime):
             for out in self.output:
                 results.append(out.to_host().tobytes())
 
-        return self.postprocess_output_order(results)
+        return self.postprocess_output(results)

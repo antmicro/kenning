@@ -71,17 +71,11 @@ class ONNXRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        ordered_input = self.preprocess_input_order(input_data)
         self.input = {}
 
-        for spec in self.input_spec:
-            name = spec['name']
-            shape = spec['shape']
-            dt = spec['dtype']
-            siz = np.abs(np.prod(shape) * dt.itemsize)
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
-            inp = inp.reshape(shape)
-            self.input[name] = inp
-            input_data = input_data[siz:]
+        for spec, inp in zip(self.input_spec, ordered_input):
+            self.input[spec['name']] = inp
         return True
 
     def prepare_model(self, input_data):

@@ -3,7 +3,6 @@ Runtime implementation for TVM-compiled models.
 """
 
 from pathlib import Path
-import numpy as np
 
 import tvm
 from tvm.contrib import graph_executor
@@ -98,30 +97,11 @@ class TVMRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        ordered_input = self.preprocess_input_order(input_data)
         input = {}
 
-        # TODO: Check for a quantization
-        for spec in self.input_spec:
-            shape = spec['shape']
-            dt = np.dtype(spec['dtype'])
-
-            try:
-                siz = np.abs(np.prod(shape) * dt.itemsize)
-                inp = np.frombuffer(input_data[:siz], dtype=dt)
-                inp = inp.reshape(shape)
-
-                # if self.model_inputdtype != np.float32:
-                #     scale = properties['scale']
-                #     zero_point = properties['zero_point']
-                #     inp = inp / scale + zero_point
-
-                input[spec['name']] = tvm.nd.array(
-                    inp.astype(dt).reshape(shape)
-                )
-                input_data = input_data[siz:]
-            except Exception as ex:
-                self.log.error(f'Failed to load input: {ex}')
-                return False
+        for spec, inp in zip(self.input_spec, ordered_input):
+            input[spec['name']] = tvm.nd.array(inp)
         try:
             if self.use_tvm_vm:
                 self.model.set_input(

@@ -3,7 +3,6 @@ Runtime implementation for IREE models
 """
 
 from pathlib import Path
-import numpy as np
 from iree import runtime as ireert
 
 from kenning.core.runtime import Runtime
@@ -68,17 +67,8 @@ class IREERuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.input = []
+        self.input = self.preprocess_input_order(input_data)
         # TODO: Check for a quantization
-
-        for spec in self.input_spec:
-            shape = spec['shape']
-            dt = spec['dtype']
-            siz = np.prod(shape) * dt.itemsize
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
-            inp = inp.reshape(shape)
-            self.input.append(inp)
-            input_data = input_data[siz:]
         return True
 
     def prepare_model(self, input_data):

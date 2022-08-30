@@ -81,7 +81,7 @@ class TFLiteRuntime(Runtime):
         delegates = None
         if self.delegates:
             delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
-        interpreter = tflite.Interpreter(
+        self.interpreter = tflite.Interpreter(
             str(self.modelpath),
             experimental_delegates=delegates,
             num_threads=4
@@ -92,27 +92,10 @@ class TFLiteRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        for det in self.interpreter.get_input_details():
-            dt = np.dtype(np.float32)
-            siz = np.prod(det['shape']) * dt.itemsize
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
-            try:
-                inp = inp.reshape(det['shape'])
-                inpsize = np.prod(inp.shape) * dt.itemsize
-                if siz != inpsize:
-                    self.log.error(f'Invalid input size:  {siz} != {inpsize}')
-                    raise ValueError
-                if det['dtype'] != np.float32:
-                    scale, zero_point = det['quantization']
-                    inp = (inp / scale + zero_point).astype(det['dtype'])
-                self.interpreter.tensor(det['index'])()[0] = inp  # noqa: E501
-                input_data = input_data[siz:]
-            except ValueError as ex:
-                self.log.error(f'Failed to load input: {ex}')
-                return False
-        if input_data:
-            self.log.error("Failed to load input: Received more data than model expected.")  # noqa: E501
-            return False
+        ordered_input = self.preprocess_input_order(input_data)
+
+        for det, inp in zip(self.interpreter.get_input_details(), ordered_input):  # noqa: E501
+            self.interpreter.tensor(det['index'])()[0] = inp
         return True
 
     def run(self):

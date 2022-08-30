@@ -8,6 +8,7 @@ import argparse
 from pathlib import Path
 from typing import Optional, Dict
 import json
+import numpy as np
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -343,6 +344,32 @@ class Runtime(object):
         else:
             self.protocol.request_failure()
         return ret
+
+    def preprocess_input_order(self, input_data: bytes) -> list[np.ndarray]:
+        reordered = any(['order' in spec for spec in self.input_spec])
+        if reordered:
+            spec_by_order = sorted(self.input_spec, lambda spec: spec['order'])
+        else:
+            spec_by_order = self.input_spec
+
+        inputs = []
+        for spec in spec_by_order:
+            shape = spec['shape']
+            dt = spec['dtype']
+            siz = np.abs(np.prod(shape) * dt.itemsize)
+            inp = np.frombuffer(input_data[:siz], dtype=dt)
+            inp = inp.reshape(shape)
+            inputs.append(inp)
+            input_data = input_data[siz:]
+
+        reordered_inputs = [None] * len(inputs)
+        if reordered:
+            for order, spec in enumerate(self.input_spec):
+                reordered_inputs[order] = inp[spec['order']]
+        else:
+            reordered_inputs = inputs
+
+        return reordered_inputs
 
     def postprocess_output_order(self, results: list) -> bytes:
         reordered_results = [None] * len(results)

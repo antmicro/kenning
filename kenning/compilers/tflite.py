@@ -252,28 +252,31 @@ class TFLiteCompiler(TensorFlowOptimizer):
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         signature = interpreter.get_signature_runner()
 
-        def update_io_names(dets, key):
+        def update_io_specs(sig_det, int_det, key):
             for order, spec in enumerate(io_specs[key]):
                 old_name = spec['name']
-                new_name = dets[old_name]['name']
+                new_name = sig_det[old_name]['name']
                 spec['name'] = new_name
                 spec['order'] = order
 
-        def update_io_order(dets, key):
+            quantized = any([det['quantizaon'][0] != 0 for det in int_det])
             new_specs = []
-            for det in dets:
+            for det in int_det:
                 spec = [
                     spec for spec in io_specs[key]
                     if det['name'] == spec['name']
                 ][0]
+
+                if quantized:
+                    scale, zero_point = det['quantization']
+                    spec['scale'] = scale
+                    spec['zero_point'] = zero_point
+                    spec['quantized_dtype'] = np.dtype(det['dtype']).name
                 new_specs.append(spec)
             io_specs[key] = new_specs
 
-        update_io_names(signature.get_input_details(), 'input')
-        update_io_order(interpreter.get_input_details(), 'input')
-
-        update_io_names(signature.get_output_details(), 'output')
-        update_io_order(interpreter.get_output_details(), 'output')
+        update_io_specs(signature.get_input_details(), interpreter.get_input_details(), 'input')  # noqa: E501
+        update_io_specs(signature.get_output_details(), interpreter.get_output_details(), 'output')  # noqa: E501
 
         self.dump_spec(inputmodelpath, io_specs)
 

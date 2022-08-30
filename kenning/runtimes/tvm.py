@@ -166,18 +166,14 @@ class TVMRuntime(Runtime):
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
-        out = b''
-
+        results = []
         # TODO: Check for a quantization
-
-        def convert(output):
-            return output.tobytes()
 
         if self.use_tvm_vm:
             for output in self.model.get_outputs():
-                out += convert(output.asnumpy())
+                results.append(output.asnumpy().tobytes())
         else:
             for i in range(self.model.get_num_outputs()):
-                out += convert(self.model.get_output(i).asnumpy())
+                results.append(self.model.get_output(i).asnumpy().tobytes())
 
-        return out
+        return self.postprocess_output_order(results)

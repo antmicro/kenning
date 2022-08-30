@@ -146,9 +146,9 @@ class ONNXRuntime(Runtime):
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
-        result = bytes()
+        results = []
 
         for i in range(len(self.session.get_outputs())):
-            result += self.scores[i].tobytes()
+            results.append(self.scores[i].tobytes())
 
-        return result
+        return self.postprocess_output_order(results)

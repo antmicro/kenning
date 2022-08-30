@@ -16,29 +16,12 @@ class TFLiteRuntime(Runtime):
     for testing inference on TFLite models.
     """
 
-    supported_types = ['float32', 'int8', 'uint8']
-
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
             'type': Path,
             'default': 'model.tar'
-        },
-        'inputdtype': {
-            'argparse_name': '--input-dtype',
-            'description': 'Type of input tensor elements',
-            'enum': supported_types,
-            'type': str,
-            'default': ['float32'],
-            'is_list': True
-        },
-        'outputdtype': {
-            'argparse_name': '--output-dtype',
-            'description': 'Type of output tensor elements',
-            'enum': supported_types,
-            'default': ['float32'],
-            'is_list': True
         },
         'delegates': {
             'argparse_name': '--delegates-list',
@@ -53,8 +36,6 @@ class TFLiteRuntime(Runtime):
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
-            inputdtype: List[str] = ('float32',),
-            outputdtype: List[str] = ('float32',),
             delegates: Optional[List] = None,
             collect_performance_data: bool = True):
         """
@@ -66,31 +47,24 @@ class TFLiteRuntime(Runtime):
             The implementation of the host-target communication  protocol
         modelpath : Path
             Path for the model file.
-        inputdtype : List[str]
-            Type of the input data
-        outputdtype : List[str]
-            Type of the output data
         delegates : List
             List of TFLite acceleration delegate libraries
         collect_performance_data : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
-        self.signature = None
-        self.inputdtype = inputdtype
-        self.outputdtype = outputdtype
+        self.interpreter = None
         self.delegates = delegates
-        self.inputs = None
-        self.outputs = None
-        super().__init__(protocol, collect_performance_data)
+        super().__init__(
+            protocol,
+            collect_performance_data
+        )
 
     @classmethod
     def from_argparse(cls, protocol, args):
         return cls(
             protocol,
             args.save_model_path,
-            args.input_dtype,
-            args.output_dtype,
             args.delegates_list,
             args.disable_performance_measurements
         )
@@ -112,35 +86,27 @@ class TFLiteRuntime(Runtime):
             experimental_delegates=delegates,
             num_threads=4
         )
-        interpreter.allocate_tensors()
-        self.signature = interpreter.get_signature_runner()
-        self.signatureinfo = interpreter.get_signature_list()['serving_default']  # noqa: E501
-
-        self.outputdtype = [np.dtype(dt) for dt in self.outputdtype]
-        self.inputdtype = [np.dtype(dt) for dt in self.inputdtype]
-
+        self.interpreter.allocate_tensors()
         self.log.info('Model loading ended successfully')
         return True
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        self.inputs = {}
-        input_names = self.signatureinfo['inputs']
-        for datatype, name in zip(self.inputdtype, input_names):
-            model_details = self.signature.get_input_details()[name]
-            expected_size = np.prod(model_details['shape']) * datatype.itemsize
-            input = np.frombuffer(input_data[:expected_size], dtype=datatype)
+        for det in self.interpreter.get_input_details():
+            dt = np.dtype(np.float32)
+            siz = np.prod(det['shape']) * dt.itemsize
+            inp = np.frombuffer(input_data[:siz], dtype=dt)
             try:
-                input = input.reshape(model_details['shape'])
-                input_size = np.prod(input.shape) * datatype.itemsize
-                if expected_size != input_size:
-                    self.log.error(f'Invalid input size:  {expected_size} != {input_size}')  # noqa E501
+                inp = inp.reshape(det['shape'])
+                inpsize = np.prod(inp.shape) * dt.itemsize
+                if siz != inpsize:
+                    self.log.error(f'Invalid input size:  {siz} != {inpsize}')
                     raise ValueError
-                scale, zero_point = model_details['quantization']
-                if scale != 0:
-                    input = (input / scale + zero_point)
-                self.inputs[name] = input.astype(model_details['dtype'])
-                input_data = input_data[expected_size:]
+                if det['dtype'] != np.float32:
+                    scale, zero_point = det['quantization']
+                    inp = (inp / scale + zero_point).astype(det['dtype'])
+                self.interpreter.tensor(det['index'])()[0] = inp  # noqa: E501
+                input_data = input_data[siz:]
             except ValueError as ex:
                 self.log.error(f'Failed to load input: {ex}')
                 return False
@@ -150,26 +116,18 @@ class TFLiteRuntime(Runtime):
         return True
 
     def run(self):
-        if self.signature is None:
-            raise AttributeError("You must prepare the model before running it.")  # noqa: E501
-        if self.inputs is not None:
-            self.outputs = self.signature(**self.inputs)
-            self.inputs = None
+        self.interpreter.invoke()
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
-        if self.outputs is None:
-            raise AttributeError("No outputs were found ")
-        result = bytes()
-        output_names = self.signatureinfo['outputs']
-        for datatype, name in zip(self.outputdtype, output_names):
-            model_details = self.signature.get_output_details()[name]
-            output = self.outputs[name]
-            if datatype != model_details['dtype']:
-                scale, zero_point = model_details['quantization']
-                if scale != 0:
-                    output = (output.astype(np.float32) - zero_point) * scale
-                output = output.astype(datatype)
-            result += output.tobytes()
-        self.outputs = None
-        return result
+        results = []
+        dt = np.dtype(np.float32)
+        for det in self.interpreter.get_output_details():
+            out = self.interpreter.tensor(det['index'])()
+            if det['dtype'] != np.float32:
+                scale, zero_point = det['quantization']
+                out = (out.astype(np.float32) - zero_point) * scale
+                out = out.astype(dt)
+            results.append(out.tobytes())
+
+        return self.postprocess_output_order(results)

@@ -344,6 +344,20 @@ class Runtime(object):
             self.protocol.request_failure()
         return ret
 
+    def postprocess_output_order(self, results: list) -> bytes:
+        reordered_results = [None] * len(results)
+        if any(['order' in spec for spec in self.output_spec]):
+            for spec, res in zip(self.output_spec, results):
+                reordered_results[spec['order']] = res
+        else:
+            reordered_results = results
+
+        result = bytes()
+        for res in reordered_results:
+            result += res
+
+        return result
+
     def read_io_specification(self, io_spec: Dict):
         """
         Parses the input/output specification and saves it

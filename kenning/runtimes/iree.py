@@ -5,8 +5,6 @@ Runtime implementation for IREE models
 from pathlib import Path
 import numpy as np
 from iree import runtime as ireert
-import functools
-import operator as op
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
@@ -103,10 +101,13 @@ class IREERuntime(Runtime):
         self.output = self.model.main(*self.input)
 
     def upload_output(self, input_data):
+        results = []
         # TODO: Check for a quantization
 
         try:
-            return self.output.to_host().tobytes()
+            results.append(self.output.to_host().tobytes())
         except AttributeError:
-            return functools.reduce(
-                op.add, [out.to_host().tobytes() for out in self.output])
+            for out in self.output:
+                results.append(out.to_host().tobytes())
+
+        return self.postprocess_output_order(results)

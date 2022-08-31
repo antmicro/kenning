@@ -187,13 +187,13 @@ class YOLACT(ModelWrapper):
 
     def get_io_specs(self):
         return {
-            'input': [{'name': 'input.1', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
+            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
             'output': [
-                {'name': '1603', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': '1604', 'shape': (-1, 32), 'dtype': 'float32'},
-                {'name': '1602', 'shape': (-1,), 'dtype': 'int64'},
-                {'name': '1601', 'shape': (-1,), 'dtype': 'float32'},
-                {'name': '1606', 'shape': (138, 138, 32), 'dtype': 'float32'}
+                {'name': 'output_0', 'shape': (-1, 4), 'dtype': 'float32'},
+                {'name': 'output_1', 'shape': (-1, 32), 'dtype': 'float32'},
+                {'name': 'output_2', 'shape': (-1,), 'dtype': 'int64'},
+                {'name': 'output_3', 'shape': (-1,), 'dtype': 'float32'},
+                {'name': 'output_4', 'shape': (138, 138, 32), 'dtype': 'float32'}  # noqa: E501
             ]
         }
 

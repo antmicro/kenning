@@ -3,7 +3,6 @@ Runtime implementation for TFLite models.
 """
 
 from pathlib import Path
-import numpy as np
 from typing import Optional, List
 
 from kenning.core.runtime import Runtime
@@ -104,13 +103,8 @@ class TFLiteRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         results = []
-        dt = np.dtype(np.float32)
         for det in self.interpreter.get_output_details():
             out = self.interpreter.tensor(det['index'])()
-            if det['dtype'] != np.float32:
-                scale, zero_point = det['quantization']
-                out = (out.astype(np.float32) - zero_point) * scale
-                out = out.astype(dt)
             results.append(out.tobytes())
 
         return self.postprocess_output(results)

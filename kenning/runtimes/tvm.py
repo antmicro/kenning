@@ -150,9 +150,9 @@ class TVMRuntime(Runtime):
 
         if self.use_tvm_vm:
             for output in self.model.get_outputs():
-                results.append(output.asnumpy().tobytes())
+                results.append(output.asnumpy())
         else:
             for i in range(self.model.get_num_outputs()):
-                results.append(self.model.get_output(i).asnumpy().tobytes())
+                results.append(self.model.get_output(i).asnumpy())
 
         return self.postprocess_output(results)

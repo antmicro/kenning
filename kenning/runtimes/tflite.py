@@ -94,7 +94,7 @@ class TFLiteRuntime(Runtime):
         ordered_input = self.preprocess_input(input_data)
 
         for det, inp in zip(self.interpreter.get_input_details(), ordered_input):  # noqa: E501
-            self.interpreter.tensor(det['index'])()[0] = inp
+            self.interpreter.set_tensor(det['index'], inp)
         return True
 
     def run(self):
@@ -105,6 +105,6 @@ class TFLiteRuntime(Runtime):
         results = []
         for det in self.interpreter.get_output_details():
             out = self.interpreter.tensor(det['index'])()
-            results.append(out.tobytes())
+            results.append(out)
 
         return self.postprocess_output(results)

@@ -352,43 +352,50 @@ class Runtime(object):
         else:
             spec_by_order = self.input_spec
 
+        # reading input
         inputs = []
         for spec in spec_by_order:
             shape = spec['shape']
-            dt = spec['dtype']
+            # get original model dtype
+            dt = (
+                spec['prequantized_dtype'] if 'prequantized_dtype' in spec
+                else spec['dtype']
+            )
             siz = np.abs(np.prod(shape) * dt.itemsize)
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
 
             # quantization
-            if 'quantized_dtype' in spec:
+            if 'prequantized_dtype' in spec:
                 scale = spec['scale']
                 zero_point = spec['zero_point']
-                inp = (inp / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
+                inp = (inp / scale + zero_point).astype(spec['dtype'])  # noqa: E501
 
             inputs.append(inp)
             input_data = input_data[siz:]
 
+        # retrieving original order
         reordered_inputs = [None] * len(inputs)
         if reordered:
             for order, spec in enumerate(self.input_spec):
-                reordered_inputs[order] = inp[spec['order']]
+                reordered_inputs[order] = inputs[spec['order']]
         else:
             reordered_inputs = inputs
 
         return reordered_inputs
 
-    def postprocess_output(self, results: list) -> bytes:
+    def postprocess_output(self, results: list[np.ndarray]) -> bytes:
         # dequantizaion
-        if any(['quanized_dtype' in spec for spec in self.output_spec]):
+        if any(['prequantized_dtype' in spec for spec in self.output_spec]):
             quantized_results = []
             for res, spec in zip(results, self.output_spec):
                 scale = spec['scale']
                 zero_point = spec['zero_point']
-                res = (res / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
+                res = (res.astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
                 quantized_results.append(res)
             results = quantized_results
 
+        # retrieving original order
         reordered_results = [None] * len(results)
         if any(['order' in spec for spec in self.output_spec]):
             for spec, res in zip(self.output_spec, results):
@@ -398,7 +405,7 @@ class Runtime(object):
 
         result = bytes()
         for res in reordered_results:
-            result += res
+            result += res.tobytes()
 
         return result
 
@@ -419,10 +426,14 @@ class Runtime(object):
         self.input_spec = io_spec['input']
         for spec in self.input_spec:
             spec['dtype'] = dtype(spec['dtype'])
+            if 'prequantized_dtype' in spec:
+                spec['prequantized_dtype'] = dtype(spec['prequantized_dtype'])
 
         self.output_spec = io_spec['output']
         for spec in self.output_spec:
             spec['dtype'] = dtype(spec['dtype'])
+            if 'prequantized_dtype' in spec:
+                spec['prequantized_dtype'] = dtype(spec['prequantized_dtype'])
 
     def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
         """

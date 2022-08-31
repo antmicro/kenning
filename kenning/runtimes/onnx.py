@@ -143,6 +143,6 @@ class ONNXRuntime(Runtime):
         results = []
 
         for i in range(len(self.session.get_outputs())):
-            results.append(self.scores[i].tobytes())
+            results.append(self.scores[i])
 
         return self.postprocess_output(results)

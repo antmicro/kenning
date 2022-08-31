@@ -68,7 +68,6 @@ class IREERuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.input = self.preprocess_input(input_data)
-        # TODO: Check for a quantization
         return True
 
     def prepare_model(self, input_data):
@@ -92,12 +91,11 @@ class IREERuntime(Runtime):
 
     def upload_output(self, input_data):
         results = []
-        # TODO: Check for a quantization
 
         try:
-            results.append(self.output.to_host().tobytes())
+            results.append(self.output.to_host())
         except AttributeError:
             for out in self.output:
-                results.append(out.to_host().tobytes())
+                results.append(out.to_host())
 
         return self.postprocess_output(results)

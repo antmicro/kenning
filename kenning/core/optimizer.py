@@ -328,7 +328,7 @@ class Optimizer(object):
 
         The input/output specification is a list of dictionaries mapping
         properties names to their values. Legal properties names are `dtype`,
-        `quantized_dtype`, `shape`, `name`, `scale`, `zero_point`.
+        `prequantized_dtype`, `shape`, `name`, `scale`, `zero_point`.
 
         The order of the layers has to be preserved.
 

@@ -34,6 +34,9 @@ sample-compilation:
     stage: tests
     script:
         - ln /usr/bin/python3 /usr/bin/python
+        - mkdir build
+        - ln -s /pet-dataset build/pet-dataset
+        - sed -i '/download-dataset/d' ./scripts/tvm-tensorflow-classification-cpu.sh
         - ./scripts/tvm-tensorflow-classification-cpu.sh
     artifacts:
         paths:

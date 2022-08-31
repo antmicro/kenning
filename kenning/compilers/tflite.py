@@ -259,7 +259,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 spec['name'] = new_name
                 spec['order'] = order
 
-            quantized = any([det['quantizaon'][0] != 0 for det in int_det])
+            quantized = any([det['quantization'][0] != 0 for det in int_det])
             new_specs = []
             for det in int_det:
                 spec = [
@@ -271,7 +271,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
                     scale, zero_point = det['quantization']
                     spec['scale'] = scale
                     spec['zero_point'] = zero_point
-                    spec['quantized_dtype'] = np.dtype(det['dtype']).name
+                    spec['prequantized_dtype'] = spec['dtype']
+                    spec['dtype'] = np.dtype(det['dtype']).name
                 new_specs.append(spec)
             io_specs[key] = new_specs
 

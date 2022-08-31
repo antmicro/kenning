@@ -7,7 +7,7 @@ from pathlib import Path
 from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.utils.args_manager import add_parameterschema_argument
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -193,7 +193,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
     arguments_structure = {
         'task': {
             'argparse_name': '--task',
-            'description': 'he task type',
+            'description': 'The task type',
             'default': 'object_detection',
             'enum': ['object_detection', 'instance_segmentation']
         },
@@ -231,13 +231,31 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
     @classmethod
     def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
+        parameterschema = super(
+            ObjectDetectionSegmentationDataset,
+            ObjectDetectionSegmentationDataset
+        ).form_parameterschema()
+
         if cls != ObjectDetectionSegmentationDataset:
             add_parameterschema_argument(
                 parameterschema,
-                ObjectDetectionSegmentationDataset.arguments_structure
+                cls.arguments_structure
             )
         return parameterschema
+
+    @classmethod
+    def form_argparse(cls):
+        parser, group = super(
+            ObjectDetectionSegmentationDataset,
+            ObjectDetectionSegmentationDataset
+        ).form_argparse()
+
+        if cls != ObjectDetectionSegmentationDataset:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
+        return parser, group
 
     def get_hashable(
             self,

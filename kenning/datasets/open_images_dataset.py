@@ -217,6 +217,11 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             'default': 'validation',
             'enum': ['train', 'validation', 'test']
         },
+        'download_num_bboxes_per_class': {
+            'description': 'Number of boxes per class to download',
+            'default': 200,
+            'type': int
+        },
         'crop_input_to_bboxes': {
             'argparse_name': '--crop-samples-to-bboxes',
             'description': 'Crop input samples and masks to show only an area with ground truths',  # noqa: E501

@@ -147,7 +147,6 @@ class TVMRuntime(Runtime):
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
         results = []
-        # TODO: Check for a quantization
 
         if self.use_tvm_vm:
             for output in self.model.get_outputs():

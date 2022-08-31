@@ -383,10 +383,9 @@ class Runtime(object):
         if any(['quanized_dtype' in spec for spec in self.output_spec]):
             quantized_results = []
             for res, spec in zip(results, self.output_spec):
-                if 'quantized_dtype' in spec:
-                    scale = spec['scale']
-                    zero_point = spec['zero_point']
-                    res = (res / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
+                scale = spec['scale']
+                zero_point = spec['zero_point']
+                res = (res / scale + zero_point).astype(spec['quantized_dtype'])  # noqa: E501
                 quantized_results.append(res)
             results = quantized_results
 

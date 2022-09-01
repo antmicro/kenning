@@ -27,6 +27,13 @@ from kenning.core.measurements import systemstatsmeasurements
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
+class ModelNotLoadedError(Exception):
+    """
+    Exception raised if trying to run the model without loading it first.
+    """
+    pass
+
+
 class Runtime(object):
     """
     Runtime object provides an API for testing inference on target devices.
@@ -268,6 +275,10 @@ class Runtime(object):
         Returns
         -------
         bool : True if succeded
+
+        Raises
+        ------
+        ModelNotLoadedError : Raised if model is not loaded
         """
         raise NotImplementedError
 
@@ -366,7 +377,14 @@ class Runtime(object):
         -------
         list[np.ndarray] : List of inputs for each layer which are
             ready to be passed to the model.
+
+        Raises
+        ------
+        AttributeError : Raised if output specification is not loaded.
         """
+        if self.input_spec is None:
+            raise AttributeError("You must load the input specification first.")  # noqa: E501
+
         reordered = any(['order' in spec for spec in self.input_spec])
         if reordered:
             spec_by_order = sorted(self.input_spec, key=lambda spec: spec['order'])  # noqa: E501
@@ -423,7 +441,14 @@ class Runtime(object):
         Returns
         -------
         bytes : Postprocessed output converted to bytes
+
+        Raises
+        ------
+        AttributeError : Raised if output specification is not loaded.
         """
+        if self.output_spec is None:
+            raise AttributeError("You must load the output specification first.")  # noqa: E501
+
         # dequantizaion
         if any(['prequantized_dtype' in spec for spec in self.output_spec]):
             quantized_results = []
@@ -562,6 +587,10 @@ class Runtime(object):
         The input should be introduced in runtime's model representation, or
         it should be delivered using a variable that was assigned in
         prepare_input method.
+
+        Raises
+        ------
+        ModelNotLoadedError : Raised if model is not loaded
         """
         raise NotImplementedError
 
@@ -582,6 +611,10 @@ class Runtime(object):
         Returns
         -------
         bytes : data to send to the client
+
+        Raises
+        ------
+        ModelNotLoadedError : Raised if model is not loaded
         """
         raise NotImplementedError
 

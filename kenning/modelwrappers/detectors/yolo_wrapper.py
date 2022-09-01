@@ -116,13 +116,6 @@ class YOLOWrapper(ModelWrapper):
     def prepare_model(self):
         self.load_model(self.modelpath)
 
-    def get_input_spec(self):
-        return {
-            'input': (
-                1, 3, self.keyparams['width'], self.keyparams['height']
-            )
-        }, 'float32'
-
     def preprocess_input(self, X):
         return np.array(X)
 

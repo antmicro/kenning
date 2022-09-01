@@ -5,7 +5,7 @@ Runtime implementation for IREE models
 from pathlib import Path
 from iree import runtime as ireert
 
-from kenning.core.runtime import Runtime
+from kenning.core.runtime import Runtime, ModelNotLoadedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
@@ -51,6 +51,7 @@ class IREERuntime(Runtime):
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
+        self.model = None
         self.driver = driver
         super().__init__(
             protocol,
@@ -67,7 +68,15 @@ class IREERuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.input = self.preprocess_input(input_data)
+        self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        if self.model is None:
+            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
+
+        try:
+            self.input = self.preprocess_input(input_data)
+        except ValueError as ex:
+            self.log.error(f'Failed to load input: {ex}')
+            return False
         return True
 
     def prepare_model(self, input_data):
@@ -87,11 +96,14 @@ class IREERuntime(Runtime):
         return True
 
     def run(self):
+        if self.model is None:
+            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
         self.output = self.model.main(*self.input)
 
     def upload_output(self, input_data):
-        results = []
+        self.log.debug('Uploading output')
 
+        results = []
         try:
             results.append(self.output.to_host())
         except AttributeError:

@@ -8,7 +8,7 @@ import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import VirtualMachine, Executable
 
-from kenning.core.runtime import Runtime
+from kenning.core.runtime import Runtime, ModelNotLoadedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 
 
@@ -97,12 +97,15 @@ class TVMRuntime(Runtime):
 
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
-        ordered_input = self.preprocess_input(input_data)
-        input = {}
+        if self.model is None:
+            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
 
-        for spec, inp in zip(self.input_spec, ordered_input):
-            input[spec['name']] = tvm.nd.array(inp)
+        input = {}
         try:
+            ordered_input = self.preprocess_input(input_data)
+            for spec, inp in zip(self.input_spec, ordered_input):
+                input[spec['name']] = tvm.nd.array(inp)
+
             if self.use_tvm_vm:
                 self.model.set_input(
                     "main",
@@ -142,12 +145,16 @@ class TVMRuntime(Runtime):
         return True
 
     def run(self):
+        if self.model is None:
+            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
         self.model.run()
 
     def upload_output(self, input_data):
         self.log.debug('Uploading output')
-        results = []
+        if self.model is None:
+            raise ModelNotLoadedError("You must prepare the model before running it.")  # noqa: E501
 
+        results = []
         if self.use_tvm_vm:
             for output in self.model.get_outputs():
                 results.append(output.asnumpy())

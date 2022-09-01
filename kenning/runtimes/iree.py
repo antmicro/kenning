@@ -22,7 +22,7 @@ class IREERuntime(Runtime):
             'type': Path,
             'default': 'model.vmfb'
         },
-        'backend': {
+        'driver': {
             'argparse_name': '--driver',
             'description': 'Name of the runtime target',
             'enum': ireert.HalDriver.query(),

@@ -125,7 +125,7 @@ class IREECompiler(Optimizer):
             'required': True,
             'enum': list(backend_convert.keys())
         },
-        'compiler-args': {
+        'compiler_args': {
             'argparse_name': '--compiler-args',
             'description': 'Additional options that are passed to compiler',
             'default': None,
@@ -138,8 +138,8 @@ class IREECompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str,
             backend: str,
+            modelframework: str = 'keras',
             compiler_args: Optional[List[str]] = None):
         """
         Wrapper for IREE compiler
@@ -151,11 +151,11 @@ class IREECompiler(Optimizer):
             during compilation stage
         compiled_model_path : Path
             Path where compiled model will be saved
-        modelframework : str
-            Framework of the input model
         backend : str
             Backend on which the model will be executed
-        compiled_args : List[str]
+        modelframework : str
+            Framework of the input model
+        compiler_args : List[str]
             Additional arguments for the compiler. Every options should be in a
             separate string, which should be formatted like this:
             <option>=<value>, or <option> for flags (example:
@@ -188,8 +188,9 @@ class IREECompiler(Optimizer):
         return cls(
             dataset,
             args.compiled_model_path,
+            args.backend,
             args.model_framework,
-            args.backend
+            args.compiler_args
         )
 
     def compile(

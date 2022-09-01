@@ -127,13 +127,14 @@ class ONNXCompiler(Optimizer):
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
 
-        if io_specs:
-            input_spec = io_specs['input']
-            output_spec = io_specs['output']
-        else:
-            spec = self.load_spec(inputmodelpath)
-            input_spec = spec['input']
-            output_spec = spec['output']
+        if not io_specs:
+            io_specs = self.load_spec(inputmodelpath)
+
+        from copy import deepcopy
+        io_specs = deepcopy(io_specs)
+
+        input_spec = io_specs['input']
+        output_spec = io_specs['output']
 
         try:
             output_names = [spec['name'] for spec in output_spec]
@@ -148,8 +149,7 @@ class ONNXCompiler(Optimizer):
 
         onnx.save(model, self.compiled_model_path)
 
-        # Update the io specification with names
-        # possibly with shapes as well.
+        # update the io specification with names
         for spec, input in zip(input_spec, model.graph.input):
             spec['name'] = input.name
 

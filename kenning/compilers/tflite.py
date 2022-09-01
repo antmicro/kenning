@@ -195,6 +195,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
         if not io_specs or not io_specs['output'] or not io_specs['input']:
             raise ValueError('No input/ouput specification found')
 
+        from copy import deepcopy
+        io_specs = deepcopy(io_specs)
+
         if self.quantization_aware_training:
             assert self.inputtype == 'keras'
             model = tf.keras.models.load_model(inputmodelpath)

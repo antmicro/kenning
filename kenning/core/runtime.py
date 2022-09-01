@@ -346,6 +346,27 @@ class Runtime(object):
         return ret
 
     def preprocess_input(self, input_data: bytes) -> list[np.ndarray]:
+        """
+        The method accepts `input_data` in bytes and preprocesses it
+        so that it can be passed to the model.
+
+        It creates `np.ndarray` for every input layer using the metadata
+        in `self.input_spec` and quantizes the data if needed.
+
+        Some compilers can change the order of the layers. If that's the case
+        the method also reorders the layers to match
+        the specification of the model.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Input data in bytes delivered by the client.
+
+        Returns
+        -------
+        list[np.ndarray] : List of inputs for each layer which are
+            ready to be passed to the model.
+        """
         reordered = any(['order' in spec for spec in self.input_spec])
         if reordered:
             spec_by_order = sorted(self.input_spec, key=lambda spec: spec['order'])  # noqa: E501
@@ -385,6 +406,24 @@ class Runtime(object):
         return reordered_inputs
 
     def postprocess_output(self, results: list[np.ndarray]) -> bytes:
+        """
+        The method accepts output of the model and postprocesses it.
+
+        The output is quantized and converted to a correct dtype if needed.
+
+        Some compilers can change the order of the layers. If that's the case
+        the methods also reorders the output to match the original
+        order of the model before compilation.
+
+        Parameters
+        ----------
+        results : list[np.ndarray]
+            List of outputs of the model
+
+        Returns
+        -------
+        bytes : Postprocessed output converted to bytes
+        """
         # dequantizaion
         if any(['prequantized_dtype' in spec for spec in self.output_spec]):
             quantized_results = []
@@ -403,6 +442,7 @@ class Runtime(object):
         else:
             reordered_results = results
 
+        # converting the output to bytes
         result = bytes()
         for res in reordered_results:
             result += res.tobytes()

@@ -3,7 +3,7 @@ import numpy as np
 from tvm import TVMError
 from typing import Type
 from abc import abstractmethod
-from kenning.core.runtime import Runtime
+from kenning.core.runtime import Runtime, ModelNotLoadedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.measurements import MeasurementsCollector
 from pytest_mock import MockerFixture
@@ -194,16 +194,16 @@ class RuntimeWithModel(RuntimeTests):
         # No model initialized
         data = np.arange(100).tobytes()
         runtime = self.initruntime()
-        with pytest.raises((TypeError, AttributeError)):
+        with pytest.raises(ModelNotLoadedError):
             runtime.prepare_input(data)
 
         # For now we got rid of inpudtype argument from runtimes
         # Model is initialized but input is with wrong shape and datatype
-        data = np.arange(99, dtype=np.int8).tobytes()
-        runtime = self.initruntime(inputdtype=['float32'])
-        runtime.prepare_model(None)
-        with pytest.raises(ValueError):
-            output = runtime.prepare_input(data)
+        # data = np.arange(99, dtype=np.int8).tobytes()
+        # runtime = self.initruntime(inputdtype=['float32'])
+        # runtime.prepare_model(None)
+        # with pytest.raises(ValueError):
+        #     output = runtime.prepare_input(data)
 
         # Correct input shape and datatype
         data = np.arange(25, dtype=np.float32).reshape(self.inputshapes)
@@ -222,7 +222,7 @@ class RuntimeWithModel(RuntimeTests):
     def test_run(self):
         # Run without model
         runtime = self.initruntime()
-        with pytest.raises(AttributeError):
+        with pytest.raises(ModelNotLoadedError):
             runtime.run()
 
         # Run without any input
@@ -249,7 +249,7 @@ class RuntimeWithModel(RuntimeTests):
     def test_upload_output(self):
         # Test on no model
         runtime = self.initruntime()
-        with pytest.raises(AttributeError):
+        with pytest.raises(ModelNotLoadedError):
             runtime.upload_output(b'')
 
         # Test with model and input

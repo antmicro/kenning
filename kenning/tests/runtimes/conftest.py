@@ -45,12 +45,13 @@ def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
 
     modelpath = path / modelname
     torch.onnx.export(model, data, modelpath,
-                      input_names=['input.1'], verbose=True)
+                      input_names=['input.1'],
+                      output_names=['output'], verbose=True)
     return (
         modelpath,
         {
             'input': [{'name': 'input.1', 'shape': (1, 1, 5, 5), 'dtype': 'float32'}],  # noqa: E501
-            'output': []
+            'output': [{'name': 'output', 'shape': (1, 1, 3, 3), 'dtype': 'float32'}]   # noqa: E501
         }
     )
 

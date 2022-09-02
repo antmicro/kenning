@@ -37,8 +37,7 @@ def performance_report(
         reportname: str,
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        reportpath: Path,
-        rootdir: Optional[Path] = None) -> str:
+        reportpath: Path) -> str:
     """
     Creates performance section of the report.
 
@@ -52,17 +51,12 @@ def performance_report(
         Path to the directory for images
     reportpath : Path
         Path to the output report
-    rootdir : Optional[Path]
-        Path to the root of the RST project involving this report
 
     Returns
     -------
     str : content of the report in RST format
     """
     log.info('Running performance_report')
-
-    if rootdir is None:
-        rootdir = reportpath.parent
 
     inference_step = None
     if 'target_inference_step' in measurementsdata:
@@ -84,9 +78,7 @@ def performance_report(
             measurementsdata[f'{inference_step}_timestamp'],
             measurementsdata[inference_step],
             skipfirst=True)
-        measurementsdata['inferencetimepath'] = str(
-            usepath.relative_to(rootdir)
-        )
+        measurementsdata['inferencetimepath'] = str(usepath)
         measurementsdata['inferencetime'] = \
             measurementsdata[inference_step]
 
@@ -100,9 +92,7 @@ def performance_report(
             'Memory usage', '%',
             measurementsdata['session_utilization_timestamp'],
             measurementsdata['session_utilization_mem_percent'])
-        measurementsdata['memusagepath'] = str(
-            usepath.relative_to(rootdir)
-        )
+        measurementsdata['memusagepath'] = str(usepath)
     else:
         log.warning('No memory usage measurements in the report')
 
@@ -120,9 +110,7 @@ def performance_report(
             'Mean CPU usage', '%',
             measurementsdata['session_utilization_timestamp'],
             measurementsdata['session_utilization_cpus_percent_avg'])
-        measurementsdata['cpuusagepath'] = str(
-            usepath.relative_to(rootdir)
-        )
+        measurementsdata['cpuusagepath'] = str(usepath)
     else:
         log.warning('No memory usage measurements in the report')
 
@@ -142,9 +130,7 @@ def performance_report(
                 'GPU memory usage', 'MB',
                 measurementsdata['session_utilization_gpu_timestamp'],
                 measurementsdata[gpumemmetric])
-            measurementsdata['gpumemusagepath'] = str(
-                usepath.relative_to(rootdir)
-            )
+            measurementsdata['gpumemusagepath'] = str(usepath)
     else:
         log.warning('No GPU memory usage measurements in the report')
 
@@ -161,9 +147,7 @@ def performance_report(
                 'Utilization', '%',
                 measurementsdata['session_utilization_gpu_timestamp'],
                 measurementsdata['session_utilization_gpu_utilization'])
-            measurementsdata['gpuusagepath'] = str(
-                usepath.relative_to(rootdir)
-            )
+            measurementsdata['gpuusagepath'] = str(usepath)
     else:
         log.warning('No GPU utilization measurements in the report')
 
@@ -178,8 +162,7 @@ def classification_report(
         reportname: str,
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        reportpath: Path,
-        rootdir: Optional[Path] = None):
+        reportpath: Path):
     """
     Creates classification quality section of the report.
 
@@ -193,17 +176,12 @@ def classification_report(
         Path to the directory for images
     reportpath : Path
         Path to the output report
-    rootdir : Optional[Path]
-        Path to the root of the RST project involving this report
 
     Returns
     -------
     str : content of the report in RST format
     """
     log.info('Running classification report')
-
-    if rootdir is None:
-        rootdir = reportpath.parent
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
@@ -216,9 +194,7 @@ def classification_report(
         'Confusion matrix',
         measurementsdata['class_names']
     )
-    measurementsdata['confusionpath'] = str(
-        confusionpath.relative_to(rootdir)
-    )
+    measurementsdata['confusionpath'] = str(confusionpath)
     with path(reports, 'classification.rst') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
@@ -230,8 +206,7 @@ def detection_report(
         reportname: str,
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        reportpath: Path,
-        rootdir: Optional[Path] = None) -> str:
+        reportpath: Path) -> str:
     """
     Creates detection quality section of the report.
 
@@ -245,8 +220,6 @@ def detection_report(
         Path to the directory for images
     reportpath : Path
         Path to the output report
-    rootdir : Optional[Path]
-        Path to the root of the RST project involving this report
 
     Returns
     -------
@@ -259,9 +232,6 @@ def detection_report(
         compute_map_per_threshold
 
     log.info('Running detection report')
-
-    if rootdir is None:
-        rootdir = reportpath.parent
 
     lines = get_recall_precision(measurementsdata, 0.5)
 
@@ -278,9 +248,7 @@ def detection_report(
         lines,
         measurementsdata['class_names']
     )
-    measurementsdata['curvepath'] = str(
-        curvepath.relative_to(rootdir)
-    )
+    measurementsdata['curvepath'] = str(curvepath)
 
     gradientpath = imgdir / f'{reportpath.stem}_recall_precision_gradients.png'
     recall_precision_gradients(
@@ -290,9 +258,7 @@ def detection_report(
         measurementsdata['class_names'],
         aps
     )
-    measurementsdata['gradientpath'] = str(
-        gradientpath.relative_to(rootdir)
-    )
+    measurementsdata['gradientpath'] = str(gradientpath)
 
     tp_iou = []
     all_tp_ious = []
@@ -314,9 +280,7 @@ def detection_report(
         tp_iou,
         measurementsdata['class_names'],
     )
-    measurementsdata['tpioupath'] = str(
-        tpioupath.relative_to(rootdir)
-    )
+    measurementsdata['tpioupath'] = str(tpioupath)
 
     if len(all_tp_ious) > 0:
         true_positives_per_iou_range_histogram(
@@ -324,9 +288,7 @@ def detection_report(
             "Histogram of True Positive IoU values",
             all_tp_ious
         )
-        measurementsdata['iouhistpath'] = str(
-            iouhistpath.relative_to(rootdir)
-        )
+        measurementsdata['iouhistpath'] = str(iouhistpath)
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
@@ -341,9 +303,7 @@ def detection_report(
         None,
         [thresholds, mapvalues]
     )
-    measurementsdata['mappath'] = str(
-        mappath.relative_to(rootdir)
-    )
+    measurementsdata['mappath'] = str(mappath)
     measurementsdata['max_mAP'] = max(mapvalues)
     measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
 
@@ -357,10 +317,9 @@ def detection_report(
 def generate_report(
         reportname: str,
         data: Dict,
-        outputpath: Path,
         imgdir: Path,
         report_types: List[str],
-        rootdir: Optional[Path]) -> str:
+        rootdir: Path) -> str:
     """
     Generates an RST report based on Measurements data.
 
@@ -372,19 +331,18 @@ def generate_report(
         Name for the report
     data : Dict
         Data coming from the Measurements object, loaded i.e. from JSON file
-    outputpath : Path
-        Path to the RST file where the report will be saved
     imgdir : Path
         Path to the directory where the report plots should be stored
     report_types : List[str]
         List of report types that define the project, i.e.
         performance, classification
-    rootdir : Optional[Path]
+    rootdir : Path
         When the report is a part of a larger RST document (i.e. Sphinx docs),
         the rootdir parameter defines thte root directory of the document.
         It is used to compute relative paths in the document's references.
     """
 
+    outputpath = rootdir / "report.rst"
     reptypes = {
         'performance': performance_report,
         'classification': classification_report,
@@ -394,7 +352,7 @@ def generate_report(
     content = ''
     data['reportname'] = [reportname]
     for typ in report_types:
-        content += reptypes[typ](reportname, data, imgdir, outputpath, rootdir)
+        content += reptypes[typ](reportname, data, imgdir, outputpath)
 
     with open(outputpath, 'w') as out:
         out.write(content)
@@ -414,15 +372,9 @@ def main(argv):
         type=str
     )
     parser.add_argument(
-        'output',
-        help='Path to the output RST file',
+        'outputdir',
+        help='Path to root directory (report and generated images will be stored here)',  # noqa: E501
         type=Path
-    )
-    parser.add_argument(
-        '--root-dir',
-        help='Path to root directory for documentation (paths in RST files are in respect to this directory)',  # noqa: E501
-        type=Path,
-        default=None
     )
     parser.add_argument(
         '--report-types',
@@ -430,11 +382,6 @@ def main(argv):
         nargs='+',
         required=True,
         type=str
-    )
-    parser.add_argument(
-        '--img-dir',
-        help='Path to the directory where images will be stored',
-        type=Path
     )
     parser.add_argument(
         '--verbosity',
@@ -445,10 +392,10 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    if args.img_dir is None:
-        args.img_dir = args.output.parent / 'img'
-
-    args.img_dir.mkdir(parents=True, exist_ok=True)
+    args.outputdir.mkdir(parents=True, exist_ok=True)
+    root_dir = args.outputdir.absolute()
+    img_dir = root_dir / "img"
+    img_dir.mkdir(parents=True, exist_ok=True)
 
     with open(args.measurements, 'r') as measurements:
         measurementsdata = json.load(measurements)
@@ -465,10 +412,9 @@ def main(argv):
     generate_report(
         args.reportname,
         measurementsdata,
-        args.output,
-        args.img_dir,
+        img_dir,
         args.report_types,
-        args.root_dir
+        root_dir
     )
 
 

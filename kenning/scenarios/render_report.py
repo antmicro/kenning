@@ -9,9 +9,10 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Any
 import json
 import numpy as np
+
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -29,8 +30,36 @@ from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
 
-
 log = logger.get_logger()
+
+
+def get_model_name(
+        measurementsdata: Dict[str, Any]
+) -> str:
+    """
+    Generates the name of the model. The name is of the form
+    `name of model wrapper`_`name of all the optimizers`_`name of runtime`
+
+    Parameters
+    ----------
+    measurementsdata: Dict[str, Any]
+        Statistics from the Measurements class
+
+    Returns
+    -------
+    str : name of the model used when generating the report
+    """
+    build_cfg = measurementsdata["build_cfg"]
+    model_name = build_cfg["model_wrapper"]["type"]
+    # Removing all of kenning.modelwrappers... etc.
+    model_name = model_name.split(".")[-1]
+    compiler_names = "-".join([
+        compiler_details["type"].split(".")[-1]
+        for compiler_details in build_cfg['optimizers']
+    ])
+    runtime_name = build_cfg["runtime"]["type"]
+    runtime_name = runtime_name.split(".")[-1]
+    return f"{model_name}-{compiler_names}-{runtime_name}"
 
 
 def performance_report(
@@ -220,6 +249,8 @@ def detection_report(
         Path to the directory for images
     reportpath : Path
         Path to the output report
+    modelname : str
+        Namo of the model
 
     Returns
     -------
@@ -267,7 +298,7 @@ def detection_report(
         dets = measurementsdata[f'eval_det/{i}'] if f'eval_det/{i}' in measurementsdata else []  # noqa: E501
         det_tp_iou = [i[2] for i in dets if i[1]]
         if len(det_tp_iou) > 0:
-            tp_iou.append(sum(det_tp_iou)/len(det_tp_iou))
+            tp_iou.append(sum(det_tp_iou) / len(det_tp_iou))
             all_tp_ious.extend(det_tp_iou)
         else:
             tp_iou.append(0)
@@ -316,7 +347,7 @@ def detection_report(
 
 def generate_report(
         reportname: str,
-        data: Dict,
+        data: List[Dict],
         imgdir: Path,
         report_types: List[str],
         rootdir: Path) -> str:
@@ -329,8 +360,9 @@ def generate_report(
     ----------
     reportname : str
         Name for the report
-    data : Dict
-        Data coming from the Measurements object, loaded i.e. from JSON file
+    data : List[Dict]
+        Data for each model coming from the Measurements object,
+        loaded i.e. from JSON files
     imgdir : Path
         Path to the directory where the report plots should be stored
     report_types : List[str]
@@ -350,9 +382,11 @@ def generate_report(
     }
 
     content = ''
-    data['reportname'] = [reportname]
     for typ in report_types:
-        content += reptypes[typ](reportname, data, imgdir, outputpath)
+        for model_data in data:
+            content += reptypes[typ](
+                reportname, model_data, imgdir, outputpath
+            )
 
     with open(outputpath, 'w') as out:
         out.write(content)
@@ -362,9 +396,11 @@ def main(argv):
     command = get_command(argv)
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
-        'measurements',
-        help='Path to the JSON file with measurements',
-        type=Path
+        '--measurements',
+        help='Path to the JSON files with measurements. If more than one file is provided, model comparison will be generated.',  # noqa: E501
+        type=Path,
+        nargs='+',
+        required=True
     )
     parser.add_argument(
         'reportname',
@@ -397,17 +433,25 @@ def main(argv):
     img_dir = root_dir / "img"
     img_dir.mkdir(parents=True, exist_ok=True)
 
-    with open(args.measurements, 'r') as measurements:
-        measurementsdata = json.load(measurements)
+    measurementsdata = []
+    for measurementspath in args.measurements:
+        with open(measurementspath, 'r') as measurementsfile:
+            measurements = json.load(measurementsfile)
+        modelname = get_model_name(measurements)
+        measurements['modelname'] = modelname
+        measurements['reportname'] = args.reportname
+        measurementsdata.append(measurements)
+    # TODO: Check if all model names are unique
 
-    if 'build_cfg' in measurementsdata:
-        measurementsdata['build_cfg'] = json.dumps(
-            measurementsdata['build_cfg'],
-            indent=4
-        ).split('\n')
+    for measurements in measurementsdata:
+        if 'build_cfg' in measurements:
+            measurements['build_cfg'] = json.dumps(
+                measurements['build_cfg'],
+                indent=4
+            ).split('\n')
 
-    if 'command' in measurementsdata:
-        measurementsdata['command'] += [''] + command
+        if 'command' in measurements:
+            measurements['command'] += [''] + command
 
     generate_report(
         args.reportname,

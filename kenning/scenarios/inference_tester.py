@@ -168,12 +168,12 @@ def main(argv):
             modelpath = Path(tempfile.NamedTemporaryFile().name)
             model.save_to_onnx(modelpath)
 
-        model.dump_spec(modelpath)
+        model.save_io_specification(modelpath)
         compiler.set_input_type(format)
         compiler.compile(modelpath)
         modelpath = compiler.compiled_model_path
     else:
-        model.dump_spec(modelpath)
+        model.save_io_specification(modelpath)
 
     if runtime:
         if protocol:

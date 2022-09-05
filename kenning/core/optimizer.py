@@ -215,8 +215,8 @@ class Optimizer(object):
         different programming language.
 
         If `io_specs` is passed, then the function uses it during the
-        compilation, otherwise `load_spec` is used to fetch the specification
-        saved in `inputmodelpath` + `.json`.
+        compilation, otherwise `load_io_specification` is used to fetch the
+        specification saved in `inputmodelpath` + `.json`.
 
         The compiled model is saved to compiled_model_path and
         the specification is saved to compiled_model_path + .json
@@ -316,7 +316,7 @@ class Optimizer(object):
     def action_compile(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def dump_spec(
+    def save_io_specification(
             self,
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
@@ -342,7 +342,7 @@ class Optimizer(object):
         if io_specs:
             model_spec = io_specs
         else:
-            model_spec = self.load_spec(inputmodelpath)
+            model_spec = self.load_io_specification(inputmodelpath)
 
         with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
             json.dump(
@@ -350,7 +350,7 @@ class Optimizer(object):
                 f
             )
 
-    def load_spec(self, modelpath: Path) -> dict[list[dict]]:
+    def load_io_specification(self, modelpath: Path) -> dict[list[dict]]:
         """
         Returns saved input and output specification of a model
         saved in `modelpath` if there is one. Otherwise return an empty
@@ -363,8 +363,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Optional[dict] : Specification of a model saved
-            in `modelpath` if there is one. Empty template otherwise
+        dict : Specification of a model saved in `modelpath` if there is one.
+            Empty template otherwise
         """
         spec_path = self.get_spec_path(modelpath)
         if spec_path.exists():

@@ -392,7 +392,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def dump_spec(self, modelpath: Path):
+    def save_io_specification(self, modelpath: Path):
         """
         Saves input/output model specification to a file named
         `modelpath` + `.json`. This function uses `get_io_specs()`

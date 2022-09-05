@@ -190,7 +190,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             io_specs: Optional[dict[list[dict]]] = None):
 
         if not io_specs:
-            io_specs = self.load_spec(inputmodelpath)
+            io_specs = self.load_io_specification(inputmodelpath)
 
         if not io_specs or not io_specs['output'] or not io_specs['input']:
             raise ValueError('No input/ouput specification found')
@@ -282,7 +282,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         update_io_specs(signature.get_input_details(), interpreter.get_input_details(), 'input')  # noqa: E501
         update_io_specs(signature.get_output_details(), interpreter.get_output_details(), 'output')  # noqa: E501
 
-        self.dump_spec(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_specs)
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

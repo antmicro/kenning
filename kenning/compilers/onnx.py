@@ -128,7 +128,7 @@ class ONNXCompiler(Optimizer):
             io_specs: Optional[dict[list[dict]]] = None):
 
         if not io_specs:
-            io_specs = self.load_spec(inputmodelpath)
+            io_specs = self.load_io_specification(inputmodelpath)
 
         from copy import deepcopy
         io_specs = deepcopy(io_specs)
@@ -156,7 +156,7 @@ class ONNXCompiler(Optimizer):
         for spec, output in zip(output_spec, model.graph.output):
             spec['name'] = output.name
 
-        self.dump_spec(
+        self.save_io_specification(
             inputmodelpath,
             {
                 'input': input_spec,

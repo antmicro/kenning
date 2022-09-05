@@ -165,7 +165,7 @@ def main(argv):
             modelpath = Path(tempfile.NamedTemporaryFile().name)
             prev_block.save_to_onnx(modelpath)
 
-        prev_block.dump_spec(modelpath)
+        prev_block.save_io_specification(modelpath)
         next_block.set_input_type(format)
         next_block.compile(modelpath)
 
@@ -173,7 +173,7 @@ def main(argv):
         modelpath = prev_block.compiled_model_path
 
     if not optimizers:
-        model.dump_spec(modelpath)
+        model.save_io_specification(modelpath)
 
     if runtime:
         if protocol:

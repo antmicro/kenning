@@ -402,7 +402,7 @@ class TVMCompiler(Optimizer):
         if io_specs:
             input_spec = io_specs['input']
         else:
-            input_spec = self.load_spec(inputmodelpath)['input']
+            input_spec = self.load_io_specification(inputmodelpath)['input']
 
         inputshapes = {spec['name']: spec['shape'] for spec in input_spec}
         dtypes = {spec['name']: spec['dtype'] for spec in input_spec}
@@ -417,7 +417,7 @@ class TVMCompiler(Optimizer):
             dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path)
-        self.dump_spec(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_specs)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

@@ -198,7 +198,7 @@ class IREECompiler(Optimizer):
             inputmodelpath: Path,
             io_specs: Optional[dict[list[dict]]] = None):
         if not io_specs:
-            io_specs = self.load_spec(inputmodelpath)
+            io_specs = self.load_io_specification(inputmodelpath)
 
         if not io_specs['input']:
             raise ValueError('No input specification found')
@@ -214,7 +214,7 @@ class IREECompiler(Optimizer):
 
         with open(self.compiled_model_path, "wb") as f:
             f.write(compiled_buffer)
-        self.dump_spec(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_specs)
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

@@ -64,32 +64,21 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     }
 
     arguments_structure = {
-        'task': {
-            'argparse_name': '--task',
-            'description': 'The task type',
-            'default': 'object_detection',
-            'enum': [
-                key for dataset in annotationsurls.values()
-                for key in dataset.keys() if key != 'images'
-            ]
-        },
+        # TODO: add arguments overriding in args_manager
+        # 'task': {
+        #     'argparse_name': '--task',
+        #     'description': 'The task type',
+        #     'default': 'object_detection',
+        #     'enum': [
+        #         key for dataset in annotationsurls.values()
+        #         for key in dataset.keys() if key != 'images'
+        #     ]
+        # },
         'dataset_type': {
             'argparse_name': '--dataset-type',
             'description': 'Type of dataset to download and use',  # noqa: E501
             'default': 'val2017',
             'enum': list(annotationsurls.keys())
-        },
-        'image_memory_layout': {
-            'argparse_name': '--image-memory-layout',
-            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            'default': 'NCHW',
-            'enum': ['NHWC', 'NCHW']
-        },
-        'show_on_eval': {
-            'argparse_name': '--show-predictions-on-eval',
-            'description': 'Show predictions during evaluation',
-            'type': bool,
-            'default': False
         }
     }
 

@@ -60,6 +60,8 @@ def get_model_name(
     ])
     runtime_name = build_cfg["runtime"]["type"]
     runtime_name = runtime_name.split(".")[-1]
+    if compiler_names == "":
+        return f"{model_name}-{runtime_name}"
     return f"{model_name}-{compiler_names}-{runtime_name}"
 
 

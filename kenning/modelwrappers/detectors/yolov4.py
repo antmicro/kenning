@@ -123,6 +123,10 @@ class ONNXYOLOV4(YOLOWrapper):
 
         return result
 
+    # NOTE: In postprocess_outputs function the second output layer `output.3`
+    # of size 255 is split into two layers of size (4 + 1 + C) and B,
+    # where C is a class vector and B is the number of detectable object
+    # in a pixel.
     def get_io_specification_from_model(self):
         return {
             'input': [{'name': 'input', 'shape': (1, 3, self.keyparams['width'], self.keyparams['height']), 'dtype': 'float32'}],  # noqa: E501

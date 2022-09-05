@@ -81,21 +81,24 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return data
 
     def convert_output_from_bytes(self, output_data):
+        # The unknown size in the output specification is the
+        # number of detected object. It can be calculated
+        # manually using the size of the output
         S = len(output_data)
         f = np.dtype(np.float32).itemsize
         i = np.dtype(np.int64).itemsize
         num_dets = S // (416 * 416 * f + i)
 
-        output_parameters = [
-            ((num_dets, 4), np.float32, 'boxes'),
-            ((num_dets,), np.int64, 'labels'),
-            ((num_dets,), np.float32, 'scores'),
-            ((num_dets, 1, 416, 416), np.float32, 'masks')
-        ]
+        output_specification = self.get_io_specification()['        ']
 
         result = {}
-        for shape, dtype, name in output_parameters:
-            tensorsize = reduce(operator.mul, shape) * np.dtype(dtype).itemsize
+        for spec in output_specification:
+            name = spec['name']
+            shape = list(
+                num_dets if val == -1 else val for val in spec['shape']
+            )
+            dtype = np.dtype(spec['dtype'])
+            tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
             # is not writeable, which breaks output postprocessing.

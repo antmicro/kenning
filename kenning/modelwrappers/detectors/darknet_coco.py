@@ -15,7 +15,6 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
     arguments_structure = {}
 
-    # TODO: Fill the output, probably move it from yolov4 to YOLOWrapper
     def get_io_specification_from_model(self):
         return {
             'input': [{'name': 'data', 'shape': (1, 3, self.keyparams['width'], self.keyparams['height']), 'dtype': 'float32'}],  # noqa: E501

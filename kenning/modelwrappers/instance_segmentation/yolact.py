@@ -185,18 +185,6 @@ class YOLACT(ModelWrapper):
             args.score_threshold
         )
 
-    def get_io_specification_from_model(self):
-        return {
-            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
-            'output': [
-                {'name': 'output_0', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': 'output_1', 'shape': (-1, 32), 'dtype': 'float32'},
-                {'name': 'output_2', 'shape': (-1,), 'dtype': 'int64'},
-                {'name': 'output_3', 'shape': (-1,), 'dtype': 'float32'},
-                {'name': 'output_4', 'shape': (138, 138, 32), 'dtype': 'float32'}  # noqa: E501
-            ]
-        }
-
     def prepare_model(self):
         if not self.from_file:
             raise NotImplementedError(
@@ -226,15 +214,22 @@ class YOLACT(ModelWrapper):
         return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
-        masks = y['proto'] @ y['mask'].T
+        # The signature of the y input
+        # output_0 - BOX
+        # output_1 - MASK
+        # output_2 - CLASS
+        # output_3 - SCORE
+        # output_4 - PROTO
+
+        masks = y['output_4'] @ y['output_1'].T
         masks = sigmoid(masks)
-        masks = crop(masks, y['box'])
+        masks = crop(masks, y['output_0'])
         masks = cv2.resize(
             masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
         ).transpose(2, 0, 1)
-        y['mask'] = (masks >= 0.5).astype(np.float32) * 255.
+        y['output_1'] = (masks >= 0.5).astype(np.float32) * 255.
 
-        boxes = y['box']
+        boxes = y['output_0']
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
             boxes[:, 0],
             boxes[:, 2],
@@ -245,31 +240,31 @@ class YOLACT(ModelWrapper):
             boxes[:, 3],
             550
         )
-        y['box'] = (boxes / 550)
+        y['output_0'] = (boxes / 550)
 
         if self.top_k is not None:
-            idx = np.argsort(y['score'], 0)[:-(self.top_k + 1):-1]
+            idx = np.argsort(y['output_3'], 0)[:-(self.top_k + 1):-1]
             for k in y:
-                if k != 'proto':
+                if k != 'output_4':
                     y[k] = y[k][idx]
 
-        keep = y['score'] >= self.score_threshold
+        keep = y['output_3'] >= self.score_threshold
         for k in y:
-            if k != "proto":
+            if k != 'output_4':
                 y[k] = y[k][keep]
 
         Y = []
-        for i in range(len(y['score'])):
-            x1, y1, x2, y2 = y['box'][i, :]
+        for i in range(len(y['output_3'])):
+            x1, y1, x2, y2 = y['output_0'][i, :]
             Y.append(SegmObject(
-                clsname=self.dataset.get_class_names()[y['class'][i]],
+                clsname=self.dataset.get_class_names()[y['output_2'][i]],
                 maskpath=None,
                 xmin=x1,
                 ymin=y1,
                 xmax=x2,
                 ymax=y2,
-                mask=y['mask'][i],
-                score=y['score'][i]
+                mask=y['output_1'][i],
+                score=y['output_3'][i]
             ))
         return [Y]
 
@@ -301,17 +296,16 @@ class YOLACT(ModelWrapper):
         i = np.dtype(np.int64).itemsize
         num_dets = (S - 138 * 138 * 32 * f) // (37 * f + i)
 
-        output_parameters = [
-            ((num_dets, 4), np.float32, 'box'),
-            ((num_dets, 32), np.float32, 'mask'),
-            ((num_dets,), np.int64, 'class'),
-            ((num_dets,), np.float32, 'score'),
-            ((138, 138, 32), np.float32, 'proto')
-        ]
+        output_specification = self.get_io_specification()['output']
 
         result = {}
-        for shape, dtype, name in output_parameters:
-            tensorsize = reduce(operator.mul, shape) * np.dtype(dtype).itemsize
+        for spec in output_specification:
+            name = spec['name']
+            shape = list(
+                num_dets if val == -1 else val for val in spec['shape']
+            )
+            dtype = np.dtype(spec['dtype'])
+            tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
             # is not writeable, which breaks output postprocessing.
@@ -323,3 +317,15 @@ class YOLACT(ModelWrapper):
             outputdata = outputdata[tensorsize:]
 
         return result
+
+    def get_io_specification_from_model(self):
+        return {
+            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
+            'output': [
+                {'name': 'output_0', 'shape': (-1, 4), 'dtype': 'float32'},
+                {'name': 'output_1', 'shape': (-1, 32), 'dtype': 'float32'},
+                {'name': 'output_2', 'shape': (-1,), 'dtype': 'int64'},
+                {'name': 'output_3', 'shape': (-1,), 'dtype': 'float32'},
+                {'name': 'output_4', 'shape': (138, 138, 32), 'dtype': 'float32'}  # noqa: E501
+            ]
+        }

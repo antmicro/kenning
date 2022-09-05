@@ -74,7 +74,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             )
         return parameterschema
 
-    def get_io_specs(self):
+    def get_io_specification(self):
         return {
             'input': [{'name': 'input.1', 'shape': (1, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
             'output': [{'name': '548', 'shape': (1, self.numclasses), 'dtype': 'float32'}]  # noqa: E501

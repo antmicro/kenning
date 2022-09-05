@@ -52,7 +52,7 @@ class PyTorchWrapper(ModelWrapper):
         x = tuple(torch.randn(
             spec['shape'],
             device='cpu'
-        ) for spec in self.get_io_specs()['input'])
+        ) for spec in self.get_io_specification()['input'])
 
         torch.onnx.export(
             self.model.to(device='cpu'),
@@ -60,10 +60,10 @@ class PyTorchWrapper(ModelWrapper):
             modelpath,
             opset_version=11,
             input_names=[
-                spec['name'] for spec in self.get_io_specs()['input']
+                spec['name'] for spec in self.get_io_specification()['input']
             ],
             output_names=[
-                spec['name'] for spec in self.get_io_specs()['output']
+                spec['name'] for spec in self.get_io_specification()['output']
             ]
         )
 

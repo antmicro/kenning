@@ -374,7 +374,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def get_io_specs(self) -> dict[list[dict]]:
+    def get_io_specification(self) -> dict[list[dict]]:
         """
         Returns a dictionary with `input` and `output` keys that map to
         input and output specifications.
@@ -395,7 +395,7 @@ class ModelWrapper(object):
     def save_io_specification(self, modelpath: Path):
         """
         Saves input/output model specification to a file named
-        `modelpath` + `.json`. This function uses `get_io_specs()`
+        `modelpath` + `.json`. This function uses `get_io_specification()`
         function to get the properties.
 
         It is later used in optimization and compilation steps.
@@ -410,7 +410,7 @@ class ModelWrapper(object):
 
         with open(spec_path, 'w') as f:
             json.dump(
-                self.get_io_specs(),
+                self.get_io_specification(),
                 f
             )
 
@@ -447,11 +447,11 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        # get_io_specs returns dictionary with multiple possible inputs
+        # get_io_specification returns dictionary with multiple possible inputs
         # Currently we do not expect to support more than single input though
         # Hence we assume every model will have its working input at index 0
         # TODO add support for multiple inputs / outputs
-        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
+        default_name = list(self.get_io_specification()['input'][0].items())[0][0]
         return {
             'out_infer': self.run_inference(
                 self.preprocess_input(input[default_name])
@@ -459,7 +459,9 @@ class ModelWrapper(object):
         }
 
     def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
+        default_name = list(
+            self.get_io_specification()['input'][0].items()
+        )[0][0]
         return {
             'out_pre': self.preprocess_input(input[default_name])
         }
@@ -468,7 +470,9 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(self.get_io_specs()['input'][0].items())[0][0]
+        default_name = list(
+            self.get_io_specification()['input'][0].items()
+        )[0][0]
         return {
             'out_post': self.postprocess_outputs(input[default_name])
         }

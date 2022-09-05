@@ -26,10 +26,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
                 spec['shape'],
                 spec['dtype'],
                 name=spec['name'],
-            ) for spec in self.get_io_specs()['input'])
+            ) for spec in self.get_io_specification()['input'])
         )
 
-    def get_io_specs(self):
+    def get_io_specification(self):
         return {
             'input': [{'name': 'input_1', 'shape': (1, 224, 224, 3), 'dtype': 'float32'}],  # noqa: E501
             'output': [{'name': 'out_layer', 'shape': (1, self.numclasses), 'dtype': 'float32'}]  # noqa: E501

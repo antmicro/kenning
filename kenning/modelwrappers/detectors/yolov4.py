@@ -123,7 +123,7 @@ class ONNXYOLOV4(YOLOWrapper):
 
         return result
 
-    def get_io_specs(self):
+    def get_io_specification(self):
         return {
             'input': [{'name': 'input', 'shape': (1, 3, self.keyparams['width'], self.keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
             'output': [

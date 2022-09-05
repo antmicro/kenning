@@ -185,7 +185,7 @@ class YOLACT(ModelWrapper):
             args.score_threshold
         )
 
-    def get_io_specs(self):
+    def get_io_specification(self):
         return {
             'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
             'output': [

@@ -4,7 +4,7 @@ Wrappers for drawing plots for reports.
 
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict
 import numpy as np
 import itertools
 from pathlib import Path
@@ -93,6 +93,69 @@ def time_series_plot(
     axhist.grid(which='both')
     plt.setp(axhist.get_yticklabels(), visible=False)
 
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
+def draw_violin_comparison_plot(
+        outpath: Optional[Path],
+        title: str,
+        xnames: List[str],
+        data: Dict[str, List]
+):
+    """
+    Draws violin plots comparing different metrics.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Path where the plot will be saved. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xnames : List[str]
+        Names of the metrics in order
+    data : Dict[str, List]
+        Map between name of the model and list of metrics to visualize
+    """
+
+    num_plots = len(xnames)
+    legend_lines, legend_labels = [], []
+    fig, axs = plt.subplots(1, num_plots, figsize=(3*num_plots, 10))
+    axs = axs.flatten()
+    fig.suptitle(title, fontsize='x-large')
+    cmap = plt.get_cmap("gnuplot")
+    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(data))]
+
+    for i, (samplename, samples) in enumerate(data.items()):
+        for ax, metric_sample in zip(axs, samples):
+            vp = ax.violinplot(metric_sample, positions=[i])
+            for body in vp['bodies']:
+                body.set_color(colors[i])
+            vp['cbars'].set_color(colors[i])
+            vp['cmins'].set_color(colors[i])
+            vp['cmaxes'].set_color(colors[i])
+        # dummy plot used to create a legend
+        line, = plt.plot([], label=samplename, color=colors[i])
+        legend_lines.append(line)
+        legend_labels.append(samplename)
+
+    for ax, metricname in zip(axs, xnames):
+        ax.set_title(metricname)
+        ax.tick_params(
+            axis='x',
+            which='both',
+            bottom=False,
+            labelbottom=False
+        )
+
+    fig.legend(
+        legend_lines,
+        legend_labels,
+        loc="lower center",
+        fontsize="large"
+    )
     if outpath is None:
         plt.show()
     else:

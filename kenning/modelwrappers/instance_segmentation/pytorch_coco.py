@@ -108,7 +108,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
         return [result]
 
-    def get_io_specification(self):
+    def get_io_specification_from_model(self):
         return {
             'input': [{'name': 'input.1', 'shape': (1, 3, 416, 416), 'dtype': 'float32'}],  # noqa: E501
             'output': [

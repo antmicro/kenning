@@ -374,10 +374,32 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
+    def get_io_specification_from_model(self) -> dict[list[dict]]:
+        """
+        Returns a new instance of dictionary with `input` and `output`
+        keys that map to input and output specifications.
+
+        A single specification is a list of dictionaries with
+        names, shapes and dtypes for each layer. The order of the
+        dictionaries is assumed to be expected by the `ModelWrapper`
+
+        It is later used in optimization and compilation steps.
+
+        It is used by `get_io_specification` function to get the
+        specification and save it for later use.
+
+        Returns
+        -------
+        dict[list[dict]] : Dictionary that conveys input and output
+            layers specification
+        """
+
+        raise NotImplementedError
+
     def get_io_specification(self) -> dict[list[dict]]:
         """
-        Returns a dictionary with `input` and `output` keys that map to
-        input and output specifications.
+        Returns a saved dictionary with `input` and `output` keys
+        that map to input and output specifications.
 
         A single specification is a list of dictionaries with
         names, shapes and dtypes for each layer. The order of the
@@ -390,7 +412,9 @@ class ModelWrapper(object):
         dict[list[dict]] : Dictionary that conveys input and output
             layers specification
         """
-        raise NotImplementedError
+        if not hasattr(self, 'io_specification'):
+            self.io_specification = self.get_io_specification_from_model()
+        return self.io_specification
 
     def save_io_specification(self, modelpath: Path):
         """
@@ -451,7 +475,9 @@ class ModelWrapper(object):
         # Currently we do not expect to support more than single input though
         # Hence we assume every model will have its working input at index 0
         # TODO add support for multiple inputs / outputs
-        default_name = list(self.get_io_specification()['input'][0].items())[0][0]
+        default_name = list(
+            self.get_io_specification()['input'][0].items()
+        )[0][0]
         return {
             'out_infer': self.run_inference(
                 self.preprocess_input(input[default_name])

@@ -42,7 +42,7 @@ class TestOptimizerModelWrapper:
         assert model_type in wrapper.get_output_formats()
 
         filepath = tmpfolder / uuid.uuid4().hex
-        io_specs = wrapper.get_io_specs()
+        io_specs = wrapper.get_io_specification()
 
         model_path = Path(model_path)
         optimizer.set_compiled_model_path(filepath)
@@ -72,7 +72,7 @@ class TestOptimizerModelWrapper:
 
         for wrapper_name in modelwrappersamples:
             wrapper = modelwrappersamples.get(wrapper_name)
-            io_specs = wrapper.get_io_specs()
+            io_specs = wrapper.get_io_specification()
 
             filename = uuid.uuid4().hex
             filepath = tmpfolder / filename

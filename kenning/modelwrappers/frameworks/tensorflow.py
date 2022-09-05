@@ -11,8 +11,7 @@ class TensorFlowWrapper(ModelWrapper):
             self,
             modelpath: Path,
             dataset: Dataset,
-            from_file: bool,
-            inputspec: tf.TensorSpec):
+            from_file: bool):
         """
         Creates the TensorFlow model wrapper.
 
@@ -27,11 +26,7 @@ class TensorFlowWrapper(ModelWrapper):
             The dataset to verify the inference
         from_file : bool
             True if the model should be loaded from file
-        inputspec : tf.TensorSpec
-            Specification of the input tensor dimensionality and type (used for
-            ONNX conversion)
         """
-        self.inputspec = inputspec
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):
@@ -58,9 +53,16 @@ class TensorFlowWrapper(ModelWrapper):
 
     def save_to_onnx(self, modelpath):
         import tf2onnx
+
+        x = tuple(tf.TensorSpec(
+            spec['shape'],
+            spec['dtype'],
+            name=spec['name'],
+        ) for spec in self.get_io_specification()['input'])
+
         modelproto, _ = tf2onnx.convert.from_keras(
             self.model,
-            input_signature=self.inputspec,
+            input_signature=x,
             output_path=modelpath,
             opset=11
         )

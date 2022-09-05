@@ -21,12 +21,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         super().__init__(
             modelpath,
             dataset,
-            from_file,
-            tuple(tf.TensorSpec(
-                spec['shape'],
-                spec['dtype'],
-                name=spec['name'],
-            ) for spec in self.get_io_specification()['input'])
+            from_file
         )
 
     def get_io_specification_from_model(self):

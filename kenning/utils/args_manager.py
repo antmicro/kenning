@@ -351,9 +351,15 @@ def add_parameterschema_argument(
         else:
             argschema_name = name
 
+        if argschema_name in schema['properties'].keys():
+            raise KeyError(f'{argschema_name} already added to the schema')
+
+        for s in schema['properties'].values():
+            if s['real_name'] == name:
+                raise KeyError(f'{s} already has a name: {name}')
+
         schema['properties'][argschema_name] = {}
         keywords = schema['properties'][argschema_name]
-
         keywords['real_name'] = name
 
         # Case for a list of keywords

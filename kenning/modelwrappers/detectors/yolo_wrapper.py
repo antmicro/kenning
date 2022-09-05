@@ -71,6 +71,12 @@ class YOLOWrapper(ModelWrapper):
                 cls.arguments_structure,
                 'class_names'
             )
+
+        if cls.arguments_structure != YOLOWrapper.arguments_structure:
+            add_argparse_argument(
+                group,
+                cls.arguments_structure
+            )
         return parser, group
 
     @classmethod
@@ -89,6 +95,12 @@ class YOLOWrapper(ModelWrapper):
                 parameterschema,
                 cls.arguments_structure,
                 'class_names'
+            )
+
+        if cls.arguments_structure != YOLOWrapper.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
             )
         return parameterschema
 

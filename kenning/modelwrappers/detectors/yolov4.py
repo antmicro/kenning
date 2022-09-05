@@ -57,6 +57,8 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
+    arguments_structure = {}
+
     def postprocess_outputs(self, y):
         # YOLOv4, as YOLOv3, has three outputs for three stages of computing.
         # Each output layer has information about bounding boxes, scores and

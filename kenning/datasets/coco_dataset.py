@@ -90,7 +90,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             task: str = 'object_detection',
             dataset_type: str = 'val2017',
             image_memory_layout: str = 'NCHW',
-            show_on_eval: bool = False):
+            show_on_eval: bool = False,
+            image_width: int = 416,
+            image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.log = get_logger()
         self.dataset_type = dataset_type
@@ -100,7 +102,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             download_dataset,
             task,
             image_memory_layout,
-            show_on_eval
+            show_on_eval,
+            image_width,
+            image_height
         )
 
     @classmethod
@@ -112,7 +116,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             args.task,
             args.dataset_type,
             args.image_memory_layout,
-            args.show_on_eval
+            args.show_predictions_on_eval,
+            args.image_width,
+            args.image_height
         )
 
     def download_dataset_fun(self):

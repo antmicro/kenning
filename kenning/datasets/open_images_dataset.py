@@ -255,7 +255,9 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             show_on_eval: bool = False,
             crop_input_to_bboxes: bool = False,
             crop_input_margin_size: float = 0.1,
-            download_seed: int = 12345):
+            download_seed: int = 12345,
+            image_width: int = 416,
+            image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.classes = classes
         self.download_num_bboxes_per_class = download_num_bboxes_per_class
@@ -266,8 +268,6 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             self.classes_path = Path(classes)
         self.download_annotations_type = download_annotations_type
         self.classmap = {}
-        self.image_width = 416
-        self.image_height = 416
         self.classnames = []
         self.crop_input_to_bboxes = crop_input_to_bboxes
         self.crop_input_margin_size = crop_input_margin_size
@@ -280,7 +280,9 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             download_dataset,
             task,
             image_memory_layout,
-            show_on_eval
+            show_on_eval,
+            image_width,
+            image_height
         )
 
     @classmethod
@@ -297,7 +299,9 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             args.show_predictions_on_eval,
             args.crop_samples_to_bboxes,
             args.crop_margin,
-            args.download_seed
+            args.download_seed,
+            args.image_width,
+            args.image_height
         )
 
     def download_dataset_fun(self):

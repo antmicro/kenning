@@ -209,6 +209,16 @@ class ObjectDetectionSegmentationDataset(Dataset):
             'type': bool,
             'default': False
         },
+        'image_width': {
+            'description': 'Width of the input images',
+            'type': int,
+            'default': 416
+        },
+        'image_height': {
+            'description': 'Height of the input images',
+            'type': int,
+            'default': 416
+        }
     }
 
     def __init__(
@@ -218,13 +228,15 @@ class ObjectDetectionSegmentationDataset(Dataset):
             download_dataset: bool = False,
             task: str = 'object_detection',
             image_memory_layout: str = 'NCHW',
-            show_on_eval: bool = False):
+            show_on_eval: bool = False,
+            image_width: int = 416,
+            image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.task = task
         self.classmap = {}
         self.image_memory_layout = image_memory_layout
-        self.image_width = 608
-        self.image_height = 608
+        self.image_width = image_width
+        self.image_height = image_height
         self.classnames = []
         self.show_on_eval = show_on_eval
         super().__init__(root, batch_size, download_dataset)

@@ -381,13 +381,16 @@ class Runtime(object):
         Raises
         ------
         AttributeError : Raised if output specification is not loaded.
+        ValueError : Raised if size of input doesn't match the input specification  # noqa: E501
         """
         if self.input_spec is None:
             raise AttributeError("You must load the input specification first.")  # noqa: E501
 
         reordered = any(['order' in spec for spec in self.input_spec])
         if reordered:
-            spec_by_order = sorted(self.input_spec, key=lambda spec: spec['order'])  # noqa: E501
+            spec_by_order = sorted(
+                self.input_spec, key=lambda spec: spec['order']
+            )
         else:
             spec_by_order = self.input_spec
 
@@ -400,7 +403,11 @@ class Runtime(object):
                 spec['prequantized_dtype'] if 'prequantized_dtype' in spec
                 else spec['dtype']
             )
+
             siz = np.abs(np.prod(shape) * dt.itemsize)
+            if len(input_data) < siz:
+                self.log.error("Received less data than model expected.")
+                raise ValueError
             inp = np.frombuffer(input_data[:siz], dtype=dt)
             inp = inp.reshape(shape)
 
@@ -408,10 +415,14 @@ class Runtime(object):
             if 'prequantized_dtype' in spec:
                 scale = spec['scale']
                 zero_point = spec['zero_point']
-                inp = (inp / scale + zero_point).astype(spec['dtype'])  # noqa: E501
+                inp = (inp / scale + zero_point).astype(spec['dtype'])
 
             inputs.append(inp)
             input_data = input_data[siz:]
+
+        if input_data:
+            self.log.error("Received more data than model expected.")
+            raise ValueError
 
         # retrieving original order
         reordered_inputs = [None] * len(inputs)

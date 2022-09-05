@@ -187,16 +187,16 @@ class TFLiteCompiler(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
 
-        if not io_specs:
-            io_specs = self.load_io_specification(inputmodelpath)
+        if not io_spec:
+            io_spec = self.load_io_specification(inputmodelpath)
 
-        if not io_specs or not io_specs['output'] or not io_specs['input']:
+        if not io_spec or not io_spec['output'] or not io_spec['input']:
             raise ValueError('No input/ouput specification found')
 
         from copy import deepcopy
-        io_specs = deepcopy(io_specs)
+        io_spec = deepcopy(io_spec)
 
         if self.quantization_aware_training:
             assert self.inputtype == 'keras'
@@ -255,18 +255,18 @@ class TFLiteCompiler(TensorFlowOptimizer):
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         signature = interpreter.get_signature_runner()
 
-        def update_io_specs(sig_det, int_det, key):
-            for order, spec in enumerate(io_specs[key]):
+        def update_io_spec(sig_det, int_det, key):
+            for order, spec in enumerate(io_spec[key]):
                 old_name = spec['name']
                 new_name = sig_det[old_name]['name']
                 spec['name'] = new_name
                 spec['order'] = order
 
             quantized = any([det['quantization'][0] != 0 for det in int_det])
-            new_specs = []
+            new_spec = []
             for det in int_det:
                 spec = [
-                    spec for spec in io_specs[key]
+                    spec for spec in io_spec[key]
                     if det['name'] == spec['name']
                 ][0]
 
@@ -276,13 +276,13 @@ class TFLiteCompiler(TensorFlowOptimizer):
                     spec['zero_point'] = zero_point
                     spec['prequantized_dtype'] = spec['dtype']
                     spec['dtype'] = np.dtype(det['dtype']).name
-                new_specs.append(spec)
-            io_specs[key] = new_specs
+                new_spec.append(spec)
+            io_spec[key] = new_spec
 
-        update_io_specs(signature.get_input_details(), interpreter.get_input_details(), 'input')  # noqa: E501
-        update_io_specs(signature.get_output_details(), interpreter.get_output_details(), 'output')  # noqa: E501
+        update_io_spec(signature.get_input_details(), interpreter.get_input_details(), 'input')  # noqa: E501
+        update_io_spec(signature.get_output_details(), interpreter.get_output_details(), 'output')  # noqa: E501
 
-        self.save_io_specification(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_spec)
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

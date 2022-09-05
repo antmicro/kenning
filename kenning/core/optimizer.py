@@ -205,7 +205,7 @@ class Optimizer(object):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
         """
         Compiles the given model to a target format.
 
@@ -214,7 +214,7 @@ class Optimizer(object):
         The model can be compiled to a binary, a different framework or a
         different programming language.
 
-        If `io_specs` is passed, then the function uses it during the
+        If `io_spec` is passed, then the function uses it during the
         compilation, otherwise `load_io_specification` is used to fetch the
         specification saved in `inputmodelpath` + `.json`.
 
@@ -225,7 +225,7 @@ class Optimizer(object):
         ----------
         inputmodelpath : Path
             Path to the input model
-        io_specs : Optional[dict[list[dict]]]
+        io_spec : Optional[dict[list[dict]]]
             Dictionary that has `input` and `output` keys that contain list
             of dictionaries mapping (property name) -> (property value)
             for the layers
@@ -319,12 +319,12 @@ class Optimizer(object):
     def save_io_specification(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
         """
         Internal function that saves input/output model specification
-        which is used during both inference and compilation. If `io_specs`
+        which is used during both inference and compilation. If `io_spec`
         is None, the function uses specification of an input model
-        stored in `inputmodelpath` + `.json`. Otherwise `io_specs` is used.
+        stored in `inputmodelpath` + `.json`. Otherwise `io_spec` is used.
 
         The input/output specification is a list of dictionaries mapping
         properties names to their values. Legal properties names are `dtype`,
@@ -336,11 +336,11 @@ class Optimizer(object):
         ----------
         inputmodelpath : Path
             Path to the input model
-        io_specs : Optional[dict[list[dict]]]
+        io_spec : Optional[dict[list[dict]]]
             Specification of the input/ouput layers
         """
-        if io_specs:
-            model_spec = io_specs
+        if io_spec:
+            model_spec = io_spec
         else:
             model_spec = self.load_io_specification(inputmodelpath)
 

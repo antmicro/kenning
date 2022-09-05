@@ -196,15 +196,15 @@ class IREECompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
-        if not io_specs:
-            io_specs = self.load_io_specification(inputmodelpath)
+            io_spec: Optional[dict[list[dict]]] = None):
+        if not io_spec:
+            io_spec = self.load_io_specification(inputmodelpath)
 
-        if not io_specs['input']:
+        if not io_spec['input']:
             raise ValueError('No input specification found')
 
         self.model_load = self.inputtypes[self.inputtype]
-        imported_model = self.model_load(inputmodelpath, io_specs['input'])
+        imported_model = self.model_load(inputmodelpath, io_spec['input'])
         compiled_buffer = ireecmp.compile_str(
             imported_model,
             input_type=self.compiler_input_type,
@@ -214,7 +214,7 @@ class IREECompiler(Optimizer):
 
         with open(self.compiled_model_path, "wb") as f:
             f.write(compiled_buffer)
-        self.save_io_specification(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_spec)
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

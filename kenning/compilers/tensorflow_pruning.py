@@ -106,7 +106,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
 
         model = self.inputtypes[self.inputtype](inputmodelpath)
 
@@ -148,4 +148,4 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             save_format='h5'
         )
 
-        self.save_io_specification(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_spec)

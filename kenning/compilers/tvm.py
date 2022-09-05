@@ -397,10 +397,10 @@ class TVMCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
 
-        if io_specs:
-            input_spec = io_specs['input']
+        if io_spec:
+            input_spec = io_spec['input']
         else:
             input_spec = self.load_io_specification(inputmodelpath)['input']
 
@@ -417,7 +417,7 @@ class TVMCompiler(Optimizer):
             dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path)
-        self.save_io_specification(inputmodelpath, io_specs)
+        self.save_io_specification(inputmodelpath, io_spec)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

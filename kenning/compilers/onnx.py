@@ -125,16 +125,16 @@ class ONNXCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_specs: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[dict[list[dict]]] = None):
 
-        if not io_specs:
-            io_specs = self.load_io_specification(inputmodelpath)
+        if not io_spec:
+            io_spec = self.load_io_specification(inputmodelpath)
 
         from copy import deepcopy
-        io_specs = deepcopy(io_specs)
+        io_spec = deepcopy(io_spec)
 
-        input_spec = io_specs['input']
-        output_spec = io_specs['output']
+        input_spec = io_spec['input']
+        output_spec = io_spec['output']
 
         try:
             output_names = [spec['name'] for spec in output_spec]

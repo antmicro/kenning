@@ -19,6 +19,13 @@ class CompilationError(Exception):
     pass
 
 
+class IOSpecificationNotFoundError(Exception):
+    """
+    Exception raised when needed input/output specification can not be found.
+    """
+    pass
+
+
 class Optimizer(object):
     """
     Compiles the given model to a different format or runtime.

@@ -546,7 +546,7 @@ class Runtime(object):
             io_spec = json.loads(input_data)
 
         self.read_io_specification(io_spec)
-        self.log.info('Input/Output details loaded')
+        self.log.info('Input/Output specification loaded')
         return True
 
     def get_io_spec_path(
@@ -686,7 +686,7 @@ class Runtime(object):
         if spec_path.exists():
             self.protocol.upload_io_specification(spec_path)
         else:
-            self.log.info("No Input/Output details found")
+            self.log.info("No Input/Output specification found")
         self.protocol.upload_model(compiledmodelpath)
 
     def prepare_local(self):

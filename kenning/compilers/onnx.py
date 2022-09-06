@@ -10,7 +10,7 @@ import onnx
 from typing import Optional
 
 from kenning.core.dataset import Dataset
-from kenning.core.optimizer import Optimizer, CompilationError
+from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
 
 
 def kerasconversion(model_path, input_spec, output_names):
@@ -130,11 +130,14 @@ class ONNXCompiler(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
-        from copy import deepcopy
-        io_spec = deepcopy(io_spec)
+        try:
+            from copy import deepcopy
+            io_spec = deepcopy(io_spec)
 
-        input_spec = io_spec['input']
-        output_spec = io_spec['output']
+            input_spec = io_spec['input']
+            output_spec = io_spec['output']
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError('No input/output specification found')  # noqa: E501
 
         try:
             output_names = [spec['name'] for spec in output_spec]

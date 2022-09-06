@@ -10,6 +10,7 @@ import numpy as np
 from typing import Optional
 import tensorflow_model_optimization as tfmot
 
+from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 
@@ -193,7 +194,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             io_spec = self.load_io_specification(inputmodelpath)
 
         if not io_spec or not io_spec['output'] or not io_spec['input']:
-            raise ValueError('No input/ouput specification found')
+            raise IOSpecificationNotFoundError('No input/ouput specification found')  # noqa: E501
 
         from copy import deepcopy
         io_spec = deepcopy(io_spec)

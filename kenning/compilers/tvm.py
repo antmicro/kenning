@@ -8,7 +8,7 @@ import tvm.relay as relay
 from pathlib import Path
 from typing import Optional
 
-from kenning.core.optimizer import Optimizer, CompilationError
+from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 
@@ -399,10 +399,13 @@ class TVMCompiler(Optimizer):
             inputmodelpath: Path,
             io_spec: Optional[dict[list[dict]]] = None):
 
-        if io_spec:
+        if not io_spec:
+            io_spec = self.load_io_specification(inputmodelpath)
+
+        try:
             input_spec = io_spec['input']
-        else:
-            input_spec = self.load_io_specification(inputmodelpath)['input']
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError('No input specification found')
 
         inputshapes = {spec['name']: spec['shape'] for spec in input_spec}
         dtypes = {spec['name']: spec['dtype'] for spec in input_spec}

@@ -7,7 +7,7 @@ from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
 
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import Optimizer, IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
 
 
@@ -200,11 +200,13 @@ class IREECompiler(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
-        if not io_spec['input']:
-            raise ValueError('No input specification found')
+        try:
+            input_spec = io_spec['input']
+        except (TypeError, KeyError):
+            raise IOSpecificationNotFoundError('No input specification found')
 
         self.model_load = self.inputtypes[self.inputtype]
-        imported_model = self.model_load(inputmodelpath, io_spec['input'])
+        imported_model = self.model_load(inputmodelpath, input_spec)
         compiled_buffer = ireecmp.compile_str(
             imported_model,
             input_type=self.compiler_input_type,

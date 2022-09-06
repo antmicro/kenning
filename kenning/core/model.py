@@ -475,9 +475,7 @@ class ModelWrapper(object):
         # Currently we do not expect to support more than single input though
         # Hence we assume every model will have its working input at index 0
         # TODO add support for multiple inputs / outputs
-        default_name = list(
-            self.get_io_specification()['input'][0].items()
-        )[0][0]
+        default_name = self.get_io_specification()['input'][0]['name']
         return {
             'out_infer': self.run_inference(
                 self.preprocess_input(input[default_name])
@@ -485,9 +483,7 @@ class ModelWrapper(object):
         }
 
     def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(
-            self.get_io_specification()['input'][0].items()
-        )[0][0]
+        default_name = self.get_io_specification()['input'][0]['name']
         return {
             'out_pre': self.preprocess_input(input[default_name])
         }
@@ -496,9 +492,7 @@ class ModelWrapper(object):
         raise NotImplementedError
 
     def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = list(
-            self.get_io_specification()['input'][0].items()
-        )[0][0]
+        default_name = self.get_io_specification()['input'][0]['name']
         return {
             'out_post': self.postprocess_outputs(input[default_name])
         }

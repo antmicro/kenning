@@ -11,6 +11,7 @@ from pathlib import Path
 from matplotlib import gridspec
 from matplotlib.collections import LineCollection
 from math import floor
+from scipy.signal import savgol_filter
 
 
 def time_series_plot(
@@ -92,6 +93,69 @@ def time_series_plot(
     axhist.set_xlabel('Value histogram', fontsize='large')
     axhist.grid(which='both')
     plt.setp(axhist.get_yticklabels(), visible=False)
+
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
+def draw_multiple_time_series(
+        outpath: Optional[Path],
+        title: str,
+        xdata: Dict[str, List],
+        ydata: Dict[str, List],
+        smooth: Optional[int] = None,
+        figsize: Tuple = (11, 8.5)
+):
+    """
+    Draws multiple time series plots.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Path where the plot will be saved. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xdata : Dict[str, List]
+        Mapping between name of the model and x coordinates of samples.
+    ydata : Dict[str, List]
+        Mapping between name of the model and y coordinates of samples.
+    smooth : Optional[int]
+        If None, raw point coordinates are plotted in a line plot.
+        If int, samples are plotted in a scatter plot in a background,
+        and smoothing is performed with Savitzky–Golay filter to the line,
+        where `smooth` is the window size parameter.
+    figsize : Tuple
+        The size of the figure
+
+    """
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    fig.suptitle(title, fontsize="x-large")
+    cmap = plt.get_cmap("gnuplot")
+    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(xdata))]
+    for color, (samplename, sample) in zip(colors, ydata.items()):
+        x_sample = xdata[samplename]
+        x_sample = np.array(x_sample)
+        x_sample -= np.min(x_sample)
+        x_sample /= np.max(x_sample)
+        if smooth is None:
+            ax.plot(x_sample, sample, label=samplename, color=color)
+        else:
+            ax.scatter(x_sample, sample, alpha=0.15, marker='.',
+                       s=10, color=color)
+            smoothed = savgol_filter(sample, smooth, 3)
+            ax.plot(x_sample, smoothed, label=samplename,
+                    linewidth=3, color=color)
+
+    ax.tick_params(
+        axis='x',
+        which='both',
+        bottom=False,
+        labelbottom=False
+    )
+    plt.legend()
+    plt.grid()
 
     if outpath is None:
         plt.show()

@@ -324,7 +324,8 @@ class Optimizer(object):
         Internal function that saves input/output model specification
         which is used during both inference and compilation. If `io_spec`
         is None, the function uses specification of an input model
-        stored in `inputmodelpath` + `.json`. Otherwise `io_spec` is used.
+        stored in `inputmodelpath` + `.json`. If there is no specification
+        stored in this path the function does not do anything.
 
         The input/output specification is a list of dictionaries mapping
         properties names to their values. Legal properties names are `dtype`,
@@ -339,22 +340,22 @@ class Optimizer(object):
         io_spec : Optional[dict[list[dict]]]
             Specification of the input/ouput layers
         """
+        if not io_spec:
+            io_spec = self.load_io_specification(inputmodelpath)
+
         if io_spec:
-            model_spec = io_spec
-        else:
-            model_spec = self.load_io_specification(inputmodelpath)
+            with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
+                json.dump(
+                    io_spec,
+                    f
+                )
 
-        with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
-            json.dump(
-                model_spec,
-                f
-            )
-
-    def load_io_specification(self, modelpath: Path) -> dict[list[dict]]:
+    def load_io_specification(
+            self,
+            modelpath: Path) -> Optional[dict[list[dict]]]:
         """
         Returns saved input and output specification of a model
-        saved in `modelpath` if there is one. Otherwise return an empty
-        template of a specification.
+        saved in `modelpath` if there is one. Otherwise returns None
 
         Parameters
         ----------
@@ -363,8 +364,8 @@ class Optimizer(object):
 
         Returns
         -------
-        dict : Specification of a model saved in `modelpath` if there is one.
-            Empty template otherwise
+        Optional[dict[list[dict]]] : Specification of a model saved
+            in `modelpath` if there is one. None otherwise
         """
         spec_path = self.get_spec_path(modelpath)
         if spec_path.exists():
@@ -372,4 +373,4 @@ class Optimizer(object):
                 spec = json.load(f)
 
             return spec
-        return {'input': [], 'output': []}
+        return None

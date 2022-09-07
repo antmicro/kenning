@@ -386,39 +386,40 @@ class Runtime(object):
         if self.input_spec is None:
             raise AttributeError("You must load the input specification first.")  # noqa: E501
 
-        reordered = any(['order' in spec for spec in self.input_spec])
-        if reordered:
-            spec_by_order = sorted(
+        is_reordered = any(['order' in spec for spec in self.input_spec])
+        if is_reordered:
+            reordered_input_spec = sorted(
                 self.input_spec, key=lambda spec: spec['order']
             )
         else:
-            spec_by_order = self.input_spec
+            reordered_input_spec = self.input_spec
 
         # reading input
         inputs = []
-        for spec in spec_by_order:
+        for spec in reordered_input_spec:
             shape = spec['shape']
             # get original model dtype
-            dt = (
+            dtype = (
                 spec['prequantized_dtype'] if 'prequantized_dtype' in spec
                 else spec['dtype']
             )
 
-            siz = np.abs(np.prod(shape) * np.dtype(dt).itemsize)
-            if len(input_data) < siz:
+            expected_size = np.abs(np.prod(shape) * np.dtype(dtype).itemsize)
+            if len(input_data) < expected_size:
                 self.log.error("Received less data than model expected.")
                 raise ValueError
-            inp = np.frombuffer(input_data[:siz], dtype=dt)
-            inp = inp.reshape(shape)
+
+            input = np.frombuffer(input_data[:expected_size], dtype=dtype)
+            input = input.reshape(shape)
 
             # quantization
             if 'prequantized_dtype' in spec:
                 scale = spec['scale']
                 zero_point = spec['zero_point']
-                inp = (inp / scale + zero_point).astype(spec['dtype'])
+                input = (input / scale + zero_point).astype(spec['dtype'])
 
-            inputs.append(inp)
-            input_data = input_data[siz:]
+            inputs.append(input)
+            input_data = input_data[expected_size:]
 
         if input_data:
             self.log.error("Received more data than model expected.")
@@ -426,7 +427,7 @@ class Runtime(object):
 
         # retrieving original order
         reordered_inputs = [None] * len(inputs)
-        if reordered:
+        if is_reordered:
             for order, spec in enumerate(self.input_spec):
                 reordered_inputs[order] = inputs[spec['order']]
         else:
@@ -459,31 +460,32 @@ class Runtime(object):
         """
         if self.output_spec is None:
             raise AttributeError("You must load the output specification first.")  # noqa: E501
+        is_reordered = any(['order' in spec for spec in self.output_spec])
 
         # dequantizaion
         if any(['prequantized_dtype' in spec for spec in self.output_spec]):
             quantized_results = []
-            for res, spec in zip(results, self.output_spec):
+            for result, spec in zip(results, self.output_spec):
                 scale = spec['scale']
                 zero_point = spec['zero_point']
-                res = (res.astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
-                quantized_results.append(res)
+                result = (result.astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
+                quantized_results.append(result)
             results = quantized_results
 
         # retrieving original order
         reordered_results = [None] * len(results)
-        if any(['order' in spec for spec in self.output_spec]):
-            for spec, res in zip(self.output_spec, results):
-                reordered_results[spec['order']] = res
+        if is_reordered:
+            for spec, result in zip(self.output_spec, results):
+                reordered_results[spec['order']] = result
         else:
             reordered_results = results
 
         # converting the output to bytes
-        result = bytes()
-        for res in reordered_results:
-            result += res.tobytes()
+        output_bytes = bytes()
+        for result in reordered_results:
+            output_bytes += result.tobytes()
 
-        return result
+        return output_bytes
 
     def read_io_specification(self, io_spec: Dict):
         """

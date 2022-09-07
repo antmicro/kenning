@@ -100,10 +100,10 @@ class ONNXRuntime(Runtime):
         # Input dtype can come either as a valid np.dtype
         # or as a string that need to be parsed
         def onnx_to_np_dtype(s):
-            if not isinstance(s, str):
-                return s
             if s == 'tensor(float)':
-                return np.dtype(np.float32)
+                return 'float32'
+            if isinstance(s, np.dtype):
+                return s.name
 
         def update_io_spec(read_spec, session_spec):
             model_spec = []

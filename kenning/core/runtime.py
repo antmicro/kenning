@@ -404,7 +404,7 @@ class Runtime(object):
                 else spec['dtype']
             )
 
-            siz = np.abs(np.prod(shape) * dt.itemsize)
+            siz = np.abs(np.prod(shape) * np.dtype(dt).itemsize)
             if len(input_data) < siz:
                 self.log.error("Received less data than model expected.")
                 raise ValueError
@@ -487,29 +487,28 @@ class Runtime(object):
 
     def read_io_specification(self, io_spec: Dict):
         """
-        Parses the input/output specification and saves it
-        so that it can be used during the inference. `input_spec` and
-        `output_spec` are dictionaries mapping names to: `shape` and
-        if the model is quantized to `scale`, `zero_point`.
+        Saves input/output specification so that it can be used during
+        the inference.
+
+        `input_spec` and `output_spec` are lists, where every
+        element is a dictionary mapping (property name) -> (property value)
+        for the layers.
+
+        The standard property names are: `name`, `dtype` and `shape`.
+
+        If the model is quantized it also has `scale`, `zero_point` and
+        `prequantized_dtype` properties.
+
+        If the layers of the model are reorder it also has `order` property.
 
         Parameters
         ----------
         io_spec : Dict
             Specification of the input/output layers
         """
-        from numpy import dtype
 
         self.input_spec = io_spec['input']
-        for spec in self.input_spec:
-            spec['dtype'] = dtype(spec['dtype'])
-            if 'prequantized_dtype' in spec:
-                spec['prequantized_dtype'] = dtype(spec['prequantized_dtype'])
-
         self.output_spec = io_spec['output']
-        for spec in self.output_spec:
-            spec['dtype'] = dtype(spec['dtype'])
-            if 'prequantized_dtype' in spec:
-                spec['prequantized_dtype'] = dtype(spec['prequantized_dtype'])
 
     def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
         """

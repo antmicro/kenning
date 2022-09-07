@@ -190,7 +190,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             inputmodelpath: Path,
             io_spec: Optional[dict[list[dict]]] = None):
 
-        if not io_spec:
+        if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)
 
         if not io_spec or not io_spec['output'] or not io_spec['input']:

@@ -10,6 +10,7 @@ import json
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.logger import get_logger
 
 
 class CompilationError(Exception):
@@ -64,6 +65,7 @@ class Optimizer(object):
         """
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
+        self.log = get_logger()
 
         self.actions = {
             'compile': self.action_compile
@@ -356,6 +358,10 @@ class Optimizer(object):
                     io_spec,
                     f
                 )
+        else:
+            self.log.warning(
+                f'{self} did not save io_specification.'
+            )
 
     def load_io_specification(
             self,
@@ -378,6 +384,9 @@ class Optimizer(object):
         if spec_path.exists():
             with open(spec_path, 'r') as f:
                 spec = json.load(f)
-
             return spec
+
+        self.log.warning(
+            f'{self} did not find io_specification in path: {spec_path}'
+        )
         return None

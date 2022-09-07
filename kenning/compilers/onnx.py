@@ -127,7 +127,7 @@ class ONNXCompiler(Optimizer):
             inputmodelpath: Path,
             io_spec: Optional[dict[list[dict]]] = None):
 
-        if not io_spec:
+        if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)
 
         try:

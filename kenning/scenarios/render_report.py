@@ -28,6 +28,7 @@ from kenning.core.drawing import true_positives_per_iou_range_histogram
 from kenning.core.drawing import draw_plot
 from kenning.core.drawing import draw_violin_comparison_plot
 from kenning.core.drawing import draw_multiple_time_series
+from kenning.core.drawing import draw_radar_chart
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
@@ -214,6 +215,7 @@ def comparison_performance_report(
         'session_utilization_gpu_utilization': 'GPU usage'
     }
     common_metrics = set(metric_names.keys())
+    hardware_usage_metrics = common_metrics - {'inference_step'}
     report_variables = {
         'reportname': measurementsdata[0]['reportname']
     }
@@ -287,6 +289,23 @@ def comparison_performance_report(
         visualizationdata
     )
     report_variables["meanperformancepath"] = usepath
+
+    hardware_usage_metrics = sorted(list(hardware_usage_metrics))
+    usage_visualization = {}
+    for data in measurementsdata:
+        usage_visualization[data['modelname']] = [
+            np.mean(data.get(metric, 0))/100
+            for metric in hardware_usage_metrics
+        ]
+
+    usepath = imgdir / "hardware_usage_comparison.png"
+    draw_radar_chart(
+        usepath,
+        "Resource usage comparison",
+        usage_visualization,
+        [metric_names[metric] for metric in hardware_usage_metrics]
+    )
+    report_variables["hardwareusagepath"] = usepath
 
     with path(reports, 'performance_comparison.rst') as reporttemplate:
         return create_report_from_measurements(

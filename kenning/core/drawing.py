@@ -10,7 +10,7 @@ import itertools
 from pathlib import Path
 from matplotlib import gridspec
 from matplotlib.collections import LineCollection
-from math import floor
+from math import floor, pi
 from scipy.signal import savgol_filter
 
 
@@ -220,6 +220,73 @@ def draw_violin_comparison_plot(
         loc="lower center",
         fontsize="large"
     )
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
+def draw_radar_chart(
+        outpath: Optional[Path],
+        title: str,
+        data: Dict[str, List],
+        labelnames: List,
+        figsize: Tuple = (11, 11)
+):
+    """
+    Draws radar plot.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Path where the plot will be saved. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    data : Dict[str, List]
+        Map between name of the model and list of metrics to visualize
+    labelnames : List[str]
+        Names of the labels in order
+    figsize : Optional[Tuple]
+        The size of the plot
+    """
+    n_categories = len(labelnames)
+
+    angles = [n / n_categories * 2 * pi for n in range(n_categories)]
+    fig, ax = plt.subplots(1, 1, figsize=figsize,
+                           subplot_kw={'projection': 'polar'})
+    ax.set_theta_offset(pi/2)
+    ax.set_theta_direction(-1)
+    ax.set_xticks(angles, labelnames)
+    ax.set_rlabel_position(1/(n_categories * 2) * 2 * pi)
+    ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
+    fig.suptitle(title, fontsize='x-large')
+    cmap = plt.get_cmap("gnuplot")
+    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(data))]
+
+    angles += [0]
+    for color, (samplename, sample) in zip(colors, data.items()):
+        sample += sample[:1]
+        ax.plot(angles, sample, label=samplename, color=color)
+        ax.fill(angles, sample, alpha=0.1, color=color)
+    plt.legend(fontsize="large", bbox_to_anchor=[0.35, 0], loc="upper right")
+
+    angles = np.array(angles)
+    angles[np.cos(angles) <= 1e-5] += pi
+    angles = np.rad2deg(angles)
+    for i in range(n_categories):
+        label = ax.get_xticklabels()[i]
+        labelname, angle = labelnames[i], angles[i]
+        x, y = label.get_position()
+        lab = ax.text(
+            x, y, labelname,
+            transform=label.get_transform(),
+            ha=label.get_ha(),
+            va=label.get_va()
+        )
+        lab.set_rotation(angle)
+        lab.set_fontsize('large')
+    ax.set_xticklabels([])
+
     if outpath is None:
         plt.show()
     else:

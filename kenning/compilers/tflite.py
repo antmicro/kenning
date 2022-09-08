@@ -70,7 +70,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         'target': {
             'description': 'The TFLite target device scenario',
             'default': 'default',
-            'enum': ['default', 'int8', 'edgetpu']
+            'enum': ['default', 'int8', 'float16', 'edgetpu']
         },
         'inferenceinputtype': {
             'argparse_name': '--inference-input-type',
@@ -230,6 +230,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             converter.target_spec.supported_ops = [
                 tf.lite.OpsSet.TFLITE_BUILTINS_INT8
             ]
+        elif self.target == 'float16':
+            converter.optimizations = [tf.lite.Optimize.DEFAULT]
+            converter.target_spec.supported_types = [tf.float16]
         else:
             converter.target_spec.supported_ops = [
                 tf.lite.OpsSet.TFLITE_BUILTINS

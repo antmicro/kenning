@@ -259,6 +259,12 @@ class TVMCompiler(Optimizer):
             'description': 'Configures the kernel layout for the CONV2D operations',  # noqa: E501
             'type': str,
             'default': ''
+        },
+        'use_fp16_precision': {
+            'argparse_name': '--use-fp16-precision',
+            'description': 'Applies conversion of FP32 weights to FP16',
+            'type': bool,
+            'default': False
         }
     }
 
@@ -274,7 +280,8 @@ class TVMCompiler(Optimizer):
             use_tvm_vm: bool = False,
             conversion_func: str = 'default',
             conv2d_data_layout: str = '',
-            conv2d_kernel_layout: str = ''):
+            conv2d_kernel_layout: str = '',
+            use_fp16_precision: bool = False):
         """
         A TVM Compiler wrapper.
 
@@ -302,6 +309,8 @@ class TVMCompiler(Optimizer):
         conv2d_kernel_layout : str
             Kernel layout to convert the model to.
             Empty if no conversion is necessary.
+        use_fp16_precision : bool
+            Applies conversion of FP32 weights to FP16
         """
         self.modelframework = modelframework
 
@@ -320,6 +329,7 @@ class TVMCompiler(Optimizer):
         self.set_input_type(modelframework)
         self.conv2d_data_layout = conv2d_data_layout
         self.conv2d_kernel_layout = conv2d_kernel_layout
+        self.use_fp16_precision = use_fp16_precision
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -335,7 +345,8 @@ class TVMCompiler(Optimizer):
             args.compile_use_vm,
             args.output_conversion_function,
             args.conv2d_data_layout,
-            args.conv2d_kernel_layout
+            args.conv2d_kernel_layout,
+            args.use_fp16_precision
         )
 
     def compile_model(self, mod, params, outputpath):
@@ -343,6 +354,11 @@ class TVMCompiler(Optimizer):
         transforms = [
             relay.transform.RemoveUnusedFunctions()
         ]
+        if self.use_fp16_precision:
+            transforms.append(
+                relay.transform.ToMixedPrecision()
+            )
+
         if self.conv2d_data_layout != '' or self.conv2d_kernel_layout != '':
             if self.conv2d_kernel_layout == '':
                 self.conv2d_kernel_layout = 'default'
@@ -360,6 +376,9 @@ class TVMCompiler(Optimizer):
             transforms.append(
                 relay.transform.ConvertLayout({
                     "nn.conv2d": [
+                        self.conv2d_data_layout, self.conv2d_kernel_layout
+                    ],
+                    "nn.max_pool2d": [
                         self.conv2d_data_layout, self.conv2d_kernel_layout
                     ],
                     "qnn.conv2d": [

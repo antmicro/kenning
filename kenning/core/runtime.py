@@ -707,12 +707,16 @@ class Runtime(object):
             self.log.info("No Input/Output specification found")
         self.protocol.upload_model(compiledmodelpath)
 
-    def prepare_local(self):
+    def prepare_local(self) -> bool:
         """
         Runs initialization for the local inference.
+
+        Returns
+        -------
+        bool: True if initialized successfully
         """
-        self.prepare_io_specification(None)
-        self.prepare_model(None)
+        return (self.prepare_model(None) and
+                self.prepare_io_specification(None))
 
     @systemstatsmeasurements('full_run_statistics')
     def run_locally(

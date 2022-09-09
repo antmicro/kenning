@@ -2,9 +2,11 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List, Any, Dict
+from typing import Tuple, List, Any, Dict, Optional
 import argparse
 from pathlib import Path
+from tqdm import tqdm
+from kenning.utils.logger import LoggerProgressBar
 
 from .measurements import Measurements
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
@@ -56,6 +58,11 @@ class Dataset(object):
             'description': 'Downloads the dataset before taking any action',
             'type': bool,
             'default': False
+        },
+        'external_calibration_dataset': {
+            'argparse_name': '--external-calibration-dataset',
+            'description': 'Path to the directory with the external calibration dataset',  # noqa: E501
+            'type': Path
         }
     }
 
@@ -63,7 +70,8 @@ class Dataset(object):
             self,
             root: Path,
             batch_size: int = 1,
-            download_dataset: bool = False):
+            download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None):
         """
         Initializes dataset object.
 
@@ -80,6 +88,10 @@ class Dataset(object):
             The batch size
         download_dataset : bool
             True if dataset should be downloaded first
+        external_calibration_dataset : Optional[Path]
+            Path to the external calibration dataset that can be used for
+            quantizing the model. If it is not provided, the calibration
+            dataset is generated from the actual dataset.
         """
         assert batch_size > 0
         self.root = Path(root)
@@ -88,6 +100,7 @@ class Dataset(object):
         self.dataY = []
         self.batch_size = batch_size
         self.download_dataset = download_dataset
+        self.external_calibration_dataset = None if external_calibration_dataset is None else Path(external_calibration_dataset)  # noqa: E501
         if download_dataset:
             self.download_dataset_fun()
         self.prepare()
@@ -397,12 +410,40 @@ class Dataset(object):
         seed : int
             The seed for random state
         """
-        _, X, _, _ = self.train_test_split_representations(
-            percentage,
-            seed
-        )
-        for x in X:
+        if self.external_calibration_dataset is None:
+            _, X, _, _ = self.train_test_split_representations(
+                percentage,
+                seed
+            )
+        else:
+            X = self.prepare_external_calibration_dataset()
+
+        for x in tqdm(X, file=LoggerProgressBar):
             yield self.prepare_input_samples([x])
+
+    def prepare_external_calibration_dataset(self) -> List[Any]:
+        """
+        Prepares the data for external calibration dataset.
+
+        This method is supposed to scan external_calibration_dataset directory
+        and prepares the list of entries that are suitable for the
+        prepare_input_samples method.
+
+        This method is called by the calibration_dataset_genereator method to
+        get the data for calibration when external_calibration_dataset is
+        provided.
+
+        By default, this method scans for all files in the directory and
+        returns the list of those files.
+
+        Returns
+        -------
+        List[Any] :
+            List of objects that are usable by the prepare_input_samples method
+        """
+        return [
+            x for x in self.external_calibration_dataset.rglob('*') if x.is_file()  # noqa: E501
+        ]
 
     def download_dataset_fun(self):
         """

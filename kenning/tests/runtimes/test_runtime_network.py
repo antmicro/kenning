@@ -105,7 +105,7 @@ class TestRuntimeNetwork:
         """
         data = self.generate_byte_data(25)
         runtime.prepare_client()
-        assert runtime.prepare_model(None) is True
+        assert runtime.prepare_local() is True
         assert runtime.prepare_input(data) is True
         runtime.process_input(b'')
 

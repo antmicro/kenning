@@ -7,7 +7,7 @@ from pathlib import Path
 import tarfile
 from PIL import Image
 import numpy as np
-from typing import Tuple, Any
+from typing import Tuple, Any, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url
@@ -61,6 +61,7 @@ class PetDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None,
             classify_by: str = 'breeds',
             image_memory_layout: str = 'NHWC',
             standardize: bool = True):
@@ -78,6 +79,10 @@ class PetDataset(Dataset):
             The batch size
         download_dataset : bool
             True if dataset should be downloaded first
+        external_calibration_dataset : Optional[Path]
+            Path to the external calibration dataset that can be used for
+            quantizing the model. If it is not provided, the calibration
+            dataset is generated from the actual dataset.
         classify_by : str
             Determines what should be the object of classification.
             The valid values are "species" and "breeds".
@@ -97,7 +102,12 @@ class PetDataset(Dataset):
         if standardize:
             self.mean, self.std = self.get_input_mean_std()
         self.image_memory_layout = image_memory_layout
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            external_calibration_dataset
+        )
 
     @classmethod
     def from_argparse(cls, args):

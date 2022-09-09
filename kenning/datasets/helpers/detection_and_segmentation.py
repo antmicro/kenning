@@ -1,4 +1,5 @@
 import cv2
+from typing import Optional
 import numpy as np
 from collections import namedtuple
 from typing import Union, List, Dict, Tuple
@@ -226,6 +227,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None,
             task: str = 'object_detection',
             image_memory_layout: str = 'NCHW',
             show_on_eval: bool = False,
@@ -239,7 +241,12 @@ class ObjectDetectionSegmentationDataset(Dataset):
         self.image_height = image_height
         self.classnames = []
         self.show_on_eval = show_on_eval
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            external_calibration_dataset
+        )
 
     @classmethod
     def form_parameterschema(cls):

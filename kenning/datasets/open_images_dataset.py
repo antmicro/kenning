@@ -24,7 +24,7 @@ import shutil
 from pathlib import Path
 import re
 import numpy as np
-from typing import Tuple, List
+from typing import Tuple, List, Optional
 from collections import defaultdict
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -247,6 +247,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None,
             task: str = 'object_detection',
             classes: str = 'coco',
             download_num_bboxes_per_class: int = 200,
@@ -278,6 +279,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             root,
             batch_size,
             download_dataset,
+            external_calibration_dataset,
             task,
             image_memory_layout,
             show_on_eval,
@@ -291,6 +293,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset,
+            args.external_calibration_dataset,
             args.task,
             args.classes,
             args.download_num_bboxes_per_class,

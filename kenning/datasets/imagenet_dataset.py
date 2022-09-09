@@ -6,6 +6,7 @@ import json
 from pathlib import Path
 from PIL import Image
 import numpy as np
+from typing import Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -56,6 +57,7 @@ class ImageNetDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None,
             image_memory_layout: str = 'NHWC',
             preprocess_type: str = 'caffe'):
         """
@@ -72,6 +74,10 @@ class ImageNetDataset(Dataset):
             The batch size
         download_dataset : bool
             True if dataset should be downloaded first
+        external_calibration_dataset : Optional[Path]
+            Path to the external calibration dataset that can be used for
+            quantizing the model. If it is not provided, the calibration
+            dataset is generated from the actual dataset.
         image_memory_layout : str
             Tells if the images should be delivered in NCHW or NHWC format.
             The default format is NHWC.
@@ -90,7 +96,12 @@ class ImageNetDataset(Dataset):
         self.classnames = dict()
         self.image_memory_layout = image_memory_layout
         self.preprocess_type = preprocess_type
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            external_calibration_dataset
+        )
 
     @classmethod
     def from_argparse(cls, args):
@@ -98,6 +109,7 @@ class ImageNetDataset(Dataset):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset,
+            args.external_calibration_dataset,
             args.image_memory_layout,
             args.preprocess_type
         )

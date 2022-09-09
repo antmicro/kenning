@@ -293,6 +293,86 @@ def draw_radar_chart(
         plt.savefig(outpath)
 
 
+def draw_bubble_plot(
+        outpath: Optional[Path],
+        title: str,
+        xdata: List[float],
+        xlabel: str,
+        ydata: List[float],
+        ylabel: str,
+        bubblesize: List[float],
+        bubblename: List[str],
+        figsize: Tuple = (11, 10)
+):
+    """
+    Draws bubble plot
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Path where the plot will be saved. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xdata : List[float]
+        The values for X dimension
+    xlabel : str
+        Name of the X axis
+    ydata : List[float]
+        The values for Y dimension
+    ylabel : str
+        Name of the Y axis
+    bubblesize : List[float]
+        Sizes of subsequent bubbles
+    bubblename : List[str]
+        Labels for consecutive bubbles
+    figsize : Tuple
+        The size of the plot
+    """
+    fig, ax = plt.subplots(1, 1, figsize=figsize)
+    cmap = plt.get_cmap("gnuplot")
+    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(xdata))]
+    markers = []
+    for x, y, size, label, c in zip(xdata, ydata, bubblesize,
+                                    bubblename, colors):
+        marker = ax.scatter(x, y, s=size**1.75, label=label, color=c,
+                            alpha=0.5, edgecolors='black')
+        markers.append(marker)
+    legend = ax.legend(handles=markers, bbox_to_anchor=[1, -0.08])
+    for handler in legend.legendHandles:
+        handler.set_sizes([40.0])
+    ax.add_artist(legend)
+
+    bubblemarkers, bubblelabels = [], []
+    for i in [25, 50, 75, 100]:
+        bubblemarker = ax.scatter([], [], s=i**1.75, color='None',
+                                  edgecolors='black')
+        bubblemarkers.append(bubblemarker)
+        bubblelabels.append(f"{i}%")
+    bubblelegend = ax.legend(
+        bubblemarkers,
+        bubblelabels,
+        handletextpad=3,
+        labelspacing=4.5,
+        borderpad=3,
+        title="RAM usage",
+        frameon=False,
+        bbox_to_anchor=[1.3, 0.83]
+    )
+    bubblelegend._legend_box.sep = 20
+    ax.add_artist(bubblelegend)
+
+    box = ax.get_position()
+    ax.set_position([box.x0, box.y0+0.05, box.width * 0.85, box.height-0.05])
+
+    fig.suptitle(title)
+    ax.set_xlabel(xlabel)
+    ax.set_ylabel(ylabel)
+    if outpath is None:
+        plt.show()
+    else:
+        plt.savefig(outpath)
+
+
 def draw_confusion_matrix(
         confusion_matrix: np.ndarray,
         outpath: Optional[Path],

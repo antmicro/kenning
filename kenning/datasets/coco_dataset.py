@@ -5,6 +5,7 @@ import tempfile
 from zipfile import ZipFile
 from tqdm import tqdm
 from collections import defaultdict
+from typing import Optional
 
 from kenning.utils.logger import download_url, get_logger
 
@@ -86,6 +87,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            external_calibration_dataset: Optional[Path] = None,
             task: str = 'object_detection',
             dataset_type: str = 'val2017',
             image_memory_layout: str = 'NCHW',
@@ -99,6 +101,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             root,
             batch_size,
             download_dataset,
+            external_calibration_dataset,
             task,
             image_memory_layout,
             show_on_eval,
@@ -112,6 +115,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset,
+            args.external_calibration_dataset,
             args.task,
             args.dataset_type,
             args.image_memory_layout,
@@ -138,7 +142,10 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             self.classmap[classid] = self.coco.cats[classid]['name']
             self.classnames.append(self.coco.cats[classid]['name'])
 
-        self.dataX = list(self.coco.imgs.keys())
+        self.dataX = [
+            str(self.root / self.dataset_type / imgdata['file_name'])
+            for imgdata in self.coco.loadImgs[list(self.coco.imgs.keys())]
+        ]
         annotations = defaultdict(list)
         for annkey, anndata in self.coco.anns.items():
             bbox = anndata['bbox']
@@ -158,9 +165,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
 
     def prepare_input_samples(self, samples):
         result = []
-        for imgdata in self.coco.loadImgs(samples):
+        for imgpath in samples:
             img = cv2.imread(
-                str(self.root / self.dataset_type / imgdata['file_name'])
+                str(self.root / self.dataset_type / imgpath)
             )
             img = cv2.resize(img, (self.image_width, self.image_height))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

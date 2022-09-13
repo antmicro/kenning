@@ -6,7 +6,7 @@ import tvm
 import onnx
 import tvm.relay as relay
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 
 from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
 from kenning.core.dataset import Dataset
@@ -397,7 +397,7 @@ class TVMCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
 
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)

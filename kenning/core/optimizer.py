@@ -214,7 +214,7 @@ class Optimizer(object):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
         """
         Compiles the given model to a target format.
 
@@ -234,7 +234,7 @@ class Optimizer(object):
         ----------
         inputmodelpath : Path
             Path to the input model
-        io_spec : Optional[dict[list[dict]]]
+        io_spec : Optional[Dict[str, List[Dict]]]
             Dictionary that has `input` and `output` keys that contain list
             of dictionaries mapping (property name) -> (property value)
             for the layers
@@ -328,7 +328,7 @@ class Optimizer(object):
     def save_io_specification(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
         """
         Internal function that saves input/output model specification
         which is used during both inference and compilation. If `io_spec`
@@ -346,7 +346,7 @@ class Optimizer(object):
         ----------
         inputmodelpath : Path
             Path to the input model
-        io_spec : Optional[dict[list[dict]]]
+        io_spec : Optional[Dict[str, List[Dict]]]
             Specification of the input/ouput layers
         """
         if not io_spec:
@@ -365,7 +365,7 @@ class Optimizer(object):
 
     def load_io_specification(
             self,
-            modelpath: Path) -> Optional[dict[list[dict]]]:
+            modelpath: Path) -> Optional[Dict[str, List[Dict]]]:
         """
         Returns saved input and output specification of a model
         saved in `modelpath` if there is one. Otherwise returns None
@@ -377,7 +377,7 @@ class Optimizer(object):
 
         Returns
         -------
-        Optional[dict[list[dict]]] : Specification of a model saved
+        Optional[Dict[str, List[Dict]]] : Specification of a model saved
             in `modelpath` if there is one. None otherwise
         """
         spec_path = self.get_spec_path(modelpath)

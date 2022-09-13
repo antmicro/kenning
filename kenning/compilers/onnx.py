@@ -7,7 +7,7 @@ import tensorflow as tf
 import tf2onnx
 import torch
 import onnx
-from typing import Optional
+from typing import Optional, Dict, List
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
@@ -125,7 +125,7 @@ class ONNXCompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
 
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)

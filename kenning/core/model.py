@@ -374,7 +374,7 @@ class ModelWrapper(object):
         """
         raise NotImplementedError
 
-    def get_io_specification_from_model(self) -> dict[list[dict]]:
+    def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
         """
         Returns a new instance of dictionary with `input` and `output`
         keys that map to input and output specifications.
@@ -390,13 +390,13 @@ class ModelWrapper(object):
 
         Returns
         -------
-        dict[list[dict]] : Dictionary that conveys input and output
+        Dict[str, List[Dict]] : Dictionary that conveys input and output
             layers specification
         """
 
         raise NotImplementedError
 
-    def get_io_specification(self) -> dict[list[dict]]:
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
         """
         Returns a saved dictionary with `input` and `output` keys
         that map to input and output specifications.
@@ -409,7 +409,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        dict[list[dict]] : Dictionary that conveys input and output
+        Dict[str, List[Dict]] : Dictionary that conveys input and output
             layers specification
         """
         if not hasattr(self, 'io_specification'):

@@ -7,7 +7,7 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
-from typing import Optional
+from typing import Optional, Dict, List
 import tensorflow_model_optimization as tfmot
 
 from kenning.core.optimizer import IOSpecificationNotFoundError
@@ -188,7 +188,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
 
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)

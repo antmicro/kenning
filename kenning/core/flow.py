@@ -5,6 +5,8 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils import logger
 
+from typing import Dict, Tuple, List, Type
+
 from kenning.utils.class_loader import load_class
 
 
@@ -36,9 +38,9 @@ class KenningFlow:
 
     def __init__(
             self,
-            modules: dict[str, tuple[type, Any, str]],
-            inputs: dict[str, dict[str, str]],
-            outputs: dict[str, dict[str, str]]):
+            modules: Dict[str, Tuple[type, Any, str]],
+            inputs: Dict[str, Dict[str, str]],
+            outputs: Dict[str, Dict[str, str]]):
         """
         Initializes the flow. This constructor only invokes helper functions.
 
@@ -65,7 +67,7 @@ class KenningFlow:
         # TODO implement compile function body
         # self.compile()
 
-    def _create_flow(self, modules: dict[str, tuple[type, Any, str]]):
+    def _create_flow(self, modules: Dict[str, Tuple[Type, Any, str]]):
         """
         This helper function creates the flow. It will call the constructors
         of underlaying classes.
@@ -117,8 +119,8 @@ class KenningFlow:
 
     def _depth_first_search(
             self,
-            matrix: list[list[int]],
-            visited: list[bool],
+            matrix: List[List[int]],
+            visited: List[bool],
             node: int) -> bool:
         """
         Depth first search helper function
@@ -223,7 +225,7 @@ class KenningFlow:
         }
 
     @classmethod
-    def from_json(cls, json_dict: dict[str, Any]):
+    def from_json(cls, json_dict: Dict[str, Any]):
         log = logger.get_logger()
 
         try:

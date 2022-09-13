@@ -6,7 +6,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 import argparse
 from pathlib import Path
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import json
 import numpy as np
 
@@ -373,7 +373,7 @@ class Runtime(object):
             self.protocol.request_failure()
         return ret
 
-    def preprocess_input(self, input_data: bytes) -> list[np.ndarray]:
+    def preprocess_input(self, input_data: bytes) -> List[np.ndarray]:
         """
         The method accepts `input_data` in bytes and preprocesses it
         so that it can be passed to the model.
@@ -452,7 +452,7 @@ class Runtime(object):
 
         return reordered_inputs
 
-    def postprocess_output(self, results: list[np.ndarray]) -> bytes:
+    def postprocess_output(self, results: List[np.ndarray]) -> bytes:
         """
         The method accepts output of the model and postprocesses it.
 

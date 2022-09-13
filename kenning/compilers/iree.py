@@ -2,7 +2,7 @@
 Wrapper for IREE compiler
 """
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
@@ -196,7 +196,7 @@ class IREECompiler(Optimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)
 

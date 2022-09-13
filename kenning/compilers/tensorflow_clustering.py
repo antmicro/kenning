@@ -3,7 +3,7 @@ Wrapper for TensorFlowClustering optimizer.
 """
 import tensorflow as tf
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, List
 import tensorflow_model_optimization as tfmot
 
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
@@ -126,7 +126,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     def compile(
             self,
             inputmodelpath: Path,
-            io_spec: Optional[dict[list[dict]]] = None):
+            io_spec: Optional[Dict[str, List[Dict]]] = None):
         model = self.inputtypes[self.inputtype](inputmodelpath)
 
         clustering_params = {

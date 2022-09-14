@@ -13,3 +13,4 @@ Inference quality metrics{% if data["modelname"] %} for {{data["modelname"]}}{% 
 * *Mean precision*: **{{ mean_precision(data['eval_confusion_matrix']) }}**
 * *Mean sensitivity*: **{{ mean_sensitivity(data['eval_confusion_matrix']) }}**
 * *G-mean*: **{{ g_mean(data['eval_confusion_matrix']) }}**
+

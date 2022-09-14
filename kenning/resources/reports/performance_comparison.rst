@@ -54,3 +54,4 @@ Hardware usage comparison
     :name: {{data["reportname"][0]}}_hardware_usage_comparison
     :alt: Resource usage comparison
     :align: center
+

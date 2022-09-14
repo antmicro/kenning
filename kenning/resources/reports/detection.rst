@@ -38,3 +38,4 @@ Object detection metrics{% if data["modelname"] %} for {{data["modelname"]}}{% e
     :align: center
 
     Histogram of IoU values for correctly labeled objects
+

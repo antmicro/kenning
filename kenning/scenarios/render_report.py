@@ -29,6 +29,7 @@ from kenning.core.drawing import draw_plot
 from kenning.core.drawing import draw_violin_comparison_plot
 from kenning.core.drawing import draw_multiple_time_series
 from kenning.core.drawing import draw_radar_chart
+from kenning.core.drawing import draw_bubble_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
@@ -355,6 +356,86 @@ def classification_report(
         )
 
 
+def comparison_classification_report(
+        measurementsdata: List[Dict],
+        imgdir: Path
+):
+    """
+    Creates classification comparison section of report.
+
+    Parameters
+    ----------
+    measurementsdata : List[Dict]
+        Statistics of every model from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+
+    Returns
+    -------
+    str : content of the report in RST format
+    """
+    report_variables = {
+        'reportname': measurementsdata[0]['reportname']
+    }
+    metric_visualization = {}
+    accuracy, mean_inference_time, ram_usage, names = [], [], [], []
+    for data in measurementsdata:
+        if 'target_inference_step' in data:
+            inference_step = 'target_inference_step'
+        elif 'protocol_inference_step' in data:
+            inference_step = 'protocol_inference_step'
+        else:
+            log.warning("Placeholder")
+            return ""
+
+        eval_matrix = np.array(data['eval_confusion_matrix'])
+        model_accuracy = np.trace(eval_matrix)/data['total']
+        accuracy.append(model_accuracy)
+        mean_inference_time.append(np.mean(data[inference_step]))
+        ram_usage.append(np.mean(data['session_utilization_mem_percent']))
+        names.append(data['modelname'])
+
+        # Accuracy, precision, recall
+        metric_visualization[data['modelname']] = [
+            model_accuracy,
+            np.mean(eval_matrix.diagonal()/np.sum(eval_matrix, axis=0)),
+            np.mean(eval_matrix.diagonal()/np.sum(eval_matrix, axis=1))
+        ]
+
+    usepath = imgdir / "accuracy_vs_inference_time.png"
+    draw_bubble_plot(
+        usepath,
+        "Accuracy vs Mean inference time",
+        mean_inference_time,
+        "Mean inference time",
+        accuracy,
+        "Accuracy",
+        ram_usage,
+        names
+    )
+    report_variables['bubbleplotpath'] = usepath
+
+    usepath = imgdir / "classification_metric_comparison.png"
+    draw_radar_chart(
+        usepath,
+        "Metric comparison",
+        metric_visualization,
+        ["Accuracy", "Mean precision", "Mean recall"]
+    )
+    report_variables['radarchartpath'] = usepath
+    report_variables['modelnames'] = names
+    report_variables = {
+        **report_variables,
+        **metric_visualization,
+    }
+
+    with path(reports, 'classification_comparison.rst') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            report_variables
+        )
+
+
 def detection_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
@@ -501,7 +582,7 @@ def generate_report(
     }
     comparereptypes = {
         'performance': comparison_performance_report,
-        'classification': lambda *args: "",  # temporary
+        'classification': comparison_classification_report,
         'detection': lambda *args: ""  # temporary
     }
 

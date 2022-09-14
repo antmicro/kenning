@@ -532,7 +532,7 @@ def detection_report(
         None,
         'mAP',
         None,
-        [thresholds, mapvalues]
+        [[thresholds, mapvalues]]
     )
     measurementsdata['mappath'] = str(mappath)
     measurementsdata['max_mAP'] = max(mapvalues)
@@ -542,6 +542,60 @@ def detection_report(
         return create_report_from_measurements(
             reporttemplate,
             measurementsdata
+        )
+
+
+def comparison_detection_report(
+        measurementsdata: List[Dict],
+        imgdir: Path
+):
+    """
+    Creates detection comparison section of report.
+
+    Parameters
+    ----------
+    measurementsdata : List[Dict]
+        Statistics of every model from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+
+    Returns
+    -------
+    str : content of the report in RST format
+    """
+    from kenning.datasets.helpers.detection_and_segmentation import \
+        compute_map_per_threshold
+
+    report_variables = {
+        'reportname': measurementsdata[0]['reportname'],
+        'modelnames': []
+    }
+
+    visualization_data = []
+    for data in measurementsdata:
+        thresholds = np.arange(0.2, 1.05, 0.05)
+        mapvalues = compute_map_per_threshold(data, thresholds)
+        visualization_data.append((thresholds, mapvalues))
+        report_variables['modelnames'].append(data['modelname'])
+        # report_variables[data['modelname']] = mapvalues
+
+    usepath = imgdir / "detection_map_thresholds.png"
+    draw_plot(
+        usepath,
+        "mAP values comparison over different thresholdd values",
+        'threshold',
+        None,
+        'mAP',
+        None,
+        visualization_data,
+        report_variables['modelnames']
+    )
+    report_variables['mapcomparisonpath'] = usepath
+
+    with path(reports, 'detection_comparison.rst') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            report_variables
         )
 
 
@@ -583,7 +637,7 @@ def generate_report(
     comparereptypes = {
         'performance': comparison_performance_report,
         'classification': comparison_classification_report,
-        'detection': lambda *args: ""  # temporary
+        'detection': comparison_detection_report
     }
 
     content = ''

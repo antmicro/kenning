@@ -231,7 +231,7 @@ def draw_radar_chart(
         title: str,
         data: Dict[str, List],
         labelnames: List,
-        figsize: Tuple = (11, 11)
+        figsize: Tuple = (11, 12)
 ):
     """
     Draws radar plot.
@@ -259,6 +259,7 @@ def draw_radar_chart(
     ax.set_xticks(angles, labelnames)
     ax.set_rlabel_position(1/(n_categories * 2) * 2 * pi)
     ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
+    ax.set_ylim((0, 1.))
     fig.suptitle(title, fontsize='x-large')
     cmap = plt.get_cmap("gnuplot")
     colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(data))]
@@ -268,10 +269,11 @@ def draw_radar_chart(
         sample += sample[:1]
         ax.plot(angles, sample, label=samplename, color=color)
         ax.fill(angles, sample, alpha=0.1, color=color)
-    plt.legend(fontsize="large", bbox_to_anchor=[0.35, 0], loc="upper right")
+    plt.legend(fontsize="large", bbox_to_anchor=[0.50, -0.05], 
+               loc="upper center")
 
     angles = np.array(angles)
-    angles[np.cos(angles) <= 1e-5] += pi
+    angles[np.cos(angles) <= -1e-5] += pi
     angles = np.rad2deg(angles)
     for i in range(n_categories):
         label = ax.get_xticklabels()[i]
@@ -283,7 +285,7 @@ def draw_radar_chart(
             ha=label.get_ha(),
             va=label.get_va()
         )
-        lab.set_rotation(angle)
+        lab.set_rotation(-angle)
         lab.set_fontsize('large')
     ax.set_xticklabels([])
 

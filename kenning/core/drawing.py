@@ -269,7 +269,7 @@ def draw_radar_chart(
         sample += sample[:1]
         ax.plot(angles, sample, label=samplename, color=color)
         ax.fill(angles, sample, alpha=0.1, color=color)
-    plt.legend(fontsize="large", bbox_to_anchor=[0.50, -0.05], 
+    plt.legend(fontsize="large", bbox_to_anchor=[0.50, -0.05],
                loc="upper center")
 
     angles = np.array(angles)
@@ -836,7 +836,8 @@ def draw_plot(
         xunit: str,
         ytitle: str,
         yunit: str,
-        line: Tuple[List, List],
+        lines: List[Tuple[List, List]],
+        linelabels: Optional[List[str]] = None,
         figsize: Tuple = (15, 15)):
     """
     Draws plot.
@@ -855,14 +856,20 @@ def draw_plot(
         Name of the Y axis
     yunit : str
         Unit for the Y axis
-    line : Tuple[List, List]
+    lines : List[Tuple[List, List]]
         Per-class list of tuples with list of recall values and precision
         values
+    linelabels : Optional[List[str]]
+        Optional list of labels naming each line
     figsize: Tuple
         The size of the figure
     """
     plt.figure(figsize=figsize)
-    plt.plot(line[0], line[1], c='purple', linewidth=3)
+
+    cmap = plt.get_cmap("gnuplot")
+    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(lines))]
+    for color, line in zip(colors, lines):
+        plt.plot(line[0], line[1], c=color, linewidth=3)
     xlabel = xtitle
     if xunit is not None:
         xlabel += f' [{xunit}]'
@@ -873,6 +880,8 @@ def draw_plot(
     plt.ylabel(ylabel, fontsize='large')
     plt.grid()
     plt.title(title)
+    if linelabels is not None:
+        plt.legend(linelabels)
 
     if outpath is None:
         plt.show()

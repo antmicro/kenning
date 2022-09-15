@@ -26,6 +26,7 @@ from kenning.core.drawing import recall_precision_gradients
 from kenning.core.drawing import true_positive_iou_histogram
 from kenning.core.drawing import true_positives_per_iou_range_histogram
 from kenning.core.drawing import draw_plot
+from kenning.core.drawing import draw_violin_comparison_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
@@ -181,6 +182,82 @@ def performance_report(
         return create_report_from_measurements(
             reporttemplate,
             measurementsdata
+        )
+
+
+def comparison_performance_report(
+        measurementsdata: List[Dict],
+        imgdir: Path) -> str:
+    """
+    Creates performance comparison section of report.
+
+    Parameters
+    ----------
+    measurementsdata : List[Dict]
+        Statistics of every model from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+
+    Returns
+    -------
+    str : content of the report in RST format
+    """
+
+    metric_names = {
+        'inference_step': 'Inference time',
+        'session_utilization_mem_percent': 'Memory usage',
+        'session_utilization_cpus_percent': 'CPU usage',
+        'session_utilization_gpu_mem_utilization': 'GPU memory usage',
+        'session_utilization_gpu_utilization': 'GPU usage'
+    }
+    common_metrics = set(metric_names.keys())
+    report_variables = {
+        'reportname': measurementsdata[0]['reportname']
+    }
+
+    for data in measurementsdata:
+        if 'target_inference_step' in data:
+            data['inference_step'] = data['target_inference_step']
+        elif 'protocol_inference_step' in data:
+            data['inference_step'] = data['protocol_inference_step']
+
+        if 'session_utilization_cpus_percent' in data:
+            data['session_utilization_cpus_percent'] = [
+                np.mean(cpus) for cpus in
+                data['session_utilization_cpus_percent']
+            ]
+
+        gpumetrics = [
+            'session_utilization_gpu_mem_utilization',
+            'session_utilization_gpu_utilization'
+        ]
+        for gpumetric in gpumetrics:
+            if gpumetric in data and len(data[gpumetric]) == 0:
+                del data[gpumetric]
+
+        modelmetrics = set(data.keys())
+        common_metrics &= modelmetrics
+
+    common_metrics = sorted(list(common_metrics))
+    visualizationdata = {}
+    for data in measurementsdata:
+        visualizationdata[data['modelname']] = [
+            data[metric] for metric in common_metrics
+        ]
+
+    usepath = imgdir / f'mean_performance_comparison.png'
+    draw_violin_comparison_plot(
+        usepath,
+        "Performance comparison plot",
+        [metric_names[metric] for metric in common_metrics],
+        visualizationdata
+    )
+    report_variables["meanperformancepath"] = usepath
+
+    with path(reports, 'performance_comparison.rst') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            report_variables
         )
 
 
@@ -369,6 +446,11 @@ def generate_report(
         'classification': classification_report,
         'detection': detection_report
     }
+    comparereptypes = {
+        'performance': comparison_performance_report,
+        'classification': lambda *args: "",  # temporary
+        'detection': lambda *args: ""  # temporary
+    }
 
     content = ''
     for typ in report_types:
@@ -378,6 +460,8 @@ def generate_report(
             else:
                 imgprefix = ""
             content += reptypes[typ](model_data, imgdir, imgprefix)
+        if len(data) > 1:
+            content += comparereptypes[typ](data, imgdir)
 
     with open(outputpath, 'w') as out:
         out.write(content)
@@ -419,7 +503,7 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    args.outputdir.mkdir(parents=True)  # temporarily without exist_ok=True
+    args.outputdir.mkdir(parents=True, exist_ok=True)
     root_dir = args.outputdir.absolute()
     img_dir = root_dir / "img"
     img_dir.mkdir()

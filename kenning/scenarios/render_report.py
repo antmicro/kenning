@@ -27,6 +27,7 @@ from kenning.core.drawing import true_positive_iou_histogram
 from kenning.core.drawing import true_positives_per_iou_range_histogram
 from kenning.core.drawing import draw_plot
 from kenning.core.drawing import draw_violin_comparison_plot
+from kenning.core.drawing import draw_multiple_time_series
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
@@ -220,8 +221,12 @@ def comparison_performance_report(
     for data in measurementsdata:
         if 'target_inference_step' in data:
             data['inference_step'] = data['target_inference_step']
+            data['inference_step_timestamp'] = \
+                data['target_inference_step_timestamp']
         elif 'protocol_inference_step' in data:
             data['inference_step'] = data['protocol_inference_step']
+            data['inference_step_timestamp'] = \
+                data['protocol_inference_step_timestamp']
 
         if 'session_utilization_cpus_percent' in data:
             data['session_utilization_cpus_percent'] = [
@@ -240,6 +245,33 @@ def comparison_performance_report(
         modelmetrics = set(data.keys())
         common_metrics &= modelmetrics
 
+    for metric, metric_name in metric_names.items():
+        metric_data = {}
+        if metric_name == 'Inference time':
+            timestamp_key = 'inference_step_timestamp'
+        elif metric_name in ('GPU usage', 'GPU memory usage'):
+            timestamp_key = 'session_utilization_gpu_timestamp'
+        else:
+            timestamp_key = 'session_utilization_timestamp'
+        timestamps = {
+            data['modelname']: data[timestamp_key]
+            for data in measurementsdata
+        }
+
+        for data in measurementsdata:
+            if metric in data:
+                metric_data[data['modelname']] = data[metric]
+        if len(metric_data) > 1:
+            usepath = imgdir / f"{metric}_comparison.png"
+            draw_multiple_time_series(
+                usepath,
+                f"{metric_name} comparison",
+                timestamps,
+                metric_data,
+                smooth=101
+            )
+            report_variables[f"{metric}_path"] = usepath
+
     common_metrics = sorted(list(common_metrics))
     visualizationdata = {}
     for data in measurementsdata:
@@ -247,7 +279,7 @@ def comparison_performance_report(
             data[metric] for metric in common_metrics
         ]
 
-    usepath = imgdir / f'mean_performance_comparison.png'
+    usepath = imgdir / 'mean_performance_comparison.png'
     draw_violin_comparison_plot(
         usepath,
         "Performance comparison plot",

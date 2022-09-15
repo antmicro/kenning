@@ -6,7 +6,6 @@ from typing import Tuple, List, Any, Dict, Optional
 import argparse
 from pathlib import Path
 from tqdm import tqdm
-from kenning.utils.logger import LoggerProgressBar
 
 from .measurements import Measurements
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
@@ -418,7 +417,7 @@ class Dataset(object):
         else:
             X = self.prepare_external_calibration_dataset()
 
-        for x in tqdm(X, file=LoggerProgressBar):
+        for x in tqdm(X):
             yield self.prepare_input_samples([x])
 
     def prepare_external_calibration_dataset(self) -> List[Any]:

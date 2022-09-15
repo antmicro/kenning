@@ -108,7 +108,10 @@ class Dataset(object):
             program's argument parser, and the corresponding arguments' group
             pointer
         """
-        parser = argparse.ArgumentParser(add_help=False)
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            conflict_handler='resolve'
+        )
         group = parser.add_argument_group(title='Dataset arguments')
         add_argparse_argument(
             group,

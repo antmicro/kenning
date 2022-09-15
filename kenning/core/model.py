@@ -82,7 +82,10 @@ class ModelWrapper(object):
             The argument parser object that can act as parent for program's
             argument parser
         """
-        parser = argparse.ArgumentParser(add_help=False)
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            conflict_handler='resolve'
+        )
         group = parser.add_argument_group(title='Inference model arguments')
         add_argparse_argument(
             group,

@@ -7,6 +7,7 @@ import argparse
 from typing import Dict
 from pathlib import Path
 
+
 """
 arguments_structure is a mapping (argument_name -> keywords)
 
@@ -260,6 +261,9 @@ def add_argparse_argument(
     properties of the struct.
 
     Note that the function modifies the given group.
+
+    If argument with name 'argparse_name' already exists in the
+    group the existing argument is overridden with the new one.
 
     Parameters
     ----------

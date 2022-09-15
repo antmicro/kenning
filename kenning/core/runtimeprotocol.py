@@ -171,7 +171,10 @@ class RuntimeProtocol(object):
             program's argument parser, and the corresponding arguments' group
             pointer
         """
-        parser = argparse.ArgumentParser(add_help=False)
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            conflict_handler='resolve'
+        )
         group = parser.add_argument_group(title='Runtime protocol arguments')
         return parser, group
 

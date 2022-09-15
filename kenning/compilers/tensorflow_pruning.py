@@ -43,7 +43,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             'description': 'Target weights sparsity of the model after pruning',  # noqa: E501
             'type': float,
             'default': 0.1
-        },
+        }
     }
 
     def __init__(

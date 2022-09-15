@@ -41,12 +41,14 @@ class PetDataset(Dataset):
     IDs are starting from 0 instead of 1, as in the annotations.
     """
 
+    classification_types = ['species', 'breeds']
+
     arguments_structure = {
         'classify_by': {
             'argparse_name': '--classify-by',
             'description': 'Determines if classification should be performed by species or by breeds',  # noqa: E501
             'default': 'breeds',
-            'enum': ['species', 'breeds']
+            'enum': classification_types
         },
         'image_memory_layout': {
             'argparse_name': '--image-memory-layout',
@@ -93,8 +95,10 @@ class PetDataset(Dataset):
             Standardize the given input samples.
             Should be set to False when using compute_input_mean_std
         """
-        assert classify_by in ['species', 'breeds']
-        assert image_memory_layout in ['NHWC', 'NCHW']
+        assert classify_by in self.classification_types, \
+            f'Invalid {classify_by}, should be {self.classification_types}'
+        assert image_memory_layout in ['NHWC', 'NCHW'], \
+            f'Unsupported layout {image_memory_layout}'
         self.classify_by = classify_by
         self.numclasses = None
         self.classnames = dict()

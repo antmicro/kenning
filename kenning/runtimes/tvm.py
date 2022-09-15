@@ -78,7 +78,6 @@ class TVMRuntime(Runtime):
         self.contextid = contextid
         self.module = None
         self.func = None
-        self.ctx = None
         self.model = None
         self._input_prepared = False
         self.use_tvm_vm = use_tvm_vm
@@ -127,6 +126,7 @@ class TVMRuntime(Runtime):
 
     def prepare_model(self, input_data):
         self.log.info('Loading model')
+        ctx = tvm.runtime.device(self.contextname, self.contextid)
         if self.use_tvm_vm:
             self.module = tvm.runtime.load_module(str(self.modelpath)+'.so')
             loaded_bytecode = bytearray(
@@ -134,17 +134,14 @@ class TVMRuntime(Runtime):
             )
             loaded_vm_exec = Executable.load_exec(loaded_bytecode, self.module)
 
-            self.ctx = tvm.cpu()
-
-            self.model = VirtualMachine(loaded_vm_exec, self.ctx)
+            self.model = VirtualMachine(loaded_vm_exec, ctx)
         else:
             if input_data:
                 with open(self.modelpath, 'wb') as outmodel:
                     outmodel.write(input_data)
             self.module = tvm.runtime.load_module(str(self.modelpath))
             self.func = self.module.get_function('default')
-            self.ctx = tvm.runtime.device(self.contextname, self.contextid)
-            self.model = graph_executor.GraphModule(self.func(self.ctx))
+            self.model = graph_executor.GraphModule(self.func(ctx))
         self.log.info('Model loading ended successfully')
         return True
 

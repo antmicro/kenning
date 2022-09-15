@@ -88,7 +88,7 @@ def performance_report(
     -------
     str : content of the report in RST format
     """
-    log.info('Running performance_report')
+    log.info(f'Running performance_report for {measurementsdata["modelname"]}')
 
     inference_step = None
     if 'target_inference_step' in measurementsdata:
@@ -207,6 +207,7 @@ def comparison_performance_report(
     -------
     str : content of the report in RST format
     """
+    log.info('Running comparison_performance_report')
 
     metric_names = {
         'inference_step': 'Inference time',
@@ -335,7 +336,7 @@ def classification_report(
     -------
     str : content of the report in RST format
     """
-    log.info('Running classification report')
+    log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
@@ -374,6 +375,8 @@ def comparison_classification_report(
     -------
     str : content of the report in RST format
     """
+    log.info('Running comparison_classification_report')
+
     report_variables = {
         'reportname': measurementsdata[0]['reportname']
     }
@@ -462,7 +465,7 @@ def detection_report(
         get_recall_precision, \
         compute_map_per_threshold
 
-    log.info('Running detection report')
+    log.info(f'Running detection report for {measurementsdata["modelname"]}')
 
     lines = get_recall_precision(measurementsdata, 0.5)
 
@@ -563,6 +566,8 @@ def comparison_detection_report(
     -------
     str : content of the report in RST format
     """
+    log.info('Running comparison_detection_report')
+
     from kenning.datasets.helpers.detection_and_segmentation import \
         compute_map_per_threshold
 
@@ -577,7 +582,6 @@ def comparison_detection_report(
         mapvalues = compute_map_per_threshold(data, thresholds)
         visualization_data.append((thresholds, mapvalues))
         report_variables['modelnames'].append(data['modelname'])
-        # report_variables[data['modelname']] = mapvalues
 
     usepath = imgdir / "detection_map_thresholds.png"
     draw_plot(

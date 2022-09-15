@@ -1,0 +1,45 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.open_images_dataset.OpenImagesDatasetV6",
+        "parameters":
+        {
+            "dataset_root": "./build/COCODataset",
+            "download_dataset": true,
+            "inference_batch_size": 1,
+            "task": "instance_segmentation"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters":
+            {
+                "model_framework": "onnx",
+                "target": "cuda",
+                "compiled_model_path": "./build/compiled-model.tar",
+                "opt_level": 3,
+                "compile_use_vm": true
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/compiled-model.tar",
+            "target_device_context": "cuda",
+            "runtime_use_vm": true
+        }
+    }
+}

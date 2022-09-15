@@ -1,4 +1,4 @@
-Object detection metrics
+Object detection metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 ------------------------
 
 .. figure:: {{data["curvepath"]}}

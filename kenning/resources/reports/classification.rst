@@ -1,4 +1,4 @@
-Inference quality metrics
+Inference quality metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 -------------------------
 
 .. figure:: {{data["confusionpath"]}}

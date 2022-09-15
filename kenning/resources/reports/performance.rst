@@ -1,4 +1,4 @@
-Inference performance metrics
+Inference performance metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 -----------------------------
 
 {% if data['command']|length > 0 -%}

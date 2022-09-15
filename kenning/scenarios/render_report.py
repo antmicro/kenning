@@ -604,7 +604,9 @@ def generate_report(
         data: List[Dict],
         imgdir: Path,
         report_types: List[str],
-        rootdir: Path) -> str:
+        rootdir: Path,
+        command: List[str]
+) -> str:
     """
     Generates an RST report based on Measurements data.
 
@@ -626,6 +628,8 @@ def generate_report(
         When the report is a part of a larger RST document (i.e. Sphinx docs),
         the rootdir parameter defines thte root directory of the document.
         It is used to compute relative paths in the document's references.
+    command : List[str]
+        Full command used to render this report, split into separate lines.
     """
 
     outputpath = rootdir / "report.rst"
@@ -640,7 +644,29 @@ def generate_report(
         'detection': comparison_detection_report
     }
 
-    content = ''
+    header_data = {
+        'reportname': reportname,
+        'modelnames': [],
+        'command': [],
+        'build_cfg': []
+    }
+
+    for model_data in data:
+        header_data['modelnames'].append(model_data['modelname'])
+        if 'command' in model_data:
+            header_data['command'] += model_data['command'] + ['']
+        if 'build_cfg' in model_data:
+            header_data['build_cfg'] += model_data['build_cfg'] + ['']
+        header_data[model_data['modelname']] = model_data
+
+    header_data['command'] += command
+
+    with path(reports, 'header.rst') as reporttemplate:
+        content = create_report_from_measurements(
+            reporttemplate,
+            header_data
+        )
+
     for typ in report_types:
         for model_data in data:
             if len(data) > 1:
@@ -713,15 +739,13 @@ def main(argv):
                 indent=4
             ).split('\n')
 
-        if 'command' in measurements:
-            measurements['command'] += [''] + command
-
     generate_report(
         args.reportname,
         measurementsdata,
         img_dir,
         args.report_types,
-        root_dir
+        root_dir,
+        command
     )
 
 

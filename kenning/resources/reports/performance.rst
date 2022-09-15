@@ -1,46 +1,6 @@
 Inference performance metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 -----------------------------
 
-{% if data['command']|length > 0 -%}
-.. note::
-
-    This section was generated using:
-
-    .. code-block:: bash
-
-        {% for line in data['command'] -%}
-        {{ line }}
-        {% endfor %}
-{% endif -%}
-
-{% if 'build_cfg' in data -%}
-.. note::
-    Input JSON:
-
-    .. code-block:: json
-
-        {% for line in data['build_cfg'] -%}
-        {{ line }}
-        {% endfor %}
-{% endif -%}
-
-General information
-~~~~~~~~~~~~~~~~~~~
-
-*Model framework*:
-
-* {{ data['model_framework'] }} ver. {{ data['model_version'] }}
-{% if data['compilers']|length > 0 %}
-    {% if data['compilers']|length == 1 %}
-*Compiler framework*:
-    {% else %}
-*Compiler frameworks*:
-    {%- endif %}
-    {% for line in data['compilers'] %}
-* {{ line['compiler_framework'] }} ver. {{ line['compiler_version'] }}
-    {%- endfor %}
-{% endif %}
-
 {% if 'inferencetime' in data -%}
 Inference time
 ~~~~~~~~~~~~~~

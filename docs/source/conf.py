@@ -49,6 +49,7 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.extlinks',
     'sphinx.ext.napoleon',
+    'myst_parser'
 ]
 
 dev = 'https://github.com/antmicro/kenning'

@@ -33,7 +33,8 @@ setuptools.setup(
             'sphinx',
             'sphinx_antmicro_theme @ git+https://github.com/antmicro/sphinx_antmicro_theme.git#egg=sphinx_antmicro_theme',  # noqa: E501
             'sphinxcontrib-napoleon',
-            'docutils==0.16'
+            'docutils==0.16',
+            'myst-parser'
         ],
         'tensorflow': [
             'onnx_tf>=1.7.0',

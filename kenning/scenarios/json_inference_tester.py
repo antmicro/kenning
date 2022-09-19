@@ -103,7 +103,7 @@ def main(argv):
     )
 
     logger.set_verbosity(args.verbosity)
-    logger.get_logger()
+    log = logger.get_logger()
 
     dataset = datasetcls.from_json(datasetcfg['parameters'])
     model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
@@ -119,9 +119,6 @@ def main(argv):
         runtimecls.from_json(protocol, runtimecfg['parameters'])
         if runtimecls else None
     )
-
-    logger.set_verbosity(args.verbosity)
-    logger.get_logger()
 
     modelframeworktuple = model.get_framework_and_version()
 
@@ -149,11 +146,16 @@ def main(argv):
 
     prev_block = model
     if args.convert_to_onnx:
+        log.warn(
+            'Force conversion of the input model to the ONNX format'
+        )
         modelpath = args.convert_to_onnx
         prev_block.save_to_onnx(modelpath)
 
     for i in range(len(optimizers)):
         next_block = optimizers[i]
+
+        log.info(f'Processing block:  {type(next_block).__name__}')
 
         format = next_block.consult_model_type(
             prev_block,

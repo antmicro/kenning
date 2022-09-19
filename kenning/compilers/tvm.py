@@ -365,8 +365,8 @@ class TVMCompiler(Optimizer):
             log = get_logger()
             log.info(
                 'Applying ConvertLayout transform:\n' +
-                'DATA LAYOUT   : "{self.conv2d_data_layout}\n' +
-                'KERNEL LAYOUT : "{self.conv2d_kernel_layout}'
+                f'DATA LAYOUT   : "{self.conv2d_data_layout}"\n' +
+                f'KERNEL LAYOUT : "{self.conv2d_kernel_layout}"'
             )
 
             if self.conv2d_data_layout == '':

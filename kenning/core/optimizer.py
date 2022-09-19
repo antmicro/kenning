@@ -211,7 +211,9 @@ class Optimizer(object):
         """
         Sets input type of the model for the compiler.
         """
-        assert inputtype in self.inputtypes.keys()
+        assert inputtype in self.inputtypes.keys(), \
+            f'Unsupported input type {inputtype}, only ' \
+            f'{", ".join(self.inputtypes.keys())} are supported'
         self.inputtype = inputtype
 
     def compile(
@@ -287,6 +289,7 @@ class Optimizer(object):
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx:
+            self.log.warn('Forcing ONNX conversion')
             if (('onnx' in self.get_input_formats())
                     and ('onnx' in possible_outputs)):
                 return 'onnx'

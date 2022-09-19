@@ -8,6 +8,7 @@ from pathlib import Path
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
+from typing import List
 
 import tensorflow as tf
 
@@ -19,6 +20,31 @@ class TensorFlowImageNet(TensorFlowWrapper):
             'argparse_name': '--model-cls',
             'description': 'The Keras model class',
             'type': str
+        },
+        'modelinputname': {
+            'argparse_name': '--model-input-name',
+            'description': 'Name of the input in the TensorFlow model',
+            'type': str,
+            'default': 'input'
+        },
+        'modeloutputname': {
+            'argparse_name': '--model-output-name',
+            'description': 'Name of the output in the TensorFlow model',
+            'type': str,
+            'default': 'output'
+        },
+        'inputshape': {
+            'argparse_name': '--input-shape',
+            'description': 'Input shape',
+            'type': int,
+            'is_list': True,
+            'default': [1, 224, 224, 3]
+        },
+        'numclasses': {
+            'argparse_name': '--num-classes',
+            'description': 'Output shape',
+            'type': int,
+            'default': 1000
         }
     }
 
@@ -27,7 +53,11 @@ class TensorFlowImageNet(TensorFlowWrapper):
             modelpath: Path,
             dataset: Dataset,
             from_file: bool = True,
-            modelcls: str = ''):
+            modelcls: str = '',
+            modelinputname: str = 'input',
+            modeloutputname: str = 'output',
+            inputshape: List[int] = [1, 224, 224, 3],
+            numclasses: int = 1000):
         """
         Creates model wrapper for TensorFlow classification
         model pretrained on ImageNet dataset.
@@ -50,7 +80,12 @@ class TensorFlowImageNet(TensorFlowWrapper):
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         self.modelcls = modelcls
-        self.numclasses = 1000
+        self.modelinputname = modelinputname
+        self.modeloutputname = modeloutputname
+        self.inputshape = inputshape
+        self.numclasses = numclasses
+        self.outputshape = [inputshape[0], numclasses]
+
         super().__init__(
             modelpath,
             dataset,
@@ -59,8 +94,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
 
     def get_io_specification_from_model(self):
         return {
-            'input': [{'name': 'input_1', 'shape': (1, 224, 224, 3), 'dtype': 'float32'}],  # noqa: E501
-            'output': [{'name': 'out_layer', 'shape': (1, self.numclasses), 'dtype': 'float32'}]  # noqa: E501
+            'input': [{'name': self.modelinputname, 'shape': self.inputshape, 'dtype': 'float32'}],  # noqa: E501
+            'output': [{'name': self.modeloutputname, 'shape': self.outputshape, 'dtype': 'float32'}]  # noqa: E501
         }
 
     def prepare_model(self):
@@ -75,7 +110,11 @@ class TensorFlowImageNet(TensorFlowWrapper):
         return cls(
             args.model_path,
             dataset,
+            from_file,
             args.model_cls,
             args.num_classes,
-            from_file
+            args.model_input_name,
+            args.model_output_name,
+            args.input_shape,
+            args.num_classes
         )

@@ -1,0 +1,46 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/detection/yolov4.onnx"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.coco_dataset.COCODataset2017",
+        "parameters":
+        {
+            "dataset_root": "./build/coco-dataset",
+            "task": "object_detection",
+            "dataset_type": "val2017",
+            "image_memory_layout": "NCHW"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": {
+                "model_framework": "onnx",
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
+                "target_host": null,
+                "opt_level": 3,
+                "compile_use_vm": false,
+                "output_conversion_function": "default",
+                "compiled_model_path": "./build/yolov4-fp16.tar",
+                "use_fp16_precision": true
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/yolov4-fp16.tar",
+	    "target_device_context": "cuda"
+        }
+    }
+}

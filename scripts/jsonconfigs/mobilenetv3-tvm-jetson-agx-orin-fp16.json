@@ -1,0 +1,46 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_imagenet_mobilenetv3small.h5",
+            "model_cls": "tensorflow.keras.applications.MobileNetV3Small"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.imagenet_dataset.ImageNetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/imagenet-dataset",
+            "image_memory_layout": "NHWC",
+            "preprocess_type": "none"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": {
+                "model_framework": "onnx",
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
+                "target_host": null,
+                "opt_level": 3,
+                "compile_use_vm": false,
+                "output_conversion_function": "default",
+                "compiled_model_path": "./build/compiled_model_mobilenetv3-fp16.tar",
+                "use_fp16_precision": true
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/compiled_model_mobilenetv3-fp16.tar",
+	    "target_device_context": "cuda"
+        }
+    }
+}

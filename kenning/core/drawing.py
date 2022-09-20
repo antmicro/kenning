@@ -14,6 +14,25 @@ from math import floor, pi
 from scipy.signal import savgol_filter
 
 
+def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
+    """
+    Creates default color schema to use for comparison plots (such as violin
+    plot, bubble chart etc.)
+
+    Parameters
+    ----------
+    n_colors : int
+        Number of colors to return
+
+    Returns
+    -------
+    List of colors to use for plotting
+    """
+    CMAP_NAME = "gnuplot"
+    cmap = plt.get_cmap(CMAP_NAME)
+    return [cmap(i) for i in np.linspace(0.1, 0.9, n_colors)]
+
+
 def time_series_plot(
         outpath: Optional[Path],
         title: str,
@@ -132,8 +151,7 @@ def draw_multiple_time_series(
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     fig.suptitle(title, fontsize="x-large")
-    cmap = plt.get_cmap("gnuplot")
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(xdata))]
+    colors = get_comparison_color_scheme(len(xdata))
     for color, (samplename, sample) in zip(colors, ydata.items()):
         x_sample = xdata[samplename]
         x_sample = np.array(x_sample)
@@ -189,8 +207,7 @@ def draw_violin_comparison_plot(
     fig, axs = plt.subplots(1, num_plots, figsize=(3*num_plots, 10))
     axs = axs.flatten()
     fig.suptitle(title, fontsize='x-large')
-    cmap = plt.get_cmap("gnuplot")
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(data))]
+    colors = get_comparison_color_scheme(len(data))
 
     for i, (samplename, samples) in enumerate(data.items()):
         for ax, metric_sample in zip(axs, samples):
@@ -261,8 +278,7 @@ def draw_radar_chart(
     ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
     ax.set_ylim((0, 1.))
     fig.suptitle(title, fontsize='x-large')
-    cmap = plt.get_cmap("gnuplot")
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(data))]
+    colors = get_comparison_color_scheme(len(data))
 
     angles += [0]
     for color, (samplename, sample) in zip(colors, data.items()):
@@ -331,8 +347,7 @@ def draw_bubble_plot(
         The size of the plot
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize)
-    cmap = plt.get_cmap("gnuplot")
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(xdata))]
+    colors = get_comparison_color_scheme(len(xdata))
     markers = []
     for x, y, size, label, c in zip(xdata, ydata, bubblesize,
                                     bubblename, colors):
@@ -866,8 +881,7 @@ def draw_plot(
     """
     plt.figure(figsize=figsize)
 
-    cmap = plt.get_cmap("gnuplot")
-    colors = [cmap(i) for i in np.linspace(0.1, 0.9, len(lines))]
+    colors = get_comparison_color_scheme(len(lines))
     for color, line in zip(colors, lines):
         plt.plot(line[0], line[1], c=color, linewidth=3)
     xlabel = xtitle

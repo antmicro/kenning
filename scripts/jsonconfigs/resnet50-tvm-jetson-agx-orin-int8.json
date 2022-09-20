@@ -1,0 +1,59 @@
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_imagenet_resnet50.h5",
+            "model_cls": "tensorflow.keras.applications.resnet50.ResNet50",
+            "model_input_name": "input_2",
+            "input_shape": [1, 224, 224, 3],
+            "model_output_name": "predictions",
+            "num_classes": 1000
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.imagenet_dataset.ImageNetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/imagenet-dataset",
+            "image_memory_layout": "NHWC",
+            "preprocess_type": "caffe",
+            "external_calibration_dataset": "./build/calibration-dataset"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "int8",
+                "compiled_model_path": "./build/compiled_model_resnet50-int8.tflite",
+                "inference_input_type": "int8",
+                "inference_output_type": "int8"
+            }
+        },
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": {
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
+                "target_host": null,
+                "opt_level": 3,
+                "compile_use_vm": false,
+                "output_conversion_function": "default",
+                "compiled_model_path": "./build/compiled_model_resnet50-int8.tar"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/compiled_model_resnet50-int8.tar",
+	    "target_device_context": "cuda"
+        }
+    }
+}

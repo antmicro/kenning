@@ -651,16 +651,13 @@ def generate_report(
     header_data = {
         'reportname': reportname,
         'modelnames': [],
-        'command': [],
-        'build_cfg': []
+        'command': []
     }
 
     for model_data in data:
         header_data['modelnames'].append(model_data['modelname'])
         if 'command' in model_data:
             header_data['command'] += model_data['command'] + ['']
-        if 'build_cfg' in model_data:
-            header_data['build_cfg'] += model_data['build_cfg'] + ['']
         header_data[model_data['modelname']] = model_data
 
     header_data['command'] += command

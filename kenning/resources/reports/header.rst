@@ -16,17 +16,6 @@ Commands used
         {% endfor %}
 {% endif -%}
 
-{% if 'build_cfg' in data -%}
-.. note::
-    Input JSON:
-
-    .. code-block:: json
-
-        {% for line in data['build_cfg'] -%}
-        {{ line }}
-        {% endfor %}
-{% endif -%}
-
 {% for modelname in data['modelnames'] %}
 General information for {{modelname}}
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -44,5 +33,15 @@ General information for {{modelname}}
 * {{ line['compiler_framework'] }} ver. {{ line['compiler_version'] }}
     {%- endfor %}
 {% endif %}
+{% if 'build_cfg' in data[modelname] -%}
+*Input JSON*:
 
+.. note::
+
+    .. code-block:: json
+
+        {% for line in data[modelname]['build_cfg'] -%}
+        {{ line }}
+        {% endfor %}
+{% endif -%}
 {% endfor %}

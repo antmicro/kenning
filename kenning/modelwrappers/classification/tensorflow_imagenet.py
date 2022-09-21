@@ -58,7 +58,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self,
             modelpath: Path,
             dataset: Dataset,
-            from_file: bool = True,
+            from_file: bool = False,
             modelcls: str = '',
             modelinputname: str = 'input',
             modeloutputname: str = 'output',
@@ -141,5 +141,18 @@ class TensorFlowImageNet(TensorFlowWrapper):
             args.model_input_name,
             args.model_output_name,
             args.input_shape,
-            args.num_classes
+            args.num_classes,
+            args.disable_builtin_preprocessing
+        )
+
+    @classmethod
+    def from_json(
+            cls,
+            dataset: Dataset,
+            json_dict: Dict,
+            from_file: bool = False):
+        return super(TensorFlowImageNet, cls).from_json(
+            dataset,
+            json_dict,
+            from_file
         )

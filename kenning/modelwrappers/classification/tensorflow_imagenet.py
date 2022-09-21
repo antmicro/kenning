@@ -8,7 +8,7 @@ from pathlib import Path
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
-from typing import List
+from typing import List, Dict
 
 import tensorflow as tf
 
@@ -45,6 +45,12 @@ class TensorFlowImageNet(TensorFlowWrapper):
             'description': 'Output shape',
             'type': int,
             'default': 1000
+        },
+        'disablebuiltinpreprocessing': {
+            'argparse_name': '--disable-builtin-preprocessing',
+            'description': 'Removes (if possible) internal preprocessing in the model',  # noqa: E501
+            'type': bool,
+            'default': False
         }
     }
 
@@ -57,7 +63,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
             modelinputname: str = 'input',
             modeloutputname: str = 'output',
             inputshape: List[int] = [1, 224, 224, 3],
-            numclasses: int = 1000):
+            numclasses: int = 1000,
+            disablebuiltinpreprocessing: bool = False):
         """
         Creates model wrapper for TensorFlow classification
         model pretrained on ImageNet dataset.
@@ -73,8 +80,16 @@ class TensorFlowImageNet(TensorFlowWrapper):
         modelcls : str
             The model class import path
             Used for loading keras.applications pretrained models
-        from_file: bool
-            True if model should be loaded from file
+        modelinputname : str
+            The name of the model input
+        modeloutputname : str
+            The name of the model output
+        inputshape : List[int]
+            The shape of the input
+        numclasses : int
+            Number of classes in the model
+        disablebuiltinpreprocessing : bool
+            Tells if the input preprocessing should be removed from the model
         """
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
@@ -85,6 +100,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         self.inputshape = inputshape
         self.numclasses = numclasses
         self.outputshape = [inputshape[0], numclasses]
+        self.disablebuiltinpreprocessing = disablebuiltinpreprocessing
 
         super().__init__(
             modelpath,
@@ -102,8 +118,17 @@ class TensorFlowImageNet(TensorFlowWrapper):
         if self.from_file:
             self.load_model(self.modelpath)
         else:
-            self.model = load_class(self.modelcls)()
+            if self.disablebuiltinpreprocessing:
+                self.model = load_class(self.modelcls)(
+                    input_shape=tuple(self.inputshape[1:]),
+                    include_preprocessing=False
+                )
+            else:
+                self.model = load_class(self.modelcls)(
+                    input_shape=tuple(self.inputshape[1:])
+                )
             self.save_model(self.modelpath)
+            self.model.summary()
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

@@ -9,7 +9,8 @@
             "model_input_name": "input_1",
             "input_shape": [1, 224, 224, 3],
             "model_output_name": "Predictions",
-            "num_classes": 1000
+            "num_classes": 1000,
+            "disable_builtin_preprocessing": true
         }
     },
     "dataset":
@@ -19,7 +20,7 @@
         {
             "dataset_root": "./build/imagenet-dataset",
             "image_memory_layout": "NHWC",
-            "preprocess_type": "none",
+            "preprocess_type": "tf",
             "external_calibration_dataset": "./build/calibration-dataset"
         }
     },
@@ -29,22 +30,20 @@
             "type": "kenning.compilers.tflite.TFLiteCompiler",
             "parameters": {
                 "target": "int8",
-                "compiled_model_path": "./build/mobilenetv3-uint8.tflite",
-                "inference_input_type": "uint8",
-                "inference_output_type": "uint8"
+                "compiled_model_path": "./build/mobilenetv3-int8.tflite",
+                "inference_input_type": "int8",
+                "inference_output_type": "int8"
             }
         },
         {
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
-                "target": "cuda -arch=sm_87 -libs=tensorrt,cudnn,cublas",
+                "target": "cuda -arch=sm_87 -libs=tensorrt",
                 "target_host": null,
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "conv2d_data_layout": "NCHW",
-                "conv2d_kernel_layout": "OIHW",
                 "compiled_model_path": "./build/compiled_model_mobilenetv3-int8.tar"
             }
         }

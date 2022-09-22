@@ -123,7 +123,9 @@ def draw_multiple_time_series(
         outpath: Optional[Path],
         title: str,
         xdata: Dict[str, List],
+        xtitle: str,
         ydata: Dict[str, List],
+        ytitle: str,
         smooth: Optional[int] = None,
         figsize: Tuple = (11, 8.5)
 ):
@@ -138,8 +140,12 @@ def draw_multiple_time_series(
         Title of the plot
     xdata : Dict[str, List]
         Mapping between name of the model and x coordinates of samples.
+    xtitle : str
+        Name of the X axis
     ydata : Dict[str, List]
         Mapping between name of the model and y coordinates of samples.
+    ytitle : str
+        Name of the Y axis
     smooth : Optional[int]
         If None, raw point coordinates are plotted in a line plot.
         If int, samples are plotted in a scatter plot in a background,

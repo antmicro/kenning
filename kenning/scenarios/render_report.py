@@ -159,7 +159,7 @@ def performance_report(
                 str(usepath),
                 'GPU memory usage',
                 'Time', 's',
-                'GPU memory usage', 'MB',
+                'GPU memory usage', '%',
                 measurementsdata['session_utilization_gpu_timestamp'],
                 measurementsdata[gpumemmetric])
             measurementsdata['gpumemusagepath'] = str(usepath)
@@ -210,11 +210,11 @@ def comparison_performance_report(
     log.info('Running comparison_performance_report')
 
     metric_names = {
-        'inference_step': 'Inference time',
-        'session_utilization_mem_percent': 'Memory usage',
-        'session_utilization_cpus_percent': 'CPU usage',
-        'session_utilization_gpu_mem_utilization': 'GPU memory usage',
-        'session_utilization_gpu_utilization': 'GPU usage'
+        'inference_step': ('Inference time', 's'),
+        'session_utilization_mem_percent': ('Memory usage', '%'),
+        'session_utilization_cpus_percent': ('CPU usage', '%'),
+        'session_utilization_gpu_mem_utilization': ('GPU memory usage', '%'),
+        'session_utilization_gpu_utilization': ('GPU usage', '%')
     }
     common_metrics = set(metric_names.keys())
     hardware_usage_metrics = common_metrics - {'inference_step'}
@@ -249,7 +249,7 @@ def comparison_performance_report(
         modelmetrics = set(data.keys())
         common_metrics &= modelmetrics
 
-    for metric, metric_name in metric_names.items():
+    for metric, (metric_name, unit) in metric_names.items():
         metric_data = {}
         if metric_name == 'Inference time':
             timestamp_key = 'inference_step_timestamp'
@@ -271,7 +271,9 @@ def comparison_performance_report(
                 usepath,
                 f"{metric_name} comparison",
                 timestamps,
+                "Time [s]",
                 metric_data,
+                f"{metric_name} [{unit}]",
                 smooth=101
             )
             report_variables[f"{metric}_path"] = usepath
@@ -287,7 +289,8 @@ def comparison_performance_report(
     draw_violin_comparison_plot(
         usepath,
         "Performance comparison plot",
-        [metric_names[metric] for metric in common_metrics],
+        [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
+         for metric in common_metrics],
         visualizationdata
     )
     report_variables["meanperformancepath"] = usepath
@@ -305,7 +308,7 @@ def comparison_performance_report(
         usepath,
         "Resource usage comparison",
         usage_visualization,
-        [metric_names[metric] for metric in hardware_usage_metrics]
+        [metric_names[metric][0] for metric in hardware_usage_metrics]
     )
     report_variables["hardwareusagepath"] = usepath
 
@@ -410,7 +413,7 @@ def comparison_classification_report(
         usepath,
         "Accuracy vs Mean inference time",
         mean_inference_time,
-        "Mean inference time",
+        "Mean inference time [s]",
         accuracy,
         "Accuracy",
         ram_usage,
@@ -586,7 +589,7 @@ def comparison_detection_report(
     usepath = imgdir / "detection_map_thresholds.png"
     draw_plot(
         usepath,
-        "mAP values comparison over different thresholdd values",
+        "mAP values comparison over different threshold values",
         'threshold',
         None,
         'mAP',

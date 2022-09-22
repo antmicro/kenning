@@ -162,7 +162,6 @@ def draw_multiple_time_series(
         x_sample = xdata[samplename]
         x_sample = np.array(x_sample)
         x_sample -= np.min(x_sample)
-        x_sample /= np.max(x_sample)
         if smooth is None:
             ax.plot(x_sample, sample, label=samplename, color=color)
         else:
@@ -172,12 +171,8 @@ def draw_multiple_time_series(
             ax.plot(x_sample, smoothed, label=samplename,
                     linewidth=3, color=color)
 
-    ax.tick_params(
-        axis='x',
-        which='both',
-        bottom=False,
-        labelbottom=False
-    )
+    ax.set_xlabel(xtitle)
+    ax.set_ylabel(ytitle)
     plt.legend()
     plt.grid()
 

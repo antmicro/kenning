@@ -118,9 +118,10 @@ class PetDataset(Dataset):
         return cls(
             args.dataset_root,
             args.inference_batch_size,
-            args.download_dataset,
-            args.classify_by,
-            args.image_memory_layout
+            download_dataset=args.download_dataset,
+            external_calibration_dataset=args.external_calibration_dataset,
+            classify_by=args.classify_by,
+            image_memory_layout=args.image_memory_layout
         )
 
     def download_dataset_fun(self):

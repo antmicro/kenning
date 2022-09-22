@@ -274,6 +274,10 @@ def add_argparse_argument(
     *names : str
         Names of the properties that are to be added to the group.
         If empty every property in struct is used.
+
+    Raises
+    ------
+    KeyError : Raised if there is a keyword that is not recognized.
     """
     if not names:
         names = struct.keys()
@@ -326,6 +330,9 @@ def add_parameterschema_argument(
 
     Note that the function modifies the given schema.
 
+    If argument with name 'argschema_name' already exists in the
+    schema the existing argument is overridden with the new one.
+
     Parameters
     ----------
     schema : Dict
@@ -335,6 +342,12 @@ def add_parameterschema_argument(
     *names : str
         Names of the properties that are to be added to the group.
         If empty every property in struct is used.
+
+    Raises
+    ------
+    KeyError : Raised if there is a keyword that is not recognized or
+        if there is already a property with a different `argparse_name`
+        and the same property name.
     """
     if 'properties' not in schema:
         schema['properties'] = {}
@@ -355,12 +368,18 @@ def add_parameterschema_argument(
         else:
             argschema_name = name
 
-        if argschema_name in schema['properties'].keys():
-            raise KeyError(f'{argschema_name} already added to the schema')
+        # Check if there is a property that is not going to be overriden
+        # by the new property but has the same property name
+        for k, p in schema['properties'].items():
+            if p['real_name'] == name and k != argschema_name:
+                raise KeyError(f'{p} already has a property name: {name}')
 
-        for s in schema['properties'].values():
-            if s['real_name'] == name:
-                raise KeyError(f'{s} already has a name: {name}')
+        # If the property is going to be overriden it has to be removed
+        # from the list of required properties
+        try:
+            schema['required'].remove(argschema_name)
+        except (KeyError, ValueError):
+            pass
 
         schema['properties'][argschema_name] = {}
         keywords = schema['properties'][argschema_name]

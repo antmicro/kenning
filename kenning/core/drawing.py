@@ -205,14 +205,14 @@ def draw_violin_comparison_plot(
 
     num_plots = len(xnames)
     legend_lines, legend_labels = [], []
-    fig, axs = plt.subplots(1, num_plots, figsize=(3*num_plots, 10))
+    fig, axs = plt.subplots(num_plots, 1, figsize=(12, 3.5*num_plots))
     axs = axs.flatten()
     fig.suptitle(title, fontsize='x-large')
     colors = get_comparison_color_scheme(len(data))
 
     for i, (samplename, samples) in enumerate(data.items()):
         for ax, metric_sample in zip(axs, samples):
-            vp = ax.violinplot(metric_sample, positions=[i])
+            vp = ax.violinplot(metric_sample, positions=[i], vert=False)
             for body in vp['bodies']:
                 body.set_color(colors[i])
             vp['cbars'].set_color(colors[i])
@@ -226,10 +226,10 @@ def draw_violin_comparison_plot(
     for ax, metricname in zip(axs, xnames):
         ax.set_title(metricname)
         ax.tick_params(
-            axis='x',
+            axis='y',
             which='both',
-            bottom=False,
-            labelbottom=False
+            left=False,
+            labelleft=False
         )
 
     fig.legend(
@@ -238,6 +238,8 @@ def draw_violin_comparison_plot(
         loc="lower center",
         fontsize="large"
     )
+    plt.tight_layout(rect=(0.1, 0.08, 0.9, 0.95))
+
     if outpath is None:
         plt.show()
     else:

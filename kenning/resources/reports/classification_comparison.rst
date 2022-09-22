@@ -3,7 +3,7 @@ Classification comparison
 
 .. figure:: {{data["bubbleplotpath"]}}
     :name: {{data["reportname"][0]}}_bubble
-    :alt: Accuracy vs Inference time vs Ram usage
+    :alt: Accuracy vs Inference time vs RAM usage
     :align: center
 
 Metric comparison

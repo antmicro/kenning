@@ -64,16 +64,15 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     }
 
     arguments_structure = {
-        # TODO: add arguments overriding in args_manager
-        # 'task': {
-        #     'argparse_name': '--task',
-        #     'description': 'The task type',
-        #     'default': 'object_detection',
-        #     'enum': [
-        #         key for dataset in annotationsurls.values()
-        #         for key in dataset.keys() if key != 'images'
-        #     ]
-        # },
+        'task': {
+            'argparse_name': '--task',
+            'description': 'The task type',
+            'default': 'object_detection',
+            'enum': list(set(
+                key for dataset in annotationsurls.values()
+                for key in dataset.keys() if key != 'images'
+            ))
+        },
         'dataset_type': {
             'argparse_name': '--dataset-type',
             'description': 'Type of dataset to download and use',  # noqa: E501

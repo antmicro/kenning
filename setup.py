@@ -26,7 +26,7 @@ setuptools.setup(
         'psutil>=5.8.0',
         'scikit_learn>=0.24.1',
         'tqdm>=4.56.2',
-        'jsonschema'
+        'jsonschema>=4.16.0',
     ],
     extras_require={
         'docs': [
@@ -41,7 +41,8 @@ setuptools.setup(
             'tensorflow>=2.4.1',
             'tensorflow_addons>=0.12.1',
             'tf2onnx>=1.8.3',
-            'tensorflow_probability'
+            'tensorflow_probability',
+            'tensorflow_model_optimization'
         ],
         'torch': [
             'torch>=1.7.1',
@@ -58,7 +59,8 @@ setuptools.setup(
             'boto3>=1.17.5',
             'botocore>=1.20.5',
             'opencv_python>=4.5.2',
-            'pandas>=1.2.1'
+            'pandas>=1.2.1',
+            'pycocotools'
         ],
         ":python_version<'3.9'": [
             'importlib_resources>=5.1.4'
@@ -71,6 +73,13 @@ setuptools.setup(
         ],
         'tvm': [
             'apache-tvm'
+        ],
+        'onnxruntime': [
+            'onnxruntime'
+        ],
+        'test': [
+            'pytest',
+            'pytest-mock'
         ]
     },
 )

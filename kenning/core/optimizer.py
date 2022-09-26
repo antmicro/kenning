@@ -325,6 +325,7 @@ class Optimizer(object):
         -------
         Path : Path to the input/output specification of a given model.
         """
+        modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
         return Path(spec_path)
 
@@ -355,6 +356,7 @@ class Optimizer(object):
         io_spec : Optional[Dict[str, List[Dict]]]
             Specification of the input/ouput layers
         """
+        inputmodelpath = Path(inputmodelpath)
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
@@ -386,6 +388,7 @@ class Optimizer(object):
         Optional[Dict[str, List[Dict]]] : Specification of a model saved
             in `modelpath` if there is one. None otherwise
         """
+        modelpath = Path(modelpath)
         spec_path = self.get_spec_path(modelpath)
         if spec_path.exists():
             with open(spec_path, 'r') as f:

@@ -6,14 +6,16 @@ Copyright (c) 2020-2022 [Antmicro](https://www.antmicro.com>)
 
 Kenning is a framework for creating deployment flows and runtimes for Deep Neural Network applications on various target hardware.
 
-It aims towards providing modular execution blocks for:
+[Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning)
 
-* dataset management,
-* model training,
-* model compilation,
-* model evaluation and performance reports,
-* model runtime on target device,
-* model input and output processing (i.e. fetching frames from camera and computing final predictions from model outputs).
+Kenning aims towards providing modular execution blocks for:
+
+* dataset management
+* model training
+* model optimization and compilation for a given target hardware
+* model evaluation and performance reports
+* running models using efficient runtimes on target device
+* model input and output processing (i.e. normalizing frames or computing final predictions from model outputs)
 
 that can be used seamlessly regardless of underlying frameworks for above-mentioned steps.
 
@@ -21,8 +23,8 @@ Kenning does not aim towards bringing yet another training or compilation framew
 Still, there is no framework that would support all of the models or target hardware devices - especially the support matrix between compilation frameworks and target hardware is extremely sparse.
 This means that any change in the application, especially in hardware, may end up with a necessity to change the whole or significant part of the application flow.
 
-Kenning addresses this issue by providing an unified API that focuses more on deployment tasks rather than their implementation - the developer decides which implementation for each task should be used, and Kenning allows to do it in a seamless way.
-This way switching to another target platform results in most cases in very small change in the code, instead of reimplementing large parts of the project.
+Kenning addresses this issue by providing a unified API that focuses more on deployment tasks rather than their implementation - the developer decides which implementation for each task should be used, and Kenning allows to do it in a seamless way.
+This way switching to another target platform results in most cases in a very small change in the code, instead of reimplementing larger parts of the project.
 This way the Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
 For more details regarding the Kenning framework, Deep Neural Network deployment flow and its API check [Kenning documentation](https://antmicro.github.io/kenning/).
@@ -74,7 +76,7 @@ The `kenning` module consists of the following submodules:
 * `core` - provides interface APIs for datasets, models, optimizers, runtimes and runtime protocols,
 * `datasets` - provides implementations for datasets,
 * `modelwrappers` - provides implementations for models for various problems implemented in various frameworks,
-* `optimizers` - provides implementations for compilers of deep learning models,
+* `compilers` - provides implementations for compilers and optimizers for deep learning models,
 * `runtimes` - provides implementations of runtime on target devices,
 * `runtimeprotocols` - provides implementations for communication protocols between host and tested target,
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
@@ -104,6 +106,7 @@ model = TensorFlowPetDatasetMobileNetV2(
     modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
     dataset=dataset
 )
+model.save_io_specification(model.modelpath)
 compiler = TFLiteCompiler(
     dataset=dataset,
     compiled_model_path='./build/compiled-model.tflite',
@@ -113,9 +116,7 @@ compiler = TFLiteCompiler(
     inferenceoutputtype='float32'
 )
 compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
-    inputshapes=model.get_input_spec()[0],
-    dtype=model.get_input_spec()[1]
+    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
 )
 ```
 
@@ -124,8 +125,6 @@ The above script downloads the dataset and compiles the model using TensorFlow L
 To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
 
 ```python
-...
-
 compiler = TFLiteCompiler(
     dataset=dataset,
     compiled_model_path='./build/compiled-model.tflite',
@@ -136,17 +135,13 @@ compiler = TFLiteCompiler(
     dataset_percentage=0.3
 )
 compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
-    inputshapes=model.get_input_spec()[0],
-    dtype=model.get_input_spec()[1]
+    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
 )
 ```
 
 To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
 
 ```python
-...
-
 runtime = TFLiteRuntime(
     protocol=None,
     modelpath='./build/compiled-model.tflite'

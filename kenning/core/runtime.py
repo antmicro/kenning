@@ -586,6 +586,7 @@ class Runtime(object):
         -------
         Path : Returns path to the specification
         """
+        modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
         return Path(spec_path)
 
@@ -743,6 +744,7 @@ class Runtime(object):
         -------
         bool : True if executed successfully
         """
+        compiledmodelpath = Path(compiledmodelpath)
         from tqdm import tqdm
         measurements = Measurements()
         try:
@@ -759,6 +761,9 @@ class Runtime(object):
                 preds = modelwrapper.convert_output_from_bytes(outbytes)
                 posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: 501
                 measurements += dataset.evaluate(posty, y)
+        except KeyboardInterrupt:
+            self.log.info("Stopping benchmark...")
+            return False
         finally:
             self.inference_session_end()
             MeasurementsCollector.measurements += measurements

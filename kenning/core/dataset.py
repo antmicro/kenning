@@ -2,7 +2,8 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List, Any, Dict, Optional
+from typing import Tuple, List, Any, Dict, Optional, Generator
+import random
 import argparse
 from pathlib import Path
 from tqdm import tqdm
@@ -398,7 +399,7 @@ class Dataset(object):
     def calibration_dataset_generator(
             self,
             percentage: float = 0.25,
-            seed: int = 12345):
+            seed: int = 12345) -> Generator[List[Any], None, None]:
         """
         Creates generator for the calibration data.
 
@@ -415,12 +416,15 @@ class Dataset(object):
                 seed
             )
         else:
-            X = self.prepare_external_calibration_dataset()
+            X = self.prepare_external_calibration_dataset(percentage, seed)
 
         for x in tqdm(X):
             yield self.prepare_input_samples([x])
 
-    def prepare_external_calibration_dataset(self) -> List[Any]:
+    def prepare_external_calibration_dataset(
+            self,
+            percentage: float = 0.25,
+            seed: int = 12345) -> List[Path]:
         """
         Prepares the data for external calibration dataset.
 
@@ -440,9 +444,11 @@ class Dataset(object):
         List[Any] :
             List of objects that are usable by the prepare_input_samples method
         """
-        return [
+        data = [
             x for x in self.external_calibration_dataset.rglob('*') if x.is_file()  # noqa: E501
         ]
+        random.Random(seed).shuffle(data)
+        return data[:int(percentage * len(data) + 0.5)]
 
     def download_dataset_fun(self):
         """

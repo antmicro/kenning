@@ -86,81 +86,15 @@ The `kenning` module consists of the following submodules:
 * `scenarios` - contains executable scripts for running training, inference, benchmarks and other tests on target devices,
 * `utils` - various functions and classes used in all above-mentioned submodules.
 
-### Using Kenning as a library in Python scripts
-
-Kenning is a regular Python module - after pip installation it can be used in Python scripts.
-The example compilation of the model can look as follows:
-
-```python
-from kenning.datasets.pet_dataset import PetDataset
-from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
-from kenning.compilers.tflite import TFLiteCompiler
-from kenning.runtimes.tflite import TFLiteRuntime
-from kenning.core.measurements import MeasurementsCollector
-
-dataset = PetDataset(
-    root='./build/pet-dataset/',
-    download_dataset=True
-)
-model = TensorFlowPetDatasetMobileNetV2(
-    modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
-    dataset=dataset
-)
-model.save_io_specification(model.modelpath)
-compiler = TFLiteCompiler(
-    dataset=dataset,
-    compiled_model_path='./build/compiled-model.tflite',
-    modelframework='keras',
-    target='default',
-    inferenceinputtype='float32',
-    inferenceoutputtype='float32'
-)
-compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
-)
-```
-
-The above script downloads the dataset and compiles the model using TensorFlow Lite to the model with FP32 inputs and outputs.
-
-To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
-
-```python
-compiler = TFLiteCompiler(
-    dataset=dataset,
-    compiled_model_path='./build/compiled-model.tflite',
-    modelframework='keras',
-    target='int8',
-    inferenceinputtype='int8',
-    inferenceoutputtype='int8',
-    dataset_percentage=0.3
-)
-compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
-)
-```
-
-To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
-
-```python
-runtime = TFLiteRuntime(
-    protocol=None,
-    modelpath='./build/compiled-model.tflite'
-)
-
-runtime.run_locally(
-    dataset,
-    model,
-    './build/compiled-model.tflite'
-)
-MeasurementsCollector.save_measurements('out.json')
-```
-
-Method `runtime.run_locally` runs benchmarks of the model on the current device.
-The `MeasurementsCollector` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in [section on rendering report from benchmarks](#render-report-from-benchmarks).
-
 ### Using Kenning scenarios
 
-One can also use ready-to-use Kenning scenarios.
+Kenning scenarios are executable scripts for:
+
+* Training and benchmarking the model using the native framework,
+* Optimizing and compiling the model for a target hardware,
+* Benchmarking the model on the target hardware,
+* Rendering performance and quality reports from benchmark data.
+
 All executable Python scripts are available in the `kenning.scenarios` submodule.
 
 #### Running model training on host
@@ -231,24 +165,6 @@ The obligatory arguments for the script are:
 * `build/result.json`, which is the path to the output JSON file with benchmark results.
 
 The remaining parameters are specific to the `ModelWrapper`-based class and `Dataset`-based class.
-
-#### Testing ONNX conversions
-
-The `kenning.scenarios.onnx_conversion` runs as follows:
-
-```
-python -m kenning.scenarios.onnx_conversion \
-    build/models-directory \
-    build/onnx-support.rst \
-    --converters-list \
-        kenning.onnxconverters.pytorch.PyTorchONNXConversion \
-        kenning.onnxconverters.tensorflow.TensorFlowONNXConversion \
-        kenning.onnxconverters.mxnet.MXNetONNXConversion
-```
-
-The first argument is the directory, where the generated ONNX models will be stored.
-The second argument is the RST file with import/export support table for each model for each framework.
-The third argument is the list of `ONNXConversion` classes implementing list of models, import method and export method.
 
 #### Running compilation and deployment of models on target hardware
 
@@ -400,6 +316,97 @@ The `classification` type provides report section regarding quality metrics for 
 * G-Mean.
 
 The above metrics can be used to determine any quality losses resulting from optimizations (i.e. pruning or quantization).
+
+#### Testing ONNX conversions
+
+The `kenning.scenarios.onnx_conversion` runs as follows:
+
+```
+python -m kenning.scenarios.onnx_conversion \
+    build/models-directory \
+    build/onnx-support.rst \
+    --converters-list \
+        kenning.onnxconverters.pytorch.PyTorchONNXConversion \
+        kenning.onnxconverters.tensorflow.TensorFlowONNXConversion \
+        kenning.onnxconverters.mxnet.MXNetONNXConversion
+```
+
+The first argument is the directory, where the generated ONNX models will be stored.
+The second argument is the RST file with import/export support table for each model for each framework.
+The third argument is the list of `ONNXConversion` classes implementing list of models, import method and export method.
+
+
+### Using Kenning as a library in Python scripts
+
+Kenning is also a regular Python module - after pip installation it can be used in Python scripts.
+The example compilation of the model can look as follows:
+
+```python
+from kenning.datasets.pet_dataset import PetDataset
+from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
+from kenning.compilers.tflite import TFLiteCompiler
+from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.core.measurements import MeasurementsCollector
+
+dataset = PetDataset(
+    root='./build/pet-dataset/',
+    download_dataset=True
+)
+model = TensorFlowPetDatasetMobileNetV2(
+    modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
+    dataset=dataset
+)
+model.save_io_specification(model.modelpath)
+compiler = TFLiteCompiler(
+    dataset=dataset,
+    compiled_model_path='./build/compiled-model.tflite',
+    modelframework='keras',
+    target='default',
+    inferenceinputtype='float32',
+    inferenceoutputtype='float32'
+)
+compiler.compile(
+    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
+)
+```
+
+The above script downloads the dataset and compiles the model using TensorFlow Lite to the model with FP32 inputs and outputs.
+
+To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
+
+```python
+compiler = TFLiteCompiler(
+    dataset=dataset,
+    compiled_model_path='./build/compiled-model.tflite',
+    modelframework='keras',
+    target='int8',
+    inferenceinputtype='int8',
+    inferenceoutputtype='int8',
+    dataset_percentage=0.3
+)
+compiler.compile(
+    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
+)
+```
+
+To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
+
+```python
+runtime = TFLiteRuntime(
+    protocol=None,
+    modelpath='./build/compiled-model.tflite'
+)
+
+runtime.run_locally(
+    dataset,
+    model,
+    './build/compiled-model.tflite'
+)
+MeasurementsCollector.save_measurements('out.json')
+```
+
+Method `runtime.run_locally` runs benchmarks of the model on the current device.
+The `MeasurementsCollector` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in [section on rendering report from benchmarks](#render-report-from-benchmarks).
 
 ### Adding new implementations
 

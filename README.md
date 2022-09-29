@@ -27,8 +27,6 @@ Kenning addresses this issue by providing a unified API that focuses more on dep
 This way switching to another target platform results in most cases in a very small change in the code, instead of reimplementing larger parts of the project.
 This way the Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
-For more details regarding the Kenning framework, Deep Neural Network deployment flow and its API check [Kenning documentation](https://antmicro.github.io/kenning/).
-
 ### Kenning installation
 
 #### Module installation with pip
@@ -46,7 +44,12 @@ The groups of extra requirements are following:
 * `torch` - modules for working with PyTorch models,
 * `mxnet` - modules for working with MXNet models,
 * `nvidia_perf` - modules for performance measurements for NVIDIA GPUs,
-* `object_detection` - modules for working with YOLOv3 object detection and Open Images Dataset V6 computer vision dataset.
+* `object_detection` - modules for working with YOLOv3 object detection and Open Images Dataset V6 computer vision dataset,
+* `iree` - modules for IREE compilation and runtime,
+* `tvm` - modules for Apache TVM compilation and runtime,
+* `onnxruntime` - modules for ONNX Runtime,
+* `docs` - modules for generating documentation,
+* `test` - modules for testing the Kenning framework.
 
 To install the extra requirements, i.e. `tensorflow`, run:
 
@@ -82,24 +85,49 @@ The `kenning` module consists of the following submodules:
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
+* `report` - provides methods for rendering reports,
+* `drawing` - provides methods for rendering plots for reports,
 * `resources` - contains project's resources, like RST templates, or trained models,
 * `scenarios` - contains executable scripts for running training, inference, benchmarks and other tests on target devices,
-* `utils` - various functions and classes used in all above-mentioned submodules.
+* `utils` - various functions and classes used in all above-mentioned submodules,
+* `tests` - submodules for framework testing.
 
-### Using Kenning scenarios
+The `core` classes that are used throughout the whole Kenning framework are:
+
+* `Dataset` class - performs dataset downloading, preparation, dataset-specific input preprocessing (i.e. input file opening, normalization), output postprocessing and model evaluation,
+* `ModelWrapper` class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using native framework,
+* `Optimizer` class - optimizes and compiles the model,
+* `Runtime` class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
+* `RuntimeProtocol` class - implements the communication protocol between the host and the target,
+* `DataProvider` class - implements providing data from such sources as camera, TCP connection or others for inference,
+* `OutputCollector` class - implements parsing and utilizing data coming from inference (such as displaying the visualizations, sending the results to via TCP).
+
+### Kenning usage
+
+There are several ways to use Kenning:
+
+* Using executable scripts from the `scenarios` submodule, configurable via JSON files (recommended approach)
+* Using executable scripts from the `scenarios` submodule, configurable via command-line arguments
+* Using Kenning as a Python module.
 
 Kenning scenarios are executable scripts for:
 
-* Training and benchmarking the model using the native framework,
-* Optimizing and compiling the model for a target hardware,
-* Benchmarking the model on the target hardware,
-* Rendering performance and quality reports from benchmark data.
+* Training and benchmarking the model using the native framework (`model_training`),
+* Optimizing and compiling the model for a target hardware (`json_inference_tester` and `inference_tester`),
+* Benchmarking the model on the target hardware (`json_inference_tester`, `json_inference_server`, `inference_tester`, `inference_server`),
+* Rendering performance and quality reports from benchmark data (`render_report`).
 
-All executable Python scripts are available in the `kenning.scenarios` submodule.
+For more details on each of the above scenarios, check the [Kenning documentation](https://antmicro.github.io/kenning/).
 
-#### Running model training on host
+### Example use case of Kenning - optimizing a classifier
 
-The `kenning.scenarios.model_training` script is run as follows:
+Let's consider a simple scenario, where we want to optimize the inference time and memory usage of the classification model executed on x86 CPU.
+
+For this we are going to use [`PetDataset`](https://github.com/antmicro/kenning/blob/main/kenning/datasets/pet_dataset.py) Dataset and [`TensorFlowPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) ModelWrapper.
+
+We will skip the training process The already trained model can be found in `kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5`.
+
+However, the training of the above model can be performed using the following command:
 
 ```
 python -m kenning.scenarios.model_training \
@@ -113,228 +141,302 @@ python -m kenning.scenarios.model_training \
     --num-epochs 50
 ```
 
-By default, `kenning.scenarios.model_training` script requires two classes:
+#### Benchmarking model using the native framework
 
-* `ModelWrapper`-based class that describes model architecture and provides training routines,
-* `Dataset`-based class that provides training data for the model.
+First of all, we want to check how the trained model performs using the native framework on CPU.
 
-The remaining arguments are provided by the `form_argparse` class methods in each class, and may be different based on selected dataset and model.
-In order to get full help for the training scenario for the above case, run:
+For this, we will use `json_inference_tester` scenario.
+Scenarios are configured using the files written in JSON format.
+In our case, the JSON file (called `native.json`) will look like this:
 
-```
-python -m kenning.scenarios.model_training \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    -h
-```
-
-This will load all the available arguments for a given model and dataset.
-
-The arguments in the above command are:
-
-* `--logdir` - path to the directory where logs will be stored (this directory may be an argument for the TensorBoard software),
-* `--dataset-root` - path to the dataset directory, required by the `Dataset`-based class,
-* `--model-path` - path where the trained model will be saved,
-* `--batch-size` - training batch size,
-* `--learning-rate` - training learning rate,
-* `--num-epochs` - number of epochs.
-
-If the dataset files are not present, use `--download-dataset` flag in order to let the Dataset API download the data.
-
-#### Benchmarking trained model on host
-
-The `kenning.scenarios.inference_performance` script runs the model using the deep learning framework used for training on a host device.
-It runs the inference on a given dataset, computes model quality metrics and performance metrics.
-The results from the script can be used as a reference point for benchmarking of the compiled models on target devices.
-
-The example usage of the script is as follows:
-
-```
-python -m kenning.scenarios.inference_performance \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    build/result.json \
-    --model-path kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
-    --dataset-root build/pet-dataset
+```json
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset",
+            "download_dataset": true
+        }
+    }
+}
 ```
 
-The obligatory arguments for the script are:
+This JSON provides a configuration for running the model natively and evaluating it against the defined Dataset.
 
-* `ModelWrapper`-based class that implements the model loading, I/O processing and inference method,
-* `Dataset`-based class that implements fetching of data samples and evaluation of the model,
-* `build/result.json`, which is the path to the output JSON file with benchmark results.
+For every class in the above JSON file there are two keys required: `type` which is a module path of our class and `parameters` which is used to provide arguments that are used to create the instances of our classes.
 
-The remaining parameters are specific to the `ModelWrapper`-based class and `Dataset`-based class.
+In `model_wrapper`, we specify the model used for evaluation - here it is MobileNetV2 trained on Pet Dataset. The `model_path` is a path to the saved model.
+The `TensorFlowPetDatasetMobileNetV2` model wrapper provides methods for loading the model, preprocessing the inputs, postprocessing the outputs and running inference using native framework (TensorFlow in this case).
 
-#### Running compilation and deployment of models on target hardware
+The dataset provided for evaluation is Pet Dataset - here we specify that we want to download the dataset (`download_dataset`) to the `./build/pet-dataset` directory (`dataset_root`).
+The `PetDataset` class can download the dataset (if necessary), load it, read the inputs and outputs from files and process them, and implement the evaluation methods for the model.
 
-There are two scripts - `kenning.scenarios.inference_tester` and `kenning.scenarios.inference_server`.
+Having the above config saved in the `native.json` file, run the `json_inference_tester` scenario:
 
-The example call for the first script is following:
-
-```
-python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.runtimes.tflite.TFLiteRuntime \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/google-coral-devboard-tflite-tensorflow.json \
-    --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
-    --model-framework keras \
-    --target "edgetpu" \
-    --compiled-model-path build/compiled-model.tflite \
-    --inference-input-type int8 \
-    --inference-output-type int8 \
-    --host 192.168.188.35 \
-    --port 12345 \
-    --packet-size 32768 \
-    --save-model-path /home/mendel/compiled-model.tflite \
-    --dataset-root build/pet-dataset \
-    --inference-batch-size 1 \
-    --verbosity INFO
+```bash
+python -m kenning.scenarios.json_inference_tester native.json build/native-out.json --verbosity INFO
 ```
 
-The script requires:
+This module runs the inference based on given configuration, evaluates the model and stores the quality and performance metrics in a JSON format, saved to `build/native-out.json` file.
+All below configurations can be executed with this command.
 
-* `ModelWrapper`-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* `Runtime`-based class that implements data processing and the inference method for the compiled model on the target hardware,
-* `Dataset`-based class that implements fetching of data samples and evaluation of the model,
-* `./build/google-coral-devboard-tflite-tensorflow.json`, which is the path to the output JSON file with performance and quality metrics.
+To visualize the evaluation and benchmark results, run the `render_report` module:
 
-`--modelcompiler-cls Optimizer` can be additionaly provided to compile the model for a given target. If it is not provided, the `inference_tester` will run the model loaded by `ModelWrapper`.
-
-In case of running inference on remote edge device, the `--protocol-cls RuntimeProtocol` also needs to be provided in order to provide communication protocol between the host and the target.
-If `--protocol-cls` is not provided, the `inference_tester` will run inference on the host machine (which is useful for testing and comparison).
-
-The remaining arguments come from the above-mentioned classes.
-Their meaning is following:
-
-* `--model-path` (`TensorFlowPetDatasetMobileNetV2` argument) is the path to the trained model that will be compiled and executed on the target hardware,
-* `--model-framework` (`TFLiteCompiler` argument) tells the compiler what is the format of the file with the saved model (it tells which backend to use for parsing the model by the compiler),
-* `--target` (`TFLiteCompiler` argument) is the name of the target hardware for which the compiler generates optimized binaries,
-* `--compiled-model-path` (`TFLiteCompiler` argument) is the path where the compiled model will be stored on host,
-* `--inference-input-type` (`TFLiteCompiler` argument) tells TFLite compiler what will be the type of the input tensors,
-* `--inference-output-type` (`TFLiteCompiler` argument) tells TFLite compiler what will be the type of the output tensors,
-* `--host` tells the `NetworkProtocol` what is the IP address of the target device,
-* `--port` tells the `NetworkProtocol` on what port the server application is listening,
-* `--packet-size` tells the `NetworkProtocol` what the packet size during communication should be,
-* `--save-model-path` (`TFLiteRuntime` argument) is the path where the compiled model will be stored on the target device,
-* `--dataset-root` (`PetDataset` argument) is the path to the dataset files,
-* `--inference-batch-size` is the batch size for the inference on the target hardware,
-* `--verbosity` is the verbosity of logs.
-
-The example call for the second script is as follows:
-
-```
-python -m kenning.scenarios.inference_server \
-    kenning.runtimeprotocols.network.NetworkProtocol \
-    kenning.runtimes.tflite.TFLiteRuntime \
-    --host 0.0.0.0 \
-    --port 12345 \
-    --packet-size 32768 \
-    --save-model-path /home/mendel/compiled-model.tflite \
-    --delegates-list libedgetpu.so.1 \
-    --verbosity INFO
+```bash
+python -m kenning.scenarios.render_report build/native-out.json 'native' build/benchmarks/native.rst --root-dir build/benchmarks --img-dir build/benchmarks/imgs --verbosity INFO --report-types performance classification
 ```
 
-This script only requires `Runtime`-based class and `RuntimeProtocol`-based class.
-It waits for a client using a given protocol, and later runs inference based on the implementation from the `Runtime` class.
+This module takes the output JSON file generated by the `json_inference_tester` module, and creates a report titled `native`, which is saved in the `build/benchmarks/native.rst` directory.
+As specified in the `--report-types` flag, we create the sections in the report for the `performance` and `classification` metrics (for example, there is also a `detection` report type for object detection tasks).
 
-The additional arguments are as follows:
+In the `build/benchmarks/imgs` there will be images with the `native_*` prefix visualizing the confusion matrix, CPU and memory usage, as well as inference time.
 
-* `--host` (`NetworkProtocol` argument) is the address where the server will listen,
-* `--port` (`NetworkProtocol` argument) is the port on which the server will listen,
-* `--packet-size` (`NetworkProtocol` argument) is the size of the packet,
-* `--save-model-path` is the path where the received model will be saved,
-* `--delegates-list` (`TFLiteRuntime` argument) is a TFLite-specific list of libraries for delegating the inference to deep learning accelerators (`libedgetpu.so.1` is the delegate for Google Coral TPUs).
+The `build/benchmarks/native.rst` file is a ReStructuredText document containing the full report for the model - apart from linking to the generated visualizations, it provides aggregated information about the CPU and memory usage, as well as classification quality metrics, such as accuracy, sensitivity, precision, G-Mean.
+Such file can be included in a larger, Sphinx-based documentation, which allows easy, automated report generation, using e.g. CI, as can be seen in the [Kenning documentation](https://antmicro.github.io/kenning/sample-report.html).
 
-First, the client compiles the model and sends it to the server using the runtime protocol.
-Then, it sends next batches of data to process to the server.
-In the end, it collects the benchmark metrics and saves them to JSON file.
-In addition, it generates plots with performance changes over time.
+While native frameworks are great for training and inference, model design, training on GPUs and distributing training across many devices, e.g. in a cloud environment, for pure inference for production purposes we have a quite large variety of inference-focused frameworks that focus on getting the most out of hardware in order to get the results as fast as possible.
 
-#### Render report from benchmarks
+#### Optimizing the model using TensorFlow Lite
 
-The `kenning.scenarios.inference_performance` and `kenning.scenarios.inference_tester` create JSON files that contain:
+One of such frameworks is TensorFlow Lite - a lightweight library for inferring networks on edge - it has a small binary size, which can be even more reduced (by disabling unused operators), and a very optimized format of input models, called FlatBuffers.
 
-* command string that was used to generate the JSON file,
-* frameworks along with their versions used to train the model and compile the model,
-* performance metrics, including:
+Before the TensorFlow Lite Interpreter (runtime for the TensorFlow Lite library) can be used, the model first needs to be optimized and compiled to the `.tflite` format.
 
-  * CPU usage over time,
-  * RAM usage over time,
-  * GPU usage over time,
-  * GPU memory usage over time,
+Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to a FlatBuffer format, as well as TensorFlow Lite Runtime that will execute the model:
 
-* predictions and ground truth to compute quality metrics, i.e. in form of confusion matrix and top-5 accuracy for classification task.
-
-The `kenning.scenarios.render_report` renders the report RST file along with plots for metrics for a given JSON file based on selected templates.
-
-For example, for the file `./build/google-coral-devboard-tflite-tensorflow.json` created in [Running compilation and deployment of models on target hardware](#running-compilation-and-deployment-of-models-on-target-hardware) the report can be rendered as follows:
-
-```
-python -m kenning.scenarios.render_report \
-    build/google-coral-devboard-tflite-tensorflow.json \
-    "Pet Dataset classification using TFLite-compiled TensorFlow model" \
-    docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst \
-    --img-dir docs/source/generated/img/ \
-    --root-dir docs/source/ \
-    --report-types \
-        performance \
-        classification
-```
-
-Where:
-
-* `build/google-coral-devboard-tflite-tensorflow.json` is the input JSON file with benchmark results
-* `"Pet Dataset classification using TFLite-compiled TensorFlow model"` is the report name that will be used as title in generated plots,
-* `docs/source/generated/google-coral-devboard-tpu-tflite-tensorflow-classification.rst` is the path to the output RST file,
-* `--img-dir docs/source/generated/img/` is the path to the directory where generated plots will be stored,
-* `--root-dir docs/source` is the root directory for documentation sources (it will be used to compute relative paths in the RST file),
-* `--report-types performance classification` is the list of report types that will form the final RST file.
-
-The `performance` type provides report sections for performance metrics, i.e.:
-
-* Inference time changes over time,
-* Mean CPU usage over time,
-* RAM usage over time,
-* GPU usage over time,
-* GPU memory usage over time.
-
-It also computes mean, standard deviation and median values for the above time series.
-
-The `classification` type provides report section regarding quality metrics for classification task:
-
-* Confusion matrics,
-* Per-class precision,
-* Per-class sensitivity,
-* Accuracy,
-* Top-5 accuracy,
-* Mean precision,
-* Mean sensitivity,
-* G-Mean.
-
-The above metrics can be used to determine any quality losses resulting from optimizations (i.e. pruning or quantization).
-
-#### Testing ONNX conversions
-
-The `kenning.scenarios.onnx_conversion` runs as follows:
-
-```
-python -m kenning.scenarios.onnx_conversion \
-    build/models-directory \
-    build/onnx-support.rst \
-    --converters-list \
-        kenning.onnxconverters.pytorch.PyTorchONNXConversion \
-        kenning.onnxconverters.tensorflow.TensorFlowONNXConversion \
-        kenning.onnxconverters.mxnet.MXNetONNXConversion
+```{code-block} json
+---
+emphasize-lines: 16, 19-31, 32-39
+---
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset",
+            "download_dataset": false,
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "default",
+                "compiled_model_path": "./build/fp32.tflite",
+                "inference_input_type": "float32",
+                "inference_output_type": "float32"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/fp32.tflite"
+        }
+    }
+}
 ```
 
-The first argument is the directory, where the generated ONNX models will be stored.
-The second argument is the RST file with import/export support table for each model for each framework.
-The third argument is the list of `ONNXConversion` classes implementing list of models, import method and export method.
+In the already existing blocks we only disable downloading the dataset - the `download_dataset` parameter can be also removed, since the dataset is not downloaded by default.
 
+The first newly added thing is the presence of  the `optimizers` list - it allows us to add one or more objects inheriting from the `kenning.core.optimizer.Optimizer` class.
+Optimizers read the model from the input file, apply various optimizations on them, and then save the optimized model to a new file.
+
+In our current scenario we will use the `TFLiteCompiler` class - it reads the model in Keras-specific format, optimizes the model and saves it to the `./build/fp32.tflite` file.
+Worth-noting here are the parameters of this particular Optimizer (each Optimizer usually has a different set of parameters):
+
+* `target` - indicates what the desired target device (or model type) is, `default` is the regular CPU. Another example here could be `edgetpu`, which can compile models for Google Coral platform.
+* `compiled_model_path` - indicates where the model should be saved.
+* `inference_input_type` and `inference_output_type` - indicate what the input and output type of the model should be. Usually, all trained models use FP32 weights (32-bit floating point) and activations - using `float32` here keeps the weights unchanged.
+
+The second thing that is added to the previous flow is the `runtime` block - it provides a class inheriting from the `kenning.core.runtime.Runtime` class that is able to load the final model and run inference on target hardware. Usually, each `Optimizer` has a corresponding `Runtime` that is able to run its results.
+
+To compile the scenario (called `tflite-fp32.json`), run:
+
+```bash
+python -m kenning.scenarios.json_inference_tester tflite-fp32.json build/tflite-fp32-out.json --verbosity INFO
+
+python -m kenning.scenarios.render_report build/tflite-fp32-out.json 'tflite-fp32' build/benchmarks/tflite-fp32.rst --root-dir build/benchmarks --img-dir build/benchmarks/imgs --verbosity INFO --report-types performance classification
+```
+
+While it depends on the used platform, there should be a significant improvement in both inference time (around 10-15 times faster model compared to the native model) and memory usage (around 2 times smaller output model).
+What’s worth noting is that we get a significant improvement with no harm in the quality of the model - the outputs stay the same.
+
+#### Quantizing the model using TensorFlow Lite
+
+To further reduce the memory usage we can quantize the model - it is a process where all weights and activations in the model are calibrated to work with the `INT8` precision, instead of `FP32` precision.
+While it may severely harm the quality of the predictions, with proper calibration the quality reduction can be negligible.
+
+The model can be quantized during the compilation process in TensorFlow Lite.
+With Kenning, it can be achieved with the following simple additions:
+
+```{code-block} json
+---
+emphasize-lines: 24-27,36
+---
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "int8",
+                "compiled_model_path": "./build/int8.tflite",
+                "inference_input_type": "int8",
+                "inference_output_type": "int8"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/int8.tflite"
+        }
+    }
+}
+```
+
+The only changes here in comparison to the previous configuration appear in the `TFLiteCompiler` configuration - we change `target`, `inference_input_type` and `inference_output_type` to `int8`.
+What `TFLiteCompiler` does in the background is fetches the subset of images from the `PetDataset` object to calibrate the model, so the entire model calibration process happens automatically.
+
+Let's run the above scenario (`tflite-int8.json`):
+
+```bash
+python -m kenning.scenarios.json_inference_tester tflite-int8.json build/tflite-int8-out.json --verbosity INFO
+
+python -m kenning.scenarios.render_report build/tflite-int8-out.json 'tflite-int8' build/benchmarks/tflite-int8.rst --root-dir build/benchmarks --img-dir build/benchmarks/imgs --verbosity INFO --report-types performance classification
+```
+
+This results in over 7 times smaller model compared to the native model without the significant loss of accuracy, but there is no speed improvement.
+
+#### Speeding up the inference with Apache TVM
+
+To speed up the inference of the quantized model, we can utilize vector extensions in the x86 CPUs, more specifically AVX2.
+For this, let's use the Apache TVM framework for compiling efficient runtimes for various hardware platforms.
+
+The scenario looks like this:
+
+```{code-block} json
+---
+emphasize-lines: 29-38,41-47
+---
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "int8",
+                "compiled_model_path": "./build/int8.tflite",
+                "inference_input_type": "int8",
+                "inference_output_type": "int8"
+            }
+        },
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": {
+                "target": "llvm -mcpu=core-avx2",
+                "opt_level": 3,
+                "conv2d_data_layout": "NCHW",
+                "compiled_model_path": "./build/int8_tvm.tar"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/int8_tvm.tar"
+        }
+    }
+}
+
+```
+
+As it can be observed, addition of a new framework is just a matter of simply adding and configuring another optimizer and using the corresponding `Runtime` to the final `Optimizer`.
+
+The `TVMCompiler`, with `llvm -mcpu=core-avx2` as the target optimizes and compiles the model to use vector extensions. The final result is a `.tar` file containing the shared object that implements the whole model.
+
+Let's compile the scenario (`tvm-avx2-int8.json`):
+
+```bash
+python -m kenning.scenarios.json_inference_tester tvm-avx2-int8.json build/tvm-avx2-int8-out.json --verbosity INFO
+
+python -m kenning.scenarios.render_report build/tvm-avx2-int8-out.json 'tvm-avx2-int8' build/benchmarks/tvm-avx2-int8.rst --root-dir build/benchmarks --img-dir build/benchmarks/imgs --verbosity INFO --report-types performance classification
+```
+
+This results in an over 40 times faster model compared to native implementation, with 3 times smaller size.
+
+This shows how easily we can interconnect various frameworks and get the most out of the hardware using Kenning, while performing just minor alterations to the configuration file.
+
+The summary of passes can be seen below:
+
+|               | Speed boost | Accuracy     | Size reduction  |
+|---------------|-------------|--------------|-----------------|
+| native        |           1 | 0.9572730984 |               1 |
+| tflite-fp32   | 15.79405698 | 0.9572730984 |     1.965973551 |
+| tflite-int8   | 1.683232669 | 0.9519662539 |      7.02033412 |
+| tvm-avx2-int8 | 41.61514549 | 0.9487005035 |     3.229375069 |
 
 ### Using Kenning as a library in Python scripts
 
@@ -406,12 +508,18 @@ MeasurementsCollector.save_measurements('out.json')
 ```
 
 Method `runtime.run_locally` runs benchmarks of the model on the current device.
+
 The `MeasurementsCollector` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in [section on rendering report from benchmarks](#render-report-from-benchmarks).
+
+As it can be observed, all classes accessible from JSON files in the scenarios have the same configuration as the classes in above Python scripts.
 
 ### Adding new implementations
 
 `Dataset`, `ModelWrapper`, `Optimizer`, `RuntimeProtocol`, `Runtime` and other classes from `kenning.core` module have dedicated directories for their implementations.
 Each method in base classes that requires implementation raises `NotImplementedError` exception.
+They can be easily implemented or extended, but they need to conform to certain rules, usually described in the source documentation.
+
+For more details and examples on how Kenning framework can be adjusted and enhanced, follow the [Kenning documentation](https://antmicro.github.io/kenning/).
 Implemented methods can be also overriden, if neccessary.
 
 Most of the base classes implement `form_argparse` and `from_argparse` methods.

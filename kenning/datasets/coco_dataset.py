@@ -144,7 +144,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
 
         self.dataX = [
             str(self.root / self.dataset_type / imgdata['file_name'])
-            for imgdata in self.coco.loadImgs[list(self.coco.imgs.keys())]
+            for imgdata in self.coco.loadImgs(list(self.coco.imgs.keys()))
         ]
         annotations = defaultdict(list)
         for annkey, anndata in self.coco.anns.items():
@@ -167,7 +167,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         result = []
         for imgpath in samples:
             img = cv2.imread(
-                str(self.root / self.dataset_type / imgpath)
+                str(imgpath)
             )
             img = cv2.resize(img, (self.image_width, self.image_height))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)

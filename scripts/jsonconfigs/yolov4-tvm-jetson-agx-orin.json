@@ -15,7 +15,9 @@
             "dataset_root": "./build/coco-dataset",
             "task": "object_detection",
             "dataset_type": "val2017",
-            "image_memory_layout": "NCHW"
+            "image_memory_layout": "NCHW",
+            "image_width": 608,
+            "image_height": 608
         }
     },
     "optimizers":

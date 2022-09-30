@@ -265,6 +265,18 @@ class TVMCompiler(Optimizer):
             'description': 'Applies conversion of FP32 weights to FP16',
             'type': bool,
             'default': False
+        },
+        'use_int8_precision': {
+            'argparse_name': '--use-int8-precision',
+            'description': 'Applies conversion of FP32 weights to INT8',
+            'type': bool,
+            'default': False
+        },
+        'dataset_percentage': {
+            'argparse_name': '--dataset-percentage',
+            'description': 'Tells how much data from the calibration dataset (training or external) will be used for calibration dataset',  # noqa: E501
+            'type': float,
+            'default': 0.25
         }
     }
 
@@ -281,7 +293,9 @@ class TVMCompiler(Optimizer):
             conversion_func: str = 'default',
             conv2d_data_layout: str = '',
             conv2d_kernel_layout: str = '',
-            use_fp16_precision: bool = False):
+            use_fp16_precision: bool = False,
+            use_int8_precision: bool = False,
+            dataset_percentage: float = 0.25):
         """
         A TVM Compiler wrapper.
 
@@ -311,7 +325,14 @@ class TVMCompiler(Optimizer):
             Empty if no conversion is necessary.
         use_fp16_precision : bool
             Applies conversion of FP32 weights to FP16
+        use_int8_precision : bool
+            Applies conversion of FP32 weights to INT8
+        dataset_percentage : float
+            If use_int8_precision is set, the given percentage of samples
+            from the training dataset or external calibration dataset is
+            used for calibrating the model
         """
+        assert not (use_fp16_precision and use_int8_precision), 'Compilation cannot use both FP16 and INT8 conversion'  # noqa: E501
         self.modelframework = modelframework
 
         self.target = target
@@ -330,6 +351,8 @@ class TVMCompiler(Optimizer):
         self.conv2d_data_layout = conv2d_data_layout
         self.conv2d_kernel_layout = conv2d_kernel_layout
         self.use_fp16_precision = use_fp16_precision
+        self.use_int8_precision = use_int8_precision
+        self.dataset_percentage = dataset_percentage
         super().__init__(dataset, compiled_model_path)
 
     @classmethod
@@ -346,14 +369,35 @@ class TVMCompiler(Optimizer):
             args.output_conversion_function,
             args.conv2d_data_layout,
             args.conv2d_kernel_layout,
-            args.use_fp16_precision
+            args.use_fp16_precision,
+            args.use_int8_precision,
+            args.dataset_percentage
         )
 
-    def compile_model(self, mod, params, outputpath):
+    def compile_model(self, mod, params, outputpath, io_spec):
         # additional regular optimizations applied to models
         transforms = [
             relay.transform.RemoveUnusedFunctions()
         ]
+
+        if self.use_int8_precision:
+            def generator():
+                for sample in self.dataset.calibration_dataset_generator(
+                        self.dataset_percentage):
+                    # TODO add support for any number of inputs
+                    assert len(io_spec['input']) == 1, \
+                        'Currently only single-input models are supported ' + \
+                        'during quantization'
+                    yield {io_spec['input'][0]['name']: tvm.nd.array(sample)}
+            with relay.quantize.qconfig(
+                    calibrate_mode='kl_divergence',
+                    weight_scale='max'):
+                mod = relay.quantize.quantize(
+                    mod,
+                    params,
+                    dataset=generator()
+                )
+
         if self.use_fp16_precision:
             transforms.append(
                 relay.transform.ToMixedPrecision()
@@ -438,7 +482,7 @@ class TVMCompiler(Optimizer):
             inputshapes,
             dtypes
         )
-        self.compile_model(mod, params, self.compiled_model_path)
+        self.compile_model(mod, params, self.compiled_model_path, io_spec)
         self.save_io_specification(inputmodelpath, io_spec)
 
     def get_framework_and_version(self):

@@ -30,6 +30,11 @@ class TFLiteRuntime(Runtime):
             'default': None,
             'is_list': True,
             'nullable': True
+        },
+        'num_threads': {
+            'description': 'Number of threads to use for inference',
+            'default': 4,
+            'type': int
         }
     }
 
@@ -38,6 +43,7 @@ class TFLiteRuntime(Runtime):
             protocol: RuntimeProtocol,
             modelpath: Path,
             delegates: Optional[List] = None,
+            num_threads: int = 4,
             collect_performance_data: bool = True):
         """
         Constructs TFLite Runtime pipeline.
@@ -48,14 +54,17 @@ class TFLiteRuntime(Runtime):
             The implementation of the host-target communication  protocol
         modelpath : Path
             Path for the model file.
-        delegates : List
+        delegates : Optional[List]
             List of TFLite acceleration delegate libraries
+        num_threads : int
+            Number of threads to use for inference
         collect_performance_data : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
         self.interpreter = None
         self._input_prepared = False
+        self.num_threads = num_threads
         self.delegates = delegates
         super().__init__(
             protocol,
@@ -68,6 +77,7 @@ class TFLiteRuntime(Runtime):
             protocol,
             args.save_model_path,
             args.delegates_list,
+            args.num_threads,
             args.disable_performance_measurements
         )
 
@@ -86,7 +96,7 @@ class TFLiteRuntime(Runtime):
         self.interpreter = tflite.Interpreter(
             str(self.modelpath),
             experimental_delegates=delegates,
-            num_threads=4
+            num_threads=self.num_threads
         )
         self.interpreter.allocate_tensors()
         self.log.info('Model loading ended successfully')

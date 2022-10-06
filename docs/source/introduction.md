@@ -1,4 +1,4 @@
-## Introduction
+# Introduction
 
 {{projecturl}} provides an API for deploying deep learning applications on edge devices using various frameworks for model training and compilation.
 

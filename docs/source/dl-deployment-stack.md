@@ -1,8 +1,8 @@
-## Deep Learning deployment stack
+# Deep Learning deployment stack
 
 This chapter lists and describes typical actions performed on deep learning models before deployment on target devices.
 
-### From training to deployment
+## From training to deployment
 
 A deep learning application deployed on IoT devices usually goes through the following process:
 
@@ -15,7 +15,7 @@ A deep learning application deployed on IoT devices usually goes through the fol
 * the model is compiled to a representation that is applicable to a given target,
 * the model is executed on a target device.
 
-### Dataset preparation
+## Dataset preparation
 
 If a model is not available or is trained for a different use case, the model has to be trained or re-trained.
 
@@ -37,7 +37,7 @@ Datasets can be either designed from scratch or found in e.g.:
 * [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html),
 * [Common Voice Dataset](https://commonvoice.mozilla.org/en).
 
-### Model preparation and training
+## Model preparation and training
 
 Currently, the most popular approach is to find an existing model that fits a given problem and perform transfer learning to adapt the model to the requirements.
 In transfer learning the existing model is slightly modified in its final layers to adapt to a new problem, and the last layers of the model are trained using a training dataset.
@@ -61,7 +61,7 @@ This step includes:
 * providing some routines for quality metrics measurements
 * providing some routines for saving an intermediate models during training (periodically, or the best model according to some quality measure)
 
-### Model optimization
+## Model optimization
 
 A successfully trained model may require some optimizations in order to run on a given IoT hardware.
 The optimizations may regard the precision of weights, or the computational representation, or the model structure.
@@ -77,7 +77,7 @@ In the end, there are algorithmic optimizations that change the whole model stru
 If the model optimizations are applied, the optimized models should be evaluated using the same metrics as the original model.
 This is required in order to find any quality drops.
 
-### Model compilation and deployment
+## Model compilation and deployment
 
 Deep learning compilers can transform model representation to:
 

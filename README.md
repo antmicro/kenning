@@ -1,4 +1,4 @@
-## Kenning
+# Kenning
 
 Copyright (c) 2020-2022 [Antmicro](https://www.antmicro.com>)
 
@@ -27,9 +27,9 @@ Kenning addresses this issue by providing a unified API that focuses more on dep
 This way switching to another target platform results in most cases in a very small change in the code, instead of reimplementing larger parts of the project.
 This way the Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
-### Kenning installation
+## Kenning installation
 
-#### Module installation with pip
+### Module installation with pip
 
 To install Kenning with its basic dependencies with pip, run:
 
@@ -57,7 +57,7 @@ To install the extra requirements, i.e. `tensorflow`, run:
 sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorflow]
 ```
 
-#### Working directly with the repository
+### Working directly with the repository
 
 For development purposes, and for usage of additional resources (as sample scripts or trained models), clone repository with:
 
@@ -72,7 +72,7 @@ cd kenning/
 git lfs pull
 ```
 
-### Kenning structure
+## Kenning structure
 
 The `kenning` module consists of the following submodules:
 
@@ -102,7 +102,7 @@ The `core` classes that are used throughout the whole Kenning framework are:
 * `DataProvider` class - implements providing data from such sources as camera, TCP connection or others for inference,
 * `OutputCollector` class - implements parsing and utilizing data coming from inference (such as displaying the visualizations, sending the results to via TCP).
 
-### Kenning usage
+## Kenning usage
 
 There are several ways to use Kenning:
 
@@ -119,7 +119,7 @@ Kenning scenarios are executable scripts for:
 
 For more details on each of the above scenarios, check the [Kenning documentation](https://antmicro.github.io/kenning/).
 
-### Example use case of Kenning - optimizing a classifier
+## Example use case of Kenning - optimizing a classifier
 
 Let's consider a simple scenario, where we want to optimize the inference time and memory usage of the classification model executed on x86 CPU.
 
@@ -141,7 +141,7 @@ python -m kenning.scenarios.model_training \
     --num-epochs 50
 ```
 
-#### Benchmarking model using the native framework
+### Benchmarking model using the native framework
 
 First of all, we want to check how the trained model performs using the native framework on CPU.
 
@@ -206,7 +206,7 @@ Such file can be included in a larger, Sphinx-based documentation, which allows 
 
 While native frameworks are great for training and inference, model design, training on GPUs and distributing training across many devices, e.g. in a cloud environment, for pure inference for production purposes we have a quite large variety of inference-focused frameworks that focus on getting the most out of hardware in order to get the results as fast as possible.
 
-#### Optimizing the model using TensorFlow Lite
+### Optimizing the model using TensorFlow Lite
 
 One of such frameworks is TensorFlow Lite - a lightweight library for inferring networks on edge - it has a small binary size, which can be even more reduced (by disabling unused operators), and a very optimized format of input models, called FlatBuffers.
 
@@ -285,7 +285,7 @@ python -m kenning.scenarios.render_report build/tflite-fp32-out.json 'tflite-fp3
 While it depends on the used platform, there should be a significant improvement in both inference time (around 10-15 times faster model compared to the native model) and memory usage (around 2 times smaller output model).
 What’s worth noting is that we get a significant improvement with no harm in the quality of the model - the outputs stay the same.
 
-#### Quantizing the model using TensorFlow Lite
+### Quantizing the model using TensorFlow Lite
 
 To further reduce the memory usage we can quantize the model - it is a process where all weights and activations in the model are calibrated to work with the `INT8` precision, instead of `FP32` precision.
 While it may severely harm the quality of the predictions, with proper calibration the quality reduction can be negligible.
@@ -351,7 +351,7 @@ python -m kenning.scenarios.render_report build/tflite-int8-out.json 'tflite-int
 
 This results in over 7 times smaller model compared to the native model without the significant loss of accuracy, but there is no speed improvement.
 
-#### Speeding up the inference with Apache TVM
+### Speeding up the inference with Apache TVM
 
 To speed up the inference of the quantized model, we can utilize vector extensions in the x86 CPUs, more specifically AVX2.
 For this, let's use the Apache TVM framework for compiling efficient runtimes for various hardware platforms.
@@ -438,7 +438,7 @@ The summary of passes can be seen below:
 | tflite-int8   | 1.683232669 | 0.9519662539 |      7.02033412 |
 | tvm-avx2-int8 | 41.61514549 | 0.9487005035 |     3.229375069 |
 
-### Using Kenning as a library in Python scripts
+## Using Kenning as a library in Python scripts
 
 Kenning is also a regular Python module - after pip installation it can be used in Python scripts.
 The example compilation of the model can look as follows:
@@ -509,11 +509,11 @@ MeasurementsCollector.save_measurements('out.json')
 
 Method `runtime.run_locally` runs benchmarks of the model on the current device.
 
-The `MeasurementsCollector` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render results as described in [section on rendering report from benchmarks](#render-report-from-benchmarks).
+The `MeasurementsCollector` class collects all benchmarks' data for the model inference and saves it in JSON format that can be later used to render reports with `kenning.scenarios.render_report` script.
 
 As it can be observed, all classes accessible from JSON files in the scenarios have the same configuration as the classes in above Python scripts.
 
-### Adding new implementations
+## Adding new implementations
 
 `Dataset`, `ModelWrapper`, `Optimizer`, `RuntimeProtocol`, `Runtime` and other classes from `kenning.core` module have dedicated directories for their implementations.
 Each method in base classes that requires implementation raises `NotImplementedError` exception.

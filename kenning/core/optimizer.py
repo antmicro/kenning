@@ -128,7 +128,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Optimizer : object of class Optimizer
+        Optimizer :
+            object of class Optimizer
         """
         return cls(
             dataset,
@@ -142,7 +143,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = {
             "type": "object",
@@ -162,7 +164,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != Optimizer.arguments_structure:
@@ -190,7 +193,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Optimizer : object of class Optimizer
+        Optimizer :
+            object of class Optimizer
         """
 
         parameterschema = cls.form_parameterschema()
@@ -249,18 +253,33 @@ class Optimizer(object):
     def get_framework_and_version(self) -> Tuple[str, str]:
         """
         Returns name of the framework and its version in a form of a tuple.
+
+        Returns
+        -------
+        Tuple[str, str] :
+            Framework name and version
         """
         raise NotImplementedError
 
     def get_input_formats(self) -> List[str]:
         """
         Returns list of names of possible input formats.
+
+        Returns
+        -------
+        List[str] :
+            Names of possible input formats
         """
         return list(self.inputtypes.keys())
 
     def get_output_formats(self) -> List[str]:
         """
         Returns list of names of possible output formats.
+
+        Returns
+        -------
+        List[str] :
+            List of possible output formats
         """
         return self.outputtypes
 
@@ -279,11 +298,13 @@ class Optimizer(object):
 
         Raises
         ------
-        ValueError : Raised if there is no matching format.
+        ValueError :
+            Raised if there is no matching format.
 
         Returns
         -------
-        str : Matching format.
+        str :
+            Matching format
         """
 
         possible_outputs = previous_block.get_output_formats()
@@ -323,7 +344,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Path : Path to the input/output specification of a given model.
+        Path :
+            Path to the input/output specification of a given model.
         """
         modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
@@ -385,7 +407,8 @@ class Optimizer(object):
 
         Returns
         -------
-        Optional[Dict[str, List[Dict]]] : Specification of a model saved
+        Optional[Dict[str, List[Dict]]] :
+            Specification of a model saved
             in `modelpath` if there is one. None otherwise
         """
         modelpath = Path(modelpath)

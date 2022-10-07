@@ -74,9 +74,9 @@ The final report is generated as an RST file with figures, as can be observed in
 
 The Dataset objects are used by:
 
-* :ref:`modelwrapper-api` - for training purposes and model evaluation,
-* :ref:`optimizer-api` - can be used i.e. for extracting calibration dataset for quantization purposes,
-* :ref:`runtime-api` - is used for evaluating the model on target hardware.
+* [](modelwrapper-api) - for training purposes and model evaluation,
+* [](optimizer-api) - can be used i.e. for extracting calibration dataset for quantization purposes,
+* [](runtime-api) - is used for evaluating the model on target hardware.
 
 The available implementations of datasets are included in the `kenning.datasets` submodule.
 The example implementations:

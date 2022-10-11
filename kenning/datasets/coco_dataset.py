@@ -157,7 +157,8 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
                 ymin=bbox[1] / height,
                 xmax=(bbox[0] + bbox[2]) / width,
                 ymax=(bbox[1] + bbox[3]) / height,
-                score=1.0
+                score=1.0,
+                iscrowd=anndata['iscrowd'] == 1
             ))
 
         for inputid in self.dataX:

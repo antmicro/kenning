@@ -484,7 +484,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                 ymin=row['YMin'],
                 xmax=row['XMax'],
                 ymax=row['YMax'],
-                score=1.0
+                score=1.0,
+                iscrowd=False
             ))
         for k, v in annotations.items():
             self.dataX.append(k)
@@ -565,7 +566,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                     xmax=subsample.xmax,
                     ymax=subsample.ymax,
                     mask=mask_img,
-                    score=1.0
+                    score=1.0,
+                    iscrowd=False
                 )
                 result[-1].append(new_subsample)
         return result

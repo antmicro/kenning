@@ -10,7 +10,7 @@ from collections import defaultdict
 from kenning.resources import coco_detection
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_iou  # noqa: E501
+from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_dect_iou  # noqa: E501
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 from pathlib import Path
@@ -140,7 +140,8 @@ class YOLOWrapper(ModelWrapper):
         return DectObject(
             self.classnames[entry[4]],
             x1, y1, x2, y2,
-            entry[5] / self.maxscore
+            entry[5] / self.maxscore,
+            False
         )
 
     def parse_outputs(self, data):
@@ -213,7 +214,7 @@ class YOLOWrapper(ModelWrapper):
                 # look for overlapping bounding boxes with lower probability
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
-                    if compute_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
+                    if compute_dect_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 

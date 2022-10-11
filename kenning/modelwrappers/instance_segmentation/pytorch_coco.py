@@ -70,7 +70,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                             out['masks'][i].transpose(1, 2, 0),  # noqa: E501
                             255
                         ).astype('uint8'),
-                        score=float(out['scores'][i])
+                        score=float(out['scores'][i]),
+                        iscrowd=False
                     ))
                 return ret
 

@@ -507,7 +507,7 @@ def detection_report(
     """
 
     from kenning.datasets.helpers.detection_and_segmentation import \
-        compute_ap11, \
+        compute_ap, \
         get_recall_precision, \
         compute_map_per_threshold
 
@@ -517,7 +517,7 @@ def detection_report(
 
     aps = []
     for line in lines:
-        aps.append(compute_ap11(line[0], line[1]))
+        aps.append(compute_ap(line[0], line[1]))
 
     measurementsdata['mAP'] = np.mean(aps)
 

@@ -264,7 +264,8 @@ class YOLACT(ModelWrapper):
                 xmax=x2,
                 ymax=y2,
                 mask=y['output_1'][i],
-                score=y['output_3'][i]
+                score=y['output_3'][i],
+                iscrowd=False
             ))
         return [Y]
 

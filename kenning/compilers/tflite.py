@@ -227,9 +227,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if self.target in ['int8', 'edgetpu']:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            converter.target_spec.supported_ops = [
-                tf.lite.OpsSet.TFLITE_BUILTINS_INT8
-            ]
+            if self.inferenceinputtype in ['int8', 'uint8'] \
+                    and self.inferenceinputtype in ['int8', 'uint8']:
+                converter.target_spec.supported_ops = [
+                    tf.lite.OpsSet.TFLITE_BUILTINS_INT8
+                ]
         elif self.target == 'float16':
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
             converter.target_spec.supported_types = [tf.float16]

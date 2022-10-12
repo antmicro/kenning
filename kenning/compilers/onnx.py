@@ -3,9 +3,6 @@ Wrapper for ONNX deep learning compiler.
 """
 
 from pathlib import Path
-import tensorflow as tf
-import tf2onnx
-import torch
 import onnx
 from typing import Optional, Dict, List
 
@@ -14,6 +11,8 @@ from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationN
 
 
 def kerasconversion(model_path, input_spec, output_names):
+    import tensorflow as tf
+    import tf2onnx
     model = tf.keras.models.load_model(model_path)
 
     input_spec = [tf.TensorSpec(
@@ -30,6 +29,7 @@ def kerasconversion(model_path, input_spec, output_names):
 
 
 def torchconversion(model_path, input_spec, output_names):
+    import torch
     dev = 'cpu'
     model = torch.load(model_path, map_location=dev)
 
@@ -60,6 +60,7 @@ def torchconversion(model_path, input_spec, output_names):
 
 
 def tfliteconversion(model_path, input_spec, output_names):
+    import tf2onnx
     modelproto, _ = tf2onnx.convert.from_tflite(
         str(model_path),
         input_names=[input['name'] for input in input_spec],

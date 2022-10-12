@@ -149,10 +149,13 @@ def get_recall_precision(
                 precisions[i - 1] = precisions[i]
 
         recallthresholds = np.linspace(0.0, 1.0, num=recallpoints)
+        if len(recalls) == 0:
+            lines.append([[], []])
+            continue
         inds = np.searchsorted(recalls, recallthresholds, side='left')
-        newprecisions = np.array(len(recallthresholds))
+        newprecisions = np.zeros(recallthresholds.shape, dtype=np.float32)
         for oldid, newid in enumerate(inds):
-            newprecisions[oldid] = precisions[newid]
+            newprecisions[oldid] = precisions[max(0, min(newid, len(recalls) - 1))]
 
         lines.append([recallthresholds, newprecisions])
     return lines

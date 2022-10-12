@@ -142,16 +142,22 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             self.classmap[classid] = self.coco.cats[classid]['name']
             self.classnames.append(self.coco.cats[classid]['name'])
 
-        self.dataX = [
-            str(self.root / self.dataset_type / imgdata['file_name'])
-            for imgdata in self.coco.loadImgs(list(self.coco.imgs.keys()))
-        ]
+        cocokeys = list(self.coco.imgs.keys())
+        keystoimgs = dict()
+
+        for key, imgdata in zip(cocokeys, self.coco.loadImgs(cocokeys)):
+            filepath = str(
+                self.root / self.dataset_type / imgdata['file_name']
+            )
+            self.dataX.append(filepath)
+            keystoimgs[key] = filepath
+
         annotations = defaultdict(list)
         for annkey, anndata in self.coco.anns.items():
             bbox = anndata['bbox']
             width = self.coco.imgs[anndata['image_id']]['width']
             height = self.coco.imgs[anndata['image_id']]['height']
-            annotations[anndata['image_id']].append(DectObject(
+            annotations[keystoimgs[anndata['image_id']]].append(DectObject(
                 clsname=self.classmap[anndata['category_id']],
                 xmin=bbox[0] / width,
                 ymin=bbox[1] / height,

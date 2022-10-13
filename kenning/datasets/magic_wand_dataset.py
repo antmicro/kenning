@@ -80,3 +80,12 @@ class MagicWandDataset(Dataset):
         for macos_dotfile in glob.glob(str(self.dataset_root)+"/**/._*") + \
                 glob.glob(str(self.dataset_root)+"/._*"):
             os.remove(macos_dotfile)
+
+    def get_class_names(self):
+        return [self.classnames[i] for i in self.classnames.keys()]
+
+    def evaluate(self, predictions, truth):
+        pass
+
+    def get_input_mean_std(self):
+        pass

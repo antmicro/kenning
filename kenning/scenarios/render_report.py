@@ -38,8 +38,7 @@ log = logger.get_logger()
 
 
 def get_model_name(
-        measurementsdata: Dict[str, Any]
-) -> str:
+        measurementsdata: Dict[str, Any]) -> str:
     """
     Generates the name of the model. The name is of the form
     `name of model wrapper`_`name of all the optimizers`_`name of runtime`
@@ -57,21 +56,29 @@ def get_model_name(
     model_name = build_cfg["model_wrapper"]["type"]
     # Removing all of kenning.modelwrappers... etc.
     model_name = model_name.split(".")[-1]
+    opts_list = build_cfg['optimizers'] if 'optimizers' in build_cfg else []
     compiler_names = "-".join([
         compiler_details["type"].split(".")[-1]
-        for compiler_details in build_cfg['optimizers']
+        for compiler_details in opts_list
     ])
-    runtime_name = build_cfg["runtime"]["type"]
+    runtime_name = build_cfg["runtime"]["type"] \
+        if 'runtime' in build_cfg else []
     runtime_name = runtime_name.split(".")[-1]
-    if compiler_names == "":
-        return f"{model_name}-{runtime_name}"
-    return f"{model_name}-{compiler_names}-{runtime_name}"
+    namecomponents = []
+    if model_name != "":
+        namecomponents.append(model_name)
+    if compiler_names != "":
+        namecomponents.append(compiler_names)
+    if runtime_name != "":
+        namecomponents.append(runtime_name)
+    return '-'.join(namecomponents)
 
 
 def performance_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        imgprefix: str) -> str:
+        imgprefix: str,
+        rootdir: Path) -> str:
     """
     Creates performance section of the report.
 
@@ -83,10 +90,13 @@ def performance_report(
         Path to the directory for images
     imgprefix : str
         Prefix to the image file name
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
-    str : content of the report in RST format
+    str :
+        content of the report in RST format
     """
     log.info(f'Running performance_report for {measurementsdata["modelname"]}')
 
@@ -110,7 +120,9 @@ def performance_report(
             measurementsdata[f'{inference_step}_timestamp'],
             measurementsdata[inference_step],
             skipfirst=True)
-        measurementsdata['inferencetimepath'] = str(usepath)
+        measurementsdata['inferencetimepath'] = str(
+            usepath.relative_to(rootdir)
+        )
         measurementsdata['inferencetime'] = \
             measurementsdata[inference_step]
 
@@ -124,7 +136,9 @@ def performance_report(
             'Memory usage', '%',
             measurementsdata['session_utilization_timestamp'],
             measurementsdata['session_utilization_mem_percent'])
-        measurementsdata['memusagepath'] = str(usepath)
+        measurementsdata['memusagepath'] = str(
+            usepath.relative_to(rootdir)
+        )
     else:
         log.warning('No memory usage measurements in the report')
 
@@ -142,7 +156,9 @@ def performance_report(
             'Mean CPU usage', '%',
             measurementsdata['session_utilization_timestamp'],
             measurementsdata['session_utilization_cpus_percent_avg'])
-        measurementsdata['cpuusagepath'] = str(usepath)
+        measurementsdata['cpuusagepath'] = str(
+            usepath.relative_to(rootdir)
+        )
     else:
         log.warning('No memory usage measurements in the report')
 
@@ -162,7 +178,9 @@ def performance_report(
                 'GPU memory usage', '%',
                 measurementsdata['session_utilization_gpu_timestamp'],
                 measurementsdata[gpumemmetric])
-            measurementsdata['gpumemusagepath'] = str(usepath)
+            measurementsdata['gpumemusagepath'] = str(
+                usepath.relative_to(rootdir)
+            )
     else:
         log.warning('No GPU memory usage measurements in the report')
 
@@ -179,7 +197,9 @@ def performance_report(
                 'Utilization', '%',
                 measurementsdata['session_utilization_gpu_timestamp'],
                 measurementsdata['session_utilization_gpu_utilization'])
-            measurementsdata['gpuusagepath'] = str(usepath)
+            measurementsdata['gpuusagepath'] = str(
+                usepath.relative_to(rootdir)
+            )
     else:
         log.warning('No GPU utilization measurements in the report')
 
@@ -192,7 +212,8 @@ def performance_report(
 
 def comparison_performance_report(
         measurementsdata: List[Dict],
-        imgdir: Path) -> str:
+        imgdir: Path,
+        rootdir: Path) -> str:
     """
     Creates performance comparison section of report.
 
@@ -202,6 +223,8 @@ def comparison_performance_report(
         Statistics of every model from the Measurements class
     imgdir : Path
         Path to the directory for images
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
@@ -276,7 +299,9 @@ def comparison_performance_report(
                 f"{metric_name} [{unit}]",
                 smooth=101
             )
-            report_variables[f"{metric}_path"] = usepath
+            report_variables[f"{metric}_path"] = str(
+                usepath.relative_to(rootdir)
+            )
 
     common_metrics = sorted(list(common_metrics))
     visualizationdata = {}
@@ -293,7 +318,9 @@ def comparison_performance_report(
          for metric in common_metrics],
         visualizationdata
     )
-    report_variables["meanperformancepath"] = usepath
+    report_variables["meanperformancepath"] = str(
+        usepath.relative_to(rootdir)
+    )
 
     hardware_usage_metrics = sorted(list(hardware_usage_metrics))
     usage_visualization = {}
@@ -310,7 +337,9 @@ def comparison_performance_report(
         usage_visualization,
         [metric_names[metric][0] for metric in hardware_usage_metrics]
     )
-    report_variables["hardwareusagepath"] = usepath
+    report_variables["hardwareusagepath"] = str(
+        usepath.relative_to(rootdir)
+    )
 
     with path(reports, 'performance_comparison.rst') as reporttemplate:
         return create_report_from_measurements(
@@ -322,7 +351,8 @@ def comparison_performance_report(
 def classification_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        imgprefix: str):
+        imgprefix: str,
+        rootdir: Path) -> str:
     """
     Creates classification quality section of the report.
 
@@ -334,6 +364,8 @@ def classification_report(
         Path to the directory for images
     imgprefix : str
         Prefix to the image file name
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
@@ -352,7 +384,9 @@ def classification_report(
         'Confusion matrix',
         measurementsdata['class_names']
     )
-    measurementsdata['confusionpath'] = str(confusionpath)
+    measurementsdata['confusionpath'] = str(
+        confusionpath.relative_to(rootdir)
+    )
     with path(reports, 'classification.rst') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
@@ -362,8 +396,8 @@ def classification_report(
 
 def comparison_classification_report(
         measurementsdata: List[Dict],
-        imgdir: Path
-):
+        imgdir: Path,
+        rootdir: Path) -> str:
     """
     Creates classification comparison section of report.
 
@@ -373,6 +407,8 @@ def comparison_classification_report(
         Statistics of every model from the Measurements class
     imgdir : Path
         Path to the directory for images
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
@@ -419,7 +455,9 @@ def comparison_classification_report(
         ram_usage,
         names
     )
-    report_variables['bubbleplotpath'] = usepath
+    report_variables['bubbleplotpath'] = str(
+        usepath.relative_to(rootdir)
+    )
 
     usepath = imgdir / "classification_metric_comparison.png"
     draw_radar_chart(
@@ -428,7 +466,9 @@ def comparison_classification_report(
         metric_visualization,
         ["Accuracy", "Mean precision", "Mean recall"]
     )
-    report_variables['radarchartpath'] = usepath
+    report_variables['radarchartpath'] = str(
+        usepath.relative_to(rootdir)
+    )
     report_variables['modelnames'] = names
     report_variables = {
         **report_variables,
@@ -445,7 +485,8 @@ def comparison_classification_report(
 def detection_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
-        imgprefix: str) -> str:
+        imgprefix: str,
+        rootdir: Path) -> str:
     """
     Creates detection quality section of the report.
 
@@ -457,6 +498,8 @@ def detection_report(
         Path to the directory for images
     imgprefix : str
         Prefix to the image file name
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
@@ -485,7 +528,9 @@ def detection_report(
         lines,
         measurementsdata['class_names']
     )
-    measurementsdata['curvepath'] = str(curvepath)
+    measurementsdata['curvepath'] = str(
+        curvepath.relative_to(rootdir)
+    )
 
     gradientpath = imgdir / f'{imgprefix}recall_precision_gradients.png'
     recall_precision_gradients(
@@ -495,7 +540,9 @@ def detection_report(
         measurementsdata['class_names'],
         aps
     )
-    measurementsdata['gradientpath'] = str(gradientpath)
+    measurementsdata['gradientpath'] = str(
+        gradientpath.relative_to(rootdir)
+    )
 
     tp_iou = []
     all_tp_ious = []
@@ -517,7 +564,9 @@ def detection_report(
         tp_iou,
         measurementsdata['class_names'],
     )
-    measurementsdata['tpioupath'] = str(tpioupath)
+    measurementsdata['tpioupath'] = str(
+        tpioupath.relative_to(rootdir)
+    )
 
     if len(all_tp_ious) > 0:
         true_positives_per_iou_range_histogram(
@@ -525,7 +574,9 @@ def detection_report(
             "Histogram of True Positive IoU values",
             all_tp_ious
         )
-        measurementsdata['iouhistpath'] = str(iouhistpath)
+        measurementsdata['iouhistpath'] = str(
+            iouhistpath.relative_to(rootdir)
+        )
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
@@ -540,7 +591,9 @@ def detection_report(
         None,
         [[thresholds, mapvalues]]
     )
-    measurementsdata['mappath'] = str(mappath)
+    measurementsdata['mappath'] = str(
+        mappath.relative_to(rootdir)
+    )
     measurementsdata['max_mAP'] = max(mapvalues)
     measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
 
@@ -553,8 +606,7 @@ def detection_report(
 
 def comparison_detection_report(
         measurementsdata: List[Dict],
-        imgdir: Path
-):
+        imgdir: Path) -> str:
     """
     Creates detection comparison section of report.
 
@@ -609,11 +661,11 @@ def comparison_detection_report(
 def generate_report(
         reportname: str,
         data: List[Dict],
+        outputpath: Path,
         imgdir: Path,
         report_types: List[str],
         rootdir: Path,
-        command: List[str]
-) -> str:
+        command: List[str]) -> str:
     """
     Generates an RST report based on Measurements data.
 
@@ -626,6 +678,8 @@ def generate_report(
     data : List[Dict]
         Data for each model coming from the Measurements object,
         loaded i.e. from JSON files
+    outputpath : Path
+        Path to the RST file where the report will be saved
     imgdir : Path
         Path to the directory where the report plots should be stored
     report_types : List[str]
@@ -639,7 +693,6 @@ def generate_report(
         Full command used to render this report, split into separate lines.
     """
 
-    outputpath = rootdir / "report.rst"
     reptypes = {
         'performance': performance_report,
         'classification': classification_report,
@@ -677,9 +730,9 @@ def generate_report(
                 imgprefix = model_data["modelname"] + "_"
             else:
                 imgprefix = ""
-            content += reptypes[typ](model_data, imgdir, imgprefix)
+            content += reptypes[typ](model_data, imgdir, imgprefix, rootdir)
         if len(data) > 1:
-            content += comparereptypes[typ](data, imgdir)
+            content += comparereptypes[typ](data, imgdir, rootdir)
 
     with open(outputpath, 'w') as out:
         out.write(content)
@@ -701,8 +754,14 @@ def main(argv):
         type=str
     )
     parser.add_argument(
-        'outputdir',
-        help='Path to root directory (report and generated images will be stored here)',  # noqa: E501
+        'output',
+        help='Path to the output RST file',
+        type=Path
+    )
+    parser.add_argument(
+        '--root-dir',
+        help='Path to root directory for documentation (paths in the RST file are relative to this directory)',  # noqa: E501
+        required=True,
         type=Path
     )
     parser.add_argument(
@@ -713,6 +772,11 @@ def main(argv):
         type=str
     )
     parser.add_argument(
+        '--img-dir',
+        help='Path to the directory where images will be stored',
+        type=Path
+    )
+    parser.add_argument(
         '--verbosity',
         help='Verbosity level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -721,10 +785,11 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    args.outputdir.mkdir(parents=True, exist_ok=True)
-    root_dir = args.outputdir.absolute()
-    img_dir = root_dir / "img"
-    img_dir.mkdir()
+    if not args.img_dir:
+        img_dir = args.root_dir / "img"
+    else:
+        img_dir = args.img_dir
+    img_dir.mkdir(parents=True, exist_ok=True)
 
     measurementsdata = []
     for measurementspath in args.measurements:
@@ -746,9 +811,10 @@ def main(argv):
     generate_report(
         args.reportname,
         measurementsdata,
+        args.output,
         img_dir,
         args.report_types,
-        root_dir,
+        args.root_dir,
         command
     )
 

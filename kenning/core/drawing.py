@@ -788,6 +788,7 @@ def recall_precision_gradients(
         lines: List[Tuple[List, List]],
         class_names: List[str],
         aps: List[float],
+        map: float,
         figsize: Tuple = (10, 25)):
     """
     Draws per-class gradients of precision dependent to recall.
@@ -838,7 +839,7 @@ def recall_precision_gradients(
         fraction=0.1,
         pad=0.05
     )
-    plt.title(f'{title} (mAP={np.mean(aps)})')
+    plt.title(f'{title} (mAP={map})')
     plt.tight_layout()
 
     if outpath is None:

@@ -98,8 +98,6 @@ def compute_ap(
     -------
     float: N-point interpolated average precision value
     """
-    if len(recall) == 0:
-        return 0
     return np.mean(
         np.interp(np.linspace(0, 1.0, num=points), recall, precision)
     )
@@ -128,36 +126,37 @@ def get_recall_precision(
     List[Tuple[List[float], List[float]]] : List with per-class lists of recall
     and precision values
     """
-    lines = []
-    for cls in measurementsdata['class_names']:
+    lines = -np.ones([len(measurementsdata['class_names']), 2, recallpoints], dtype=np.float32)
+    for clsid, cls in enumerate(measurementsdata['class_names']):
         gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else 0  # noqa: E501
         if gt_count == 0:
             continue
         dets = measurementsdata[f'eval_det/{cls}'] if f'eval_det/{cls}' in measurementsdata else []  # noqa: E501
         dets = [d for d in dets if d[0] >= scorethresh]
-        dets.sort(reverse=True, key=lambda x: x[0])
-        tps = np.array([entry[1] == 1 for entry in dets])
-        fps = np.array([entry[1] == 0 for entry in dets])
+        dets.sort(key=lambda d: -d[0])
+        tps = np.array([entry[1] != 0.0 for entry in dets])
+        fps = np.array([entry[1] == 0.0 for entry in dets])
         tpacc = np.cumsum(tps).astype(dtype=np.float)
         fpacc = np.cumsum(fps).astype(dtype=np.float)
 
-        precisions = tpacc / (fpacc + tpacc + np.spacing(1))
         recalls = tpacc / gt_count
+        precisions = tpacc / (fpacc + tpacc + np.spacing(1))
 
         for i in range(len(precisions) - 1, 0, -1):
             if precisions[i] > precisions[i - 1]:
                 precisions[i - 1] = precisions[i]
 
         recallthresholds = np.linspace(0.0, 1.0, num=recallpoints)
-        if len(recalls) == 0:
-            lines.append([[], []])
-            continue
         inds = np.searchsorted(recalls, recallthresholds, side='left')
         newprecisions = np.zeros(recallthresholds.shape, dtype=np.float32)
-        for oldid, newid in enumerate(inds):
-            newprecisions[oldid] = precisions[max(0, min(newid, len(recalls) - 1))]
+        try:
+            for oldid, newid in enumerate(inds):
+                newprecisions[oldid] = precisions[newid]
+        except IndexError:
+            pass
 
-        lines.append([recallthresholds, newprecisions])
+        lines[clsid, 0] = recallthresholds
+        lines[clsid, 1] = newprecisions
     return lines
 
 
@@ -177,11 +176,9 @@ def compute_map_per_threshold(
     """
     maps = []
     for thresh in scorethresholds:
-        lines = get_recall_precision(measurementsdata, thresh)
-        aps = []
-        for line in lines:
-            aps.append(compute_ap(line[0], line[1]))
-        maps.append(np.mean(aps))
+        recallprecisions = get_recall_precision(measurementsdata, thresh)
+        precisions = recallprecisions[:, 1, :]
+        maps.append(np.mean(precisions[precisions > -1]))
 
     return np.array(maps, dtype=np.float32)
 
@@ -463,6 +460,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         MIN_IOU = 0.5
+        MAX_DETS = 100
         measurements = Measurements()
 
         # TODO add support for specifying ground truth area ranges
@@ -473,13 +471,15 @@ class ObjectDetectionSegmentationDataset(Dataset):
             # first, let's sort predictions by score
             preds.sort(key=lambda x: -x.score)
 
+            preds = preds[:MAX_DETS]
+
             # store array of matched ground truth bounding boxes
             matchedgt = np.zeros([len(groundtruths)], dtype=np.int32)
 
             # for each prediction
             for predid, pred in enumerate(preds):
                 # store index of best-matching ground truth
-                bestiou = 0
+                bestiou = 0.0
                 bestgt = -1
                 # iterate over ground truth
                 for gtid, gt in enumerate(groundtruths):
@@ -488,7 +488,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
                         continue
                     # skip if ground truth is already matched and is not a
                     # crowd
-                    if matchedgt[gtid] and not gt.iscrowd:
+                    if matchedgt[gtid] > 0 and not gt.iscrowd:
                         continue
                     iou = self.compute_iou(pred, gt)
                     if iou < bestiou:
@@ -505,6 +505,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
                         ]],
                         lambda: list()
                     )
+                    continue
                 measurements.add_measurement(
                     f'eval_det/{pred.clsname}',
                     [[
@@ -514,7 +515,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
                     ]],
                     lambda: list()
                 )
-                matchedgt[bestgt] = predid
+                matchedgt[bestgt] = 1
 
             for gt in groundtruths:
                 measurements.accumulate(

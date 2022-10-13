@@ -507,8 +507,8 @@ def detection_report(
     """
 
     from kenning.datasets.helpers.detection_and_segmentation import \
-        compute_ap, \
         get_recall_precision, \
+        compute_ap, \
         compute_map_per_threshold
 
     log.info(f'Running detection report for {measurementsdata["modelname"]}')
@@ -519,7 +519,10 @@ def detection_report(
     for line in lines:
         aps.append(compute_ap(line[0], line[1]))
 
-    measurementsdata['mAP'] = np.mean(aps)
+    measurementsdata['mAP'] = compute_map_per_threshold(
+        measurementsdata,
+        [0.0]
+    )[0]
 
     curvepath = imgdir / f'{imgprefix}recall_precision_curves.png'
     recall_precision_curves(
@@ -538,7 +541,8 @@ def detection_report(
         'Average precision plots',
         lines,
         measurementsdata['class_names'],
-        aps
+        aps,
+        measurementsdata['mAP']
     )
     measurementsdata['gradientpath'] = str(
         gradientpath.relative_to(rootdir)

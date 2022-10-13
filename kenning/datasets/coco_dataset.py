@@ -159,15 +159,17 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             bbox = anndata['bbox']
             width = self.coco.imgs[anndata['image_id']]['width']
             height = self.coco.imgs[anndata['image_id']]['height']
-            annotations[self.keystoimgs[anndata['image_id']]].append(DectObject(
-                clsname=self.classmap[anndata['category_id']],
-                xmin=bbox[0] / width,
-                ymin=bbox[1] / height,
-                xmax=(bbox[0] + bbox[2]) / width,
-                ymax=(bbox[1] + bbox[3]) / height,
-                score=1.0,
-                iscrowd=anndata['iscrowd'] == 1
-            ))
+            annotations[
+                self.keystoimgs[anndata['image_id']]].append(DectObject(
+                    clsname=self.classmap[anndata['category_id']],
+                    xmin=bbox[0] / width,
+                    ymin=bbox[1] / height,
+                    xmax=(bbox[0] + bbox[2]) / width,
+                    ymax=(bbox[1] + bbox[3]) / height,
+                    score=1.0,
+                    iscrowd=anndata['iscrowd'] == 1
+                )
+            )
 
         for inputid in self.dataX:
             self.dataY.append(annotations[inputid])

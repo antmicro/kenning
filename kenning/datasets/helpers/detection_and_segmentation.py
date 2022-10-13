@@ -126,7 +126,10 @@ def get_recall_precision(
     List[Tuple[List[float], List[float]]] : List with per-class lists of recall
     and precision values
     """
-    lines = -np.ones([len(measurementsdata['class_names']), 2, recallpoints], dtype=np.float32)
+    lines = -np.ones(
+        [len(measurementsdata['class_names']), 2, recallpoints],
+        dtype=np.float32
+    )
     for clsid, cls in enumerate(measurementsdata['class_names']):
         gt_count = measurementsdata[f'eval_gtcount/{cls}'] if f'eval_gtcount/{cls}' in measurementsdata else 0  # noqa: E501
         if gt_count == 0:

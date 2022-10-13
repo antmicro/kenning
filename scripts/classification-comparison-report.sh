@@ -50,6 +50,8 @@ python -m kenning.scenarios.inference_tester \
 
 python -m kenning.scenarios.render_report \
     "Classification comparison on Pet Dataset" \
-    build/pet-report \
+    build/classification-report/report.rst \
+    --root-dir build/classification-report \
+    --img-dir build/classification-report/imgs \
     --report-types performance classification \
     --measurements build/pet-dataset-tvm.json build/pet-dataset-tflite.json build/pet-dataset-iree.json

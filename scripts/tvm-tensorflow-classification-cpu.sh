@@ -20,6 +20,8 @@ python3 -m kenning.scenarios.inference_tester \
 
 python3 -m kenning.scenarios.render_report \
     "Pet Dataset classification using TVM-compiled TensorFlow model" \
-    docs/source/generated/ \
+    docs/source/generated/local-cpu-tvm-tensorflow-classification.rst \
+    --root-dir docs/source/ \
+    --img-dir docs/source/generated/img \
     --report-types performance classification \
     --measurements build/local-cpu-tvm-tensorflow-classification.json

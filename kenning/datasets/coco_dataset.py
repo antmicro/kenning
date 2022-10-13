@@ -143,21 +143,23 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             self.classnames.append(self.coco.cats[classid]['name'])
 
         cocokeys = list(self.coco.imgs.keys())
-        keystoimgs = dict()
+        self.keystoimgs = dict()
+        self.imgstokeys = dict()
 
         for key, imgdata in zip(cocokeys, self.coco.loadImgs(cocokeys)):
             filepath = str(
                 self.root / self.dataset_type / imgdata['file_name']
             )
             self.dataX.append(filepath)
-            keystoimgs[key] = filepath
+            self.keystoimgs[key] = filepath
+            self.imgstokeys[filepath] = key
 
         annotations = defaultdict(list)
         for annkey, anndata in self.coco.anns.items():
             bbox = anndata['bbox']
             width = self.coco.imgs[anndata['image_id']]['width']
             height = self.coco.imgs[anndata['image_id']]['height']
-            annotations[keystoimgs[anndata['image_id']]].append(DectObject(
+            annotations[self.keystoimgs[anndata['image_id']]].append(DectObject(
                 clsname=self.classmap[anndata['category_id']],
                 xmin=bbox[0] / width,
                 ymin=bbox[1] / height,
@@ -192,8 +194,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         currindex = self._dataindex - len(predictions)
         for pred, groundtruth in zip(predictions, truth):
             for p in pred:
-                width = self.coco.imgs[self.dataX[currindex]]['width']
-                height = self.coco.imgs[self.dataX[currindex]]['height']
+                cocoid = self.imgstokeys[self.dataX[currindex]]
+                width = self.coco.imgs[cocoid]['width']
+                height = self.coco.imgs[cocoid]['height']
                 xmin = max(min(p.xmin * width, width), 0)
                 xmax = max(min(p.xmax * width, width), 0)
                 ymin = max(min(p.ymin * height, height), 0)
@@ -203,7 +206,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
                 measurements.add_measurement(
                     'predictions',
                     [{
-                        'image_name': self.coco.loadImgs([self.dataX[currindex]])[0]['file_name'],  # noqa: E501
+                        'image_name': self.imgstokeys[self.dataX[currindex]],
                         'category': p.clsname,
                         'bbox': [xmin, ymin, w, h],
                         'score': p.score

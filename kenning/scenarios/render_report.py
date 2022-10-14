@@ -669,7 +669,7 @@ def generate_report(
         imgdir: Path,
         report_types: List[str],
         rootdir: Path,
-        command: List[str]) -> str:
+        command: List[str] = []) -> str:
     """
     Generates an RST report based on Measurements data.
 

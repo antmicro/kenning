@@ -396,6 +396,21 @@ class ObjectDetectionSegmentationDataset(Dataset):
             return compute_segm_iou(b1, b2)
 
     def show_dect_eval_images(self, predictions, truth):
+        """
+        Shows the predictions on screen compared to ground truth.
+
+        It is meant for object detection.
+
+        The method runs a preview of inference results during
+        evaluation process.
+
+        Parameters
+        ----------
+        predictions : List
+            The list of predictions from the model
+        truth: List
+            The ground truth for given batch
+        """
         log = get_logger()
         log.info(f'\ntruth\n{truth}')
         log.info(f'\npredictions\n{predictions}')
@@ -426,6 +441,21 @@ class ObjectDetectionSegmentationDataset(Dataset):
             plt.show()
 
     def show_segm_eval_images(self, predictions, truth):
+        """
+        Shows the predictions on screen compared to ground truth.
+
+        It is meant for instance segmentation.
+
+        The method runs a preview of inference results during
+        evaluation process.
+
+        Parameters
+        ----------
+        predictions : List
+            The list of predictions from the model
+        truth: List
+            The ground truth for given batch
+        """
         log = get_logger()
         log.info(f'\ntruth\n{truth}')
         log.info(f'\npredictions\n{predictions}')
@@ -456,6 +486,21 @@ class ObjectDetectionSegmentationDataset(Dataset):
             )
 
     def show_eval_images(self, predictions, truth):
+        """
+        Shows the predictions on screen compared to ground truth.
+
+        It uses proper method based on task parameter.
+
+        The method runs a preview of inference results during
+        evaluation process.
+
+        Parameters
+        ----------
+        predictions : List
+            The list of predictions from the model
+        truth: List
+            The ground truth for given batch
+        """
         if self.task == 'object_detection':
             self.show_dect_eval_images(predictions, truth)
         elif self.task == 'instance_segmentation':

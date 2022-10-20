@@ -1,3 +1,3 @@
 # Developing Kenning blocks
 
-TODO
+## Defining arguments for core classes

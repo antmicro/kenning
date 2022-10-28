@@ -138,13 +138,10 @@ class MagicWandDataset(Dataset):
         pass
 
     def split_sample_to_windows(self, data_frame, window_size=128):
-        return np.expand_dims(
-            np.array(np.array_split(
+        return np.array(np.array_split(
                 data_frame,
                 len(data_frame) // window_size, axis=0)
-            ),
-            axis=1
-        )
+            )
 
     def train_test_split_representations(
             self,

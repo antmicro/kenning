@@ -15,14 +15,10 @@ class MagicWandDataset(Dataset):
     def __init__(
             self,
             root: Path,
-            window_size: int = 128,
-            window_shift: int = 128,
             batch_size: int = 1,
             download_dataset: bool = False):
         self.dataset_root = root
         self.batch_size = batch_size
-        self.window_size = window_size
-        self.window_shift = window_shift
         if download_dataset:
             self.download_dataset_fun()
         super().__init__(root, batch_size, download_dataset)
@@ -64,8 +60,9 @@ class MagicWandDataset(Dataset):
                         if re.match(r"^[-0-9 ][\x20-\x7E]{1,}$", line):
                             if re.search("-,-,-", line):
                                 if data_frame != []:
-                                    self.dataX.append(deepcopy(self.generate_padding(data_frame)))  # noqa: E501
+                                    self.dataX.append(deepcopy(data_frame))
                                     self.dataY.append(self.rev_class_id(i))
+                                    data_frame = []
                             else:
                                 data = line.rstrip()
                                 data_frame.append(
@@ -96,6 +93,8 @@ class MagicWandDataset(Dataset):
     def generate_padding(
             self,
             data_frame: list,
+            window_size: int = 128,
+            window_shift: int = 128,
             noise_level: int = 20) -> list:
         """
         Generates neighbor-based padding around a given data frame
@@ -115,12 +114,12 @@ class MagicWandDataset(Dataset):
         """
         pre_padding = self._generate_padding(
                 noise_level,
-                self.window_size - 1,
+                abs(window_size - len(data_frame)) % window_size,
                 data_frame[0]
         )
         unpadded_len = len(pre_padding) + len(data_frame)
-        post_len = (self.window_shift - (unpadded_len %
-                    self.window_shift)) % self.window_shift
+        post_len = (window_shift - (unpadded_len %
+                    window_shift)) % window_shift
 
         post_padding = self._generate_padding(
                 noise_level,
@@ -137,6 +136,15 @@ class MagicWandDataset(Dataset):
 
     def get_input_mean_std(self):
         pass
+
+    def split_sample_to_windows(self, data_frame, window_size=128):
+        return np.expand_dims(
+            np.array(np.array_split(
+                data_frame,
+                len(data_frame) // window_size, axis=0)
+            ),
+            axis=1
+        )
 
     def train_test_split_representations(
             self,

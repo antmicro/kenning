@@ -146,7 +146,9 @@ class MagicWandDataset(Dataset):
     def train_test_split_representations(
             self,
             test_fraction: float = 0.25,
-            seed: int = 1234):
+            seed: int = 1234,
+            validation: bool = False,
+            validation_fraction: float = 0.1):
         """
         Splits the data representations into train dataset and test dataset.
 
@@ -156,6 +158,11 @@ class MagicWandDataset(Dataset):
             The fraction of data to leave for model validation
         seed : int
             The seed for random state
+        validation: bool
+            Whehther to return a third, validation dataset
+        validation_fraction: float
+            The fraction (of the total size) that should be split out of
+            the training set
         """
         from sklearn.model_selection import train_test_split
         dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
@@ -165,4 +172,20 @@ class MagicWandDataset(Dataset):
             random_state=seed,
             shuffle=True,
         )
+        if validation:
+            dataXtrain, dataXvalid, dataYtrain, dataYvalid = train_test_split(
+                self.dataX,
+                self.dataY,
+                test_size=test_fraction*(1-test_fraction),
+                random_state=seed,
+                shuffle=True,
+            )
+            return (
+                dataXtrain,
+                dataXtest,
+                dataYtrain,
+                dataYtest,
+                dataXvalid,
+                dataYvalid
+            )
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)

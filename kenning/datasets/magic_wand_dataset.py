@@ -189,3 +189,18 @@ class MagicWandDataset(Dataset):
                 dataYvalid
             )
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)
+
+    def prepare_tf_dataset(self, in_features: list, in_labels: list):
+        from tensorflow.data import Dataset
+        for i, data in enumerate(in_features):
+            in_features[i] = np.array(data)
+        features = np.zeros((len(in_features), 128, 3))
+        labels = np.zeros(len(in_features))
+        for i, (data_frag, label) in enumerate(zip(in_features, in_labels)):
+            pdata_frag = self.generate_padding(data_frag[0].tolist())
+            features[i] = self.split_sample_to_windows(pdata_frag)[0]
+            labels[i] = label
+        dataset = Dataset.from_tensor_slices(
+            (features, labels.astype("int32"))
+        )
+        return dataset

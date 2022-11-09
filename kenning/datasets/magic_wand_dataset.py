@@ -80,9 +80,11 @@ class MagicWandDataset(Dataset):
             download_url(dataset_url, tarpath)
             data = tarfile.open(tarpath)
             data.extractall(self.dataset_root)
-        # cleanup MacOS dotfiles with its internal metadata
-        for macos_dotfile in glob.glob(str(self.dataset_root)+"/**/._*") + \
-                glob.glob(str(self.dataset_root)+"/._*"):
+
+        # cleanup MacOS-related hidden metadata files present in the dataset
+        for macos_dotfile in glob.glob(
+                    str(self.dataset_root) + "/**/._*") + glob.glob(
+                    str(self.dataset_root) + "/._*"):
             os.remove(macos_dotfile)
 
     def _generate_padding(self, noise_level, amount, neighbor: list) -> list:

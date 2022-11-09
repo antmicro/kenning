@@ -35,7 +35,8 @@ class MagicWandDataset(Dataset):
             The name of the class for which the ID will be returned
         Returns
         -------
-        Int : the class id
+        Int :
+            the class id
         """
         return {v: k for k, v in self.classnames.items()}[classname]
 
@@ -109,7 +110,8 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        List : The padded data frame
+        List :
+            The padded data frame
 
         """
         pre_padding = self._generate_padding(

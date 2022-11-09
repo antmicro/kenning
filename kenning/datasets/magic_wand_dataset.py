@@ -88,10 +88,11 @@ class MagicWandDataset(Dataset):
             os.remove(macos_dotfile)
 
     def _generate_padding(self, noise_level, amount, neighbor: list) -> list:
-        return [list(i) for i in np.round((np.random.rand(
-            amount,
-            3
-        ) - 0.5) * noise_level, 1)+neighbor]
+        return [
+            list(i)
+            for i in np.round(
+                (np.random.rand(amount, 3) - 0.5) * noise_level, 1)+neighbor
+        ]
 
     def generate_padding(
             self,

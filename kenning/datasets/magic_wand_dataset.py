@@ -1,5 +1,6 @@
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url
+from kenning.core.measurements import Measurements
 
 from pathlib import Path
 import tarfile
@@ -137,7 +138,17 @@ class MagicWandDataset(Dataset):
         return [self.classnames[i] for i in self.classnames.keys()]
 
     def evaluate(self, predictions, truth):
-        pass
+        confusion_matrix = np.zeros((self.numclasses, self.numclasses))
+        for prediction, label in zip(predictions, truth):
+            confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
+        measurements = Measurements()
+        measurements.accumulate(
+            'eval_confusion_matrix',
+            confusion_matrix,
+            lambda: np.zeros((self.numclasses, self.numclasses))
+        )
+        measurements.accumulate('total', len(predictions), lambda: 0)
+        return measurements
 
     def get_input_mean_std(self):
         pass

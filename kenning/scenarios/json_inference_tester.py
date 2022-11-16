@@ -48,7 +48,8 @@ def run_scenario(
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
         command: str = 'Run in a different environment',
-        run_benchmarks_only: bool = False):
+        run_benchmarks_only: bool = False,
+        validate_only: bool = False):
     """
     Wrapper function that runs a scenario given in `json_cfg` argument.
 
@@ -68,10 +69,14 @@ def run_scenario(
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
         only testing of the model is executed
+    validate_only : bool
+        States whether the function should only create the scenario and
+        validate it. If it is true the function returns before
+        running the inference. Otherwise the inference is run normally.
 
     Returns
     -------
-    int : 1 if the inference was successful, 0 otherwise
+    int : 0 if the inference was successful, 1 otherwise
     """
     modelwrappercfg = json_cfg['model_wrapper']
     datasetcfg = json_cfg['dataset']
@@ -103,9 +108,6 @@ def run_scenario(
         if protocolcfg else None
     )
 
-    logger.set_verbosity(verbosity)
-    log = logger.get_logger()
-
     dataset = datasetcls.from_json(datasetcfg['parameters'])
     model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
     optimizers = [
@@ -120,6 +122,12 @@ def run_scenario(
         runtimecls.from_json(protocol, runtimecfg['parameters'])
         if runtimecls else None
     )
+
+    if validate_only:
+        return 0
+
+    logger.set_verbosity(verbosity)
+    log = logger.get_logger()
 
     modelframeworktuple = model.get_framework_and_version()
 

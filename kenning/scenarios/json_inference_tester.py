@@ -4,7 +4,6 @@
 A script that runs inference client.
 
 It requires implementations of two classes as input:
-
 * ModelWrapper - wraps the model that will be compiled and executed on hardware
 * Optimizer - wraps the compiling routines for the deep learning model
 
@@ -37,46 +36,43 @@ import json
 import tempfile
 from pathlib import Path
 
+from typing import Optional
 from kenning.utils.class_loader import load_class, get_command
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
 
 
-def main(argv):
-    command = get_command(argv)
+def run_scenario(
+        json_cfg: dict,
+        output: Path,
+        verbosity: str = 'INFO',
+        convert_to_onnx: Optional[Path] = None,
+        command: str = 'Run in a different environment',
+        run_benchmarks_only: bool = False):
+    """
+    Wrapper function that runs a scenario given in `json_cfg` argument.
 
-    parser = argparse.ArgumentParser(argv[0])
-    parser.add_argument(
-        'jsoncfg',
-        help='The path to the input JSON file with configuration of the inference'  # noqa: E501
-    )
-    parser.add_argument(
-        'output',
-        help='The path to the output JSON file with measurements',
-        type=Path,
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
-    parser.add_argument(
-        '--convert-to-onnx',
-        help='Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)',  # noqa: E501
-        type=Path
-    )
-    parser.add_argument(
-        '--run-benchmarks-only',
-        help='Instead of running the full compilation and testing flow, only testing of the model is executed',  # noqa: E501
-        action='store_true'
-    )
+    Parameters
+    ----------
+    json_cfg : dict
+        Configuration of the inference scenario
+    output : Path
+        Path to the output JSON file with measurements
+    verbosity : str, optional
+        Verbosity level
+    convert_to_onnx : Optional[Path], optional
+        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
+    command : str, optional
+        Command used to run this inference scenario. It is put in
+        the output JSON file
+    run_benchmarks_only : bool
+        Instead of running the full compilation and testing flow,
+        only testing of the model is executed
 
-    args, _ = parser.parse_known_args(argv[1:])
-
-    with open(args.jsoncfg, 'r') as f:
-        json_cfg = json.load(f)
-
+    Returns
+    -------
+    int : 1 if the inference was successful, 0 otherwise
+    """
     modelwrappercfg = json_cfg['model_wrapper']
     datasetcfg = json_cfg['dataset']
     runtimecfg = (
@@ -107,7 +103,7 @@ def main(argv):
         if protocolcfg else None
     )
 
-    logger.set_verbosity(args.verbosity)
+    logger.set_verbosity(verbosity)
     log = logger.get_logger()
 
     dataset = datasetcls.from_json(datasetcfg['parameters'])
@@ -148,14 +144,13 @@ def main(argv):
         }
 
     modelpath = model.get_path()
-
-    if not args.run_benchmarks_only:
+    if not run_benchmarks_only:
         prev_block = model
-        if args.convert_to_onnx:
+        if convert_to_onnx:
             log.warn(
                 'Force conversion of the input model to the ONNX format'
             )
-            modelpath = args.convert_to_onnx
+            modelpath = convert_to_onnx
             prev_block.save_to_onnx(modelpath)
 
         for i in range(len(optimizers)):
@@ -165,11 +160,11 @@ def main(argv):
 
             format = next_block.consult_model_type(
                 prev_block,
-                force_onnx=(args.convert_to_onnx and prev_block == model)
+                force_onnx=(convert_to_onnx and prev_block == model)
             )
 
             if (format == 'onnx' and prev_block == model) and \
-                    not args.convert_to_onnx:
+                    not convert_to_onnx:
                 modelpath = Path(tempfile.NamedTemporaryFile().name)
                 prev_block.save_to_onnx(modelpath)
 
@@ -202,8 +197,53 @@ def main(argv):
         'compiled_model_size': Path(modelpath).stat().st_size
     }
 
-    MeasurementsCollector.save_measurements(args.output)
+    MeasurementsCollector.save_measurements(output)
     return 0
+
+
+def main(argv):
+    command = get_command(argv)
+
+    parser = argparse.ArgumentParser(argv[0])
+    parser.add_argument(
+        'jsoncfg',
+        help='The path to the input JSON file with configuration of the inference'  # noqa: E501
+    )
+    parser.add_argument(
+        'output',
+        help='The path to the output JSON file with measurements',
+        type=Path,
+    )
+    parser.add_argument(
+        '--verbosity',
+        help='Verbosity level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
+    )
+    parser.add_argument(
+        '--convert-to-onnx',
+        help='Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)',  # noqa: E501
+        type=Path
+    )
+    parser.add_argument(
+        '--run-benchmarks-only',
+        help='Instead of running the full compilation and testing flow, only testing of the model is executed',  # noqa: E501
+        action='store_true'
+    )
+
+    args, _ = parser.parse_known_args(argv[1:])
+
+    with open(args.jsoncfg, 'r') as f:
+        json_cfg = json.load(f)
+
+    run_scenario(
+        json_cfg,
+        args.output,
+        args.verbosity,
+        args.convert_to_onnx,
+        command,
+        args.run_benchmarks_only
+    )
 
 
 if __name__ == '__main__':

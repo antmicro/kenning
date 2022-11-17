@@ -1,7 +1,7 @@
 from kenning.utils.pipeline_manager.dataflow_specification import nodes, io_mapping  # noqa: E501
 
 
-def get_specification():
+def get_specification() -> dict:
     """
     Prepares core-based Kenning classes to be sent to Pipeline Manager.
 
@@ -13,7 +13,7 @@ def get_specification():
         'nodes': []
     }
 
-    def strip_io(io_list: list):
+    def strip_io(io_list: list) -> list:
         """
         Strips every input/output from metadata and leaves only
         `name` and `type` keys.

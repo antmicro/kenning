@@ -62,7 +62,9 @@ class Dataset(object):
         'external_calibration_dataset': {
             'argparse_name': '--external-calibration-dataset',
             'description': 'Path to the directory with the external calibration dataset',  # noqa: E501
-            'type': Path
+            'type': Path,
+            'nullable': True,
+            'default': None
         }
     }
 

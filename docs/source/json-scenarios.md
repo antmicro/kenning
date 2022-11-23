@@ -243,4 +243,131 @@ python -m kenning.scenarios.json_inference_tester scenario.json output.json
 
 ## Compiling the model and running it remotely
 
+For some platforms, we cannot run Python script to evaluate or run the model to check its quality - the dataset is too large to fit in the storage, no libraries or compilation tools are available for the target platform, or the device does not have an operating system to run Python on.
 
+In such case, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and ``kenning.scenarios.json_inference_server`` scenario.
+
+For this use case we need two JSON files - one for configuring the inference server, and the second one for configuring ``kenning.scenarios.json_inference_tester``, which acts as a runtime client.
+
+The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication and other.
+It depends on the used [](runtimeprotocol-api).
+
+Let's start with the client configuration by adding `runtime_protocol` entry:
+
+```{code-block} json
+---
+emphasize-lines: 48-57
+---
+{
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": "int8",
+                "compiled_model_path": "./build/int8.tflite",
+                "inference_input_type": "int8",
+                "inference_output_type": "int8"
+            }
+        },
+        {
+            "type": "kenning.compilers.tvm.TVMCompiler",
+            "parameters": {
+                "target": "llvm -mcpu=core-avx2",
+                "opt_level": 3,
+                "conv2d_data_layout": "NCHW",
+                "compiled_model_path": "./build/int8_tvm.tar"
+            }
+        }
+    ],
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/int8_tvm.tar"
+        }
+    },
+    "runtime_protocol":
+    {
+        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "parameters":
+        {
+            "host": "10.9.8.7",
+            "port": 12345,
+            "packet_size": 32768
+        }
+    }
+}
+```
+
+In `runtime_protocol` entry, we specify a `kenning.runtimeprotocols.network.NetworkProtocol` and provide server's address (`host`), application port (`port`) ad packet size (`packet_size`).
+The `runtime` block is still needed to perform runtime-specific data preprocessing and postprocessing in the client application (the server only infers data).
+
+The configuration for the server looks as follows:
+
+```{code-block} json
+{
+    "runtime":
+    {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+            "save_model_path": "./build/compiled_model_server.tar"
+        }
+    },
+    "runtime_protocol":
+    {
+        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "parameters":
+        {
+            "host": "0.0.0.0",
+            "port": 12345,
+            "packet_size": 32768
+        }
+    }
+}
+```
+
+In server only `runtime` and `runtime_protocol` need to be specified.
+It uses `runtime_protocol` to receive requests from clients and `runtime` to run the tested models.
+
+The remaining things are provided by the client - input data and model.
+Direct outputs from the model are sent as is to the client so it can postprocess them and evaluate the model using the dataset.
+Server also sends the measurements from its sensors in JSON format if it's able to collect and send them.
+
+First, run the server so it will be available for the client:
+
+```bash
+python3 -m kenning.scenarios.json_inference_server \
+    ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
+    --verbosity INFO
+```
+
+Secondly, run the client:
+
+```bash
+python3 -m kenning.scenarios.json_inference_tester \
+    ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
+    ./build/tflite-tvm-classificationjson.json \
+    --verbosity INFO
+```
+
+The rest of the flow is automated.

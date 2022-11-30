@@ -21,7 +21,7 @@ The root element of the JSON file is a dictionary that can have the following ke
 Each dictionary in above fields consists of:
 
 * `type` - appropriate class for the key,
-* `parameters` - `type`-specific arguments for underlying class (see [Defining arguments for core classes](kenning-development.md#defining-arguments-for-core-classes)).
+* `parameters` - `type`-specific arguments for underlying class (see [](defining-arguments-for-core-classes)).
 
 ## Evaluating model using its native framework
 
@@ -119,7 +119,7 @@ As it can be observed, the parameters allow the user to:
 * configure anything specific for the dataset.
 
 ```{note}
-For more details on defining parameters for Kenning core classes, check [Defining arguments for core classes](kenning-development.md#defining-arguments-for-core-classes).
+For more details on defining parameters for Kenning core classes, check [](defining-arguments-for-core-classes).
 ```
 
 If no `optimizers` or `runtime` is specified, the model is executed using the [](modelwrapper-api)'s `run_inference` method.
@@ -142,7 +142,7 @@ It contains such information as:
 Which can be later used in [](report-generation).
 
 ```{note}
-Check [](measurements) for more information.
+Check {doc}`measurements` for more information.
 ```
 
 ## Optimizing the model and running it on the same device

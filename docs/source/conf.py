@@ -56,8 +56,6 @@ myst_enable_extensions = [
     'substitution'
 ]
 
-myst_heading_anchors = 3
-
 dev = 'https://github.com/antmicro/kenning'
 
 extlinks = {

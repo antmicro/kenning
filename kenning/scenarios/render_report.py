@@ -8,6 +8,7 @@ It requires providing the report type and JSON file to extract data from.
 
 import sys
 import argparse
+from collections import defaultdict
 from pathlib import Path
 from typing import Dict, List, Any
 import json
@@ -36,6 +37,7 @@ from kenning.utils.class_loader import get_command
 
 log = logger.get_logger()
 
+MODEL_NAME_COUNTER = defaultdict(int)
 
 def get_model_name(
         measurementsdata: Dict[str, Any]) -> str:
@@ -71,7 +73,13 @@ def get_model_name(
         namecomponents.append(compiler_names)
     if runtime_name != "":
         namecomponents.append(runtime_name)
-    return '-'.join(namecomponents)
+    original_name = '-'.join(namecomponents)
+    if MODEL_NAME_COUNTER[original_name] == 0:
+        name = original_name
+    else:
+        name = f"{original_name} ({MODEL_NAME_COUNTER[original_name]})"
+    MODEL_NAME_COUNTER[original_name] += 1
+    return name
 
 
 def performance_report(

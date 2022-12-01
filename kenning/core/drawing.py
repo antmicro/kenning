@@ -236,7 +236,8 @@ def draw_violin_comparison_plot(
         legend_lines,
         legend_labels,
         loc="lower center",
-        fontsize="large"
+        fontsize="large",
+        ncol=2
     )
     plt.tight_layout(rect=(0.1, 0.08, 0.9, 0.95))
 
@@ -289,7 +290,7 @@ def draw_radar_chart(
         ax.plot(angles, sample, label=samplename, color=color)
         ax.fill(angles, sample, alpha=0.1, color=color)
     plt.legend(fontsize="large", bbox_to_anchor=[0.50, -0.05],
-               loc="upper center")
+               loc="upper center", ncol=2)
 
     angles = np.array(angles)
     angles[np.cos(angles) <= -1e-5] += pi
@@ -357,7 +358,7 @@ def draw_bubble_plot(
         marker = ax.scatter(x, y, s=size**1.75, label=label, color=c,
                             alpha=0.5, edgecolors='black')
         markers.append(marker)
-    legend = ax.legend(handles=markers, bbox_to_anchor=[1, -0.08])
+    legend = ax.legend(handles=markers, bbox_to_anchor=[1, -0.08], ncol=2)
     for handler in legend.legendHandles:
         handler.set_sizes([40.0])
     ax.add_artist(legend)

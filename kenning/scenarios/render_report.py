@@ -39,6 +39,7 @@ log = logger.get_logger()
 
 MODEL_NAME_COUNTER = defaultdict(int)
 
+
 def get_model_name(
         measurementsdata: Dict[str, Any]) -> str:
     """
@@ -789,6 +790,12 @@ def main(argv):
         type=Path
     )
     parser.add_argument(
+        '--model-names',
+        help='Names of the models used to create measurements in order',
+        nargs='+',
+        type=str
+    )
+    parser.add_argument(
         '--verbosity',
         help='Verbosity level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -804,10 +811,13 @@ def main(argv):
     img_dir.mkdir(parents=True, exist_ok=True)
 
     measurementsdata = []
-    for measurementspath in args.measurements:
+    for i, measurementspath in enumerate(args.measurements):
         with open(measurementspath, 'r') as measurementsfile:
             measurements = json.load(measurementsfile)
-        modelname = get_model_name(measurements)
+        if args.model_names is not None:
+            modelname = args.model_names[i]
+        else:
+            modelname = get_model_name(measurements)
         measurements['modelname'] = modelname
         measurements['reportname'] = args.reportname
         measurementsdata.append(measurements)

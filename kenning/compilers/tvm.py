@@ -272,6 +272,12 @@ class TVMCompiler(Optimizer):
             'type': bool,
             'default': False
         },
+        'use_tensorrt': {
+            'argparse_name': '--use-tensorrt',
+            'description': 'For CUDA targets: delegates supported operations to TensorRT',  # noqa: E501
+            'type': bool,
+            'default': False
+        },
         'dataset_percentage': {
             'argparse_name': '--dataset-percentage',
             'description': 'Tells how much data from the calibration dataset (training or external) will be used for calibration dataset',  # noqa: E501
@@ -295,6 +301,7 @@ class TVMCompiler(Optimizer):
             conv2d_kernel_layout: str = '',
             use_fp16_precision: bool = False,
             use_int8_precision: bool = False,
+            use_tensorrt: bool = False,
             dataset_percentage: float = 0.25):
         """
         A TVM Compiler wrapper.
@@ -327,12 +334,17 @@ class TVMCompiler(Optimizer):
             Applies conversion of FP32 weights to FP16
         use_int8_precision : bool
             Applies conversion of FP32 weights to INT8
+        use_tensorrt : bool
+            Applies transformations moving supported operations to
+            TensorRT kernels.
         dataset_percentage : float
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
             used for calibrating the model
         """
         assert not (use_fp16_precision and use_int8_precision), 'Compilation cannot use both FP16 and INT8 conversion'  # noqa: E501
+        assert not (use_tensorrt and (use_fp16_precision or use_int8_precision)), 'TensorRT usage with FP16 or INT8 passes is not supported'  # noqa: E501
+        assert not (use_tensorrt and ('cuda' not in target)), 'TensorRT is only supported with CUDA target'  # noqa: E501
         self.modelframework = modelframework
 
         self.target = target
@@ -352,6 +364,7 @@ class TVMCompiler(Optimizer):
         self.conv2d_kernel_layout = conv2d_kernel_layout
         self.use_fp16_precision = use_fp16_precision
         self.use_int8_precision = use_int8_precision
+        self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
         super().__init__(dataset, compiled_model_path)
 
@@ -371,6 +384,7 @@ class TVMCompiler(Optimizer):
             args.conv2d_kernel_layout,
             args.use_fp16_precision,
             args.use_int8_precision,
+            args.use_tensorrt,
             args.dataset_percentage
         )
 
@@ -432,6 +446,7 @@ class TVMCompiler(Optimizer):
             )
 
         additional_opts = tvm.transform.Sequential(transforms)
+
         if self.use_tvm_vm:
             with tvm.transform.PassContext(
                     opt_level=3,
@@ -447,8 +462,11 @@ class TVMCompiler(Optimizer):
                     file.write(bytecode)
                 lib.export_library(str(outputpath)+'.so')
         else:
+            mod = additional_opts(mod)
+            if self.use_tensorrt:
+                from tvm.relay.op.contrib.tensorrt import partition_for_tensorrt  # noqa: E501
+                mod = partition_for_tensorrt(mod, params)
             with tvm.transform.PassContext(opt_level=self.opt_level):
-                mod = additional_opts(mod)
                 lib = relay.build(
                     mod,
                     target=self.target_obj,

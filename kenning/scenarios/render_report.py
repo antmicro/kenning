@@ -619,7 +619,8 @@ def detection_report(
 
 def comparison_detection_report(
         measurementsdata: List[Dict],
-        imgdir: Path) -> str:
+        imgdir: Path,
+        rootdir: Path) -> str:
     """
     Creates detection comparison section of report.
 
@@ -629,6 +630,8 @@ def comparison_detection_report(
         Statistics of every model from the Measurements class
     imgdir : Path
         Path to the directory for images
+    rootdir : Path
+        Path to the root of the documentation project involving this report
 
     Returns
     -------
@@ -662,7 +665,9 @@ def comparison_detection_report(
         visualization_data,
         report_variables['modelnames']
     )
-    report_variables['mapcomparisonpath'] = usepath
+    report_variables['mapcomparisonpath'] = str(
+        usepath.relative_to(rootdir)
+    )
 
     with path(reports, 'detection_comparison.rst') as reporttemplate:
         return create_report_from_measurements(

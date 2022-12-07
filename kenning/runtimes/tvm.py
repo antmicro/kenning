@@ -163,6 +163,8 @@ class TVMRuntime(Runtime):
                 results.append(output.asnumpy())
         else:
             for i in range(self.model.get_num_outputs()):
-                results.append(self.model.get_output(i).asnumpy())
+                results.append(
+                    self.model.get_output(i).asnumpy()
+                )
 
         return self.postprocess_output(results)

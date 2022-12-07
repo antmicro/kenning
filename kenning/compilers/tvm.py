@@ -501,6 +501,10 @@ class TVMCompiler(Optimizer):
             dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path, io_spec)
+        if self.use_fp16_precision or self.use_int8_precision:
+            output_dtype = 'float16' if self.use_fp16_precision else 'int8'
+            for id in range(len(io_spec['output'])):
+                io_spec['output'][id]['dtype'] = output_dtype
         self.save_io_specification(inputmodelpath, io_spec)
 
     def get_framework_and_version(self):

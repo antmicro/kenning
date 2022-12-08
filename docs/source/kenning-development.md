@@ -4,11 +4,11 @@ This chapter describes the development process of Kenning components.
 
 ## Model metadata
 
-Since not all model formats supported by Kenning provide information about inputs and outputs, or other data required for compilation or runtime purposes, each model processed by Kenning comes with the JSON file describing I/O specification (and other useful metadata).
+Since not all model formats supported by Kenning provide information about inputs and outputs or other data required for compilation or runtime purposes, each model processed by Kenning comes with a JSON file describing an I/O specification (and other useful metadata).
 
 The JSON file with metadata for file `<model-name>.<ext>` is saved as `<model-name>.<ext>.json` in the same directory.
 
-The example metadata file looks as follows (for ResNet50 for ImageNet classification problem):
+The example metadata file looks as follows (for ResNet50 for the ImageNet classification problem):
 
 ```json
 {
@@ -44,30 +44,30 @@ The metadata file consists of:
 
 Each input and output is described by the following parameters:
 
-* `name` - name of the input/output.
-* `shape` - shape of the input/output tensor.
-* `dtype` - type of the output.
-* `order` - some of the runtimes/compilers allow accessing inputs and outputs by an id.
-  This field tells what is the id of the current input/output.
+* `name` - input/output name.
+* `shape` - input/output tensor shape.
+* `dtype` - output type.
+* `order` - some of the runtimes/compilers allow accessing inputs and outputs by id.
+  This field describes the id of the current input/output.
 * `scale` - scale parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization.
 * `zero_point` - zero point parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization.
-* `prequantized_dtype` - data type of the input/output before quantization.
+* `prequantized_dtype` - input/output data type before quantization.
 
 The model metadata is used by all classes in Kenning for understanding the format of the inputs and outputs.
 ```{warning}
-The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. quantize the network - it is crucial to update the I/O specification when the current block modifies it.
+The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. quantize the network. It is crucial to update the I/O specification when the current block modifies it.
 ```
 
 ## Implementing a new Kenning component
 
 Firstly, check the [](kenning-api) for available building blocks for Kenning and their documentation.
-Adding a new block to Kenning is a matter of creating a new class inheriting from one of `kenning.core` classes, providing configuration parameters and implementing at least unimplemented methods.
+Adding a new block to Kenning is a matter of creating a new class inheriting from one of `kenning.core` classes, providing configuration parameters, and implementing methods - at least the unimplemented ones.
 
 For example purposes, let's create a sample [](optimizer-api)-based class, which will convert an input model to the TensorFlow Lite format.
 
-Firstly, let's create a minimal code with the empty class:
+First, let's create minimal code with the empty class:
 
 ```python
 from kenning.core.optimizer import Optimizer
@@ -81,20 +81,20 @@ class TensorFlowLiteCompiler(Optimizer):
 
 ### Defining arguments for core classes
 
-Kenning classes can be created three ways:
+Kenning classes can be created in three ways:
 
 * Using constructor in Python,
 * Using argparse from command-line (see [](cmd-usage)),
 * Using JSON-based dictionaries from JSON scenarios (see [](json-scenarios))
 
-To support all three ways, the newly implemented class requires creating a dictionary called `arguments_structure` that holds all configurable parameters of the class, along with their description, type and additional information.
+To support all three methods, the newly implemented class requires creating a dictionary called `arguments_structure` that holds all configurable parameters of the class, along with their description, type and additional information.
 
 This structure is used to create:
 
-* an `argparse` group, to configure class parameters from terminal level (via `form_argparse` method).
-  Later, class can be created with `from_argparse` method.
-* JSON schema to configure the class from the JSON file (via `form_parameterschema` method).
-  Later, class can be created with `from_parameterschema` method.
+* an `argparse` group, to configure class parameters from terminal level (via the `form_argparse` method).
+  Later, a class can be created with the `from_argparse` method.
+* JSON schema to configure the class from the JSON file (via the `form_parameterschema` method).
+  Later, a class can be created with the `from_parameterschema` method.
 
 `arguments_structure` is a dictionary of form:
 
@@ -118,14 +118,14 @@ The fields describing the argument are following:
 
 * `argparse_name` - if there is a need for a different flag in argparse, it can be provided here,
 * `description` - description of the node, displayed during parsing error for JSON, or in help in case of command-line access
-* `type` - type of the argument, can be:
+* `type` - type of argument, can be:
 
     * `Path` from `pathlib` module,
     * `str`
     * `float`
     * `int`
     * `bool`
-* `default` - default value to use for the argument,
+* `default` - default value for the argument,
 * `required` - boolean, tells if argument is required or not
 * `enum` - a list of possible values for the argument,
 * `is_list` - tells if argument is a list of objects of types given in `type` field,
@@ -190,7 +190,7 @@ class TensorFlowLiteCompiler(Optimizer):
         )
 ```
 
-In addition to defined arguments, there are also default [](optimizer-api) arguments - [](dataset-api) object and path to save the model (`compiled_model_path`).
+In addition to defined arguments, there are also default [](optimizer-api) arguments - the [](dataset-api) object and path to save the model (`compiled_model_path`).
 
 Also, a `from_argparse` object creator is implemented, since there are additional parameters (`dataset`) to handle. Function `from_parameterschema` is created automatically.
 
@@ -198,11 +198,11 @@ The above implementation of arguments is common for all core classes.
 
 ### Defining supported output and input types
 
-The Kenning classes for consecutive steps are meant to work in a seamless manner - it means providing various way to pass the model from one class to another.
+The Kenning classes for consecutive steps are meant to work in a seamless manner, which means providing various ways to pass the model from one class to another.
 
-Usually, each class can accept multiple input formats of models and provides at least one output format that can be accepted in other classes (except for `terminal` compilers, such as [Apache TVM](https://tvm.apache.org/) that compiles model to runtime library).
+Usually, each class can accept multiple model input formats and provides at least one output format that can be accepted in other classes (except for `terminal` compilers, such as [Apache TVM](https://tvm.apache.org/) that compile model to runtime library).
 
-The list of supported output formats is represented in a class with `outputtypes` list:
+The list of supported output formats is represented in a class with an `outputtypes` list:
 
 ```python
     outputtypes = [
@@ -210,7 +210,7 @@ The list of supported output formats is represented in a class with `outputtypes
     ]
 ```
 
-The supported inputs formats are delivered in a form of a dictionary mapping supported input type name to the function loading the model:
+The supported input formats are delivered in a form of a dictionary, mapping the supported input type name to the function used to load a model:
 
 ```python
     inputtypes = {
@@ -303,12 +303,12 @@ class TensorFlowLiteCompiler(Optimizer):
 ### Implementing unimplemented methods
 
 The remaining aspect of developing Kenning classes is implementing unimplemented methods.
-Unimplemented methods raise `NotImplementedError`.
+Unimplemented methods raise the `NotImplementedError`.
 
-In case of [](optimizer-api) class, it is the `compile` method and `get_framework_and_version`.
+In case of the [](optimizer-api) class, it is the `compile` method and `get_framework_and_version`.
 
-When implementing unimplemented methods, it is crucial to follow the type hints both for inputs and for outputs - more details can be found in the documentation for the method.
-Sticking to the type hints ensures the compatibility between blocks, which is required for seamless connection of compilation components.
+When implementing unimplemented methods, it is crucial to follow type hints both for inputs and outputs - more details can be found in the documentation for the method.
+Sticking to the type hints ensures compatibility between blocks, which is required for a seamless connection between compilation components.
 
 Let's finish the implementation of the [](optimizer-api)-based class:
 
@@ -475,9 +475,9 @@ class TensorFlowLiteCompiler(Optimizer):
 
 There are several important things regarding the above code snippet:
 
-* The information regarding inputs and outputs can be collected with `self.load_io_specification` method, present in all classes.
+* The information regarding inputs and outputs can be collected with the `self.load_io_specification` method, present in all classes.
 * The information about the input format to use is delivered in the `self.inputtype` field - it is updated automatically by the function consulting the best supported format for previous and current block.
-* If the I/O metadata is affected by the current block, it needs to be updated and saved together with the compiled model using `self.save_io_specification` method.
+* If the I/O metadata is affected by the current block, it needs to be updated and saved along with the compiled model using the `self.save_io_specification` method.
 
 ### Using the implemented block
 

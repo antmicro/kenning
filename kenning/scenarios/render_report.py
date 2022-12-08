@@ -37,50 +37,22 @@ from kenning.utils.class_loader import get_command
 
 log = logger.get_logger()
 
-MODEL_NAME_COUNTER = defaultdict(int)
 
-
-def get_model_name(
-        measurementsdata: Dict[str, Any]) -> str:
+def get_model_name(filepath: Path) -> str:
     """
-    Generates the name of the model. The name is of the form
-    `name of model wrapper`_`name of all the optimizers`_`name of runtime`
+    Generates the name of the model. Path to the measurements file is used for
+    name generation.
 
     Parameters
     ----------
-    measurementsdata: Dict[str, Any]
-        Statistics from the Measurements class
+    filepath: Path
+        Path to the measurements file
 
     Returns
     -------
     str : name of the model used when generating the report
     """
-    build_cfg = measurementsdata["build_cfg"]
-    model_name = build_cfg["model_wrapper"]["type"]
-    # Removing all of kenning.modelwrappers... etc.
-    model_name = model_name.split(".")[-1]
-    opts_list = build_cfg['optimizers'] if 'optimizers' in build_cfg else []
-    compiler_names = "-".join([
-        compiler_details["type"].split(".")[-1]
-        for compiler_details in opts_list
-    ])
-    runtime_name = build_cfg["runtime"]["type"] \
-        if 'runtime' in build_cfg else []
-    runtime_name = runtime_name.split(".")[-1]
-    namecomponents = []
-    if model_name != "":
-        namecomponents.append(model_name)
-    if compiler_names != "":
-        namecomponents.append(compiler_names)
-    if runtime_name != "":
-        namecomponents.append(runtime_name)
-    original_name = '-'.join(namecomponents)
-    if MODEL_NAME_COUNTER[original_name] == 0:
-        name = original_name
-    else:
-        name = f"{original_name} ({MODEL_NAME_COUNTER[original_name]})"
-    MODEL_NAME_COUNTER[original_name] += 1
-    return name
+    return str(filepath).replace("/", ".")
 
 
 def performance_report(
@@ -822,11 +794,10 @@ def main(argv):
         if args.model_names is not None:
             modelname = args.model_names[i]
         else:
-            modelname = get_model_name(measurements)
+            modelname = get_model_name(measurementspath)
         measurements['modelname'] = modelname
         measurements['reportname'] = args.reportname
         measurementsdata.append(measurements)
-    # TODO: Check if all model names are unique
 
     for measurements in measurementsdata:
         if 'build_cfg' in measurements:

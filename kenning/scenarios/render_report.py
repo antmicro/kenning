@@ -8,9 +8,8 @@ It requires providing the report type and JSON file to extract data from.
 
 import sys
 import argparse
-from collections import defaultdict
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List
 import json
 import numpy as np
 

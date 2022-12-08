@@ -189,6 +189,10 @@ def main(argv):
     if not ret:
         return 1
 
+    MeasurementsCollector.measurements += {
+        'compiled_model_size': Path(modelpath).stat().st_size
+    }
+
     MeasurementsCollector.save_measurements(args.output)
     return 0
 

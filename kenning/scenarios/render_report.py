@@ -260,6 +260,8 @@ def comparison_performance_report(
             timestamp_key = 'session_utilization_gpu_timestamp'
         else:
             timestamp_key = 'session_utilization_timestamp'
+        if not timestamp_key in data:
+            continue
         timestamps = {
             data['modelname']: data[timestamp_key]
             for data in measurementsdata

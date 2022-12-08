@@ -787,6 +787,11 @@ def main(argv):
         img_dir = args.img_dir
     img_dir.mkdir(parents=True, exist_ok=True)
 
+    if args.model_names is not None and \
+            len(args.measurements) != len(args.model_names):
+        log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
+        args.model_names = None
+
     measurementsdata = []
     for i, measurementspath in enumerate(args.measurements):
         with open(measurementspath, 'r') as measurementsfile:

@@ -17,21 +17,21 @@ The grey blocks represent the inference results and metrics flow.
 
 {{projecturl}} provides:
 
-* a [](dataset-api) class - performs dataset downloading, preparation, input preprocessing, output postprocessing and model evaluation,
-* a [](modelwrapper-api) class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using native framework,
+* a [](dataset-api) class - performs dataset download, preparation, input preprocessing, output postprocessing and model evaluation,
+* a [](modelwrapper-api) class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using a native framework,
 * a [](optimizer-api) class - optimizes and compiles the model,
 * a [](runtime-api) class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
 * a [](runtimeprotocol-api) class - implements the communication protocol between the host and the target,
-* a [](dataprovider-api) class - implements providing data from such sources as camera, TCP connection or others for inference,
-* a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying the visualizations, sending the results to via TCP).
+* a [](dataprovider-api) class - implements providing data for inference from such sources as camera, TCP connection, or others,
+* a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying visualizations or sending results via TCP).
 
 ### Model processing
 
-The orange blocks and arrows in the {figure:numref}`class-flow` represent the model life cycle:
+The orange blocks and arrows in {figure:numref}`class-flow` represent a model's life cycle:
 
 * the model is designed, trained, evaluated and improved - the training is implemented in the [](modelwrapper-api).
   ```{note}
-  This is an optional step - the already trained model can also be wrapped and used.
+  This is an optional step - an already trained model can also be wrapped and used.
   ```
 * the model is passed to the [](optimizer-api) where it is optimized for given hardware and later compiled,
 * during inference testing, the model is sent to the target using [](runtimeprotocol-api),
@@ -48,7 +48,7 @@ Firstly, the input and output data is loaded from dataset files and processed.
 Later, since every model has its specific input preprocessing and output postprocessing routines, the data is passed to the [](modelwrapper-api) methods in order to to apply modifications.
 During inference testing, the data is sent to and from the target using [](runtimeprotocol-api).
 
-Lastly, since [](runtime-api) runtimes also have their specific representations of data, proper I/O processing is applied.
+Lastly, since [](runtime-api)s also have their specific representations of data, proper I/O processing is applied.
 
 ### Reporting data flow
 

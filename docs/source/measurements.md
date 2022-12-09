@@ -4,12 +4,12 @@ Kenning measurements are a set of information describing the compilation and eva
 
 They contains such information as:
 
-* Classes used to construct the optimization/runtime pipeline, along with their parameters,
-* JSON scenario used in the run,
-* Command used to run the scenario,
-* Versions of Python modules used,
-* Performance measurements, such as CPU usage, GPU usage,
-* Quality measurements, such as predictions, ground truth, confusion matrix
+* classes used to construct the optimization/runtime pipeline, along with their parameters,
+* the JSON scenario used in the run,
+* the command used to run the scenario,
+* versions of the Python modules used,
+* performance measurements, such as CPU usage, GPU usage,
+* quality measurements, such as predictions, ground truth, confusion matrix
 
 All information is stored in JSON format.
 

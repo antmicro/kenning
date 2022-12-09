@@ -39,35 +39,35 @@ The example metadata file looks as follows (for ResNet50 for the ImageNet classi
 
 The metadata file consists of:
 
-* `input` list of structures describing inputs for the model,
-* `output` list of structures describing outputs for the model.
+* an `input` list of structures describing inputs for the model,
+* an `output` list of structures describing outputs for the model.
 
 Each input and output is described by the following parameters:
 
-* `name` - input/output name.
-* `shape` - input/output tensor shape.
-* `dtype` - output type.
+* `name` - input/output name,
+* `shape` - input/output tensor shape,
+* `dtype` - output type,
 * `order` - some of the runtimes/compilers allow accessing inputs and outputs by id.
-  This field describes the id of the current input/output.
+  This field describes the id of the current input/output,
 * `scale` - scale parameter for the quantization purposes.
-  Present only if the input/output requires quantization/dequantization.
-* `zero_point` - zero point parameter for the quantization purposes.
-  Present only if the input/output requires quantization/dequantization.
+  Present only if the input/output requires quantization/dequantization,
+* `zero_point` - zero point parameter for the quantization purposes,
+  Present only if the input/output requires quantization/dequantization,
 * `prequantized_dtype` - input/output data type before quantization.
 
-The model metadata is used by all classes in Kenning for understanding the format of the inputs and outputs.
+The model metadata is used by all classes in Kenning in order to understand the format of the inputs and outputs.
 ```{warning}
-The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. quantize the network. It is crucial to update the I/O specification when the current block modifies it.
+The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. quantize the network. It is crucial to update the I/O specification when a block modifies it.
 ```
 
 ## Implementing a new Kenning component
 
-Firstly, check the [](kenning-api) for available building blocks for Kenning and their documentation.
+Firstly, check [](kenning-api) for available building blocks for Kenning and their documentation.
 Adding a new block to Kenning is a matter of creating a new class inheriting from one of `kenning.core` classes, providing configuration parameters, and implementing methods - at least the unimplemented ones.
 
 For example purposes, let's create a sample [](optimizer-api)-based class, which will convert an input model to the TensorFlow Lite format.
 
-First, let's create minimal code with the empty class:
+First, let's create minimal code with an empty class:
 
 ```python
 from kenning.core.optimizer import Optimizer
@@ -93,10 +93,10 @@ This structure is used to create:
 
 * an `argparse` group, to configure class parameters from terminal level (via the `form_argparse` method).
   Later, a class can be created with the `from_argparse` method.
-* JSON schema to configure the class from the JSON file (via the `form_parameterschema` method).
+* a JSON schema to configure the class from a JSON file (via the `form_parameterschema` method).
   Later, a class can be created with the `from_parameterschema` method.
 
-`arguments_structure` is a dictionary of form:
+`arguments_structure` is a dictionary in the following form:
 
 ```python
 arguments_structure = {
@@ -110,15 +110,15 @@ arguments_structure = {
 
 The `argument_name` is a name used in:
 
-* Python constructor,
-* Argparse argument (in a form of `--argument-name`),
-* JSON argument.
+* the Python constructor,
+* an Argparse argument (in a form of `--argument-name`),
+* a JSON argument.
 
-The fields describing the argument are following:
+The fields describing the argument are as follows:
 
 * `argparse_name` - if there is a need for a different flag in argparse, it can be provided here,
-* `description` - description of the node, displayed during parsing error for JSON, or in help in case of command-line access
-* `type` - type of argument, can be:
+* `description` - description of the node, displayed for a parsing error for JSON, or in help in case of command-line access
+* `type` - type of argument, i.e.:
 
     * `Path` from `pathlib` module,
     * `str`
@@ -192,7 +192,7 @@ class TensorFlowLiteCompiler(Optimizer):
 
 In addition to defined arguments, there are also default [](optimizer-api) arguments - the [](dataset-api) object and path to save the model (`compiled_model_path`).
 
-Also, a `from_argparse` object creator is implemented, since there are additional parameters (`dataset`) to handle. Function `from_parameterschema` is created automatically.
+Also, a `from_argparse` object creator is implemented, since there are additional parameters (`dataset`) to handle. The `from_parameterschema` function is created automatically.
 
 The above implementation of arguments is common for all core classes.
 
@@ -200,7 +200,7 @@ The above implementation of arguments is common for all core classes.
 
 The Kenning classes for consecutive steps are meant to work in a seamless manner, which means providing various ways to pass the model from one class to another.
 
-Usually, each class can accept multiple model input formats and provides at least one output format that can be accepted in other classes (except for `terminal` compilers, such as [Apache TVM](https://tvm.apache.org/) that compile model to runtime library).
+Usually, each class can accept multiple model input formats and provides at least one output format that can be accepted in other classes (except for `terminal` compilers, such as [Apache TVM](https://tvm.apache.org/), that compile models to a runtime library).
 
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
@@ -473,7 +473,7 @@ class TensorFlowLiteCompiler(Optimizer):
         return 'tensorflow', tf.__version__
 ```
 
-There are several important things regarding the above code snippet:
+There are several important things regarding the code snippet above:
 
 * The information regarding inputs and outputs can be collected with the `self.load_io_specification` method, present in all classes.
 * The information about the input format to use is delivered in the `self.inputtype` field - it is updated automatically by the function consulting the best supported format for previous and current block.
@@ -485,8 +485,8 @@ In the Python script, the above class can be used with other classes from the []
 
 To use the implemented block in the JSON scenario (as described in [](json-scenarios), the module implementing the class needs to be available from the current directory, or the path to the module needs to be added to the `PYTHONPATH` variable.
 
-Let's assume that the class was implemented in `my_optimizer.py` file.
-The scenario can look as follow:
+Let's assume that the class was implemented in the `my_optimizer.py` file.
+The scenario can look as follows:
 
 ```{code-block} json
 ---
@@ -532,6 +532,6 @@ emphasize-lines: 18-29
 }
 ```
 
-The emphasized line demonstrates usage of implemented `TensorFlowLiteCompiler` from the `my_optimizer.py` script.
+The emphasized line demonstrates usage of the implemented `TensorFlowLiteCompiler` from the `my_optimizer.py` script.
 
 This sums up the Kenning development process.

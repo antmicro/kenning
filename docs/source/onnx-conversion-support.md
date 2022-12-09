@@ -10,14 +10,14 @@ The `kenning.core.onnxconversion.ONNXConversion` class provides an API for writi
 
 It requires implementing:
 
-* a method for importing ONNX model for a given framework,
-* a method for exporting ONNX model from a given framework,
-* a list of models implemented in a given framework, where each model will be exported to ONNX, and then imported back to the framework.
+* a method for ONNX model import for a given framework,
+* a method for ONNX model export from a given framework,
+* a list of models implemented in a given framework, where each model is exported to ONNX, and then imported back to the framework.
 
-The `ONNXConversion` class implements a method for converting the models.
+The `ONNXConversion` class implements a method for model conversion.
 It catches exceptions and any issues in the import/export methods, and provides a report on conversion status per model.
 
-Look at the [TensorFlowONNXConversion class](https://github.com/antmicro/kenning/blob/main/kenning/onnxconverters/tensorflow.py) for an example of API usage.
+See the [TensorFlowONNXConversion class](https://github.com/antmicro/kenning/blob/main/kenning/onnxconverters/tensorflow.py) for an example of API usage.
 
 ## ONNX support grid in deep learning frameworks
 

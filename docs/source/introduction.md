@@ -4,9 +4,9 @@
 
 This documentation consists of the following chapters:
 
-* []The (project-readme) section provides a project description, installation steps and a quick start guide,
-* []The (dl-deployment-stack) section describes the typical model deployment flow on edge devices,
-* []The (cmd-usage) section describes executable scripts available in |projecturl|,
-* []The (onnx-conversion-support) section covers ONNX model format support in deep learning frameworks,
-* []The (sample-report) section provides a sample report generated using |projecturl|,
-* []The (kenning-api) section describes the |projecturl| API.
+* The [](project-readme) section provides a project description, installation steps and a quick start guide,
+* The [](dl-deployment-stack) section describes a typical model deployment flow on edge devices,
+* The [](cmd-usage) section describes executable scripts available in |projecturl|,
+* The [](onnx-conversion-support) section covers ONNX model format support in deep learning frameworks,
+* The [](sample-report) section provides a sample report generated using {{projecturl}},
+* The [](kenning-api) section provides an in-depth description of the {{projecturl}} API.

@@ -10,7 +10,7 @@ A deep learning application deployed on IoT devices usually goes through the fol
 * evaluation metrics are specified based on a given dataset and outputs,
 * data in the dataset undergoes analysis, data loaders that perform the preprocessing are implemented,
 * the deep learning model is either designed from scratch or a baseline is selected from a wide selection of existing pre-trained models for a given deep learning application (classification, detection, semantic segmentation, instance segmentation, etc.) and adjusted to a particular use case,
-* a loss function and a learning algorithm are specified along with a deep learning model,
+* a loss function and a learning algorithm are specified along with the deep learning model,
 * the model is trained, evaluated and improved,
 * the model is compiled to a representation that is applicable to a given target,
 * the model is executed on a target device.
@@ -48,7 +48,7 @@ The intuition behind this is that there are multiple common features between var
 
 Once a model is seleceted, it requires adequate data input preprocessing in order to perform valid training.
 The input data should be normalized and resized to fit input tensor requirements.
-In case of the training dataset, especially if it is quite small, applying reasonable data augmentations like random brightness, contrast, cropping, jitters, rotations can significantly improve the training process and prevent the network from overfitting.
+In case of the training dataset, especially if it is quite small, applying reasonable data augmentations like random brightness, contrast, cropping, jitters or rotations can significantly improve the training process and prevent the network from overfitting.
 
 In the end, a proper training procedure needs to be specified.
 This step includes:
@@ -81,7 +81,7 @@ This is required in order to find any drops in quality.
 
 Deep learning compilers can transform model representation to:
 
-* a source code for a different programming language, e.g. [Halide](https://halide-lang.org), C, C++, Java that can be later used on a given target,
+* a source code for a different programming language, e.g. [Halide](https://halide-lang.org), C, C++, Java, that can be later used on a given target,
 * a machine code utilizing available hardware accelerators with e.g. OpenGL, OpenCL, CUDA, TensorRT, ROCm libraries,
 * an FPGA bitstream,
 * other targets.

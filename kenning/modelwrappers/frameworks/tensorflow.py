@@ -1,5 +1,4 @@
 import numpy as np
-import tensorflow as tf
 from pathlib import Path
 
 from kenning.core.model import ModelWrapper
@@ -30,6 +29,7 @@ class TensorFlowWrapper(ModelWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def load_model(self, modelpath):
+        import tensorflow as tf
         tf.keras.backend.clear_session()
         if hasattr(self, 'model') and self.model is not None:
             del self.model
@@ -37,23 +37,28 @@ class TensorFlowWrapper(ModelWrapper):
         print(self.model.summary())
 
     def save_model(self, modelpath):
+        self.prepare_model()
         self.model.save(modelpath)
 
     def preprocess_input(self, X):
         return np.array(X, dtype='float32')
 
     def run_inference(self, X):
+        self.prepare_model()
         return self.model.predict(X, verbose=0)
 
     def get_framework_and_version(self):
+        import tensorflow as tf
         return ('tensorflow', tf.__version__)
 
     def get_output_formats(self):
         return ['onnx', 'keras']
 
     def save_to_onnx(self, modelpath):
+        import tensorflow as tf
         import tf2onnx
 
+        self.prepare_model()
         x = tuple(tf.TensorSpec(
             spec['shape'],
             spec['dtype'],

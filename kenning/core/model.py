@@ -51,7 +51,7 @@ class ModelWrapper(object):
         self.dataset = dataset
         self.data = defaultdict(list)
         self.from_file = from_file
-        self.prepare_model()
+        self.model_prepared = False
 
         self.actions = {
             'infer': self.action_infer,
@@ -214,6 +214,14 @@ class ModelWrapper(object):
     def prepare_model(self):
         """
         Downloads the model (if required) and loads it to the device.
+
+        Should be used whenever the model is actually required.
+
+        The prepare_model method should check model_prepared field
+        to determine if the model is not already loaded.
+
+        It should also set model_prepared field to True
+        once the model is prepared.
         """
         raise NotImplementedError
 

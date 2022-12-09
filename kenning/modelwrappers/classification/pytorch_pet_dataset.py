@@ -5,13 +5,9 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 """
 
 from pathlib import Path
-from torchvision import models, transforms
-import torch
 import numpy as np
-from torch.utils.data import Dataset
-import torch.optim as optim
 from tqdm import tqdm
-from torch.utils.tensorboard import SummaryWriter
+from kenning.core.dataset import Dataset
 
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
@@ -83,14 +79,17 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def preprocess_input(self, X):
         if np.ndim(X) == 3:
             X = np.array([X])
+        import torch
         return torch.Tensor(
             np.array(X, dtype=np.float32)
         ).to(self.device).permute(0, 3, 1, 2)
 
     def create_model_structure(self):
+        from torchvision import models
         self.model = models.mobilenet_v2(pretrained=True)
         for param in self.model.parameters():
             param.requires_grad = False
+        import torch
         self.model.classifier = torch.nn.Sequential(
             torch.nn.Linear(1280, 1024),
             torch.nn.ReLU(),
@@ -105,6 +104,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
+        import torch
         if self.from_file:
             self.load_model(self.modelpath)
         else:
@@ -117,6 +119,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.model.classifier.apply(weights_init)
             self.save_model(self.modelpath)
         self.model.to(self.device)
+        self.model_prepared = True
 
     def train_model(
             self,
@@ -124,13 +127,18 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             learning_rate: int,
             epochs: int,
             logdir: Path):
+        import torch
+        from torch.utils.data import Dataset as TorchDataset
+        from torchvision import transforms
+
+        self.prepare_model()
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(
             0.25
         )
 
         self.dataset.standardize = False
 
-        class PetDatasetPytorch(Dataset):
+        class PetDatasetPytorch(TorchDataset):
             def __init__(
                     self,
                     inputs,
@@ -195,10 +203,12 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         self.model.to(self.device)
 
         criterion = torch.nn.CrossEntropyLoss()
+        import torch.optim as optim
         opt = optim.Adam(self.model.parameters(), lr=learning_rate)
 
         best_acc = 0
 
+        from torch.utils.tensorboard import SummaryWriter
         writer = SummaryWriter(log_dir=logdir)
 
         for epoch in range(epochs):
@@ -262,6 +272,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return data
 
     def convert_output_from_bytes(self, outputdata):
+        import torch
         result = []
         singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
         for ind in range(0, len(outputdata), singleoutputsize):

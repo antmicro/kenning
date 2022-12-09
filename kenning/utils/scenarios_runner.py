@@ -4,7 +4,7 @@ Module with scenarios running helper functions
 import tempfile
 from pathlib import Path
 
-from typing import Optional, Dict, Tuple
+from typing import Optional, Dict, Tuple, List
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.args_manager import serialize_inference
@@ -124,7 +124,8 @@ def run_scenario_json(
         output: Path,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
-        command: str = 'Run in a different environment') -> int:
+        command: List = ['Run in a different environment'],
+        run_benchmarks_only: bool = False) -> int:
     """
     Simple wrapper for `run_scenario` method that parses `json_cfg` argument,
     asserts its integrity and then runs the scenario with given parameters.
@@ -139,16 +140,20 @@ def run_scenario_json(
         Verbosity level
     convert_to_onnx : Optional[Path], optional
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
-    command : str, optional
+    command : List, optional
         Command used to run this inference scenario. It is put in
         the output JSON file
+    run_benchmarks_only : bool
+        Instead of running the full compilation and testing flow,
+        only testing of the model is executed
     """
     run_scenario(
         *parse_json_scenario(json_cfg),
         output,
         verbosity,
         convert_to_onnx,
-        command
+        command,
+        run_benchmarks_only
     )
 
 
@@ -161,7 +166,8 @@ def run_scenario(
         output: Path,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
-        command: str = 'Run in a different environment'):
+        command: List = ['Run in a different environment'],
+        run_benchmarks_only: bool = False):
     """
     Wrapper function that runs a scenario given in `json_cfg` argument.
 
@@ -175,13 +181,12 @@ def run_scenario(
         Verbosity level
     convert_to_onnx : Optional[Path], optional
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
-    command : str, optional
+    command : List, optional
         Command used to run this inference scenario. It is put in
         the output JSON file
-    validate_only : bool
-        States whether the function should only create the scenario and
-        validate it. If it is true the function returns before
-        running the inference. Otherwise the inference is run normally.
+    run_benchmarks_only : bool
+        Instead of running the full compilation and testing flow,
+        only testing of the model is executed
 
     Returns
     -------
@@ -222,37 +227,42 @@ def run_scenario(
 
     modelpath = model.get_path()
 
-    prev_block = model
-    if convert_to_onnx:
-        log.warn(
-            'Force conversion of the input model to the ONNX format'
-        )
-        modelpath = convert_to_onnx
-        prev_block.save_to_onnx(modelpath)
-
-    for i in range(len(optimizers)):
-        next_block = optimizers[i]
-
-        log.info(f'Processing block:  {type(next_block).__name__}')
-
-        format = next_block.consult_model_type(
-            prev_block,
-            force_onnx=(convert_to_onnx and prev_block == model)
-        )
-
-        if (format == 'onnx' and prev_block == model) and not convert_to_onnx:
-            modelpath = Path(tempfile.NamedTemporaryFile().name)
+    if not run_benchmarks_only:
+        prev_block = model
+        if convert_to_onnx:
+            log.warn(
+                'Force conversion of the input model to the ONNX format'
+            )
+            modelpath = convert_to_onnx
             prev_block.save_to_onnx(modelpath)
 
-        prev_block.save_io_specification(modelpath)
-        next_block.set_input_type(format)
-        next_block.compile(modelpath)
+        for i in range(len(optimizers)):
+            next_block = optimizers[i]
 
-        prev_block = next_block
-        modelpath = prev_block.compiled_model_path
+            log.info(f'Processing block:  {type(next_block).__name__}')
 
-    if not optimizers:
-        model.save_io_specification(modelpath)
+            format = next_block.consult_model_type(
+                prev_block,
+                force_onnx=(convert_to_onnx and prev_block == model)
+            )
+
+            if (format == 'onnx' and prev_block == model) and \
+                    not convert_to_onnx:
+                modelpath = Path(tempfile.NamedTemporaryFile().name)
+                prev_block.save_to_onnx(modelpath)
+
+            prev_block.save_io_specification(modelpath)
+            next_block.set_input_type(format)
+            next_block.compile(modelpath)
+
+            prev_block = next_block
+            modelpath = prev_block.compiled_model_path
+
+        if not optimizers:
+            model.save_io_specification(modelpath)
+    else:
+        if len(optimizers) > 0:
+            modelpath = optimizers[-1].compiled_model_path
 
     if runtime:
         if protocol:
@@ -265,6 +275,10 @@ def run_scenario(
 
     if not ret:
         return 1
+
+    MeasurementsCollector.measurements += {
+        'compiled_model_size': Path(modelpath).stat().st_size
+    }
 
     MeasurementsCollector.save_measurements(output)
     return 0

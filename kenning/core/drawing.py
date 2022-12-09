@@ -117,6 +117,7 @@ def time_series_plot(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def draw_multiple_time_series(
@@ -180,6 +181,7 @@ def draw_multiple_time_series(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def draw_violin_comparison_plot(
@@ -245,6 +247,7 @@ def draw_violin_comparison_plot(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def draw_radar_chart(
@@ -313,6 +316,7 @@ def draw_radar_chart(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def draw_bubble_plot(
@@ -408,6 +412,7 @@ def draw_bubble_plot(
             ),
             bbox_inches='tight'
         )
+    plt.close()
 
 
 def draw_confusion_matrix(
@@ -653,6 +658,7 @@ def draw_confusion_matrix(
             bbox_extra_artists=[suptitlehandle],
             pad_inches=0.1
         )
+    plt.close()
 
 
 def recall_precision_curves(
@@ -712,6 +718,7 @@ def recall_precision_curves(
             bbox_extra_artists=[legendhandle],
             bbox_inches='tight'
         )
+    plt.close()
 
 
 def true_positive_iou_histogram(
@@ -755,6 +762,7 @@ def true_positive_iou_histogram(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def true_positives_per_iou_range_histogram(
@@ -797,6 +805,7 @@ def true_positives_per_iou_range_histogram(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def recall_precision_gradients(
@@ -863,6 +872,7 @@ def recall_precision_gradients(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()
 
 
 def draw_plot(
@@ -922,3 +932,4 @@ def draw_plot(
         plt.show()
     else:
         plt.savefig(outpath)
+    plt.close()

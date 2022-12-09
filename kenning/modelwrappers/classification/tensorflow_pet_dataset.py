@@ -5,7 +5,6 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 """
 
 from pathlib import Path
-import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper  # noqa: E501
@@ -13,6 +12,7 @@ from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper  # noq
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
+        import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
@@ -31,6 +31,9 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         }
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
+        import tensorflow as tf
         if self.from_file:
             self.load_model(self.modelpath)
         else:
@@ -65,6 +68,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             )
             print(self.model.summary())
             self.save_model(self.modelpath)
+        self.model_prepared = True
 
     def train_model(
             self,
@@ -72,6 +76,9 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             learning_rate: int,
             epochs: int,
             logdir: Path):
+        import tensorflow as tf
+
+        self.prepare_model()
 
         def preprocess_input(path, onehot):
             data = tf.io.read_file(path)

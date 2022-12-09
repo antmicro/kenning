@@ -186,11 +186,14 @@ class YOLACT(ModelWrapper):
         )
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
         if not self.from_file:
             raise NotImplementedError(
                 "Yolact ModelWrapper only supports loading model from a file."
             )
         self.load_model(self.modelpath)
+        self.model_prepared = True
 
     def load_model(self, modelpath):
         if self.model is not None:

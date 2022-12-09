@@ -6,7 +6,6 @@ Prerained on COCO dataset
 
 import numpy as np
 from pathlib import Path
-from torchvision import models
 from functools import reduce
 import operator
 
@@ -29,6 +28,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     def create_model_structure(self):
+        from torchvision import models
         self.model = models.detection.maskrcnn_resnet50_fpn(
             pretrained=True,  # downloads mask r-cnn model to torchhub dir
             progress=True,
@@ -37,6 +37,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         )
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
         if self.from_file:
             self.load_model(self.modelpath)
         else:
@@ -50,6 +52,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             with open(p, 'r') as f:
                 for line in f:
                     self.custom_classnames.append(line.strip())
+        self.model_prepared = True
 
     def postprocess_outputs(self, out_all: list) -> list:
         ret = []

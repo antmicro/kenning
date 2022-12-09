@@ -200,8 +200,6 @@ class TVMCompiler(Optimizer):
     The TVM compiler.
     """
 
-    outputtypes = []
-
     inputtypes = {
         'keras': kerasconversion,
         'onnx': onnxconversion,
@@ -209,6 +207,8 @@ class TVMCompiler(Optimizer):
         'torch': torchconversion,
         'tflite': tfliteconversion
     }
+
+    outputtypes = ['tvm']
 
     arguments_structure = {
         'modelframework': {

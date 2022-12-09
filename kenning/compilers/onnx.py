@@ -74,16 +74,13 @@ class ONNXCompiler(Optimizer):
     """
     The ONNX compiler.
     """
-
-    outputtypes = [
-        'onnx'
-    ]
-
     inputtypes = {
         'keras': kerasconversion,
         'torch': torchconversion,
         'tflite': tfliteconversion
     }
+
+    outputtypes = ['onnx']
 
     arguments_structure = {
         'modelframework': {

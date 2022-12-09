@@ -17,6 +17,8 @@ class IREERuntime(Runtime):
     for testing inference on IREE models.
     """
 
+    inputtypes = ['iree']
+
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',

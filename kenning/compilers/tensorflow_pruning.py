@@ -19,13 +19,13 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     """
     The TensorFlowPruning optimizer.
     """
-    outputtypes = [
-        'keras'
-    ]
-
     inputtypes = {
         'keras': kerasconversion,
     }
+
+    outputtypes = [
+        'keras'
+    ]
 
     arguments_structure = {
         'modelframework': {

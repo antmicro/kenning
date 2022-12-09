@@ -17,6 +17,8 @@ class TFLiteRuntime(Runtime):
     for testing inference on TFLite models.
     """
 
+    inputtypes = ['tflite']
+
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',

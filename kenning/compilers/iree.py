@@ -110,7 +110,7 @@ class IREECompiler(Optimizer):
         'tflite': tfliteconversion
     }
 
-    outputtypes = []
+    outputtypes = ['iree']
 
     arguments_structure = {
         'modelframework': {

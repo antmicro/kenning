@@ -19,6 +19,8 @@ class ONNXRuntime(Runtime):
     for testing inference on ONNX models.
     """
 
+    inputtypes = ['onnx']
+
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',

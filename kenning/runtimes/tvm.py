@@ -20,6 +20,8 @@ class TVMRuntime(Runtime):
     for testing inference on TVM models.
     """
 
+    inputtypes = ['tvm']
+
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--save-model-path',

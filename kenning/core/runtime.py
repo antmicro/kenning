@@ -60,6 +60,8 @@ class Runtime(object):
     analyzed.
     """
 
+    inputtypes = []
+
     arguments_structure = {
         'collect_performance_data': {
             'argparse_name': '--disable-performance-measurements',
@@ -228,6 +230,17 @@ class Runtime(object):
             protocol,
             **parsed_json_dict
         )
+
+    def get_input_formats(self) -> List[str]:
+        """
+        Returns list of names of possible input formats names.
+
+        Returns
+        -------
+        List[str] :
+            List of possible input format names
+        """
+        return self.inputtypes
 
     def inference_session_start(self):
         """

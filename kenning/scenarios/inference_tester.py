@@ -31,15 +31,12 @@ Each of those classes require specific set or arguments to configure the
 compilation and benchmark process
 """
 
-import sys
 import argparse
-import tempfile
+import sys
 from pathlib import Path
 
-from kenning.utils.class_loader import load_class, get_command
-import kenning.utils.logger as logger
-from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.args_manager import serialize_inference
+from kenning.utils.class_loader import get_command, load_class
+from kenning.utils.scenarios_runner import run_scenario
 
 
 def main(argv):
@@ -105,11 +102,13 @@ def main(argv):
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         default='INFO'
     )
+    parser.add_argument(
+        '--run-benchmarks-only',
+        help='Instead of running the full compilation and testing flow, only testing of the model is executed',  # noqa: E501
+        action='store_true'
+    )
 
     args = parser.parse_args(argv[1:])
-
-    logger.set_verbosity(args.verbosity)
-    logger.get_logger()
 
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
@@ -117,78 +116,18 @@ def main(argv):
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
-    modelframeworktuple = model.get_framework_and_version()
-
-    if compiler:
-        compilerframeworktuple = compiler.get_framework_and_version()
-        compiler_info = [
-            {
-                'compiler_framework': compilerframeworktuple[0],
-                'compiler_version': compilerframeworktuple[1]
-            }
-        ]
-    else:
-        compiler_info = []
-
-    MeasurementsCollector.measurements += {
-        'model_framework': modelframeworktuple[0],
-        'model_version': modelframeworktuple[1],
-        'compilers': compiler_info,
-        'command': command,
-        'build_cfg': serialize_inference(
-            dataset,
-            model,
-            compiler,
-            protocol,
-            runtime
-        )
-    }
-
-    # TODO add method for providing metadata to dataset
-    if hasattr(dataset, 'classnames'):
-        MeasurementsCollector.measurements += {
-            'class_names': [val for val in dataset.get_class_names()]
-        }
-
-    modelpath = model.get_path()
-
-    if args.convert_to_onnx:
-        modelpath = args.convert_to_onnx
-        model.save_to_onnx(modelpath)
-
-    if compiler:
-        # TODO make use of --model-framework parameter or make it optional and
-        # use it only if specified
-        format = compiler.consult_model_type(
-            model,
-            force_onnx=args.convert_to_onnx
-        )
-
-        if format == 'onnx' and not args.convert_to_onnx:
-            modelpath = Path(tempfile.NamedTemporaryFile().name)
-            model.save_to_onnx(modelpath)
-
-        model.save_io_specification(modelpath)
-        compiler.set_input_type(format)
-        compiler.compile(modelpath)
-        modelpath = compiler.compiled_model_path
-    else:
-        model.save_io_specification(modelpath)
-
-    if runtime:
-        if protocol:
-            ret = runtime.run_client(dataset, model, modelpath)
-        else:
-            ret = runtime.run_locally(dataset, model, modelpath)
-    else:
-        model.test_inference()
-        ret = True
-
-    if not ret:
-        return 1
-
-    MeasurementsCollector.save_measurements(args.output)
-    return 0
+    run_scenario(
+        dataset,
+        model,
+        [compiler],
+        runtime,
+        protocol,
+        args.output,
+        args.verbosity,
+        args.convert_to_onnx,
+        command,
+        args.run_benchmarks_only
+    )
 
 
 if __name__ == '__main__':

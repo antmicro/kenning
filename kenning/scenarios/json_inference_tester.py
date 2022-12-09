@@ -30,183 +30,13 @@ Each of those classes require specific set or arguments to configure the
 compilation and benchmark process
 """
 
-import sys
 import argparse
 import json
-import tempfile
+import sys
 from pathlib import Path
 
-from typing import Optional
-from kenning.utils.class_loader import load_class, get_command
-import kenning.utils.logger as logger
-from kenning.core.measurements import MeasurementsCollector
-
-
-def run_scenario(
-        json_cfg: dict,
-        output: Path,
-        verbosity: str = 'INFO',
-        convert_to_onnx: Optional[Path] = None,
-        command: str = 'Run in a different environment',
-        run_benchmarks_only: bool = False,
-        validate_only: bool = False):
-    """
-    Wrapper function that runs a scenario given in `json_cfg` argument.
-
-    Parameters
-    ----------
-    json_cfg : dict
-        Configuration of the inference scenario
-    output : Path
-        Path to the output JSON file with measurements
-    verbosity : str, optional
-        Verbosity level
-    convert_to_onnx : Optional[Path], optional
-        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
-    command : str, optional
-        Command used to run this inference scenario. It is put in
-        the output JSON file
-    run_benchmarks_only : bool
-        Instead of running the full compilation and testing flow,
-        only testing of the model is executed
-    validate_only : bool
-        States whether the function should only create the scenario and
-        validate it. If it is true the function returns before
-        running the inference. Otherwise the inference is run normally.
-
-    Returns
-    -------
-    int : 0 if the inference was successful, 1 otherwise
-    """
-    modelwrappercfg = json_cfg['model_wrapper']
-    datasetcfg = json_cfg['dataset']
-    runtimecfg = (
-        json_cfg['runtime']
-        if 'runtime' in json_cfg else None
-    )
-    optimizerscfg = (
-        json_cfg['optimizers']
-        if 'optimizers' in json_cfg else []
-    )
-    protocolcfg = (
-        json_cfg['runtime_protocol']
-        if 'runtime_protocol' in json_cfg else None
-    )
-
-    if (optimizerscfg or protocolcfg) and not runtimecfg:
-        raise RuntimeError('Runtime is not provided')
-
-    modelwrappercls = load_class(modelwrappercfg['type'])
-    datasetcls = load_class(datasetcfg['type'])
-    runtimecls = (
-        load_class(runtimecfg['type'])
-        if runtimecfg else None
-    )
-    optimizerscls = [load_class(cfg['type']) for cfg in optimizerscfg]
-    protocolcls = (
-        load_class(protocolcfg['type'])
-        if protocolcfg else None
-    )
-
-    dataset = datasetcls.from_json(datasetcfg['parameters'])
-    model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
-    optimizers = [
-        cls.from_json(dataset, cfg['parameters'])
-        for cfg, cls in zip(optimizerscfg, optimizerscls)
-    ]
-    protocol = (
-        protocolcls.from_json(protocolcfg['parameters'])
-        if protocolcls else None
-    )
-    runtime = (
-        runtimecls.from_json(protocol, runtimecfg['parameters'])
-        if runtimecls else None
-    )
-
-    if validate_only:
-        return 0
-
-    logger.set_verbosity(verbosity)
-    log = logger.get_logger()
-
-    modelframeworktuple = model.get_framework_and_version()
-
-    MeasurementsCollector.measurements += {
-        'model_framework': modelframeworktuple[0],
-        'model_version': modelframeworktuple[1],
-        'compilers': [
-            {
-                'compiler_framework': optimizer.get_framework_and_version()[0],
-                'compiler_version': optimizer.get_framework_and_version()[1]
-            }
-            for optimizer in optimizers
-        ],
-        'command': command,
-        'build_cfg': json_cfg
-    }
-
-    # TODO add method for providing metadata to dataset
-    if hasattr(dataset, 'classnames'):
-        MeasurementsCollector.measurements += {
-            'class_names': [val for val in dataset.get_class_names()]
-        }
-
-    modelpath = model.get_path()
-    if not run_benchmarks_only:
-        prev_block = model
-        if convert_to_onnx:
-            log.warn(
-                'Force conversion of the input model to the ONNX format'
-            )
-            modelpath = convert_to_onnx
-            prev_block.save_to_onnx(modelpath)
-
-        for i in range(len(optimizers)):
-            next_block = optimizers[i]
-
-            log.info(f'Processing block:  {type(next_block).__name__}')
-
-            format = next_block.consult_model_type(
-                prev_block,
-                force_onnx=(convert_to_onnx and prev_block == model)
-            )
-
-            if (format == 'onnx' and prev_block == model) and \
-                    not convert_to_onnx:
-                modelpath = Path(tempfile.NamedTemporaryFile().name)
-                prev_block.save_to_onnx(modelpath)
-
-            prev_block.save_io_specification(modelpath)
-            next_block.set_input_type(format)
-            next_block.compile(modelpath)
-
-            prev_block = next_block
-            modelpath = prev_block.compiled_model_path
-
-        if not optimizers:
-            model.save_io_specification(modelpath)
-    else:
-        if len(optimizers) > 0:
-            modelpath = optimizers[-1].compiled_model_path
-
-    if runtime:
-        if protocol:
-            ret = runtime.run_client(dataset, model, modelpath)
-        else:
-            ret = runtime.run_locally(dataset, model, modelpath)
-    else:
-        model.test_inference()
-        ret = True
-
-    if not ret:
-        return 1
-
-    MeasurementsCollector.measurements += {
-        'compiled_model_size': Path(modelpath).stat().st_size
-    }
-
-    MeasurementsCollector.save_measurements(output)
-    return 0
+from kenning.utils.class_loader import get_command
+from kenning.utils.scenarios_runner import run_scenario_json
 
 
 def main(argv):
@@ -244,7 +74,7 @@ def main(argv):
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
-    run_scenario(
+    run_scenario_json(
         json_cfg,
         args.output,
         args.verbosity,

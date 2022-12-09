@@ -2,13 +2,11 @@
 Wrapper for TensorFlow Lite deep learning compiler.
 """
 
-import tensorflow as tf
 from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
 from typing import Optional, Dict, List
-import tensorflow_model_optimization as tfmot
 
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
@@ -23,17 +21,20 @@ class EdgeTPUCompilerError(Exception):
 
 
 def kerasconversion(modelpath: Path):
+    import tensorflow as tf
     model = tf.keras.models.load_model(modelpath)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     return converter
 
 
 def tensorflowconversion(modelpath: Path):
+    import tensorflow as tf
     converter = tf.lite.TFLiteConverter.from_saved_model(modelpath)
     return converter
 
 
 def onnxconversion(modelpath: Path):
+    import tensorflow as tf
     from onnx_tf.backend import prepare
     import onnx
     from datetime import datetime
@@ -189,6 +190,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             self,
             inputmodelpath: Path,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
+        import tensorflow as tf
+        import tensorflow_model_optimization as tfmot
 
         if io_spec is None:
             io_spec = self.load_io_specification(inputmodelpath)

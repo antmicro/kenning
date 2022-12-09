@@ -50,12 +50,12 @@ During inference testing, the data is sent to and from the target using [](runti
 
 Lastly, since [](runtime-api)s also have their specific representations of data, proper I/O processing is applied.
 
-### Reporting data flow
+### Data flow reporting
 
 Report rendering requires performance metrics and quality metrics.
 The flow for this is presented with grey lines and blocks in {figure:numref}`class-flow`.
 
-On target side, performance metrics are computed and sent back to the host using [](runtimeprotocol-api), and later passed to report rendering.
+On target side, performance metrics are computed and sent back to the host using the [](runtimeprotocol-api), and later passed to report rendering.
 After the output data goes through processing in the [](runtime-api) and [](modelwrapper-api), it is compared to the ground truth in the [](dataset-api) during model evaluation.
 In the end, the results of model evaluation are passsed to report rendering.
 

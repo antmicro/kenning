@@ -260,7 +260,7 @@ def comparison_performance_report(
             timestamp_key = 'session_utilization_gpu_timestamp'
         else:
             timestamp_key = 'session_utilization_timestamp'
-        if not timestamp_key in data:
+        if timestamp_key not in data:
             continue
         timestamps = {
             data['modelname']: data[timestamp_key]
@@ -402,21 +402,30 @@ def comparison_classification_report(
         'reportname': measurementsdata[0]['reportname']
     }
     metric_visualization = {}
-    accuracy, mean_inference_time, ram_usage, names = [], [], [], []
+    accuracy, mean_inference_time, model_sizes, names = [], [], [], []
     for data in measurementsdata:
         if 'target_inference_step' in data:
             inference_step = 'target_inference_step'
         elif 'protocol_inference_step' in data:
             inference_step = 'protocol_inference_step'
         else:
-            log.warning("Placeholder")
+            log.warning("No inference measurements available, skipping report generation")  # noqa: E501
             return ""
 
         eval_matrix = np.array(data['eval_confusion_matrix'])
         model_accuracy = np.trace(eval_matrix)/data['total']
         accuracy.append(model_accuracy)
         mean_inference_time.append(np.mean(data[inference_step]))
-        ram_usage.append(np.mean(data['session_utilization_mem_percent']))
+        if 'compiled_model_size' in data:
+            model_sizes.append(data['compiled_model_size'])
+        else:
+            log.warning(
+                'Missing information about model size in measurements' +
+                ' - computing size based on average RAM usage'
+            )
+            model_sizes.append(
+                np.mean(data['session_utilization_mem_percent'])
+            )
         names.append(data['modelname'])
 
         # Accuracy, precision, recall
@@ -434,7 +443,7 @@ def comparison_classification_report(
         "Mean inference time [s]",
         accuracy,
         "Accuracy",
-        ram_usage,
+        model_sizes,
         names
     )
     report_variables['bubbleplotpath'] = str(

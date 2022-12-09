@@ -353,12 +353,19 @@ def draw_bubble_plot(
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     colors = get_comparison_color_scheme(len(xdata))
     markers = []
-    for x, y, size, label, c in zip(xdata, ydata, bubblesize,
-                                    bubblename, colors):
+    maxsize = max(bubblesize)
+    for x, y, bsize, label, c in zip(xdata, ydata, bubblesize,
+                                     bubblename, colors):
+        size = bsize / maxsize * 100
         marker = ax.scatter(x, y, s=size**1.75, label=label, color=c,
                             alpha=0.5, edgecolors='black')
         markers.append(marker)
-    legend = ax.legend(handles=markers, bbox_to_anchor=[1, -0.08], ncol=2)
+    legend = ax.legend(
+        loc='upper center',
+        handles=markers,
+        bbox_to_anchor=[0.5, -0.08],
+        ncol=2
+    )
     for handler in legend.legendHandles:
         handler.set_sizes([40.0])
     ax.add_artist(legend)
@@ -368,16 +375,17 @@ def draw_bubble_plot(
         bubblemarker = ax.scatter([], [], s=i**1.75, color='None',
                                   edgecolors='black')
         bubblemarkers.append(bubblemarker)
-        bubblelabels.append(f"{i}%")
+        bubblelabels.append(f"{i / 100 * maxsize / 1024 ** 2:.4f} MB")
     bubblelegend = ax.legend(
         bubblemarkers,
         bubblelabels,
         handletextpad=3,
         labelspacing=4.5,
         borderpad=3,
-        title="RAM usage",
+        title="Model size",
         frameon=False,
-        bbox_to_anchor=[1.3, 0.83]
+        bbox_to_anchor=[1.05, 0.5],
+        loc='center left'
     )
     bubblelegend._legend_box.sep = 20
     ax.add_artist(bubblelegend)
@@ -385,13 +393,21 @@ def draw_bubble_plot(
     box = ax.get_position()
     ax.set_position([box.x0, box.y0+0.05, box.width * 0.85, box.height-0.05])
 
-    fig.suptitle(title)
+    titleartist = fig.suptitle(title)
     ax.set_xlabel(xlabel)
     ax.set_ylabel(ylabel)
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath)
+        plt.savefig(
+            outpath,
+            bbox_extra_artists=(
+                titleartist,
+                bubblelegend,
+                legend
+            ),
+            bbox_inches='tight'
+        )
 
 
 def draw_confusion_matrix(

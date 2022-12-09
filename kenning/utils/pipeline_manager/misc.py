@@ -1,6 +1,7 @@
-from kenning.utils.pipeline_manager.dataflow_specification import nodes, io_mapping  # noqa: E501
+from typing import Dict, Tuple, Union
+
 from kenning.utils import logger
-from typing import Union, Dict, Tuple
+from kenning.utils.pipeline_manager.dataflow_specification import io_mapping, nodes  # noqa: E501
 
 
 def get_specification() -> Dict:

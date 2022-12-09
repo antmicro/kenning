@@ -66,6 +66,11 @@ def main(argv):
         help='Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)',  # noqa: E501
         type=Path
     )
+    parser.add_argument(
+        '--run-benchmarks-only',
+        help='Instead of running the full compilation and testing flow, only testing of the model is executed',  # noqa: E501
+        action='store_true'
+    )
 
     args, _ = parser.parse_known_args(argv[1:])
 
@@ -144,38 +149,42 @@ def main(argv):
 
     modelpath = model.get_path()
 
-    prev_block = model
-    if args.convert_to_onnx:
-        log.warn(
-            'Force conversion of the input model to the ONNX format'
-        )
-        modelpath = args.convert_to_onnx
-        prev_block.save_to_onnx(modelpath)
-
-    for i in range(len(optimizers)):
-        next_block = optimizers[i]
-
-        log.info(f'Processing block:  {type(next_block).__name__}')
-
-        format = next_block.consult_model_type(
-            prev_block,
-            force_onnx=(args.convert_to_onnx and prev_block == model)
-        )
-
-        if (format == 'onnx' and prev_block == model) and \
-                not args.convert_to_onnx:
-            modelpath = Path(tempfile.NamedTemporaryFile().name)
+    if not args.run_benchmarks_only:
+        prev_block = model
+        if args.convert_to_onnx:
+            log.warn(
+                'Force conversion of the input model to the ONNX format'
+            )
+            modelpath = args.convert_to_onnx
             prev_block.save_to_onnx(modelpath)
 
-        prev_block.save_io_specification(modelpath)
-        next_block.set_input_type(format)
-        next_block.compile(modelpath)
+        for i in range(len(optimizers)):
+            next_block = optimizers[i]
 
-        prev_block = next_block
-        modelpath = prev_block.compiled_model_path
+            log.info(f'Processing block:  {type(next_block).__name__}')
 
-    if not optimizers:
-        model.save_io_specification(modelpath)
+            format = next_block.consult_model_type(
+                prev_block,
+                force_onnx=(args.convert_to_onnx and prev_block == model)
+            )
+
+            if (format == 'onnx' and prev_block == model) and \
+                    not args.convert_to_onnx:
+                modelpath = Path(tempfile.NamedTemporaryFile().name)
+                prev_block.save_to_onnx(modelpath)
+
+            prev_block.save_io_specification(modelpath)
+            next_block.set_input_type(format)
+            next_block.compile(modelpath)
+
+            prev_block = next_block
+            modelpath = prev_block.compiled_model_path
+
+        if not optimizers:
+            model.save_io_specification(modelpath)
+    else:
+        if len(optimizers) > 0:
+            modelpath = optimizers[-1].compiled_model_path
 
     if runtime:
         if protocol:

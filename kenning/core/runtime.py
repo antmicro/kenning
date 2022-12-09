@@ -482,15 +482,15 @@ class Runtime(object):
             raise AttributeError("You must load the output specification first.")  # noqa: E501
         is_reordered = any(['order' in spec for spec in self.output_spec])
 
-        # dequantizaion
-        if any(['prequantized_dtype' in spec for spec in self.output_spec]):
-            quantized_results = []
-            for result, spec in zip(results, self.output_spec):
-                scale = spec['scale']
-                zero_point = spec['zero_point']
-                result = (result.astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
-                quantized_results.append(result)
-            results = quantized_results
+        # dequantization/precision conversion
+        for i, spec in enumerate(self.output_spec):
+            if 'prequantized_dtype' in spec:
+                if ('scale' not in spec) and ('zero_point' not in spec):
+                    results[i] = results[i].astype(spec['prequantized_dtype'])
+                else:
+                    scale = 1.0 if 'scale' not in spec else spec['scale']
+                    zero_point = 0 if 'zero_point' not in spec else spec['zero_point']  # noqa: E501
+                    results[i] = (results[i].astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
 
         # retrieving original order
         reordered_results = [None] * len(results)

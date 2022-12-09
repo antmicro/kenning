@@ -118,6 +118,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             return None
         if self.from_file:
             self.load_model(self.modelpath)
+            self.model_prepared = True
         else:
             if self.disablebuiltinpreprocessing:
                 self.model = load_class(self.modelcls)(
@@ -128,9 +129,9 @@ class TensorFlowImageNet(TensorFlowWrapper):
                 self.model = load_class(self.modelcls)(
                     input_shape=tuple(self.inputshape[1:])
                 )
+            self.model_prepared = True
             self.save_model(self.modelpath)
             self.model.summary()
-        self.model_prepared = True
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

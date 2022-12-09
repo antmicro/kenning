@@ -10,8 +10,6 @@ from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
 from typing import List, Dict
 
-import tensorflow as tf
-
 
 class TensorFlowImageNet(TensorFlowWrapper):
 
@@ -91,6 +89,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         disablebuiltinpreprocessing : bool
             Tells if the input preprocessing should be removed from the model
         """
+        import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
@@ -115,6 +114,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
         }
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
         if self.from_file:
             self.load_model(self.modelpath)
         else:
@@ -129,6 +130,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
                 )
             self.save_model(self.modelpath)
             self.model.summary()
+        self.model_prepared = True
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

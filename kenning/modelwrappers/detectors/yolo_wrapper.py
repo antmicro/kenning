@@ -61,6 +61,8 @@ class YOLOWrapper(ModelWrapper):
         if dataset:
             self.batch_size = dataset.batch_size
             assert self.numclasses == len(dataset.get_class_names())
+        self.prepare_model()
+        self.model_prepared = True
 
     @classmethod
     def form_argparse(cls, no_dataset: bool = False):
@@ -126,7 +128,10 @@ class YOLOWrapper(ModelWrapper):
         }
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
         self.load_model(self.modelpath)
+        self.model_prepared = True
 
     def preprocess_input(self, X):
         return np.array(X)

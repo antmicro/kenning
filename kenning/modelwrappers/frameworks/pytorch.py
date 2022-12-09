@@ -1,13 +1,13 @@
 from kenning.core.model import ModelWrapper
 
 import numpy as np
-import torch
 import copy
 from collections import OrderedDict
 
 
 class PyTorchWrapper(ModelWrapper):
     def __init__(self, modelpath, dataset, from_file):
+        import torch
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501
         super().__init__(modelpath, dataset, from_file)
 
@@ -34,6 +34,7 @@ class PyTorchWrapper(ModelWrapper):
         raise NotImplementedError
 
     def load_model(self, modelpath):
+        import torch
         input_data = torch.load(
             self.modelpath,
             map_location=self.device
@@ -49,6 +50,8 @@ class PyTorchWrapper(ModelWrapper):
             self.model = input_data
 
     def save_to_onnx(self, modelpath):
+        import torch
+        self.prepare_model()
         x = tuple(torch.randn(
             spec['shape'],
             device='cpu'
@@ -68,21 +71,26 @@ class PyTorchWrapper(ModelWrapper):
         )
 
     def save_model(self, modelpath, export_dict=True):
+        import torch
+        self.prepare_model()
         if export_dict:
             torch.save(self.model.state_dict(), modelpath)
         else:
             torch.save(self.model, modelpath)
 
     def preprocess_input(self, X):
+        import torch
         return torch.Tensor(np.array(X)).to(self.device)
 
     def postprocess_outputs(self, y):
         return y.detach().cpu().numpy()
 
     def run_inference(self, X):
+        self.prepare_model()
         return self.model(X)
 
     def get_framework_and_version(self):
+        import torch
         return ('torch', torch.__version__)
 
     def get_output_formats(self):

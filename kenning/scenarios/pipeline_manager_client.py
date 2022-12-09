@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-import json
 import argparse
+import json
 import sys
 from pathlib import Path
 
-from pipeline_manager_backend_communication.communication_backend import CommunicationBackend   # noqa: E501
+from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
+
 from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow  # noqa: E501
-from kenning.scenarios.json_inference_tester import run_scenario
+from kenning.utils.scenarios_runner import run_scenario, parse_json_scenario
 
 
 def main(argv):
@@ -57,11 +58,13 @@ def main(argv):
                     client.send_message(MessageType.ERROR, msg.encode())
                     continue
                 try:
-                    run_scenario(
-                        msg,
-                        args.file_path,
-                        validate_only=(message_type == MessageType.VALIDATE)
-                    )
+                    scenario_tuple = parse_json_scenario(msg)
+
+                    if message_type == MessageType.RUN:
+                        run_scenario(
+                            *scenario_tuple,
+                            args.file_path
+                        )
                 except Exception as ex:
                     client.send_message(MessageType.ERROR, str(ex).encode())
                     continue

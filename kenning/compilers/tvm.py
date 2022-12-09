@@ -462,11 +462,11 @@ class TVMCompiler(Optimizer):
                     file.write(bytecode)
                 lib.export_library(str(outputpath)+'.so')
         else:
-            mod = additional_opts(mod)
-            if self.use_tensorrt:
-                from tvm.relay.op.contrib.tensorrt import partition_for_tensorrt  # noqa: E501
-                mod = partition_for_tensorrt(mod, params)
             with tvm.transform.PassContext(opt_level=self.opt_level):
+                mod = additional_opts(mod)
+                if self.use_tensorrt:
+                    from tvm.relay.op.contrib.tensorrt import partition_for_tensorrt  # noqa: E501
+                    mod = partition_for_tensorrt(mod, params)
                 lib = relay.build(
                     mod,
                     target=self.target_obj,

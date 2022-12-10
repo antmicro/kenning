@@ -28,9 +28,9 @@ def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
     -------
     List of colors to use for plotting
     """
-    CMAP_NAME = "gnuplot"
+    CMAP_NAME = "nipy_spectral"
     cmap = plt.get_cmap(CMAP_NAME)
-    return [cmap(i) for i in np.linspace(0.1, 0.9, n_colors)]
+    return [cmap(i) for i in np.linspace(0.0, 1.0, n_colors)]
 
 
 def time_series_plot(
@@ -288,10 +288,23 @@ def draw_radar_chart(
     colors = get_comparison_color_scheme(len(data))
 
     angles += [0]
-    for color, (samplename, sample) in zip(colors, data.items()):
+    linestyles = ['-', '--', '-.', ':']
+    for i, (color, (samplename, sample)) in enumerate(zip(colors, data.items())):  # noqa: E501
         sample += sample[:1]
-        ax.plot(angles, sample, label=samplename, color=color)
-        ax.fill(angles, sample, alpha=0.1, color=color)
+        ax.plot(
+            angles,
+            sample,
+            label=samplename,
+            color=color,
+            alpha=0.5,
+            linestyle=linestyles[i % len(linestyles)]
+        )
+        ax.fill(
+            angles,
+            sample,
+            alpha=0.1,
+            color=color
+        )
     plt.legend(fontsize="large", bbox_to_anchor=[0.50, -0.05],
                loc="upper center", ncol=2)
 
@@ -358,10 +371,11 @@ def draw_bubble_plot(
     colors = get_comparison_color_scheme(len(xdata))
     markers = []
     maxsize = max(bubblesize)
+    minsize = min(bubblesize)
     for x, y, bsize, label, c in zip(xdata, ydata, bubblesize,
                                      bubblename, colors):
-        size = bsize / maxsize * 100
-        marker = ax.scatter(x, y, s=size**1.75, label=label, color=c,
+        size = (bsize - minsize) / (maxsize - minsize) * 100
+        marker = ax.scatter(x, y, s=(15 + size**1.75), label=label, color=c,
                             alpha=0.5, edgecolors='black')
         markers.append(marker)
     legend = ax.legend(
@@ -375,11 +389,11 @@ def draw_bubble_plot(
     ax.add_artist(legend)
 
     bubblemarkers, bubblelabels = [], []
-    for i in [25, 50, 75, 100]:
-        bubblemarker = ax.scatter([], [], s=i**1.75, color='None',
+    for i in [0, 25, 50, 75, 100]:
+        bubblemarker = ax.scatter([], [], s=(15 + i**1.75), color='None',
                                   edgecolors='black')
         bubblemarkers.append(bubblemarker)
-        bubblelabels.append(f"{i / 100 * maxsize / 1024 ** 2:.4f} MB")
+        bubblelabels.append(f"{(minsize + i / 100 * (maxsize - minsize)) / 1024 ** 2:.4f} MB")  # noqa: E501
     bubblelegend = ax.legend(
         bubblemarkers,
         bubblelabels,

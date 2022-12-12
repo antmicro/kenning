@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Dict, List
 import json
 import numpy as np
+import re
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -737,6 +738,8 @@ def generate_report(
             content += reptypes[typ](model_data, imgdir, imgprefix, rootdir)
         if len(data) > 1:
             content += comparereptypes[typ](data, imgdir, rootdir)
+
+    content = re.sub(r'[ \t]+$', "", content, 0, re.M)
 
     with open(outputpath, 'w') as out:
         out.write(content)

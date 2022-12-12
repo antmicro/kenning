@@ -23,8 +23,8 @@ Metric comparison
       - Mean recall
 {% for modelname in data["modelnames"] %}
     * - {{modelname}}
-      - {{data[modelname][0]}}
-      - {{data[modelname][1]}}
-      - {{data[modelname][2]}}
+      - {{'%.6f' % data[modelname][0]}}
+      - {{'%.6f' % data[modelname][1]}}
+      - {{'%.6f' % data[modelname][2]}}
 {% endfor %}
 

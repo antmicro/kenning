@@ -261,6 +261,10 @@ def comparison_performance_report(
         else:
             timestamp_key = 'session_utilization_timestamp'
         if timestamp_key not in data:
+            log.warning(
+                f'Missing measurement "{timestamp_key}" in the measurements ' +
+                f"file. Can't provide benchmarks for {metric_name}"
+            )
             continue
         timestamps = {
             data['modelname']: data[timestamp_key]

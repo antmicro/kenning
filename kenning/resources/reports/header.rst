@@ -1,5 +1,5 @@
 {{data['reportname']}}
-----------------------
+{{'-' * data['reportname']|length}}
 
 Commands used
 ~~~~~~~~~~~~~
@@ -16,9 +16,10 @@ Commands used
         {% endfor %}
 {% endif -%}
 
+
 {% for modelname in data['modelnames'] %}
 General information for {{modelname}}
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~{{'~' * modelname|length}}
 
 *Model framework*:
 

@@ -32,18 +32,19 @@
                 "target": "int8",
                 "compiled_model_path": "./build/resnet50-int8.tflite",
                 "inference_input_type": "int8",
-                "inference_output_type": "int8"
+                "inference_output_type": "int8",
+                "dataset_percentage": 0.01
             }
         },
         {
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters": {
-                "target": "cuda -arch=sm_87 -libs=tensorrt,cudnn,cublas",
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas",
                 "target_host": null,
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/compiled_model_resnet50-int8.tar"
+                "compiled_model_path": "./build/resnet50-int8.tar"
             }
         }
     ],
@@ -52,7 +53,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-            "save_model_path": "./build/compiled_model_resnet50-int8.tar",
+            "save_model_path": "./build/resnet50-int8.tar",
 	    "target_device_context": "cuda"
         }
     }

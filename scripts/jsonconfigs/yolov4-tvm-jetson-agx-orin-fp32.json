@@ -31,8 +31,7 @@
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/yolov4-fp16.tar",
-                "use_fp16_precision": true
+                "compiled_model_path": "./build/compiled_model.tar"
             }
         }
     ],
@@ -41,7 +40,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-            "save_model_path": "./build/yolov4-fp16.tar",
+            "save_model_path": "./build/compiled_model.tar",
 	    "target_device_context": "cuda"
         }
     }

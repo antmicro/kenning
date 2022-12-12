@@ -21,15 +21,23 @@
     "optimizers":
     [
         {
+            "type": "kenning.compilers.onnx.ONNXCompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/mobilenetv3-tensorrt.onnx"
+            }
+        },
+        {
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
-                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
+                "target": "cuda -arch=sm_87 -libs=cudnn,cublas",
                 "target_host": null,
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/compiled_model_mobilenetv3.tar"
+                "compiled_model_path": "./build/mobilenetv3-tensorrt.tar",
+                "use_tensorrt": true
             }
         }
     ],
@@ -38,7 +46,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-            "save_model_path": "./build/compiled_model_mobilenetv3.tar",
+            "save_model_path": "./build/mobilenetv3-tensorrt.tar",
 	    "target_device_context": "cuda"
         }
     }

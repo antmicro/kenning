@@ -24,7 +24,7 @@
             "type": "kenning.compilers.onnx.ONNXCompiler",
             "parameters":
             {
-                "compiled_model_path": "./build/mobilenetv3-fp16.onnx"
+                "compiled_model_path": "./build/mobilenetv3-fp32.onnx"
             }
         },
         {
@@ -36,8 +36,7 @@
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/mobilenetv3-fp16.tar",
-                "use_fp16_precision": true
+                "compiled_model_path": "./build/mobilenetv3-fp32.tar"
             }
         }
     ],
@@ -46,7 +45,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-            "save_model_path": "./build/mobilenetv3-fp16.tar",
+            "save_model_path": "./build/mobilenetv3-fp32.tar",
 	    "target_device_context": "cuda"
         }
     }

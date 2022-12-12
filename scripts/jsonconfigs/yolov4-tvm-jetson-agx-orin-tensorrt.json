@@ -26,12 +26,13 @@
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
-                "target": "cuda -arch=sm_87 -libs=cudnn,cublas,tensorrt",
+                "target": "cuda -arch=sm_87",
                 "target_host": null,
                 "opt_level": 3,
                 "compile_use_vm": false,
                 "output_conversion_function": "default",
-                "compiled_model_path": "./build/compiled_model.tar"
+                "compiled_model_path": "./build/yolov4_tensorrt_fp32.tar",
+                "use_tensorrt": true
             }
         }
     ],
@@ -40,7 +41,7 @@
         "type": "kenning.runtimes.tvm.TVMRuntime",
         "parameters":
         {
-            "save_model_path": "./build/compiled_model.tar",
+            "save_model_path": "./build/yolov4_tensorrt_fp32.tar",
 	    "target_device_context": "cuda"
         }
     }

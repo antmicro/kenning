@@ -113,7 +113,7 @@ The ``ModelWrapper`` provides methods for running the inference in a loop for da
 
 The ``kenning.modelwrappers.frameworks`` submodule contains framework-wise implementations of ``ModelWrapper`` class - they implement all methods that are common for given frameworks regardless of used model.
 
-For the `Pet Dataset wrapper`_ object there is an example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
+For the `PetDataset`_ wrapper object there is an example classifier implemented in TensorFlow 2.x called `TensorFlowPetDatasetMobileNetV2 <https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py>`_.
 
 Examples of model wrappers:
 

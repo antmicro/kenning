@@ -1,13 +1,15 @@
-Inference quality metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
------------------------------{% if data["modelname"] %}{{'-' * (' for ' + data["modelname"])|length}}{% endif %}
+# Inference quality metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname"] if "modelname" not in data else data["reportname"] + data["modelname"] %}
-.. figure:: {{data["confusionpath"]}}
-    :name: {{basename}}_confusionmatrix
-    :alt: Confusion matrix
-    :align: center
+```{figure} {{data["confusionpath"]}}
+---
+name: {{basename}}_confusionmatrix
+alt: Confusion matrix
+align: center
+---
 
-    Confusion matrix
+Confusion matrix
+```
 
 * *Accuracy*: **{{ accuracy(data['eval_confusion_matrix']) }}**
 * *Top-5 accuracy*: **{{ data['top_5_count'] / data['total'] }}**

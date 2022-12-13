@@ -21,6 +21,5 @@ See the [TensorFlowONNXConversion class](https://github.com/antmicro/kenning/blo
 
 ## ONNX support grid in deep learning frameworks
 
-```{eval-rst}
-.. include:: generated/onnx-support.rst
+```{include} generated/onnx-support.md
 ```

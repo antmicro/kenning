@@ -1,25 +1,23 @@
-{{data['reportname']}}
-{{'-' * data['reportname']|length}}
+# {{data['reportname']}}
 
-Commands used
-~~~~~~~~~~~~~
+## Commands used
 
 {% if data['command']|length > 0 -%}
-.. note::
+````{note}
 
-    This section was generated using:
+This section was generated using:
 
-    .. code-block:: bash
-
-        {% for line in data['command'] -%}
-        {{ line }}
-        {% endfor %}
+```bash
+{% for line in data['command'] -%}
+{{ line }}
+{% endfor %}
+```
+````
 {% endif -%}
 
 
 {% for modelname in data['modelnames'] %}
-General information for {{modelname}}
-~~~~~~~~~~~~~~~~~~~~~~~~{{'~' * modelname|length}}
+## General information for {{modelname}}
 
 *Model framework*:
 
@@ -37,12 +35,10 @@ General information for {{modelname}}
 {% if 'build_cfg' in data[modelname] -%}
 *Input JSON*:
 
-.. note::
-
-    .. code-block:: json
-
-        {% for line in data[modelname]['build_cfg'] -%}
-        {{ line }}
-        {% endfor %}
+```json
+{% for line in data[modelname]['build_cfg'] -%}
+{{ line }}
+{% endfor %}
+```
 {% endif -%}
 {% endfor %}

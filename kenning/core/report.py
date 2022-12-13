@@ -1,5 +1,5 @@
 """
-Functions to generate RST reports from templates and Measurements objects.
+Functions to generate Markdown reports from templates and Measurements objects.
 """
 
 from jinja2 import Template

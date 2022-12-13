@@ -395,8 +395,8 @@ class RuntimeProtocol(object):
         This method should receive the status of uploading the data to
         the target.
 
-        Parameter
-        ---------
+        Parameters
+        ----------
         path : Path
             Path to the json file
 

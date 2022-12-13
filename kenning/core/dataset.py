@@ -171,7 +171,8 @@ class Dataset(object):
 
         Returns
         -------
-        Dataset : object of class Dataset
+        Dataset :
+            object of class Dataset
         """
         return cls(
             args.dataset_root,
@@ -186,7 +187,8 @@ class Dataset(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = {
             "type": "object",
@@ -207,7 +209,8 @@ class Dataset(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != Dataset.arguments_structure:
@@ -233,7 +236,8 @@ class Dataset(object):
 
         Returns
         -------
-        Dataset : object of class Dataset
+        Dataset :
+            object of class Dataset
         """
 
         parameterschema = cls.form_parameterschema()
@@ -252,7 +256,8 @@ class Dataset(object):
 
         Returns
         -------
-        Dataset : this object
+        Dataset :
+            this object
         """
         self._dataindex = 0
         return self
@@ -285,7 +290,8 @@ class Dataset(object):
 
         Returns
         -------
-        int : Number of input samples
+        int :
+            Number of input samples
         """
         return len(self.dataX)
 
@@ -305,7 +311,8 @@ class Dataset(object):
 
         Returns
         -------
-        List : preprocessed input samples
+        List :
+            preprocessed input samples
         """
         return samples
 
@@ -324,7 +331,8 @@ class Dataset(object):
 
         Returns
         -------
-        List : preprocessed output samples
+        List :
+            preprocessed output samples
         """
         return samples
 
@@ -351,7 +359,8 @@ class Dataset(object):
 
         Returns
         -------
-        Tuple[List, List] : the list of data samples
+        Tuple[List, List] :
+            the list of data samples
         """
         return (
             self.prepare_input_samples(self.dataX),
@@ -367,7 +376,8 @@ class Dataset(object):
 
         Returns
         -------
-        Tuple[List, List] : the list of data samples representations
+        Tuple[List, List] :
+            the list of data samples representations
         """
         return (self.dataX, self.dataY)
 
@@ -486,7 +496,8 @@ class Dataset(object):
 
         Returns
         -------
-        Measurements : The dictionary containing the evaluation results
+        Measurements :
+            The dictionary containing the evaluation results
         """
         raise NotImplementedError
 
@@ -511,7 +522,8 @@ class Dataset(object):
 
         Returns
         -------
-        List[str] :  List of class names
+        List[str] :
+            List of class names
         """
         raise NotImplementedError
 

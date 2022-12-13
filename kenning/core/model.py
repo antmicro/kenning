@@ -66,7 +66,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        modelpath : Path
+        Path :
             The path to the model
         """
         return self.modelpath
@@ -132,7 +132,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        ModelWrapper : object of class ModelWrapper
+        ModelWrapper :
+            object of class ModelWrapper
         """
         return cls(args.model_path, dataset, from_file)
 
@@ -144,7 +145,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = {
             "type": "object",
@@ -165,7 +167,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != ModelWrapper.arguments_structure:
@@ -199,7 +202,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        ModelWrapper : object of class ModelWrapper
+        ModelWrapper :
+            object of class ModelWrapper
         """
 
         parameterschema = cls.form_parameterschema()
@@ -271,7 +275,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Any: The preprocessed inputs that are ready to be fed to the model
+        Any:
+            The preprocessed inputs that are ready to be fed to the model
         """
         return X
 
@@ -291,7 +296,7 @@ class ModelWrapper(object):
 
         Returns
         -------
-        List:
+        List :
             The postprocessed outputs from the model that need to be in
             format requested by the Dataset object.
         """
@@ -311,19 +316,30 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Any: The results of the inference.
+        Any :
+            The results of the inference.
         """
         raise NotImplementedError
 
     def get_framework_and_version(self) -> Tuple[str, str]:
         """
         Returns name of the framework and its version in a form of a tuple.
+
+        Returns
+        -------
+        Tuple[str, str] :
+            Framework name and version
         """
         raise NotImplementedError
 
     def get_output_formats(self) -> List[str]:
         """
         Returns list of names of possible output formats.
+
+        Returns
+        -------
+        List[str] :
+            List of possible output format names
         """
         raise NotImplementedError
 
@@ -339,7 +355,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Measurements : The inference results
+        Measurements :
+            The inference results
         """
         from tqdm import tqdm
 
@@ -401,7 +418,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dict[str, List[Dict]] : Dictionary that conveys input and output
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output
             layers specification
         """
 
@@ -420,7 +438,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Dict[str, List[Dict]] : Dictionary that conveys input and output
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output
             layers specification
         """
         if not hasattr(self, 'io_specification'):
@@ -460,7 +479,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        bytes : Input data as byte stream
+        bytes :
+            Input data as byte stream
         """
         raise NotImplementedError
 
@@ -477,7 +497,8 @@ class ModelWrapper(object):
 
         Returns
         -------
-        Any : Output data to feed to postprocess_outputs
+        Any :
+            Output data to feed to postprocess_outputs
         """
         raise NotImplementedError
 

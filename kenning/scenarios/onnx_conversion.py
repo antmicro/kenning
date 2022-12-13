@@ -4,7 +4,7 @@
 The script for creating ONNX import/export support matrix.
 
 It expects a list of the implemented ONNXConversion classes and generates
-the RST file with support matrix table.
+the Markdown file with support matrix table.
 """
 
 import sys
@@ -69,7 +69,7 @@ def create_onnx_support_report(
         command: str = ''):
     headers, grid = generate_onnx_support_grid(converterslist, modelsdir)
 
-    with path(reports, 'onnx-conversion-support-grid.rst') as reportpath:
+    with path(reports, 'onnx-conversion-support-grid.md') as reportpath:
         with open(reportpath, 'r') as templatefile:
             template = templatefile.read()
             tm = Template(template)
@@ -93,7 +93,7 @@ def main(argv):
     )
     parser.add_argument(
         'output',
-        help='Path to the output RST file with ONNX support grid',
+        help='Path to the output .md file with ONNX support grid',
         type=Path
     )
     parser.add_argument(

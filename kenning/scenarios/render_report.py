@@ -77,7 +77,7 @@ def performance_report(
     Returns
     -------
     str :
-        content of the report in RST format
+        content of the report in MyST format
     """
     log.info(f'Running performance_report for {measurementsdata["modelname"]}')
 
@@ -184,7 +184,7 @@ def performance_report(
     else:
         log.warning('No GPU utilization measurements in the report')
 
-    with path(reports, 'performance.rst') as reporttemplate:
+    with path(reports, 'performance.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             measurementsdata
@@ -209,7 +209,7 @@ def comparison_performance_report(
 
     Returns
     -------
-    str : content of the report in RST format
+    str : content of the report in MyST format
     """
     log.info('Running comparison_performance_report')
 
@@ -328,7 +328,7 @@ def comparison_performance_report(
         usepath.relative_to(rootdir)
     )
 
-    with path(reports, 'performance_comparison.rst') as reporttemplate:
+    with path(reports, 'performance_comparison.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             report_variables
@@ -356,7 +356,7 @@ def classification_report(
 
     Returns
     -------
-    str : content of the report in RST format
+    str : content of the report in MyST format
     """
     log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
 
@@ -374,7 +374,7 @@ def classification_report(
     measurementsdata['confusionpath'] = str(
         confusionpath.relative_to(rootdir)
     )
-    with path(reports, 'classification.rst') as reporttemplate:
+    with path(reports, 'classification.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             measurementsdata
@@ -399,7 +399,7 @@ def comparison_classification_report(
 
     Returns
     -------
-    str : content of the report in RST format
+    str : content of the report in MyST format
     """
     log.info('Running comparison_classification_report')
 
@@ -471,7 +471,7 @@ def comparison_classification_report(
         **metric_visualization,
     }
 
-    with path(reports, 'classification_comparison.rst') as reporttemplate:
+    with path(reports, 'classification_comparison.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             report_variables
@@ -499,7 +499,7 @@ def detection_report(
 
     Returns
     -------
-    str : content of the report in RST format
+    str : content of the report in MyST format
     """
 
     from kenning.datasets.helpers.detection_and_segmentation import \
@@ -597,7 +597,7 @@ def detection_report(
     measurementsdata['max_mAP'] = max(mapvalues)
     measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
 
-    with path(reports, 'detection.rst') as reporttemplate:
+    with path(reports, 'detection.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             measurementsdata
@@ -622,7 +622,7 @@ def comparison_detection_report(
 
     Returns
     -------
-    str : content of the report in RST format
+    str : content of the report in MyST format
     """
     log.info('Running comparison_detection_report')
 
@@ -656,7 +656,7 @@ def comparison_detection_report(
         usepath.relative_to(rootdir)
     )
 
-    with path(reports, 'detection_comparison.rst') as reporttemplate:
+    with path(reports, 'detection_comparison.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             report_variables
@@ -672,7 +672,7 @@ def generate_report(
         rootdir: Path,
         command: List[str] = []) -> str:
     """
-    Generates an RST report based on Measurements data.
+    Generates an MyST report based on Measurements data.
 
     The report is saved to the file in ``outputpath``.
 
@@ -684,14 +684,14 @@ def generate_report(
         Data for each model coming from the Measurements object,
         loaded i.e. from JSON files
     outputpath : Path
-        Path to the RST file where the report will be saved
+        Path to the MyST file where the report will be saved
     imgdir : Path
         Path to the directory where the report plots should be stored
     report_types : List[str]
         List of report types that define the project, i.e.
         performance, classification
     rootdir : Path
-        When the report is a part of a larger RST document (i.e. Sphinx docs),
+        When the report is a part of a larger MyST document (i.e. Sphinx docs),
         the rootdir parameter defines thte root directory of the document.
         It is used to compute relative paths in the document's references.
     command : List[str]
@@ -723,7 +723,7 @@ def generate_report(
 
     header_data['command'] += command
 
-    with path(reports, 'header.rst') as reporttemplate:
+    with path(reports, 'header.md') as reporttemplate:
         content = create_report_from_measurements(
             reporttemplate,
             header_data
@@ -762,12 +762,12 @@ def main(argv):
     )
     parser.add_argument(
         'output',
-        help='Path to the output RST file',
+        help='Path to the output MyST file',
         type=Path
     )
     parser.add_argument(
         '--root-dir',
-        help='Path to root directory for documentation (paths in the RST file are relative to this directory)',  # noqa: E501
+        help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
         required=True,
         type=Path
     )

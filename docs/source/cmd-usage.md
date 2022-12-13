@@ -1,16 +1,16 @@
 # Using Kenning via command line arguments
 
-{{projecturl}} provides several scripts for training, compiling and benchmarking deep learning models on various target hardware.
+{{projecturl}} provides several scripts for training, compilation and benchmarking of deep learning models on various target hardware.
 The executable scripts are present in the [kenning.scenarios module](https://github.com/antmicro/kenning/tree/main/kenning/scenarios).
-The sample bash scripts using the scenarios are located in the [scripts directory in the repository](https://github.com/antmicro/kenning/tree/main/scripts).
+Sample bash scripts using the scenarios are located in the [scripts directory in the repository](https://github.com/antmicro/kenning/tree/main/scripts).
 
-Runnable scripts in scenarios require providing implemented classes from `kenning.core` module to perform such actions as in-framework inference, model training, model compilation and model benchmarking on target.
+Runnable scripts in scenarios require providing implemented classes from the `kenning.core` module to perform such actions as in-framework inference, model training, model compilation and model benchmarking on target.
 
 ## Command-line arguments for classes
 
-Each class ([](dataset-api), [](modelwrapper-api), [](optimizer-api) and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of the object of the class.
+Each class ([](dataset-api), [](modelwrapper-api), [](optimizer-api) and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of an object of the given class.
 
-Each class in the `kenning.core` implements `form_argparse` and `from_argparse` methods.
+Each class in `kenning.core` implements `form_argparse` and `from_argparse` methods.
 The former creates an `argparse` group for a given class with its parameters.
 The latter takes the arguments parsed by `argparse` and returns the object of a class.
 
@@ -80,17 +80,17 @@ python -m kenning.scenarios.model_training \
     --num-epochs 50
 ```
 
-This will train the model with learning rate 0.0001, batch size 32 for 50 epochs.
+This will train the model with a 0.0001 learning rate and batch size 32 for 50 epochs.
 The trained model will be saved as `build/trained-model.h5`.
 
 ## In-framework inference performance measurements
 
-The `kenning.scenarios.inference_performance` script runs inference os a given model in the framework it was trained on.
-It requires providing:
+The `kenning.scenarios.inference_performance` script runs inference os a given model in a framework it was trained on.
+It requires you to provide:
 
-* [](modelwrapper-api)-based object wrapping the model to be tested,
-* [](dataset-api)-based object wrapping the dataset applicable for the model,
-* a path to the output JSON file with performance and quality metrics gathered during inference by [](measurements-api) object.
+* a [](modelwrapper-api)-based object wrapping the model to be tested,
+* a [](dataset-api)-based object wrapping the dataset applicable to the model,
+* a path to the output JSON file with performance and quality metrics gathered during inference by the [](measurements-api) object.
 
 The example call for the method is following:
 
@@ -104,17 +104,17 @@ python -m kenning.scenarios.inference_performance \
     --download-dataset
 ```
 
-The script downloads dataset to `build/pet-dataset` directory, loads `tensorflow_pet_dataset_mobilenetv2.h5` model, runs inference on all images from the dataset and collects performance and quality metrics throughout the run.
+The script downloads the dataset to the `build/pet-dataset` directory, loads the `tensorflow_pet_dataset_mobilenetv2.h5` model, runs inference on all images from the dataset and collects performance and quality metrics throughout the run.
 The performance data stored in JSON file can be later rendered using [](report-generation).
 
 ## ONNX conversion
 
-The `kenning.scenarios.onnx_conversion` tests empirically the ONNX conversion for various frameworks and generates the report with the support matrix.
-The matrix tells if model export to ONNX and model import from ONNX for a given framework and model is supported or not.
+The `kenning.scenarios.onnx_conversion` empirically tests the ONNX conversion for various frameworks and generates a report containing support matrix.
+The matrix tells us if model export to ONNX and model import from ONNX for a given framework and model is supported or not.
 The example report with the command call is available in [](./onnx-conversion-support).
 
-The `kenning.scenarios.onnx_conversion` requires the list of [](onnxconversion-api) classes that implement model providers and conversion method.
-For the below call:
+The `kenning.scenarios.onnx_conversion` requires a list of [](onnxconversion-api) classes that implement model providers and a conversion method.
+For the below, call:
 
 ```bash
 python -m kenning.scenarios.onnx_conversion \
@@ -132,26 +132,26 @@ The final RST file with the report is stored in the `build/onnx-support.rst` dir
 
 ## Testing inference on target hardware
 
-The `kenning.scenarios.inference_tester` and `kenning.scenarios.inference_server` are used for testing the inference on target hardware.
+The `kenning.scenarios.inference_tester` and `kenning.scenarios.inference_server` are used for inference testing on target hardware.
 The `inference_tester` loads the dataset and the model, compiles the model and runs inference either locally or remotely using `inference_server`.
 
-The `inference_server` receives the model, input data, and sends output data and statistics.
+The `inference_server` receives the model and input data, and sends output data and statistics.
 
 Both `inference_tester` and `inference_server` require [](runtime-api) for determining the model execution flow.
 Both scripts communicate using the communication protocol implemented in the [](runtimeprotocol-api).
 
-In the end, the `inference_tester` returns the benchmark data in a form of a JSON file extracted from the [](measurements-api) object.
+In the end, the `inference_tester` returns the benchmark data in the form of a JSON file extracted from the [](measurements-api) object.
 
 The `kenning.scenarios.inference_tester` requires:
 
-* [](modelwrapper-api)-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
-* [](runtime-api)-based class that implements data processing and the inference method for the compiled model on the target hardware,
-* [](dataset-api)-based class that implements fetching of data samples and evaluation of the model,
-* path to the output JSON file with performance and quality metrics.
+* a [](modelwrapper-api)-based class that implements model loading, I/O processing and optionally model conversion to ONNX format,
+* a [](runtime-api)-based class that implements data processing and the inference method for the compiled model on the target hardware,
+* a [](dataset-api)-based class that implements data sample fetching and model evaluation,
+* a path to the output JSON file with performance and quality metrics.
 
-[](optimizer-api)-based class can be provided to compile the model for a given target if needed.
+An [](optimizer-api)-based class can be provided to compile the model for a given target if needed.
 
-Optionally, it requires [](runtimeprotocol-api)-based class when running remotely to communicate with the `kenning.scenarios.inference_server`.
+Optionally, it requires a [](runtimeprotocol-api)-based class when running remotely to communicate with the `kenning.scenarios.inference_server`.
 
 To print the list of required arguments, run:
 
@@ -235,8 +235,8 @@ Runtime protocol arguments:
 
 The `kenning.scenarios.inference_server` requires only:
 
-* [](runtimeprotocol-api)-based class for the implementation of the communication,
-* [](runtime-api)-based class for the implementation of runtime routines on device.
+* A [](runtimeprotocol-api)-based class for the implementation of the communication,
+* a [](runtime-api)-based class for the implementation of runtime routines on device.
 
 Both classes may require some additional arguments that can be listed with the `-h` flag.
 
@@ -280,10 +280,10 @@ python -m kenning.scenarios.inference_server \
 ```
 
 ```{note}
-This run was tested on Google Coral Devboard device.
+This run was tested on a Google Coral Devboard device.
 ```
 
-The `kenning.scenarios.inference_tester` can be also executed locally - in this case the `--protocol-cls` argument can be skipped.
+The `kenning.scenarios.inference_tester` can be also executed locally - in this case, the `--protocol-cls` argument can be skipped.
 The example call is as follows:
 
 ```bash
@@ -308,7 +308,7 @@ python3 -m kenning.scenarios.inference_tester \
 
 ```{note}
 For more examples of running `inference_tester` and `inference_server`, check the [kenning/scripts](https://github.com/antmicro/kenning/tree/main/scripts) directory.
-In the [kenning/scripts/edge-runtimes](https://github.com/antmicro/kenning/tree/master/scripts/edge-runtimes) directory there are directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks.
+Directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks can be found in the [kenning/scripts/edge-runtimes](https://github.com/antmicro/kenning/tree/master/scripts/edge-runtimes) directory.
 ```
 
 ## Running inference
@@ -317,10 +317,10 @@ The `kenning.scenarios.inference_runner` is used to run inference locally on a p
 
 The `kenning.scenarios.inference_runner` requires:
 
-* [](modelwrapper-api)-based class that performs I/O processing specific to the model,
-* [](runtime-api)-based class that runs inference on target using the compiled model,
-* [](dataprovider-api)-based class that implements fetching of data samples from various sources,
-* list of [](outputcollector-api)-based classes that implement output processing for the specific use-case.
+* a [](modelwrapper-api)-based class that performs I/O processing specific to the model,
+* a [](runtime-api)-based class that runs inference on target using the compiled model,
+* a [](dataprovider-api)-based class that implements fetching of data samples from various sources,
+* a list of [](outputcollector-api)-based classes that implement output processing for the specific use-case.
 
 To print the list of required arguments, run:
 
@@ -378,7 +378,7 @@ OutputCollector arguments:
                         What is the type of model that will input data to the NamePrinter
 ```
 
-The example script for `inference_runner` is:
+An example script for `inference_runner`:
 
 ```bash
 python3 -m kenning.scenarios.inference_runner \
@@ -402,21 +402,21 @@ The `kenning.scenarios.inference_performance` and `kenning.scenarios.inference_t
 They contain both performance metrics data, and the quality metrics data.
 
 The data from JSON files can be analyzed, processed and visualized by the `kenning.scenarios.render_report` script.
-This script parses the information in JSON files and returns the RST file with the report, along with visualizations.
+This script parses the information in JSON files and returns an RST file with the report, along with visualizations.
 
 It requires:
 
-* JSON file with the benchmark data,
-* name of the report that will be used in the RST file and for creating Sphinx refs to figures,
-* RST output file name,
+* a JSON file with benchmark data,
+* a report name for use in the RST file and for creating Sphinx refs to figures,
+* an RST output file name,
 * `--root-dir` specifying the root directory of the Sphinx documentation where the RST file will be embedded (it is used to compute relative paths),
 * `--img-dir` specifying the path where the figures should be saved,
-* `--report-types`, which is the list describing to what types the report belong.
+* `--report-types`, which is a list describing the types the report falls into.
 
 The example call and the resulting RST file can be observed in the {doc}`sample-report`.
 
 As for now, the available report types are:
 
 * `performance` - this is the most common report type that renders information about the overall inference performance metrics, such as inference time, CPU usage, RAM usage or GPU utilization,
-* `classification` - this report is specific to the classification task, it renders the classification-specific quality figures and metrics, as confusion matrix, accuracy, precision, G-mean,
-* `detection` - this report is specific to the detection task, it renders the detection-specific quality figures and metrics, as recall-precision curves, mean average precision.
+* `classification` - this report is specific to the classification task, it renders classification-specific quality figures and metrics, such as confusion matrices, accuracy, precision, G-mean,
+* `detection` - this report is specific to the detection task, it renders detection-specific quality figures and metrics, such as recall-precision curves or mean average precision.

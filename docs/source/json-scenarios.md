@@ -1,21 +1,21 @@
 # Defining optimization pipelines in Kenning
 
 {{project}} blocks (specified in the [](kenning-api) can be configured either via command line (see [](cmd-usage)), or via configuration files, specified in JSON format.
-The latter approach allows the user to create more advance and easy-to-reproduce scenarios for model deployment.
-Most of all, various optimizers available through Kenning can be chained to utilize various optimizations to get better performing models.
+The latter approach allows the user to create more advanced and easy-to-reproduce scenarios for model deployment.
+Most notably, various optimizers available through Kenning can be chained to utilize various optimizations and get better performing models.
 
-One of the most commonly used scenarios in Kenning is optimizing and compiling the model.
+One of the scenarios most commonly used in Kenning is model optimization and compilation.
 It can be done using {{json_compilation_script}}.
 
 ## JSON specification
 
-{{json_compilation_script}} takes the specification of optimization and testing flow in a JSON format.
+The {{json_compilation_script}} takes the specification of optimization and testing flow in a JSON format.
 The root element of the JSON file is a dictionary that can have the following keys:
 
 * `model_wrapper` - **mandatory field**, accepts dictionary as a value that defines the [](modelwrapper-api) object for the deployed model (provides I/O processing, optionally model).
 * `dataset` - **mandatory field**, accepts dictionary as a value that defines the [](dataset-api) object for model optimization and evaluation.
-* `optimizers` - *optional field*, accepts list of dictionaries specifying sequence of [](optimizer-api)-based optimizations applied on the model.
-* `runtime_protocol` - *optional field*, defines the [](runtimeprotocol-api) object used to communicate with the remote target platform.
+* `optimizers` - *optional field*, accepts a list of dictionaries specifying the sequence of [](optimizer-api)-based optimizations applied to the model.
+* `runtime_protocol` - *optional field*, defines the [](runtimeprotocol-api) object used to communicate with a remote target platform.
 * `runtime` - *optional field* (**required** when `optimizers` are provided), defines the [](runtime-api)-based object that will infer the model on target device.
 
 Each dictionary in above fields consists of:
@@ -23,7 +23,7 @@ Each dictionary in above fields consists of:
 * `type` - appropriate class for the key,
 * `parameters` - `type`-specific arguments for underlying class (see [](defining-arguments-for-core-classes)).
 
-## Evaluating model using its native framework
+## Model evaluation using its native framework
 
 The simplest JSON configuration looks as follows:
 
@@ -50,13 +50,13 @@ The simplest JSON configuration looks as follows:
 ```
 
 It only takes `model_wrapper` and `dataset`.
-With this, the model will be loaded and evaluated using its native framework.
+This way, the model will be loaded and evaluated using its native framework.
 
-The used [](modelwrapper-api) is `TensorFlowPetDatasetMobileNetV2`, which is a MobileNetV2 model trained to classify 37 breeds of cats and dogs.
-In `type` field we specify the full "path" to the class by specifying the module it is implemented in (`kenning.modelwrappers.classification.tensorflow_pet_dataset`) and the name of the class (`TensorFlowPetDatasetMobileNetV2`), in a Python-like format (dot-separated).
+The [](modelwrapper-api) used is `TensorFlowPetDatasetMobileNetV2`, which is a MobileNetV2 model trained to classify 37 breeds of cats and dogs.
+In the `type` field, we specify the full "path" to the class by specifying the module it is implemented in (`kenning.modelwrappers.classification.tensorflow_pet_dataset`) and the name of the class (`TensorFlowPetDatasetMobileNetV2`), in a Python-like format (dot-separated).
 
-In `parameters`, the arguments specific to `TensorFlowPetDatasetMobileNetV2` are provided.
-Looking at the arguments' specification, the available parameters are:
+In `parameters`, arguments specific to `TensorFlowPetDatasetMobileNetV2` are provided.
+The following parameters are available based on the argument specification:
 
 ```python
 # this argument structure is taken from kenning.core.model - it is inherited by child classes
@@ -70,10 +70,10 @@ arguments_structure = {
 }
 ```
 
-The only mandatory parameter here is `model_path`, which points to the file with the model.
+The only mandatory parameter here is `model_path`, which points to a file containing the model.
 It is a required argument.
 
-The `dataset` used here is `PetDataset` - as previously, it is provided in a module-like format (`kenning.datasets.pet_dataset.PetDataset`). The parameters here are specified in `kenning.core.dataset.Dataset` (inherited) and `kenning.core.dataset.PetDataset`:
+The `dataset` used here, is `PetDataset`. Like previously, it is provided in a module-like format (`kenning.datasets.pet_dataset.PetDataset`). The parameters here are specified in `kenning.core.dataset.Dataset` (inherited) and `kenning.core.dataset.PetDataset`:
 
 ```python
 arguments_structure = {
@@ -111,7 +111,7 @@ arguments_structure = {
 }
 ```
 
-As it can be observed, the parameters allow the user to:
+As visible, the parameters allow the user to:
 
 * specify the dataset's location,
 * download the dataset,
@@ -122,7 +122,7 @@ As it can be observed, the parameters allow the user to:
 For more details on defining parameters for Kenning core classes, check [](defining-arguments-for-core-classes).
 ```
 
-If no `optimizers` or `runtime` is specified, the model is executed using the [](modelwrapper-api)'s `run_inference` method.
+If `optimizers` or `runtime` are not specified, the model is executed using the [](modelwrapper-api)'s `run_inference` method.
 The dataset test data is passed through the model and evaluation metrics are collected.
 
 To run the defined pipeline (assuming that the JSON file is under `pipeline.json`), run:
@@ -131,27 +131,27 @@ To run the defined pipeline (assuming that the JSON file is under `pipeline.json
 python -m kenning.scenarios.json_inference_tester pipeline.json measurements.json --verbosity INFO
 ```
 
-The `measurements.json` file is the output of the {{json_compilation_script}} providing the measurements data.
-It contains such information as:
+The `measurements.json` file is the output of the {{json_compilation_script}} providing measurement data.
+It contains information such as:
 
-* defined above JSON configuration,
-* versions of used packages from core classes (such as `tensorflow`, `torch`, `tvm`, ...),
+* a JSON configuration defined above,
+* versions of core class packages used (e.g. `tensorflow`, `torch`, `tvm`, ...),
 * available resource usage readings (CPU usag, GPU usage, memory usage, ...),
 * data necessary for evaluation, such as predictions, confusion matrix, ...
 
-Which can be later used in [](report-generation).
+This information can be later used in [](report-generation).
 
 ```{note}
 Check {doc}`measurements` for more information.
 ```
 
-## Optimizing the model and running it on the same device
+## Optimizing and running a model on a single device
 
-The model optimization and deployment can be performed directly on target device, if device is able to perform the optimization steps.
-It can be also used to check the outcome of certain optimization on desktop platform before deployment.
+Model optimization and deployment can be performed directly on target device, if the device is able to perform the optimization steps.
+It can also be used to check the outcome of certain optimizations on a desktop platform before deployment.
 
 Optimizations and compilers used in the scenario are defined in the `optimizers` field.
-This field accepts a list of optimizers - they are applied on the model in the same order as they are defined in the `optimizers` field.
+This field accepts a list of optimizers - they are applied to the model in the same order in which they are defined in the `optimizers` field.
 
 For example, a model can be subjected to the following optimizations:
 
@@ -159,7 +159,7 @@ For example, a model can be subjected to the following optimizations:
 * Conversion of data layout from NHWC to NCHW format using Apache TVM
 * Compilation to x86 runtime with AVX2 vector extensions using Apache TVM.
 
-The scenario in such case will look like this:
+Such case will result is the following scenario:
 
 ```{code-block} json
 ---
@@ -216,16 +216,16 @@ emphasize-lines: 18-47
 
 ```
 
-As emphasized, the `optimizers` list is added, with two entries:
+As emphasized above, the `optimizers` list is added, with two entries:
 
-* block of type `kenning.compilers.tflite.TFLiteCompiler`, quantizing the model,
-* block of type `kenning.compilers.tvm.TVMCompiler`, performing the rest of the optimization steps.
+* `kenning.compilers.tflite.TFLiteCompiler`type block, quantizing the model,
+* `kenning.compilers.tvm.TVMCompiler` type block, performing remaining optimization steps.
 
-In `runtime` field, the TVM-specific runtime of type `kenning.runtimes.tvm.TVMRuntime` is used.
+In the `runtime` field, a TVM-specific runtime of `kenning.runtimes.tvm.TVMRuntime` type is used.
 
-The first optimizer in the list reads the input model path from the [](modelwrapper-api)'s `model_path` field.
+The first optimizer on the list reads the input model path from the [](modelwrapper-api)'s `model_path` field.
 Each consecutive [](optimizer-api) reads the model from file saved by the previous [](optimizer-api).
-In the simplest scenario, the model is saved to `compiled_model_path` path in each optimizer, and is fetched by the next [](optimizer-api).
+In the simplest scenario, the model is saved to `compiled_model_path` in each optimizer, and is fetched by the next [](optimizer-api).
 
 In case the default output file type of the previous [](optimizer-api) is not supported by the next [](optimizer-api), the first common supported model format is determined and used to pass the model between optimizers.
 
@@ -241,18 +241,18 @@ The scenario can be executed as follows:
 python -m kenning.scenarios.json_inference_tester scenario.json output.json
 ```
 
-## Compiling the model and running it remotely
+## Compiling a model and running it remotely
 
 For some platforms, we cannot run Python script to evaluate or run the model to check its quality - the dataset is too large to fit in the storage, no libraries or compilation tools are available for the target platform, or the device does not have an operating system to run Python on.
 
-In such case, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and ``kenning.scenarios.json_inference_server`` scenario.
+In such cases, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and the ``kenning.scenarios.json_inference_server`` scenario.
 
-For this use case we need two JSON files - one for configuring the inference server, and the second one for configuring ``kenning.scenarios.json_inference_tester``, which acts as a runtime client.
+For this use case, we need two JSON files - one for inference server configuration, and another one for the ``kenning.scenarios.json_inference_tester`` configuration, which acts as a runtime client.
 
-The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication and other.
-It depends on the used [](runtimeprotocol-api).
+The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication or other.
+It depends on the [](runtimeprotocol-api) used.
 
-Let's start with the client configuration by adding `runtime_protocol` entry:
+Let's start with client configuration by adding a `runtime_protocol` entry:
 
 ```{code-block} json
 ---
@@ -318,10 +318,10 @@ emphasize-lines: 48-57
 }
 ```
 
-In `runtime_protocol` entry, we specify a `kenning.runtimeprotocols.network.NetworkProtocol` and provide server's address (`host`), application port (`port`) ad packet size (`packet_size`).
+In the `runtime_protocol` entry, we specify a `kenning.runtimeprotocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
 The `runtime` block is still needed to perform runtime-specific data preprocessing and postprocessing in the client application (the server only infers data).
 
-The configuration for the server looks as follows:
+The server configuration looks as follows:
 
 ```{code-block} json
 {
@@ -346,14 +346,14 @@ The configuration for the server looks as follows:
 }
 ```
 
-In server only `runtime` and `runtime_protocol` need to be specified.
+Here, only `runtime` and `runtime_protocol` need to be specified.
 It uses `runtime_protocol` to receive requests from clients and `runtime` to run the tested models.
 
 The remaining things are provided by the client - input data and model.
-Direct outputs from the model are sent as is to the client so it can postprocess them and evaluate the model using the dataset.
-Server also sends the measurements from its sensors in JSON format if it's able to collect and send them.
+Direct outputs from the model are sent as is to the client, so it can postprocess them and evaluate the model using the dataset.
+The server also sends measurements from its sensors in JSON format as long as it is able to collect and send them.
 
-First, run the server so it will be available for the client:
+First, run the server, so that it is available for the client:
 
 ```bash
 python3 -m kenning.scenarios.json_inference_server \
@@ -361,7 +361,7 @@ python3 -m kenning.scenarios.json_inference_server \
     --verbosity INFO
 ```
 
-Secondly, run the client:
+Then, run the client:
 
 ```bash
 python3 -m kenning.scenarios.json_inference_tester \

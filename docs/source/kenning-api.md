@@ -234,7 +234,7 @@ The implementation of running inference on the given target is contained within 
 
 ### RuntimeProtocol API
 
-`kenning.core.runtimeprotocol.RuntimeProtocol`-based classes implement the [](runtime-protocol-spec) in a given means of transport, i.e. TCP connection, or UART.
+`kenning.core.runtimeprotocol.RuntimeProtocol`-based classes implement the [](runtime-protocol-spec) in a given means of transport, e.g. TCP connection or UART.
 It requires method implementation for:
 
 * server (target hardware) and client (compiling host) initialization,

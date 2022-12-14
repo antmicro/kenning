@@ -10,4 +10,4 @@ python -m kenning.scenarios.onnx_conversion \
         kenning.onnxconverters.pytorch.PyTorchONNXConversion \
         kenning.onnxconverters.tensorflow.TensorFlowONNXConversion
 
-cat build/onnx-support.rst
+cat build/onnx-support.md

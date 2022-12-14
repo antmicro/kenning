@@ -7,6 +7,7 @@ variables:
 stages:
     - lint
     - tests
+    - docs
 
 flake8:
     stage: lint
@@ -25,9 +26,11 @@ onnx-conversions:
     script:
         - ln /usr/bin/python3 /usr/bin/python
         - ./scripts/onnxconversions.sh
+        - mkdir -p docs/source/generated
+        - cp build/onnx-support.md docs/source/generated/onnx-support.md
     artifacts:
         paths:
-            - build/onnx-support.rst
+            - docs/source/generated
     allow_failure: false
 
 sample-compilation:
@@ -41,5 +44,15 @@ sample-compilation:
     artifacts:
         paths:
             - build/local-cpu-tvm-tensorflow-classification.json
-            - docs
+            - docs/source/generated
+    allow_failure: false
+
+docs:
+    stage: docs
+    script:
+        - cd docs
+        - make html
+    artifacts:
+        paths:
+            - docs/build/html
     allow_failure: false

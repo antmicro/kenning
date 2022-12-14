@@ -101,15 +101,13 @@ jobs:
           python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
           python -m pip install --upgrade onnx jinja2 tqdm psutil scikit_learn jsonschema
           python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
-          python -m pip install sphinxcontrib-napoleon docutils==0.16
+          python -m pip install sphinxcontrib-napoleon myst-parser docutils==0.16
       - name: Generate documentation
         run: |
           mkdir -p docs/source/generated
-          find .
-          cp onnxconversion/onnx-support.rst docs/source/generated/onnx-support.rst
           python -m kenning.scenarios.render_report \
-            "Pet Dataset classification using TVM-compiled TensorFlow model" \
-            docs/source/generated/local-cpu-tvm-tensorflow-classification.rst \
+            "Pet Dataset classification using TVM" \
+            docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
             --root-dir docs/source/ \
             --img-dir docs/source/generated/img \
             --report-types performance classification \

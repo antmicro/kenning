@@ -1,4 +1,4 @@
-name: Edge AI Tester docs
+name: Kenning docs
 
 on:
   push:
@@ -69,14 +69,14 @@ jobs:
       - uses: actions/download-artifact@v3
       - uses: actions/setup-python@v4
         with:
-          python-version: 3.8.5
+          python-version: 3.9
       - name: Install dependencies
         run: |
           python -m pip install .[docs]
       - name: Generate documentation
         run: |
-          cp -r inferencetest/docs/source/generated docs/source/generated
-          cp onnxconversion/build/onnx-support.md docs/source/generated
+          cp -r inferencetest docs/source/generated
+          cp onnxconversion/onnx-support.md docs/source/generated
           cd docs
           make html
       - uses: actions/upload-artifact@v3

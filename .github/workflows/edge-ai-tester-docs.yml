@@ -11,45 +11,39 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.8.5
+          python-version: 3.9
       - name: Install dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y gcc g++ build-essential cmake llvm protobuf-compiler libprotoc-dev
-          python -m pip install --upgrade pip==21.0.1 setuptools
-          python -m pip install --upgrade matplotlib tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
-          python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git@v1.9.2
-          python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git@v1.8.0
-          python -m pip install --upgrade torch==1.8.1+cpu torchvision==0.9.1+cpu torchaudio==0.8.1 -f https://download.pytorch.org/whl/torch_stable.html
-          python -m pip install --upgrade mxnet gluoncv
-          python -m pip install --upgrade jinja2
-          python -m pip install --upgrade numpy jsonschema
+          python -m pip install .[tensorflow,torch,mxnet,docs]
+          python -m pip install --upgrade tf-models-official~=2.9.1
       - name: Run ONNX conversion tests
         run: |
           ./scripts/onnxconversions.sh
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: onnxconversion
-          path: build/onnx-support.rst
+          path: build/onnx-support.md
 
   inference-test:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout sources
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           lfs: true
       - name: Checkout LFS objects
         run: git lfs checkout
       - name: Setup Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
-          python-version: 3.8.5
+          python-version: 3.9
       - name: Install dependencies
         run: |
           sudo apt-get update
@@ -57,64 +51,35 @@ jobs:
              gcc g++ build-essential cmake llvm protobuf-compiler \
              libprotoc-dev libtinfo-dev zlib1g-dev libedit-dev libxml2-dev \
              llvm curl wget
-          python -m pip install --upgrade pip==21.0.1 setuptools
-          python -m pip install --upgrade tensorflow==2.5.0 tensorflow-addons tf-models-official==2.5.0
-          python -m pip install --upgrade git+https://github.com/onnx/tensorflow-onnx.git
-          python -m pip install --upgrade git+https://github.com/onnx/onnx-tensorflow.git
-          python -m pip install --upgrade onnx
-          python -m pip install --upgrade numpy jinja2 jsonschema
-      - name: Install TVM
-        run: |
-          git clone https://github.com/apache/tvm tvm
-          cd tvm
-          git checkout 83baec3
-          git submodule update --init --recursive
-          mkdir build
-          cp cmake/config.cmake build/config.cmake
-          sed -i 's/set(USE_LLVM OFF)/set(USE_LLVM ON)/g' build/config.cmake
-          cd build
-          cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local ..
-          make -j`nproc`
-          sudo make install
-          cd ..
-          python -m pip install -e python/
+          python -m pip install .[tensorflow,docs,tvm]
       - name: Run sample compilation and inference
         run: |
           ./scripts/tvm-tensorflow-classification-cpu.sh
       - name: Upload artifacts
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: inferencetest
-          path: build/local-cpu-tvm-tensorflow-classification.json
+          path: docs/source/generated
 
   docs-generation:
     runs-on: ubuntu-latest
     needs: [onnxconversion,inference-test]
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/download-artifact@v2
-      - uses: actions/setup-python@v2
+      - uses: actions/checkout@v3
+      - uses: actions/download-artifact@v3
+      - uses: actions/setup-python@v4
         with:
           python-version: 3.8.5
       - name: Install dependencies
         run: |
-          python -m pip install --upgrade sphinx matplotlib numpy importlib-resources tqdm
-          python -m pip install --upgrade onnx jinja2 tqdm psutil scikit_learn jsonschema
-          python -m pip install git+https://github.com/antmicro/sphinx_antmicro_theme.git
-          python -m pip install sphinxcontrib-napoleon myst-parser docutils==0.16
+          python -m pip install .[docs]
       - name: Generate documentation
         run: |
-          mkdir -p docs/source/generated
-          python -m kenning.scenarios.render_report \
-            "Pet Dataset classification using TVM" \
-            docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
-            --root-dir docs/source/ \
-            --img-dir docs/source/generated/img \
-            --report-types performance classification \
-            --measurements inferencetest/local-cpu-tvm-tensorflow-classification.json
+          cp -r inferencetest/docs/source/generated docs/source/generated
+          cp onnxconversion/build/onnx-support.md docs/source/generated
           cd docs
           make html
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v3
         with:
           name: gh-page
           path: docs/build/html

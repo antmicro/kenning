@@ -2,7 +2,7 @@
 
 ```{figure} {{data["bubbleplotpath"]}}
 ---
-name: {{data["reportname"]}}_classification_size_inference
+name: {{data["reportname_simple"]}}_classification_size_inference
 alt: Accuracy vs Inference time vs RAM usage
 align: center
 ---
@@ -17,7 +17,7 @@ The size of the model is represented by the size of its point.
 
 ```{figure} {{data['radarchartpath']}}
 ---
-name: {{data['reportname']}}_classification_metrics_radar
+name: {{data['reportname_simple']}}_classification_metrics_radar
 alt: Metric comparison
 align: center
 ---

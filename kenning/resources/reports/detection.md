@@ -1,6 +1,6 @@
 ## Object detection metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
-{% set basename = data["reportname"] if "modelname" not in data else data["reportname"] + data["modelname"] %}
+{% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
 ```{figure} {{data["curvepath"]}}
 ---
 name: {{basename}}_recall_precision_curves

@@ -4,7 +4,7 @@
 
 ```{figure} {{data["mapcomparisonpath"]}}
 ---
-name: {{data["reportname"]}}_map_comparison
+name: {{data["reportname_simple"]}}_map_comparison
 alt: mAP comparison over thresholds
 align: center
 ---

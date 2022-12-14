@@ -223,7 +223,8 @@ def comparison_performance_report(
     common_metrics = set(metric_names.keys())
     hardware_usage_metrics = common_metrics - {'inference_step'}
     report_variables = {
-        'reportname': measurementsdata[0]['reportname']
+        'reportname': measurementsdata[0]['reportname'],
+        'reportname_simple': measurementsdata[0]['reportname_simple']
     }
 
     for data in measurementsdata:
@@ -404,7 +405,8 @@ def comparison_classification_report(
     log.info('Running comparison_classification_report')
 
     report_variables = {
-        'reportname': measurementsdata[0]['reportname']
+        'reportname': measurementsdata[0]['reportname'],
+        'reportname_simple': measurementsdata[0]['reportname_simple']
     }
     metric_visualization = {}
     accuracy, mean_inference_time, model_sizes, names = [], [], [], []
@@ -631,6 +633,7 @@ def comparison_detection_report(
 
     report_variables = {
         'reportname': measurementsdata[0]['reportname'],
+        'reportname_simple': measurementsdata[0]['reportname_simple'],
         'modelnames': []
     }
 
@@ -819,6 +822,11 @@ def main(argv):
             modelname = get_model_name(measurementspath)
         measurements['modelname'] = modelname
         measurements['reportname'] = args.reportname
+        measurements['reportname_simple'] = re.sub(
+            r'[\W]',
+            '',
+            args.reportname.lower().replace(' ', '_')
+        )
         measurementsdata.append(measurements)
 
     for measurements in measurementsdata:

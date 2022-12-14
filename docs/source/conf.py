@@ -25,7 +25,7 @@ theme_path = get_html_theme_path() + "/sphinx_antmicro_theme"
 
 project = 'Kenning'
 basic_filename = 'kenning'
-copyright = '2020-2021, Antmicro'
+copyright = '2020-2022, Antmicro'
 author = 'Antmicro'
 
 # The short X.Y version
@@ -129,11 +129,12 @@ html_last_updated_fmt = today_fmt
 
 html_show_sphinx = False
 
+html_show_sourcelink = False
+
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.
 htmlhelp_basename = f'{basic_filename}-doc'
-
 
 # -- Options for LaTeX output ------------------------------------------------
 

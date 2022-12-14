@@ -10,6 +10,5 @@ The CI is set up as follows:
 * *Compiler framework*: TVM,
 * *Target*: CPU (using LLVM target on TVM).
 
-```{eval-rst}
-.. include:: generated/local-cpu-tvm-tensorflow-classification.rst
+```{include} generated/local-cpu-tvm-tensorflow-classification.md
 ```

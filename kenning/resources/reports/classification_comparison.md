@@ -1,4 +1,4 @@
-# Classification comparison
+## Classification comparison
 
 ```{figure} {{data["bubbleplotpath"]}}
 ---
@@ -6,9 +6,14 @@ name: {{data["reportname"]}}_classification_size_inference
 alt: Accuracy vs Inference time vs RAM usage
 align: center
 ---
+
+Model size, speed and quality summary.
+The accuracy of the model is presented on Y axis.
+The inference time of the model is presented on X axis.
+The size of the model is represented by the size of its point.
 ```
 
-## Metric comparison
+### Metric comparison
 
 ```{figure} {{data['radarchartpath']}}
 ---
@@ -16,9 +21,11 @@ name: {{data['reportname']}}_classification_metrics_radar
 alt: Metric comparison
 align: center
 ---
+
+Radar chart representing the accuracy, precision and recall for models
 ```
 
-```{list-table}
+```{list-table} Summary of classification metrics for models
 ---
 header-rows: 1
 align: center
@@ -35,3 +42,5 @@ align: center
   - {{'%.6f' % data[modelname][2]}}
 {% endfor %}
 ```
+
+

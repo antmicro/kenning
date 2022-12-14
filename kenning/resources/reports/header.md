@@ -1,6 +1,6 @@
-# {{data['reportname']}}
+## {{data['reportname']}}
 
-## Commands used
+### Commands used
 
 {% if data['command']|length > 0 -%}
 ````{note}
@@ -17,7 +17,7 @@ This section was generated using:
 
 
 {% for modelname in data['modelnames'] %}
-## General information for {{modelname}}
+### General information for {{modelname}}
 
 *Model framework*:
 

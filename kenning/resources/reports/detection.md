@@ -1,4 +1,4 @@
-# Object detection metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Object detection metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname"] if "modelname" not in data else data["reportname"] + data["modelname"] %}
 ```{figure} {{data["curvepath"]}}

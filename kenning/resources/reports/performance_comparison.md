@@ -1,14 +1,16 @@
-# Inference comparison
+## Inference comparison
 
-## Performance metrics
+### Performance metrics
 
 {% if 'inference_step_path' in data -%}
 ```{figure} {{data["inference_step_path"]}}
 ---
 name: {{data["reportname"]}}_inference_step_comparison
-alt: Inference step comparison
+alt: Inference time comparison
 align: center
 ---
+
+Plot represents changes of inference time over time for all models.
 ```
 {% endif %}
 
@@ -19,6 +21,8 @@ name: {{data["reportname"]}}_cpu_comparison
 alt: CPU usage comparison
 align: center
 ---
+
+Plot represents changes of CPU usage over time for all models.
 ```
 {% endif %}
 
@@ -29,6 +33,8 @@ name: {{data["reportname"]}}_memory_comparison
 alt: Memory usage comparison
 align: center
 ---
+
+Plot represents changes of RAM usage over time for all models.
 ```
 {% endif %}
 
@@ -39,6 +45,8 @@ name: {{data["reportname"]}}_gpu_comparison
 alt: GPU usage comparison
 align: center
 ---
+
+Plot represents changes of GPU usage over time for all models.
 ```
 {% endif %}
 
@@ -49,10 +57,12 @@ name: {{data["reportname"]}}_gpu_mem_comparison
 alt: GPU memory usage comparison
 align: center
 ---
+
+Plot represents changes of GPU RAM usage over time for all models.
 ```
 {% endif %}
 
-## Mean comparison plot
+### Mean comparison plot
 
 ```{figure} {{data["meanperformancepath"]}}
 ---
@@ -60,9 +70,10 @@ name: {{data["reportname"]}}_performance_comparison
 alt: Performance comparison
 align: center
 ---
+Violin chart representing distribution of values for performance metrics for models
 ```
 
-## Hardware usage comparison
+### Hardware usage comparison
 
 ```{figure} {{data["hardwareusagepath"]}}
 ---
@@ -70,6 +81,7 @@ name: {{data["reportname"]}}_hardware_usage_comparison
 alt: Resource usage comparison
 align: center
 ---
+Radar chart representing the resource usage of models
 ```
 
 

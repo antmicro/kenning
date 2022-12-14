@@ -1,8 +1,8 @@
-# Inference performance metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Inference performance metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname"] if "modelname" not in data else data["reportname"] + data["modelname"] %}
 {% if 'inferencetime' in data -%}
-## Inference time
+### Inference time
 
 ```{figure} {{data["inferencetimepath"]}}
 ---
@@ -21,7 +21,7 @@ Inference time
 {% endif %}
 
 {% if 'session_utilization_cpus_percent_avg' in data -%}
-## Mean CPU usage
+### Mean CPU usage
 
 ```{figure} {{data["cpuusagepath"]}}
 ---
@@ -39,7 +39,7 @@ Mean CPU usage during benchmark
 {% endif %}
 
 {% if 'session_utilization_mem_percent' in data -%}
-## Memory usage
+### Memory usage
 
 ```{figure} {{data["memusagepath"]}}
 ---
@@ -57,7 +57,7 @@ Memory usage during benchmark
 {% endif %}
 
 {% if 'session_utilization_gpu_utilization' in data and data['session_utilization_gpu_utilization']|length > 0 -%}
-# GPU usage
+## GPU usage
 
 ```{figure} {{data["gpuusagepath"]}}
 ---
@@ -75,7 +75,7 @@ GPU utilization during benchmark
 {% endif %}
 
 {% if 'session_utilization_gpu_mem_utilization' in data and data['session_utilization_gpu_mem_utilization']|length > 0 -%}
-# GPU memory usage
+## GPU memory usage
 
 ```{figure} {{data["gpumemusagepath"]}}
 ---

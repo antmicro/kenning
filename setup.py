@@ -1,6 +1,6 @@
 import setuptools
 
-with open('README.rst', 'r') as fh:
+with open('README.md', 'r') as fh:
     long_description = fh.read()
 
 setuptools.setup(
@@ -37,16 +37,16 @@ setuptools.setup(
             'myst-parser'
         ],
         'tensorflow': [
-            'onnx_tf>=1.7.0',
-            'tensorflow>=2.4.1',
-            'tensorflow_addons>=0.12.1',
-            'tf2onnx>=1.8.3',
-            'tensorflow_probability',
-            'tensorflow_model_optimization'
+            'onnx_tf~=1.10.0',
+            'tensorflow~=2.9.1',
+            'tensorflow_addons~=0.17.1',
+            'tf2onnx~=1.11.1',
+            'tensorflow_probability~=0.17.0',
+            'tensorflow_model_optimization~=0.7.3'
         ],
         'torch': [
-            'torch>=1.7.1',
-            'torchvision>=0.8.2'
+            'torch~=1.13.0',
+            'torchvision~=0.14.0'
         ],
         'mxnet': [
             'gluoncv>=0.10.2',

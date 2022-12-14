@@ -12,7 +12,7 @@ python -m kenning.scenarios.json_inference_tester \
 
 python -m kenning.scenarios.render_report \
     "YOLACT detection report" \
-    build/yolact-report/report.rst \
+    build/yolact-report/report.md \
     --root-dir build/yolact-report \
     --img-dir build/yolact-report/imgs \
     --report-types performance detection \

@@ -198,6 +198,17 @@ def main(argv):
         'jsoncfg',
         help='The path to the input JSON file with configuration'
     )
+    parser.add_argument(
+        'output',
+        help='The path to the output JSON file with measurements',
+        type=str,
+    )
+    parser.add_argument(
+        '--verbosity',
+        help='Verbosity level',
+        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        default='INFO'
+    )
     args, _ = parser.parse_known_args(argv[1:])
 
     with open(args.jsoncfg, 'r') as f:
@@ -221,7 +232,8 @@ def main(argv):
         try:
             run_scenario_json(
                 scenario,
-                Path(str(output_count) + '.json')
+                Path(str(output_count) + '_' + args.output),
+                args.verbosity
             )
             output_count += 1
         except Exception as ex:

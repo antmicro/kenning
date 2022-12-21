@@ -28,7 +28,8 @@ def assert_io_formats(model, optimizers, runtime) -> None:
 
     Raises
     ------
-    ValueError : raised if blocks are incompatible.
+    ValueError :
+        raised if blocks are incompatible.
     """
     chain = [model] + optimizers + [runtime]
 
@@ -43,11 +44,6 @@ def assert_io_formats(model, optimizers, runtime) -> None:
             f'Output block supported formats: {", ".join(previous_block.get_output_formats())}\n' +  # noqa: E501
             f'Input block supported formats: {", ".join(next_block.get_input_formats())}'  # noqa: E501
         )
-
-
-def parse_argparse_pipeline():
-    # TODO: Decide on how to implement that
-    pass
 
 
 def parse_json_pipeline(
@@ -71,7 +67,10 @@ def parse_json_pipeline(
 
     Raises
     ------
-    ValueError : raised if blocks are connected incorrectly
+    ValueError :
+        raised if blocks are connected incorrectly
+    jsonschema.exceptions.ValidationError :
+        raised if parameters are incorrect
 
     Returns
     -------
@@ -147,8 +146,20 @@ def run_pipeline_json(
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
         only testing of the model is executed
+
+    Raises
+    ------
+    ValueError :
+        raised if blocks are connected incorrectly
+    jsonschema.exceptions.ValidationError :
+        raised if parameters are incorrect
+
+    Returns
+    -------
+    int :
+        0 if the inference was successful, 1 otherwise
     """
-    run_pipeline(
+    return run_pipeline(
         *parse_json_pipeline(json_cfg),
         output,
         verbosity,
@@ -197,9 +208,17 @@ def run_pipeline(
         Instead of running the full compilation and testing flow,
         only testing of the model is executed
 
+    Raises
+    ------
+    ValueError :
+        raised if blocks are connected incorrectly
+    jsonschema.exceptions.ValidationError :
+        raised if parameters are incorrect
+
     Returns
     -------
-    int : 0 if the inference was successful, 1 otherwise
+    int :
+        0 if the inference was successful, 1 otherwise
     """
     logger.set_verbosity(verbosity)
     log = logger.get_logger()

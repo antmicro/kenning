@@ -16,6 +16,7 @@ from itertools import chain, product
 from pathlib import Path
 from typing import Dict, List
 
+from jsonschema.exceptions import ValidationError
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.pipeline_runner import run_pipeline_json
@@ -237,6 +238,10 @@ def main(argv):
                 args.verbosity
             )
             output_count += 1
+        except ValidationError as ex:
+            log.error("Incorrect parameters passed")
+            log.error(ex)
+            raise
         except Exception as ex:
             log.error(f'Scenario: {scenario} was invalid.')
             log.error(ex)

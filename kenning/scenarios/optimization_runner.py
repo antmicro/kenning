@@ -18,7 +18,7 @@ from typing import Dict, List
 
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.scenarios_runner import run_scenario_json
+from kenning.utils.pipeline_runner import run_pipeline_json
 
 log = logger.get_logger()
 
@@ -230,7 +230,7 @@ def main(argv):
     for scenario in scenarios:
         MeasurementsCollector.clear()
         try:
-            run_scenario_json(
+            run_pipeline_json(
                 scenario,
                 Path(str(output_count) + '_' + args.output),
                 args.verbosity

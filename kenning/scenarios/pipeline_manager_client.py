@@ -9,7 +9,7 @@ from pipeline_manager_backend_communication.communication_backend import Communi
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
 
 from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow  # noqa: E501
-from kenning.utils.scenarios_runner import run_scenario, parse_json_scenario
+from kenning.utils.pipeline_runner import run_pipeline, parse_json_pipeline
 
 
 def main(argv):
@@ -58,10 +58,10 @@ def main(argv):
                     client.send_message(MessageType.ERROR, msg.encode())
                     continue
                 try:
-                    scenario_tuple = parse_json_scenario(msg)
+                    scenario_tuple = parse_json_pipeline(msg)
 
                     if message_type == MessageType.RUN:
-                        run_scenario(
+                        run_pipeline(
                             *scenario_tuple,
                             args.file_path
                         )

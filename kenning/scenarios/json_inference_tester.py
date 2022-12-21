@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 from kenning.utils.class_loader import get_command
-from kenning.utils.scenarios_runner import run_scenario_json
+from kenning.utils.pipeline_runner import run_pipeline_json
 
 
 def main(argv):
@@ -74,7 +74,7 @@ def main(argv):
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
-    run_scenario_json(
+    run_pipeline_json(
         json_cfg,
         args.output,
         args.verbosity,

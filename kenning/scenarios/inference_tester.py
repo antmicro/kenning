@@ -36,7 +36,7 @@ import sys
 from pathlib import Path
 
 from kenning.utils.class_loader import get_command, load_class
-from kenning.utils.scenarios_runner import run_scenario
+from kenning.utils.pipeline_runner import run_pipeline
 
 
 def main(argv):
@@ -116,7 +116,7 @@ def main(argv):
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
-    run_scenario(
+    run_pipeline(
         dataset,
         model,
         [compiler],

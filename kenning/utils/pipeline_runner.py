@@ -1,5 +1,5 @@
 """
-Module with scenarios running helper functions
+Module with pipelines running helper functions
 """
 
 import tempfile
@@ -15,16 +15,16 @@ from kenning.core.measurements import MeasurementsCollector
 
 def assert_io_formats(model, optimizers, runtime) -> None:
     """
-    Asserts that given blocks can be put together in a scenario.
+    Asserts that given blocks can be put together in a pipeline.
 
     Parameters
     ----------
     model : ModelWrapper
-        ModelWrapper of the scenario
+        ModelWrapper of the pipeline
     optimizers : Union[List[Optimizer], Optimizer]
-        Optimizers of the scenario
+        Optimizers of the pipeline
     runtime : Runtime
-        Runtime of the scenario
+        Runtime of the pipeline
 
     Raises
     ------
@@ -45,27 +45,27 @@ def assert_io_formats(model, optimizers, runtime) -> None:
         )
 
 
-def parse_argparse_scenario():
+def parse_argparse_pipeline():
     # TODO: Decide on how to implement that
     pass
 
 
-def parse_json_scenario(
+def parse_json_pipeline(
         json_cfg: Dict,
         assert_integrity: bool = True) -> Tuple:
     """
-    Method that parses a json configuration of an inference scenario.
+    Method that parses a json configuration of an inference pipeline.
 
-    It also checks whether the scenario is correct in terms of connected
+    It also checks whether the pipeline is correct in terms of connected
     blocks if `assert_integrity` is set to true.
 
     Can be used to check whether blocks' parameters
-    and the order of the scenario are correct.
+    and the order of the blocks are correct.
 
     Parameters
     ----------
     json_cfg: Dict
-        Configuration of the inference scenario
+        Configuration of the inference pipeline
     assert_integrity: bool
         States whether integrity of connected blocks should be checked.
 
@@ -77,7 +77,7 @@ def parse_json_scenario(
     -------
     Tuple :
         Tuple that consists of (Dataset, Model, List[Optimizer], Optional[Runtime], Optional[RuntimeProtocol])  # noqa: E501
-        It can be used to run a scenario using `run_scenario` function.
+        It can be used to run a pipeline using `run_pipeline` function.
     """
     modelwrappercfg = json_cfg['model_wrapper']
     datasetcfg = json_cfg['dataset']
@@ -120,7 +120,7 @@ def parse_json_scenario(
     return (dataset, model, optimizers, runtime, protocol)
 
 
-def run_scenario_json(
+def run_pipeline_json(
         json_cfg: Dict,
         output: Path,
         verbosity: str = 'INFO',
@@ -128,13 +128,13 @@ def run_scenario_json(
         command: List = ['Run in a different environment'],
         run_benchmarks_only: bool = False) -> int:
     """
-    Simple wrapper for `run_scenario` method that parses `json_cfg` argument,
-    asserts its integrity and then runs the scenario with given parameters.
+    Simple wrapper for `run_pipeline` method that parses `json_cfg` argument,
+    asserts its integrity and then runs the pipeline with given parameters.
 
     Parameters
     ----------
     json_cfg : dict
-        Configuration of the inference scenario
+        Configuration of the inference pipeline
     output : Path
         Path to the output JSON file with measurements
     verbosity : Optional[str]
@@ -142,14 +142,14 @@ def run_scenario_json(
     convert_to_onnx : Optional[Path]
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
     command : Optional[List]
-        Command used to run this inference scenario. It is put in
+        Command used to run this inference pipeline. It is put in
         the output JSON file
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
         only testing of the model is executed
     """
-    run_scenario(
-        *parse_json_scenario(json_cfg),
+    run_pipeline(
+        *parse_json_pipeline(json_cfg),
         output,
         verbosity,
         convert_to_onnx,
@@ -158,7 +158,7 @@ def run_scenario_json(
     )
 
 
-def run_scenario(
+def run_pipeline(
         dataset,
         model,
         optimizers,
@@ -170,7 +170,7 @@ def run_scenario(
         command: List = ['Run in a different environment'],
         run_benchmarks_only: bool = False):
     """
-    Wrapper function that runs a scenario using given parameters
+    Wrapper function that runs a pipeline using given parameters
 
     Parameters
     ----------
@@ -191,7 +191,7 @@ def run_scenario(
     convert_to_onnx : Optional[Path]
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
     command : Optional[List]
-        Command used to run this inference scenario. It is put in
+        Command used to run this inference pipelin. It is put in
         the output JSON file
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,

@@ -34,6 +34,8 @@ from kenning.core.drawing import draw_bubble_plot
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
+from kenning.core.metrics import compute_performance_metrics, \
+    compute_classification_metrics, compute_detection_metrics
 
 log = logger.get_logger()
 
@@ -80,6 +82,8 @@ def performance_report(
         content of the report in MyST format
     """
     log.info(f'Running performance_report for {measurementsdata["modelname"]}')
+    metrics = compute_performance_metrics(measurementsdata)
+    measurementsdata |= metrics
 
     inference_step = None
     if 'target_inference_step' in measurementsdata:
@@ -126,10 +130,6 @@ def performance_report(
     if 'session_utilization_cpus_percent' in measurementsdata:
         log.info('Using target measurements CPU usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_usage.png'
-        measurementsdata['session_utilization_cpus_percent_avg'] = [
-            np.mean(cpus) for cpus in
-            measurementsdata['session_utilization_cpus_percent']
-        ]
         time_series_plot(
             str(usepath),
             'Mean CPU usage',
@@ -216,7 +216,7 @@ def comparison_performance_report(
     metric_names = {
         'inference_step': ('Inference time', 's'),
         'session_utilization_mem_percent': ('Memory usage', '%'),
-        'session_utilization_cpus_percent': ('CPU usage', '%'),
+        'session_utilization_cpus_percent_avg': ('CPU usage', '%'),
         'session_utilization_gpu_mem_utilization': ('GPU memory usage', '%'),
         'session_utilization_gpu_utilization': ('GPU usage', '%')
     }
@@ -238,10 +238,9 @@ def comparison_performance_report(
                 data['protocol_inference_step_timestamp']
 
         if 'session_utilization_cpus_percent' in data:
-            data['session_utilization_cpus_percent'] = [
-                np.mean(cpus) for cpus in
-                data['session_utilization_cpus_percent']
-            ]
+            metrics = compute_performance_metrics(data)
+            data['session_utilization_cpus_percent_avg'] = \
+                metrics['session_utilization_cpus_percent_avg']
 
         gpumetrics = [
             'session_utilization_gpu_mem_utilization',
@@ -303,7 +302,7 @@ def comparison_performance_report(
         usepath,
         "Performance comparison plot",
         [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
-         for metric in common_metrics],
+            for metric in common_metrics],
         visualizationdata
     )
     report_variables["meanperformancepath"] = str(
@@ -360,6 +359,8 @@ def classification_report(
     str : content of the report in MyST format
     """
     log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
+    metrics = compute_classification_metrics(measurementsdata)
+    measurementsdata |= metrics
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
@@ -411,18 +412,20 @@ def comparison_classification_report(
     metric_visualization = {}
     accuracy, mean_inference_time, model_sizes, names = [], [], [], []
     for data in measurementsdata:
-        if 'target_inference_step' in data:
-            inference_step = 'target_inference_step'
-        elif 'protocol_inference_step' in data:
-            inference_step = 'protocol_inference_step'
-        else:
+        performance_metrics = compute_performance_metrics(data)
+        if 'inferencetime_mean' not in performance_metrics:
             log.warning("No inference measurements available, skipping report generation")  # noqa: E501
             return ""
 
-        eval_matrix = np.array(data['eval_confusion_matrix'])
-        model_accuracy = np.trace(eval_matrix)/data['total']
+        classification_metrics = compute_classification_metrics(data)
+        model_accuracy = classification_metrics['accuracy']
+        model_precision = classification_metrics['mean_precision']
+        model_sensitivity = classification_metrics['mean_sensitivity']
         accuracy.append(model_accuracy)
-        mean_inference_time.append(np.mean(data[inference_step]))
+
+        model_inferencetime_mean = performance_metrics['inferencetime_mean']
+        mean_inference_time.append(model_inferencetime_mean)
+
         if 'compiled_model_size' in data:
             model_sizes.append(data['compiled_model_size'])
         else:
@@ -431,15 +434,15 @@ def comparison_classification_report(
                 ' - computing size based on average RAM usage'
             )
             model_sizes.append(
-                np.mean(data['session_utilization_mem_percent'])
+                performance_metrics['session_utilization_mem_percent_mean']
             )
         names.append(data['modelname'])
 
-        # Accuracy, precision, recall
+        # Accuracy, precision, sensitivity
         metric_visualization[data['modelname']] = [
             model_accuracy,
-            np.mean(eval_matrix.diagonal()/np.sum(eval_matrix, axis=0)),
-            np.mean(eval_matrix.diagonal()/np.sum(eval_matrix, axis=1))
+            model_precision,
+            model_sensitivity
         ]
 
     usepath = imgdir / "accuracy_vs_inference_time.png"
@@ -510,17 +513,14 @@ def detection_report(
         compute_map_per_threshold
 
     log.info(f'Running detection report for {measurementsdata["modelname"]}')
+    metrics = compute_detection_metrics(measurementsdata)
+    measurementsdata |= metrics
 
     lines = get_recall_precision(measurementsdata, 0.5)
 
     aps = []
     for line in lines:
         aps.append(compute_ap(line[0], line[1]))
-
-    measurementsdata['mAP'] = compute_map_per_threshold(
-        measurementsdata,
-        [0.0]
-    )[0]
 
     curvepath = imgdir / f'{imgprefix}recall_precision_curves.png'
     recall_precision_curves(

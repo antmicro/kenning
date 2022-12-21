@@ -106,7 +106,7 @@ def grid_search(json_cfg: Dict) -> Dict:
             "type": "kenning.runtimes.tvm.TVMRuntime",
             "parameters":
             {
-                "save_model_path": "./build/compiled_model.tar"
+                "save_model_path": ["./build/compiled_model.tar"]
             }
         },
         {
@@ -196,7 +196,8 @@ def main(argv):
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         'jsoncfg',
-        help='The path to the input JSON file with configuration'
+        help='The path to the input JSON file with configuration',
+        type=Path
     )
     parser.add_argument(
         'output',

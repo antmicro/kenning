@@ -116,7 +116,7 @@ def main(argv):
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
-    run_pipeline(
+    return run_pipeline(
         dataset,
         model,
         [compiler],

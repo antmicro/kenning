@@ -74,7 +74,7 @@ def main(argv):
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
-    run_pipeline_json(
+    return run_pipeline_json(
         json_cfg,
         args.output,
         args.verbosity,

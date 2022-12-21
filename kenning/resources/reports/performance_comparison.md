@@ -14,8 +14,8 @@ Plot represents changes of inference time over time for all models.
 ```
 {% endif %}
 
-{% if 'session_utilization_cpus_percent_path' in data -%}
-```{figure} {{data["session_utilization_cpus_percent_path"]}}
+{% if 'session_utilization_cpus_percent_avg_path' in data -%}
+```{figure} {{data["session_utilization_cpus_percent_avg_path"]}}
 ---
 name: {{data["reportname_simple"]}}_cpu_comparison
 alt: CPU usage comparison

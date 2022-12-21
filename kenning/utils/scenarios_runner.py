@@ -1,6 +1,7 @@
 """
 Module with scenarios running helper functions
 """
+
 import tempfile
 from pathlib import Path
 
@@ -70,7 +71,7 @@ def parse_json_scenario(
 
     Raises
     ------
-    ValueError : raised if blocks are connected invalidly
+    ValueError : raised if blocks are connected incorrectly
 
     Returns
     -------
@@ -136,11 +137,11 @@ def run_scenario_json(
         Configuration of the inference scenario
     output : Path
         Path to the output JSON file with measurements
-    verbosity : str, optional
+    verbosity : Optional[str]
         Verbosity level
-    convert_to_onnx : Optional[Path], optional
+    convert_to_onnx : Optional[Path]
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
-    command : List, optional
+    command : Optional[List]
         Command used to run this inference scenario. It is put in
         the output JSON file
     run_benchmarks_only : bool
@@ -169,19 +170,27 @@ def run_scenario(
         command: List = ['Run in a different environment'],
         run_benchmarks_only: bool = False):
     """
-    Wrapper function that runs a scenario given in `json_cfg` argument.
+    Wrapper function that runs a scenario using given parameters
 
     Parameters
     ----------
-    json_cfg : dict
-        Configuration of the inference scenario
+    dataset : Dataset
+        Dataset to use in inference
+    model : ModelWrapper
+        ModelWrapper to use in inference
+    optimizers : List[Optimizer]
+        Optimizers to use in inference
+    runtime : Runtime
+        Runtime to use in inference
+    runtimeprotocol : RuntimeProtocol
+        RuntimeProtocol to use in inference
     output : Path
         Path to the output JSON file with measurements
-    verbosity : str, optional
+    verbosity : Optional[str]
         Verbosity level
-    convert_to_onnx : Optional[Path], optional
+    convert_to_onnx : Optional[Path]
         Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
-    command : List, optional
+    command : Optional[List]
         Command used to run this inference scenario. It is put in
         the output JSON file
     run_benchmarks_only : bool

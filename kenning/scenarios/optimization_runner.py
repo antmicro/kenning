@@ -12,7 +12,7 @@ list of parameters instead of a singular value specified.
 import argparse
 import json
 import sys
-from itertools import chain, product
+from itertools import chain, product, combinations
 from pathlib import Path
 from typing import Dict, List
 
@@ -93,6 +93,36 @@ def get_block_product(block: Dict[str, List]) -> List:
         }
         for p in product(*block['parameters'].values())
     ]
+
+
+def ordered_powerset(iterable: List) -> List[List]:
+    """
+    Generates a powerset of ordered elements of `iterable` argument.
+
+    Example
+    ```python
+    iterable = [1, 2, 3]
+    ```
+    will return
+    ```
+    [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+    ```
+
+    Parameters
+    ----------
+    iterable : List
+        List of arguments
+
+    Returns
+    -------
+    List[List]
+        Powerset of ordered values
+    """
+    res = []
+    for i in range(len(iterable) + 1):
+        comb = [list(c) for c in list(combinations(iterable, r=i))]
+        res.append(comb)
+    return list(chain(*res))
 
 
 def grid_search(json_cfg: Dict) -> Dict:

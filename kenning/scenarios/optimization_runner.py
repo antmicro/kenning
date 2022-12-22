@@ -97,9 +97,9 @@ def get_block_product(block: Dict[str, List]) -> List:
 
 def grid_search(json_cfg: Dict) -> Dict:
     """
-    Creates a configuration for running the scenarios. For every type of block
+    Creates a configuration for running the pipelines. For every type of block
     it creates a list of parametrized blocks of this type that can be used to
-    run a scenario.
+    run a pipeline.
 
     An example of an optimizable runtime block
     ```python
@@ -123,6 +123,8 @@ def grid_search(json_cfg: Dict) -> Dict:
     ]
     ```
     will yield a list of valid runtime blocks that can be used.
+    Those are valid runtime blocks and every one of them can be used
+    as a runtime. 
     ```python
     "runtime":
     [
@@ -160,9 +162,9 @@ def grid_search(json_cfg: Dict) -> Dict:
     Returns
     -------
     Dict :
-        Dictionary that for every type of block in the scenario
+        Dictionary that for every type of block in the pipeline
         creates a list of parametrized blocks of this type that can be
-        directly used in the final scenario.
+        directly used in the final pipeline.
     """
     optimization_parameters = json_cfg['optimization_parameters']
     blocks_to_optimize = [
@@ -236,28 +238,28 @@ def main(argv):
     if optimization_strategy == 'grid_search':
         optimization_configuration = grid_search(json_cfg)
 
-    # Create all possible scenarios from all possible blocks values by taking
+    # Create all possible pipelines from all possible blocks values by taking
     # a cartesian product.
     # TODO: For bigger optimizations problems consider using yield.
-    scenarios = [
-        dict(zip(optimization_configuration.keys(), scenario))
-        for scenario in product(*optimization_configuration.values())
+    pipelines = [
+        dict(zip(optimization_configuration.keys(), pipeline))
+        for pipeline in product(*optimization_configuration.values())
     ]
 
     output_count = 0
-    best_scenario = None
+    best_pipeline = None
     best_score = float('inf') if args.policy == 'min' else -float('inf')
     get_best_score = min if args.policy == 'min' else max
 
     log.info(f'Finding {args.policy} for {args.metric}')
-    for scenario in scenarios:
+    for pipeline in pipelines:
         MeasurementsCollector.clear()
         try:
             measurementspath = str(output_count) + '_' + args.output
             output_count += 1
 
             run_pipeline_json(
-                scenario,
+                pipeline,
                 Path(measurementspath),
                 args.verbosity
             )
@@ -280,19 +282,19 @@ def main(argv):
 
             best_score = get_best_score(best_score, new_score)
             if best_score == new_score:
-                log.info(f'Found new best scenario with {args.metric} = {best_score}')  # noqa: E501
-                best_scenario = scenario
+                log.info(f'Found new best pipeline with {args.metric} = {best_score}')  # noqa: E501
+                best_pipeline = pipeline
 
         except ValidationError as ex:
             log.error('Incorrect parameters passed')
             log.error(ex)
             raise
         except Exception as ex:
-            log.error(f'Scenario: {scenario} was invalid.')
+            log.error(f'Pipeline: {pipeline} was invalid.')
             log.error(ex)
 
     pprint(best_score)
-    pprint(best_scenario)
+    pprint(best_pipeline)
 
 
 if __name__ == '__main__':

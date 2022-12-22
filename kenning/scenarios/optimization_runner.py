@@ -206,6 +206,18 @@ def main(argv):
         type=str,
     )
     parser.add_argument(
+        '--metric',
+        help='Target optimization metric',
+        choices=['inferencetime_mean', 'accuracy', 'mean_precision', 'mean_sensitivity'],
+        default='inferencetime_mean'
+    )
+    parser.add_argument(
+        '--policy',
+        help='Decides whether to minimize or maximize chosen metric',
+        choices=['min', 'max'],
+        default='min'
+    )
+    parser.add_argument(
         '--verbosity',
         help='Verbosity level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],

@@ -35,6 +35,9 @@ import json
 import sys
 from pathlib import Path
 
+from jsonschema.exceptions import ValidationError
+
+import kenning.utils.logger as logger
 from kenning.utils.class_loader import get_command
 from kenning.utils.pipeline_runner import run_pipeline_json
 
@@ -71,17 +74,31 @@ def main(argv):
 
     args, _ = parser.parse_known_args(argv[1:])
 
+    logger.set_verbosity(args.verbosity)
+    log = logger.get_logger()
+
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
 
-    return run_pipeline_json(
-        json_cfg,
-        args.output,
-        args.verbosity,
-        args.convert_to_onnx,
-        command,
-        args.run_benchmarks_only
-    )
+    try:
+        ret = run_pipeline_json(
+            json_cfg,
+            args.output,
+            args.verbosity,
+            args.convert_to_onnx,
+            command,
+            args.run_benchmarks_only
+        )
+    except ValidationError as ex:
+        log.error(f'Validation error: {ex}')
+        raise
+    except Exception as ex:
+        log.error(ex)
+        raise
+
+    if not ret:
+        return 1
+    return ret
 
 
 if __name__ == '__main__':

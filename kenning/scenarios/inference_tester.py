@@ -35,8 +35,11 @@ import argparse
 import sys
 from pathlib import Path
 
+from jsonschema.exceptions import ValidationError
+
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.pipeline_runner import run_pipeline
+import kenning.utils.logger as logger
 
 
 def main(argv):
@@ -110,24 +113,38 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
+    logger.set_verbosity(args.verbosity)
+    log = logger.get_logger()
+
     dataset = datasetcls.from_argparse(args)
     model = modelwrappercls.from_argparse(dataset, args)
     compiler = compilercls.from_argparse(dataset, args) if compilercls else None  # noqa: E501
     protocol = protocolcls.from_argparse(args) if protocolcls else None
     runtime = runtimecls.from_argparse(protocol, args) if runtimecls else None
 
-    return run_pipeline(
-        dataset,
-        model,
-        [compiler],
-        runtime,
-        protocol,
-        args.output,
-        args.verbosity,
-        args.convert_to_onnx,
-        command,
-        args.run_benchmarks_only
-    )
+    try:
+        ret = run_pipeline(
+            dataset,
+            model,
+            [compiler],
+            runtime,
+            protocol,
+            args.output,
+            args.verbosity,
+            args.convert_to_onnx,
+            command,
+            args.run_benchmarks_only
+        )
+    except ValidationError as ex:
+        log.error(f'Validation error: {ex}')
+        raise
+    except Exception as ex:
+        log.error(ex)
+        raise
+
+    if not ret:
+        return 1
+    return ret
 
 
 if __name__ == '__main__':

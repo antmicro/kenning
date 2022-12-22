@@ -95,7 +95,7 @@ def get_block_product(block: Dict[str, List]) -> List:
     ]
 
 
-def ordered_powerset(iterable: List) -> List[List]:
+def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     """
     Generates a powerset of ordered elements of `iterable` argument.
 
@@ -112,6 +112,8 @@ def ordered_powerset(iterable: List) -> List[List]:
     ----------
     iterable : List
         List of arguments
+    min_elements : int
+        Minimal number of elements in the powerset
 
     Returns
     -------
@@ -119,7 +121,7 @@ def ordered_powerset(iterable: List) -> List[List]:
         Powerset of ordered values
     """
     res = []
-    for i in range(len(iterable) + 1):
+    for i in range(min_elements, len(iterable) + 1):
         comb = [list(c) for c in list(combinations(iterable, r=i))]
         res.append(comb)
     return list(chain(*res))
@@ -154,7 +156,7 @@ def grid_search(json_cfg: Dict) -> Dict:
     ```
     will yield a list of valid runtime blocks that can be used.
     Those are valid runtime blocks and every one of them can be used
-    as a runtime. 
+    as a runtime.
     ```python
     "runtime":
     [
@@ -219,7 +221,20 @@ def grid_search(json_cfg: Dict) -> Dict:
         # We need to treat optimizers differently, as those can be chained.
         # For other blocks we have to pick only one.
         if block == 'optimizers':
-            block_parameters = [list(p) for p in product(*block_parameters)]
+            optimizers_blocks = [list(p) for p in product(*block_parameters)]
+
+            # We also need to take every mask of the list of optimizers.
+            # For example if we have optimizers A and B then we could use
+            # only A, only B, both A and B or neither in the final pipeline.
+            final_parameters = []
+            for bp in optimizers_blocks:
+                final_parameters.append(ordered_powerset(bp))
+            final_parameters = list(chain(*final_parameters))
+
+            block_parameters = []
+            for p in final_parameters:
+                if p not in block_parameters:
+                    block_parameters.append(p)
         else:
             block_parameters = list(chain(*block_parameters))
 

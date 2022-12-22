@@ -17,6 +17,8 @@ from pathlib import Path
 from typing import Dict, List
 
 from jsonschema.exceptions import ValidationError
+
+from kenning.core.metrics import compute_classification_metrics, compute_performance_metrics, compute_detection_metrics  # noqa: E501
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.pipeline_runner import run_pipeline_json
@@ -208,7 +210,6 @@ def main(argv):
     parser.add_argument(
         '--metric',
         help='Target optimization metric',
-        choices=['inferencetime_mean', 'accuracy', 'mean_precision', 'mean_sensitivity'],
         default='inferencetime_mean'
     )
     parser.add_argument(
@@ -235,28 +236,63 @@ def main(argv):
     if optimization_strategy == 'grid_search':
         optimization_configuration = grid_search(json_cfg)
 
+    # Create all possible scenarios from all possible blocks values by taking
+    # a cartesian product.
+    # TODO: For bigger optimizations problems consider using yield.
     scenarios = [
         dict(zip(optimization_configuration.keys(), scenario))
         for scenario in product(*optimization_configuration.values())
     ]
 
     output_count = 0
+    best_scenario = None
+    best_score = float('inf') if args.policy == 'min' else -float('inf')
+    get_best_score = min if args.policy == 'min' else max
+
+    log.info(f'Finding {args.policy} for {args.metric}')
     for scenario in scenarios:
         MeasurementsCollector.clear()
         try:
+            measurementspath = str(output_count) + '_' + args.output
+            output_count += 1
+
             run_pipeline_json(
                 scenario,
-                Path(str(output_count) + '_' + args.output),
+                Path(measurementspath),
                 args.verbosity
             )
-            output_count += 1
+
+            # Consider using MeasurementsCollector.measurements
+            with open(measurementspath, 'r') as measurementsfile:
+                measurements = json.load(measurementsfile)
+
+            computed_metrics = {}
+
+            computed_metrics |= compute_performance_metrics(measurements)
+            computed_metrics |= compute_classification_metrics(measurements)
+            computed_metrics |= compute_detection_metrics(measurements)
+
+            try:
+                new_score = computed_metrics[args.metric]
+            except KeyError:
+                log.error(f'{args.metric} not found in the metrics')
+                raise
+
+            best_score = get_best_score(best_score, new_score)
+            if best_score == new_score:
+                log.info(f'Found new best scenario with {args.metric} = {best_score}')  # noqa: E501
+                best_scenario = scenario
+
         except ValidationError as ex:
-            log.error("Incorrect parameters passed")
+            log.error('Incorrect parameters passed')
             log.error(ex)
             raise
         except Exception as ex:
             log.error(f'Scenario: {scenario} was invalid.')
             log.error(ex)
+
+    pprint(best_score)
+    pprint(best_scenario)
 
 
 if __name__ == '__main__':

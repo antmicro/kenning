@@ -204,6 +204,8 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     from kenning.datasets.helpers.detection_and_segmentation import \
         compute_map_per_threshold
 
-    return {
-        'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]
-    }
+    if 'eval_gtcount' in measurementsdata:
+        return {
+            'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]
+        }
+    return {}

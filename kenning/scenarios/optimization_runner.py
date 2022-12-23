@@ -15,6 +15,7 @@ import sys
 from itertools import chain, product, combinations
 from pathlib import Path
 from typing import Dict, List
+from pprint import pformat
 
 from jsonschema.exceptions import ValidationError
 
@@ -102,10 +103,11 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     Example
     ```python
     iterable = [1, 2, 3]
+    min_elements = 1
     ```
     will return
     ```
-    [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+    [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
     ```
 
     Parameters
@@ -231,6 +233,7 @@ def grid_search(json_cfg: Dict) -> Dict:
                 final_parameters.append(ordered_powerset(bp))
             final_parameters = list(chain(*final_parameters))
 
+            # Get rid of the duplicates
             # For great numbers of pipelines this may be very expensive.
             block_parameters = []
             for p in final_parameters:
@@ -303,7 +306,7 @@ def main(argv):
         MeasurementsCollector.clear()
         try:
             log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
-            log.info(f'Configuration {pipeline}')
+            log.info(f'Configuration {pformat(pipeline)}')
             measurementspath = str(args.output.with_suffix('')) + \
                 '_' + \
                 str(pipeline_count) + \
@@ -341,7 +344,7 @@ def main(argv):
             log.error(ex)
             raise
         except Exception as ex:
-            log.error(f'Pipeline: {pipeline} was invalid.')
+            log.error('Pipeline was invalid')
             log.error(ex)
 
     if best_pipeline:

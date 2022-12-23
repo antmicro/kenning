@@ -253,7 +253,7 @@ def main(argv):
     parser.add_argument(
         'output',
         help='The path to the output JSON file with the best pipeline',
-        type=str,
+        type=Path,
     )
     parser.add_argument(
         '--metric',
@@ -303,7 +303,12 @@ def main(argv):
         MeasurementsCollector.clear()
         try:
             log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
-            measurementspath = str(pipeline_count) + '_' + args.output
+            log.info(f'Configuration {pipeline}')
+            measurementspath = str(args.output.with_suffix('')) + \
+                '_' + \
+                str(pipeline_count) + \
+                str(args.output.suffix)
+
             run_pipeline_json(
                 pipeline,
                 Path(measurementspath),

@@ -259,17 +259,6 @@ def main(argv):
         type=Path,
     )
     parser.add_argument(
-        '--metric',
-        help='Target optimization metric',
-        default='inferencetime_mean'
-    )
-    parser.add_argument(
-        '--policy',
-        help='Decides whether to minimize or maximize chosen metric',
-        choices=['min', 'max'],
-        default='min'
-    )
-    parser.add_argument(
         '--verbosity',
         help='Verbosity level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -283,6 +272,8 @@ def main(argv):
 
     optimization_parameters = json_cfg['optimization_parameters']
     optimization_strategy = optimization_parameters['strategy']
+    policy = optimization_parameters['policy']
+    metric = optimization_parameters['metric']
 
     optimization_configuration = None
     if optimization_strategy == 'grid_search':
@@ -298,10 +289,10 @@ def main(argv):
 
     pipelines_num = len(pipelines)
     best_pipeline = None
-    best_score = float('inf') if args.policy == 'min' else -float('inf')
-    get_best_score = min if args.policy == 'min' else max
+    best_score = float('inf') if policy == 'min' else -float('inf')
+    get_best_score = min if policy == 'min' else max
 
-    log.info(f'Finding {args.policy} for {args.metric}')
+    log.info(f'Finding {policy} for {metric}')
     for pipeline_count, pipeline in enumerate(pipelines):
         MeasurementsCollector.clear()
         try:
@@ -329,14 +320,14 @@ def main(argv):
             computed_metrics |= compute_detection_metrics(measurements)
 
             try:
-                new_score = computed_metrics[args.metric]
+                new_score = computed_metrics[metric]
             except KeyError:
-                log.error(f'{args.metric} not found in the metrics')
+                log.error(f'{metric} not found in the metrics')
                 raise
 
             best_score = get_best_score(best_score, new_score)
             if best_score == new_score:
-                log.info(f'Found new best pipeline with {args.metric} = {best_score}')  # noqa: E501
+                log.info(f'Found new best pipeline with {metric} = {best_score}')  # noqa: E501
                 best_pipeline = pipeline
 
         except ValidationError as ex:
@@ -348,7 +339,7 @@ def main(argv):
             log.error(ex)
 
     if best_pipeline:
-        log.info('Best score for {argc.metric} is {best_score}')
+        log.info('Best score for {metric} is {best_score}')
         with open(args.output, 'w') as f:
             json.dump(best_pipeline, f)
         log.info('Pipeline stored in {args.output}')

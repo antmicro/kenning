@@ -284,6 +284,7 @@ def comparison_performance_report(
                 "Time [s]",
                 metric_data,
                 f"{metric_name} [{unit}]",
+                skipfirst=True,
                 smooth=101
             )
             report_variables[f"{metric}_path"] = str(

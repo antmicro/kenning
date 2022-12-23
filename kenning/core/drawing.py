@@ -127,6 +127,7 @@ def draw_multiple_time_series(
         xtitle: str,
         ydata: Dict[str, List],
         ytitle: str,
+        skipfirst: bool = False,
         smooth: Optional[int] = None,
         figsize: Tuple = (11, 8.5)
 ):
@@ -147,6 +148,8 @@ def draw_multiple_time_series(
         Mapping between name of the model and y coordinates of samples.
     ytitle : str
         Name of the Y axis
+    skipfirst: bool
+        True if the first entry should be removed from plotting.
     smooth : Optional[int]
         If None, raw point coordinates are plotted in a line plot.
         If int, samples are plotted in a scatter plot in a background,
@@ -156,19 +159,21 @@ def draw_multiple_time_series(
         The size of the figure
 
     """
+    start = 1 if skipfirst else 0
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     fig.suptitle(title, fontsize="x-large")
     colors = get_comparison_color_scheme(len(xdata))
     for color, (samplename, sample) in zip(colors, ydata.items()):
-        x_sample = xdata[samplename]
+        x_sample = xdata[samplename][start:]
         x_sample = np.array(x_sample)
         x_sample -= np.min(x_sample)
+        y_sample = sample[start:]
         if smooth is None:
-            ax.plot(x_sample, sample, label=samplename, color=color)
+            ax.plot(x_sample, y_sample, label=samplename, color=color)
         else:
-            ax.scatter(x_sample, sample, alpha=0.15, marker='.',
+            ax.scatter(x_sample, y_sample, alpha=0.15, marker='.',
                        s=10, color=color)
-            smoothed = savgol_filter(sample, smooth, 3)
+            smoothed = savgol_filter(y_sample, smooth, 3)
             ax.plot(x_sample, smoothed, label=samplename,
                     linewidth=3, color=color)
 

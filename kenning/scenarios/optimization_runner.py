@@ -231,6 +231,7 @@ def grid_search(json_cfg: Dict) -> Dict:
                 final_parameters.append(ordered_powerset(bp))
             final_parameters = list(chain(*final_parameters))
 
+            # For great numbers of pipelines this may be very expensive.
             block_parameters = []
             for p in final_parameters:
                 if p not in block_parameters:
@@ -251,7 +252,7 @@ def main(argv):
     )
     parser.add_argument(
         'output',
-        help='The path to the output JSON file with measurements',
+        help='The path to the output JSON file with the best pipeline',
         type=str,
     )
     parser.add_argument(
@@ -272,6 +273,7 @@ def main(argv):
         default='INFO'
     )
     args, _ = parser.parse_known_args(argv[1:])
+    logger.set_verbosity(args.verbosity)
 
     with open(args.jsoncfg, 'r') as f:
         json_cfg = json.load(f)
@@ -291,18 +293,17 @@ def main(argv):
         for pipeline in product(*optimization_configuration.values())
     ]
 
-    output_count = 0
+    pipelines_num = len(pipelines)
     best_pipeline = None
     best_score = float('inf') if args.policy == 'min' else -float('inf')
     get_best_score = min if args.policy == 'min' else max
 
     log.info(f'Finding {args.policy} for {args.metric}')
-    for pipeline in pipelines:
+    for pipeline_count, pipeline in enumerate(pipelines):
         MeasurementsCollector.clear()
         try:
-            measurementspath = str(output_count) + '_' + args.output
-            output_count += 1
-
+            log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
+            measurementspath = str(pipeline_count) + '_' + args.output
             run_pipeline_json(
                 pipeline,
                 Path(measurementspath),
@@ -338,8 +339,13 @@ def main(argv):
             log.error(f'Pipeline: {pipeline} was invalid.')
             log.error(ex)
 
-    pprint(best_score)
-    pprint(best_pipeline)
+    if best_pipeline:
+        log.info('Best score for {argc.metric} is {best_score}')
+        with open(args.output, 'w') as f:
+            json.dump(best_pipeline, f)
+        log.info('Pipeline stored in {args.output}')
+    else:
+        log.info('No pipeline was found for the optimization problem')
 
 
 if __name__ == '__main__':

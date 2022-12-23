@@ -129,11 +129,12 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     return list(chain(*res))
 
 
-def grid_search(json_cfg: Dict) -> Dict:
+def grid_search(json_cfg: Dict) -> List[Dict]:
     """
-    Creates a configuration for running the pipelines. For every type of block
-    it creates a list of parametrized blocks of this type that can be used to
-    run a pipeline.
+    Creates all possible pipeline configurations based on input `json_cfg`.
+    For every type of block it creates a list of parametrized blocks
+    of this type that can be used to run a pipeline.
+    Then for all of the generated blocks cartesian product is computed.
 
     An example of an optimizable runtime block
     ```python
@@ -187,6 +188,9 @@ def grid_search(json_cfg: Dict) -> Dict:
         }
     ]
     ```
+    This is done to every block type.
+    Then a cartesian product is computed that returns all possible
+    pipeline configurations.
 
     Parameters
     ----------
@@ -195,10 +199,8 @@ def grid_search(json_cfg: Dict) -> Dict:
 
     Returns
     -------
-    Dict :
-        Dictionary that for every type of block in the pipeline
-        creates a list of parametrized blocks of this type that can be
-        directly used in the final pipeline.
+    List[Dict] :
+        List of pipeline configurations.
     """
     optimization_parameters = json_cfg['optimization_parameters']
     blocks_to_optimize = [
@@ -217,6 +219,7 @@ def grid_search(json_cfg: Dict) -> Dict:
         optimization_configuration[block] = [json_cfg[block]]
 
     # Grid search
+    # Creating all possible block configuration for every block type
     for block in blocks_to_optimize:
         block_parameters = [get_block_product(b) for b in json_cfg[block]]
 
@@ -243,7 +246,15 @@ def grid_search(json_cfg: Dict) -> Dict:
             block_parameters = list(chain(*block_parameters))
 
         optimization_configuration[block] = block_parameters
-    return optimization_configuration
+
+    # Create all possible pipelines from all possible blocks configurations
+    # by taking a cartesian product.
+    # TODO: For bigger optimizations problems consider using yield.
+    pipelines = [
+        dict(zip(optimization_configuration.keys(), pipeline))
+        for pipeline in product(*optimization_configuration.values())
+    ]
+    return pipelines
 
 
 def main(argv):
@@ -275,17 +286,9 @@ def main(argv):
     policy = optimization_parameters['policy']
     metric = optimization_parameters['metric']
 
-    optimization_configuration = None
+    pipelines = None
     if optimization_strategy == 'grid_search':
-        optimization_configuration = grid_search(json_cfg)
-
-    # Create all possible pipelines from all possible blocks values by taking
-    # a cartesian product.
-    # TODO: For bigger optimizations problems consider using yield.
-    pipelines = [
-        dict(zip(optimization_configuration.keys(), pipeline))
-        for pipeline in product(*optimization_configuration.values())
-    ]
+        pipelines = grid_search(json_cfg)
 
     pipelines_num = len(pipelines)
     best_pipeline = None

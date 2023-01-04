@@ -36,6 +36,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         import tensorflow as tf
         if self.from_file:
             self.load_model(self.modelpath)
+            self.model_prepared = True
         else:
             self.base = tf.keras.applications.MobileNetV2(
                 input_shape=(224, 224, 3),
@@ -66,9 +67,9 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
                 inputs=self.base.input,
                 outputs=output
             )
-            print(self.model.summary())
+            self.model_prepared = True
             self.save_model(self.modelpath)
-        self.model_prepared = True
+            self.model.summary()
 
     def train_model(
             self,

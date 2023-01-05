@@ -291,9 +291,7 @@ def main(argv):
         pipelines = grid_search(json_cfg)
 
     pipelines_num = len(pipelines)
-    best_pipeline = None
-    best_score = float('inf') if policy == 'min' else -float('inf')
-    get_best_score = min if policy == 'min' else max
+    pipelines_scores = []
 
     log.info(f'Finding {policy} for {metric}')
     for pipeline_count, pipeline in enumerate(pipelines):
@@ -321,18 +319,18 @@ def main(argv):
             computed_metrics |= compute_performance_metrics(measurements)
             computed_metrics |= compute_classification_metrics(measurements)
             computed_metrics |= compute_detection_metrics(measurements)
+            computed_metrics.pop('session_utilization_cpus_percent_avg')
 
             try:
-                new_score = computed_metrics[metric]
+                pipelines_scores.append(
+                    {
+                        'pipeline': pipeline,
+                        'metrics': computed_metrics
+                    }
+                )
             except KeyError:
                 log.error(f'{metric} not found in the metrics')
                 raise
-
-            best_score = get_best_score(best_score, new_score)
-            if best_score == new_score:
-                log.info(f'Found new best pipeline with {metric} = {best_score}')  # noqa: E501
-                best_pipeline = pipeline
-
         except ValidationError as ex:
             log.error('Incorrect parameters passed')
             log.error(ex)
@@ -341,11 +339,26 @@ def main(argv):
             log.error('Pipeline was invalid')
             log.error(ex)
 
-    if best_pipeline:
-        log.info('Best score for {metric} is {best_score}')
+    if pipelines_scores:
+        policy_fun = min if policy == 'min' else max
+        best_pipeline = policy_fun(
+            pipelines_scores,
+            key=lambda pipeline: pipeline['metrics'][metric]
+        )
+
+        best_score = best_pipeline['metrics'][metric]
+        log.info(f'Best score for {metric} is {best_score}')
         with open(args.output, 'w') as f:
             json.dump(best_pipeline, f)
-        log.info('Pipeline stored in {args.output}')
+        log.info(f'Pipeline stored in {args.output}')
+
+        path_all_results = str(args.output.with_suffix('')) + \
+            '_' + \
+            'all_results' + \
+            str(args.output.suffix)
+        with open(path_all_results, 'w') as f:
+            json.dump(pipelines_scores, f)
+        log.info(f'All results stored in {path_all_results}')
     else:
         log.info('No pipeline was found for the optimization problem')
 

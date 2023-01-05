@@ -10,6 +10,7 @@ list of parameters instead of a singular value specified.
 """
 
 import argparse
+import copy
 import json
 import sys
 from itertools import chain, product, combinations
@@ -257,6 +258,40 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     return pipelines
 
 
+def replace_paths(pipeline: dict, id: int) -> dict:
+    """
+    Copies given `pipeline` and puts `id`_ in front of `compiled_model_path`
+    parameter in every optimizer and in front of `save_model_path` parameter
+    in runtime.
+
+    It is used when running pipelines so that every pipeline gets its own
+    unique namespace. Thanks to that collision names are avoided.
+
+    Parameters
+    ----------
+    pipeline : dict
+        Pipeline that gets copied and its parameters are replaced.
+    id : int
+        Value that is used to create a prefix for the path
+
+    Returns
+    -------
+    dict :
+        Pipeline with `compiled_model_path` and `save_model_path` parameters
+        changed
+    """
+    pipeline = copy.deepcopy(pipeline)
+    for optimizer in pipeline['optimizers']:
+        path = Path(optimizer['parameters']['compiled_model_path'])
+        new_path = path.with_stem(f'{str(id)}_{path.stem}')
+        optimizer['parameters']['compiled_model_path'] = str(new_path)
+
+    path = Path(pipeline['runtime']['parameters']['save_model_path'])
+    new_path = path.with_stem(f'{str(id)}_{path.stem}')
+    pipeline['runtime']['parameters']['save_model_path'] = str(new_path)
+    return pipeline
+
+
 def main(argv):
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
@@ -295,6 +330,7 @@ def main(argv):
 
     log.info(f'Finding {policy} for {metric}')
     for pipeline_count, pipeline in enumerate(pipelines):
+        pipeline = replace_paths(pipeline, pipeline_count)
         MeasurementsCollector.clear()
         try:
             log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501

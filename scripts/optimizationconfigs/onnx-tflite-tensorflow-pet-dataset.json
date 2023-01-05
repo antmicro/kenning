@@ -1,0 +1,61 @@
+{
+    "optimization_parameters":
+    {
+        "strategy": "grid_search",
+        "optimizable": ["optimizers", "runtime"],
+        "metric": "inferencetime_mean",
+        "policy": "min"
+    },
+    "model_wrapper":
+    {
+        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+        "parameters":
+        {
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5" 
+        }
+    },
+    "dataset":
+    {
+        "type": "kenning.datasets.pet_dataset.PetDataset",
+        "parameters":
+        {
+            "dataset_root": "./build/pet-dataset" 
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "parameters":
+            {
+                "target": ["default"],
+                "compiled_model_path": ["./build/compiled_model.tflite"]
+            }
+        },
+        {
+            "type": "kenning.compilers.onnx.ONNXCompiler",
+            "parameters":
+            {
+                "compiled_model_path": ["./build/compiled_model.onnx"]
+            }
+        }
+    ],
+    "runtime":
+    [
+        {
+            "type": "kenning.runtimes.onnx.ONNXRuntime",
+            "parameters":
+            {
+                "save_model_path": ["./build/compiled_model.onnx"],
+                "execution_providers": [["CPUExecutionProvider"], ["CUDAExecutionProvider"]]
+            }
+        },
+        {
+            "type": "kenning.runtimes.tflite.TFLiteRuntime",
+            "parameters":
+            {
+                "save_model_path": ["./build/compiled_model.tflite"]
+            }
+        }
+    ]
+}

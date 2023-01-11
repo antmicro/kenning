@@ -24,7 +24,6 @@ else:
     from importlib.resources import path
 
 from kenning.resources import reports
-from kenning.core.drawing import time_series_plot
 from kenning.core.drawing import draw_confusion_matrix
 from kenning.core.drawing import recall_precision_curves
 from kenning.core.drawing import recall_precision_gradients
@@ -40,6 +39,7 @@ from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
 from kenning.core.metrics import compute_performance_metrics, \
     compute_classification_metrics, compute_detection_metrics
+from servis import render_time_series_plot_with_histogram
 
 log = logger.get_logger()
 
@@ -100,90 +100,238 @@ def performance_report(
         log.warning('No inference time measurements in the report')
 
     if inference_step:
-        usepath = imgdir / f'{imgprefix}inference_time.png'
-        time_series_plot(
-            str(usepath),
-            'Inference time',
-            'Time', 's',
-            'Inference time', 's',
-            measurementsdata[f'{inference_step}_timestamp'],
-            measurementsdata[inference_step],
-            skipfirst=True)
-        measurementsdata['inferencetimepath'] = str(
-            usepath.relative_to(rootdir)
+        usepath = imgdir / f'{imgprefix}inference_time'
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata[inference_step],
+            xdata=measurementsdata[f'{inference_step}_timestamp'],
+            title='Inference time',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Inference time',
+            yunit='s',
+            outpath=str(usepath),
+            outputext=['png'],
+            skipfirst=True,
+            plottype='scatter',
+            backend='matplotlib'
         )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata[inference_step],
+            xdata=measurementsdata[f'{inference_step}_timestamp'],
+            title='Inference time',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Inference time',
+            yunit='s',
+            outpath=str(usepath),
+            outputext=['html'],
+            skipfirst=True,
+            plottype='scatter',
+            figsize=(670, 390)
+        )
+
+        usepath_png = Path(f'{usepath}.png')
+        usepath_html = Path(f'{usepath}.html')
+
+        measurementsdata['inferencetimepath'] = str(
+            usepath_png.relative_to(rootdir)
+        )
+        measurementsdata['inferencetimepathhtml'] = str(
+            usepath_html.relative_to(rootdir)
+        )
+
         measurementsdata['inferencetime'] = \
             measurementsdata[inference_step]
 
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
-        usepath = imgdir / f'{imgprefix}cpu_memory_usage.png'
-        time_series_plot(
-            str(usepath),
-            'Memory usage',
-            'Time', 's',
-            'Memory usage', '%',
-            measurementsdata['session_utilization_timestamp'],
-            measurementsdata['session_utilization_mem_percent'])
+        usepath = imgdir / f'{imgprefix}cpu_memory_usage'
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_mem_percent'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Memory usage',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Memory usage',
+            yunit='%',
+            outpath=str(usepath),
+            outputext=['png'],
+            skipfirst=True,
+            plottype='scatter',
+            backend='matplotlib'
+        )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_mem_percent'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Memory usage',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Memory usage',
+            yunit='%',
+            outpath=str(usepath),
+            outputext=['html'],
+            skipfirst=True,
+            plottype='scatter',
+            tags=measurementsdata['tags'],
+            tagstype='double',
+            figsize=(670, 390)
+        )
+
+        usepath_png = Path(f'{usepath}.png')
+        usepath_html = Path(f'{usepath}.html')
+
         measurementsdata['memusagepath'] = str(
-            usepath.relative_to(rootdir)
+            usepath_png.relative_to(rootdir)
+        )
+        measurementsdata['memusagepathhtml'] = str(
+            usepath_html.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
 
     if 'session_utilization_cpus_percent' in measurementsdata:
         log.info('Using target measurements CPU usage percentage')
-        usepath = imgdir / f'{imgprefix}cpu_usage.png'
-        time_series_plot(
-            str(usepath),
-            'Mean CPU usage',
-            'Time', 's',
-            'Mean CPU usage', '%',
-            measurementsdata['session_utilization_timestamp'],
-            measurementsdata['session_utilization_cpus_percent_avg'])
+        usepath = imgdir / f'{imgprefix}cpu_usage'
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Mean CPU usage',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Mean CPU usage',
+            yunit='%',
+            outpath=str(usepath),
+            outputext=['png'],
+            skipfirst=True,
+            plottype='scatter',
+            backend='matplotlib'
+        )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Mean CPU usage',
+            xtitle='Time',
+            xunit='s',
+            ytitle='Mean CPU usage',
+            yunit='%',
+            outpath=str(usepath),
+            outputext=['html'],
+            skipfirst=True,
+            plottype='scatter',
+            tags=measurementsdata['tags'],
+            tagstype='double',
+            figsize=(670, 390)
+        )
+
+        usepath_png = Path(f'{usepath}.png')
+        usepath_html = Path(f'{usepath}.html')
+
         measurementsdata['cpuusagepath'] = str(
-            usepath.relative_to(rootdir)
+            usepath_png.relative_to(rootdir)
+        )
+        measurementsdata['cpuusagepathhtml'] = str(
+            usepath_html.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
 
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
         log.info('Using target measurements GPU memory usage percentage')
-        usepath = imgdir / f'{imgprefix}gpu_memory_usage.png'
+        usepath = imgdir / f'{imgprefix}gpu_memory_usage'
         gpumemmetric = 'session_utilization_gpu_mem_utilization'
         if len(measurementsdata[gpumemmetric]) == 0:
             log.warning(
                 'Incorrectly collected data for GPU memory utilization'
             )
         else:
-            time_series_plot(
-                str(usepath),
-                'GPU memory usage',
-                'Time', 's',
-                'GPU memory usage', '%',
-                measurementsdata['session_utilization_gpu_timestamp'],
-                measurementsdata[gpumemmetric])
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata[gpumemmetric],
+                xdata=measurementsdata['session_utilization_gpu_timestamp'],
+                title='GPU memory usage',
+                xtitle='Time',
+                xunit='s',
+                ytitle='GPU memory usage',
+                yunit='%',
+                outpath=str(usepath),
+                outputext=['png'],
+                skipfirst=True,
+                plottype='scatter',
+                backend='matplotlib'
+            )
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata[gpumemmetric],
+                xdata=measurementsdata['session_utilization_gpu_timestamp'],
+                title='GPU memory usage',
+                xtitle='Time',
+                xunit='s',
+                ytitle='GPU memory usage',
+                yunit='%',
+                outpath=str(usepath),
+                outputext=['html'],
+                skipfirst=True,
+                plottype='scatter',
+                tags=measurementsdata['tags'],
+                tagstype='double',
+                figsize=(670, 390)
+            )
+
+            usepath_png = Path(f'{usepath}.png')
+            usepath_html = Path(f'{usepath}.html')
+
             measurementsdata['gpumemusagepath'] = str(
-                usepath.relative_to(rootdir)
+                usepath_png.relative_to(rootdir)
+            )
+            measurementsdata['gpumemusagepathhtml'] = str(
+                usepath_html.relative_to(rootdir)
             )
     else:
         log.warning('No GPU memory usage measurements in the report')
 
     if 'session_utilization_gpu_utilization' in measurementsdata:
         log.info('Using target measurements GPU utilization')
-        usepath = imgdir / f'{imgprefix}gpu_usage.png'
+        usepath = imgdir / f'{imgprefix}gpu_usage'
         if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
             log.warning('Incorrectly collected data for GPU utilization')
         else:
-            time_series_plot(
-                str(usepath),
-                'GPU Utilization',
-                'Time', 's',
-                'Utilization', '%',
-                measurementsdata['session_utilization_gpu_timestamp'],
-                measurementsdata['session_utilization_gpu_utilization'])
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata['session_utilization_gpu_utilization'],
+                xdata=measurementsdata['session_utilization_gpu_timestamp'],
+                title='GPU utilization',
+                xtitle='Time',
+                xunit='s',
+                ytitle='Utilization',
+                yunit='%',
+                outpath=str(usepath),
+                outputext=['png'],
+                skipfirst=True,
+                plottype='scatter',
+                backend='matplotlib'
+            )
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata['session_utilization_gpu_utilization'],
+                xdata=measurementsdata['session_utilization_gpu_timestamp'],
+                title='GPU utilization',
+                xtitle='Time',
+                xunit='s',
+                ytitle='Utilization',
+                yunit='%',
+                outpath=str(usepath),
+                outputext=['html'],
+                skipfirst=True,
+                plottype='scatter',
+                tags=measurementsdata['tags'],
+                tagstype='double',
+                figsize=(670, 390)
+            )
+
+            usepath_png = Path(f'{usepath}.png')
+            usepath_html = Path(f'{usepath}.html')
+
             measurementsdata['gpuusagepath'] = str(
-                usepath.relative_to(rootdir)
+                usepath_png.relative_to(rootdir)
+            )
+            measurementsdata['gpuusagepathhtml'] = str(
+                usepath_html.relative_to(rootdir)
             )
     else:
         log.warning('No GPU utilization measurements in the report')

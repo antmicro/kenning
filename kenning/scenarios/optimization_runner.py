@@ -372,8 +372,8 @@ def main(argv):
             log.error(ex)
             raise
         except Exception as ex:
-            log.error('Pipeline was invalid')
-            log.error(ex)
+            log.warning('Pipeline was invalid')
+            log.warning(ex)
 
     if pipelines_scores:
         policy_fun = min if policy == 'min' else max
@@ -385,7 +385,7 @@ def main(argv):
         best_score = best_pipeline['metrics'][metric]
         log.info(f'Best score for {metric} is {best_score}')
         with open(args.output, 'w') as f:
-            json.dump(best_pipeline, f)
+            json.dump(best_pipeline, f, indent=4)
         log.info(f'Pipeline stored in {args.output}')
 
         path_all_results = str(args.output.with_suffix('')) + \
@@ -393,7 +393,7 @@ def main(argv):
             'all_results' + \
             str(args.output.suffix)
         with open(path_all_results, 'w') as f:
-            json.dump(pipelines_scores, f)
+            json.dump(pipelines_scores, f, indent=4)
         log.info(f'All results stored in {path_all_results}')
     else:
         log.info('No pipeline was found for the optimization problem')

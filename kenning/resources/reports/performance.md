@@ -4,6 +4,14 @@
 {% if 'inferencetime' in data -%}
 ### Inference time
 
+`````{only} html
+```{raw} html
+    :file: {{data["inferencetimepathhtml"]}}
+```
+`````
+
+
+`````{only} latex
 ```{figure} {{data["inferencetimepath"]}}
 ---
 name: {{basename}}_inferencetime
@@ -13,7 +21,7 @@ align: center
 
 Inference time
 ```
-
+`````
 * *First inference duration* (usually including allocation time): **{{ data['inferencetime'][0] }}**,
 * *Mean*: **{{ data['inferencetime_mean'] }} s**,
 * *Standard deviation*: **{{ data['inferencetime_std'] }} s**,
@@ -23,6 +31,13 @@ Inference time
 {% if 'session_utilization_cpus_percent_avg' in data -%}
 ### Mean CPU usage
 
+`````{only} html
+```{raw} html
+    :file: {{data["cpuusagepathhtml"]}}
+```
+`````
+
+`````{only} latex
 ```{figure} {{data["cpuusagepath"]}}
 ---
 name: {{basename}}_cpuusage
@@ -32,6 +47,7 @@ align: center
 
 Mean CPU usage during benchmark
 ```
+`````
 
 * *Mean*: **{{ data['session_utilization_cpus_percent_avg_mean'] }} %**,
 * *Standard deviation*: **{{ data['session_utilization_cpus_percent_avg_std'] }} %**,
@@ -41,6 +57,14 @@ Mean CPU usage during benchmark
 {% if 'session_utilization_mem_percent' in data -%}
 ### Memory usage
 
+`````{only} html
+```{raw} html
+    :file: {{data["memusagepathhtml"]}}
+```
+`````
+
+
+`````{only} latex
 ```{figure} {{data["memusagepath"]}}
 ---
 name: {{basename}}_memusage
@@ -50,6 +74,7 @@ align: center
 
 Memory usage during benchmark
 ```
+`````
 
 * *Mean*: **{{ data['session_utilization_mem_percent_mean'] }} %**,
 * *Standard deviation*: **{{ data['session_utilization_mem_percent_std'] }} %**,
@@ -59,6 +84,14 @@ Memory usage during benchmark
 {% if 'session_utilization_gpu_utilization' in data and data['session_utilization_gpu_utilization']|length > 0 -%}
 ## GPU usage
 
+
+`````{only} html
+```{raw} html
+    :file: {{data["gpuusagepathhtml"]}}
+```
+`````
+
+`````{only} latex
 ```{figure} {{data["gpuusagepath"]}}
 ---
 name: {{basename}}_gpuusage
@@ -68,6 +101,7 @@ align: center
 
 GPU utilization during benchmark
 ```
+`````
 
 * *Mean*: **{{ data['session_utilization_gpu_utilization_mean'] }} %**,
 * *Standard deviation*: **{{ data['session_utilization_gpu_utilization_std'] }} %**,
@@ -77,6 +111,13 @@ GPU utilization during benchmark
 {% if 'session_utilization_gpu_mem_utilization' in data and data['session_utilization_gpu_mem_utilization']|length > 0 -%}
 ## GPU memory usage
 
+`````{only} html
+```{raw} html
+    :file: {{data["gpumemusagepathhtml"]}}
+```
+`````
+
+`````{only} latex
 ```{figure} {{data["gpumemusagepath"]}}
 ---
 name: {{basename}}_gpumemusage
@@ -86,6 +127,7 @@ align: center
 
 GPU memory usage during benchmark
 ```
+`````
 
 * *Mean*: **{{ data['session_utilization_gpu_mem_utilization_mean'] }} MB**,
 * *Standard deviation*: **{{ data['session_utilization_gpu_mem_utilization_std'] }} MB**,

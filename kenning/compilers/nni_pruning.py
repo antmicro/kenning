@@ -1,14 +1,15 @@
 import torch
+import nni
 from nni.compression.pytorch.pruning import (
     ActivationAPoZRankPruner,
     ActivationMeanRankPruner,
 )
+from nni.compression.pytorch.speedup import ModelSpeedup
+from nni.algorithms.compression.v2.pytorch import TorchEvaluator
+from nni.experiment import experiment_config
 from pathlib import Path
 import numpy as np
-import nni
-from nni.compression.pytorch.speedup import ModelSpeedup
-from nni.experiment import experiment_config
-from typing import Callable, Dict, Optional, List
+from typing import Callable, Dict, Optional, List, Type
 from enum import Enum
 import json
 from tqdm import tqdm
@@ -49,13 +50,18 @@ def torchconversion(
 
 
 class Modes(str, Enum):
+    """
+    Enum containing possible pruners's modes.
+    """
+
     NORMAL = "normal"
     DEPENDENCY = "dependency_aware"
 
 
 class NNIPruningOptimizer(Optimizer):
     """
-    The Neural Network Intelligence optimizer.
+    The Neural Network Intelligence optimizer for activation base pruners,
+    ActivationAPoZRankPruner and ActivationMeanRankPruner.
     """
 
     outputtypes = ["torch"]
@@ -74,7 +80,8 @@ class NNIPruningOptimizer(Optimizer):
             "default": "torch",
             "enum": list(inputtypes.keys()),
         },
-        "finetuning_epochs": {  # TODO: implement + desc
+        "finetuning_epochs": {  # TODO: desc
+            "argparse_name": "--finetuning_epochs",
             "description": "",
             "type": int,
             "default": 3,
@@ -112,16 +119,17 @@ class NNIPruningOptimizer(Optimizer):
             "type": float,
             "default": 0.001,
         },
-        "training_batches": {
-            "argparse_name": "--training-batches",
+        "training_steps": {
+            "argparse_name": "--training-steps",
             "description": "",
             "type": int,
+            "required": True,
         },
         "activation": {
             "description": "",
             "type": str,
             "enum": ["relu", "gelu", "relu6"],
-            "default": "relu"
+            "default": "relu",
         },
         "model_wrapper_type": {  # Probably temporary
             "argparse_name": "--model-wrapper-type",
@@ -148,7 +156,7 @@ class NNIPruningOptimizer(Optimizer):
         compiled_model_path: Path,
         pruner_type: str,
         config_list: str,
-        training_batches: int,
+        training_steps: int,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",
         optimizer: str = "torch.optim.lr_scheduler.MultiStepLR",
@@ -163,7 +171,7 @@ class NNIPruningOptimizer(Optimizer):
         self.criterion_modulepath = criterion
         self.optimizer_modulepath = optimizer
         self.learning_rate = learning_rate
-        self.training_batches = training_batches
+        self.training_steps = training_steps
         self.activation_str = activation
 
         self.modelframework = modelframework
@@ -192,24 +200,21 @@ class NNIPruningOptimizer(Optimizer):
         model = self.inputtypes[self.inputtype](
             inputmodelpath, self.model_wrapper_type
         )
+
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
         dummy_input = self.generate_dummy_input(io_spec)
-
         criterion = load_class(self.criterion_modulepath)()
         optimizer_cls = load_class(self.optimizer_modulepath)
-        traced_optimizer = nni.trace(optimizer_cls)(
-            model.parameters(), lr=self.learning_rate
+        evaluator = self.create_evaluator(
+            model, criterion, optimizer_cls, dummy_input
         )
-
         pruner = self.pruner_cls(
             model,
             self.config_list,
-            self.train_model,
-            traced_optimizer,
-            criterion,
-            self.training_batches,
+            evaluator,
+            self.training_steps,
             self.activation_str,
             self.mode,
             dummy_input,
@@ -239,6 +244,8 @@ class NNIPruningOptimizer(Optimizer):
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         criterion: Callable,
+        *args,
+        **kwargs,
     ):
         model.train()
         for batch_begin in tqdm(
@@ -251,6 +258,24 @@ class NNIPruningOptimizer(Optimizer):
             loss = criterion(output, label)
             loss.backward()
             optimizer.step()
+
+    def evaluate_model(self, model: torch.nn.Module):
+        # TODO: For now evaluate mean loss, possible use of additional
+        # parameter with modulepath to some torchmetrics or custom function
+        criterion = load_class(self.criterion_modulepath)()
+        model.eval()
+        data_len = len(self.valid_data[0])
+        loss_sum = 0
+        with torch.no_grad():
+            for batch_begin in tqdm(
+                range(0, data_len, self.dataset.batch_size),
+                file=LoggerProgressBar(),
+            ):
+                data, target = self.prepare_input_output_data(batch_begin)
+                output = model(data)
+                loss: torch.Tensor = criterion(output, target)
+                loss_sum += loss.sum(-1)
+        return loss_sum / data_len
 
     def prepare_input_output_data(self, batch_begin):
         batch_x = self.train_data[0][
@@ -272,6 +297,25 @@ class NNIPruningOptimizer(Optimizer):
 
         self.train_data = (Xt, Yt)
         self.valid_data = (Xv, Yv)
+
+    def create_evaluator(
+        self,
+        model: torch.nn.Module,
+        criterion: Callable,
+        optimizer_cls: Type,
+        dummy_input: torch.Tensor,
+    ):
+        traced_optimizer = nni.trace(optimizer_cls)(
+            model.parameters(), lr=self.learning_rate
+        )
+
+        return TorchEvaluator(
+            self.train_model,
+            traced_optimizer,
+            criterion,
+            evaluating_func=self.evaluate_model,
+            dummy_input=dummy_input,
+        )
 
     def generate_dummy_input(
         self, io_spec: Dict[str, List[Dict]]
@@ -307,7 +351,7 @@ class NNIPruningOptimizer(Optimizer):
             args.compiled_model_path,
             args.pruner_type,
             args.config_list,
-            args.training_batches,
+            args.training_steps,
             args.mode,
             args.criterion,
             args.optimizer,

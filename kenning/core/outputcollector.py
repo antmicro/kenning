@@ -6,13 +6,33 @@
 Provides an API for processing and returning data from models and dataprovider
 """
 
-from typing import Any
+from typing import Any, Dict, Tuple
 import argparse
 
+from kenning.core.runner import Runner
+from kenning.utils.args_manager import add_parameterschema_argument
+from kenning.utils.args_manager import get_parsed_json_dict
 
-class OutputCollector(object):
-    def __init__(self):
-        pass
+
+class OutputCollector(Runner):
+
+    arguments_structure = {}
+
+    def __init__(
+            self,
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            outputs: Dict[str, str] = {}):
+        """
+        Creates the output collector.
+
+        Parameters
+        ----------
+        inputs_sources:
+            Input from where data is being retrieved
+        outputs:
+            Outputs of this runner
+        """
+        super().__init__(inputs_sources, outputs)
 
     @classmethod
     def form_argparse(cls):
@@ -53,6 +73,30 @@ class OutputCollector(object):
         OutputCollector : object of class OutputCollector
         """
         return cls()
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != OutputCollector.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
+
+    @classmethod
+    def from_json(
+            cls,
+            json_dict: Dict,
+            inputs_sources: Dict[str, Tuple[int, str]] = None,
+            outputs: Dict[str, str] = None):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            **parsed_json_dict,
+            inputs_sources=inputs_sources,
+            outputs=outputs)
 
     def process_output(self, input_data: Any, output_data: Any):
         """

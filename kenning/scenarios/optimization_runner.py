@@ -120,7 +120,7 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
 
     Returns
     -------
-    List[List]
+    List[List] :
         Powerset of ordered values
     """
     res = []

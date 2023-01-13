@@ -1,32 +1,23 @@
-from nni.compression.pytorch.speedup import ModelSpeedup
 import torch
 from nni.compression.pytorch.pruning import (
-        LevelPruner,
-        L1NormPruner,
-        L2NormPruner,
-        FPGMPruner,
-        SlimPruner,
-        ActivationAPoZRankPruner,
-        ActivationMeanRankPruner,
-        TaylorFOWeightPruner,
-        ADMMPruner,
-        LinearPruner,
-        AGPPruner,
-        LotteryTicketPruner,
-        SimulatedAnnealingPruner,
-        AutoCompressPruner,
-        AMCPruner,
-        MovementPruner
+    ActivationAPoZRankPruner,
+    ActivationMeanRankPruner,
 )
 from pathlib import Path
-from typing import Dict, Optional, List, Tuple
+import numpy as np
+import nni
+from nni.compression.pytorch.speedup import ModelSpeedup
+from nni.experiment import experiment_config
+from typing import Callable, Dict, Optional, List
 from enum import Enum
+import json
+from tqdm import tqdm
 
-# from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer  # , CompilationError
+from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.utils.class_loader import load_class
+from kenning.utils.logger import LoggerProgressBar
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
@@ -40,14 +31,16 @@ def torchconversion(
     if not isinstance(loaded, torch.nn.Module):
         # Probably only temporary for testing - not user-friendly to
         # pass ModelWrapper more than one time
-        assert model_wrapper_class, \
-            "ModelWrapper class have to be known to convert" \
+        assert model_wrapper_class, (
+            "ModelWrapper class have to be known to convert"
             " OrderedDict to specific torch.nn.Module"
+        )
         cls = load_class(model_wrapper_class)
         model_wrapper: PyTorchWrapper = cls(modelpath, None, False)
         model_wrapper.create_model_structure()
         model_wrapper.load_weights(loaded)
         model = model_wrapper.model
+        # TODO: after test change to raise error
         # raise CompilationError(f'Expecting model of type:' \
         # f' torch.nn.Module, but got {type(model).__name__}')
     else:
@@ -57,8 +50,7 @@ def torchconversion(
 
 class Modes(str, Enum):
     NORMAL = "normal"
-    DEPENDENCY = ("dependency_aware",)
-    GLOBAL = "global"
+    DEPENDENCY = "dependency_aware"
 
 
 class NNIPruningOptimizer(Optimizer):
@@ -70,35 +62,10 @@ class NNIPruningOptimizer(Optimizer):
 
     inputtypes = {"torch": torchconversion}
 
-    basicprunertypes = {
-        "level": LevelPruner,
-        "l1": L1NormPruner,
-        "l2": L2NormPruner,
-        "fpgm": FPGMPruner,
-        "slim": SlimPruner,
+    prunertypes = {
         "apoz": ActivationAPoZRankPruner,
         "mean_rank": ActivationMeanRankPruner,
-        "taylorfo": TaylorFOWeightPruner,
-        "admm": ADMMPruner,
     }
-    evaluationprunertypes = {}
-    scheduledprunertypes = {
-        "linear": LinearPruner,
-        "agp": AGPPruner,
-        "lottery_ticket": LotteryTicketPruner,
-        "simulated_annealing": SimulatedAnnealingPruner,
-        "auto_compress": AutoCompressPruner,
-        "amc": AMCPruner,
-    }
-    movementprunertypes = {"movement": MovementPruner}
-    prunertypes = dict(
-        **basicprunertypes,
-        **evaluationprunertypes,
-        **scheduledprunertypes,
-        **movementprunertypes,
-    )
-
-    # modetypes = ['normal', 'dependency_aware']
 
     arguments_structure = {
         "modelframework": {
@@ -107,24 +74,21 @@ class NNIPruningOptimizer(Optimizer):
             "default": "torch",
             "enum": list(inputtypes.keys()),
         },
-        "speedup": {  # TODO: implement + desc
+        "finetuning_epochs": {  # TODO: implement + desc
             "description": "",
-            "type": bool,
-            "default": True,
-        },
-        "finetuning": {  # TODO: implement + desc
-            "description": "",
-            "type": bool,
-            "default": True,
+            "type": int,
+            "default": 3,
         },
         "pruner_type": {
+            "argparse_name": "--pruner-type",
             "description": "Pruning method",
+            "type": str,
             "required": True,
             "enum": list(prunertypes.keys()),
         },
-        "config_list": {  # TODO: try if dicts parameters is ok
-            "description": "Pruning specification, for more information please see NNI documentation - Compression Config Specification",  # noqa E501
-            "type": list,
+        "config_list": {
+            "description": "Pruning specification, for more information please see NNI documentation - Compression Config Specification",  # noqa: E501
+            "type": str,
             "required": True,
         },
         "mode": {  # TODO: description
@@ -132,7 +96,35 @@ class NNIPruningOptimizer(Optimizer):
             "default": Modes.NORMAL.value,
             "enum": [mode.value for mode in Modes],
         },
+        "criterion": {
+            "description": "",
+            "type": str,
+            "default": "torch.nn.CrossEntropyLoss",
+        },
+        "optimizer": {
+            "description": "",
+            "type": str,
+            "default": "torch.optim.SGD",
+        },
+        "learning_rate": {
+            "argparse_name": "--learnign-rate",
+            "description": "",
+            "type": float,
+            "default": 0.001,
+        },
+        "training_batches": {
+            "argparse_name": "--training-batches",
+            "description": "",
+            "type": int,
+        },
+        "activation": {
+            "description": "",
+            "type": str,
+            "enum": ["relu", "gelu", "relu6"],
+            "default": "relu"
+        },
         "model_wrapper_type": {  # Probably temporary
+            "argparse_name": "--model-wrapper-type",
             "description": "Copy of modelwrapper.type",
             "type": str,
         },
@@ -155,31 +147,42 @@ class NNIPruningOptimizer(Optimizer):
         dataset: Dataset,
         compiled_model_path: Path,
         pruner_type: str,
-        config_list: List[Dict],
+        config_list: str,
+        training_batches: int,
         mode: Optional[str] = Modes.NORMAL.value,
+        criterion: str = "torch.nn.CrossEntropyLoss",
+        optimizer: str = "torch.optim.lr_scheduler.MultiStepLR",
+        learning_rate: float = 0.001,
+        activation: Optional[str] = None,
         modelframework: str = "torch",
-        speedup: bool = True,
-        finetuning: bool = True,
+        finetuning_epochs: int = 3,
         model_wrapper_type: Optional[str] = None,
     ):
+        super().__init__(dataset, compiled_model_path)
+
+        self.criterion_modulepath = criterion
+        self.optimizer_modulepath = optimizer
+        self.learning_rate = learning_rate
+        self.training_batches = training_batches
+        self.activation_str = activation
+
         self.modelframework = modelframework
-        self.speedup = speedup
-        self.finetuning = finetuning
+        self.finetuning_epochs = finetuning_epochs
         self.set_input_type(modelframework)
+
         self.pruner_type = pruner_type
         self.set_pruner_class(pruner_type)
-        self.set_pruner_possible_args(pruner_type)
-        self.config_list = config_list
+
+        # TODO: for now pass List[Dict] as str in json, upgrade argparse
+        self.config_list = json.loads(config_list)
         self.mode = mode
 
-        self.run_pruner = self.chose_run_pruner(pruner_type)
+        self.prepare_dataloader_train_valid()
 
         self.model_wrapper_type = model_wrapper_type
 
-        # TODO: remove
-        self.config_list = [{"sparsity": 0.8, "op_types": ["Conv2d"]}]
-        print(self.config_list)
-        super().__init__(dataset, compiled_model_path)
+        # TODO: set NNI logger to specified level
+        experiment_config.logging.root = self.log
 
     def compile(
         self,
@@ -192,130 +195,107 @@ class NNIPruningOptimizer(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
-        argumetns = self.create_arguments_dict()
-        argumetns["model"] = model
-        mask = self.run_pruner(model, io_spec, argumetns)
+        dummy_input = self.generate_dummy_input(io_spec)
 
-        if self.speedup:
-            ModelSpeedup(
-                model,
-                dummy_input=self.generate_dummy_input(io_spec),
-                masks_file=mask,
-            ).speedup_model()
-            model.eval()
+        criterion = load_class(self.criterion_modulepath)()
+        optimizer_cls = load_class(self.optimizer_modulepath)
+        traced_optimizer = nni.trace(optimizer_cls)(
+            model.parameters(), lr=self.learning_rate
+        )
 
-        if self.finetuning:
-            pass
+        pruner = self.pruner_cls(
+            model,
+            self.config_list,
+            self.train_model,
+            traced_optimizer,
+            criterion,
+            self.training_batches,
+            self.activation_str,
+            self.mode,
+            dummy_input,
+        )
 
-        torch.save(model.state_dict(), self.compiled_model_path)
-
-    def _run_basic_pruner(
-        self,
-        model: torch.nn.Module,
-        io_spec: Dict[str, List[Dict]],
-        arguments: Dict,
-    ):
-        """
-        Returns
-        -------
-        mask
-            Mask aquired in pruning proces
-        """
-        self.add_dummy_input_argument(arguments, io_spec)
-        print("@@@@@@@@@@@@@", arguments)
-        pruner = self.pruner_class(**arguments)
+        self.log.info("Pruning model")
         _, mask = pruner.compress()
         pruner._unwrap_model()
-        return mask
 
-    def _run_evaluation_pruner(
+        ModelSpeedup(
+            model,
+            dummy_input=dummy_input,
+            masks_file=mask,
+        ).speedup_model()
+
+        optimizer = optimizer_cls(model.parameters(), lr=self.learning_rate)
+        for finetuning_epoch in range(self.finetuning_epochs):
+            self.log.info(
+                f"Fine-tuning pruned model - epoch {finetuning_epoch+1}"
+            )
+            self.train_model(model, optimizer, criterion)
+
+        torch.save(model, self.compiled_model_path)
+
+    def train_model(
         self,
         model: torch.nn.Module,
-        io_spec: Dict[str, List[Dict]],
-        arguments: Dict,
+        optimizer: torch.optim.Optimizer,
+        criterion: Callable,
     ):
-        raise NotImplementedError
+        model.train()
+        for batch_begin in tqdm(
+            range(0, len(self.train_data[0]), self.dataset.batch_size),
+            file=LoggerProgressBar(),
+        ):
+            data, label = self.prepare_input_output_data(batch_begin)
+            optimizer.zero_grad()
+            output = model(data)
+            loss = criterion(output, label)
+            loss.backward()
+            optimizer.step()
 
-    def _run_scheduled_pruner(
-        self,
-        model: torch.nn.Module,
-        io_spec: Dict[str, List[Dict]],
-        arguments: Dict,
-    ):
-        raise NotImplementedError
+    def prepare_input_output_data(self, batch_begin):
+        batch_x = self.train_data[0][
+            batch_begin:batch_begin + self.dataset.batch_size
+        ]
+        data = np.asarray(self.dataset.prepare_input_samples(batch_x))
+        batch_y = self.train_data[1][
+            batch_begin:batch_begin + self.dataset.batch_size
+        ]
+        label = np.asarray(self.dataset.prepare_output_samples(batch_y))
+        # TODO: I assume right NHWC/NCHW is choosen
+        data = torch.from_numpy(data).to(device)
+        label = torch.from_numpy(label).to(device)
+        return data, label
 
-    def _run_movement_pruner(
-        self,
-        model: torch.nn.Module,
-        io_spec: Dict[str, List[Dict]],
-        arguments: Dict,
-    ):
-        raise NotImplementedError
+    def prepare_dataloader_train_valid(self):
+        # TODO: I assume the same split like when pretraining
+        Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
+
+        self.train_data = (Xt, Yt)
+        self.valid_data = (Xv, Yv)
 
     def generate_dummy_input(
         self, io_spec: Dict[str, List[Dict]]
     ) -> torch.Tensor:
         inputs = io_spec["input"]
-        print(inputs, len(inputs))
         assert (
             len(inputs) <= 1
         ), "NNI pruners only support dummy_input in form of one Tensor"
-        assert len(inputs) >= 1, "At least one input " \
-            "shape have to be specified to provide dummy input"
+        assert len(inputs) >= 1, (
+            "At least one"
+            " input shape have to be specified to provide dummy input"
+        )
         return torch.rand(
             inputs[0]["shape"],
             dtype=self.str_to_dtype[inputs[0]["dtype"]],
             device=device,
         )
 
-    def add_dummy_input_argument(
-        self, arguments: Dict, io_spec: Dict[str, List[Dict]]
-    ):
-        if (
-            self.mode == Modes.DEPENDENCY.value
-            and "dummy_input" in self.pruner_possible_args
-        ):
-            arguments["dummy_input"] = self.generate_dummy_input(io_spec)
-
-    def chose_run_pruner(self, pruner_type):
-        types = (
-            self.basicprunertypes,
-            self.evaluationprunertypes,
-            self.scheduledprunertypes,
-            self.movementprunertypes,
-        )
-        functions = (
-            self._run_basic_pruner,
-            self._run_evaluation_pruner,
-            self._run_scheduled_pruner,
-            self._run_movement_pruner,
-        )
-        for _type, _function in zip(types, functions):
-            if pruner_type in _type.keys():
-                return _function
-        raise KeyError(f"Wrong pruner type: {pruner_type}")
-
-    def create_arguments_dict(self) -> Dict:
-        possible_arguments_names: Tuple = (
-            self.pruner_class.__init__.__code__.co_varnames
-        )
-        return {
-            argument_name: argument_value
-            for (argument_name, argument_value) in self.__dict__.items()
-            if argument_name in possible_arguments_names
-        }
-
     def set_pruner_class(self, pruner_type):
         assert pruner_type in self.prunertypes.keys(), (
             f"Unsupported pruner type {pruner_type}, only"
             " {', '.join(self.prunertypes.keys())} are supported"
         )
-        self.pruner_class = self.prunertypes[self.pruner_type]
-
-    def set_pruner_possible_args(self, pruner_type):
-        self.pruner_possible_args = (
-            self.pruner_class.__init__.__code__.co_varnames
-        )
+        self.pruner_cls = self.prunertypes[pruner_type]
 
     def get_framework_and_version(self):
         return ("torch", torch.__version__)
@@ -327,8 +307,13 @@ class NNIPruningOptimizer(Optimizer):
             args.compiled_model_path,
             args.pruner_type,
             args.config_list,
+            args.training_batches,
             args.mode,
-            args.model_framework.args.speedup,
-            args.finetuning,
+            args.criterion,
+            args.optimizer,
+            args.learning_rate,
+            args.activation,
+            args.model_framework,
+            args.finetuning_epochs,
             args.model_wrapper_type,
         )

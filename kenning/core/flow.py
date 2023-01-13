@@ -1,16 +1,18 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+"""
+Provides implementation of a KenningFlow that allows execution of arbitrary
+flows created from Runners.
+"""
 
-from typing import Any
-
+from typing import Dict, Any, List
 import jsonschema
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+
+from kenning.interfaces.io_interface import IOInterface
+from kenning.interfaces.io_interface import IOCompatibilityError
+from kenning.core.runner import Runner
 from kenning.utils import logger
-
-from typing import Dict, Tuple, List, Type
-
 from kenning.utils.class_loader import load_class
 
 
@@ -19,176 +21,44 @@ class KenningFlow:
     Allows for creation of custom flows using Kenning core classes.
 
     KenningFlow class creates and executes customized flows consisting of
-    the modules implemented based on kenning.core classes, such as
-    Dataset, ModelWrapper, Runtime.
+    the runners implemented based on kenning.core classes, such as
+    DatasetProvider, ModelRunner, OutputCollector.
     Designed flows may be formed into non-linear, graph-like structures.
 
     The flow may be defined either directly via dictionaries or in a predefined
     JSON format.
 
     The JSON format must follow well defined structure.
-    Each module should be prefixed with a unique name and consist of
-    following entires:
+    Each runner should consist of following entires:
 
     type - Type of a Kenning class to use for this module
     parameters - Inner parameters of chosen class
     inputs - Optional, set of pairs (local name, global name)
     outputs - Optional, set of pairs (local name, global name)
-    action - Singular string denoting intended action for a module
 
     All global names (inputs and outputs) must be unique.
     All local names are predefined for each class.
+    All variables used as input to a runner must be defined as a output of a
+    runner that is placed before that runner.
     """
 
     def __init__(
             self,
-            modules: Dict[str, Tuple[type, Any, str]],
-            inputs: Dict[str, Dict[str, str]],
-            outputs: Dict[str, Dict[str, str]]):
+            runners: List[Runner]):
         """
-        Initializes the flow. This constructor only invokes helper functions.
+        Initializes the flow.
 
         Parameters
         ----------
-        modules : Dict
-            Mapping of module names to their types, config and action
-        inputs : Dict
-            Mapping of module names to (global input name -> local input name)
-        outputs : Dict
-            Mapping of module names to (local input name -> global input name)
+        runners_specifications : List[Runner]
+            List of specifications of runners in the flow
         """
 
         self.log = logger.get_logger()
-        self.modules = dict()
-        self.inputs = inputs
-        self.outputs = outputs
 
-        self._create_flow(modules)
-
-        if self._has_cycles():
-            raise RuntimeError('Resulting graph has possible cycles')
-
-        # TODO implement compile function body
-        # self.compile()
-
-    def _create_flow(self, modules: Dict[str, Tuple[Type, Any, str]]):
-        """
-        This helper function creates the flow. It will call the constructors
-        of underlaying classes.
-
-        Parameters
-        ----------
-            modules : Dict
-                Mapping of module names to their types, config and action
-        """
-
-        for name, (cls, cfg, action) in modules.items():
-            try:
-                # TODO remove this after removing dataset from arguments
-                if (issubclass(cls, ModelWrapper) or
-                        issubclass(cls, Optimizer)):
-                    ds_name = self._find_input_module(name)
-                    self.modules[name] = (
-                        cls.from_json(self.modules[ds_name][0], cfg),
-                        action)
-
-                else:
-                    self.modules[name] = (cls.from_json(cfg), action)
-
-            except Exception as e:
-                self.log.error(f'Error loading submodule {name} : {str(e)}')
-                raise
-
-    def _find_input_module(self, name: str) -> str:
-        """
-        Helper function returning name of a input module for given node.
-
-        Parameters
-        ----------
-        name : str
-            Name of module we are searching parent for
-
-        Returns
-        -------
-        str : Name of a module that provides input for given node
-        """
-        try:
-            return [
-                module_name for module_name in self.modules if
-                set(self.inputs[name]) &
-                set(self.outputs[module_name].values()) != set()
-            ][0]
-        except IndexError:
-            raise IndexError('Module input connector not found')
-
-    def _depth_first_search(
-            self,
-            matrix: List[List[int]],
-            visited: List[bool],
-            node: int) -> bool:
-        """
-        Depth first search helper function
-        Parameters
-        ----------
-        matrix : Adjacency matrix
-        visited : Local list noting visited nodes
-        node : Current node
-
-        Returns
-        -------
-            bool : Wheher a cycle was found
-        """
-        if visited[node]:
-            return True
-
-        visited[node] = True
-
-        for n, conn in enumerate(matrix[node]):
-            if conn:
-                if self._depth_first_search(matrix, visited, n):
-                    return True
-
-        visited[node] = False
-        return False
-
-    def _has_cycles(self) -> bool:
-        """
-        Helper function that checks for possible cycles in a graph.
-        Possible cycles are deduced only from static description of
-        inputs and outputs. This means that not every possible cycle
-        has to actually occur during the processing. An example would be
-        a situation, where action defined within module does not yield
-        an output that would close the cycle inside the graph.
-        That also implies such defined connection would be redundant
-        and should be removed from graph description.
-
-        Returns
-        -------
-            bool : Whether graph has possible cycles
-        """
-        matrix = [[0 for _ in self.modules] for _ in self.modules]
-
-        for n1, m1 in enumerate(self.modules):
-            for n2, m2 in enumerate(self.modules):
-                if m1 in self.outputs and m2 in self.inputs:
-                    s1 = self.outputs[m1].values()
-                    s2 = self.inputs[m2].keys()
-                    matrix[n1][n2] = len(s1 & s2)
-
-        for node in range(len(self.modules)):
-            if self._depth_first_search(
-                    matrix, [False for _ in self.modules],
-                    node):
-                return True
-
-        return False
-
-    def compile(self):
-        """
-        This function runs sequential optimizaions on models and
-        prepares all runtimes for deployment.
-        """
-        raise NotImplementedError('Compile function not yet implemented')
+        self.runners = runners
+        self.flow_state = None
+        self.should_close = False
 
     @classmethod
     def form_parameterschema(cls):
@@ -197,103 +67,185 @@ class KenningFlow:
 
         Returns
         -------
-            Dict : Schema for the class
+        Dict :
+            Schema for the class
         """
         return {
-            'type': 'object',
-            'patternProperties': {
-                '.': {
-                    'type': 'object',
-                    'properties': {
-                        'type': {'type': 'string'},
-                        'inputs': {
-                            'type': 'object',
-                            'patternProperties': {
-                                '.': {'type': 'string'}
-                            }
-                        },
-                        'outputs': {
-                            'type': 'object',
-                            'patternProperties': {
-                                '.': {'type': 'string'}
-                            }
-                        },
-                        'properties': {
-                            'type': 'object'
-                        },
-                        'additionalProperties': False
+            'type': 'array',
+            'items': {
+                'type': 'object',
+                'properties': {
+                    'type': {
+                        'type': 'string'
                     },
-                    'required': ['type', 'parameters']
-                }
+                    'parameters': {
+                        'type': 'object'
+                    },
+                    'inputs': {
+                        'type': 'object',
+                        'patternProperties': {
+                            '.': {'type': 'string'}
+                        }
+                    },
+                    'outputs': {
+                        'type': 'object',
+                        'patternProperties': {
+                            '.': {'type': 'string'}
+                        }
+                    },
+                    'additionalProperties': False
+                },
+                'required': ['type', 'parameters']
             }
         }
 
     @classmethod
-    def from_json(cls, json_dict: Dict[str, Any]):
+    def from_json(cls, runners_specifications: List[Dict[str, Any]]):
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according
+        to the json schema defined in ``form_parameterschema``.
+        If it is then it parses json and invokes the constructor.
+
+        Parameters
+        ----------
+        runners_specifications : List
+            List of runners that creates the flow.
+
+        Returns
+        -------
+        KenningFlow :
+            object of class KenningFlow
+        """
         log = logger.get_logger()
 
         try:
-            jsonschema.validate(json_dict, cls.form_parameterschema())
-        except jsonschema.ValidationError:
-            log.error('JSON description is invalid')
+            jsonschema.validate(
+                runners_specifications,
+                cls.form_parameterschema())
+        except jsonschema.ValidationError as e:
+            log.error(f'JSON description is invalid: {e.message}')
             raise
 
-        modules = dict()
-        inputs = dict()
-        outputs = dict()
+        output_variables = {}
+        runners: List[Runner] = []
 
-        for module_name, module_cfg in json_dict.items():
-            modules[module_name] = (
-                load_class(module_cfg['type']),
-                module_cfg['parameters'],
-                module_cfg['action'])
-            try:
-                inputs[module_name] = {
-                    global_name: local_name for local_name,
-                    global_name in module_cfg['inputs'].items()}
-            except KeyError:
-                pass
+        for runner_idx, runner_spec in enumerate(runners_specifications):
+            runner_cls: Runner = load_class(runner_spec['type'])
+            cfg = runner_spec['parameters']
+            inputs = runner_spec.get('inputs', {})
+            outputs = runner_spec.get('outputs', {})
 
-            try:
-                outputs[module_name] = {
-                    local_name: global_name for local_name,
-                    global_name in module_cfg['outputs'].items()}
-            except KeyError:
-                pass
+            log.info(f'Loading runner: {runner_cls.__name__}')
 
-        return cls(modules, inputs, outputs)
+            # validate output variables and add them to dict
+            for local_name, global_name in outputs.items():
+                if global_name in output_variables.keys():
+                    log.error(f'Error loading runner {runner_idx}:'
+                              f'{runner_cls}. Redefined output variable '
+                              f'{local_name}:{global_name}.')
+                    raise Exception(f'Redefined output variable {global_name}')
 
-    def step(self):
-        current_outputs = dict()
+                output_variables[global_name] = runner_idx
 
-        for name, (module, action) in self.modules.items():
-            input = {
-                local_name: current_outputs[global_name]
-                for global_name, local_name in
-                self.inputs[name].items()
-            } if name in self.inputs else {}
+            # create and fill dict with input sources
+            inputs_sources = {}
 
-            output = module.actions[action](input)
+            for local_name, global_name in inputs.items():
+                if global_name not in output_variables:
+                    log.error(f'Error loading runner {runner_idx}:'
+                              f'{runner_cls}. Undefined input variable '
+                              f'{local_name}:{global_name}.')
+                    raise Exception(f'Undefined input variable {global_name}')
 
-            current_outputs.update({
-                self.outputs[name][local_output]: value
-                for local_output, value in
-                output.items()
-            })
+                inputs_sources[local_name] = (output_variables[global_name],
+                                              global_name)
 
-        return current_outputs
+            # instantiate runner
+            runner = runner_cls.from_json(
+                cfg,
+                inputs_sources=inputs_sources,
+                outputs=outputs
+            )
 
-    def process(self):
+            runners.append(runner)
+
+        cls._validate_runners_io(runners)
+
+        return cls(runners)
+
+    @staticmethod
+    def _validate_runners_io(runners: List[Runner]):
+        """
+        Validates IO of runners. If there is some incompatibility then an
+        Exceptions is raised.
+
+        Parameters
+        ----------
+        runners : List[Runner]
+            List of runners that creates the flow
+        """
+
+        output_specifications = {}
+
+        for runner in runners:
+            # populate dict with flow variables specs
+            runner_output_specification = \
+                (runner.get_io_specification()['output']
+                 + runner.get_io_specification().get('processed_output', []))
+
+            for local_name, global_name in runner.outputs.items():
+                for out_spec in runner_output_specification:
+                    if out_spec['name'] == local_name:
+                        output_specifications[global_name] = out_spec
+
+        for runner in runners:
+            # get output specs from global flow variables
+            output_spec = {}
+            for _, (_, name) in runner.inputs_sources.items():
+                output_spec[name] = output_specifications[name]
+
+            # get input specs mapped to global variables
+            input_spec = {}
+            runner_io_spec = runner.get_io_specification()
+            for local_name, (_, global_name) in runner.inputs_sources.items():
+                for spec in runner_io_spec['input']:
+                    if spec['name'] == local_name:
+                        input_spec[global_name] = spec
+                        break
+
+            if not IOInterface.validate(output_spec, input_spec):
+                raise IOCompatibilityError(
+                    f'Input and output are not compatible.\nOutput is:\n'
+                    f'{output_spec}\nInput is:\n{input_spec}\n'
+                )
+
+    def run_single_step(self):
+        """
+        Runs flow one time.
+        """
+        self.log.info('Flow started')
+        for runner in self.runners:
+            if runner.should_close():
+                self.should_close = True
+                break
+
+            runner._run(self.flow_state)
+
+    def run(self):
         """
         Main process function. Repeatedly runs constructed graph in a loop.
         """
-        current_outputs = dict()
-        while True:
+
+        while not self.should_close:
+            self.flow_state = []
             try:
-                current_outputs = self.step()
+                self.run_single_step()
 
             except KeyboardInterrupt:
-                self.log.warn('Processing interrupted due to keyboard interrupt. Aborting.')  # noqa: E501
+                self.log.warn('Processing interrupted due to keyboard '
+                              'interrupt. Aborting.')
                 break
 
             except StopIteration:
@@ -305,7 +257,11 @@ class KenningFlow:
                 break
 
             except RuntimeError as e:
-                self.log.warn(f'Processing interrupted from inside of module. {(str(e))}')  # noqa: E501
+                self.log.warn('Processing interrupted from inside of module. '
+                              f'{(str(e))}')
                 break
 
-        return current_outputs
+        for runner in self.runners:
+            runner.cleanup()
+
+        self.log.info(f'Final {self.flow_state=}')

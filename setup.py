@@ -22,7 +22,6 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'Jinja2>=2.11.2',
         'Pillow>=8.1.0',
         'matplotlib>=3.3.4',
         'numpy~=1.23.5',
@@ -100,6 +99,10 @@ setuptools.setup(
         ],
         'pipeline_manager': [
             'pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git'  # noqa: E501
+        ],
+        'reports': [
+            'Jinja2>=2.11.2',
+            'git+https://github.com/antmicro/servis#egg=servis[bokeh,matplotlib]'  # noqa: E501
         ]
     },
 )

@@ -6,16 +6,34 @@
 Provides an API for gathering and preparing data from external sources
 """
 
-from typing import Any
+from typing import Any, Dict, Tuple
 import argparse
 
+from kenning.core.runner import Runner
+from kenning.utils.args_manager import add_parameterschema_argument
 
-class DataProvider(object):
-    def __init__(self):
+
+class DataProvider(Runner):
+
+    arguments_structure = {}
+
+    def __init__(
+            self,
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            outputs: Dict[str, str] = {}):
         """
         Initializes dataprovider object.
+
+        Parameters
+        ----------
+        inputs_sources : Dict[str, Tuple[int, str]]
+            Input from where data is being retrieved
+        outputs : Dict[str, str]
+            Outputs of this Runner
         """
         self.prepare()
+
+        super().__init__(inputs_sources, outputs)
 
     @classmethod
     def form_argparse(cls):
@@ -56,6 +74,16 @@ class DataProvider(object):
         DataProvider : object of class DataProvider
         """
         return cls()
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = cls._form_parameterschema()
+        if cls.arguments_structure != DataProvider.arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                cls.arguments_structure
+            )
+        return parameterschema
 
     def prepare(self):
         """

@@ -51,6 +51,7 @@ We can distinguish the following groups of extra requirements:
 * `iree` - modules for IREE compilation and runtime,
 * `tvm` - modules for Apache TVM compilation and runtime,
 * `onnxruntime` - modules for ONNX Runtime,
+* `nni` - modules for Neural Network Intelligence optimizers,
 * `docs` - modules for generating documentation,
 * `test` - modules for Kenning framework testing,
 * `real_time_visualization` - modules for real time visualization runners.

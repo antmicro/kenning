@@ -117,6 +117,11 @@ setuptools.setup(
         'renode': [
             'pyrenode @ git+https://github.com/antmicro/pyrenode',
             'renode-run @ git+https://github.com/antmicro/renode-run'
-        ]
+        ],
+        'nni': [
+            'kenning[torch]',
+            'nni~=2.10.0',
+            'tensorboard~=2.11.1'
+        ],
     },
 )

@@ -7,15 +7,16 @@ A OutputCollector-derived class used to visualize bounding box
 data on input images and display/save them.
 """
 
-from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.helpers.detection_and_segmentation import DectObject
 import random
 import cv2
-import numpy as np
-from typing import Tuple, List
-from pathlib import Path
 import sys
+import numpy as np
+from typing import Tuple, List, Dict
+from pathlib import Path
 from collections import defaultdict
+
+from kenning.core.outputcollector import OutputCollector
+from kenning.datasets.helpers.detection_and_segmentation import DectObject
 
 
 def generate_color() -> Tuple[int, int, int]:
@@ -33,6 +34,22 @@ def generate_color() -> Tuple[int, int, int]:
 
 
 class DetectionVisualizer(OutputCollector):
+
+    arguments_structure = {
+        'output_width': {
+            'argparse_name': '--output_width',
+            'description': 'Output image width',
+            'type': int,
+            'required': False
+        },
+        'output_height': {
+            'argparse_name': '--output_height',
+            'description': 'Output image height',
+            'type': int,
+            'required': False
+        },
+    }
+
     def __init__(
             self,
             output_width: int = 1024,
@@ -40,8 +57,32 @@ class DetectionVisualizer(OutputCollector):
             save_to_file: bool = False,
             save_path: Path = './',
             save_fps: int = 25,
-            window_name: str = "stream"):
+            window_name: str = "stream",
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            outputs: Dict[str, str] = {}):
+        """
+        Creates the detection visualizer.
 
+        Parameters
+        ----------
+        output_width : int
+            Width of the output
+        output_height : int
+            Height of the output
+        save_to_file : bool
+            True if frames should be saved to file. In other case
+            they are presented using opencv
+        save_path: Path
+            Path where frames should be saved
+        save_fps:
+            Frames pre second of the saved video
+        window_name:
+            Name of opencv window
+        inputs_sources:
+            Input from where data is being retrieved
+        outputs:
+            Outputs of this Runner
+        """
         self.window_name = window_name
         self.output_width = output_width
         self.output_height = output_height
@@ -61,7 +102,7 @@ class DetectionVisualizer(OutputCollector):
         self.font_thickness = 2
         self.color_dict = defaultdict(generate_color)
 
-        super().__init__()
+        super().__init__(inputs_sources, outputs)
 
     @classmethod
     def form_argparse(cls):
@@ -99,6 +140,9 @@ class DetectionVisualizer(OutputCollector):
             args.save_to_file,
             args.save_path
         )
+
+    def cleanup(self):
+        self.detach_from_output()
 
     def compute_coordinates(
             self,
@@ -176,7 +220,24 @@ class DetectionVisualizer(OutputCollector):
             self,
             input_data: np.ndarray,  # since the original frames are passed in, this should always be HWC, uint8  # noqa: E501
             output_data: List[List[DectObject]]):
+        """
+        Method used to visualize predicted classes on input images.
+
+        Parameters
+        ----------
+        input_data : np.ndarray
+            the original image
+        output_data : List[DectObject]
+            list of found objects represented as DectObjects
+        """
+        # TODO: consider adding support for variable batch sizes
         output_data = output_data[0]
+        input_data = input_data[0]
+
+        if input_data.shape[0] == 3:
+            # convert to channel-last
+            input_data = input_data.transpose(1, 2, 0)
+
         input_data = cv2.resize(
             input_data,
             (self.output_width, self.output_height)
@@ -191,7 +252,7 @@ class DetectionVisualizer(OutputCollector):
                 self.visualize_data(input_data, output_data)
             )
 
-    def should_close(self):
+    def should_close(self) -> bool:
         return cv2.waitKey(1) == 27
 
     def detach_from_output(self):
@@ -199,3 +260,21 @@ class DetectionVisualizer(OutputCollector):
             self.out.release()
         else:
             cv2.destroyWindow(self.window_name)
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        return {
+            'input': [
+                {'name': 'frame',
+                 'shape': [(1, -1, -1, 3), (1, 3, -1, -1)],
+                 'dtype': 'float32'},
+                {'name': 'detection_input',
+                 'type': 'List[DectObject]'}],
+            'output': []
+        }
+
+    def run(
+            self,
+            inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        input_data = inputs['frame']
+        output_data = inputs['detection_input']
+        self.process_output(input_data, output_data)

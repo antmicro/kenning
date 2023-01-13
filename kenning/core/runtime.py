@@ -10,7 +10,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 import argparse
 from pathlib import Path
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Any
 import json
 import numpy as np
 
@@ -785,6 +785,41 @@ class Runtime(object):
             self.inference_session_end()
             MeasurementsCollector.measurements += measurements
         return True
+
+    def infer(
+            self,
+            X: np.ndarray,
+            modelwrapper: ModelWrapper,
+            postprocess: bool = True) -> Any:
+        """
+        Runs inference on single batch locally using a given runtime.
+
+        Parameters
+        ----------
+        X : np.ndarray
+            Batch of data provided for inference
+        modelwrapper : ModelWrapper
+            Model that is executed on target hardware
+        postprocess : bool
+            Indicates if model output should be postprocessed
+
+        Returns
+        -------
+        Any :
+            obtained values
+        """
+        prepX = modelwrapper._preprocess_input(X)
+        prepX = modelwrapper.convert_input_to_bytes(prepX)
+        succeed = self.prepare_input(prepX)
+        if not succeed:
+            return False
+        self._run()
+        outbytes = self.upload_output(None)
+        preds = modelwrapper.convert_output_from_bytes(outbytes)
+        if postprocess:
+            return modelwrapper._postprocess_outputs(preds)
+
+        return preds
 
     def run_client(
             self,

@@ -172,8 +172,6 @@ def performance_report(
             outputext=['html'],
             skipfirst=True,
             plottype='scatter',
-            tags=measurementsdata['tags'],
-            tagstype='double',
             figsize=(670, 390)
         )
 
@@ -195,10 +193,10 @@ def performance_report(
         render_time_series_plot_with_histogram(
             ydata=measurementsdata['session_utilization_cpus_percent_avg'],
             xdata=measurementsdata['session_utilization_timestamp'],
-            title='Mean CPU usage',
+            title='Average CPU usage',
             xtitle='Time',
             xunit='s',
-            ytitle='Mean CPU usage',
+            ytitle='Average CPU usage',
             yunit='%',
             outpath=str(usepath),
             outputext=['png'],
@@ -209,17 +207,15 @@ def performance_report(
         render_time_series_plot_with_histogram(
             ydata=measurementsdata['session_utilization_cpus_percent_avg'],
             xdata=measurementsdata['session_utilization_timestamp'],
-            title='Mean CPU usage',
+            title='Average CPU usage',
             xtitle='Time',
             xunit='s',
-            ytitle='Mean CPU usage',
+            ytitle='Average CPU usage',
             yunit='%',
             outpath=str(usepath),
             outputext=['html'],
             skipfirst=True,
             plottype='scatter',
-            tags=measurementsdata['tags'],
-            tagstype='double',
             figsize=(670, 390)
         )
 
@@ -270,8 +266,6 @@ def performance_report(
                 outputext=['html'],
                 skipfirst=True,
                 plottype='scatter',
-                tags=measurementsdata['tags'],
-                tagstype='double',
                 figsize=(670, 390)
             )
 
@@ -319,8 +313,6 @@ def performance_report(
                 outputext=['html'],
                 skipfirst=True,
                 plottype='scatter',
-                tags=measurementsdata['tags'],
-                tagstype='double',
                 figsize=(670, 390)
             )
 

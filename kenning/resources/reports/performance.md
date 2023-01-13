@@ -29,7 +29,7 @@ Inference time
 {% endif %}
 
 {% if 'session_utilization_cpus_percent_avg' in data -%}
-### Mean CPU usage
+### Average CPU usage
 
 `````{only} html
 ```{raw} html
@@ -41,11 +41,11 @@ Inference time
 ```{figure} {{data["cpuusagepath"]}}
 ---
 name: {{basename}}_cpuusage
-alt: Mean CPU usage
+alt: Average CPU usage
 align: center
 ---
 
-Mean CPU usage during benchmark
+Average CPU usage during benchmark
 ```
 `````
 

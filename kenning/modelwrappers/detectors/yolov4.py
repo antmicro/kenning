@@ -138,6 +138,9 @@ class ONNXYOLOV4(YOLOWrapper):
                 {'name': 'output', 'shape': (1, 255, self.keyparams['width'] // (8 * 2 ** 0), self.keyparams['height'] // (8 * 2 ** 0)), 'dtype': 'float32'},  # noqa: E501
                 {'name': 'output.3', 'shape': (1, 255, self.keyparams['width'] // (8 * 2 ** 1), self.keyparams['height'] // (8 * 2 ** 1)), 'dtype': 'float32'},  # noqa: E501
                 {'name': 'output.7', 'shape': (1, 255, self.keyparams['width'] // (8 * 2 ** 2), self.keyparams['height'] // (8 * 2 ** 2)), 'dtype': 'float32'}  # noqa: E501
+            ],
+            'processed_output': [
+                {'name': 'detection_output', 'type': 'List[DectObject]'}
             ]
         }
 

@@ -31,7 +31,7 @@ def main(argv):
         json_cfg = json.load(f)
 
     flow: KenningFlow = KenningFlow.from_json(json_cfg)
-    _ = flow.process()
+    _ = flow.run()
 
     log.info('Processing has finished')
     return 0

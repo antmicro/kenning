@@ -85,7 +85,7 @@ def parse_dataflow(dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
     """
     Parses a `dataflow` that comes from Pipeline Manager application.
     If any error during parsing occurs it is returned.
-    If parsing is successful a kenning scenario is returned.
+    If parsing is successful a kenning pipeline is returned.
 
     Parameters
     ----------
@@ -95,8 +95,8 @@ def parse_dataflow(dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
     Returns
     -------
     Tuple[bool, Union[Dict, str]] :
-        If parsing is successful then (True, scenario) is returned where
-        scenario is a valid JSON that can be used to run an inference.
+        If parsing is successful then (True, pipeline) is returned where
+        pipeline is a valid JSON that can be used to run an inference.
         Otherwise (False, error_message) is returned where error_message
         is an error that occured during parsing process.
     """
@@ -210,7 +210,7 @@ def parse_dataflow(dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
             ]
         })
 
-    scenario = {
+    pipeline = {
         'model_wrapper': [],
         'runtime': [],
         'optimizer': [],
@@ -218,35 +218,35 @@ def parse_dataflow(dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
     }
 
     for node in kenning_nodes:
-        scenario[node['type']].append(node)
+        pipeline[node['type']].append(node)
 
     # Checking cardinality of the nodes
-    if len(scenario['dataset']) != 1:
+    if len(pipeline['dataset']) != 1:
         mes = (
             'Multiple instances of dataset class'
-            if len(scenario['dataset']) > 1
+            if len(pipeline['dataset']) > 1
             else 'No dataset class instance'
         )
         return return_error(mes)
-    if len(scenario['runtime']) != 1:
+    if len(pipeline['runtime']) != 1:
         mes = (
             'Multiple instances of runtime class'
-            if len(scenario['runtime']) > 1
+            if len(pipeline['runtime']) > 1
             else 'No runtime class instance'
         )
         return return_error(mes)
-    if len(scenario['model_wrapper']) != 1:
+    if len(pipeline['model_wrapper']) != 1:
         mes = (
             'Multiple instances of model_wrapper class'
-            if len(scenario['model_wrapper']) > 1
+            if len(pipeline['model_wrapper']) > 1
             else 'No model_wrapper class instance'
         )
         return return_error(mes)
 
-    dataset = scenario['dataset'][0]
-    model_wrapper = scenario['model_wrapper'][0]
-    runtime = scenario['runtime'][0]
-    optimizers = scenario['optimizer']
+    dataset = pipeline['dataset'][0]
+    model_wrapper = pipeline['model_wrapper'][0]
+    runtime = pipeline['runtime'][0]
+    optimizers = pipeline['optimizer']
 
     # Checking required connections between found nodes
     for current_node in kenning_nodes:

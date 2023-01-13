@@ -21,7 +21,7 @@ setuptools.setup(
         'Jinja2>=2.11.2',
         'Pillow>=8.1.0',
         'matplotlib>=3.3.4',
-        'numpy>=1.20.0',
+        'numpy~=1.23.5',
         'onnx>=1.7.0',
         'psutil>=5.8.0',
         'scikit_learn>=0.24.1',
@@ -50,7 +50,7 @@ setuptools.setup(
         ],
         'mxnet': [
             'gluoncv>=0.10.2',
-            'mxnet>=1.8.0'
+            'mxnet~=1.9.1'
         ],
         'nvidia_perf': [
             'pynvml>=8.0.4'

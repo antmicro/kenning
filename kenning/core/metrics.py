@@ -67,6 +67,7 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
 def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
     Computes performance metrics based on `measurementsdata` argument.
+    If there is no performance metrics returns an empty dictionary.
 
     Computes mean, standard deviation and median for keys:
 
@@ -155,7 +156,8 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
 def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
-    Computes performance metrics based on `measurementsdata` argument.
+    Computes classification metrics based on `measurementsdata` argument.
+    If there is no classification metrics returns an empty dictionary.
 
     Computes accuracy, top 5 accuracy, precision, sensitivity and g mean of
     passed confusion matrix stored as `eval_confusion_matrix`.
@@ -187,7 +189,8 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
 def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
-    Computes performance metrics based on `measurementsdata` argument.
+    Computes detection metrics based on `measurementsdata` argument.
+    If there is no detection metrics returns an empty dictionary.
 
     Computes mAP values.
 

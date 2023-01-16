@@ -6,7 +6,6 @@ from nni.compression.pytorch.pruning import (
 )
 from nni.compression.pytorch.speedup import ModelSpeedup
 from nni.algorithms.compression.v2.pytorch import TorchEvaluator
-from nni.experiment import experiment_config
 from pathlib import Path
 import numpy as np
 from typing import Callable, Dict, Optional, List, Type
@@ -21,8 +20,6 @@ from kenning.utils.class_loader import load_class
 from kenning.utils.logger import LoggerProgressBar
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-# TODO: add documentation
 
 
 def torchconversion(
@@ -80,15 +77,15 @@ class NNIPruningOptimizer(Optimizer):
             "default": "torch",
             "enum": list(inputtypes.keys()),
         },
-        "finetuning_epochs": {  # TODO: desc
+        "finetuning_epochs": {
             "argparse_name": "--finetuning_epochs",
-            "description": "",
+            "description": "Number of epochs model will be fine-tuning for",
             "type": int,
             "default": 3,
         },
         "pruner_type": {
             "argparse_name": "--pruner-type",
-            "description": "Pruning method",
+            "description": "Type of pruning algorithm",
             "type": str,
             "required": True,
             "enum": list(prunertypes.keys()),
@@ -98,35 +95,35 @@ class NNIPruningOptimizer(Optimizer):
             "type": str,
             "required": True,
         },
-        "mode": {  # TODO: description
-            "description": "",
+        "mode": {
+            "description": "The mode for the pruner configuration",
             "default": Modes.NORMAL.value,
             "enum": [mode.value for mode in Modes],
         },
         "criterion": {
-            "description": "",
+            "description": "Module path to class calculation loss",
             "type": str,
             "default": "torch.nn.CrossEntropyLoss",
         },
         "optimizer": {
-            "description": "",
+            "description": "Module path to optimizer class",
             "type": str,
             "default": "torch.optim.SGD",
         },
         "learning_rate": {
             "argparse_name": "--learnign-rate",
-            "description": "",
+            "description": "Learning rate for pruning and fine-tuning",
             "type": float,
             "default": 0.001,
         },
         "training_steps": {
             "argparse_name": "--training-steps",
-            "description": "",
+            "description": "The step number used to collect activations",
             "type": int,
             "required": True,
         },
         "activation": {
-            "description": "",
+            "description": "Type of activation used in pruning algorithm",
             "type": str,
             "enum": ["relu", "gelu", "relu6"],
             "default": "relu",
@@ -159,13 +156,52 @@ class NNIPruningOptimizer(Optimizer):
         training_steps: int,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",
-        optimizer: str = "torch.optim.lr_scheduler.MultiStepLR",
+        optimizer: str = "torch.optim.SGD",
         learning_rate: float = 0.001,
         activation: Optional[str] = None,
         modelframework: str = "torch",
         finetuning_epochs: int = 3,
         model_wrapper_type: Optional[str] = None,
     ):
+        """
+        The NNIPruning optimizer.
+
+        This compiler applies pruning optimization base
+        on Neural Network Intelligence framework.
+
+        Parameters
+        ----------
+        dataset: Dataset
+            Dataset used to prune and fie-tune model
+        compiled_model_path: Path
+            Path where compiled model will be saved
+        pruner_type: str
+            'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
+            or ActivationMeanRankPruner
+        config_list: str
+            String, with list of dictionaries in JSON format, containing
+            pruning specification, for more information please see
+            NNI documentation - Compression Config Specification
+        training_steps: int
+            The step number used to collect activation
+        mode: str
+            'normal' or 'dependency_aware' - to select pruner mode
+        criterion: str
+            Path to class calculating loss
+        optimizer: str
+            Path to optimizer class
+        learning_rate: float
+            Learning rate for pruning and fine-tuning
+        activation: str
+            'relu', 'gelu' or 'relu6' - to select activation function
+            used by pruner
+        modelframework: str
+            Framework of the input model, used to select proper backend
+        finetuning_epochs: int
+            Number of epoch used for fine-tuning model
+        model_wrapper_type: str
+            Path to ModelWrapper used for input model
+        """
         super().__init__(dataset, compiled_model_path)
 
         self.criterion_modulepath = criterion
@@ -188,9 +224,6 @@ class NNIPruningOptimizer(Optimizer):
         self.prepare_dataloader_train_valid()
 
         self.model_wrapper_type = model_wrapper_type
-
-        # TODO: set NNI logger to specified level
-        experiment_config.logging.root = self.log
 
     def compile(
         self,
@@ -247,6 +280,20 @@ class NNIPruningOptimizer(Optimizer):
         *args,
         **kwargs,
     ):
+        """
+        The method used for training for one epoch
+
+        This method is used by TorchEvaluator
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            The PyTorch model to train
+        optimizer: torch.optim.Optimizer
+            The instance of the optimizer class
+        criterion:
+            The callable object used to callculate loss
+        """
         model.train()
         for batch_begin in tqdm(
             range(0, len(self.train_data[0]), self.dataset.batch_size),
@@ -260,6 +307,21 @@ class NNIPruningOptimizer(Optimizer):
             optimizer.step()
 
     def evaluate_model(self, model: torch.nn.Module):
+        """
+        The method used to evaluate model, by calculating mean of losses
+        on test set
+
+        This method is used by TorchEvaluator
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            The PyTorch model to evaluate
+
+        Returns
+        -------
+        The model evaluation - mean of losses on test set
+        """
         # TODO: For now evaluate mean loss, possible use of additional
         # parameter with modulepath to some torchmetrics or custom function
         criterion = load_class(self.criterion_modulepath)()
@@ -277,7 +339,19 @@ class NNIPruningOptimizer(Optimizer):
                 loss_sum += loss.sum(-1)
         return loss_sum / data_len
 
-    def prepare_input_output_data(self, batch_begin):
+    def prepare_input_output_data(self, batch_begin: int):
+        """
+        The method used to prepare data in batche
+
+        Parameters
+        ----------
+        batch_begin: int
+            The index of the batch begining
+
+        Returns
+        -------
+        Prepared batch of data and targets
+        """
         batch_x = self.train_data[0][
             batch_begin:batch_begin + self.dataset.batch_size
         ]
@@ -292,7 +366,9 @@ class NNIPruningOptimizer(Optimizer):
         return data, label
 
     def prepare_dataloader_train_valid(self):
-        # TODO: I assume the same split like when pretraining
+        """
+        The method used to split dataset to train and validation set
+        """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
         self.train_data = (Xt, Yt)
@@ -305,6 +381,24 @@ class NNIPruningOptimizer(Optimizer):
         optimizer_cls: Type,
         dummy_input: torch.Tensor,
     ):
+        """
+        The method creating evaluator used during pruning
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            The input model which will be pruned
+        criterion: Callable
+            The callable object calculating loss
+        optimizer_cls: Type
+            The class of the optimizer
+        dummy_input: torch.Tensor
+            The tensor with random data suitable for model's input
+
+        Returns
+        -------
+        The instance of TorchEvaluator
+        """
         traced_optimizer = nni.trace(optimizer_cls)(
             model.parameters(), lr=self.learning_rate
         )
@@ -320,6 +414,18 @@ class NNIPruningOptimizer(Optimizer):
     def generate_dummy_input(
         self, io_spec: Dict[str, List[Dict]]
     ) -> torch.Tensor:
+        """
+        The method to generate dummy input used by pruner
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List[Dict]]
+            The specification of model's input and output shape and type
+
+        Returns
+        -------
+        The tensor with random data of shape suitable for model's input
+        """
         inputs = io_spec["input"]
         assert (
             len(inputs) <= 1
@@ -335,6 +441,14 @@ class NNIPruningOptimizer(Optimizer):
         )
 
     def set_pruner_class(self, pruner_type):
+        """
+        The method used for choosing pruner class based on input string
+
+        Parameters
+        ----------
+        pruner_type: str
+            String with pruner label
+        """
         assert pruner_type in self.prunertypes.keys(), (
             f"Unsupported pruner type {pruner_type}, only"
             " {', '.join(self.prunertypes.keys())} are supported"

@@ -10,17 +10,17 @@ from typing import List, Any, Tuple, Dict
 import argparse
 from pathlib import Path
 from collections import defaultdict
-import json
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
 from kenning.core.measurements import systemstatsmeasurements
+from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 
-class ModelWrapper(object):
+class ModelWrapper(IOInterface):
     """
     Wraps the given model.
     """
@@ -449,28 +449,6 @@ class ModelWrapper(object):
         if not hasattr(self, 'io_specification'):
             self.io_specification = self.get_io_specification_from_model()
         return self.io_specification
-
-    def save_io_specification(self, modelpath: Path):
-        """
-        Saves input/output model specification to a file named
-        `modelpath` + `.json`. This function uses `get_io_specification()`
-        function to get the properties.
-
-        It is later used in optimization and compilation steps.
-
-        Parameters
-        ----------
-        modelpath : Path
-            Path that is used to store the model input/output specification
-        """
-        spec_path = modelpath.parent / (modelpath.name + '.json')
-        spec_path = Path(spec_path)
-
-        with open(spec_path, 'w') as f:
-            json.dump(
-                self.get_io_specification(),
-                f
-            )
 
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
         """

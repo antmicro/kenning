@@ -173,6 +173,8 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
         Gathered computed metrics
     """
 
+    # If confusion matrix is not present in the measurementsdata, then
+    # classification metrics can not be calculated.
     if 'eval_confusion_matrix' in measurementsdata:
         return {
             'accuracy': accuracy(measurementsdata['eval_confusion_matrix']),
@@ -207,6 +209,8 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     from kenning.datasets.helpers.detection_and_segmentation import \
         compute_map_per_threshold
 
+    # If ground truths count is not present in the measurementsdata, then
+    # mAP metric can not be calculated.
     if 'eval_gtcount' in measurementsdata:
         return {
             'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]

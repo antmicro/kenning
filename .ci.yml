@@ -47,6 +47,18 @@ sample-compilation:
             - docs/source/generated
     allow_failure: false
 
+sample-pipeline-optimization:
+    stage: tests
+    script:
+        - ln /usr/bin/python3 /usr/bin/python
+        - mkdir build
+        - ln -s /pet-dataset build/pet-dataset
+        - ./scripts/optimization-tflite-tvm-tensorflow-pet-dataset.sh
+    artifacts:
+        paths:
+            - build/
+    allow_failure: false
+
 docs:
     stage: docs
     script:

@@ -7,6 +7,7 @@ from pathlib import Path
 
 from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
+from kenning.core.measurements import MeasurementsCollector
 
 from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow  # noqa: E501
 from kenning.utils.pipeline_runner import run_pipeline, parse_json_pipeline
@@ -61,6 +62,7 @@ def main(argv):
                     scenario_tuple = parse_json_pipeline(msg)
 
                     if message_type == MessageType.RUN:
+                        MeasurementsCollector.clear()
                         run_pipeline(
                             *scenario_tuple,
                             args.file_path

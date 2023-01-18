@@ -1,4 +1,5 @@
 from typing import Dict, Tuple, Union
+from collections import defaultdict as dd
 
 from kenning.utils import logger
 from kenning.utils.pipeline_manager.dataflow_specification import io_mapping, nodes  # noqa: E501
@@ -79,6 +80,146 @@ def get_specification() -> Dict:
         })
 
     return specification
+
+
+def create_dataflow(pipeline: dict):
+    dataflow_nodes = []
+    dataflow = {
+        'panning': {
+            'x': 0,
+            'y': 0,
+        },
+        'scaling': 1
+    }
+
+    def dict_factory():
+        return dd(dict_factory)
+    io_mapping_to_id = dict_factory()
+
+    id = 0
+
+    def get_id():
+        nonlocal id
+        id += 1
+        return id
+
+    x_offset = 50
+    node_width = 300
+    x_pos = 0
+    y_pos = 50
+
+    def get_new_x_position():
+        nonlocal x_pos
+        x_pos += (node_width + x_offset)
+        return x_pos
+
+    def default_to_regular(d):
+        if isinstance(d, dd):
+            d = {k: default_to_regular(v) for k, v in d.items()}
+        return d
+
+    def add_node(kenning_block, kenning_block_name):
+        _, cls_name = kenning_block['type'].rsplit('.', 1)
+        kenning_node = [node for node in nodes if node.name == cls_name][0]
+
+        new_node = {
+            'name': kenning_node.name,
+            'type': kenning_node.name,
+            'id': get_id(),
+            'options': [
+                [
+                    key,
+                    value
+                ]
+                for key, value in kenning_block['parameters'].items()
+            ],
+            'width': node_width,
+            'position': {
+                'x': get_new_x_position(),
+                'y': y_pos
+            },
+            'state': {},
+        }
+
+        interfaces = []
+        for io_name in ['inputs', 'outputs']:
+            for io_object in io_mapping[kenning_block_name][io_name]:
+                id = get_id()
+                interfaces.append([
+                    io_object['name'],
+                    {
+                        'value': None,
+                        'isInput': True,
+                        'type': io_object['type'],
+                        'id': id
+                    }
+                ])
+                if kenning_block_name == 'optimizer':
+                    io_to_ids = io_mapping_to_id[kenning_block_name][io_name][io_object['type']]  # noqa: E501
+                    if io_to_ids:
+                        io_to_ids.append(id)
+                    else:
+                        io_to_ids = [id]
+                else:
+                    io_to_ids = id
+
+        new_node['interfaces'] = interfaces
+        dataflow_nodes.append(new_node)
+
+    # Add dataset, model_wrapper and runtime blocks
+    for name in ['dataset', 'model_wrapper', 'runtime']:
+        add_node(pipeline[name], name)
+
+    # Add optimizer blocks
+    for optimizer in pipeline['optimizers']:
+        add_node(optimizer, 'optimizer')
+
+    connections = []
+    # This part of code is strongly related to the definition of io_mapping
+    # It should be double-checked if io_mapping changes. For now this is
+    # manually set, but can be altered to use io_mapping later on
+    connections.append({
+        'id': get_id(),
+        'from': io_mapping_to_id['dataset']['outputs']['dataset'],
+        'to': io_mapping_to_id['model_wrapper']['inputs']['dataset'],
+    })
+    connections.append({
+        'id': get_id(),
+        'from': io_mapping_to_id['model_wrapper']['outputs']['model_wrapper'],
+        'to': io_mapping_to_id['runtime']['inputs']['model_wrapper'],
+    })
+    # Connecting the first optimizer with model_wrapper
+    connections.append({
+        'id': get_id(),
+        'from': io_mapping_to_id['model_wrapper']['outputs']['model'],
+        'to': io_mapping_to_id['optimizer']['inputs']['model'][0],
+    })
+
+    # Connecting optimizers
+    for i in range(len(pipeline['optimizers']) - 1):
+        connections.append({
+            'id': get_id(),
+            'from': io_mapping_to_id['optimizer']['outputs']['model'][i],
+            'to': io_mapping_to_id['optimizer']['inputs']['model'][i + 1],
+        })
+
+    # Connecting the last optimizer with runtime
+    connections.append({
+        'id': get_id(),
+        'from': io_mapping_to_id['optimizer']['outputs']['model'][-1],
+        'to': io_mapping_to_id['runtime']['inputs']['model'],
+    })
+
+    if 'runtime_protocol' in io_mapping_to_id:
+        connections.append({
+            'id': get_id(),
+            'from': io_mapping_to_id['runtime_protocol']['outputs']['runtime_protocol'],  # noqa: E501
+            'to': io_mapping_to_id['runtime']['inputs']['runtime_protocol'],
+        })
+
+    dataflow['connections'] = connections
+    dataflow['nodes'] = dataflow_nodes
+    return dataflow
 
 
 def parse_dataflow(dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:

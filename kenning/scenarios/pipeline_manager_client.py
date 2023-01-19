@@ -50,7 +50,8 @@ def main(argv):
                 )
 
             if (message_type == MessageType.VALIDATE or
-                    message_type == MessageType.RUN):
+                    message_type == MessageType.RUN or
+                    message_type == MessageType.EXPORT):
 
                 dataflow = json.loads(data)
                 successful, msg = parse_dataflow(dataflow)
@@ -60,6 +61,10 @@ def main(argv):
                     continue
                 try:
                     scenario_tuple = parse_json_pipeline(msg)
+
+                    if message_type == MessageType.EXPORT:
+                        with open(args.file_path, 'w') as f:
+                            json.dump(msg, f)
 
                     if message_type == MessageType.RUN:
                         MeasurementsCollector.clear()
@@ -76,6 +81,8 @@ def main(argv):
                     feedback_msg = 'Successfuly validated'
                 elif message_type == MessageType.RUN:
                     feedback_msg = f'Successfuly run. Output saved in {args.file_path}'  # noqa: E501
+                elif message_type == MessageType.EXPORT:
+                    feedback_msg = f'Successfuly exported. Output saved in {args.file_path}'  # noqa: E501
 
                 client.send_message(
                     MessageType.OK,

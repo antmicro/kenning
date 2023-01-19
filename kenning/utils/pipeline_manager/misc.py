@@ -180,7 +180,7 @@ def create_dataflow(pipeline: Dict):
         """
         Adds block entry to the dataflow definition based on the
         `kenning_block` and `kenning_block_name` arguments.
-        
+
         Additionaly modifies `io_mapping_to_id` dictionary that saves ids of
         inputs and outputs of every block that is later used to create
         connections between the blocks.
@@ -188,7 +188,8 @@ def create_dataflow(pipeline: Dict):
         Parameters
         ----------
         kenning_block : dict
-            Dictionary of a block that comes from the definition of the pipeline.
+            Dictionary of a block that comes from the definition
+            of the pipeline.
         kenning_block_name : str
             Name of the block from the pipeline. Valid values are based on the
             `io_mapping` dictionary.

@@ -9,7 +9,7 @@ from pipeline_manager_backend_communication.communication_backend import Communi
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
 from kenning.core.measurements import MeasurementsCollector
 
-from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow  # noqa: E501
+from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow, create_dataflow  # noqa: E501
 from kenning.utils.pipeline_runner import run_pipeline, parse_json_pipeline
 
 
@@ -82,6 +82,15 @@ def main(argv):
                     feedback_msg.encode()
                 )
                 continue
+
+            if message_type == MessageType.IMPORT:
+                pipeline = json.loads(data)
+                dataflow = create_dataflow(pipeline)
+
+                client.send_message(
+                    MessageType.OK,
+                    json.dumps(dataflow).encode(encoding='UTF-8')
+                )
 
 
 if __name__ == '__main__':

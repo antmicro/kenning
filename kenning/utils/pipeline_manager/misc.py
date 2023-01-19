@@ -241,13 +241,16 @@ def create_dataflow(pipeline: Dict):
         new_node['interfaces'] = interfaces
         dataflow_nodes.append(new_node)
 
-    # Add dataset, model_wrapper and runtime blocks
-    for name in ['dataset', 'model_wrapper', 'runtime']:
+    # Add dataset, model_wrapper blocks
+    for name in ['dataset', 'model_wrapper']:
         add_block(pipeline[name], name)
 
     # Add optimizer blocks
     for optimizer in pipeline['optimizers']:
         add_block(optimizer, 'optimizer')
+
+    # Add runtime block
+    add_block(pipeline['runtime'], 'runtime')
 
     if 'runtime_protocol' in pipeline:
         add_block(pipeline['runtime_protocol'], 'runtime_protocol')

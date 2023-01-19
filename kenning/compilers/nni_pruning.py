@@ -111,6 +111,12 @@ class NNIPruningOptimizer(Optimizer):
             "type": float,
             "default": 0.001,
         },
+        "finetuning_batch_size": {
+            "argparse_name": "--finetuning-batch-size",
+            "description": "Batch size for fine-tuning",
+            "type": int,
+            "default": 32
+        },
         "training_steps": {
             "argparse_name": "--training-steps",
             "description": "The step number used to collect activations",
@@ -148,7 +154,8 @@ class NNIPruningOptimizer(Optimizer):
         criterion: str = "torch.nn.CrossEntropyLoss",
         optimizer: str = "torch.optim.SGD",
         finetuning_learning_rate: float = 0.001,
-        activation: Optional[str] = None,
+        finetuning_batch_size: int = 32,
+        activation: str = 'relu',
         modelframework: str = "torch",
         finetuning_epochs: int = 3,
     ):
@@ -180,7 +187,9 @@ class NNIPruningOptimizer(Optimizer):
         optimizer: str
             Path to optimizer class
         finetuning_learning_rate: float
-            Learning rate for pruning and fine-tuning
+            Learning rate for fine-tuning
+        finetuning_batch_size: int
+            Batch size for fine-tuning
         activation: str
             'relu', 'gelu' or 'relu6' - to select activation function
             used by pruner
@@ -194,6 +203,7 @@ class NNIPruningOptimizer(Optimizer):
         self.criterion_modulepath = criterion
         self.optimizer_modulepath = optimizer
         self.finetuning_learning_rate = finetuning_learning_rate
+        self.finetuning_batch_size = finetuning_batch_size
         self.training_steps = training_steps
         self.set_activation_str(activation)
 
@@ -273,6 +283,7 @@ class NNIPruningOptimizer(Optimizer):
                            f'_ep{finetuning_epoch}.pth')
 
         torch.save(model, self.compiled_model_path)
+        self.save_io_specification(inputmodelpath, io_spec)
 
     def train_model(
         self,
@@ -298,7 +309,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         model.train()
         for batch_begin in tqdm(
-            range(0, len(self.train_data[0]), self.dataset.batch_size),
+            range(0, len(self.train_data[0]), self.finetuning_batch_size),
             file=LoggerProgressBar(),
         ):
             data, label = self.prepare_input_output_data(batch_begin)
@@ -332,7 +343,7 @@ class NNIPruningOptimizer(Optimizer):
         loss_sum = 0
         with torch.no_grad():
             for batch_begin in tqdm(
-                range(0, data_len, self.dataset.batch_size),
+                range(0, data_len, self.finetuning_batch_size),
                 file=LoggerProgressBar(),
             ):
                 data, target = self.prepare_input_output_data(batch_begin)
@@ -355,11 +366,11 @@ class NNIPruningOptimizer(Optimizer):
         Prepared batch of data and targets
         """
         batch_x = self.train_data[0][
-            batch_begin:batch_begin + self.dataset.batch_size
+            batch_begin:batch_begin + self.finetuning_batch_size
         ]
         data = np.asarray(self.dataset.prepare_input_samples(batch_x))
         batch_y = self.train_data[1][
-            batch_begin:batch_begin + self.dataset.batch_size
+            batch_begin:batch_begin + self.finetuning_batch_size
         ]
         label = np.asarray(self.dataset.prepare_output_samples(batch_y))
 
@@ -512,7 +523,8 @@ class NNIPruningOptimizer(Optimizer):
             args.mode,
             args.criterion,
             args.optimizer,
-            args.learning_rate,
+            args.finetuning_learning_rate,
+            args.finetuning_batch_size,
             args.activation,
             args.model_framework,
             args.finetuning_epochs,

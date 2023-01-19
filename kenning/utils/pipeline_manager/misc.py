@@ -82,7 +82,23 @@ def get_specification() -> Dict:
     return specification
 
 
-def create_dataflow(pipeline: dict):
+def create_dataflow(pipeline: Dict):
+    """
+    Parses a Kenning pipeline JSON into a Pipeline Manager dataflow format
+    that can be loaded into the Pipeline Manager editor.
+
+    It is assumed that the passed pipeline is valid.
+
+    Parameters
+    ----------
+    pipeline : Dict
+        Valid Kenning pipeline in JSON.
+
+    Returns
+    -------
+    Dict :
+        Dataflow that is a valid save in Pipeline Manager format.
+    """
     dataflow_nodes = []
     dataflow = {
         'panning': {
@@ -92,33 +108,91 @@ def create_dataflow(pipeline: dict):
         'scaling': 1
     }
 
-    def dict_factory():
+    def dict_factory() -> Dict:
+        """
+        Simple wrapper for a default_dict so that values can be assigned
+        without creating the entries first.
+
+        Returns
+        -------
+        Dict :
+            Wrapped defaultdict
+        """
         return dd(dict_factory)
-    io_mapping_to_id = dict_factory()
 
-    id = 0
+    def default_to_regular(d: Dict) -> Dict:
+        """
+        Function that converts dict_factory dictionary into a normal
+        python dictionary.
 
-    def get_id():
-        nonlocal id
-        id += 1
-        return id
+        Parameters
+        ----------
+        d : Dict
+            Dictionary to be converted into a normal python dictionary.
 
-    x_offset = 50
-    node_width = 300
-    x_pos = 0
-    y_pos = 50
-
-    def get_new_x_position():
-        nonlocal x_pos
-        x_pos += (node_width + x_offset)
-        return x_pos
-
-    def default_to_regular(d):
+        Returns
+        -------
+        Dict :
+            Converted python dictionary
+        """
         if isinstance(d, dd):
             d = {k: default_to_regular(v) for k, v in d.items()}
         return d
 
-    def add_node(kenning_block, kenning_block_name):
+    io_mapping_to_id = dict_factory()
+    id = 0
+
+    def get_id() -> int:
+        """
+        Generator for new unique id values.
+        Every call returns a value increased by 1.
+
+        Returns
+        -------
+        int :
+            New unique id
+        """
+        nonlocal id
+        id += 1
+        return id
+
+    node_x_offset = 50
+    node_width = 300
+    x_pos = 0
+    y_pos = 50
+
+    def get_new_x_position() -> int:
+        """
+        Generator for new x node positions.
+        Every call returns a value increased by `node_width` and
+        `node_x_offset`.
+
+        Returns
+        -------
+        int
+            Newly generated x position.
+        """
+        nonlocal x_pos
+        x_pos += (node_width + node_x_offset)
+        return x_pos
+
+    def add_block(kenning_block: dict, kenning_block_name: str):
+        """
+        Adds block entry to the dataflow definition based on the
+        `kenning_block` and `kenning_block_name` arguments.
+        
+        Additionaly modifies `io_mapping_to_id` dictionary that saves ids of
+        inputs and outputs of every block that is later used to create
+        connections between the blocks.
+
+        Parameters
+        ----------
+        kenning_block : dict
+            Dictionary of a block that comes from the definition of the pipeline.
+        kenning_block_name : str
+            Name of the block from the pipeline. Valid values are based on the
+            `io_mapping` dictionary.
+        """
         _, cls_name = kenning_block['type'].rsplit('.', 1)
         kenning_node = [node for node in nodes if node.name == cls_name][0]
 
@@ -154,30 +228,35 @@ def create_dataflow(pipeline: dict):
                         'id': id
                     }
                 ])
+
+                io_to_ids = io_mapping_to_id[kenning_block_name][io_name]
                 if kenning_block_name == 'optimizer':
-                    io_to_ids = io_mapping_to_id[kenning_block_name][io_name][io_object['type']]  # noqa: E501
-                    if io_to_ids:
-                        io_to_ids.append(id)
+                    if io_to_ids[io_object['type']]:
+                        io_to_ids[io_object['type']].append(id)
                     else:
-                        io_to_ids = [id]
+                        io_to_ids[io_object['type']] = [id]
                 else:
-                    io_to_ids = id
+                    io_to_ids[io_object['type']] = id
 
         new_node['interfaces'] = interfaces
         dataflow_nodes.append(new_node)
 
     # Add dataset, model_wrapper and runtime blocks
     for name in ['dataset', 'model_wrapper', 'runtime']:
-        add_node(pipeline[name], name)
+        add_block(pipeline[name], name)
 
     # Add optimizer blocks
     for optimizer in pipeline['optimizers']:
-        add_node(optimizer, 'optimizer')
+        add_block(optimizer, 'optimizer')
 
-    connections = []
+    if 'runtime_protocol' in pipeline:
+        add_block(pipeline['runtime_protocol'], 'runtime_protocol')
+
+    io_mapping_to_id = default_to_regular(io_mapping_to_id)
     # This part of code is strongly related to the definition of io_mapping
     # It should be double-checked if io_mapping changes. For now this is
     # manually set, but can be altered to use io_mapping later on
+    connections = []
     connections.append({
         'id': get_id(),
         'from': io_mapping_to_id['dataset']['outputs']['dataset'],

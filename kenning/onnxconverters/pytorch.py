@@ -6,6 +6,7 @@
 ONNXConversion for PyTorch models.
 """
 
+from copy import deepcopy
 import torchvision.models as models
 import torch
 import onnx
@@ -14,6 +15,7 @@ from typing import Union
 
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.onnxconversion import SupportStatus
+import traceback
 
 
 class PyTorchONNXConversion(ONNXConversion):
@@ -87,7 +89,9 @@ class PyTorchONNXConversion(ONNXConversion):
 
         try:
             model_torch = self.onnx_to_torch(model_onnx)
+            # print(str(model_torch))
         except RuntimeError or NotImplementedError:
+            traceback.print_exc()
             del model_onnx
             return SupportStatus.UNSUPPORTED
 
@@ -115,4 +119,115 @@ class PyTorchONNXConversion(ONNXConversion):
         Model converted to PyTorch framework
         """
         import onnx2torch
-        return onnx2torch.convert(onnx_model)
+        from onnx2torch.node_converters.registry import (
+            add_converter,
+            _CONVERTER_REGISTRY,
+            OperationDescription
+        )
+        from onnx2torch.onnx_node import OnnxNode
+        from onnx2torch.onnx_graph import OnnxGraph
+        from onnx2torch.utils.common import (
+            OperationConverterResult,
+            OnnxMapping
+        )
+
+        # Backup copy and removing default Gemm conversions
+        converter_registy_copy = deepcopy(_CONVERTER_REGISTRY)
+        for version in (9, 11, 13):
+            del _CONVERTER_REGISTRY[OperationDescription(
+                operation_type='Gemm',
+                version=version,
+                domain=onnx.defs.ONNX_DOMAIN)]
+
+        class MissingWeightsError(Exception):
+            """
+            Custom Exception class for missing weights
+            """
+            def __init__(self, *args: object) -> None:
+                super().__init__(*args)
+
+        class Transposition(torch.nn.Module):
+            """
+            Artifficial torch Module for transposing input
+            """
+            def __init__(self) -> None:
+                super().__init__()
+
+            def forward(self, x: torch.Tensor):
+                return x.T
+
+        @add_converter(operation_type='Gemm', version=9)
+        @add_converter(operation_type='Gemm', version=11)
+        @add_converter(operation_type='Gemm', version=13)
+        def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
+            """
+            Conversion from Gemm to torch Linear layer
+
+            Parameters
+            ----------
+            node: OnnxNode
+                The Gemm node for conversion
+            graph: OnnxGraph
+                The whole model wrapped in OnnxGraph
+
+            Returns
+            -------
+            OperationConverterResult which is a scheme for converting Gemm
+            """
+            a_name = node.input_values[0]
+            b_name = node.input_values[1]
+            c_name = node.input_values[2] \
+                if len(node.input_values) > 2 else None
+
+            alpha = node.attributes.get('alpha', 1.)
+            beta = node.attributes.get('beta', 1.)
+            trans_a = node.attributes.get('transA', 0) != 0
+            trans_b = node.attributes.get('transB', 0) != 0
+
+            sequence = []
+            if trans_a:
+                sequence.append(Transposition())
+
+            if c_name is None:
+                bias = None
+            else:
+                bias = graph.initializers[c_name].to_torch()
+
+            if b_name in graph.initializers:
+                weights = graph.initializers[b_name].to_torch().T
+                if trans_b:
+                    weights = weights.T
+                in_feature, out_feature = weights.shape[0], weights.shape[1]
+                linear = torch.nn.Linear(
+                    in_features=in_feature,
+                    out_features=out_feature,
+                    bias=bias is not None
+                )
+                with torch.no_grad():
+                    weights = weights * alpha
+                    linear.weight.data = weights
+                    if bias is not None:
+                        bias = bias * beta
+                        linear.bias.data = bias
+                sequence.append(linear)
+            else:  # weights are missing
+                raise MissingWeightsError
+            if len(sequence) > 1:
+                return OperationConverterResult(
+                    torch_module=torch.nn.Sequential(*sequence),
+                    onnx_mapping=OnnxMapping(
+                        inputs=(a_name,),
+                        outputs=node.output_values)
+                )
+            else:
+                return OperationConverterResult(
+                    torch_module=sequence[0],
+                    onnx_mapping=OnnxMapping(
+                        inputs=(a_name,),
+                        outputs=node.output_values)
+                )
+
+        # Convert module and restore default Gemm conversions
+        converted_model = onnx2torch.convert(onnx_model)
+        _CONVERTER_REGISTRY = converter_registy_copy
+        return converted_model

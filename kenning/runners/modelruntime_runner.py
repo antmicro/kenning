@@ -5,6 +5,7 @@ Provides a runner that performs inference.
 from typing import Dict, List, Tuple, Any
 from copy import deepcopy
 
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.runtime import Runtime
 from kenning.core.runner import Runner
@@ -22,6 +23,7 @@ class ModelRuntimeRunner(Runner):
             model: ModelWrapper,
             runtime: Runtime,
             inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
         Creates the model runner.
@@ -34,6 +36,8 @@ class ModelRuntimeRunner(Runner):
             Runtime used to run selected model
         inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs : Dict[str, str]
             Outputs of this Runner
         """
@@ -43,7 +47,11 @@ class ModelRuntimeRunner(Runner):
         self.runtime.inference_session_start()
         self.runtime.prepare_local()
 
-        super().__init__(inputs_sources, outputs)
+        super().__init__(
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
 
     def cleanup(self):
         self.runtime.inference_session_end()
@@ -65,6 +73,10 @@ class ModelRuntimeRunner(Runner):
                 "model_wrapper": {
                     "type": "object",
                     "real_name": "model_wrapper"
+                },
+                "dataset": {
+                    "type": "object",
+                    "real_name": "dataset"
                 },
                 "runtime": {
                     "type": "object",
@@ -96,6 +108,7 @@ class ModelRuntimeRunner(Runner):
             cls,
             json_dict: Dict,
             inputs_sources: Dict[str, Tuple[int, str]],
+            inputs_specs: Dict[str, Dict],
             outputs: Dict[str, str]):
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -110,6 +123,8 @@ class ModelRuntimeRunner(Runner):
             Arguments for the constructor
         inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs : Dict[str, str]
             Outputs of this Runner
 
@@ -125,7 +140,12 @@ class ModelRuntimeRunner(Runner):
         model_json_dict = parsed_json_dict['model_wrapper']
         runtime_json_dict = parsed_json_dict['runtime']
 
-        model: ModelWrapper = cls._create_model(model_json_dict)
+        if 'dataset' in parsed_json_dict.keys():
+            dataset = cls._create_dataset(parsed_json_dict['dataset'])
+        else:
+            dataset = None
+
+        model: ModelWrapper = cls._create_model(dataset, model_json_dict)
         model.prepare_model()
         runtime: Runtime = cls._create_runtime(runtime_json_dict)
 
@@ -133,17 +153,38 @@ class ModelRuntimeRunner(Runner):
             model,
             runtime,
             inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
             outputs=outputs
         )
 
+    @staticmethod
+    def _create_dataset(json_dict: Dict):
+        """
+        Method used to create dataset based on json dict.
+
+        Parameters
+        ----------
+        json_dict : Dict
+            Arguments for the constructor
+
+        -------
+        Dataset :
+            Created dataset
+        """
+        cls = load_class(json_dict['type'])
+        return cls.from_json(
+            json_dict=json_dict['parameters'])
+
     # TODO: make dataset/protocol an optional parameter for model/runtime
     @staticmethod
-    def _create_model(json_dict):
+    def _create_model(dataset: Dataset, json_dict: Dict):
         """
         Method used to create model based on json dict.
 
         Parameters
         ----------
+        dataset : Dataset
+            Dataset used to initialize model params (class names etc.)
         json_dict : Dict
             Arguments for the constructor
 
@@ -153,7 +194,7 @@ class ModelRuntimeRunner(Runner):
         """
         cls = load_class(json_dict['type'])
         return cls.from_json(
-            dataset=None,
+            dataset=dataset,
             json_dict=json_dict['parameters'])
 
     @staticmethod
@@ -201,7 +242,7 @@ class ModelRuntimeRunner(Runner):
 
         result = {}
         # TODO: Add support for multiple inputs/outputs
-        for out_spec, out_value in zip(io_spec['processed_output'], [preds]):
+        for out_spec, out_value in zip(io_spec['output'], [preds]):
             if out_spec['name'] in self.outputs.keys():
                 result[self.outputs[out_spec['name']]] = out_value
 

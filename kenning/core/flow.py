@@ -9,8 +9,6 @@ flows created from Runners.
 from typing import Dict, Any, List
 import jsonschema
 
-from kenning.interfaces.io_interface import IOInterface
-from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.core.runner import Runner
 from kenning.utils import logger
 from kenning.utils.class_loader import load_class
@@ -129,6 +127,7 @@ class KenningFlow:
             raise
 
         output_variables = {}
+        output_specifications = {}
         runners: List[Runner] = []
 
         for runner_idx, runner_spec in enumerate(runners_specifications):
@@ -162,34 +161,19 @@ class KenningFlow:
                 inputs_sources[local_name] = (output_variables[global_name],
                                               global_name)
 
+            # get output specs from global flow variables
+            inputs_specs = {}
+            for local_name, (_, glbal_name) in inputs_sources.items():
+                inputs_specs[local_name] = output_specifications[glbal_name]
+
             # instantiate runner
             runner = runner_cls.from_json(
                 cfg,
                 inputs_sources=inputs_sources,
+                inputs_specs=inputs_specs,
                 outputs=outputs
             )
 
-            runners.append(runner)
-
-        cls._validate_runners_io(runners)
-
-        return cls(runners)
-
-    @staticmethod
-    def _validate_runners_io(runners: List[Runner]):
-        """
-        Validates IO of runners. If there is some incompatibility then an
-        Exceptions is raised.
-
-        Parameters
-        ----------
-        runners : List[Runner]
-            List of runners that creates the flow
-        """
-
-        output_specifications = {}
-
-        for runner in runners:
             # populate dict with flow variables specs
             runner_output_specification = \
                 (runner.get_io_specification()['output']
@@ -200,26 +184,9 @@ class KenningFlow:
                     if out_spec['name'] == local_name:
                         output_specifications[global_name] = out_spec
 
-        for runner in runners:
-            # get output specs from global flow variables
-            output_spec = {}
-            for _, (_, name) in runner.inputs_sources.items():
-                output_spec[name] = output_specifications[name]
+            runners.append(runner)
 
-            # get input specs mapped to global variables
-            input_spec = {}
-            runner_io_spec = runner.get_io_specification()
-            for local_name, (_, global_name) in runner.inputs_sources.items():
-                for spec in runner_io_spec['input']:
-                    if spec['name'] == local_name:
-                        input_spec[global_name] = spec
-                        break
-
-            if not IOInterface.validate(output_spec, input_spec):
-                raise IOCompatibilityError(
-                    f'Input and output are not compatible.\nOutput is:\n'
-                    f'{output_spec}\nInput is:\n{input_spec}\n'
-                )
+        return cls(runners)
 
     def run_single_step(self):
         """

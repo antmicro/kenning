@@ -59,6 +59,7 @@ class DetectionVisualizer(OutputCollector):
             save_fps: int = 25,
             window_name: str = "stream",
             inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
         Creates the detection visualizer.
@@ -72,15 +73,17 @@ class DetectionVisualizer(OutputCollector):
         save_to_file : bool
             True if frames should be saved to file. In other case
             they are presented using opencv
-        save_path: Path
+        save_path : Path
             Path where frames should be saved
-        save_fps:
+        save_fps : int
             Frames pre second of the saved video
-        window_name:
+        window_name : str
             Name of opencv window
-        inputs_sources:
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
-        outputs:
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
+        outputs : Dict[str, str]
             Outputs of this Runner
         """
         self.window_name = window_name
@@ -102,7 +105,11 @@ class DetectionVisualizer(OutputCollector):
         self.font_thickness = 2
         self.color_dict = defaultdict(generate_color)
 
-        super().__init__(inputs_sources, outputs)
+        super().__init__(
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
 
     @classmethod
     def form_argparse(cls):

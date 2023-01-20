@@ -20,6 +20,7 @@ class DataProvider(Runner):
     def __init__(
             self,
             inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
         Initializes dataprovider object.
@@ -28,12 +29,18 @@ class DataProvider(Runner):
         ----------
         inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs : Dict[str, str]
             Outputs of this Runner
         """
         self.prepare()
 
-        super().__init__(inputs_sources, outputs)
+        super().__init__(
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
 
     @classmethod
     def form_argparse(cls):

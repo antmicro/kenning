@@ -60,7 +60,8 @@ setuptools.setup(
         ],
         'torch': [
             'torch~=1.13.0',
-            'torchvision~=0.14.0'
+            'torchvision~=0.14.0',
+            'onnx2torch~=1.5.4'
         ],
         'mxnet': [
             'gluoncv>=0.10.2',

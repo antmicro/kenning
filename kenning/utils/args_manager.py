@@ -10,7 +10,7 @@ import jsonschema
 import argparse
 from typing import Dict
 from pathlib import Path
-
+import numpy as np
 
 """
 arguments_structure is a mapping (argument_name -> keywords)
@@ -85,6 +85,8 @@ def to_argparse_name(s):
 def convert_to_jsontype(v):
     if isinstance(v, Path):
         return str(v)
+    if isinstance(v, np.ndarray):
+        return v.tolist()
     return v
 
 

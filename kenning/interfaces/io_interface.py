@@ -3,7 +3,7 @@ Provides implementation of interface used by other Kenning components to manage
 their input and output types
 """
 
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 from pathlib import Path
 import json
 
@@ -63,8 +63,8 @@ class IOInterface(object):
 
                     else:
                         return IOInterface._validate_shape(
-                            single_input_spec['shape'],
-                            single_output_spec['shape'])
+                            single_output_spec['shape'],
+                            single_input_spec['shape'])
                 # validate type
                 if 'type' in single_input_spec:
                     if (single_input_spec['type'] != 'Any' and
@@ -108,6 +108,57 @@ class IOInterface(object):
         with open(spec_path, 'w') as f:
             json.dump(self.get_io_specification(), f)
 
+    def load_io_specification(self, path: Path) -> Dict[str, List[Dict]]:
+        """
+        Loads input/output specification from a file named `path` + `.json`.
+
+        Parameters
+        ----------
+        path : Path
+            Path that is used to store the input/output specification
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Loaded IO specification
+        """
+        spec_path = path.parent / (path.name + '.json')
+        spec_path = Path(spec_path)
+
+        with open(spec_path, 'r') as f:
+            return json.load(f)
+
+    @staticmethod
+    def find_spec(
+            io_spec: Dict[str, List[Dict]],
+            io_type: str,
+            io_name: str) -> Dict[str, Any]:
+        """
+        Find single io spec based on type (input, output) and name
+
+        Parameters
+        ----------
+        io_spec : Dict[str, List[Dict]]
+            IO specification to be searched in
+        io_type : str
+            Type of io (input, output, processed_input or processed_output)
+        io_name : str
+            Name of the io
+
+        Returns
+        -------
+        Dict[str, Any] :
+            Specification of single io
+        """
+        for spec in io_spec[io_type]:
+            if spec['name'] == io_name:
+                return spec
+
+        raise IOSpecNotFound(
+            f'{io_type} spec with name {io_name} not found in IO '
+            f'specification:\n{io_spec}'
+        )
+
     @staticmethod
     def _validate_shape(
             output_shape: Tuple[int, ...],
@@ -139,6 +190,14 @@ class IOInterface(object):
 class IOCompatibilityError(Exception):
     """
     Exception is raised when input and output are not compatible.
+    """
+    def __init__(self, *args) -> bool:
+        super().__init__(*args)
+
+
+class IOSpecNotFound(Exception):
+    """
+    Exception is raised when IO spec is not found
     """
     def __init__(self, *args) -> bool:
         super().__init__(*args)

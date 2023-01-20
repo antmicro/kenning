@@ -88,6 +88,9 @@ setuptools.setup(
         'test': [
             'pytest',
             'pytest-mock'
+        ],
+        'real_time_visualization': [
+            'dearpygui>=1.6.2'
         ]
     },
 )

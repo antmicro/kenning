@@ -21,6 +21,7 @@ import shutil
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.core.model import ModelWrapper
+from kenning.interfaces.io_interface import IOInterface
 
 
 def crop(
@@ -174,6 +175,17 @@ class YOLACT(ModelWrapper):
             score_threshold: float = 0.,
     ):
         self.model = None
+        if dataset is not None:
+            self.class_names = dataset.get_class_names()
+        else:
+            io_spec = self.load_io_specification(modelpath)
+            segmentation_output = IOInterface.find_spec(
+                io_spec,
+                'processed_output',
+                'segmentation_output'
+            )
+            self.class_names = segmentation_output['class_names']
+
         self.top_k = top_k
         self.score_threshold = score_threshold
         self.original_model_path = modelpath
@@ -206,6 +218,8 @@ class YOLACT(ModelWrapper):
 
     def save_model(self, modelpath):
         shutil.copy(self.original_model_path, modelpath)
+
+        self.save_model_metadata(modelpath, {'class_names': self.class_names})
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -264,7 +278,7 @@ class YOLACT(ModelWrapper):
         for i in range(len(y['output_3'])):
             x1, y1, x2, y2 = y['output_0'][i, :]
             Y.append(SegmObject(
-                clsname=self.dataset.get_class_names()[y['output_2'][i]],
+                clsname=self.class_names[y['output_2'][i]],
                 maskpath=None,
                 xmin=x1,
                 ymin=y1,
@@ -335,5 +349,10 @@ class YOLACT(ModelWrapper):
                 {'name': 'output_2', 'shape': (-1,), 'dtype': 'int64'},
                 {'name': 'output_3', 'shape': (-1,), 'dtype': 'float32'},
                 {'name': 'output_4', 'shape': (138, 138, 32), 'dtype': 'float32'}  # noqa: E501
-            ]
+            ],
+            'processed_output': [{
+                'name': 'segmentation_output',
+                'type': 'List[SegmObject]',
+                'class_names': self.class_names
+            }]
         }

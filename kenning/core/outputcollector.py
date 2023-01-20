@@ -21,18 +21,25 @@ class OutputCollector(Runner):
     def __init__(
             self,
             inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
         Creates the output collector.
 
         Parameters
         ----------
-        inputs_sources:
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
-        outputs:
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
+        outputs : Dict[str, str]
             Outputs of this runner
         """
-        super().__init__(inputs_sources, outputs)
+        super().__init__(
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
 
     @classmethod
     def form_argparse(cls):
@@ -88,14 +95,16 @@ class OutputCollector(Runner):
     def from_json(
             cls,
             json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]] = None,
-            outputs: Dict[str, str] = None):
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
+            outputs: Dict[str, str] = {}):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
         return cls(
             **parsed_json_dict,
             inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
             outputs=outputs)
 
     def process_output(self, input_data: Any, output_data: Any):

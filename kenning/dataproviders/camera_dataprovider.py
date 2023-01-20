@@ -20,25 +20,33 @@ class CameraDataProvider(DataProvider):
 
     arguments_structure = {
         'video_file_path': {
-            'argparse_name': '--video_file_path',
+            'argparse_name': '--video-file-path',
             'description': 'Path to the camera device',
             'type': Path,
             'required': True
         },
-        'image_memory_layout': {
-            'argparse_name': '--image_memory_layout',
-            'description': 'Layout of capture frames (NHWC or NCHW)',
+        'input_memory_layout': {
+            'argparse_name': '--input-memory-layout',
+            'description': 'Layout of captured frames (NHWC or NCHW)',
             'type': str,
-            'required': False
+            'required': False,
+            'default': 'NCHW'
         },
-        'image_width': {
-            'argparse_name': '--image_width',
+        'input_color_format': {
+            'argparse_name': '--input-color-format',
+            'description': 'Color format of captured frames (BGR or RGB)',
+            'type': str,
+            'required': False,
+            'default': 'BGR'
+        },
+        'input_width': {
+            'argparse_name': '--input-width',
             'description': 'Width of captured frame',
             'type': int,
             'required': False
         },
-        'image_height': {
-            'argparse_name': '--image_height',
+        'input_height': {
+            'argparse_name': '--input-height',
             'description': 'Height of captured frame',
             'type': int,
             'required': False
@@ -48,10 +56,12 @@ class CameraDataProvider(DataProvider):
     def __init__(
             self,
             video_file_path: Path,
-            image_memory_layout: str = "NCHW",
-            image_width: int = 416,
-            image_height: int = 416,
+            input_memory_layout: str = 'NCHW',
+            input_color_format: str = 'BGR',
+            input_width: int = 416,
+            input_height: int = 416,
             inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
         Creates the camera data provider.
@@ -60,14 +70,18 @@ class CameraDataProvider(DataProvider):
         ----------
         video_file_path: Path
             Path to the video file
-        image_memory_layout: str
+        input_memory_layout: str
             Layout of the frame memory: NCHW or NHWC
-        image_width: int
+        input_color_format: str
+            Color format of captured frames: RGB or BGR
+        input_width: int
             Width of the frame
-        image_height: int
+        input_height: int
             Height of the frame
         inputs_sources: Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs: Dict[str, str]
             Outputs of this Runner
         """
@@ -75,77 +89,54 @@ class CameraDataProvider(DataProvider):
         self.device_id = str(video_file_path)
 
         self.video_file_path = video_file_path
-        self.image_memory_layout = image_memory_layout
-        self.image_width = image_width
-        self.image_height = image_height
+        self.input_memory_layout = input_memory_layout
+        self.input_color_format = input_color_format
+        self.input_width = input_width
+        self.input_height = input_height
 
         self.device = None
 
         super().__init__(
             inputs_sources=inputs_sources,
-            outputs=outputs)
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--video-file-path',
-            help='Video file path (for cameras, use /dev/videoX where X is the device ID eg. /dev/video0)',  # noqa: E501
-            type=Path,
-            required=True
+            inputs_specs=inputs_specs,
+            outputs=outputs
         )
-        group.add_argument(
-            '--image-memory-layout',
-            help='Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            choices=['NHWC', 'NCHW'],
-            default='NCHW'
-        )
-        group.add_argument(
-            '--image-width',
-            help='Determines the width of the image for the model',
-            type=int,
-            default=416
-        )
-        group.add_argument(
-            '--image-height',
-            help='Determines the height of the image for the model',
-            type=int,
-            default=416
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):
         return cls(
             args.video_file_path,
-            args.image_memory_layout,
-            args.image_width,
-            args.image_height
+            args.input_memory_layout,
+            args.input_color_format,
+            args.input_width,
+            args.input_height
         )
 
     @classmethod
     def from_json(
             cls,
             json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]] = None,
-            outputs: Dict[str, str] = None):
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
+            outputs: Dict[str, str] = {}):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
         return cls(
             **parsed_json_dict,
             inputs_sources=inputs_sources,
-            outputs=outputs)
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
 
     def prepare(self):
         self.device = cv2.VideoCapture(self.device_id)
 
     def preprocess_input(self, data: np.ndarray) -> np.ndarray:
-        data = cv2.resize(
-            data,
-            (self.image_width, self.image_height)
-        )
-        if self.image_memory_layout == "NCHW":
+        data = cv2.resize(data, (self.input_width, self.input_height))
+        if self.input_color_format == 'RGB':
+            data = cv2.cvtColor(data, cv2.COLOR_BGR2RGB)
+        if self.input_memory_layout == 'NCHW':
             img = np.transpose(data, (2, 0, 1))
             return np.array(img, dtype=np.float32) / 255.0
         else:
@@ -163,10 +154,10 @@ class CameraDataProvider(DataProvider):
             self.device.release()
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.image_memory_layout == 'NCHW':
-            frame_shape = (1, 3, self.image_height, self.image_width)
+        if self.input_memory_layout == 'NCHW':
+            frame_shape = (1, 3, self.input_height, self.input_width)
         else:
-            frame_shape = (1, self.image_height, self.image_width, 3)
+            frame_shape = (1, self.input_height, self.input_width, 3)
         return {
             'input': [],
             'output': [{

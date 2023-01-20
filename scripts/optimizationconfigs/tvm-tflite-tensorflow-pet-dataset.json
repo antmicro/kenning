@@ -36,7 +36,7 @@
             "type": "kenning.compilers.tvm.TVMCompiler",
             "parameters":
             {
-                "target": ["llvm -mcpu=core-avx2"],
+                "target": ["llvm"],
                 "compiled_model_path": ["./build/compiled_model.tar"],
                 "opt_level": [3],
                 "conv2d_data_layout": ["NHWC", "NCHW"]

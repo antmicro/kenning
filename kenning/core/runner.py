@@ -5,7 +5,7 @@ Provides a base class for Kenning Flow elements.
 from typing import Dict, List, Tuple, Any
 
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.utils.args_manager import add_parameterschema_argument
 
 
@@ -17,6 +17,7 @@ class Runner(IOInterface):
     def __init__(
             self,
             inputs_sources: Dict[str, Tuple[int, str]],
+            inputs_specs: Dict[str, Dict],
             outputs: Dict[str, str]):
         """
         Creates the runner.
@@ -25,11 +26,34 @@ class Runner(IOInterface):
         ----------
         inputs_sources: Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs: Dict[str, str])
             Outputs of this Runner
         """
         self.inputs_sources = inputs_sources
+        self.inputs_specs = inputs_specs
         self.outputs = outputs
+
+        # get input specs mapped to global variables
+        runner_input_spec = {}
+        runner_io_spec = self.get_io_specification()
+        for local_name, (_, global_name) in self.inputs_sources.items():
+            for spec in runner_io_spec['input']:
+                if spec['name'] == local_name:
+                    runner_input_spec[global_name] = spec
+                    break
+
+        # get provided inputs spec mapped to global variables
+        outputs_specs = {}
+        for local_name, (_, global_name) in self.inputs_sources.items():
+            outputs_specs[global_name] = self.inputs_specs[local_name]
+
+        if not IOInterface.validate(outputs_specs, runner_input_spec):
+            raise IOCompatibilityError(
+                f'Input and output are not compatible.\nOutput is:\n'
+                f'{outputs_specs}\nInput is:\n{runner_input_spec}\n'
+            )
 
     def cleanup(self):
         """
@@ -77,6 +101,7 @@ class Runner(IOInterface):
             cls,
             json_dict: Dict,
             inputs_sources: Dict[str, Tuple[int, str]],
+            inputs_specs: Dict[str, Dict],
             outputs: Dict[str, str]):
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -91,6 +116,8 @@ class Runner(IOInterface):
             Arguments for the constructor
         inputs_sources: Dict[str, Tuple[int, str]]
             Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
         outputs: Dict[str, str])
             Outputs of this Runner
 
@@ -99,11 +126,7 @@ class Runner(IOInterface):
         Runner :
             object of class Runner
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(**parsed_json_dict)
+        raise NotImplementedError
 
     def _run(
             self,

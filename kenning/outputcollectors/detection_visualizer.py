@@ -37,17 +37,31 @@ class DetectionVisualizer(OutputCollector):
 
     arguments_structure = {
         'output_width': {
-            'argparse_name': '--output_width',
+            'argparse_name': '--output-width',
             'description': 'Output image width',
             'type': int,
             'required': False
         },
         'output_height': {
-            'argparse_name': '--output_height',
+            'argparse_name': '--output-height',
             'description': 'Output image height',
             'type': int,
             'required': False
         },
+        'save_to_file': {
+            'argparse_name': '--save-to-file',
+            'description': 'If output should be saved to file',
+            'type': bool,
+            'required': False,
+            'default': False
+        },
+        'save_path': {
+            'argparse_name': '--save-path',
+            'description': 'Output image height',
+            'type': str,
+            'required': False,
+            'default': './'
+        }
     }
 
     def __init__(
@@ -94,7 +108,7 @@ class DetectionVisualizer(OutputCollector):
         self.out = None
         self.save_path = Path(save_path)
         if save_to_file:
-            codec = cv2.VideoWriter_fourcc(*'avc1')
+            codec = cv2.VideoWriter_fourcc(*'mp4v')
             self.out = cv2.VideoWriter(
                 str(self.save_path),
                 codec,
@@ -250,9 +264,9 @@ class DetectionVisualizer(OutputCollector):
             (self.output_width, self.output_height)
         )
         if self.save_to_file:
-            self.out.write(
-                self.visualize_data(input_data, output_data)
-            )
+            frame = self.visualize_data(input_data, output_data)
+            frame = (frame*255).astype(np.uint8)
+            self.out.write(frame)
         else:
             cv2.imshow(
                 self.window_name,
@@ -266,7 +280,11 @@ class DetectionVisualizer(OutputCollector):
         if self.out:
             self.out.release()
         else:
-            cv2.destroyWindow(self.window_name)
+            try:
+                cv2.destroyWindow(self.window_name)
+            except cv2.error:
+                # no window to close
+                pass
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         return {

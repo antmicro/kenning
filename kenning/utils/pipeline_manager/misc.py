@@ -169,7 +169,7 @@ def create_dataflow(pipeline: Dict):
 
         Returns
         -------
-        int
+        int :
             Newly generated x position.
         """
         nonlocal x_pos

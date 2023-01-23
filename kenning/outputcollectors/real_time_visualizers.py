@@ -70,7 +70,7 @@ class BaseRealTimeVisualizer(OutputCollector):
             inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
-        Base class for openGL-based real time visualizer
+        Base class for OpenGL-based real time visualizer
 
         Parameters
         ----------
@@ -91,7 +91,6 @@ class BaseRealTimeVisualizer(OutputCollector):
         outputs : Dict[str, str]
             Outputs of this Runner
         """
-        dpg.create_context()
         self.title = title
         self.width = viewer_width
         self.height = viewer_height
@@ -196,6 +195,8 @@ class BaseRealTimeVisualizer(OutputCollector):
         # will not be tag conflicts
         BaseRealTimeVisualizer.setup_gui_lock.acquire()
         # look for valid tag
+        dpg.create_context()
+
         self.id = 0
         while dpg.does_item_exist(f'main_window_{self.id}'):
             self.id += 1

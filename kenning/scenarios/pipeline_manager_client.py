@@ -64,7 +64,7 @@ def main(argv):
 
                     if message_type == MessageType.EXPORT:
                         with open(args.file_path, 'w') as f:
-                            json.dump(msg, f)
+                            json.dump(msg, f, indent=4)
 
                     if message_type == MessageType.RUN:
                         MeasurementsCollector.clear()

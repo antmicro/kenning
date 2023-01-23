@@ -127,66 +127,91 @@ class KenningFlow:
             raise
 
         output_variables = {}
-        output_specifications = {}
+        output_specs = {}
         runners: List[Runner] = []
 
         for runner_idx, runner_spec in enumerate(runners_specifications):
-            runner_cls: Runner = load_class(runner_spec['type'])
-            cfg = runner_spec['parameters']
-            inputs = runner_spec.get('inputs', {})
-            outputs = runner_spec.get('outputs', {})
+            try:
+                runner_cls: Runner = load_class(runner_spec['type'])
+                cfg = runner_spec['parameters']
+                inputs = runner_spec.get('inputs', {})
+                outputs = runner_spec.get('outputs', {})
 
-            log.info(f'Loading runner: {runner_cls.__name__}')
+                log.info(f'Loading runner: {runner_cls.__name__}')
 
-            # validate output variables and add them to dict
-            for local_name, global_name in outputs.items():
-                if global_name in output_variables.keys():
-                    log.error(f'Error loading runner {runner_idx}:'
-                              f'{runner_cls}. Redefined output variable '
-                              f'{local_name}:{global_name}.')
-                    raise Exception(f'Redefined output variable {global_name}')
+                # validate output variables and add them to dict
+                for local_name, global_name in outputs.items():
+                    if global_name in output_variables.keys():
+                        log.error(
+                            f'Error loading runner {runner_idx}:'
+                            f'{runner_cls}. Redefined output variable '
+                            f'{local_name}:{global_name}.'
+                        )
+                        raise Exception(
+                            f'Redefined output variable {global_name}'
+                         )
 
-                output_variables[global_name] = runner_idx
+                    output_variables[global_name] = runner_idx
 
-            # create and fill dict with input sources
-            inputs_sources = {}
+                # create and fill dict with input sources
+                inputs_sources = {}
 
-            for local_name, global_name in inputs.items():
-                if global_name not in output_variables:
-                    log.error(f'Error loading runner {runner_idx}:'
-                              f'{runner_cls}. Undefined input variable '
-                              f'{local_name}:{global_name}.')
-                    raise Exception(f'Undefined input variable {global_name}')
+                for local_name, global_name in inputs.items():
+                    if global_name not in output_variables:
+                        log.error(
+                            f'Error loading runner {runner_idx}:'
+                            f'{runner_cls}. Undefined input variable '
+                            f'{local_name}:{global_name}.'
+                        )
+                        raise Exception(
+                            f'Undefined input variable {global_name}'
+                        )
 
-                inputs_sources[local_name] = (output_variables[global_name],
-                                              global_name)
+                    inputs_sources[local_name] = (
+                        output_variables[global_name],
+                        global_name
+                    )
 
-            # get output specs from global flow variables
-            inputs_specs = {}
-            for local_name, (_, glbal_name) in inputs_sources.items():
-                inputs_specs[local_name] = output_specifications[glbal_name]
+                # get output specs from global flow variables
+                inputs_specs = {}
+                for local_name, (_, glbal_name) in inputs_sources.items():
+                    inputs_specs[local_name] = output_specs[glbal_name]
 
-            # instantiate runner
-            runner = runner_cls.from_json(
-                cfg,
-                inputs_sources=inputs_sources,
-                inputs_specs=inputs_specs,
-                outputs=outputs
-            )
+                # instantiate runner
+                runner = runner_cls.from_json(
+                    cfg,
+                    inputs_sources=inputs_sources,
+                    inputs_specs=inputs_specs,
+                    outputs=outputs
+                )
 
-            # populate dict with flow variables specs
-            runner_output_specification = \
-                (runner.get_io_specification()['output']
-                 + runner.get_io_specification().get('processed_output', []))
+                # populate dict with flow variables specs
+                runner_io_spec = runner.get_io_specification()
+                runner_output_specification = \
+                    (runner_io_spec['output']
+                     + runner_io_spec.get('processed_output', []))
 
-            for local_name, global_name in runner.outputs.items():
-                for out_spec in runner_output_specification:
-                    if out_spec['name'] == local_name:
-                        output_specifications[global_name] = out_spec
+                for local_name, global_name in runner.outputs.items():
+                    for out_spec in runner_output_specification:
+                        if out_spec['name'] == local_name:
+                            output_specs[global_name] = out_spec
 
-            runners.append(runner)
+                runners.append(runner)
+
+            except Exception as e:
+                log.error(f'Error during flow json parsing: {e}')
+                for runner in runners:
+                    runner.cleanup()
+                raise
 
         return cls(runners)
+
+    def init_state(self):
+        self.flow_state = []
+
+    def cleanup(self):
+        for runner in self.runners:
+            runner.cleanup()
 
     def run_single_step(self):
         """
@@ -206,7 +231,7 @@ class KenningFlow:
         """
 
         while not self.should_close:
-            self.flow_state = []
+            self.init_state()
             try:
                 self.run_single_step()
 
@@ -228,7 +253,6 @@ class KenningFlow:
                               f'{(str(e))}')
                 break
 
-        for runner in self.runners:
-            runner.cleanup()
+        self.cleanup()
 
         self.log.info(f'Final {self.flow_state=}')

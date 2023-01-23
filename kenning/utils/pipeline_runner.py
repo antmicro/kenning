@@ -19,11 +19,11 @@ def assert_io_formats(model, optimizers, runtime) -> None:
 
     Parameters
     ----------
-    model : ModelWrapper
+    model : Optional[ModelWrapper]
         ModelWrapper of the pipeline
     optimizers : Union[List[Optimizer], Optimizer]
         Optimizers of the pipeline
-    runtime : Runtime
+    runtime : Optional[Runtime]
         Runtime of the pipeline
 
     Raises
@@ -32,6 +32,7 @@ def assert_io_formats(model, optimizers, runtime) -> None:
         raised if blocks are incompatible.
     """
     chain = [model] + optimizers + [runtime]
+    chain = [block for block in chain if block is not None]
 
     for previous_block, next_block in zip(chain, chain[1:]):
         if (set(next_block.get_input_formats()) &
@@ -100,8 +101,10 @@ def parse_json_pipeline(
         load_class(protocolcfg['type'])
         if protocolcfg else None
     )
-    runtimecls = load_class(runtimecfg['type'])
-
+    runtimecls = (
+        load_class(runtimecfg['type'])
+        if runtimecfg else None
+    )
     dataset = datasetcls.from_json(datasetcfg['parameters'])
     model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
     optimizers = [
@@ -112,7 +115,10 @@ def parse_json_pipeline(
         protocolcls.from_json(protocolcfg['parameters'])
         if protocolcls else None
     )
-    runtime = runtimecls.from_json(protocol, runtimecfg['parameters'])
+    runtime = (
+        runtimecls.from_json(protocol, runtimecfg['parameters'])
+        if runtimecls else None
+    )
 
     if assert_integrity:
         assert_io_formats(model, optimizers, runtime)

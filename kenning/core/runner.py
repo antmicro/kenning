@@ -50,6 +50,7 @@ class Runner(IOInterface):
             outputs_specs[global_name] = self.inputs_specs[local_name]
 
         if not IOInterface.validate(outputs_specs, runner_input_spec):
+            self.cleanup()
             raise IOCompatibilityError(
                 f'Input and output are not compatible.\nOutput is:\n'
                 f'{outputs_specs}\nInput is:\n{runner_input_spec}\n'

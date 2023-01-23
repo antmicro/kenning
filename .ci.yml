@@ -63,7 +63,7 @@ docs:
     stage: docs
     script:
         - cd docs
-        - make html
+        - make SPHINXOPTS="-A commit=$CI_BUILD_REF -A branch=$CI_BUILD_REF_NAME" html
     artifacts:
         paths:
             - docs/build/html

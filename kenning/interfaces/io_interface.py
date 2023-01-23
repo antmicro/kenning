@@ -40,37 +40,40 @@ class IOInterface(object):
 
         for global_name, single_input_spec in input_spec.items():
             if global_name in output_spec.keys():
-                single_output_spec = output_spec[global_name]
-                # validate dtype
-                if 'dtype' in single_input_spec:
-                    if (single_input_spec['dtype']
-                            != single_output_spec['dtype']):
-                        return False
-                # validate shape
-                if 'shape' in single_input_spec:
-                    if isinstance(single_input_spec['shape'], list):
-                        # multiple valid shapes
-                        found_valid_shape = False
-                        for input_shape in single_input_spec['shape']:
-                            if IOInterface._validate_shape(
-                                    single_output_spec['shape'],
-                                    input_shape):
-                                found_valid_shape = True
-                                break
-
-                        if not found_valid_shape:
+                try:
+                    single_output_spec = output_spec[global_name]
+                    # validate dtype
+                    if 'dtype' in single_input_spec:
+                        if (single_input_spec['dtype']
+                                != single_output_spec['dtype']):
                             return False
+                    # validate shape
+                    if 'shape' in single_input_spec:
+                        if isinstance(single_input_spec['shape'], list):
+                            # multiple valid shapes
+                            found_valid_shape = False
+                            for input_shape in single_input_spec['shape']:
+                                if IOInterface._validate_shape(
+                                        single_output_spec['shape'],
+                                        input_shape):
+                                    found_valid_shape = True
+                                    break
 
-                    else:
-                        return IOInterface._validate_shape(
-                            single_output_spec['shape'],
-                            single_input_spec['shape'])
-                # validate type
-                if 'type' in single_input_spec:
-                    if (single_input_spec['type'] != 'Any' and
-                            single_input_spec['type']
-                            != single_output_spec['type']):
-                        return False
+                            if not found_valid_shape:
+                                return False
+
+                        else:
+                            return IOInterface._validate_shape(
+                                single_output_spec['shape'],
+                                single_input_spec['shape'])
+                    # validate type
+                    if 'type' in single_input_spec:
+                        if (single_input_spec['type'] != 'Any' and
+                                single_input_spec['type']
+                                != single_output_spec['type']):
+                            return False
+                except KeyError:
+                    return False
             else:
                 return False
 

@@ -1,4 +1,3 @@
-
 # Kenning
 
 Copyright (c) 2020-2023 [Antmicro](https://www.antmicro.com)

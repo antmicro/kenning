@@ -59,6 +59,7 @@ class PyTorchRuntime(Runtime):
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
         self.log.info("Loading model")
         import torch
+        from torch.jit.frontend import UnsupportedNodeError
 
         if input_data:
             with open(self.modelpath, "wb") as fd:
@@ -66,15 +67,23 @@ class PyTorchRuntime(Runtime):
 
         self.model = torch.load(self.modelpath, map_location=self.device)
         if isinstance(self.model, torch.nn.Module):
-            self.model = torch.jit.script(self.model.eval())
-        elif not isinstance(self.model, torch.jit.ScriptModule):
+            try:
+                self.model = torch.jit.script(self.model.eval())
+                self.model = torch.jit.freeze(self.model)
+            except UnsupportedNodeError or RuntimeError:
+                self.log.error("Model contains unsupported nodes,"
+                               " conversion to TorchScript aborted")
+            except Exception:
+                pass
+        elif isinstance(self.model, torch.jit.ScriptModule):
+            self.model = torch.jit.freeze(self.model)
+        else:
             self.log.error(
                 f"Loaded model is type {type(self.model).__name__}"
                 ", only torch.nn.Module and torch.jit.ScriptModule"
                 " supported"
             )
             return False
-        self.model = torch.jit.freeze(self.model)
         self.log.info("Model loading ended successfully")
         return True
 

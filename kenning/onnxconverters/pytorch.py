@@ -6,7 +6,7 @@
 ONNXConversion for PyTorch models.
 """
 
-from copy import deepcopy
+from copy import copy, deepcopy
 import torchvision.models as models
 import torch
 import onnx
@@ -15,7 +15,7 @@ from typing import Union
 
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.onnxconversion import SupportStatus
-import traceback
+from kenning.utils.logger import get_logger
 
 
 class PyTorchONNXConversion(ONNXConversion):
@@ -91,14 +91,10 @@ class PyTorchONNXConversion(ONNXConversion):
             model_torch = self.onnx_to_torch(model_onnx)
             # print(str(model_torch))
         except RuntimeError or NotImplementedError:
-            traceback.print_exc()
             del model_onnx
             return SupportStatus.UNSUPPORTED
 
-        if len(input_tensor) == 1:
-            model_torch(input_tensor[0])
-        else:  # input_tensor: List[Tensor]
-            model_torch(*input_tensor)
+        model_torch(*input_tensor)
 
         del model_onnx  # noqa: F821
         del model_torch
@@ -126,16 +122,30 @@ class PyTorchONNXConversion(ONNXConversion):
         )
         from onnx2torch.onnx_node import OnnxNode
         from onnx2torch.onnx_graph import OnnxGraph
+        from onnx2torch.node_converters import onnx_mapping_from_node
+        from onnx2torch.node_converters.batch_norm import (
+            _ as batch_converter
+        )
         from onnx2torch.utils.common import (
             OperationConverterResult,
-            OnnxMapping
+            OnnxMapping,
         )
 
-        # Backup copy and removing default Gemm conversions
+        # Backup copy and removing default conversions
         converter_registy_copy = deepcopy(_CONVERTER_REGISTRY)
         for version in (9, 11, 13):
             del _CONVERTER_REGISTRY[OperationDescription(
                 operation_type='Gemm',
+                version=version,
+                domain=onnx.defs.ONNX_DOMAIN)]
+        for version in (1, 6, 7, 13, 14):
+            del _CONVERTER_REGISTRY[OperationDescription(
+                operation_type='Add',
+                version=version,
+                domain=onnx.defs.ONNX_DOMAIN)]
+        for version in (9, 14, 15):
+            del _CONVERTER_REGISTRY[OperationDescription(
+                operation_type='BatchNormalization',
                 version=version,
                 domain=onnx.defs.ONNX_DOMAIN)]
 
@@ -154,7 +164,7 @@ class PyTorchONNXConversion(ONNXConversion):
                 super().__init__()
 
             def forward(self, x: torch.Tensor):
-                return x.T
+                return torch.transpose(x, dim0=1, dim1=-1)
 
         @add_converter(operation_type='Gemm', version=9)
         @add_converter(operation_type='Gemm', version=11)
@@ -226,6 +236,40 @@ class PyTorchONNXConversion(ONNXConversion):
                         inputs=(a_name,),
                         outputs=node.output_values)
                 )
+
+        class Addition(torch.nn.Module):
+            def __init__(self) -> None:
+                super().__init__()
+
+            def forward(self, a: torch.Tensor, b: torch.Tensor):
+                return a + b
+
+        @add_converter(operation_type='Add', version=1)
+        @add_converter(operation_type='Add', version=6)
+        @add_converter(operation_type='Add', version=7)
+        @add_converter(operation_type='Add', version=13)
+        @add_converter(operation_type='Add', version=14)
+        def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
+            if node.attributes.get('broadcast', None) is not None:
+                raise NotImplementedError
+            if node.attributes.get('axis', None) is not None:
+                raise NotImplementedError
+            return OperationConverterResult(
+                torch_module=Addition(),
+                onnx_mapping=onnx_mapping_from_node(node=node)
+            )
+
+        @add_converter(operation_type='BatchNormalization', version=9)
+        @add_converter(operation_type='BatchNormalization', version=14)
+        @add_converter(operation_type='BatchNormalization', version=15)
+        def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
+            if len(node.output_values) > 1:
+                get_logger().warning(
+                    "Number of BatchNormalization outputs reduced to one")
+                node_copy = copy(node)
+                node_copy._output_values = (node_copy.output_values[1],)
+                return batch_converter(node_copy, graph)
+            return batch_converter(node, graph)
 
         # Convert module and restore default Gemm conversions
         converted_model = onnx2torch.convert(onnx_model)

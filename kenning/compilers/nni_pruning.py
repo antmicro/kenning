@@ -6,30 +6,94 @@ import nni
 from nni.compression.pytorch.pruning import (
     ActivationAPoZRankPruner,
     ActivationMeanRankPruner,
+    ActivationPruner,
 )
 from nni.compression.pytorch.speedup import ModelSpeedup
 from nni.algorithms.compression.v2.pytorch import TorchEvaluator
+from nni.compression.pytorch.speedup.compress_modules import (
+    no_replace, convert_to_coarse_mask
+)
+from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from pathlib import Path
 import numpy as np
-from typing import Callable, Dict, Optional, List, Type
+from typing import Callable, Dict, Optional, List, Tuple, Type
 from enum import Enum
 import json
 import logging
 from tqdm import tqdm
 
+from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import Optimizer, CompilationError
 from kenning.core.dataset import Dataset
+from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import LoggerProgressBar
 
 
-def torchconversion(modelpath: Path, device: torch.device):
+def torchconversion(modelpath: Path, device: torch.device, **kwargs):
     loaded = torch.load(modelpath, map_location=device)
     if not isinstance(loaded, torch.nn.Module):
         raise CompilationError(
             f'Expecting model of type:'
             f' torch.nn.Module, but got {type(loaded).__name__}')
     return loaded
+
+
+def onnxconversion(modelpath: Path, device: torch.device, **kwargs):
+    conversion = PyTorchONNXConversion()
+    if conversion.onnx_import(None, modelpath) != SupportStatus.SUPPORTED:
+        traceback.print_exc()
+        raise CompilationError('Conversion for provided model to PyTorch'
+                               ' is not supported')
+    model = conversion.onnx_to_torch(modelpath)
+    model.to(device)
+    return model
+
+
+class MaskedBinaryMathOperation(torch.nn.Module):
+    """
+    PyTorch module for adding and adjusting size of two tensor with masks
+    """
+
+    def __init__(self,
+                 math_operation: Callable,
+                 mask_a: torch.Tensor,
+                 mask_b: torch.Tensor,
+                 mask_out: torch.Tensor) -> None:
+        super().__init__()
+        self.math_operation = math_operation
+        if math_operation == torch.add or math_operation == torch.sub:
+            self.initializer: Callable = torch.zeros
+        else:
+            self.initializer: Callable = torch.ones
+        _, self.channels_a = convert_to_coarse_mask(mask_a, 1)
+        _, self.channels_b = convert_to_coarse_mask(mask_b, 1)
+        _, self.channels_out = \
+            convert_to_coarse_mask(mask_out, 0)
+        self.original_size = tuple(mask_out.shape)
+        self.channels_a = self.channels_a.to(mask_a.device)
+        self.channels_b = self.channels_b.to(mask_b.device)
+
+    def forward(self, a: torch.Tensor, b: torch.Tensor):
+        operation_result = self.initializer(a.shape[0], *self.original_size,
+                                            dtype=a.dtype, device=a.device)
+        operation_result[:, self.channels_a] = a
+        operation_result[:, self.channels_b] = \
+            self.math_operation(operation_result[:, self.channels_b], b)
+        return operation_result[:, self.channels_out]
+
+
+def math_operation_conversion(onnx_math_op, masks: Tuple):
+    """
+    Function converting Addition to MaskedAddition
+    """
+    in_masks, out_masks, _ = masks
+    return MaskedBinaryMathOperation(
+        onnx_math_op.math_op_function,
+        in_masks[0],
+        in_masks[1],
+        out_masks[0]
+    )
 
 
 class Modes(str, Enum):
@@ -58,7 +122,7 @@ class NNIPruningOptimizer(Optimizer):
 
     outputtypes = ["torch"]
 
-    inputtypes = {"torch": torchconversion}
+    inputtypes = {"torch": torchconversion, "onnx": onnxconversion}
 
     prunertypes = {
         "apoz": ActivationAPoZRankPruner,
@@ -130,6 +194,18 @@ class NNIPruningOptimizer(Optimizer):
             "default": "relu",
         },
     }
+
+    replace_modules = {
+        module: no_replace for module in (
+            'OnnxBinaryMathOperation',
+            'OnnxGlobalAveragePoolWithKnownInputShape',
+            'OnnxGlobalAveragePool',
+            'Transposition',
+        )
+    }
+    replace_modules.update({
+        'Addition': addition_conversion
+    })
 
     str_to_dtype = {
         "int": torch.int,
@@ -223,6 +299,8 @@ class NNIPruningOptimizer(Optimizer):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
+        nni_logger.setLevel(self.log.level)
+
     def compile(
         self,
         inputmodelpath: Path,
@@ -242,14 +320,15 @@ class NNIPruningOptimizer(Optimizer):
         evaluator = self.create_evaluator(
             model, criterion, optimizer_cls, dummy_input
         )
-        pruner = self.pruner_cls(
-            model,
-            self.config_list,
-            evaluator,
-            self.training_steps,
-            self.activation_str,
-            self.mode,
-            dummy_input,
+
+        pruner: ActivationPruner = self.pruner_cls(
+            model=model,
+            config_list=self.config_list,
+            evaluator=evaluator,
+            training_steps=self.training_steps,
+            activation=self.activation_str,
+            mode=self.mode,
+            dummy_input=dummy_input,
         )
 
         self.log.info("Pruning model")
@@ -261,6 +340,7 @@ class NNIPruningOptimizer(Optimizer):
             model,
             dummy_input=dummy_input,
             masks_file=mask,
+            customized_replace_func=self.replace_modules
         ).speedup_model()
 
         self.log.info(f"Model after pruning\n{model}")
@@ -272,7 +352,11 @@ class NNIPruningOptimizer(Optimizer):
         self.log.info("Fine-tunning model starting with mean loss "
                       f"{mean_loss if mean_loss else None}")
         for finetuning_epoch in range(self.finetuning_epochs):
-            self.train_model(model, optimizer, criterion)
+            self.train_model(
+                model,
+                optimizer,
+                criterion,
+                max_epochs=1)
             if self.log.level == logging.INFO:
                 mean_loss = self.evaluate_model(model)
                 self.log.info(f"Epoch {finetuning_epoch+1} from "
@@ -290,9 +374,12 @@ class NNIPruningOptimizer(Optimizer):
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         criterion: Callable,
+        lr_scheduler=None,
+        max_steps: Optional[int] = None,
+        max_epochs: Optional[int] = None,
         *args,
         **kwargs,
-    ):
+    ) -> None:
         """
         The method used for training for one epoch
 
@@ -306,7 +393,17 @@ class NNIPruningOptimizer(Optimizer):
             The instance of the optimizer class
         criterion:
             The callable object used to callculate loss
+        lr_scheduler:
+            The scheduler for learning rate manipulation
+        max_steps: int | None
+            The number of maximum steps - one step is equal to processing
+            one batch of data
+        max_epochs: int | None
+            The number of maximum epochs
         """
+        if max_steps is None and max_epochs is None:
+            max_epochs = 5
+
         model.train()
         for batch_begin in tqdm(
             range(0, len(self.train_data[0]), self.finetuning_batch_size),
@@ -318,6 +415,29 @@ class NNIPruningOptimizer(Optimizer):
             loss = criterion(output, label)
             loss.backward()
             optimizer.step()
+            if max_steps is not None:
+                max_steps -= 1
+                if max_steps == 0:
+                    return
+
+        if max_steps:
+            self.log.info(f"{max_steps} steps left")
+        if max_epochs is None:
+            self.train_model(
+                model,
+                optimizer,
+                criterion,
+                max_steps=max_steps
+            )
+        elif max_epochs > 1:
+            self.log.info(f"{max_epochs} epochs left")
+            self.train_model(
+                model,
+                optimizer,
+                criterion,
+                max_steps=max_steps,
+                max_epochs=max_epochs-1
+            )
 
     def evaluate_model(self, model: torch.nn.Module):
         """

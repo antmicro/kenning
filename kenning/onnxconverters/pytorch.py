@@ -6,7 +6,7 @@
 ONNXConversion for PyTorch models.
 """
 
-from copy import copy, deepcopy
+from copy import deepcopy
 import torchvision.models as models
 import torch
 import onnx
@@ -15,7 +15,6 @@ from typing import Union
 
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.onnxconversion import SupportStatus
-from kenning.utils.logger import get_logger
 
 
 class PyTorchONNXConversion(ONNXConversion):
@@ -94,14 +93,14 @@ class PyTorchONNXConversion(ONNXConversion):
             del model_onnx
             return SupportStatus.UNSUPPORTED
 
+        model_torch.train()
         model_torch(*input_tensor)
 
         del model_onnx  # noqa: F821
         del model_torch
         return SupportStatus.SUPPORTED
 
-    @staticmethod
-    def onnx_to_torch(onnx_model: Union[Path, onnx.ModelProto]):
+    def onnx_to_torch(self, onnx_model: Union[Path, onnx.ModelProto]):
         """
         Function for converting model from ONNX framework to PyTorch
 
@@ -138,23 +137,16 @@ class PyTorchONNXConversion(ONNXConversion):
                 operation_type='Gemm',
                 version=version,
                 domain=onnx.defs.ONNX_DOMAIN)]
-        for version in (1, 6, 7, 13, 14):
-            del _CONVERTER_REGISTRY[OperationDescription(
-                operation_type='Add',
-                version=version,
-                domain=onnx.defs.ONNX_DOMAIN)]
         for version in (9, 14, 15):
             del _CONVERTER_REGISTRY[OperationDescription(
                 operation_type='BatchNormalization',
                 version=version,
                 domain=onnx.defs.ONNX_DOMAIN)]
-
-        class MissingWeightsError(Exception):
-            """
-            Custom Exception class for missing weights
-            """
-            def __init__(self, *args: object) -> None:
-                super().__init__(*args)
+        for version in (10, 12, 13):
+            del _CONVERTER_REGISTRY[OperationDescription(
+                operation_type='Dropout',
+                version=version,
+                domain=onnx.defs.ONNX_DOMAIN)]
 
         class Transposition(torch.nn.Module):
             """
@@ -204,10 +196,10 @@ class PyTorchONNXConversion(ONNXConversion):
                 bias = graph.initializers[c_name].to_torch()
 
             if b_name in graph.initializers:
-                weights = graph.initializers[b_name].to_torch().T
-                if trans_b:
+                weights = graph.initializers[b_name].to_torch()
+                if not trans_b:
                     weights = weights.T
-                in_feature, out_feature = weights.shape[0], weights.shape[1]
+                in_feature, out_feature = weights.shape[1], weights.shape[0]
                 linear = torch.nn.Linear(
                     in_features=in_feature,
                     out_features=out_feature,
@@ -221,7 +213,7 @@ class PyTorchONNXConversion(ONNXConversion):
                         linear.bias.data = bias
                 sequence.append(linear)
             else:  # weights are missing
-                raise MissingWeightsError
+                raise RuntimeError("Missing weights for linear layer")
             if len(sequence) > 1:
                 return OperationConverterResult(
                     torch_module=torch.nn.Sequential(*sequence),
@@ -237,39 +229,37 @@ class PyTorchONNXConversion(ONNXConversion):
                         outputs=node.output_values)
                 )
 
-        class Addition(torch.nn.Module):
-            def __init__(self) -> None:
-                super().__init__()
-
-            def forward(self, a: torch.Tensor, b: torch.Tensor):
-                return a + b
-
-        @add_converter(operation_type='Add', version=1)
-        @add_converter(operation_type='Add', version=6)
-        @add_converter(operation_type='Add', version=7)
-        @add_converter(operation_type='Add', version=13)
-        @add_converter(operation_type='Add', version=14)
-        def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
-            if node.attributes.get('broadcast', None) is not None:
-                raise NotImplementedError
-            if node.attributes.get('axis', None) is not None:
-                raise NotImplementedError
-            return OperationConverterResult(
-                torch_module=Addition(),
-                onnx_mapping=onnx_mapping_from_node(node=node)
-            )
-
         @add_converter(operation_type='BatchNormalization', version=9)
         @add_converter(operation_type='BatchNormalization', version=14)
         @add_converter(operation_type='BatchNormalization', version=15)
         def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
             if len(node.output_values) > 1:
-                get_logger().warning(
+                self.logger.warning(
                     "Number of BatchNormalization outputs reduced to one")
-                node_copy = copy(node)
-                node_copy._output_values = (node_copy.output_values[1],)
-                return batch_converter(node_copy, graph)
+                node._output_values = (node.output_values[0],)
             return batch_converter(node, graph)
+
+        @add_converter(operation_type='Dropout', version=10)
+        @add_converter(operation_type='Dropout', version=12)
+        @add_converter(operation_type='Dropout', version=13)
+        def _(node: OnnxNode, graph: OnnxGraph) -> OperationConverterResult:
+            if len(node.input_values) > 1:
+                self.logger.warning("Number of Dropout inputs reduced to one")
+                node._input_values = (node.input_values[0],)
+            if len(node.output_values) > 1:
+                self.logger.warning("Number of Dropout outputs reduced to one")
+                node._output_values = (node.output_values[0],)
+            ratio = node.attributes.get('ratio', 0.5)
+            seed = node.attributes.get('seed', None)
+            if seed is not None:
+                raise NotImplementedError(
+                    'Dropout nodes seeds are not supported')
+
+            dropout = torch.nn.Dropout(ratio)
+            return OperationConverterResult(
+                torch_module=dropout,
+                onnx_mapping=onnx_mapping_from_node(node)
+            )
 
         # Convert module and restore default Gemm conversions
         converted_model = onnx2torch.convert(onnx_model)

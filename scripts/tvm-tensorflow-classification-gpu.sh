@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     kenning.datasets.pet_dataset.PetDataset \

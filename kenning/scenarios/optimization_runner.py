@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Script for running automated optimizations for pipelines. It performs
 a search on given set of blocks based on JSON configuration passed.

@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 The sample benchmark for classification problem.
 

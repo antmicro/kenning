@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 A script that uses the model in inference-only mode with
 no performance data collection. It utilizes a DataProvider and

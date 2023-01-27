@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from kenning.core.measurements import Measurements
 from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
 from typing import Tuple, List

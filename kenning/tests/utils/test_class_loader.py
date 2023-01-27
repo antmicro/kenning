@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 from kenning.utils.class_loader import get_command
 from kenning.utils.class_loader import get_kenning_submodule_from_path
 from kenning.utils.class_loader import load_class

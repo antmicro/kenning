@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 python3 -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \

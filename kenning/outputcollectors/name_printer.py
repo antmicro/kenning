@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 A small, very basic OutputCollector-derived class used to test
 handling of multiple OutputCollectors in inference_runner scenario

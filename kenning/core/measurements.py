@@ -130,7 +130,7 @@ class Measurements(object):
             self,
             measurementtype: str,
             value: Any,
-            initialvaluefunc: Callable = lambda: list()):
+            initialvaluefunc: Callable[[], Any] = lambda: list()):
         """
         Add new value to a given measurement type.
 
@@ -184,7 +184,7 @@ class Measurements(object):
             the name of the measurement
         valuetoadd : Any
             New value to add to the measurement
-        initvaluefunc : Any
+        initvaluefunc : Callable[[], Any]
             The initial value of the measurement, default 0
         """
         if measurementtype not in self.data:

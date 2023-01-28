@@ -61,10 +61,16 @@ sample-pipeline-optimization:
 
 docs:
     stage: docs
+    tags:
+        - docs
+    variables:
+        DOCS_DIR: './docs'
     script:
-        - cd docs
+        - cd $DOCS_DIR
         - make SPHINXOPTS="-A commit=$CI_BUILD_REF -A branch=$CI_BUILD_REF_NAME" html
+        - tar cf $CI_DOCS_ARCHIVE -C build/html/ .
     artifacts:
         paths:
-            - docs/build/html
+            - $DOCS_DIR/build/html
+            - $CI_DOCS_ARCHIVE
     allow_failure: false

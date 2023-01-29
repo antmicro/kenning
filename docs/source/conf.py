@@ -19,12 +19,12 @@
 import os
 import sys
 
-from antmicro_sphinx_utils import assets
 from antmicro_sphinx_utils.defaults import (
     extensions as default_extensions,
     myst_enable_extensions as default_myst_enable_extensions,
-    default_antmicro_html_theme_options,
-    default_antmicro_latex_elements
+    html_logo as default_html_logo,
+    antmicro_html_theme_options,
+    antmicro_latex_elements
 )
 
 sys.path.insert(0, os.path.abspath('../..'))
@@ -106,7 +106,7 @@ html_last_updated_fmt = today_fmt
 
 html_show_sphinx = False
 
-html_theme_options = default_antmicro_html_theme_options(
+html_theme_options = antmicro_html_theme_options(
     pdf_url=f"{basic_filename}.pdf"
 )
 
@@ -118,7 +118,7 @@ html_title = project
 # html_short_title = None
 
 # The name of an image file to place at the top of the sidebar.
-html_logo = str(assets.logo('html'))
+html_logo = default_html_logo
 
 html_show_sourcelink = False
 
@@ -134,7 +134,7 @@ htmlhelp_basename = basic_filename
     latex_documents,
     latex_logo,
     latex_additional_files
-) = default_antmicro_latex_elements(basic_filename, authors, project)
+) = antmicro_latex_elements(basic_filename, authors, project)
 
 # -- Options for Epub output -------------------------------------------------
 
@@ -155,6 +155,8 @@ epub_exclude_files = ['search.html']
 
 
 # -- Napoleon settings -------------------------------------------------------
+
+napoleon_numpy_docstring = True
 
 # -- Extension configuration -------------------------------------------------
 rst_epilog = """

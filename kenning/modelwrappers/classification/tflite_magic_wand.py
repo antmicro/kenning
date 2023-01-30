@@ -75,56 +75,48 @@ class MagicWandModelWrapper(TensorFlowWrapper):
     def train_model(
             self,
             batch_size=64,
-            learning_rate=0.99,
+            learning_rate=0.001,
             epochs=50,
-            logdir="/tmp/tflite_magic_wand_logs"):
+            logdir='/tmp/tflite_magic_wand_logs'):
         self.model.compile(
-            optimizer="adam",
-            loss="sparse_categorical_crossentropy",
+            optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
+            loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
         train_data, test_data,\
             train_labels, test_labels,\
-            validation_data, validation_labels = \
+            val_data, val_labels = \
             self.dataset.train_test_split_representations(validation=True)
-        for i, data in enumerate(train_data):
-            train_data[i] = self.dataset.split_sample_to_windows(
-                self.dataset.generate_padding(data)
-            )
-        for i, data in enumerate(test_data):
-            test_data[i] = self.dataset.split_sample_to_windows(
-                self.dataset.generate_padding(data)
-            )
-        for i, data in enumerate(validation_data):
-            validation_data[i] = self.dataset.split_sample_to_windows(
-                self.dataset.generate_padding(data)
-            )
-        train_data = self.dataset.prepare_tf_dataset(
+
+        train_dataset = self.dataset.prepare_tf_dataset(
             train_data,
             train_labels
         ).batch(batch_size).repeat()
-        valid_data = self.dataset.prepare_tf_dataset(
-            validation_data,
-            validation_labels
+        val_dataset = self.dataset.prepare_tf_dataset(
+            val_data,
+            val_labels
         ).batch(batch_size)
-        test_data = self.dataset.prepare_tf_dataset(
+        test_dataset = self.dataset.prepare_tf_dataset(
             test_data,
             test_labels
         ).batch(batch_size)
+        test_labels = np.concatenate([y for _, y in test_dataset], axis=0)
+
         self.model.fit(
-            train_data,
+            train_dataset,
             epochs=epochs,
-            validation_data=valid_data,
+            validation_data=val_dataset,
             steps_per_epoch=1000,
-            validation_steps=int((len(valid_data) - 1) / batch_size + 1),
-            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=logdir)])
-        loss, acc = self.model.evaluate(test_data)
-        pred = np.argmax(self.model.predict(test_data), axis=1)
+            validation_steps=int((len(val_data) - 1) / batch_size + 1),
+            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=logdir)]
+        )
+        loss, acc = self.model.evaluate(test_dataset)
+        pred = np.argmax(self.model.predict(test_dataset), axis=1)
         confusion = tf.math.confusion_matrix(
             labels=tf.constant(test_labels),
             predictions=tf.constant(pred),
             num_classes=4
         )
         print(confusion)
-        print("Loss {}, Accuracy {}".format(loss, acc))
+        print(f'loss: {loss}, accuracy: {acc}')
         self.model.save(self.modelpath)

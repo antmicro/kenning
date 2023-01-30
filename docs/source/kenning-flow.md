@@ -5,12 +5,32 @@ Flow definition can be saved in JSON file and then run using {{json_flow_runner_
 
 ## JSON structure
 
-JSON configuration consist of list of dictionaries describing each runner. It has to determine its:
+JSON configuration consist of list of dictionaries describing each runner. 
 
-* `type` - class of the runner,
-* `parameters` - parameters passed to class constructor,
-* `inputs` - (optional) inputs of runner,
-* `outputs` - (optional) outputs of runner.
+Example runner specification looks as follows:
+```json
+{
+  "type": "kenning.dataproviders.camera_dataprovider.CameraDataProvider",
+  "parameters": {
+    "video_file_path": "/dev/video0",
+    "input_memory_layout": "NCHW",
+    "input_width": 608,
+    "input_height": 608
+  },
+  "outputs": {
+    "frame": "cam_frame"
+  }
+},
+```
+
+Each runner's dictionary consists of:
+
+* `type` - class of the runner. In example it is [CameraDataProvider](https://github.com/antmicro/kenning/blob/main/kenning/dataproviders/camera_dataprovider.py),
+* `parameters` - parameters passed to class constructor. In this case they are - `video_file_path="/dev/video0"`, `input_memory_layout="NCHW"`, `input_width=608` and `input_height=608`,
+* `inputs` - (optional) inputs of runner. In above example above there are none,
+* `outputs` - (optional) outputs of runner. In above example it is a single output - camera frame defined as flow's variable `cam_frame`.
+
+### Runner's IO
 
 In example, IO specification (of YOLOv4 model) looks as follows:
 ```{code-block} json
@@ -65,24 +85,9 @@ Runner's input is considered to be compatible with associated outputs if:
 ### IO special types
 
 If the input or output is not a `numpy.ndarray` then its type is described by `type` field, which is a string.
-For example for detection data it is a `List[DectObject]`.
-This is interpreted as a list of `DectoObject`'s.
-The `DectObject` is defined as follow:
-
-```python
-DectObject = namedtuple(
-    'DectObject',
-    [
-        'clsname',
-        'xmin',
-        'ymin',
-        'xmax',
-        'ymax',
-        'score',
-        'iscrowd'
-    ]
-)
-```
+In example for detection output from IO specification presented above it is a `List[DectObject]`.
+This is interpreted as a list of `DectObject`'s.
+The `DectObject` is a named tuple describing detection output (class names, rectangle positions, score).
 
 ### IO names and mapping
 
@@ -93,6 +98,7 @@ Runner's IO names are specific to runner type and model (for `ModelRuntimeRunner
 ```{note}
 IO names can be obtained using `get_io_specification` method.
 ```
+
 ### Runtime example
 
 Now we are going to create KenningFlow presenting YOLOv4 model performance.
@@ -152,7 +158,7 @@ Let's create file `flow_scenario_detection.json` and put into it following confi
 ]
 ```
 
-This JSON creates a KenningFlow that consists of three runners - [CameraDataProvider](https://github.com/antmicro/kenning/blob/main/kenning/dataproviders/camera_dataprovider.py), [ModelRuntimeRunner](https://github.com/antmicro/kenning/blob/main/kenning/runners/modelruntime_runner.py) and [RealTimeDetectionVisualizer](https://github.com/antmicro/kenning/blob/master/kenning/outputcollectors/real_time_visualizers.py).
+This JSON creates a KenningFlow that consists of three runners - [CameraDataProvider](https://github.com/antmicro/kenning/blob/main/kenning/dataproviders/camera_dataprovider.py), [ModelRuntimeRunner](https://github.com/antmicro/kenning/blob/main/kenning/runners/modelruntime_runner.py) and [RealTimeDetectionVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py).
 The first one captures frames from camera and pass it as `cam_frame` variable.
 Next one passes `cam_frame` to detection model (in this case YOLOv4) and returns predicted detection objects as `predictions`.
 The last one gets both outputs (`cam_frame` and `predictions`) and shows visualization of detection using DearPyGui.

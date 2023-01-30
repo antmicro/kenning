@@ -12,17 +12,14 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             modelpath: Path,
             dataset: Dataset,
             from_file: bool):
-        self.modelpath = modelpath
-        self.dataset = dataset
-        self.from_file = from_file
-        self.numclasses = len(self.dataset.get_class_names())
-
         super().__init__(
             modelpath,
             dataset,
-            from_file,
-            (tf.TensorSpec((1, 128, 3, 1), name='input_1'),)
+            from_file
         )
+
+        self.class_names = self.dataset.get_class_names()
+        self.numclasses = len(self.class_names)
 
     def get_input_spec(self):
         return {'input_1': (1, 128, 3, 1)}, 'float32'

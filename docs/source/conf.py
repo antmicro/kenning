@@ -163,7 +163,8 @@ rst_epilog = """
 """ % (project, project, dev)
 
 myst_substitutions = {
-    "project": project,
-    "projecturl": f'[{project}]({dev})',
-    "json_compilation_script": "`kenning.scenarios.json_inference_tester`"
+    'project': project,
+    'projecturl': f'[{project}]({dev})',
+    'json_compilation_script': '`kenning.scenarios.json_inference_tester`',
+    'json_flow_runner_script': '`kenning.scenarios.json_flow_runner`'
 }

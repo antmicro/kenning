@@ -13,17 +13,6 @@ import numpy as np
 
 
 class MagicWandDataset(Dataset):
-    def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = False):
-        self.dataset_root = root
-        self.batch_size = batch_size
-        if download_dataset:
-            self.download_dataset_fun()
-        super().__init__(root, batch_size, download_dataset)
-
     def rev_class_id(self, classname: str) -> int:
         """
         Returns an integer representing a class based on a class name

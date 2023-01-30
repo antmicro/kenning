@@ -32,7 +32,7 @@ Datasets can be either designed from scratch or found in e.g.:
 
 * [Kaggle datasets](https://www.kaggle.com),
 * [Google Dataset Search](https://datasetsearch.research.google.com),
-* [Dataset list](https://datasetlist.com),
+* [Dataset list](https://www.datasetlist.com),
 * Universities' pages,
 * [Open Images Dataset](https://storage.googleapis.com/openimages/web/index.html),
 * [Common Voice Dataset](https://commonvoice.mozilla.org/en).

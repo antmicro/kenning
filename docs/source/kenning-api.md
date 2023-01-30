@@ -81,9 +81,9 @@ The Dataset objects are used by:
 The available dataset implementations are included in the `kenning.datasets` submodule.
 Example implementations:
 
-* [PetDataset](https://github.com/antmicro/kenning/blob/master/kenning/datasets/pet_dataset.py) for classification,
-* [OpenImagesDatasetV6](https://github.com/antmicro/kenning/blob/master/kenning/datasets/open_images_dataset.py) for object detection,
-* [RandomizedClassificationDataset](https://github.com/antmicro/kenning/blob/master/kenning/datasets/random_dataset.py).
+* [PetDataset](https://github.com/antmicro/kenning/blob/main/kenning/datasets/pet_dataset.py) for classification,
+* [OpenImagesDatasetV6](https://github.com/antmicro/kenning/blob/main/kenning/datasets/open_images_dataset.py) for object detection,
+* [RandomizedClassificationDataset](https://github.com/antmicro/kenning/blob/main/kenning/datasets/random_dataset.py).
 
 ```{eval-rst}
 .. autoclass:: kenning.core.dataset.Dataset
@@ -114,10 +114,10 @@ For the `Pet Dataset wrapper` object, there is an example classifier implemented
 
 Model wrapper examples:
 
-* [PyTorchWrapper](https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/frameworks/pytorch.py) and [TensorFlowWrapper](https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/frameworks/tensorflow.py) implement common methods for all PyTorch and TensorFlow framework models,
-* [PyTorchPetDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/pytorch_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in PyTorch,
-* [TensorFlowDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in TensorFlow,
-* [TVMDarknetCOCOYOLOV3](https://github.com/antmicro/kenning/blob/master/kenning/modelwrappers/detectors/darknet_coco.py) wraps the YOLOv3 model for COCO object detection implemented in Darknet (without training and inference methods).
+* [PyTorchWrapper](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/frameworks/pytorch.py) and [TensorFlowWrapper](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/frameworks/tensorflow.py) implement common methods for all PyTorch and TensorFlow framework models,
+* [PyTorchPetDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/pytorch_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in PyTorch,
+* [TensorFlowDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in TensorFlow,
+* [TVMDarknetCOCOYOLOV3](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/detectors/darknet_coco.py) wraps the YOLOv3 model for COCO object detection implemented in Darknet (without training and inference methods).
 
 ```{eval-rst}
 .. autoclass:: kenning.core.model.ModelWrapper
@@ -135,8 +135,8 @@ All Optimizer objects should provide methods for compiling models in ONNX format
 
 Example model compilers:
 
-* [TFLiteCompiler](https://github.com/antmicro/kenning/blob/master/kenning/compilers/tflite.py) - wraps TensorFlow Lite compilation,
-* [TVMCompiler](https://github.com/antmicro/kenning/blob/master/kenning/compilers/tvm.py) - wraps TVM compilation.
+* [TFLiteCompiler](https://github.com/antmicro/kenning/blob/main/kenning/compilers/tflite.py) - wraps TensorFlow Lite compilation,
+* [TVMCompiler](https://github.com/antmicro/kenning/blob/main/kenning/compilers/tvm.py) - wraps TVM compilation.
 
 ```{eval-rst}
 .. autoclass:: kenning.core.optimizer.Optimizer
@@ -162,7 +162,7 @@ The server (target) side of the `Runtime` class requires method implementation f
 Runtime examples:
 
 * [TFLiteRuntime](https://github.com/antmicro/kenning/blob/main/kenning/runtimes/tflite.py) for models compiled with TensorFlow Lite,
-* [TVMRuntime](https://github.com/antmicro/kenning/blob/master/kenning/runtimes/tvm.py) for models compiled with TVM.
+* [TVMRuntime](https://github.com/antmicro/kenning/blob/main/kenning/runtimes/tvm.py) for models compiled with TVM.
 
 ```{eval-rst}
 .. autoclass:: kenning.core.runtime.Runtime
@@ -193,7 +193,7 @@ Based on the above-mentioned methods, the `kenning.core.runtime.Runtime` connect
 
 RuntimeProtocol examples:
 
-* [NetworkProtocol](https://github.com/antmicro/kenning/blob/master/kenning/runtimeprotocols/network.py) - implements a TCP-based communication between the host and the client.
+* [NetworkProtocol](https://github.com/antmicro/kenning/blob/main/kenning/runtimeprotocols/network.py) - implements a TCP-based communication between the host and the client.
 
 (runtime-protocol-spec)=
 

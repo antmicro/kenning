@@ -65,7 +65,7 @@ For development purposes, and for usage of additional resources (as sample scrip
 git clone https://github.com/antmicro/kenning.git
 ```
 
-To download model weights, install [Git Large File Storage](https://git-lfs.github.com>) (if not installed) and run:
+To download model weights, install [Git Large File Storage](https://git-lfs.com) (if not installed) and run:
 
 ```
 cd kenning/

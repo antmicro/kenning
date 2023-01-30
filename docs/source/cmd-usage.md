@@ -308,7 +308,7 @@ python3 -m kenning.scenarios.inference_tester \
 
 ```{note}
 For more examples of running `inference_tester` and `inference_server`, check the [kenning/scripts](https://github.com/antmicro/kenning/tree/main/scripts) directory.
-Directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks can be found in the [kenning/scripts/edge-runtimes](https://github.com/antmicro/kenning/tree/master/scripts/edge-runtimes) directory.
+Directories with scripts for client and server calls for various target devices, deep learning frameworks and compilation frameworks can be found in the [kenning/scripts/edge-runtimes](https://github.com/antmicro/kenning/tree/main/scripts/edge-runtimes) directory.
 ```
 
 ## Running inference

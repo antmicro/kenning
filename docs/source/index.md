@@ -11,6 +11,7 @@ cmd-usage
 measurements
 onnx-conversion-support
 sample-report
+kenning-flow
 kenning-development
 kenning-api
 ```

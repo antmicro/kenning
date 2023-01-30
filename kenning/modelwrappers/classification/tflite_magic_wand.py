@@ -38,36 +38,39 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         }
 
     def prepare_model(self):
+        if self.model_prepared:
+            return None
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51
         self.model = tf.keras.Sequential([
             tf.keras.layers.Conv2D(
                 8,
                 (4, 3),
-                padding="same",
-                activation="relu",
+                padding='same',
+                activation='relu',
                 input_shape=(128, 3, 1)),
             tf.keras.layers.MaxPool2D((3, 3)),
             tf.keras.layers.Dropout(0.1),
             tf.keras.layers.Conv2D(
                 16,
                 (4, 1),
-                padding="same",
-                activation="relu"),
-            tf.keras.layers.MaxPool2D((3, 1), padding="same"),
+                padding='same',
+                activation='relu'),
+            tf.keras.layers.MaxPool2D((3, 1), padding='same'),
             tf.keras.layers.Dropout(0.1),
             tf.keras.layers.Flatten(),
-            tf.keras.layers.Dense(16, activation="relu"),
+            tf.keras.layers.Dense(16, activation='relu'),
             tf.keras.layers.Dropout(0.1),
-            tf.keras.layers.Dense(4, activation="softmax")
+            tf.keras.layers.Dense(4, activation='softmax')
         ])
+        self.model.summary()
 
         if self.from_file:
             self.model.load_weights(self.modelpath)
+            self.model_prepared = True
         else:
             self.train_model()
-
-    def save_model(self, modelpath):
-        open(modelpath, 'wb').write(self.model)
+            self.model_prepared = True
+            self.save_model(self.modelpath)
 
     def train_model(
             self,

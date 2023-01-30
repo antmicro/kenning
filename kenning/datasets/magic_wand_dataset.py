@@ -1,14 +1,14 @@
-from kenning.core.dataset import Dataset
-from kenning.utils.logger import download_url
-from kenning.core.measurements import Measurements
-
-from typing import List, Tuple, Any
+from typing import Tuple, Any, List
 from pathlib import Path
 import tarfile
 import tempfile
 import glob
 import os
 import numpy as np
+
+from kenning.core.dataset import Dataset
+from kenning.utils.logger import download_url
+from kenning.core.measurements import Measurements
 
 
 class MagicWandDataset(Dataset):

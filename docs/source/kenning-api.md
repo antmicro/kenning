@@ -61,6 +61,32 @@ In the end, the results of model evaluation are passsed to report rendering.
 
 The final report is generated as an RST file containing figures, as can be observed in the [](./sample-report).
 
+(kenningflow-api)=
+## KenningFLow
+
+`kenning.core.flow.KenningFlow` class allows creation and execution of arbitrary flows built of runners.
+It is responsible for validating all runners provided in config file and their IO compatibility.
+
+```{eval-rst}
+.. autoclass:: kenning.core.flow.KenningFlow
+   :members:
+```
+
+(runner-api)=
+## Runner
+
+`kenning.core.runner.Runner`-based classes are responsible for executing various operation in KenningFlow (i.e. data providing, model execution, data visualization).
+
+The available runner implementations are:
+* [DataProvider](dataprovider-api) - base class for data providing,
+* [ModelRuntimeRunner](https://github.com/antmicro/kenning/blob/main/kenning/runners/modelruntime_runner.py) - for running model inference,
+* [OutputCollector](outputcollector-api) - for processing model output.
+
+```{eval-rst}
+.. autoclass:: kenning.core.runner.Runner
+   :members:
+```
+
 (dataset-api)=
 ## Dataset
 
@@ -281,6 +307,11 @@ It also provides methods for testing the conversion process empirically on a lis
 The `DataProvider` classes are used during deployment to provide data for inference.
 They can provide data from such sources as a camera, video files, microphone data or a TCP connection.
 
+The available `DataProvider` implementations are included in the `kenning.dataproviders` submodule.
+Example implementations:
+
+* [CameraDataProvider](https://github.com/antmicro/kenning/blob/main/kenning/dataproviders/camera_dataprovider.py) for capturing frames from camera.
+
 ```{eval-rst}
 .. autoclass:: kenning.core.dataprovider.DataProvider
    :members:
@@ -292,6 +323,19 @@ They can provide data from such sources as a camera, video files, microphone dat
 
 The `OutputCollector` classes are used during deployment for inference results receiving and processing.
 They can display the results, send them, or store them in a file.
+
+The available output collector implementations are included in the `kenning.outputcollectors` submodule.
+Example implementations:
+
+* [DetectionVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/detection_visualizer.py) for visualizing detection model outputs,
+* [BaseRealTimeVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py) base class for real time visualizers:
+   * [RealTimeDetectionVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
+      for visualizing detection model outputs,
+   * [RealTimeSegmentationVisualization](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
+      for visualizing segmentation model outputs,
+   * [RealTimeClassificationVisualization](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
+      for visualizing classification model outputs.
+
 
 ```{eval-rst}
 .. autoclass:: kenning.core.outputcollector.OutputCollector

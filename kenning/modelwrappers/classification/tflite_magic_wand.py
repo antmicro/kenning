@@ -1,3 +1,4 @@
+from typing import Dict, List
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
@@ -21,8 +22,20 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         self.class_names = self.dataset.get_class_names()
         self.numclasses = len(self.class_names)
 
-    def get_input_spec(self):
-        return {'input_1': (1, 128, 3, 1)}, 'float32'
+    def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
+        return {
+            'input': [{
+                'name': 'input_1',
+                'shape': (1, 128, 3, 1),
+                'dtype': 'float32'
+            }],
+            'output': [{
+                'name': 'out_layer',
+                'shape': (1, self.numclasses),
+                'dtype': 'float32',
+                'class_names': self.class_names
+            }]
+        }
 
     def prepare_model(self):
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51

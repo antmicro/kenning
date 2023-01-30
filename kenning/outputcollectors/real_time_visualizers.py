@@ -376,7 +376,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         return {
             'input': [
                 {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'detection_input', 'type': 'List[DectObject]'}],
+                {'name': 'detection_data', 'type': 'List[DectObject]'}],
             'output': []
         }
 

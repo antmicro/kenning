@@ -292,7 +292,7 @@ class DetectionVisualizer(OutputCollector):
                 {'name': 'frame',
                  'shape': [(1, -1, -1, 3), (1, 3, -1, -1)],
                  'dtype': 'float32'},
-                {'name': 'detection_input',
+                {'name': 'detection_data',
                  'type': 'List[DectObject]'}],
             'output': []
         }
@@ -301,5 +301,5 @@ class DetectionVisualizer(OutputCollector):
             self,
             inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         input_data = inputs['frame']
-        output_data = inputs['detection_input']
+        output_data = inputs['detection_data']
         self.process_output(input_data, output_data)

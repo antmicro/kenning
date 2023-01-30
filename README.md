@@ -49,7 +49,8 @@ We can distinguish the following groups of extra requirements:
 * `tvm` - modules for Apache TVM compilation and runtime,
 * `onnxruntime` - modules for ONNX Runtime,
 * `docs` - modules for generating documentation,
-* `test` - modules for Kenning framework testing.
+* `test` - modules for Kenning framework testing,
+* `real_time_visualization` - modules for real time visualization runners.
 
 To install the extra requirements, e.g. `tensorflow`, run:
 
@@ -81,10 +82,12 @@ The `kenning` module consists of the following submodules:
 * `modelwrappers` - provides implementations for models for various problems implemented in various frameworks,
 * `compilers` - provides implementations for compilers and optimizers for deep learning models,
 * `runtimes` - provides implementations of runtime on target devices,
+* `interfaces` - provides interface classes to group related methods used in Kenning `core` classes,
 * `runtimeprotocols` - provides implementations for communication protocols between host and tested target,
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
+* `runners` - provide implementations for runners that can be used in runtime,
 * `report` - provides methods for rendering reports,
 * `drawing` - provides methods for rendering plots for reports,
 * `resources` - contains project's resources, like RST templates, or trained models,
@@ -100,7 +103,8 @@ The `kenning` module consists of the following submodules:
 * `Runtime` class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
 * `RuntimeProtocol` class - implements the communication protocol between the host and the target,
 * `DataProvider` class - implements data provision from such sources as camera, TCP connection or others for inference,
-* `OutputCollector` class - implements parsing and utilization of data from inference (such as displaying the visualizations, sending the results to via TCP).
+* `OutputCollector` class - implements parsing and utilization of data from inference (such as displaying the visualizations, sending the results to via TCP),
+* `Runner` class - represents single runtime processing block.
 
 ## Kenning usage
 

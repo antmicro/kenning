@@ -2,6 +2,7 @@ from kenning.core.dataset import Dataset
 from kenning.utils.logger import download_url
 from kenning.core.measurements import Measurements
 
+from typing import List, Tuple, Any
 from pathlib import Path
 import tarfile
 import tempfile
@@ -16,7 +17,7 @@ class MagicWandDataset(Dataset):
         Returns an integer representing a class based on a class name
 
         It generates a reversed dictionary from the self.classnames and
-        it gets the ID that is assigned to that name
+        it gets the ID that is assigned to that name.
 
         Parameters
         ----------
@@ -75,12 +76,14 @@ class MagicWandDataset(Dataset):
         ):
             os.remove(macos_dotfile)
 
-    def _generate_padding(self, noise_level, amount, neighbor: list) -> list:
-        return [
-            list(i)
-            for i in np.round(
-                (np.random.rand(amount, 3) - 0.5) * noise_level, 1)+neighbor
-        ]
+    def _generate_padding(
+            self,
+            noise_level: int,
+            amount: int,
+            neighbor: list) -> list:
+        padding = (np.round((np.random.rand(amount, 3) - 0.5)*noise_level, 1)
+                   + neighbor)
+        return [list(i) for i in padding]
 
     def generate_padding(
             self,
@@ -109,22 +112,21 @@ class MagicWandDataset(Dataset):
             The padded data frame
         """
         pre_padding = self._generate_padding(
-                noise_level,
-                abs(window_size - len(data_frame)) % window_size,
-                data_frame[0]
+            noise_level,
+            abs(window_size - len(data_frame)) % window_size,
+            data_frame[0]
         )
         unpadded_len = len(pre_padding) + len(data_frame)
-        post_len = (window_shift - (unpadded_len %
-                    window_shift)) % window_shift
+        post_len = (-unpadded_len) % window_shift
 
         post_padding = self._generate_padding(
-                noise_level,
-                post_len,
-                data_frame[-1]
+            noise_level,
+            post_len,
+            data_frame[-1]
         )
-        return pre_padding+data_frame+post_padding
+        return pre_padding + data_frame + post_padding
 
-    def get_class_names(self):
+    def get_class_names(self) -> List[str]:
         return list(self.classnames.values())
 
     def evaluate(self, predictions, truth):
@@ -140,10 +142,16 @@ class MagicWandDataset(Dataset):
         measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements
 
-    def get_input_mean_std(self):
-        pass
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        return (
+            np.array([-219.346, 198.207, 854.390]),
+            np.array([430.269, 326.288, 447.666])
+        )
 
-    def split_sample_to_windows(self, data_frame, window_size=128):
+    def split_sample_to_windows(
+            self,
+            data_frame: List,
+            window_size: int = 128) -> np.ndarray:
         """
         Splits given data sample into windows.
 
@@ -160,9 +168,8 @@ class MagicWandDataset(Dataset):
             Data sample split into windows
         """
         return np.array(np.array_split(
-                data_frame,
-                len(data_frame) // window_size, axis=0)
-            )
+            data_frame, len(data_frame) // window_size, axis=0
+        ))
 
     def train_test_split_representations(
             self,
@@ -180,10 +187,15 @@ class MagicWandDataset(Dataset):
         seed : int
             The seed for random state
         validation: bool
-            Whehther to return a third, validation dataset
+            Whether to return a third, validation dataset
         validation_fraction: float
             The fraction (of the total size) that should be split out of
             the training set
+
+        Returns
+        -------
+        Tuple[List, ...] :
+            Data splitted into train, test and optionally validation subsets
         """
         from sklearn.model_selection import train_test_split
         dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
@@ -192,26 +204,28 @@ class MagicWandDataset(Dataset):
             test_size=test_fraction,
             random_state=seed,
             shuffle=True,
+            stratify=self.dataY
         )
         if validation:
-            dataXtrain, dataXvalid, dataYtrain, dataYvalid = train_test_split(
-                self.dataX,
-                self.dataY,
-                test_size=test_fraction*(1-test_fraction),
+            dataXtrain, dataXval, dataYtrain, dataYval = train_test_split(
+                dataXtrain,
+                dataYtrain,
+                test_size=validation_fraction/(1 - test_fraction),
                 random_state=seed,
                 shuffle=True,
+                stratify=dataYtrain
             )
             return (
                 dataXtrain,
                 dataXtest,
                 dataYtrain,
                 dataYtest,
-                dataXvalid,
-                dataYvalid
+                dataXval,
+                dataYval
             )
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
-    def prepare_tf_dataset(self, in_features: list, in_labels: list):
+    def prepare_tf_dataset(self, in_features: List, in_labels: List):
         """
         Converts data to tensorflow Dataset class.
 
@@ -229,13 +243,18 @@ class MagicWandDataset(Dataset):
         """
         from tensorflow.data import Dataset
         for i, data in enumerate(in_features):
-            in_features[i] = np.array(data)
-        features = np.zeros((len(in_features), 128, 3))
-        labels = np.zeros(len(in_features))
-        for i, (data_frag, label) in enumerate(zip(in_features, in_labels)):
-            pdata_frag = self.generate_padding(data_frag[0].tolist())
-            features[i] = self.split_sample_to_windows(pdata_frag)[0]
-            labels[i] = label
+            in_features[i] = np.array(self.split_sample_to_windows(
+                self.generate_padding(data)
+            ))
+        samples_count = sum(data.shape[0] for data in in_features)
+        features = np.zeros((samples_count, 128, 3))
+        labels = np.zeros(samples_count)
+        data_idx = 0
+        for data, label in zip(in_features, in_labels):
+            for sample in data:
+                features[data_idx] = sample
+                labels[data_idx] = label
+                data_idx += 1
         dataset = Dataset.from_tensor_slices(
             (features, labels.astype(np.int32))
         )

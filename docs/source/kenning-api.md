@@ -27,7 +27,7 @@ The grey blocks represent the inference results and metrics flow.
 
 ### Model processing
 
-The orange blocks and arrows in {figure:numref}`class-flow` represent a model's life cycle:
+The orange blocks and arrows in {numref}`class-flow` represent a model's life cycle:
 
 * the model is designed, trained, evaluated and improved - the training is implemented in the [](modelwrapper-api).
   ```{note}
@@ -41,7 +41,7 @@ Once the development of the model is complete, the optimized and compiled model 
 
 ### I/O data flow
 
-The data flow is represented in the {figure:numref}`class-flow` with green blocks.
+The data flow is represented in the {numref}`class-flow` with green blocks.
 The input data flow is depicted using green arrows, and the output data flow is depicted using grey arrows.
 
 Firstly, the input and output data is loaded from dataset files and processed.
@@ -53,7 +53,7 @@ Lastly, since [](runtime-api)s also have their specific representations of data,
 ### Data flow reporting
 
 Report rendering requires performance metrics and quality metrics.
-The flow for this is presented with grey lines and blocks in {figure:numref}`class-flow`.
+The flow for this is presented with grey lines and blocks in {numref}`class-flow`.
 
 On target side, performance metrics are computed and sent back to the host using the [](runtimeprotocol-api), and later passed to report rendering.
 After the output data goes through processing in the [](runtime-api) and [](modelwrapper-api), it is compared to the ground truth in the [](dataset-api) during model evaluation.

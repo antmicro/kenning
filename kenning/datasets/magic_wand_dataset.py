@@ -7,8 +7,6 @@ import tarfile
 import tempfile
 import glob
 import os
-import re
-from copy import deepcopy
 import numpy as np
 
 
@@ -32,35 +30,33 @@ class MagicWandDataset(Dataset):
 
     def prepare(self):
         self.classnames = {
-            0: "wing",
-            1: "ring",
-            2: "slope",
-            3: "negative"
+            0: 'wing',
+            1: 'ring',
+            2: 'slope',
+            3: 'negative'
         }
         self.numclasses = 4
         self.dataX = []
         self.dataY = []
-        for i in self.classnames.values():
-            path = self.root / i
-            for file in glob.glob(str(path / "*.txt")):
+        for class_name in self.classnames.values():
+            path = self.root / class_name
+            class_id = self.rev_class_id(class_name)
+            for file in glob.glob(str(path / '*.txt')):
                 data_frame = []
                 with open(file) as f:
                     for line in f:
-                        # match if line begins with '-', a number or a space
-                        # and later shows only visible characters up to the end
-                        if re.match(r"^[-0-9 ][\x20-\x7E]{1,}$", line):
-                            if re.search("-,-,-", line):
-                                if data_frame != []:
-                                    self.dataX.append(deepcopy(data_frame))
-                                    self.dataY.append(self.rev_class_id(i))
-                                    data_frame = []
-                            else:
-                                data = line.rstrip()
-                                data_frame.append(
-                                    [float(i) for i in data.split(',')]
-                                )
-        # print(self.dataX)
-        # print(self.dataY)
+                        line_split = line.strip().split(',')
+                        if len(line_split) != 3:
+                            continue
+                        try:
+                            values = [float(i) for i in line_split]
+                            data_frame.append(values)
+                        except ValueError:
+                            if data_frame:
+                                self.dataX.append(data_frame)
+                                self.dataY.append(class_id)
+                                data_frame = []
+
         assert len(self.dataX) == len(self.dataY)
 
     def download_dataset_fun(self):

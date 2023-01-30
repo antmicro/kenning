@@ -17,6 +17,7 @@ class MagicWandDataset(Dataset):
 
         It generates a reversed dictionary from the self.classnames and
         it gets the ID that is assigned to that name
+
         Parameters
         ----------
         classname : str
@@ -60,17 +61,18 @@ class MagicWandDataset(Dataset):
         assert len(self.dataX) == len(self.dataY)
 
     def download_dataset_fun(self):
-        dataset_url = "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz"  # noqa: E501
+        dataset_url = r'http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz'  # noqa: E501
         with tempfile.TemporaryDirectory() as tempdir:
-            tarpath = Path(tempdir) / "data.tar.gz"
+            tarpath = Path(tempdir) / 'data.tar.gz'
             download_url(dataset_url, tarpath)
             data = tarfile.open(tarpath)
-            data.extractall(self.dataset_root)
+            data.extractall(self.root)
 
         # cleanup MacOS-related hidden metadata files present in the dataset
-        for macos_dotfile in glob.glob(
-                    str(self.dataset_root) + "/**/._*") + glob.glob(
-                    str(self.dataset_root) + "/._*"):
+        for macos_dotfile in (
+            glob.glob(str(self.root) + '/**/._*')
+            + glob.glob(str(self.root) + '/._*')
+        ):
             os.remove(macos_dotfile)
 
     def _generate_padding(self, noise_level, amount, neighbor: list) -> list:
@@ -93,15 +95,18 @@ class MagicWandDataset(Dataset):
         ----------
         data_frame : List
             A frame of data to be padded
-        noise_level : Int
-            Level of noise (window in which the
-            neighbor data will vary in each axis)
+        window_size: int
+            Size of the data window
+        window_shift: int
+            Shift of the data window
+        noise_level : int
+            Level of noise (window in which the neighbor data will vary in each
+            axis)
 
         Returns
         -------
         List :
             The padded data frame
-
         """
         pre_padding = self._generate_padding(
                 noise_level,
@@ -139,6 +144,21 @@ class MagicWandDataset(Dataset):
         pass
 
     def split_sample_to_windows(self, data_frame, window_size=128):
+        """
+        Splits given data sample into windows.
+
+        Parameters
+        ----------
+        data_frame : List
+            Data sample to be split
+        window_size : int
+            Size of the window
+
+        Returns
+        -------
+        np.ndarray :
+            Data sample split into windows
+        """
         return np.array(np.array_split(
                 data_frame,
                 len(data_frame) // window_size, axis=0)
@@ -192,6 +212,21 @@ class MagicWandDataset(Dataset):
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
     def prepare_tf_dataset(self, in_features: list, in_labels: list):
+        """
+        Converts data to tensorflow Dataset class.
+
+        Parameters
+        ----------
+        in_features : List
+            Dataset features
+        in_labels : List
+            Dataset labels
+
+        Returns
+        -------
+        tensorflow.data.Dataset :
+            Dataset in tensorflow format
+        """
         from tensorflow.data import Dataset
         for i, data in enumerate(in_features):
             in_features[i] = np.array(data)
@@ -202,6 +237,6 @@ class MagicWandDataset(Dataset):
             features[i] = self.split_sample_to_windows(pdata_frag)[0]
             labels[i] = label
         dataset = Dataset.from_tensor_slices(
-            (features, labels.astype("int32"))
+            (features, labels.astype(np.int32))
         )
         return dataset

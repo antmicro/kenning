@@ -37,23 +37,73 @@ The example metadata file looks as follows (for ResNet50 for the ImageNet classi
 }
 ```
 
-The metadata file consists of:
+The sample metadata JSON file may look as follows (for YOLOv4 detection model):
 
-* an `input` list of structures describing inputs for the model,
-* an `output` list of structures describing outputs for the model.
+```json
+{
+    "input": [
+        {
+            "name": "input",
+            "shape": [1, 3, 608, 608],
+            "dtype": "float32"
+        }
+    ],
+    "output": [
+        {
+            "name": "output",
+            "shape": [1, 255, 76, 76],
+            "dtype": "float32"
+        },
+        {
+            "name": "output.3",
+            "shape": [1, 255, 38, 38],
+            "dtype": "float32"
+        },
+        {
+            "name": "output.7",
+            "shape": [1, 255, 19, 19],
+            "dtype": "float32"
+        }
+    ],
+    "processed_output": [
+        {
+            "name": "detection_output",
+            "type": "List[DectObject]"
+        }
+    ]
+}
+```
 
-Each input and output is described by the following parameters:
+In general, the metadata file consist of four fields:
 
+* `input` is a specification of data passed to model wrapper,
+* `processed_input` is a specification of input data preprocessed for wrapped model,
+* `output` is a specification of data returned by wrapped model,
+* `processed_output` is a specification of output data postprocessed by model wrapper.
+
+If `processed_input` or `processed_output` is not specified we assume that there is no processing and it is the same as `input` or `output` respectively.
+Each array consist of dictionaries describing model inputs and outputs.
+
+Parameters common to all fields:
 * `name` - input/output name,
 * `shape` - input/output tensor shape,
-* `dtype` - output type,
+* `dtype` - input/output type.
+
+Parameters specific to `input` and `processed_input`:
 * `order` - some of the runtimes/compilers allow accessing inputs and outputs by id.
   This field describes the id of the current input/output,
 * `scale` - scale parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization,
-* `zero_point` - zero point parameter for the quantization purposes,
+* `zero_point` - zero point parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization,
 * `prequantized_dtype` - input/output data type before quantization.
+* `mean` - mean used to normalize dataset before model training,
+* `std` - standard deviation used to normalize dataset before model training,
+* `class_name` - list of class names from the dataset.
+  It is used by output collectors to present the data in human-readable way.
+
+Parameters specific to `processed_output`:
+* `type` - input/output type if different than `np.ndarray` (i.e. `List[SegmObject]` in segmentation model's postprocessed output).
 
 The model metadata is used by all classes in Kenning in order to understand the format of the inputs and outputs.
 ```{warning}
@@ -117,16 +167,15 @@ The `argument_name` is a name used in:
 The fields describing the argument are as follows:
 
 * `argparse_name` - if there is a need for a different flag in argparse, it can be provided here,
-* `description` - description of the node, displayed for a parsing error for JSON, or in help in case of command-line access
+* `description` - description of the node, displayed for a parsing error for JSON, or in help in case of command-line access,
 * `type` - type of argument, i.e.:
-
     * `Path` from `pathlib` module,
-    * `str`
-    * `float`
-    * `int`
-    * `bool`
+    * `str`,
+    * `float`,
+    * `int`,
+    * `bool`,
 * `default` - default value for the argument,
-* `required` - boolean, tells if argument is required or not
+* `required` - boolean, tells if argument is required or not,
 * `enum` - a list of possible values for the argument,
 * `is_list` - tells if argument is a list of objects of types given in `type` field,
 * `nullable` - tells if argument can be empty (`None`).
@@ -158,7 +207,8 @@ class TensorFlowLiteCompiler(Optimizer):
             'default': False
         },
         'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
+            'description': 'Tells how much data from dataset (from 0.0 to '
+                           '1.0) will be used for calibration dataset',
             'type': float,
             'default': 0.25
         }
@@ -259,7 +309,8 @@ class TensorFlowLiteCompiler(Optimizer):
             'default': False
         },
         'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
+            'description': 'Tells how much data from dataset (from 0.0 to '
+                           '1.0) will be used for calibration dataset',
             'type': float,
             'default': 0.25
         }
@@ -352,7 +403,8 @@ class TensorFlowLiteCompiler(Optimizer):
             'default': False
         },
         'dataset_percentage': {
-            'description': 'Tells how much data from dataset (from 0.0 to 1.0) will be used for calibration dataset',  # noqa: E501
+            'description': 'Tells how much data from dataset (from 0.0 to '
+                           '1.0) will be used for calibration dataset',
             'type': float,
             'default': 0.25
         }
@@ -535,3 +587,52 @@ emphasize-lines: 18-29
 The emphasized line demonstrates usage of the implemented `TensorFlowLiteCompiler` from the `my_optimizer.py` script.
 
 This sums up the Kenning development process.
+
+## Implementing Kenning runtime blocks
+(implementing-runner)=
+### Implementing a new Runner for KenningFlow
+
+The process of creating new [Runner](runner-api) is almost the same as described above process of implementing Kenning component.
+There are few more things to be done.
+
+First of all, the new component must inherit from Runner class (not necessarily directly).
+Then one need to implement following methods:
+* `cleanup` - cleans resources after flow is stopped,
+* `should_close` - (optional) returns boolean indicating whether runner got some exit indication (error etc.).
+  Default implementation always returns `False`,
+* `run` - method that gets runner inputs, process them and returns obtained results.
+
+Inputs of the runner are passed to the `run` method as a dictionary where key is the name of the input same as specified in KenningFlow JSON and the value is simply input's value.
+
+In example for `DetectionVisualizer` defined in JSON as
+```{code-block} json
+---
+emphasize-lines: 8-9
+---
+{
+    "type": "kenning.outputcollectors.detection_visualizer.DetectionVisualizer",
+    "parameters": {
+        "output_width": 608,
+        "output_height": 608
+    },
+    "inputs": {
+        "frame": "cam_frame",
+        "detection_data": "predictions"
+    }
+}
+```
+the `run` method access inputs as follows
+```{code-block} python
+---
+emphasize-lines: 2-3
+---
+def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+    input_data = inputs['frame']
+    output_data = inputs['detection_data']
+    self.process_output(input_data, output_data)
+```
+
+```{note}
+In the example above, the `run` method does not have `return` statement, because this runner does not have any outputs.
+If one want to create runner with outputs then this method should return similar dictionary with outputs.
+```

@@ -125,7 +125,7 @@ class MagicWandDataset(Dataset):
         return pre_padding+data_frame+post_padding
 
     def get_class_names(self):
-        return [self.classnames[i] for i in self.classnames.keys()]
+        return list(self.classnames.values())
 
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))

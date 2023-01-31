@@ -42,12 +42,15 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             return None
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51
         self.model = tf.keras.Sequential([
+            tf.keras.layers.InputLayer(
+                input_shape=(128, 3, 1),
+                name='input_1'
+            ),
             tf.keras.layers.Conv2D(
                 8,
                 (4, 3),
                 padding='same',
-                activation='relu',
-                input_shape=(128, 3, 1)),
+                activation='relu'),
             tf.keras.layers.MaxPool2D((3, 3)),
             tf.keras.layers.Dropout(0.1),
             tf.keras.layers.Conv2D(
@@ -60,7 +63,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             tf.keras.layers.Flatten(),
             tf.keras.layers.Dense(16, activation='relu'),
             tf.keras.layers.Dropout(0.1),
-            tf.keras.layers.Dense(4, activation='softmax')
+            tf.keras.layers.Dense(4, activation='softmax', name='out_layer')
         ])
         self.model.summary()
 

@@ -38,8 +38,8 @@ class MagicWandDataset(Dataset):
             3: 'negative'
         }
         self.numclasses = 4
-        self.dataX = []
-        self.dataY = []
+        tmp_dataX = []
+        tmp_dataY = []
         for class_name in self.classnames.values():
             path = self.root / class_name
             class_id = self.rev_class_id(class_name)
@@ -55,9 +55,19 @@ class MagicWandDataset(Dataset):
                             data_frame.append(values)
                         except ValueError:
                             if data_frame:
-                                self.dataX.append(data_frame)
-                                self.dataY.append(class_id)
+                                tmp_dataX.append(data_frame)
+                                tmp_dataY.append(class_id)
                                 data_frame = []
+
+        self.dataX = []
+        self.dataY = []
+        for data, label in zip(tmp_dataX, tmp_dataY):
+            padded_data = np.array(self.split_sample_to_windows(
+                self.generate_padding(data)
+            ))
+            for sample in padded_data:
+                self.dataX.append(sample)
+                self.dataY.append(label)
 
         assert len(self.dataX) == len(self.dataY)
 
@@ -258,20 +268,10 @@ class MagicWandDataset(Dataset):
         tensorflow.data.Dataset :
             Dataset in tensorflow format
         """
+        assert len(in_features) == len(in_labels)
         from tensorflow.data import Dataset
-        for i, data in enumerate(in_features):
-            in_features[i] = np.array(self.split_sample_to_windows(
-                self.generate_padding(data)
-            ))
-        samples_count = sum(data.shape[0] for data in in_features)
-        features = np.zeros((samples_count, 128, 3))
-        labels = np.zeros(samples_count)
-        data_idx = 0
-        for data, label in zip(in_features, in_labels):
-            for sample in data:
-                features[data_idx] = sample
-                labels[data_idx] = label
-                data_idx += 1
+        features = np.array(in_features)
+        labels = np.array(in_labels)
         dataset = Dataset.from_tensor_slices(
             (features, labels.astype(np.int32))
         )

@@ -80,17 +80,34 @@ class MagicWandDataset(Dataset):
             self,
             noise_level: int,
             amount: int,
-            neighbor: list) -> list:
+            neighbor: List) -> List:
+        """
+        Generates noise padding of given length.
+
+        Parameters
+        ----------
+        noise_level : int
+            Level of generated noise
+        amount : int
+            Length of generated noise
+        neighbor : List
+            Neighbor data
+
+        Returns
+        -------
+        List :
+            Neighbor data with noise padding
+        """
         padding = (np.round((np.random.rand(amount, 3) - 0.5)*noise_level, 1)
                    + neighbor)
         return [list(i) for i in padding]
 
     def generate_padding(
             self,
-            data_frame: list,
+            data_frame: List,
             window_size: int = 128,
             window_shift: int = 128,
-            noise_level: int = 20) -> list:
+            noise_level: int = 20) -> List:
         """
         Generates neighbor-based padding around a given data frame
 
@@ -176,7 +193,7 @@ class MagicWandDataset(Dataset):
             test_fraction: float = 0.25,
             seed: int = 1234,
             validation: bool = False,
-            validation_fraction: float = 0.1):
+            validation_fraction: float = 0.1) -> Tuple[List, ...]:
         """
         Splits the data representations into train dataset and test dataset.
 

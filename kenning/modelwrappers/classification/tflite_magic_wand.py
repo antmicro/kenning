@@ -8,25 +8,58 @@ from kenning.core.dataset import Dataset
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
+
+    arguments_structure = {
+        'window_size': {
+            'argparse_name': '--window-size',
+            'description': 'Determines the size of single sample window',
+            'default': 128,
+        }
+    }
+
     def __init__(
             self,
             modelpath: Path,
             dataset: Dataset,
-            from_file: bool):
+            from_file: bool,
+            window_size: int = 128):
         super().__init__(
             modelpath,
             dataset,
             from_file
         )
+        """
+        Creates the Magic Wand model wrapper.
 
+        Parameters
+        ----------
+        modelpath : Path
+            The path to the model
+        dataset : Dataset
+            The dataset to verify the inference
+        from_file : bool
+            True if the model should be loaded from file
+        windows_size : int
+            Size of single sample window
+        """
+        self.window_size = window_size
         self.class_names = self.dataset.get_class_names()
         self.numclasses = len(self.class_names)
+
+    @classmethod
+    def from_argparse(cls, dataset, args, from_file=False):
+        return cls(
+            args.modelpath,
+            dataset,
+            from_file,
+            args.window_size
+        )
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
         return {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, 128, 3, 1),
+                'shape': (1, self.window_size, 3, 1),
                 'dtype': 'float32'
             }],
             'output': [{
@@ -43,7 +76,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         # https://github.com/tensorflow/tflite-micro/blob/dde75de483faa8d5e42b875cef3aaf26f6c63101/tensorflow/lite/micro/examples/magic_wand/train/train.py#L51
         self.model = tf.keras.Sequential([
             tf.keras.layers.InputLayer(
-                input_shape=(128, 3, 1),
+                input_shape=(self.window_size, 3, 1),
                 name='input_1'
             ),
             tf.keras.layers.Conv2D(

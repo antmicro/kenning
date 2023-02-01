@@ -13,6 +13,7 @@ from kenning.interfaces.io_interface import IOCompatibilityError
 
 FLOW_STEPS: Final = 4
 
+# base camera data provider runner
 CAMERA_DATA_PROVIDER_NCHW_JSON = {
     "type": "kenning.dataproviders.camera_dataprovider.CameraDataProvider",
     "parameters": {
@@ -25,10 +26,9 @@ CAMERA_DATA_PROVIDER_NCHW_JSON = {
         "frame": "cam_frame"
     }
 }
-CAMERA_DATA_PROVIDER_NHWC_JSON = deepcopy(CAMERA_DATA_PROVIDER_NCHW_JSON)
-CAMERA_DATA_PROVIDER_NHWC_JSON['parameters']['input_memory_layout'] = 'NHWC'
 
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON = {
+# base YOLOv4 (detection model) runner
+MDL_RT_RUNNER_YOLOV4_JSON = {
     "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
     "parameters": {
         "model_wrapper": {
@@ -53,20 +53,9 @@ MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON = {
         "detection_output": "predictions"
     }
 }
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_2_JSON = deepcopy(
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON
-)
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_2_JSON['outputs']['detection_output'] = 'predictions_2'  # noqa: 501
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_REDEFINED_VARIABLE_JSON = deepcopy(
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON
-)
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_REDEFINED_VARIABLE_JSON['outputs']['detection_output'] = 'cam_frame'    # noqa: 501
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_UNDEFINED_VARIABLE_JSON = deepcopy(
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON
-)
-MODEL_RUNTIME_RUNNER_ONNXYOLOV4_UNDEFINED_VARIABLE_JSON['inputs']['input'] = 'undefined_cam_frame'  # noqa: 501
 
-MODEL_RUNTIME_RUNNER_ONNXYOLACT_JSON = {
+# base YOLACT (segmentation model) runner
+MDL_RT_RUNNER_YOLACT_JSON = {
     "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
     "parameters": {
         "dataset":
@@ -89,7 +78,7 @@ MODEL_RUNTIME_RUNNER_ONNXYOLACT_JSON = {
             "parameters":
             {
                 "save_model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",  # noqa: 501
-                "execution_providers": ["CPUExecutionProvider"]
+                "execution_providers": ["CUDAExecutionProvider"]
             }
         }
     },
@@ -100,7 +89,9 @@ MODEL_RUNTIME_RUNNER_ONNXYOLACT_JSON = {
         "segmentation_output": "predictions"
     }
 }
-DETECTION_VISUALIZER_JSON = {
+
+# base detection visualizer runner
+DECT_VISUALIZER_JSON = {
     "type": "kenning.outputcollectors.detection_visualizer.DetectionVisualizer",    # noqa: 501
     "parameters": {
         "output_width": 608,
@@ -113,14 +104,9 @@ DETECTION_VISUALIZER_JSON = {
         "detection_input": "predictions"
     }
 }
-DETECTION_VISUALIZER_2_JSON = deepcopy(DETECTION_VISUALIZER_JSON)
-DETECTION_VISUALIZER_2_JSON['inputs']['detection_input'] = 'predictions'
-DETECTION_VISUALIZER_2_JSON['parameters']['save_path'] = 'out_2.mp4'
-DETECTION_VISUALIZER_3_JSON = deepcopy(DETECTION_VISUALIZER_JSON)
-DETECTION_VISUALIZER_3_JSON['inputs']['detection_input'] = 'predictions_2'
-DETECTION_VISUALIZER_3_JSON['parameters']['save_path'] = 'out_3.mp4'
 
-RT_DETECTION_VISUALIZER_JSON = {
+# base real time detection visualizer runner
+RT_DECT_VISUALIZER_JSON = {
     "type": "kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer",   # noqa: 501
     "parameters": {
         "viewer_width": 512,
@@ -133,7 +119,9 @@ RT_DETECTION_VISUALIZER_JSON = {
         "input": "predictions"
     }
 }
-RT_SEGMENTATION_VISUALIZER_JSON = {
+
+# base real time segmentation visualizer runner
+RT_SEGM_VISUALIZER_JSON = {
     "type": "kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualization", # noqa: 501
     "parameters": {
         "viewer_width": 512,
@@ -148,44 +136,89 @@ RT_SEGMENTATION_VISUALIZER_JSON = {
     }
 }
 
+# valid scenario with camera, detection model and detection visualizer
 FLOW_SCENARIO_DETECTION = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON,
-    DETECTION_VISUALIZER_JSON
+    MDL_RT_RUNNER_YOLOV4_JSON,
+    DECT_VISUALIZER_JSON
 ]
+# valid scenario with camera, detection model and real time detection
+# visualizer
 FLOW_SCENARIO_RT_DETECTION = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON,
-    RT_DETECTION_VISUALIZER_JSON
+    MDL_RT_RUNNER_YOLOV4_JSON,
+    RT_DECT_VISUALIZER_JSON
 ]
+# valid scenario with camera, segmentation model and real time segmentation
+# visualizer. For this model we need to change camera output height and width
+CAMERA_DATA_PROVIDER_NCHW_SEGM_JSON = deepcopy(CAMERA_DATA_PROVIDER_NCHW_JSON)
+CAMERA_DATA_PROVIDER_NCHW_SEGM_JSON['parameters']['input_width'] = 550
+CAMERA_DATA_PROVIDER_NCHW_SEGM_JSON['parameters']['input_height'] = 550
+
 FLOW_SCENARIO_RT_SEGMENTATION = [
-    CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON,
-    RT_SEGMENTATION_VISUALIZER_JSON
+    CAMERA_DATA_PROVIDER_NCHW_SEGM_JSON,
+    MDL_RT_RUNNER_YOLACT_JSON,
+    RT_SEGM_VISUALIZER_JSON
 ]
+# a complex scenario with two detection models and three detection visualizers.
+# To make it work, we need to change names of variables used by models to
+# prevent redefinition - we change second model output to 'predictions_2' and
+# names of visualizers outputs to 'out_2.mp4' and 'out_3.mp4' respectively. We
+# also change one visualizer to use second model output
+MDL_RT_RUNNER_YOLOV4_2_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
+MDL_RT_RUNNER_YOLOV4_2_JSON['outputs']['detection_output'] = 'predictions_2'
+
+DECT_VISUALIZER_2_JSON = deepcopy(DECT_VISUALIZER_JSON)
+DECT_VISUALIZER_2_JSON['parameters']['save_path'] = 'out_2.mp4'
+
+DECT_VISUALIZER_3_JSON = deepcopy(DECT_VISUALIZER_JSON)
+DECT_VISUALIZER_3_JSON['inputs']['detection_input'] = 'predictions_2'
+DECT_VISUALIZER_3_JSON['parameters']['save_path'] = 'out_3.mp4'
+
 FLOW_SCENARIO_COMPLEX = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_2_JSON,
-    DETECTION_VISUALIZER_JSON,
-    DETECTION_VISUALIZER_2_JSON,
-    DETECTION_VISUALIZER_3_JSON
+    MDL_RT_RUNNER_YOLOV4_JSON,
+    MDL_RT_RUNNER_YOLOV4_2_JSON,
+    DECT_VISUALIZER_JSON,
+    DECT_VISUALIZER_2_JSON,
+    DECT_VISUALIZER_3_JSON
 ]
+
+# detection scenario is indeed valid so we will use it as valid case
 FLOW_SCENARIO_VALID = FLOW_SCENARIO_DETECTION
-FLOW_SCENARIO_REDEFINED_VARIBLE = [
+
+# to prepare scenario with redefined variable, we change model output name to
+# same as camera provider output - 'cam_frame'
+MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
+MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON['outputs']['detection_output'] = 'cam_frame'    # noqa: 501
+
+FLOW_SCENARIO_REDEF_VARIBLE = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_REDEFINED_VARIABLE_JSON,
-    DETECTION_VISUALIZER_JSON
+    MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON,
+    DECT_VISUALIZER_JSON
 ]
-FLOW_SCENARIO_UNDEFINED_VARIBLE = [
+
+# to prepare scenario with undefined variable, we simply change model input
+# name to 'undefined_cam_frame'
+MDL_RT_RUNNER_YOLOV4_UNDEF_VAR_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
+MDL_RT_RUNNER_YOLOV4_UNDEF_VAR_JSON['inputs']['input'] = 'undefined_cam_frame'
+
+FLOW_SCENARIO_UNDEF_VARIBLE = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_UNDEFINED_VARIABLE_JSON,
-    DETECTION_VISUALIZER_JSON
+    MDL_RT_RUNNER_YOLOV4_UNDEF_VAR_JSON,
+    DECT_VISUALIZER_JSON
 ]
+
+# to prepare scenario with incompatible IO, we change camera memory layout from
+# 'NCHW' to 'NHWC' which changes its shape and makes incompatible with model
+# input
+CAMERA_DATA_PROVIDER_NHWC_JSON = deepcopy(CAMERA_DATA_PROVIDER_NCHW_JSON)
+CAMERA_DATA_PROVIDER_NHWC_JSON['parameters']['input_memory_layout'] = 'NHWC'
+
 FLOW_SCENARIO_INCOMPATIBLE_IO = [
     CAMERA_DATA_PROVIDER_NHWC_JSON,
-    MODEL_RUNTIME_RUNNER_ONNXYOLOV4_JSON,
-    DETECTION_VISUALIZER_JSON
+    MDL_RT_RUNNER_YOLOV4_JSON,
+    DECT_VISUALIZER_JSON
 ]
 
 
@@ -243,9 +276,9 @@ class TestKenningFlowScenarios:
         [
             (FLOW_SCENARIO_VALID,
              does_not_raise()),
-            (FLOW_SCENARIO_REDEFINED_VARIBLE,
+            (FLOW_SCENARIO_REDEF_VARIBLE,
              pytest.raises(Exception)),
-            (FLOW_SCENARIO_UNDEFINED_VARIBLE,
+            (FLOW_SCENARIO_UNDEF_VARIBLE,
              pytest.raises(Exception)),
             (FLOW_SCENARIO_INCOMPATIBLE_IO,
              pytest.raises(IOCompatibilityError)),

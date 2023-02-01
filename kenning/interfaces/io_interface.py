@@ -42,13 +42,16 @@ class IOInterface(object):
             if global_name in output_spec.keys():
                 try:
                     single_output_spec = output_spec[global_name]
-                    # validate dtype
-                    if 'dtype' in single_input_spec:
+                    # dtype and type are mutually exclusive
+                    if (('dtype' in single_input_spec) ==
+                            ('type' in single_input_spec)):
+                        return False
+                    # validate dtype and shape
+                    if ('dtype' in single_input_spec and
+                            'shape' in single_input_spec):
                         if (single_input_spec['dtype']
                                 != single_output_spec['dtype']):
                             return False
-                    # validate shape
-                    if 'shape' in single_input_spec:
                         if isinstance(single_input_spec['shape'], list):
                             # multiple valid shapes
                             found_valid_shape = False
@@ -66,6 +69,10 @@ class IOInterface(object):
                             return IOInterface._validate_shape(
                                 single_output_spec['shape'],
                                 single_input_spec['shape'])
+                    # dtype and shape imply each other
+                    elif ('dtype' in single_input_spec or
+                            'shape' in single_input_spec):
+                        return False
                     # validate type
                     if 'type' in single_input_spec:
                         if (single_input_spec['type'] != 'Any' and

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
+from kenning.utils.logger import get_logger
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
@@ -114,6 +115,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             learning_rate=0.001,
             epochs=50,
             logdir='/tmp/tflite_magic_wand_logs'):
+        log = get_logger()
         self.model.compile(
             optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
             loss='sparse_categorical_crossentropy',
@@ -153,6 +155,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             predictions=tf.constant(pred),
             num_classes=4
         )
-        print(confusion)
-        print(f'loss: {loss}, accuracy: {acc}')
+        log.info(confusion)
+        log.info(f'loss: {loss}, accuracy: {acc}')
         self.model.save(self.modelpath)

@@ -68,7 +68,6 @@ docs:
     script:
         - cd $DOCS_DIR
         - make SPHINXOPTS="-A commit=$CI_BUILD_REF -A branch=$CI_BUILD_REF_NAME" html latexpdf
-        - make linkcheck
         - cp build/latex/*.pdf build/html/
         - tar cf $CI_DOCS_ARCHIVE -C build/html/ .
         - mv $CI_DOCS_ARCHIVE ..
@@ -78,3 +77,12 @@ docs:
             - $DOCS_DIR/build/latex/*.pdf
             - $CI_DOCS_ARCHIVE
     allow_failure: false
+
+linkcheck:
+    stage: docs
+    variables:
+        DOCS_DIR: './docs'
+    script:
+        - cd $DOCS_DIR
+        - make linkcheck
+    allow_failure: true

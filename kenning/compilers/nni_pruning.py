@@ -9,14 +9,15 @@ from nni.compression.pytorch.pruning import (
     ActivationPruner,
 )
 from nni.compression.pytorch.speedup import ModelSpeedup
+from nni.compression.pytorch.speedup.replacer import DefaultReplacer
 from nni.algorithms.compression.v2.pytorch import TorchEvaluator
-from nni.compression.pytorch.speedup.compress_modules import (
-    no_replace, convert_to_coarse_mask
-)
+from nni.compression.pytorch.speedup.compress_modules import no_replace
+from nni.compression.pytorch.utils.mask_conflict import fix_mask_conflict
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
+from nni.common.graph_utils import _logger as nni_graph_logger
 from pathlib import Path
 import numpy as np
-from typing import Callable, Dict, Optional, List, Tuple, Type
+from typing import Callable, Dict, Optional, List, Type
 from enum import Enum
 import json
 import logging
@@ -42,58 +43,11 @@ def torchconversion(modelpath: Path, device: torch.device, **kwargs):
 def onnxconversion(modelpath: Path, device: torch.device, **kwargs):
     conversion = PyTorchONNXConversion()
     if conversion.onnx_import(None, modelpath) != SupportStatus.SUPPORTED:
-        traceback.print_exc()
         raise CompilationError('Conversion for provided model to PyTorch'
                                ' is not supported')
     model = conversion.onnx_to_torch(modelpath)
     model.to(device)
     return model
-
-
-class MaskedBinaryMathOperation(torch.nn.Module):
-    """
-    PyTorch module for adding and adjusting size of two tensor with masks
-    """
-
-    def __init__(self,
-                 math_operation: Callable,
-                 mask_a: torch.Tensor,
-                 mask_b: torch.Tensor,
-                 mask_out: torch.Tensor) -> None:
-        super().__init__()
-        self.math_operation = math_operation
-        if math_operation == torch.add or math_operation == torch.sub:
-            self.initializer: Callable = torch.zeros
-        else:
-            self.initializer: Callable = torch.ones
-        _, self.channels_a = convert_to_coarse_mask(mask_a, 1)
-        _, self.channels_b = convert_to_coarse_mask(mask_b, 1)
-        _, self.channels_out = \
-            convert_to_coarse_mask(mask_out, 0)
-        self.original_size = tuple(mask_out.shape)
-        self.channels_a = self.channels_a.to(mask_a.device)
-        self.channels_b = self.channels_b.to(mask_b.device)
-
-    def forward(self, a: torch.Tensor, b: torch.Tensor):
-        operation_result = self.initializer(a.shape[0], *self.original_size,
-                                            dtype=a.dtype, device=a.device)
-        operation_result[:, self.channels_a] = a
-        operation_result[:, self.channels_b] = \
-            self.math_operation(operation_result[:, self.channels_b], b)
-        return operation_result[:, self.channels_out]
-
-
-def math_operation_conversion(onnx_math_op, masks: Tuple):
-    """
-    Function converting Addition to MaskedAddition
-    """
-    in_masks, out_masks, _ = masks
-    return MaskedBinaryMathOperation(
-        onnx_math_op.math_op_function,
-        in_masks[0],
-        in_masks[1],
-        out_masks[0]
-    )
 
 
 class Modes(str, Enum):
@@ -193,19 +147,37 @@ class NNIPruningOptimizer(Optimizer):
             "enum": ["relu", "gelu", "relu6"],
             "default": "relu",
         },
+        "exclude_last_layer": {
+            "argparse_name": "--exclude-last-layer",
+            "description": "Exclude last Linear layer to preserve number of outputs",  # noqa: E501
+            "type": bool,
+            "default": True,
+        },
     }
 
     replace_modules = {
         module: no_replace for module in (
-            'OnnxBinaryMathOperation',
             'OnnxGlobalAveragePoolWithKnownInputShape',
             'OnnxGlobalAveragePool',
+            'OnnxPadStatic',
+            'OnnxConcat',
+            'OnnxSoftmaxV1V11',
+            'OnnxTranspose',
+            'OnnxSqueezeStaticAxes',
+            'LocalResponseNorm',
             'Transposition',
+            'Gather',
+            'OnnxGather',
+            'Reshape',
+            'OnnxReshape',
+            'Shape',
+            'OnnxShape',
+            'Concat',
+            'OnnxConcat',
+            'OnnxUnsqueezeStaticAxes',
+            'OnnxBinaryMathOperation'
         )
     }
-    replace_modules.update({
-        'Addition': addition_conversion
-    })
 
     str_to_dtype = {
         "int": torch.int,
@@ -231,9 +203,10 @@ class NNIPruningOptimizer(Optimizer):
         optimizer: str = "torch.optim.SGD",
         finetuning_learning_rate: float = 0.001,
         finetuning_batch_size: int = 32,
-        activation: str = 'relu',
+        activation: str = "relu",
         modelframework: str = "torch",
         finetuning_epochs: int = 3,
+        exclude_last_layer: bool = True,
     ):
         """
         The NNIPruning optimizer.
@@ -273,6 +246,8 @@ class NNIPruningOptimizer(Optimizer):
             Framework of the input model, used to select proper backend
         finetuning_epochs: int
             Number of epoch used for fine-tuning model
+        exclude_last_layer: bool
+            Condition for excluding last linear layer from pruning
         """
         super().__init__(dataset, compiled_model_path)
 
@@ -280,18 +255,19 @@ class NNIPruningOptimizer(Optimizer):
         self.optimizer_modulepath = optimizer
         self.finetuning_learning_rate = finetuning_learning_rate
         self.finetuning_batch_size = finetuning_batch_size
+        self.finetuning_epochs = finetuning_epochs
         self.training_steps = training_steps
+        self.exclude_last_layer = exclude_last_layer
         self.set_activation_str(activation)
 
         self.modelframework = modelframework
-        self.finetuning_epochs = finetuning_epochs
         self.set_input_type(modelframework)
 
         self.pruner_type = pruner_type
         self.set_pruner_class(pruner_type)
 
         # TODO: for now pass List[Dict] as str in json, upgrade argparse
-        self.config_list = json.loads(config_list)
+        self.config_list: List[Dict] = json.loads(config_list)
         self.set_pruner_mode(mode)
 
         self.prepare_dataloader_train_valid()
@@ -300,6 +276,7 @@ class NNIPruningOptimizer(Optimizer):
             "cuda" if torch.cuda.is_available() else "cpu")
 
         nni_logger.setLevel(self.log.level)
+        nni_graph_logger.setLevel(self.log.level)
 
     def compile(
         self,
@@ -307,6 +284,9 @@ class NNIPruningOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
         model = self.inputtypes[self.inputtype](inputmodelpath, self.device)
+
+        if self.exclude_last_layer:
+            self.add_exclude_to_config(model)
 
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
@@ -334,13 +314,14 @@ class NNIPruningOptimizer(Optimizer):
         self.log.info("Pruning model")
 
         _, mask = pruner.compress()
+        fixed_mask = fix_mask_conflict(mask, model, dummy_input)
         pruner._unwrap_model()
 
         ModelSpeedup(
             model,
             dummy_input=dummy_input,
-            masks_file=mask,
-            customized_replace_func=self.replace_modules
+            masks_file=fixed_mask,
+            customized_replacers=[DefaultReplacer(self.replace_modules)]
         ).speedup_model()
 
         self.log.info(f"Model after pruning\n{model}")
@@ -362,11 +343,13 @@ class NNIPruningOptimizer(Optimizer):
                 self.log.info(f"Epoch {finetuning_epoch+1} from "
                               f"{self.finetuning_epochs}"
                               f" ended with mean loss: {mean_loss}")
-            if finetuning_epoch % 4 == 0:  # TODO: tmp checkpoints,remove later
-                torch.save(model, f'{str(self.compiled_model_path)[:-4]}'
-                           f'_ep{finetuning_epoch}.pth')
 
-        torch.save(model, self.compiled_model_path)
+        try:
+            torch.save(model, self.compiled_model_path)
+        except AttributeError:
+            self.log.error("Full model can't be pickled, only"
+                           " model parameters will be saved")
+            torch.save(model.state_dict(), self.compiled_model_path)
         self.save_io_specification(inputmodelpath, io_spec)
 
     def train_model(
@@ -495,8 +478,10 @@ class NNIPruningOptimizer(Optimizer):
         label = np.asarray(self.dataset.prepare_output_samples(batch_y))
 
         if list(data.shape[1:]) != list(self.io_spec['input'][0]['shape'][1:]):
-            # try to change place of a channel
-            data = np.moveaxis(data, -1, 1)
+            data = np.reshape(
+                data,
+                (-1, *self.io_spec['input'][0]['shape'][1:])
+            )
         assert list(data.shape[1:]) == \
             list(self.io_spec['input'][0]['shape'][1:]), \
             f"Input data in shape {data.shape[1:]}, but only " \
@@ -582,6 +567,24 @@ class NNIPruningOptimizer(Optimizer):
             device=self.device,
         )
 
+    def add_exclude_to_config(self, model: torch.nn.Module):
+        """
+        The method appending config list with name of excluded last
+        linear layer
+
+        Parameters
+        ----------
+        model: torch.nn.Module
+            Model which will be pruned
+        """
+        for name, node in reversed(list(model.named_children())):
+            if isinstance(node, torch.nn.Linear):
+                self.config_list.append({
+                    'exclude': True,
+                    'op_names': [name]
+                })
+                break
+
     def set_pruner_class(self, pruner_type):
         """
         The method used for choosing pruner class based on input string
@@ -648,4 +651,5 @@ class NNIPruningOptimizer(Optimizer):
             args.activation,
             args.model_framework,
             args.finetuning_epochs,
+            args.exclude_last_layer,
         )

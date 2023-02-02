@@ -2,7 +2,8 @@
 
 This chapter describes the development process of Kenning components.
 
-## Model metadata
+(model-io-metadata)=
+## Model and I/O metadata
 
 Since not all model formats supported by Kenning provide information about inputs and outputs or other data required for compilation or runtime purposes, each model processed by Kenning comes with a JSON file describing an I/O specification (and other useful metadata).
 
@@ -85,11 +86,13 @@ If `processed_input` or `processed_output` is not specified we assume that there
 Each array consist of dictionaries describing model inputs and outputs.
 
 Parameters common to all fields:
-* `name` - input/output name,
-* `shape` - input/output tensor shape,
-* `dtype` - input/output type.
 
-Parameters specific to `input` and `processed_input`:
+* `name` - input/output name,
+
+Parameters specific to `input` and `output`:
+
+* `shape` - input/output tensor shape,
+* `dtype` - input/output type,
 * `order` - some of the runtimes/compilers allow accessing inputs and outputs by id.
   This field describes the id of the current input/output,
 * `scale` - scale parameter for the quantization purposes.
@@ -97,15 +100,24 @@ Parameters specific to `input` and `processed_input`:
 * `zero_point` - zero point parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization,
 * `prequantized_dtype` - input/output data type before quantization.
-* `mean` - mean used to normalize dataset before model training,
-* `std` - standard deviation used to normalize dataset before model training,
 * `class_name` - list of class names from the dataset.
   It is used by output collectors to present the data in human-readable way.
 
-Parameters specific to `processed_output`:
+Parameters specific to `input`:
+
+* `mean` - mean used to normalize inputs before model training,
+* `std` - standard deviation used to normalize inputs before model training.
+
+Parameters specific to `output` and `processed_output`:
+
+* `class_name` - list of class names from the dataset.
+  It is used by output collectors to present the data in human-readable way.
+
+Parameters specific to `processed_input` and `processed_output`:
 * `type` - input/output type if different than `np.ndarray` (i.e. `List[SegmObject]` in segmentation model's postprocessed output).
 
 The model metadata is used by all classes in Kenning in order to understand the format of the inputs and outputs.
+
 ```{warning}
 The [](optimizer-api) objects can affect the format of inputs and outputs, e.g. quantize the network. It is crucial to update the I/O specification when a block modifies it.
 ```
@@ -589,22 +601,25 @@ The emphasized line demonstrates usage of the implemented `TensorFlowLiteCompile
 This sums up the Kenning development process.
 
 ## Implementing Kenning runtime blocks
+
 (implementing-runner)=
 ### Implementing a new Runner for KenningFlow
 
-The process of creating new [Runner](runner-api) is almost the same as described above process of implementing Kenning component.
+The process of creating new [](runner-api) is almost the same as described above process of implementing Kenning component.
 There are few more things to be done.
 
 First of all, the new component must inherit from Runner class (not necessarily directly).
 Then one need to implement following methods:
-* `cleanup` - cleans resources after flow is stopped,
-* `should_close` - (optional) returns boolean indicating whether runner got some exit indication (error etc.).
-  Default implementation always returns `False`,
+* `cleanup` - cleans resources after execution is stopped
+* `should_close` - (*optional*) returns boolean indicating whether runner ended processing and requests closing
+  Possible reasons can be signal from terminal, user request in GUI, end of data to process, error and more.
+  Default implementation always returns `False`
 * `run` - method that gets runner inputs, process them and returns obtained results.
 
 Inputs of the runner are passed to the `run` method as a dictionary where key is the name of the input same as specified in KenningFlow JSON and the value is simply input's value.
 
 In example for `DetectionVisualizer` defined in JSON as
+
 ```{code-block} json
 ---
 emphasize-lines: 8-9
@@ -621,7 +636,9 @@ emphasize-lines: 8-9
     }
 }
 ```
+
 the `run` method access inputs as follows
+
 ```{code-block} python
 ---
 emphasize-lines: 2-3

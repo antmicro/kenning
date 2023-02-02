@@ -6,7 +6,7 @@
 ONNXConversion for PyTorch models.
 """
 
-from copy import deepcopy
+import copy
 import torchvision.models as models
 import torch
 import onnx
@@ -71,6 +71,7 @@ class PyTorchONNXConversion(ONNXConversion):
         return SupportStatus.SUPPORTED
 
     def onnx_import(self, modelentry, importpath):
+        device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model_onnx = onnx.load(str(importpath))
         if model_onnx.ir_version <= 3:
             self.logger.error("Model unsupported due to the not suficient "
@@ -85,7 +86,7 @@ class PyTorchONNXConversion(ONNXConversion):
                 model_onnx
             )
             input_tensor = (
-                [torch.rand(shape) for shape in input_tensor]
+                [torch.rand(shape).to(device) for shape in input_tensor]
                 if input_tensor
                 else None
             )
@@ -101,6 +102,7 @@ class PyTorchONNXConversion(ONNXConversion):
             del model_onnx
             return SupportStatus.UNSUPPORTED
 
+        model_torch = model_torch.to(device)
         model_torch.train()
         model_torch(*input_tensor)
 
@@ -124,7 +126,6 @@ class PyTorchONNXConversion(ONNXConversion):
         import onnx2torch
         from onnx2torch.node_converters.registry import (
             add_converter,
-            get_converter,
             _CONVERTER_REGISTRY,
             OperationDescription,
         )
@@ -134,13 +135,7 @@ class PyTorchONNXConversion(ONNXConversion):
         from onnx2torch.node_converters.batch_norm import _ as _batch_converter
         from onnx2torch.node_converters.reshape import OnnxReshape
         from onnx2torch.node_converters.matmul import _ as _matmul_converter
-        from onnx2torch.node_converters.gather import OnnxGather
         from onnx2torch.node_converters.constant import OnnxConstant
-        from onnx2torch.node_converters.activations import OnnxSoftmaxV1V11
-        from onnx2torch.node_converters.concat import (
-            OnnxConcat,
-            _ as _concat_converter
-        )
         from onnx2torch.node_converters.max_pool import (
             _ as _max_pool_converter
         )
@@ -151,10 +146,9 @@ class PyTorchONNXConversion(ONNXConversion):
             OperationConverterResult,
             OnnxMapping,
         )
-        _unsqueeze_converter = get_converter('Unsqueeze', 11)
 
-        # Backup copy and removing default converters
-        converter_registy_copy = deepcopy(_CONVERTER_REGISTRY)
+        # Backuping and removing default converters
+        converter_registy_copy = copy.deepcopy(_CONVERTER_REGISTRY)
         default_versions = (
             ("Gemm", (9, 11, 13)),
             ("MatMul", (1, 9, 13)),
@@ -165,11 +159,6 @@ class PyTorchONNXConversion(ONNXConversion):
             ("Add", (1, 6, 7, 13, 14)),
             ("Sub", (1, 6, 7, 13, 14)),
             ("Shape", (1, 13, 15)),
-            ("Gather", (1, 11, 13)),
-            ("Concat", (4, 11, 13)),
-            ("LRN", (1, 13)),
-            ("Softmax", (1, 11)),
-            ("Unsqueeze", (1, 11)),
         )
         for op_type, versions in default_versions:
             for version in versions:
@@ -181,12 +170,14 @@ class PyTorchONNXConversion(ONNXConversion):
                     )
                 ]
 
+        const_nodes = dict()
+
         def create_linear_from_weights(
             weights: torch.Tensor,
             bias: Optional[Union[torch.Tensor, bool]] = None,
             alpha: float = 1.0,
             beta: float = 1.0,
-        ):
+        ) -> torch.nn.Linear:
             """
             The function for creating torch Linear layer based on provided
             weights and biases
@@ -204,7 +195,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            Created Linear layer
+            torch.nn.Linear:
+                Created Linear layer
             """
             if bias is False:
                 bias = None
@@ -245,7 +237,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            Extracted value or default_value
+            Optional[torch.Tensor]:
+                Extracted value or default_value
             """
             value = None
             if value_name in node.attributes:
@@ -254,7 +247,10 @@ class PyTorchONNXConversion(ONNXConversion):
                 value = graph.initializers[value_name]
             elif value_name in graph._node_output_values:
                 value_node, _ = graph.value_as_node_output(value_name)
-                value = value_node.attributes.get('value', default_value)
+                if value_node.operation_type == "Constant":
+                    value = value_node.attributes.get('value', default_value)
+                elif value_node.name in const_nodes:
+                    value = const_nodes[value_node.name].value
 
             if value is None:
                 return default_value
@@ -270,7 +266,7 @@ class PyTorchONNXConversion(ONNXConversion):
 
         class Transposition(torch.nn.Module):
             """
-            Artifficial torch Module for transposing input
+            Artificial torch Module for transposing input
             """
 
             def __init__(self) -> None:
@@ -297,7 +293,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting Gemm
             """
             a_name = node.input_values[0]
             b_name = node.input_values[1]
@@ -354,7 +351,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting MatMul
             """
             in_name_0 = node.input_values[0]
             in_name_1 = node.input_values[1]
@@ -403,7 +401,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting BatchNormalization
             """
             if len(node.output_values) > 1:
                 self.logger.warning(
@@ -431,7 +430,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting Dropout
             """
             if len(node.input_values) > 1:
                 self.logger.warning("Number of Dropout inputs reduced to one")
@@ -460,17 +460,28 @@ class PyTorchONNXConversion(ONNXConversion):
                 super().__init__()
                 self.shape = size
 
-            def forward(self, x: torch.Tensor) -> torch.Tensor:
-                return torch.reshape(x, torch.Size((x.shape[0], *self.shape)))
+            def forward(self, *x: torch.Tensor) -> torch.Tensor:
+                return torch.reshape(
+                    x[0],
+                    torch.Size((x[0].shape[0], *self.shape)))
 
         class Reshape(OnnxReshape):
             """
             Extension of OnnxReshape with correcting inputs order
             """
 
+            def flatten(self, input_, shape):
+                return torch.flatten(input_, startt_dim=shape.shape[0]-1)
+
             def forward(self, *inputs):
+                if len(inputs) <= 2:
+                    return torch.flatten(inputs[0], start_dim=1)
                 if inputs[0].dim() == 1:
+                    if inputs[0].shape[0] <= 2:
+                        return self.flatten(inputs[1], inputs[0])
                     return super().forward(inputs[1], inputs[0])
+                if inputs[1].shape[0] <= 2:
+                    return self.flatten(inputs[0], inputs[1])
                 return super().forward(*inputs)
 
         @add_converter(operation_type="Reshape", version=5)
@@ -495,7 +506,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting Reshape
             """
             shape = extract_value_from_graph(node, graph, node.input_values[1])
             mapping = OnnxMapping(
@@ -540,12 +552,12 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting MaxPool
             """
             padding = extract_value_from_graph(node, graph, "pads")
             if padding is not None:
                 self.logger.warning("Forcing symmetric paddings")
-                print(padding)
                 half_len = len(padding) // 2
                 begin_pads, end_pads = padding[:half_len], padding[half_len:]
                 new_padding = []
@@ -585,7 +597,8 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting Add or Sub
             """
             in_name_0 = node.input_values[0]
             in_name_1 = node.input_values[1]
@@ -651,232 +664,140 @@ class PyTorchONNXConversion(ONNXConversion):
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            OperationConverterResult:
+                Scheme for converting Shape
             """
             return OperationConverterResult(
                 torch_module=ShapeWithMemory(),
                 onnx_mapping=onnx_mapping_from_node(node)
             )
 
-        class GatherWithConstIndicies(OnnxGather):
+        def fill_none(
+            module: torch.nn.Module, template: List, *inputs
+        ) -> List[torch.Tensor]:
             """
-            Extension of OnnxGather with constant indicies
-            """
-
-            def __init__(self, indicies: torch.Tensor, axis: int = 0):
-                super().__init__(axis)
-                self.indicies = indicies
-
-            def forward(self, input_tensor):
-                return super().forward(input_tensor, self.indicies)
-
-        @add_converter(operation_type="Gather", version=1)
-        @add_converter(operation_type="Gather", version=11)
-        @add_converter(operation_type="Gather", version=13)
-        def gather_converter(
-            node: OnnxNode, graph: OnnxGraph
-        ) -> OperationConverterResult:
-            """
-            Extension of onnx2torch's Gather conversion, if one input is not
-            an output from other node, then convert to GatherWithConstIndicies
+            The function for combining input list from inputs and constants
 
             Parameters
             ----------
-            node: OnnxNode
-                The Gemm node for conversion
-            graph: OnnxGraph
-                The whole model wrapped in OnnxGraph
+            module: torch.nn.Module
+                Module which will receive the input
+            template: List[Tensor | None]
+                Template list showing how input should look, not None values
+                means constant
+            *inputs
+                Inputs for the forward method
 
             Returns
             -------
-            OperationConverterResult which is a scheme for converting Gemm
+            List[torch.Tensor]:
+                Completed list of inputs
             """
-            axis = extract_value_from_graph(node, graph, 'axis', 0)
-            indicies = extract_value_from_graph(
-                node, graph, node.input_values[1]
-            )
+            i = 0
+            c = 0
+            result = []
+            for id, el in enumerate(template):
+                if el is None:
+                    result.append(inputs[i] if len(inputs) > i else None)
+                    i += 1
+                else:
+                    result.append(module.get_buffer(f'const{c}'))
+                    c += 1
+            return result
 
-            if indicies is not None:
-                if indicies.dim() == 0:
-                    indicies = int(indicies)
-                return OperationConverterResult(
-                    torch_module=GatherWithConstIndicies(indicies, axis),
-                    onnx_mapping=OnnxMapping(
-                        inputs=(node.input_values[0],),
-                        outputs=node.output_values
-                    )
-                )
-            return OperationConverterResult(
-                torch_module=OnnxGather(axis),
-                onnx_mapping=onnx_mapping_from_node(node)
-            )
-
-        class ConcatWithConstInputs(OnnxConcat):
+        class FunctionWrapperForCheckingConst:
             """
-            Extension of OnnxConcat with part of input as a constant
+            Class wrapping existing onnx2torch converters, for checking
+            constant inputs and converting nodes to OnnxConstant if neccessary
             """
 
-            def __init__(self, axis: int, const_input: List[torch.Tensor]):
-                super().__init__(axis)
-                self.const_input = const_input
+            # Operation types with different behavior depending on test/eval
+            op_type_train_eval = {'Dropout', 'BatchNormalization'}
 
-            def _apply(self, fn):
-                self.const_input = [fn(const) for const in self.const_input]
-                return super()._apply(fn)
+            def __init__(self, default_converter):
+                self.default_converter = default_converter
 
-            def forward(self, *input_tensors):
-                return super().forward(*input_tensors, *self.const_input)
+            def __call__(self, node: OnnxNode, graph: OnnxGraph):
+                defalut_conversion = self.default_converter(node, graph)
+                params = list(
+                    defalut_conversion.torch_module.parameters())
+                if node.operation_type != "Constant":
+                    inputs = [extract_value_from_graph(node, graph, name)
+                              for name
+                              in defalut_conversion.onnx_mapping.inputs]
+                    constant_input = [_input is not None for _input in inputs]
 
-        @add_converter(operation_type="Concat", version=4)
-        @add_converter(operation_type="Concat", version=11)
-        @add_converter(operation_type="Concat", version=13)
-        def concat_converter(
-            node: OnnxNode, graph: OnnxGraph
-        ) -> OperationConverterResult:
-            """
-            Extension of onnx2torch's Concat conversion, if at least one input
-            is constant convert to ConcatWithConstInputs
+                    if all(constant_input):
+                        # All inputs are constant, so node will be converted
+                        # to OnnxConstant
+                        const = OnnxConstant(
+                            defalut_conversion.torch_module(*inputs)
+                        )
+                        const_nodes[node.name] = const
+                        return OperationConverterResult(
+                            torch_module=const,
+                            onnx_mapping=OnnxMapping(
+                                inputs=tuple(),
+                                outputs=node.output_values
+                            )
+                        )
+                    elif (any(constant_input) and len(params) > 0) \
+                            or len(params) == 0:
+                        # Some inputs are constants or module don't have
+                        # parameters, fixing number of inputs
+                        inputs_name = tuple((name for name, const in zip(
+                            defalut_conversion.onnx_mapping.inputs,
+                            constant_input
+                        ) if not const))
+                        if len(params) > 0 or \
+                                node.operation_type in self.op_type_train_eval:
+                            module: torch.nn.Module = type(
+                                node.operation_type,
+                                (torch.nn.Module,), {
+                                    "consts": inputs,
+                                    "forward": lambda self, *inputs:
+                                    self.wrapped_module(
+                                        *fill_none(self, self.consts, *inputs))
+                                })()
+                            module.register_module(
+                                'wrapped_module',
+                                defalut_conversion.torch_module)
+                        else:
+                            module: torch.nn.Module = type(
+                                node.operation_type,
+                                (torch.nn.Module,), {
+                                    "consts": inputs,
+                                    "wrapped_model":
+                                    defalut_conversion.torch_module,
+                                    "forward": lambda self, *inputs:
+                                    self.wrapped_model(
+                                        *fill_none(self, self.consts, *inputs))
+                                })()
+                        i = 0
+                        for id, (const, name) in enumerate(zip(
+                                module.consts,
+                                defalut_conversion.onnx_mapping.inputs
+                        )):
+                            if isinstance(const, torch.Tensor):
+                                module.register_buffer(f"const{i}", const)
+                                i += 1
+                        return OperationConverterResult(
+                            torch_module=module,
+                            onnx_mapping=OnnxMapping(
+                                inputs=inputs_name,
+                                outputs=defalut_conversion.onnx_mapping.outputs
+                            ))
+                else:  # Converted node is constant
+                    const_nodes[node.name] = \
+                        defalut_conversion.torch_module
+                return defalut_conversion
 
-            Parameters
-            ----------
-            node: OnnxNode
-                The Gemm node for conversion
-            graph: OnnxGraph
-                The whole model wrapped in OnnxGraph
-
-            Returns
-            -------
-            OperationConverterResult which is a scheme for converting Gemm
-            """
-            const_inputs = []
-            const_input_names = []
-            axis = extract_value_from_graph(node, graph, 'axis', 0)
-            for input_name in node.input_values:
-                _input = extract_value_from_graph(node, graph, input_name)
-                if _input is not None:
-                    const_inputs.append(_input)
-                    const_input_names.append(input_name)
-            if len(const_inputs) > 0:
-                new_inputs = list(node.input_values)
-                [new_inputs.remove(v) for v in const_input_names]
-                return OperationConverterResult(
-                    torch_module=ConcatWithConstInputs(axis, const_inputs),
-                    onnx_mapping=OnnxMapping(
-                        inputs=new_inputs,
-                        outputs=node.output_values
-                    )
-                )
-            else:
-                return _concat_converter(node, graph)
-
-        class WrapperForUniqueInputs(torch.nn.Module):
-            """
-            Wrapper for torch.nn.Module class, which ensure only one input
-            """
-
-            def __init__(self, module: torch.nn.Module):
-                super().__init__()
-                self.wrapped_module = module
-
-            def forward(self, *inputs):
-                return self.wrapped_module.forward(inputs[0])
-
-        @add_converter(operation_type='LRN', version=1)
-        @add_converter(operation_type='LRN', version=13)
-        def lrn_converter(
-            node: OnnxNode, graph: OnnxGather
-        ) -> OperationConverterResult:
-            """
-            Extension of onnx2torch's LRN conversion, wrapping
-            LocalResponseNorn with WrapperForUniqueInputs to ensure right
-            number of inputs
-
-            Parameters
-            ----------
-            node: OnnxNode
-                The Gemm node for conversion
-            graph: OnnxGraph
-                The whole model wrapped in OnnxGraph
-
-            Returns
-            -------
-            OperationConverterResult which is a scheme for converting Gemm
-            """
-            size = extract_value_from_graph(node, graph, 'size')
-            alpha = extract_value_from_graph(node, graph, 'alpha', 0.0001)
-            beta = extract_value_from_graph(node, graph, 'beta', 0.75)
-            k = extract_value_from_graph(node, graph, 'bias', 1)
-
-            return OperationConverterResult(
-                torch_module=WrapperForUniqueInputs(
-                    torch.nn.LocalResponseNorm(size, alpha, beta, k)),
-                onnx_mapping=onnx_mapping_from_node(node)
-            )
-
-        @add_converter(operation_type='Softmax', version=1)
-        @add_converter(operation_type='Softmax', version=11)
-        def softmax_converter(
-            node: OnnxNode, graph: OnnxGraph
-        ) -> OperationConverterResult:
-            """
-            Extension of onnx2torch's Softmax conversion, wrapping
-            OnnxSoftmaxV1V11 with WrapperForUniqueInputs to ensure right
-            number of inputs
-
-            Parameters
-            ----------
-            node: OnnxNode
-                The Gemm node for conversion
-            graph: OnnxGraph
-                The whole model wrapped in OnnxGraph
-
-            Returns
-            -------
-            OperationConverterResult which is a scheme for converting Gemm
-            """
-            dim = extract_value_from_graph(node, graph, 'axis', 1)
-            return OperationConverterResult(
-                torch_module=WrapperForUniqueInputs(OnnxSoftmaxV1V11(dim)),
-                onnx_mapping=onnx_mapping_from_node(node)
-            )
-
-        @add_converter(operation_type='Unsqueeze', version=1)
-        @add_converter(operation_type='Unsqueeze', version=11)
-        def unsqueeze_converter(
-            node: OnnxNode, graph: OnnxGather
-        ) -> OperationConverterResult:
-            """
-            Extension of onnx2torch's Unsqueeze conversion, changing node to
-            OnnxConstant if both inputs are constants
-
-            Parameters
-            ----------
-            node: OnnxNode
-                The Gemm node for conversion
-            graph: OnnxGraph
-                The whole model wrapped in OnnxGraph
-
-            Returns
-            -------
-            OperationConverterResult which is a scheme for converting Gemm
-            """
-            _input = extract_value_from_graph(
-                node, graph, node.input_values[0])
-            dims = extract_value_from_graph(node, graph, 'axes', -1)
-            if _input is not None and dims is not None:
-                for dim in dims:
-                    _input = torch.unsqueeze(_input, dim)
-                return OperationConverterResult(
-                    torch_module=OnnxConstant(_input),
-                    onnx_mapping=OnnxMapping(
-                        inputs=tuple(),
-                        outputs=node.output_values
-                    )
-                )
-            else:
-                return _unsqueeze_converter(node, graph)
+        for description, converter in _CONVERTER_REGISTRY.items():
+            _CONVERTER_REGISTRY[description] = \
+                FunctionWrapperForCheckingConst(converter)
 
         # Convert module and restore default Gemm conversions
         converted_model = onnx2torch.convert(onnx_model)
-        _CONVERTER_REGISTRY = converter_registy_copy
+        for description, func in converter_registy_copy.items():
+            _CONVERTER_REGISTRY[description] = func
         return converted_model

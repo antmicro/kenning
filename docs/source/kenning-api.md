@@ -62,7 +62,7 @@ In the end, the results of model evaluation are passsed to report rendering.
 The final report is generated as an RST file containing figures, as can be observed in the [](./sample-report).
 
 (kenningflow-api)=
-## KenningFLow
+## KenningFlow
 
 `kenning.core.flow.KenningFlow` class allows creation and execution of arbitrary flows built of runners.
 It is responsible for validating all runners provided in config file and their IO compatibility.

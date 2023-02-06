@@ -7,10 +7,10 @@ A OutputCollector-derived class used to visualize bounding box
 data on input images and display/save them.
 """
 
-import random
 import cv2
 import sys
 import numpy as np
+import colorsys
 from typing import Tuple, List, Dict
 from pathlib import Path
 from collections import defaultdict
@@ -19,18 +19,15 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DectObject
 
 
-def generate_color() -> Tuple[int, int, int]:
+def generate_color() -> Tuple[float, float, float]:
     """
     Generates a random RGB color
+
     Returns
     -------
-    Tuple[int, int, int] : color in (r,g,b) format
+    Tuple[float, float, float] : color in (r,g,b) format
     """
-    return (
-        random.randint(0, 255),
-        random.randint(0, 255),
-        random.randint(0, 255)
-    )
+    return colorsys.hsv_to_rgb(np.random.rand(), 1, 1)
 
 
 class DetectionVisualizer(OutputCollector):
@@ -303,3 +300,4 @@ class DetectionVisualizer(OutputCollector):
         input_data = inputs['frame']
         output_data = inputs['detection_data']
         self.process_output(input_data, output_data)
+        return {}

@@ -145,7 +145,11 @@ class Runner(IOInterface):
         inputs = {input_name: flow_state[block_idx][output_name]
                   for input_name, (block_idx, output_name)
                   in self.inputs_sources.items()}
-        outputs = self.run(inputs)
+        local_outputs = self.run(inputs)
+        outputs = {}
+        for local_name, global_name in self.outputs.items():
+            outputs[global_name] = local_outputs[local_name]
+
         flow_state.append(outputs)
 
     def run(

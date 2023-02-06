@@ -243,11 +243,9 @@ class ModelRuntimeRunner(Runner):
         result = {}
         # TODO: Add support for multiple inputs/outputs
         for out_spec, out_value in zip(io_spec['output'], [preds]):
-            if out_spec['name'] in self.outputs.keys():
-                result[self.outputs[out_spec['name']]] = out_value
+            result[out_spec['name']] = out_value
 
         for out_spec, out_value in zip(io_spec['processed_output'], [posty]):
-            if out_spec['name'] in self.outputs.keys():
-                result[self.outputs[out_spec['name']]] = out_value
+            result[out_spec['name']] = out_value
 
         return result

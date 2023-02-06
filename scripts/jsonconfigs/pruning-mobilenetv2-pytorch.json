@@ -1,45 +1,41 @@
 {
-    "model_wrapper":
-    {
-        "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
-        "parameters":
-        {
-            "model_path": "./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"                                        
-        }                            
-    },
-    "dataset":
-    {
-        "type": "kenning.datasets.pet_dataset.PetDataset",
-        "parameters":
-            {
-                "dataset_root": "./build/pet-dataset"
-            }
-    },
-    "optimizers":
-    [
-        {
-            "type": "kenning.compilers.nni_pruning.NNIPruningOptimizer",
-            "parameters": 
-            {
-                "pruner_type": "apoz",
-                "config_list": "[{\"sparsity_per_layer\": 0.15, \"op_types\": [\"Conv2d\"]}]",
-                "training_steps": 8,
-                "activation": "gelu",
-                "compiled_model_path": "./build/model.pth",
-                "mode": "dependency_aware",
-                "finetuning_epochs": 5,
-                "finetuning_batch_size": 32,
-                "criterion": "torch.nn.CrossEntropyLoss",
-                "optimizer": "torch.optim.SGD",
-                "finetuning_learning_rate": 0.001
-            }                               
-        }                    
-    ],
-    "runtime":
-    {
-        "type": "kenning.runtimes.pytorch.PyTorchRuntime",
-        "parameters":{
-            "save_model_path": "./build/model.pth"
-        }
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
+    "parameters": {
+      "model_path": "./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
     }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/pet-dataset"
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.compilers.nni_pruning.NNIPruningOptimizer",
+      "parameters": {
+        "pruner_type": "apoz",
+        "config_list": "[{\"sparsity_per_layer\": 0.15, \"op_types\": [\"Conv2d\", \"Linear\"]}]",
+        "training_steps": 174,
+        "activation": "relu",
+        "compiled_model_path": "./build/model.pth",
+        "mode": "dependency_aware",
+        "finetuning_epochs": 5,
+        "finetuning_batch_size": 32,
+        "confidence": 8,
+        "criterion": "torch.nn.CrossEntropyLoss",
+        "optimizer": "torch.optim.SGD",
+        "pruning_on_cuda": true,
+        "finetuning_learning_rate": 0.001,
+        "exclude_last_layer": true
+      }
+    }
+  ],
+  "runtime": {
+    "type": "kenning.runtimes.pytorch.PyTorchRuntime",
+    "parameters": {
+      "save_model_path": "./build/model.pth"
+    }
+  }
 }

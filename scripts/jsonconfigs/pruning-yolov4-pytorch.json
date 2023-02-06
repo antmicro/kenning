@@ -1,0 +1,45 @@
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+    "parameters": {
+      "model_path": "./kenning/resources/models/detection/yolov4.onnx"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.coco_dataset.COCODataset2017",
+    "parameters": {
+      "dataset_root": "./kenning/resources/coco_detection",
+      "dataset_type": "val2017",
+      "download_dataset": false,
+      "image_width": 608,
+      "image_height": 608
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.compilers.nni_pruning.NNIPruningOptimizer",
+      "parameters": {
+        "model_framework": "onnx",
+        "pruner_type": "apoz",
+        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\"]}]",
+        "training_steps": 1024,
+        "activation": "relu6",
+        "compiled_model_path": "./build/model.pth",
+        "mode": "dependency_aware",
+        "finetuning_epochs": 1,
+        "finetuning_batch_size": 2,
+        "confidence": 2,
+        "criterion": "kenning.compilers.nni_pruning.TmpLoss",
+        "optimizer": "torch.optim.Adam",
+        "pruning_on_cuda": false,
+        "finetuning_learning_rate": 0.0015
+      }
+    }
+  ],
+  "runtime": {
+    "type": "kenning.runtimes.pytorch.PyTorchRuntime",
+    "parameters": {
+      "save_model_path": "./build/model.pth"
+    }
+  }
+}

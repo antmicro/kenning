@@ -240,7 +240,7 @@ class NNIPruningOptimizer(Optimizer):
         finetuning_learning_rate: float = 0.001,
         finetuning_batch_size: int = 32,
         activation: str = "relu",
-        modelframework: str = "torch",
+        model_framework: str = "torch",
         finetuning_epochs: int = 3,
         confidence: Optional[int] = None,
         pruning_on_cuda: bool = True,
@@ -308,8 +308,8 @@ class NNIPruningOptimizer(Optimizer):
         self.exclude_last_layer = exclude_last_layer
         self.set_activation_str(activation)
 
-        self.modelframework = modelframework
-        self.set_input_type(modelframework)
+        self.model_framework = model_framework
+        self.set_input_type(model_framework)
 
         self.pruner_type = pruner_type
         self.set_pruner_class(pruner_type)
@@ -554,9 +554,6 @@ class NNIPruningOptimizer(Optimizer):
         """
         The method used to split dataset to train and validation set
         """
-        print('\n\n', self.dataset.dataX[0], self.dataset.dataY[0], '\n')
-        print(type(self.dataset.dataX), type(self.dataset.dataY))
-        print('\n')
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
         self.train_data = (Xt, Yt)
@@ -640,7 +637,6 @@ class NNIPruningOptimizer(Optimizer):
         """
         added = False
         for name, node in reversed(list(model.named_modules())):
-            print(name, node)
             if isinstance(node, torch.nn.Linear):
                 added = True
                 self.config_list.append({

@@ -6,7 +6,8 @@
 Module containing decorators for benchmark data gathering.
 """
 
-from typing import List, Dict, Union, Any, Callable
+from typing import List, Dict, Union, Any, Callable, Optional, Type
+from types import TracebackType
 import time
 from kenning.utils import logger
 import psutil
@@ -332,6 +333,19 @@ class SystemStatsCollector(Thread):
         self.step = step
         self.runningcondition = Condition()
 
+    def __enter__(self) -> 'SystemStatsCollector':
+        self.start()
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType]) -> bool:
+        self.stop()
+        self.join()
+        return False
+
     def get_measurements(self):
         """
         Returns measurements from the thread.
@@ -504,13 +518,11 @@ def systemstatsmeasurements(measurementname: str, step: float = 0.5):
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args):
-            measurementsthread = SystemStatsCollector(measurementname, step)
-            measurementsthread.start()
-            returnvalue = function(*args)
-            measurementsthread.stop()
-            measurementsthread.join()
-            MeasurementsCollector.measurements += \
-                measurementsthread.get_measurements()
+            with (SystemStatsCollector(measurementname, step)
+                    as measurementsthread):
+                returnvalue = function(*args)
+                MeasurementsCollector.measurements += \
+                    measurementsthread.get_measurements()
             return returnvalue
         return statistics_wrapper
     return statistics_decorator

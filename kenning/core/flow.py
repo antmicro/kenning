@@ -217,13 +217,17 @@ class KenningFlow:
         """
         Runs flow one time.
         """
-        self.log.info('Flow started')
-        for runner in self.runners:
-            if runner.should_close():
-                self.should_close = True
-                break
+        try:
+            self.log.info('Flow started')
+            for runner in self.runners:
+                if runner.should_close():
+                    self.should_close = True
+                    break
 
-            runner._run(self.flow_state)
+                runner._run(self.flow_state)
+        except Exception:
+            self.cleanup()
+            raise
 
     def run(self):
         """

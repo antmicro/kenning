@@ -4,6 +4,7 @@ and instance segmentation models.
 """
 from typing import Dict, Tuple, List, Any
 from collections import defaultdict
+from copy import deepcopy
 import dearpygui.dearpygui as dpg
 import numpy as np
 import time
@@ -289,7 +290,7 @@ class BaseRealTimeVisualizer(OutputCollector):
 
     def process_output(
             self,
-            input_data: np.ndarray,
+            input_data: List[np.ndarray],
             output_data: List[Any]):
         """
         Method used to prepare data for visualization and call
@@ -297,11 +298,12 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         Parameters
         ----------
-        input_data : np.ndarray
-            Input image
+        input_data : List[np.ndarray]
+            List of input images
         output_data : List[Any]
-            Data used for visualization
+            List of data used for visualization
         """
+        assert len(input_data) == 1
         assert len(output_data) == 1
         img = input_data[0]
         output_data = output_data[0]
@@ -348,12 +350,30 @@ class BaseRealTimeVisualizer(OutputCollector):
         """
         raise NotImplementedError
 
+    def get_output_data(
+            self,
+            inputs: Dict[str, Any]) -> Any:
+        """
+        Retrieves data specific to visualizer from inputs.
+
+        Parameters
+        ----------
+        inputs : Dict[str,Any]
+            Visualized inputs
+        Returns
+        -------
+        Any :
+            Data specific to visualizer
+        """
+        return inputs
+
     def run(
             self,
-            inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+            inputs: Dict[str, Any]) -> Dict[str, Any]:
         input_data = inputs['frame']
-        output_data = inputs['input']
-        self.thread_data.append((input_data, output_data))
+        output_data = self.get_output_data(inputs)
+        self.thread_data.append((deepcopy(input_data), deepcopy(output_data)))
+        return {}
 
 
 class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
@@ -380,10 +400,13 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
             'output': []
         }
 
+    def get_output_data(self, inputs: Dict[str, Any]) -> List[DectObject]:
+        return inputs['detection_data']
+
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: List[List[DectObject]]):
+            output_data: List[DectObject]):
         """
         Method used to visualize object detection data
 
@@ -392,7 +415,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         img : np.ndarray
             Input image
         output_data : List[DectObject]
-            List of detected objects
+            List of detection data
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 
@@ -455,18 +478,6 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         super().__init__('Real time segmentation visualization',
                          *args, **kwargs)
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.input_memory_layout == 'NCHW':
-            frame_shape = (1, 3, -1, -1)
-        else:
-            frame_shape = (1, -1, -1, 3)
-        return {
-            'input': [
-                {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'segmentation_input', 'type': 'List[SegmObject]'}],
-            'output': []
-        }
-
     @classmethod
     def from_argparse(cls, args):
         """
@@ -488,10 +499,25 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
             args.viewer_height
         )
 
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        if self.input_memory_layout == 'NCHW':
+            frame_shape = (1, 3, -1, -1)
+        else:
+            frame_shape = (1, -1, -1, 3)
+        return {
+            'input': [
+                {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
+                {'name': 'segmentation_data', 'type': 'List[SegmObject]'}],
+            'output': []
+        }
+
+    def get_output_data(self, inputs: Dict[str, Any]) -> List[SegmObject]:
+        return inputs['segmentation_data']
+
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: List[List[SegmObject]]):
+            output_data: List[SegmObject]):
         """
         Method used to visualize object detection data
 
@@ -499,8 +525,8 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         ----------
         img : np.ndarray
             Input image
-        output_data : List[List[SegmObject]]
-            List of detected objects
+        output_data : List[SegmObject]
+            List of segmentation data
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
         mix_factor = .3
@@ -578,7 +604,8 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         """
         super().__init__('Real time classification visualizer',
                          *args, **kwargs)
-        self.class_names = self.inputs_specs['input']['class_names']
+        class_input_spec = self.inputs_specs['classification_data']
+        self.class_names = class_input_spec['class_names']
         self.top_n = top_n
 
     @classmethod
@@ -646,9 +673,12 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         return {
             'input': [
                 {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'input', 'type': 'List[Tuple(str,float)]'}],
+                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}], # noqa: 501
             'output': []
         }
+
+    def get_output_data(self, inputs: Dict[str, Any]) -> np.ndarray:
+        return inputs['classification_data']
 
     def visualize_output(
             self,
@@ -661,8 +691,8 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         ----------
         img : np.ndarray
             Input image
-        output_data : List[Tuple[str, float]]
-            List of pairs (class name, score)
+        output_data : np.ndarray
+            Classification data
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 

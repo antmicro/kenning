@@ -170,14 +170,9 @@ class CameraDataProvider(DataProvider):
     def run(
             self,
             inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
-        frame_global_name = None
-        for local_name, global_name in self.outputs.items():
-            if local_name == 'frame':
-                frame_global_name = global_name
-
         frame = self.fetch_input()
         frame = self.preprocess_input(frame)
-        return {frame_global_name: np.expand_dims(frame, 0)}
+        return {'frame': np.expand_dims(frame, 0)}
 
 
 class VideoCaptureDeviceException(Exception):

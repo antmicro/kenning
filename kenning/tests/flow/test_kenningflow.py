@@ -78,7 +78,7 @@ MDL_RT_RUNNER_YOLACT_JSON = {
             "parameters":
             {
                 "save_model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",  # noqa: 501
-                "execution_providers": ["CUDAExecutionProvider"]
+                "execution_providers": ["CPUExecutionProvider"]
             }
         }
     },
@@ -101,7 +101,7 @@ DECT_VISUALIZER_JSON = {
     },
     "inputs": {
         "frame": "cam_frame",
-        "detection_input": "predictions"
+        "detection_data": "predictions"
     }
 }
 
@@ -116,7 +116,7 @@ RT_DECT_VISUALIZER_JSON = {
     },
     "inputs": {
         "frame": "cam_frame",
-        "input": "predictions"
+        "detection_data": "predictions"
     }
 }
 
@@ -132,7 +132,7 @@ RT_SEGM_VISUALIZER_JSON = {
     },
     "inputs": {
         "frame": "cam_frame",
-        "input": "predictions"
+        "segmentation_data": "predictions"
     }
 }
 
@@ -172,7 +172,7 @@ DECT_VISUALIZER_2_JSON = deepcopy(DECT_VISUALIZER_JSON)
 DECT_VISUALIZER_2_JSON['parameters']['save_path'] = 'out_2.mp4'
 
 DECT_VISUALIZER_3_JSON = deepcopy(DECT_VISUALIZER_JSON)
-DECT_VISUALIZER_3_JSON['inputs']['detection_input'] = 'predictions_2'
+DECT_VISUALIZER_3_JSON['inputs']['detection_data'] = 'predictions_2'
 DECT_VISUALIZER_3_JSON['parameters']['save_path'] = 'out_3.mp4'
 
 FLOW_SCENARIO_COMPLEX = [

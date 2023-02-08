@@ -22,9 +22,8 @@ import sys
 from antmicro_sphinx_utils.defaults import (
     extensions as default_extensions,
     myst_enable_extensions as default_myst_enable_extensions,
-    html_logo as default_html_logo,
-    antmicro_html_theme_options,
-    antmicro_latex_elements
+    antmicro_html,
+    antmicro_latex
 )
 
 sys.path.insert(0, os.path.abspath('../..'))
@@ -106,9 +105,11 @@ html_last_updated_fmt = today_fmt
 
 html_show_sphinx = False
 
-html_theme_options = antmicro_html_theme_options(
-    pdf_url=f"{basic_filename}.pdf"
-)
+(
+    html_logo,
+    html_theme_options,
+    html_context
+) = antmicro_html(pdf_url=f"{basic_filename}.pdf")
 
 # The name for this set of Sphinx documents. If None, it defaults to
 # "<project> v<release> documentation".
@@ -116,9 +117,6 @@ html_title = project
 
 # A shorter title for the navigation bar. Default is the same as html_title.
 # html_short_title = None
-
-# The name of an image file to place at the top of the sidebar.
-html_logo = default_html_logo
 
 html_show_sourcelink = False
 
@@ -134,7 +132,7 @@ htmlhelp_basename = basic_filename
     latex_documents,
     latex_logo,
     latex_additional_files
-) = antmicro_latex_elements(basic_filename, authors, project)
+) = antmicro_latex(basic_filename, authors, project)
 
 # -- Options for Epub output -------------------------------------------------
 

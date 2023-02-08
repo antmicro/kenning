@@ -13,10 +13,13 @@ from TVM-compiled model.
 """
 
 from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.datasets.coco_dataset import COCODataset2017
 
 
 class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
+    pretrained_modelpath = r'kenning/resources/models/detection/yolov3.cfg'
+    default_dataset = COCODataset2017
     arguments_structure = {}
 
     def get_io_specification_from_model(self):

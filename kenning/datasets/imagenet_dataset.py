@@ -13,11 +13,8 @@ import numpy as np
 from typing import Optional
 
 from kenning.core.dataset import Dataset
+from kenning.core.dataset import CannotDownloadDatasetError
 from kenning.core.measurements import Measurements
-
-
-class CannotDownloadDatasetError(Exception):
-    pass
 
 
 class ImageNetDataset(Dataset):

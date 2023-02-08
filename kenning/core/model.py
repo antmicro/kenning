@@ -6,7 +6,7 @@
 Provides a wrapper for deep learning models.
 """
 
-from typing import List, Any, Tuple, Dict
+from typing import List, Any, Tuple, Dict, Type, Optional
 import argparse
 from pathlib import Path
 from collections import defaultdict
@@ -24,7 +24,8 @@ class ModelWrapper(IOInterface):
     """
     Wraps the given model.
     """
-
+    pretrained_modelpath: Optional[str] = None
+    default_dataset: Optional[Type[Dataset]] = None
     arguments_structure = {
         'modelpath': {
             'argparse_name': '--model-path',

@@ -12,7 +12,10 @@ import tvm.relay as relay
 from pathlib import Path
 from typing import Optional, Dict, List
 
-from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
+from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import ConversionError
+from kenning.core.optimizer import CompilationError
+from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 
@@ -162,8 +165,11 @@ def darknetconversion(
         log.fatal(
             'The darknet converter requires libdarknet.so library. ' +
             'Provide the path to it using --libdarknet-path flag')
-        raise CompilationError('Provide libdarknet.so library')
-    lib = __darknetffi__.dlopen(str(compiler.libdarknetpath))
+        raise ConversionError('Provide libdarknet.so library')
+    try:
+        lib = __darknetffi__.dlopen(str(compiler.libdarknetpath))
+    except OSError as e:
+        raise ConversionError(e)
     net = lib.load_network(
         str(modelpath.with_suffix('.cfg')).encode('utf-8'),
         str(modelpath).encode('utf-8'),
@@ -172,7 +178,7 @@ def darknetconversion(
     return relay.frontend.from_darknet(
         net,
         dtype=dtype,
-        shape=input_shapes['data']
+        shape=input_shapes['input']
     )
 
 

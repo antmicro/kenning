@@ -6,10 +6,13 @@ from pathlib import Path
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
+from kenning.datasets.magic_wand_dataset import MagicWandDataset
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
 
+    default_dataset = MagicWandDataset
+    pretrained_modelpath = r'kenning/resources/models/classification/magic_wand.h5' # noqa: 501
     arguments_structure = {
         'window_size': {
             'argparse_name': '--window-size',
@@ -44,8 +47,9 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             Size of single sample window
         """
         self.window_size = window_size
-        self.class_names = self.dataset.get_class_names()
-        self.numclasses = len(self.class_names)
+        if dataset is not None:
+            self.class_names = self.dataset.get_class_names()
+            self.numclasses = len(self.class_names)
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

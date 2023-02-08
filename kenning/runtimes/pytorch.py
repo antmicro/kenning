@@ -65,7 +65,13 @@ class PyTorchRuntime(Runtime):
             with open(self.modelpath, "wb") as fd:
                 fd.write(input_data)
 
-        self.model = torch.load(self.modelpath, map_location=self.device)
+        try:
+            self.model = torch.load(self.modelpath, map_location=self.device)
+        except Exception:
+            import dill
+            with open(self.modelpath, 'rb') as fd:
+                self.model = dill.load(fd)
+
         if isinstance(self.model, torch.nn.Module):
             try:
                 self.model = torch.jit.script(self.model.eval())
@@ -118,11 +124,16 @@ class PyTorchRuntime(Runtime):
             raise ModelNotPreparedError
         import torch
 
+        results = []
         for id, output in enumerate(self.output):
             if isinstance(output, torch.Tensor):
-                self.output[id] = output.cpu().numpy()
+                results.append(output.cpu().numpy())
+            elif isinstance(output, list):
+                results.extend([out.cpu().numpy() for out in output])
+            else:
+                results.append(output)
 
-        return self.postprocess_output(self.output)
+        return self.postprocess_output(results)
 
     @classmethod
     def from_argparse(cls, protocol, args):

@@ -16,6 +16,7 @@ import operator
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.datasets.coco_dataset import COCODataset2017
 
 from kenning.resources import coco_instance_segmentation
 import sys
@@ -26,9 +27,13 @@ else:
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
+
+    default_dataset = COCODataset2017
+
     def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
         self.threshold = 0.7
-        self.numclasses = dataset.numclasses
+        if dataset is not None:
+            self.numclasses = dataset.numclasses
         super().__init__(modelpath, dataset, from_file)
 
     def create_model_structure(self):
@@ -45,8 +50,10 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             return None
         if self.from_file:
             self.load_model(self.modelpath)
+            self.model_prepared = True
         else:
             self.create_model_structure()
+            self.model_prepared = True
             self.save_model(self.modelpath)
 
         self.model.to(self.device)
@@ -56,31 +63,32 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             with open(p, 'r') as f:
                 for line in f:
                     self.custom_classnames.append(line.strip())
-        self.model_prepared = True
 
     def postprocess_outputs(self, out_all: list) -> list:
         ret = []
         for out in out_all:
             ret.append([])
-            if isinstance(out, dict):
-                for i in range(len(out['labels'])):
-                    ret[-1].append(SegmObject(
-                        clsname=self.custom_classnames[
-                            int(out['labels'][i])
-                        ],
-                        maskpath=None,
-                        xmin=float(out['boxes'][i][0]),
-                        ymin=float(out['boxes'][i][1]),
-                        xmax=float(out['boxes'][i][2]),
-                        ymax=float(out['boxes'][i][3]),
-                        mask=np.multiply(
-                            out['masks'][i].transpose(1, 2, 0),  # noqa: E501
-                            255
-                        ).astype('uint8'),
-                        score=float(out['scores'][i]),
-                        iscrowd=False
-                    ))
-                return ret
+            if not isinstance(out, dict):
+                continue
+            for i in range(len(out['labels'])):
+                masks_np = out['masks'][i].cpu().detach().numpy()
+                ret[-1].append(SegmObject(
+                    clsname=self.custom_classnames[
+                        int(out['labels'][i])
+                    ],
+                    maskpath=None,
+                    xmin=float(out['boxes'][i][0]),
+                    ymin=float(out['boxes'][i][1]),
+                    xmax=float(out['boxes'][i][2]),
+                    ymax=float(out['boxes'][i][3]),
+                    mask=np.multiply(
+                        masks_np.transpose(1, 2, 0),
+                        255
+                    ).astype('uint8'),
+                    score=float(out['scores'][i]),
+                    iscrowd=False
+                ))
+            return ret
 
     def convert_input_to_bytes(self, input_data):
         data = bytes()

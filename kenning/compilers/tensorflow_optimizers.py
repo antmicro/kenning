@@ -155,14 +155,25 @@ class TensorFlowOptimizer(Optimizer):
         """
         traindataset, validdataset = self.prepare_train_validation()
 
-        model.compile(
-            optimizer=self.optimizer,
-            loss=tf.keras.losses.CategoricalCrossentropy(
+        if len(traindataset.element_spec[1].shape) == 1:
+            loss = tf.keras.losses.SparseCategoricalCrossentropy(
                 from_logits=not self.disable_from_logits
-            ),
-            metrics=[
+            )
+            metrics = [
+                tf.keras.metrics.SparseCategoricalAccuracy()
+            ]
+        else:
+            loss = tf.keras.losses.CategoricalCrossentropy(
+                from_logits=not self.disable_from_logits
+            )
+            metrics = [
                 tf.keras.metrics.CategoricalAccuracy()
             ]
+
+        model.compile(
+            optimizer=self.optimizer,
+            loss=loss,
+            metrics=metrics
         )
 
         model.fit(

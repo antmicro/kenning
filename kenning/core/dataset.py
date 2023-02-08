@@ -539,3 +539,7 @@ class Dataset(object):
             'data_x': next[0],
             'data_y': next[1]
         }
+
+
+class CannotDownloadDatasetError(Exception):
+    pass

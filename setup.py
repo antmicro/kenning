@@ -122,7 +122,8 @@ setuptools.setup(
         'nni': [
             'kenning[torch]',
             'nni~=2.10.0',
-            'tensorboard~=2.11.1'
-        ],
+            'tensorboard~=2.11.1',
+            'dill~=0.3.6'
+        ]
     },
 )

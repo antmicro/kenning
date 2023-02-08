@@ -21,6 +21,8 @@ import numpy as np
 from typing import Callable, Dict, Optional, List, Type, Tuple
 from enum import Enum
 import json
+import copy
+import dill
 import logging
 from tqdm import tqdm
 
@@ -30,6 +32,7 @@ from kenning.core.dataset import Dataset
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import LoggerProgressBar
+from kenning.onnxconverters.onnx2torch import convert
 
 
 def torchconversion(modelpath: Path, device: torch.device, **kwargs):
@@ -46,7 +49,7 @@ def onnxconversion(modelpath: Path, device: torch.device, **kwargs):
     if conversion.onnx_import(None, modelpath) != SupportStatus.SUPPORTED:
         raise CompilationError('Conversion for provided model to PyTorch'
                                ' is not supported')
-    model = conversion.onnx_to_torch(modelpath)
+    model = convert(modelpath)
     model.to(device)
     return model
 
@@ -62,12 +65,12 @@ class AddOperation(torch.nn.Module):
                  mask_out: torch.Tensor) -> None:
         super().__init__()
         self.original_size = tuple(mask_out.shape)[1:]
-        _, self.channels_a = convert_to_coarse_mask(mask_a, 1)
-        _, self.channels_b = convert_to_coarse_mask(mask_b, 1)
-        _, self.channels_out = \
-            convert_to_coarse_mask(mask_out, 1)
-        self.channels_a = self.channels_a.to(mask_a.device)
-        self.channels_b = self.channels_b.to(mask_b.device)
+        self.register_buffer(
+            'channels_a', convert_to_coarse_mask(mask_a, 1)[1])
+        self.register_buffer(
+            'channels_b', convert_to_coarse_mask(mask_b, 1)[1])
+        self.register_buffer(
+            'channels_out', convert_to_coarse_mask(mask_out, 1)[1])
 
     def forward(self, a: torch.Tensor, b: torch.Tensor):
         operation_result = torch.zeros(a.shape[0], *self.original_size,
@@ -77,9 +80,9 @@ class AddOperation(torch.nn.Module):
         return operation_result[:, self.channels_out]
 
 
-def add_operation_conversion(onnx_math_op, masks: Tuple):
+def add_replacer(onnx_math_op, masks: Tuple):
     """
-    Function converting Addition to MaskedAddition
+    Function converting Addition to AddOperation
     """
     in_masks, out_masks, _ = masks
     return AddOperation(
@@ -87,6 +90,32 @@ def add_operation_conversion(onnx_math_op, masks: Tuple):
         in_masks[1],
         out_masks
     )
+
+
+def reshape_replacer(reshape, masks):
+    """
+    Function replacing Reshape for pruned model
+    """
+    in_masks, out_mask, _ = masks
+    reshape = copy.deepcopy(reshape)
+    if hasattr(reshape.wrapped_module, 'shape'):
+        rem = [convert_to_coarse_mask(out_mask, i)[1].shape[0]
+               for i in range(1, out_mask.dim())]
+        reshape.wrapped_module.shape = tuple(rem)
+    return reshape
+
+
+def expand_conversion(expand, masks):
+    """
+    Function replacing Expand for pruned model
+    """
+    in_masks, out_mask, _ = masks
+    if hasattr(expand, 'const0'):
+        expand = copy.deepcopy(expand)
+        expand.const0 = torch.tensor(
+            [1]+[convert_to_coarse_mask(out_mask, i)[1].shape[0]
+                 for i in range(1, expand.const0.shape[0])])
+    return expand
 
 
 class TmpLoss(torch.nn.modules.loss._Loss):
@@ -327,7 +356,11 @@ class NNIPruningOptimizer(Optimizer):
         nni_logger.setLevel(self.log.level)
         nni_graph_logger.setLevel(self.log.level)
 
-        replace_module['Add'] = add_operation_conversion
+        replace_module.update({
+            'Add': add_replacer,
+            'Reshape': reshape_replacer,
+            'Expand': expand_conversion,
+        })
 
     def compile(
         self,
@@ -402,9 +435,23 @@ class NNIPruningOptimizer(Optimizer):
         try:
             torch.save(model, self.compiled_model_path)
         except Exception:
-            self.log.error("Full model can't be pickled, only"
-                           " model parameters will be saved")
-            torch.save(model.state_dict(), self.compiled_model_path)
+            self.log.error(
+                "torch.save can't pickle full model, model parameters will be"
+                " saved and dill will try to save full model")
+            try:
+                with open(self.compiled_model_path, 'wb') as fd:
+                    dill.dump(model, fd)
+            except Exception:
+                torch.save(model.state_dict(), self.compiled_model_path)
+                self.log.info("Only model's state dict saved "
+                              f"to {self.compiled_model_path}")
+            else:
+                torch.save(model.state_dict(),
+                           str(self.compiled_model_path)+'.state_dict')
+                self.log.info(
+                    f"Full model was saved to {self.compiled_model_path} "
+                    "by `dill` and state dict was saved to "
+                    f"{self.compiled_model_path}.state_dict")
         self.save_io_specification(inputmodelpath, io_spec)
 
     def train_model(
@@ -441,7 +488,6 @@ class NNIPruningOptimizer(Optimizer):
         """
         if max_steps is None and max_epochs is None:
             max_epochs = 5
-
         model.train()
         for batch_begin in tqdm(
             range(0, len(self.train_data[0]), self.finetuning_batch_size),
@@ -530,7 +576,7 @@ class NNIPruningOptimizer(Optimizer):
         batch_y = self.train_data[1][
             batch_begin:batch_begin + self.finetuning_batch_size
         ]
-        label = np.asarray(self.dataset.prepare_output_samples(batch_y))
+        label = self.dataset.prepare_output_samples(batch_y)
 
         if list(data.shape[1:]) != list(self.io_spec['input'][0]['shape'][1:]):
             data = np.reshape(
@@ -544,7 +590,7 @@ class NNIPruningOptimizer(Optimizer):
 
         data = torch.from_numpy(data).to(self.device)
         try:
-            label = torch.from_numpy(label).to(self.device)
+            label = torch.from_numpy(np.asarray(label)).to(self.device)
         except TypeError:
             pass
 

@@ -123,6 +123,8 @@ class MagicWandDataset(Dataset):
         tmp_dataY = []
         for class_name in self.classnames.values():
             path = self.root / class_name
+            if not os.path.isdir(path):
+                raise FileNotFoundError
             class_id = self.rev_class_id(class_name)
             for file in glob.glob(str(path / '*.txt')):
                 data_frame = []

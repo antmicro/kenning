@@ -130,6 +130,7 @@ class YOLOWrapper(ModelWrapper):
             k: [np.array([int(x) for x in s.split(',')]) for s in v]
             for k, v in self.perlayerparams.items()
         }
+        self.save_io_specification(self.modelpath)
 
     def prepare_model(self):
         if self.model_prepared:

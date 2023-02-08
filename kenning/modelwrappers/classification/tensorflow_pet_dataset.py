@@ -16,9 +16,12 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.interfaces.io_interface import IOInterface
+from kenning.datasets.pet_dataset import PetDataset
 
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
+    default_dataset = PetDataset
+    pretrained_modelpath = r'kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5' # noqa: 501
     arguments_structure = {}
 
     def __init__(

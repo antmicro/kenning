@@ -99,6 +99,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             image_width: int = 416,
             image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
+        self.numclasses = 80
         self.log = get_logger()
         self.dataset_type = dataset_type
         super().__init__(

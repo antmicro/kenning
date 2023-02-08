@@ -27,11 +27,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             dataset: Dataset,
             from_file: bool,
             window_size: int = 128):
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
         """
         Creates the Magic Wand model wrapper.
 
@@ -46,10 +41,16 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         windows_size : int
             Size of single sample window
         """
+        super().__init__(
+            modelpath,
+            dataset,
+            from_file
+        )
         self.window_size = window_size
         if dataset is not None:
             self.class_names = self.dataset.get_class_names()
             self.numclasses = len(self.class_names)
+            self.save_io_specification(self.modelpath)
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):

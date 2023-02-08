@@ -11,13 +11,18 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 from pathlib import Path
 import numpy as np
 from tqdm import tqdm
-from kenning.core.dataset import Dataset
 
-from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper  # noqa: E501
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
+from kenning.core.dataset import Dataset
+from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.utils.args_manager import add_parameterschema_argument
+from kenning.utils.args_manager import add_argparse_argument
+from kenning.datasets.pet_dataset import PetDataset
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
+
+    default_dataset = PetDataset
+    pretrained_modelpath = r'kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth' # noqa: 501
 
     arguments_structure = {
         'class_count': {
@@ -113,6 +118,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         import torch
         if self.from_file:
             self.load_model(self.modelpath)
+            self.model_prepared = True
         else:
             self.create_model_structure()
 
@@ -121,9 +127,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     torch.nn.init.xavier_uniform_(m.weight)
                     torch.nn.init.zeros_(m.bias)
             self.model.classifier.apply(weights_init)
+            self.model_prepared = True
             self.save_model(self.modelpath)
         self.model.to(self.device)
-        self.model_prepared = True
 
     def train_model(
             self,

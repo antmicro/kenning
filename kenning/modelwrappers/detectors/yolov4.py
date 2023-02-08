@@ -27,6 +27,7 @@ import shutil
 from typing import List
 
 from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.datasets.coco_dataset import COCODataset2017
 
 
 def yolov4_remove_postprocessing(
@@ -61,6 +62,8 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
+    pretrained_modelpath = r'kenning/resources/models/detection/yolov4.cfg'
+    default_dataset = COCODataset2017
     arguments_structure = {}
 
     def postprocess_outputs(self, y):

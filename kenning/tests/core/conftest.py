@@ -12,7 +12,7 @@ from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
-from kenning.datasets.random_dataset import RandomizedDetectionDataset
+from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: 501
 from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: 501
 from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: 501
 from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
@@ -24,11 +24,33 @@ KENNING_MODELS_PATH: Final = Path(r'kenning/resources/models/')
 RANDOM_DATASET_SAMPLES: Final = 256
 
 
-def get_tmp_name() -> str:
-    return r'/tmp/' + next(tempfile._get_candidate_names())
+def get_tmp_path() -> Path:
+    """
+    Generates temporary path
+
+    Returns
+    -------
+    Path :
+        Temporary path
+    """
+    return Path(f'/tmp/{next(tempfile._get_candidate_names())}')
 
 
-def get_all_subclasses(cls: type) -> List[type]:
+def get_all_subclasses(cls: Type) -> List[Type]:
+    """
+    Retrieves all subclasses of given class. Filters classes that are not
+    final.
+
+    Parameters
+    ----------
+    cls : Type
+        Given base class
+
+    Returns
+    -------
+    List[Type] :
+        List of all final subclasses of given class
+    """
     result = []
     queue = [cls]
     while queue:
@@ -40,7 +62,22 @@ def get_all_subclasses(cls: type) -> List[type]:
     return result
 
 
-def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
+def get_default_dataset_model(
+        framework: str) -> Tuple[Type[Dataset], Type[ModelWrapper]]:
+    """
+    Returns default model and dataset for given framework. Returned dataset is
+    a mock of default dataset of returned model.
+
+    Parameters
+    ----------
+    framework : str
+        Name of framework
+
+    Returns
+    -------
+    Tuple[Type[Dataset], Type[ModelWrapper]] :
+        Tuple with dataset and model for given framework
+    """
     if framework == 'keras':
         dataset = get_dataset_random_mock(MagicWandDataset)
         modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.h5'
@@ -93,32 +130,76 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
 
 
 def remove_file_or_dir(path: str):
+    """
+    Removes directory of given path
+
+    Parameters
+    ----------
+    path : str
+        Path of given directory or file
+    """
     if os.path.isfile(path):
         os.remove(path)
     elif os.path.isdir(path):
         shutil.rmtree(path)
 
 
-def get_model_path(cls: Type[ModelWrapper]) -> Path:
-    return Path(f'/tmp/{cls.__name__}_{next(tempfile._get_candidate_names())}')
+def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
+    """
+    Returns temporary download path for given dataset
+
+    Parameters
+    ----------
+    dataset_cls : Type[Dataset]
+        Given dataset class
+
+    Returns
+    -------
+    Path :
+        Temporary path for dataset download
+    """
+    return Path(f'/tmp/{dataset_cls.__name__}')
 
 
-def get_dataset_download_path(cls: Type[Dataset]) -> Path:
-    return Path(f'/tmp/{cls.__name__}')
+def get_dataset(dataset_cls: Type[Dataset]) -> Dataset:
+    """
+    Returns dataset instance of given class. It tries to used already download
+    data and if that fails it download the data.
 
+    Parameters
+    ----------
+    dataset_cls : Type[Dataset]
+        Class of the dataset to be returned
 
-def get_dataset(cls: Type[Dataset]) -> Dataset:
-    download_path = get_dataset_download_path(cls)
+    Returns
+    -------
+    Dataset :
+        Instance of given dataset class
+    """
+    download_path = get_dataset_download_path(dataset_cls)
     try:
-        dataset = cls(download_path, download_dataset=False)
+        dataset = dataset_cls(download_path, download_dataset=False)
     except FileNotFoundError:
-        dataset = cls(download_path, download_dataset=True)
+        dataset = dataset_cls(download_path, download_dataset=True)
     except Exception:
         raise
     return dataset
 
 
-def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Type[Dataset]:
+def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
+    """
+    Return a mock for given dataset class.
+
+    Parameters
+    ----------
+    dataset_cls : Type[Dataset]
+        Dataset class to be mocked
+
+    Returns
+    -------
+    Dataset :
+        Mock of given dataset class
+    """
 
     if dataset_cls is PetDataset:
         return RandomizedClassificationDataset(
@@ -149,8 +230,8 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Type[Dataset]:
         dataset.dataX = dataset.prepare_input_samples(dataset.dataX)
         return dataset
     if dataset_cls is COCODataset2017:
-        return RandomizedDetectionDataset(
-            get_dataset_download_path(RandomizedDetectionDataset),
+        return RandomizedDetectionSegmentationDataset(
+            get_dataset_download_path(RandomizedDetectionSegmentationDataset),
             samplescount=8,
             numclasses=80,
             inputdims=(3, 608, 608)
@@ -158,5 +239,8 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Type[Dataset]:
     raise NotImplementedError
 
 
-class UnknownFramework(Exception):
+class UnknownFramework(ValueError):
+    """
+    Raised when unknown framework is passed.
+    """
     pass

@@ -14,6 +14,7 @@ import time
 import uuid
 
 
+@pytest.mark.xdist_group(name='use_socket')
 class RuntimeProtocolTests(TestCoreRuntimeProtocol):
     def test_initialize_server(self):
         """

@@ -24,7 +24,7 @@ class ModelWrapper(IOInterface):
     """
     Wraps the given model.
     """
-    pretrained_modelpath: Optional[str] = None
+    pretrained_modelpath: Optional[Path] = None
     default_dataset: Optional[Type[Dataset]] = None
     arguments_structure = {
         'modelpath': {

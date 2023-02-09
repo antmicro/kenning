@@ -11,6 +11,7 @@ import cv2
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
+from kenning.datasets.helpers.detection_and_segmentation import ObjectDetectionSegmentationDataset  # noqa: 501
 from kenning.datasets.helpers.detection_and_segmentation import DectObject
 
 
@@ -151,7 +152,7 @@ class RandomizedClassificationDataset(Dataset):
             yield [np.random.randint(0, 255, size=self.inputdims)]
 
 
-class RandomizedDetectionDataset(Dataset):
+class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset):   # noqa: 501
     """
     Creates a sample randomized detection dataset.
 
@@ -248,7 +249,7 @@ class RandomizedDetectionDataset(Dataset):
         for i in range(self.samplescount):
             x_rand = np.random.random((2,))
             y_rand = np.random.random((2,))
-            self.dataY.append(DectObject(
+            self.dataY.append([DectObject(
                 clsname=str(classes[i]),
                 xmin=x_rand.min(),
                 ymin=y_rand.min(),
@@ -256,7 +257,7 @@ class RandomizedDetectionDataset(Dataset):
                 ymax=y_rand.max(),
                 score=1.0,
                 iscrowd=(np.random.randint(0, 1) == 1)
-            ))
+            )])
 
     def download_dataset_fun(self):
         pass

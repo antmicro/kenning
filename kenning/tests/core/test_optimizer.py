@@ -6,7 +6,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
 from kenning.compilers import *  # noqa: 401, 403
-from kenning.tests.core.conftest import get_tmp_name
+from kenning.tests.core.conftest import get_tmp_path
 from kenning.tests.core.conftest import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 
@@ -22,14 +22,17 @@ class TestOptimizer:
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
             pytest.mark.dependency(
-                name=f'test_initializer[{opt_cls.__name__}]'
+                name=f'test_initializer[{opt_cls.__name__},{inputtype}]'
             ),
             pytest.mark.xdist_group(name=f'TestOptimizer_{opt_cls.__name__}')
         ])
         for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
     ])
     def test_initializer(self, opt_cls: Type[Optimizer], inputtype: str):
-        compiled_model_path = get_tmp_name()
+        """
+        Tests optimizer initialization.
+        """
+        compiled_model_path = get_tmp_path()
         dataset, _ = get_default_dataset_model(inputtype)
 
         _ = opt_cls(dataset, compiled_model_path)
@@ -37,14 +40,17 @@ class TestOptimizer:
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
             pytest.mark.dependency(
-                depends=[f'test_initializer[{opt_cls.__name__}]']
+                depends=[f'test_initializer[{opt_cls.__name__},{inputtype}]']
             ),
             pytest.mark.xdist_group(name=f'TestOptimizer_{opt_cls.__name__}')
         ])
         for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
     ])
     def test_compilation(self, opt_cls: Type[Optimizer], inputtype: str):
-        compiled_model_path = get_tmp_name()
+        """
+        Tests optimizer compilation.
+        """
+        compiled_model_path = get_tmp_path()
         dataset, model = get_default_dataset_model(inputtype)
 
         optimizer = opt_cls(dataset, compiled_model_path)
@@ -56,3 +62,27 @@ class TestOptimizer:
             pytest.xfail(f'compilation error {e}')
         except ConversionError as e:
             pytest.xfail(f'conversion error {e}')
+
+    @pytest.mark.parametrize('opt_cls,inputtype', [
+        pytest.param(opt_cls, inputtype, marks=[
+            pytest.mark.dependency(
+                depends=[f'test_initializer[{opt_cls.__name__},{inputtype}]']
+            ),
+            pytest.mark.xdist_group(name=f'TestOptimizer_{opt_cls.__name__}')
+        ])
+        for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
+    ])
+    def test_get_framework_and_version(
+            self,
+            opt_cls: Type[Optimizer],
+            inputtype: str):
+        """
+        Tests `get_framework_and_version` method.
+        """
+        compiled_model_path = get_tmp_path()
+        dataset, model = get_default_dataset_model(inputtype)
+
+        optimizer = opt_cls(dataset, compiled_model_path)
+        optimizer.set_input_type(inputtype)
+
+        assert optimizer.get_framework_and_version() is not None

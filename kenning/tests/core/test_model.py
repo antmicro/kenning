@@ -27,7 +27,7 @@ class TestModelWrapper:
         """
         Tests model initialization without specified dataset.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         if model_cls.pretrained_modelpath is not None:
@@ -52,7 +52,7 @@ class TestModelWrapper:
         """
         Tests model initialization with specified dataset.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -81,7 +81,7 @@ class TestModelWrapper:
         """
         Tests the `prepare_model` method.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -110,7 +110,7 @@ class TestModelWrapper:
         """
         Tests the `save_model` method.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -146,7 +146,7 @@ class TestModelWrapper:
         """
         Tests the `test_inference` method.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -179,7 +179,7 @@ class TestModelWrapper:
         """
         Tests the `train_model` method.
         """
-        modelpath = get_tmp_path(model_cls)
+        modelpath = get_tmp_path()
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset

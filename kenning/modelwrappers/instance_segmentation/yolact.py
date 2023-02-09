@@ -17,12 +17,18 @@ from functools import reduce
 from typing import Tuple
 import operator
 import shutil
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.core.model import ModelWrapper
 from kenning.interfaces.io_interface import IOInterface
 from kenning.datasets.coco_dataset import COCODataset2017
+from kenning.resources.models import instance_segmentation
 
 
 def crop(
@@ -152,7 +158,7 @@ STD = np.array([57.38, 57.12, 58.40]).reshape(-1, 1, 1)
 
 class YOLACT(ModelWrapper):
 
-    pretrained_modelpath = r'kenning/resources/models/instance_segmentation/yolact.onnx'    # noqa: 501
+    pretrained_modelpath = files(instance_segmentation) / 'yolact.onnx'
     default_dataset = COCODataset2017
     arguments_structure = {
         'top_k': {

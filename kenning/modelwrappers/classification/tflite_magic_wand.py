@@ -2,17 +2,23 @@ from typing import Dict, List
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
+from kenning.resources.models import classification
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
 
     default_dataset = MagicWandDataset
-    pretrained_modelpath = r'kenning/resources/models/classification/magic_wand.h5' # noqa: 501
+    pretrained_modelpath = files(classification) / 'magic_wand.h5'
     arguments_structure = {
         'window_size': {
             'argparse_name': '--window-size',

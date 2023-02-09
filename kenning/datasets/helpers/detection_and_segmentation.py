@@ -345,6 +345,25 @@ class ObjectDetectionSegmentationDataset(Dataset):
             )
         return parser, group
 
+    def train_test_split_representations(
+            self,
+            test_fraction: float = 0.25,
+            seed: int = 12345) -> Tuple[List, List, List, List]:
+        from sklearn.model_selection import train_test_split
+        dataY_indices = list(range(len(self.dataY)))
+        (dataXtrain, dataXtest, dataYtrain_indices, dataYtest_indices) = \
+            train_test_split(
+                self.dataX,
+                dataY_indices,
+                test_size=test_fraction,
+                random_state=seed,
+                shuffle=True
+            )
+        dataYtrain = [self.dataY[i] for i in dataYtrain_indices]
+        dataYtest = [self.dataY[i] for i in dataYtest_indices]
+
+        return (dataXtrain, dataXtest, dataYtrain, dataYtest)
+
     def get_hashable(
             self,
             unhashable: Union['DectObject', 'SegmObject']

@@ -6,11 +6,10 @@ from kenning.core.model import ModelWrapper
 from kenning.modelwrappers.classification import *  # noqa: 401, 403
 from kenning.modelwrappers.detectors import *  # noqa: 401, 403
 from kenning.modelwrappers.instance_segmentation import *  # noqa: 401, 403
+from kenning.tests.core.conftest import get_tmp_path
 from kenning.tests.core.conftest import get_all_subclasses
-from kenning.tests.core.conftest import get_tmp_name
-from kenning.tests.core.conftest import get_dataset_random_mock
-from kenning.tests.core.conftest import get_model_path
 from kenning.tests.core.conftest import remove_file_or_dir
+from kenning.tests.core.conftest import get_dataset_random_mock
 
 
 MODELWRAPPER_SUBCLASSES: Final = get_all_subclasses(ModelWrapper)
@@ -25,7 +24,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_initializer_no_dataset(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests model initialization without specified dataset.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         if model_cls.pretrained_modelpath is not None:
@@ -47,7 +49,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_initializer_with_dataset(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests model initialization with specified dataset.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -73,7 +78,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_prepare(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests the `prepare_model` method.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -99,7 +107,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_save(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests the `save_model` method.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -114,7 +125,7 @@ class TestModelWrapper:
 
         model = model_cls(model_path, dataset, from_file)
         model.prepare_model()
-        model_save_path = get_tmp_name()
+        model_save_path = get_tmp_path()
         try:
             model.save_model(model_save_path)
         except NotImplementedError:
@@ -132,7 +143,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_inference(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests the `test_inference` method.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset
@@ -162,7 +176,10 @@ class TestModelWrapper:
         for cls in MODELWRAPPER_SUBCLASSES
     ])
     def test_train(self, model_cls: Type[ModelWrapper]):
-        modelpath = get_model_path(model_cls)
+        """
+        Tests the `train_model` method.
+        """
+        modelpath = get_tmp_path(model_cls)
         remove_file_or_dir(modelpath)
 
         dataset_cls = model_cls.default_dataset

@@ -203,25 +203,27 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
 
     if dataset_cls is PetDataset:
         return RandomizedClassificationDataset(
-            get_dataset_download_path(RandomizedClassificationDataset),
+            get_tmp_path(),
             samplescount=37*4,
             numclasses=37,
             inputdims=(224, 224, 3)
         )
     if dataset_cls is ImageNetDataset:
         return RandomizedClassificationDataset(
-            get_dataset_download_path(RandomizedClassificationDataset),
+            get_tmp_path(),
             samplescount=8,
             numclasses=1000,
             inputdims=(224, 224, 3)
         )
     if dataset_cls is MagicWandDataset:
-        RandomizedClassificationDataset.train_test_split_representations = \
+        class RndClassDatasetCopy(RandomizedClassificationDataset):
+            pass
+        RndClassDatasetCopy.train_test_split_representations = \
             MagicWandDataset.train_test_split_representations
-        RandomizedClassificationDataset.prepare_tf_dataset = \
+        RndClassDatasetCopy.prepare_tf_dataset = \
             MagicWandDataset.prepare_tf_dataset
-        dataset = RandomizedClassificationDataset(
-            get_dataset_download_path(RandomizedClassificationDataset),
+        dataset = RndClassDatasetCopy(
+            get_tmp_path(),
             samplescount=4*8,
             numclasses=4,
             integer_classes=True,
@@ -231,7 +233,7 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
         return dataset
     if dataset_cls is COCODataset2017:
         return RandomizedDetectionSegmentationDataset(
-            get_dataset_download_path(RandomizedDetectionSegmentationDataset),
+            get_tmp_path(),
             samplescount=8,
             numclasses=80,
             inputdims=(3, 608, 608)

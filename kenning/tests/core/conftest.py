@@ -86,7 +86,10 @@ def get_default_dataset_model(
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
         modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.pb'
-        keras_model = load_model(MagicWandModelWrapper.pretrained_modelpath)
+        keras_model = load_model(
+            MagicWandModelWrapper.pretrained_modelpath,
+            compile=False
+        )
         keras_model.save(modelpath)
         if not os.path.isfile(f'{modelpath}.json'):
             shutil.copy(

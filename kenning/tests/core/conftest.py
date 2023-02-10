@@ -13,8 +13,9 @@ from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
 from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: 501
-from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: 501
 from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: 501
+from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: 501
+from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2    # noqa: 501
 from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
 from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
 
@@ -33,7 +34,7 @@ def get_tmp_path() -> Path:
     Path :
         Temporary path
     """
-    return Path(f'/tmp/{next(tempfile._get_candidate_names())}')
+    return Path(tempfile.gettempdir()) / next(tempfile._get_candidate_names())
 
 
 def copy_model_to_tmp(modelpath: Path) -> Path:
@@ -53,9 +54,11 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     if os.path.isfile(modelpath):
         tmp_modelpath = get_tmp_path().with_suffix(modelpath.suffix)
         shutil.copy(modelpath, tmp_modelpath)
-    else:
+    elif os.path.isdir(modelpath):
         tmp_modelpath = get_tmp_path()
         shutil.copytree(modelpath, tmp_modelpath)
+    else:
+        raise FileNotFoundError
     return tmp_modelpath
 
 
@@ -102,11 +105,15 @@ def get_default_dataset_model(
         Tuple with dataset and model for given framework
     """
     if framework == 'keras':
-        dataset = get_dataset_random_mock(MagicWandDataset)
+        dataset = get_dataset_random_mock(PetDataset)
         modelpath = copy_model_to_tmp(
-            MagicWandModelWrapper.pretrained_modelpath
+            TensorFlowPetDatasetMobileNetV2.pretrained_modelpath
         )
-        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+        model = TensorFlowPetDatasetMobileNetV2(
+            modelpath,
+            dataset,
+            from_file=True
+        )
 
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)

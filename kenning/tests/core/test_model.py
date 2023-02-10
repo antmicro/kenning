@@ -203,3 +203,61 @@ class TestModelWrapper:
             )
         except NotImplementedError:
             pytest.xfail('train_model not implemented for this model')
+
+    @pytest.mark.parametrize('model_cls', [
+        pytest.param(cls, marks=[
+            pytest.mark.dependency(
+                depends=[f'test_prepare[{cls.__name__}]']
+            ),
+            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
+        ])
+        for cls in MODELWRAPPER_SUBCLASSES
+    ])
+    def test_get_io_spec(self, model_cls: Type[ModelWrapper]):
+        """
+        Tests the `train_model` method.
+        """
+        modelpath = get_tmp_path()
+        remove_file_or_dir(modelpath)
+
+        dataset_cls = model_cls.default_dataset
+        dataset = get_dataset_random_mock(dataset_cls)
+
+        if model_cls.pretrained_modelpath is not None:
+            model_path = model_cls.pretrained_modelpath
+            from_file = True
+        else:
+            model_path = modelpath
+            from_file = False
+
+        model = model_cls(model_path, dataset, from_file)
+        assert model.get_io_specification_from_model() is not None
+
+    @pytest.mark.parametrize('model_cls', [
+        pytest.param(cls, marks=[
+            pytest.mark.dependency(
+                depends=[f'test_prepare[{cls.__name__}]']
+            ),
+            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
+        ])
+        for cls in MODELWRAPPER_SUBCLASSES
+    ])
+    def test_get_framework_and_version(self, model_cls: Type[ModelWrapper]):
+        """
+        Tests the `train_model` method.
+        """
+        modelpath = get_tmp_path()
+        remove_file_or_dir(modelpath)
+
+        dataset_cls = model_cls.default_dataset
+        dataset = get_dataset_random_mock(dataset_cls)
+
+        if model_cls.pretrained_modelpath is not None:
+            model_path = model_cls.pretrained_modelpath
+            from_file = True
+        else:
+            model_path = modelpath
+            from_file = False
+
+        model = model_cls(model_path, dataset, from_file)
+        assert model.get_framework_and_version() is not None

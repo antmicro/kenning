@@ -2,89 +2,218 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import NamedTuple
+from kenning.utils.class_loader import load_class
+from kenning.utils.logger import get_logger
+from typing import NamedTuple, List
 
-# Datasets
-from kenning.datasets.coco_dataset import COCODataset2017
-from kenning.datasets.imagenet_dataset import ImageNetDataset
-from kenning.datasets.open_images_dataset import OpenImagesDatasetV6
-from kenning.datasets.pet_dataset import PetDataset
-from kenning.datasets.random_dataset import RandomizedClassificationDataset
-
-# ModelWrappers
-# classification
-from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2  # noqa: E501
-from kenning.modelwrappers.classification.tensorflow_imagenet import TensorFlowImageNet  # noqa: E501
-from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2  # noqa: E501
-# detectors
-from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
-from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
-# instance segmentation
-from kenning.modelwrappers.instance_segmentation.pytorch_coco import PyTorchCOCOMaskRCNN  # noqa: E501
-from kenning.modelwrappers.instance_segmentation.yolact import YOLACT
-
-# RuntimeProtocols
-from kenning.runtimeprotocols.network import NetworkProtocol
-
-# Runtimes
-from kenning.runtimes.iree import IREERuntime
-from kenning.runtimes.onnx import ONNXRuntime
-from kenning.runtimes.tflite import TFLiteRuntime
-from kenning.runtimes.tvm import TVMRuntime
-
-# Optimizers
-from kenning.compilers.iree import IREECompiler
-from kenning.compilers.onnx import ONNXCompiler
-from kenning.compilers.tensorflow_clustering import TensorFlowClusteringOptimizer  # noqa: E501
-from kenning.compilers.tensorflow_pruning import TensorFlowPruningOptimizer
-from kenning.compilers.tflite import TFLiteCompiler
-from kenning.compilers.tvm import TVMCompiler
+_LOGGER = get_logger()
 
 
 class Node(NamedTuple):
+    """
+    NamedTuple specifying the single node in specification.
+
+    Attributes
+    ----------
+    name : str
+        Name of the block
+    category : str
+        Category of the node (where it appears in the available blocks menu)
+    type : str
+        Type of the block (for internal usage in pipeline manager)
+    cls : object
+        Class object to extract parameters from.
+    """
     name: str
     category: str
     type: str
     cls: object
 
 
-nodes = [
-    # Datasets
-    Node(COCODataset2017.__name__, 'Dataset', 'dataset', COCODataset2017),
-    Node(ImageNetDataset.__name__, 'Dataset', 'dataset', ImageNetDataset),
-    Node(OpenImagesDatasetV6.__name__, 'Dataset', 'dataset', OpenImagesDatasetV6),  # noqa: E501
-    Node(PetDataset.__name__, 'Dataset', 'dataset', PetDataset),
-    Node(RandomizedClassificationDataset.__name__, 'Dataset', 'dataset', RandomizedClassificationDataset),  # noqa: E501
+def add_node(
+        node_list: List,
+        nodemodule: str,
+        category: str,
+        type: str):
+    """
+    Loads a class containing Kenning block and adds it to available nodes.
 
-    # ModelWrappers
-    # classification
-    Node(PyTorchPetDatasetMobileNetV2.__name__, 'ModelWrapper - Classification', 'model_wrapper', PyTorchPetDatasetMobileNetV2),  # noqa: E501
-    Node(TensorFlowImageNet.__name__, 'ModelWrapper - Classification', 'model_wrapper', TensorFlowImageNet),  # noqa: E501
-    Node(TensorFlowPetDatasetMobileNetV2.__name__, 'ModelWrapper - Classification', 'model_wrapper', TensorFlowPetDatasetMobileNetV2),  # noqa: E501
-    # detectors
-    Node(TVMDarknetCOCOYOLOV3.__name__, 'ModelWrapper - Detectors', 'model_wrapper', TVMDarknetCOCOYOLOV3),  # noqa: E501
-    Node(ONNXYOLOV4.__name__, 'ModelWrapper - Detectors', 'model_wrapper', ONNXYOLOV4),  # noqa: E501
-    # instance segmentation
-    Node(PyTorchCOCOMaskRCNN.__name__, 'ModelWrapper - Segmentation', 'model_wrapper', PyTorchCOCOMaskRCNN),  # noqa: E501
-    Node(YOLACT.__name__, 'ModelWrapper - Segmentation', 'model_wrapper', YOLACT),  # noqa: E501
+    If the class can't be imported due to import errors, it is not added.
 
-    # RuntimeProtocols
-    Node(NetworkProtocol.__name__, 'RuntimeProtocol', 'runtime_protocol', NetworkProtocol),  # noqa: E501
+    Parameters
+    ----------
+    node_list: List[Node]
+        List of nodes to add to the specification
+    nodemodule : str
+        Python-like path to the class holding a block to add to specification
+    category : str
+        Category of the block
+    type : str
+        Type of the block added to the specification
+    """
+    try:
+        nodeclass = load_class(nodemodule)
+        node_list.append(Node(nodeclass.__name__, category, type, nodeclass))
+    except (ModuleNotFoundError, ImportError, Exception) as err:
+        msg = f'Could not add {nodemodule}. Reason:'
+        _LOGGER.warn('-' * len(msg))
+        _LOGGER.warn(msg)
+        _LOGGER.warn(err)
+        _LOGGER.warn('-' * len(msg))
 
-    # Runtimes
-    Node(IREERuntime.__name__, 'Runtime', 'runtime', IREERuntime),
-    Node(ONNXRuntime.__name__, 'Runtime', 'runtime', ONNXRuntime),
-    Node(TFLiteRuntime.__name__, 'Runtime', 'runtime', TFLiteRuntime),
-    Node(TVMRuntime.__name__, 'Runtime', 'runtime', TVMRuntime),
 
-    # Optimizers
-    Node(IREECompiler.__name__, 'Optimizer', 'optimizer', IREECompiler),
-    Node(ONNXCompiler.__name__, 'Optimizer', 'optimizer', ONNXCompiler),
-    Node(TensorFlowClusteringOptimizer.__name__, 'Optimizer', 'optimizer', TensorFlowClusteringOptimizer),  # noqa: E501
-    Node(TensorFlowPruningOptimizer.__name__, 'Optimizer', 'optimizer', TensorFlowPruningOptimizer),  # noqa: E501
-    Node(TFLiteCompiler.__name__, 'Optimizer', 'optimizer', TFLiteCompiler),
-    Node(TVMCompiler.__name__, 'Optimizer', 'optimizer', TVMCompiler)
-]
+nodes = []
+
+# Datasets
+add_node(
+    nodes,
+    'kenning.datasets.coco_dataset.COCODataset2017',
+    'Dataset',
+    'dataset'
+)
+add_node(
+    nodes,
+    'kenning.datasets.imagenet_dataset.ImageNetDataset',
+    'Dataset',
+    'dataset'
+)
+add_node(
+    nodes,
+    'kenning.datasets.open_images_dataset.OpenImagesDatasetV6',
+    'Dataset',
+    'dataset'
+)
+add_node(
+    nodes,
+    'kenning.datasets.pet_dataset.PetDataset',
+    'Dataset',
+    'dataset'
+)
+add_node(
+    nodes,
+    'kenning.datasets.random_dataset.RandomizedClassificationDataset',
+    'Dataset',
+    'dataset'
+)
+
+# ModelWrappers
+# classification
+add_node(
+    nodes,
+    'kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',  # noqa: E501
+    'ModelWrapper - Classification',
+    'model_wrapper'
+)
+add_node(
+    nodes,
+    'kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet',  # noqa: E501
+    'ModelWrapper - Classification',
+    'model_wrapper'
+)
+add_node(
+    nodes,
+    'kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
+    'ModelWrapper - Classification',
+    'model_wrapper'
+)
+# detectors
+add_node(
+    nodes,
+    'kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3',
+    'ModelWrapper - Detectors',
+    'model_wrapper'
+)
+add_node(
+    nodes,
+    'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
+    'ModelWrapper - Detectors',
+    'model_wrapper'
+)
+# instance segmentation
+add_node(
+    nodes,
+    'kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN',  # noqa: E501
+    'ModelWrapper - Segmentation',
+    'model_wrapper'
+)
+add_node(
+    nodes,
+    'kenning.modelwrappers.instance_segmentation.yolact.YOLACT',
+    'ModelWrapper - Segmentation',
+    'model_wrapper'
+)
+
+# RuntimeProtocols
+add_node(
+    nodes,
+    'kenning.runtimeprotocols.network.NetworkProtocol',
+    'RuntimeProtocol',
+    'runtime_protocol'
+)
+
+# Runtimes
+add_node(
+    nodes,
+    'kenning.runtimes.iree.IREERuntime',
+    'Runtime',
+    'runtime'
+)
+add_node(
+    nodes,
+    'kenning.runtimes.onnx.ONNXRuntime',
+    'Runtime',
+    'runtime'
+)
+add_node(
+    nodes,
+    'kenning.runtimes.tflite.TFLiteRuntime',
+    'Runtime',
+    'runtime'
+)
+add_node(
+    nodes,
+    'kenning.runtimes.tvm.TVMRuntime',
+    'Runtime',
+    'runtime'
+)
+
+# Optimizers
+add_node(
+    nodes,
+    'kenning.compilers.iree.IREECompiler',
+    'Optimizer',
+    'optimizer'
+)
+add_node(
+    nodes,
+    'kenning.compilers.onnx.ONNXCompiler',
+    'Optimizer',
+    'optimizer'
+)
+add_node(
+    nodes,
+    'kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer',
+    'Optimizer',
+    'optimizer'
+)
+add_node(
+    nodes,
+    'kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer',
+    'Optimizer',
+    'optimizer'
+)
+add_node(
+    nodes,
+    'kenning.compilers.tflite.TFLiteCompiler',
+    'Optimizer',
+    'optimizer'
+)
+add_node(
+    nodes,
+    'kenning.compilers.tvm.TVMCompiler',
+    'Optimizer',
+    'optimizer'
+)
 
 io_mapping = {
     'dataset': {

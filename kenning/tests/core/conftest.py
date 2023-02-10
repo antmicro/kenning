@@ -80,18 +80,19 @@ def get_default_dataset_model(
     """
     if framework == 'keras':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.h5'
+        modelpath = MagicWandModelWrapper.pretrained_modelpath
         model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
 
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
         modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.pb'
-        keras_model = load_model(KENNING_MODELS_PATH / 'classification/magic_wand.h5')  # noqa: 501
-        keras_model.save(KENNING_MODELS_PATH / 'classification/magic_wand.pb')
-        shutil.copy(
-            KENNING_MODELS_PATH / 'classification/magic_wand.h5.json',
-            KENNING_MODELS_PATH / 'classification/magic_wand.pb.json'
-        )
+        keras_model = load_model(MagicWandModelWrapper.pretrained_modelpath)
+        keras_model.save(modelpath)
+        if not os.path.isfile(f'{modelpath}.json'):
+            shutil.copy(
+                KENNING_MODELS_PATH / 'classification/magic_wand.h5.json',
+                f'{modelpath}.json'
+            )
         model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
 
     elif framework == 'tflite':
@@ -101,12 +102,12 @@ def get_default_dataset_model(
 
     elif framework == 'onnx':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = KENNING_MODELS_PATH / 'detection/yolov4.onnx'
+        modelpath = ONNXYOLOV4.pretrained_modelpath
         model = ONNXYOLOV4(modelpath, dataset)
 
     elif framework == 'torch':
         dataset = get_dataset_random_mock(PetDataset)
-        modelpath = KENNING_MODELS_PATH / 'classification/pytorch_pet_dataset_mobilenetv2_full_model.pth'  # noqa: 501
+        modelpath = PyTorchPetDatasetMobileNetV2.pretrained_modelpath
         model = PyTorchPetDatasetMobileNetV2(
             modelpath,
             dataset=dataset,
@@ -116,11 +117,7 @@ def get_default_dataset_model(
 
     elif framework == 'darknet':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = KENNING_MODELS_PATH / 'detection/yolov4.cfg'
-        shutil.copy(
-            KENNING_MODELS_PATH / 'detection/yolov4.onnx.json',
-            KENNING_MODELS_PATH / 'detection/yolov4.cfg.json'
-        )
+        modelpath = TVMDarknetCOCOYOLOV3.pretrained_modelpath
         model = TVMDarknetCOCOYOLOV3(modelpath, dataset)
 
     else:

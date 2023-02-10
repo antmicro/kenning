@@ -132,6 +132,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             inputmodelpath: Path,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
         model = self.inputtypes[self.inputtype](inputmodelpath)
+        for layer in model.layers:
+            layer.trainable = True
 
         clustering_params = {
             'number_of_clusters': self.clusters_number,

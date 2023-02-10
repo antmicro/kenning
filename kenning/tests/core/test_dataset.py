@@ -26,7 +26,7 @@ class TestDataset:
         """
         dataset_download_dir = get_dataset_download_path(dataset_cls)
         if os.path.isdir(dataset_download_dir):
-            shutil.rmtree(dataset_download_dir)
+            shutil.rmtree(dataset_download_dir, ignore_errors=True)
 
         try:
             dataset = dataset_cls(dataset_download_dir, download_dataset=False)
@@ -53,7 +53,7 @@ class TestDataset:
         """
         dataset_download_dir = get_dataset_download_path(dataset_cls)
         if os.path.isdir(dataset_download_dir):
-            shutil.rmtree(dataset_download_dir)
+            shutil.rmtree(dataset_download_dir, ignore_errors=True)
 
         try:
             dataset = dataset_cls(dataset_download_dir, download_dataset=True)

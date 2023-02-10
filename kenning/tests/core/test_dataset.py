@@ -31,7 +31,8 @@ class TestDataset:
         try:
             dataset = dataset_cls(dataset_download_dir, download_dataset=False)
             dataset.prepare()
-            assert len(dataset.dataX) > 0
+            if 'Random' not in dataset_cls.__name__:
+                pytest.fail('No exception thrown')
         except FileNotFoundError:
             pass
         except Exception as e:

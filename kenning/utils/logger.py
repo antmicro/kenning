@@ -38,7 +38,7 @@ def get_logger():
     Configures and returns root logger.
     """
     logger = logging.getLogger('root')
-    FORMAT = '[%(asctime)-15s %(filename)s:%(lineno)s] %(message)s'
+    FORMAT = '[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s'  # noqa: E501
     logging.basicConfig(format=FORMAT)
     return logger
 

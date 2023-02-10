@@ -36,6 +36,29 @@ def get_tmp_path() -> Path:
     return Path(f'/tmp/{next(tempfile._get_candidate_names())}')
 
 
+def copy_model_to_tmp(modelpath: Path) -> Path:
+    """
+    Copies model to tmp folder and returns its path.
+
+    Parameters
+    ----------
+    modelpath : Path
+        Path to the model
+
+    Returns
+    -------
+    Path :
+        Path to the model copy
+    """
+    if os.path.isfile(modelpath):
+        tmp_modelpath = get_tmp_path().with_suffix(modelpath.suffix)
+        shutil.copy(modelpath, tmp_modelpath)
+    else:
+        tmp_modelpath = get_tmp_path()
+        shutil.copytree(modelpath, tmp_modelpath)
+    return tmp_modelpath
+
+
 def get_all_subclasses(cls: Type) -> List[Type]:
     """
     Retrieves all subclasses of given class. Filters classes that are not
@@ -80,52 +103,59 @@ def get_default_dataset_model(
     """
     if framework == 'keras':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = MagicWandModelWrapper.pretrained_modelpath
+        modelpath = copy_model_to_tmp(
+            MagicWandModelWrapper.pretrained_modelpath
+        )
         model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
 
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.pb'
+        modelpath = get_tmp_path().with_suffix('.pb')
         keras_model = load_model(
             MagicWandModelWrapper.pretrained_modelpath,
             compile=False
         )
         keras_model.save(modelpath)
-        if not os.path.isfile(f'{modelpath}.json'):
-            shutil.copy(
-                KENNING_MODELS_PATH / 'classification/magic_wand.h5.json',
-                f'{modelpath}.json'
-            )
         model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
 
     elif framework == 'tflite':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = KENNING_MODELS_PATH / 'classification/magic_wand.tflite'
+        modelpath = copy_model_to_tmp(
+            KENNING_MODELS_PATH / 'classification/magic_wand.tflite'
+        )
         model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
 
     elif framework == 'onnx':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = ONNXYOLOV4.pretrained_modelpath
+        modelpath = copy_model_to_tmp(ONNXYOLOV4.pretrained_modelpath)
+        shutil.copy(
+            ONNXYOLOV4.pretrained_modelpath.with_suffix('.cfg'),
+            modelpath.with_suffix('.cfg')
+        )
         model = ONNXYOLOV4(modelpath, dataset)
 
     elif framework == 'torch':
         dataset = get_dataset_random_mock(PetDataset)
-        modelpath = PyTorchPetDatasetMobileNetV2.pretrained_modelpath
+        modelpath = copy_model_to_tmp(
+            PyTorchPetDatasetMobileNetV2.pretrained_modelpath
+        )
         model = PyTorchPetDatasetMobileNetV2(
             modelpath,
             dataset=dataset,
             from_file=True
         )
-        model.save_io_specification(modelpath)
 
     elif framework == 'darknet':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = TVMDarknetCOCOYOLOV3.pretrained_modelpath
+        modelpath = copy_model_to_tmp(
+            TVMDarknetCOCOYOLOV3.pretrained_modelpath
+        )
         model = TVMDarknetCOCOYOLOV3(modelpath, dataset)
 
     else:
         raise UnknownFramework(f'Unknown framework: {framework}')
 
+    model.save_io_specification(model.modelpath)
     return dataset, model
 
 

@@ -18,7 +18,7 @@ flake8:
 pytest:
     stage: tests
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -rs kenning
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -rs kenning --color=yes -vvv
     allow_failure: false
 
 onnx-conversions:

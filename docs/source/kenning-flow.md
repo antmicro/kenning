@@ -125,7 +125,7 @@ Let's create file `flow_scenario_detection.json` and put into it following confi
     },
     "inputs": {
       "frame": "cam_frame",
-      "input": "predictions"
+      "detection_data": "predictions"
     }
   }
 ]

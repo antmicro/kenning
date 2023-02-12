@@ -174,8 +174,8 @@ class KenningFlow:
 
                 # get output specs from global flow variables
                 inputs_specs = {}
-                for local_name, (_, glbal_name) in inputs_sources.items():
-                    inputs_specs[local_name] = output_specs[glbal_name]
+                for local_name, (_, global_name) in inputs_sources.items():
+                    inputs_specs[local_name] = output_specs[global_name]
 
                 # instantiate runner
                 runner = runner_cls.from_json(

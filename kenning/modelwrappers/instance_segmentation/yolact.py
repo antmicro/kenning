@@ -229,8 +229,6 @@ class YOLACT(ModelWrapper):
     def save_model(self, modelpath):
         shutil.copy(self.original_model_path, modelpath)
 
-        self.save_model_metadata(modelpath, {'class_names': self.class_names})
-
     def preprocess_input(self, X):
         if len(X) > 1:
             raise RuntimeError(

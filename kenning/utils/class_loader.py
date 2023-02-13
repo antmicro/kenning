@@ -6,9 +6,68 @@
 Provides methods for importing classes and modules at runtime based on string.
 """
 
+from typing import Type
 import importlib
 from typing import ClassVar, List
 from pathlib import Path
+import pkgutil
+
+from kenning.utils.logger import get_logger
+
+
+def get_all_subclasses(
+        modulepath: str,
+        cls: Type,
+        raise_exception: bool = False) -> List[Type]:
+    """
+    Retrieves all subclasses of given class. Filters classes that are not
+    final.
+
+    Parameters
+    ----------
+    modulepath : str
+        Module-like path to where search should be done
+    cls : Type
+        Given base class
+    raise_exception : bool
+        Indicate if exception should be raised in case subclass cannot be
+        imported
+
+    Returns
+    -------
+    List[Type] :
+        List of all final subclasses of given class
+    """
+    logger = get_logger()
+
+    result = []
+    queue = [pkgutil.resolve_name(modulepath)]
+    while queue:
+        q = queue.pop()
+        prefix = q.__name__ + '.'
+        for m in pkgutil.iter_modules(q.__path__, prefix):
+            try:
+                module = pkgutil.resolve_name(m.name)
+                if m.ispkg:
+                    queue.append(module)
+                else:
+                    result.append(module)
+            except Exception:
+                if raise_exception:
+                    logger.error(f'Could not import module: {m}')
+                    raise
+                else:
+                    logger.warn(f'Could not import module: {m}')
+
+    result = []
+    queue = [cls]
+    while queue:
+        q = queue.pop()
+        if len(q.__subclasses__()) == 0:
+            result.append(q)
+        for sub_q in q.__subclasses__():
+            queue.append(sub_q)
+    return result
 
 
 def load_class(modulepath: str) -> ClassVar:

@@ -1,4 +1,4 @@
-from typing import Final, List, Tuple, Type
+from typing import Final, Tuple, Type
 from pathlib import Path
 import tempfile
 import shutil
@@ -60,32 +60,6 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     else:
         raise FileNotFoundError
     return tmp_modelpath
-
-
-def get_all_subclasses(cls: Type) -> List[Type]:
-    """
-    Retrieves all subclasses of given class. Filters classes that are not
-    final.
-
-    Parameters
-    ----------
-    cls : Type
-        Given base class
-
-    Returns
-    -------
-    List[Type] :
-        List of all final subclasses of given class
-    """
-    result = []
-    queue = [cls]
-    while queue:
-        q = queue.pop()
-        if len(q.__subclasses__()) == 0:
-            result.append(q)
-        for sub_q in q.__subclasses__():
-            queue.append(sub_q)
-    return result
 
 
 def get_default_dataset_model(

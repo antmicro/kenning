@@ -10,7 +10,7 @@ from collections import namedtuple
 from pathlib import Path
 from enum import Enum
 import onnx
-from typing import List, Optional
+from typing import List
 
 from kenning.utils.logger import get_logger
 
@@ -244,41 +244,3 @@ class ONNXConversion(object):
                 imported
             ))
         return supportlist
-
-    @staticmethod
-    def try_extracting_input_shape_from_onnx(
-            model_onnx: onnx.ModelProto) -> Optional[List[List]]:
-        """
-        Function for extracting ONNX model's input shape
-
-        Parameters
-        ----------
-        model_onnx: ModelProto
-            Loaded ONNX model
-
-        Returns
-        -------
-        List of input shapes or None if extracting was impossible
-        """
-        try:
-            inputs = model_onnx.graph.input
-            shapes = []
-            for input_ in inputs:
-                if input_.type.tensor_type.elem_type != 1:
-                    return None
-                shapes.append(input_.type.tensor_type.shape.dim)
-            # print(shapes)
-            tensors_shape = []
-            for shape in shapes:
-                dims = []
-                for dim in shape:
-                    if not dim.dim_value and dim.dim_param != '':
-                        dims.append(1)
-                    elif dim.dim_value > 0:
-                        dims.append(dim.dim_value)
-                    else:
-                        return None
-                tensors_shape.append(dims)
-        except AttributeError:
-            return None
-        return tensors_shape

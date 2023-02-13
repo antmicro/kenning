@@ -3,16 +3,17 @@ from typing import Type, Final
 import os
 
 from kenning.core.model import ModelWrapper
-from kenning.modelwrappers.classification import *  # noqa: 401, 403
-from kenning.modelwrappers.detectors import *  # noqa: 401, 403
-from kenning.modelwrappers.instance_segmentation import *  # noqa: 401, 403
+from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_tmp_path
-from kenning.tests.core.conftest import get_all_subclasses
 from kenning.tests.core.conftest import remove_file_or_dir
 from kenning.tests.core.conftest import get_dataset_random_mock
 
 
-MODELWRAPPER_SUBCLASSES: Final = get_all_subclasses(ModelWrapper)
+MODELWRAPPER_SUBCLASSES: Final = get_all_subclasses(
+    'kenning.modelwrappers',
+    ModelWrapper,
+    raise_exception=True
+)
 
 
 @pytest.fixture(autouse=True, scope='module')

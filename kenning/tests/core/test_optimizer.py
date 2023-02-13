@@ -5,13 +5,16 @@ import os
 from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
-from kenning.compilers import *  # noqa: 401, 403
+from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_tmp_path
-from kenning.tests.core.conftest import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 
 
-OPTIMIZER_SUBCLASSES: Final = get_all_subclasses(Optimizer)
+OPTIMIZER_SUBCLASSES: Final = get_all_subclasses(
+    'kenning.compilers',
+    Optimizer,
+    raise_exception=True
+)
 
 OPTIMIZER_INPUTTYPES: Final = [
     (opt, inp) for opt in OPTIMIZER_SUBCLASSES for inp in opt.inputtypes

@@ -2,13 +2,16 @@ import pytest
 from typing import Type, Final
 
 from kenning.core.runtime import Runtime
-from kenning.runtimes import *  # noqa: 401, 403
-from kenning.tests.core.conftest import get_all_subclasses
+from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
 
 
-RUNTIME_SUBCLASSES: Final = get_all_subclasses(Runtime)
+RUNTIME_SUBCLASSES: Final = get_all_subclasses(
+    'kenning.runtimes',
+    Runtime,
+    raise_exception=True
+)
 
 RUNTIME_INPUTTYPES: Final = [
     (run, inp) for run in RUNTIME_SUBCLASSES for inp in run.inputtypes

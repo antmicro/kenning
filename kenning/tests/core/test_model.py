@@ -15,6 +15,21 @@ from kenning.tests.core.conftest import get_dataset_random_mock
 MODELWRAPPER_SUBCLASSES: Final = get_all_subclasses(ModelWrapper)
 
 
+@pytest.fixture(autouse=True, scope='module')
+def prepare_models_io_specs():
+    for model_cls in MODELWRAPPER_SUBCLASSES:
+        try:
+            dataset_cls = model_cls.default_dataset
+            dataset = get_dataset_random_mock(dataset_cls)
+
+            model_path = model_cls.pretrained_modelpath
+
+            model = model_cls(model_path, dataset, from_file=True)
+            model.save_io_specification(model_path)
+        except Exception:
+            pass
+
+
 class TestModelWrapper:
 
     @pytest.mark.parametrize('model_cls', [

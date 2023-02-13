@@ -4,13 +4,16 @@ import os
 import shutil
 
 from kenning.core.dataset import Dataset, CannotDownloadDatasetError
-from kenning.datasets import *  # noqa: 401, 403
-from kenning.tests.core.conftest import get_all_subclasses
+from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_dataset
 from kenning.tests.core.conftest import get_dataset_download_path
 
 
-DATASET_SUBCLASSES: Final = get_all_subclasses(Dataset)
+DATASET_SUBCLASSES: Final = get_all_subclasses(
+    'kenning.datasets',
+    Dataset,
+    raise_exception=True
+)
 
 
 class TestDataset:

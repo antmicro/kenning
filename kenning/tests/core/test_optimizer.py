@@ -1,13 +1,14 @@
 import pytest
-from typing import Type, Final
-import os
+from typing import Type, Final, Tuple
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
+from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_tmp_path
 from kenning.tests.core.conftest import get_default_dataset_model
+from kenning.tests.core.conftest import UnknownFramework
 
 
 OPTIMIZER_SUBCLASSES: Final = get_all_subclasses(
@@ -19,6 +20,21 @@ OPTIMIZER_SUBCLASSES: Final = get_all_subclasses(
 OPTIMIZER_INPUTTYPES: Final = [
     (opt, inp) for opt in OPTIMIZER_SUBCLASSES for inp in opt.inputtypes
 ]
+
+
+def prepare_objects(
+        opt_cls: Type[Optimizer],
+        inputtype: str) -> Tuple[Optimizer, ModelWrapper]:
+    compiled_model_path = get_tmp_path()
+    try:
+        dataset, model = get_default_dataset_model(inputtype)
+    except UnknownFramework:
+        pytest.xfail(f'Unknown framework: {inputtype}')
+
+    optimizer = opt_cls(dataset, compiled_model_path)
+    optimizer.set_input_type(inputtype)
+
+    return optimizer, model
 
 
 class TestOptimizer:
@@ -35,10 +51,7 @@ class TestOptimizer:
         """
         Tests optimizer initialization.
         """
-        compiled_model_path = get_tmp_path()
-        dataset, _ = get_default_dataset_model(inputtype)
-
-        _ = opt_cls(dataset, compiled_model_path)
+        _ = prepare_objects(opt_cls, inputtype)
 
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
@@ -53,14 +66,10 @@ class TestOptimizer:
         """
         Tests optimizer compilation.
         """
-        compiled_model_path = get_tmp_path()
-        dataset, model = get_default_dataset_model(inputtype)
-
-        optimizer = opt_cls(dataset, compiled_model_path)
-        optimizer.set_input_type(inputtype)
+        optimizer, model = prepare_objects(opt_cls, inputtype)
         try:
             optimizer.compile(model.modelpath)
-            assert os.path.isfile(compiled_model_path)
+            assert optimizer.compiled_model_path.exists()
         except CompilationError as e:
             pytest.xfail(f'compilation error {e}')
         except ConversionError as e:
@@ -82,10 +91,6 @@ class TestOptimizer:
         """
         Tests `get_framework_and_version` method.
         """
-        compiled_model_path = get_tmp_path()
-        dataset, model = get_default_dataset_model(inputtype)
-
-        optimizer = opt_cls(dataset, compiled_model_path)
-        optimizer.set_input_type(inputtype)
+        optimizer, _ = prepare_objects(opt_cls, inputtype)
 
         assert optimizer.get_framework_and_version() is not None

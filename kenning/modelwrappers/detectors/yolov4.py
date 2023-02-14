@@ -30,6 +30,7 @@ if sys.version_info.minor < 9:
     from importlib_resources import files
 else:
     from importlib.resources import files
+import math
 
 from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
 from kenning.datasets.coco_dataset import COCODataset2017
@@ -104,21 +105,177 @@ class ONNXYOLOV4(YOLOWrapper):
                 1 / (1 + np.exp(-outarr[:, :, 4:, :, :]))
             outputs.append(outarr)
 
-        # change the dimensions so the output format is
-        # batches layerouts dets params width height
-        perbatchoutputs = []
-        for i in range(outputs[0].shape[0]):
-            perbatchoutputs.append([
-                outputs[0][i],
-                outputs[1][i],
-                outputs[2][i]
-            ])
-        result = []
-        # parse the combined outputs for each image in batch, and return result
-        for out in perbatchoutputs:
-            result.append(self.parse_outputs(out))
+        return self.parse_batches(outputs)
 
-        return result
+    def loss_torch(
+        self, outputs: List, target: List[List], scale_noobj=0.5, eps=1e-7
+    ):
+        """
+        Loss function for YOLOv4, implemented to work one batch in form
+        of torch.Tensors. YOLOv4 use sum of few losses - CIoU, binary
+        cross-entropy of objectness and classification scores
+
+        Parameters
+        ----------
+        output: List[torch.Tensor]
+            One batch of YOLO network output
+        target: List[List[DectObject]]
+            True bounding boxes of object on precessed image
+        scale_noobj: float
+            Scaling factor of bounding boxes without object error
+
+        Returns
+        -------
+        torch.Tensor:
+            Value of loss
+        """
+        import torch
+
+        device = outputs[0].device
+        dtype = outputs[0].dtype
+        loss = torch.zeros(outputs[0].shape[0], device=device)
+
+        # Preprocessing outputs
+        # detect_output = []
+        result = []
+        for id, out in enumerate(outputs):
+            # Reshaping to (BS, BB, 4+1+C, W', H')
+            # BS - batch_size, BB - bounding boxes per one 'pixel'/chunk
+            # 4 parameters responsible for x, y, w, h
+            # 1 parameter - objectness logit, C logits of classification
+            out = out.view(
+                out.shape[0],
+                len(self.perlayerparams['mask'][id]),
+                4 + 1 + self.numclasses,
+                out.shape[-2],
+                out.shape[-1]
+            )
+            # Calculating centers (x, y) of bounding boxes
+            x_y = torch.sigmoid(out[:, :, :2])
+            x_y_ids = torch.arange(
+                out.shape[-1], device=device).expand_as(x_y)
+            x_y = x_y + x_y_ids
+            x_y[:, :, 0] /= out.shape[-2]
+            x_y[:, :, 1] /= out.shape[-1]
+
+            # Calculating width, height of bounding boxes
+            anchors = self.perlayerparams['anchors'][id]
+            mask = self.perlayerparams['mask'][id]
+            w_h_anchor = torch.tensor([
+                [anchors[2*mask[bounding_box]]/self.keyparams['width'],
+                 anchors[2*mask[bounding_box]+1]/self.keyparams['height']]
+                for bounding_box in range(out.shape[1])],
+                device=device, dtype=dtype)
+            w_h_anchor = w_h_anchor.unsqueeze(
+                0).unsqueeze(-1).unsqueeze(-1).expand_as(out[:, :, 2:4])
+            w_h = w_h_anchor*torch.exp(out[:, :, 2:4])
+
+            # result shape (BS, all BB, (x, y, w, h, o, clf))
+            result.append(
+                torch.cat((x_y, w_h, out[:, :, 4:]), dim=2).reshape(
+                    out.shape[0], -1, out.shape[2]))
+        result = torch.cat(result, dim=1)
+
+        for id, (detect_batch, target_batch) in enumerate(zip(
+                result, target)):
+
+            # Converting DectObject to tensor
+            target_batch_torch = torch.tensor(
+                [[(_target.xmin-_target.xmin)/2,
+                    (_target.ymin-_target.ymin)/2,
+                    _target.xmax-_target.xmin,
+                    _target.ymax-_target.ymin,
+                    *[1.0 if name == _target.clsname else 0.0
+                        for name in self.classnames]
+                  ] for _target in target_batch],
+                device=device
+            )
+            loss[id] = self._loss_one_batch_torch(
+                detect_batch, target_batch_torch, scale_noobj, eps)
+
+        return torch.mean(loss)
+
+    def _loss_one_batch_torch(
+            self, detect_batch, target_batch, scale_noobj=0.5, eps=1e-7
+    ):
+        import torch
+        import torch.nn.functional as F
+
+        def ten(x): return torch.tensor(x, device=detect_batch[0].device)
+
+        best_detect_ids = set()
+        # Preparing losses
+        ciou = ten(0.)
+        obj = ten(0.)
+        clf = ten(0.)
+        # Placements and sizes of detected bounding boxes
+        detect_box_size = detect_batch[:, 2]*detect_batch[:, 3]
+        detect_min_max = torch.stack((
+            detect_batch[:, 0] - detect_batch[:, 2]/2,
+            detect_batch[:, 1] - detect_batch[:, 3]/2,
+            detect_batch[:, 0] + detect_batch[:, 2]/2,
+            detect_batch[:, 1] + detect_batch[:, 3]/2,
+        ), dim=-1)
+        for target_obj in target_batch:
+            # IoU
+            target_box_size = target_obj[2]*target_obj[3]
+            target_min_max = [
+                target_obj[0]-target_obj[2]/2,
+                target_obj[1]-target_obj[3]/2,
+                target_obj[0]+target_obj[2]/2,
+                target_obj[1]+target_obj[3]/2,
+            ]
+            intersection_w = torch.maximum(
+                torch.minimum(detect_min_max[:, 2], target_min_max[2])
+                - torch.maximum(detect_min_max[:, 0], target_min_max[0]),
+                ten(0.)
+            )
+            intersection_h = torch.maximum(
+                torch.minimum(detect_min_max[:, 3], target_min_max[3])
+                - torch.maximum(detect_min_max[:, 1], target_min_max[1]),
+                ten(0.)
+            )
+            intersection = intersection_w * intersection_h
+            iou_detect = intersection / \
+                (detect_box_size+target_box_size-intersection + eps)
+
+            # CIoU
+            best_detect_id = torch.argmax(iou_detect)
+            best_detect_ids.add(best_detect_id)
+            best_detect = detect_batch[best_detect_id]
+            iou = iou_detect[best_detect_id]
+            distance_centers_2 = (best_detect[0]-target_obj[0])**2 + \
+                (best_detect[1]-target_obj[1])**2
+            best_min_max = detect_min_max[best_detect_id]
+            spanning_box_diagonal_2 = (
+                (torch.min(best_min_max[0], target_min_max[0]) -
+                 torch.max(best_min_max[2], target_min_max[2])) ** 2 +
+                (torch.min(best_min_max[1], target_min_max[1]) -
+                 torch.max(best_min_max[3], target_min_max[3])) ** 2
+            ) + eps
+            ratio_detect = best_detect[2] / (best_detect[3] + eps)
+            ratio_target = target_obj[2] / (target_obj[3] + eps)
+            ratio_consistency = 4 / math.pi ** 2 * \
+                torch.abs(torch.atan(ratio_target)-torch.atan(ratio_detect)) ** 2  # noqa: E501
+            alpha = ratio_consistency/(1 - iou + ratio_consistency + eps)
+
+            ciou += (1. - iou
+                     + distance_centers_2 / spanning_box_diagonal_2
+                     + alpha*ratio_consistency)
+
+            # Classification
+            clf += F.binary_cross_entropy_with_logits(
+                best_detect[5:], target_obj[4:]
+            )
+
+        # Objectness + No Objectness
+        obj = F.binary_cross_entropy_with_logits(
+            detect_batch[:, 4],
+            ten([1. if id in best_detect_ids else 0. for id in range(
+                detect_batch.shape[0])])
+        )
+
+        return ciou + obj + clf
 
     # NOTE: In postprocess_outputs function the second output layer `output.3`
     # of size 255 is split into two layers of size (4 + 1 + C) and B,

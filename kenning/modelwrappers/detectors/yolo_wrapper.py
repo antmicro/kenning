@@ -218,7 +218,10 @@ class YOLOWrapper(ModelWrapper):
 
             outputs.append(y[i].reshape(outshape))
 
-        # change the dimensionsso the output format is
+        return self.parse_batches(outputs)
+
+    def parse_batches(self, outputs):
+        # change the dimensions so the output format is
         # batches layerouts dets params width height
         perbatchoutputs = []
         for i in range(outputs[0].shape[0]):

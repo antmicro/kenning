@@ -126,10 +126,15 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             learning_rate=0.001,
             epochs=50,
             logdir='/tmp/tflite_magic_wand_logs'):
+        def convert_to_tf_dataset(features: List, labels: List):
+            return tf.data.Dataset.from_tensor_slices(
+                (np.array(self.dataset.prepare_input_samples(features)),
+                 np.array(self.dataset.prepare_output_samples(labels)))
+            )
         log = get_logger()
         self.model.compile(
             optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
-            loss='sparse_categorical_crossentropy',
+            loss='categorical_crossentropy',
             metrics=['accuracy']
         )
         train_data, test_data,\
@@ -137,19 +142,15 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             val_data, val_labels = \
             self.dataset.train_test_split_representations(validation=True)
 
-        train_dataset = self.dataset.prepare_tf_dataset(
-            train_data,
-            train_labels
+        train_dataset = convert_to_tf_dataset(
+            train_data, train_labels
         ).batch(batch_size).repeat()
-        val_dataset = self.dataset.prepare_tf_dataset(
-            val_data,
-            val_labels
+        val_dataset = convert_to_tf_dataset(
+            val_data, val_labels
         ).batch(batch_size)
-        test_dataset = self.dataset.prepare_tf_dataset(
-            test_data,
-            test_labels
+        test_dataset = convert_to_tf_dataset(
+            test_data, test_labels
         ).batch(batch_size)
-        test_labels = np.concatenate([y for _, y in test_dataset], axis=0)
 
         self.model.fit(
             train_dataset,

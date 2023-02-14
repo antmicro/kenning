@@ -91,7 +91,7 @@ def get_default_dataset_model(
 
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = get_tmp_path().with_suffix('.pb')
+        modelpath = get_tmp_path()
         keras_model = load_model(
             MagicWandModelWrapper.pretrained_modelpath,
             compile=False
@@ -157,7 +157,7 @@ def remove_file_or_dir(path: str):
 
 def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
     """
-    Returns temporary download path for given dataset
+    Returns temporary download path for given dataset.
 
     Parameters
     ----------
@@ -172,29 +172,21 @@ def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
     return Path(f'/tmp/{dataset_cls.__name__}')
 
 
-def get_dataset(dataset_cls: Type[Dataset]) -> Dataset:
+def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
     """
-    Returns dataset instance of given class. It tries to used already download
-    data and if that fails it download the data.
+    Returns path to reduced dataset added to docker image.
 
     Parameters
     ----------
     dataset_cls : Type[Dataset]
-        Class of the dataset to be returned
+        Given dataset class
 
     Returns
     -------
-    Dataset :
-        Instance of given dataset class
+    Path :
+        Path to reduced dataset
     """
-    download_path = get_dataset_download_path(dataset_cls)
-    try:
-        dataset = dataset_cls(download_path, download_dataset=False)
-    except FileNotFoundError:
-        dataset = dataset_cls(download_path, download_dataset=True)
-    except Exception:
-        raise
-    return dataset
+    return Path(f'/datasets-reduced/{dataset_cls.__name__}')
 
 
 def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
@@ -227,20 +219,12 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
             inputdims=(224, 224, 3)
         )
     if dataset_cls is MagicWandDataset:
-        class RndClassDatasetCopy(RandomizedClassificationDataset):
-            pass
-        RndClassDatasetCopy.train_test_split_representations = \
-            MagicWandDataset.train_test_split_representations
-        RndClassDatasetCopy.prepare_tf_dataset = \
-            MagicWandDataset.prepare_tf_dataset
-        dataset = RndClassDatasetCopy(
+        dataset = RandomizedClassificationDataset(
             get_tmp_path(),
             samplescount=4*8,
             numclasses=4,
-            integer_classes=True,
             inputdims=(128, 3, 1)
         )
-        dataset.dataX = dataset.prepare_input_samples(dataset.dataX)
         return dataset
     if dataset_cls is COCODataset2017:
         return RandomizedDetectionSegmentationDataset(

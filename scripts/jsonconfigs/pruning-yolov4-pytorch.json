@@ -21,18 +21,19 @@
       "parameters": {
         "model_framework": "onnx",
         "pruner_type": "apoz",
-        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\"]}]",
-        "training_steps": 1024,
+        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\", \"Linear\"]}, {\"exclude\": true, \"op_names\": [\"Conv_93\", \"Conv_101\", \"Conv_109\"]}]",
+        "training_steps": 256,
         "activation": "relu6",
         "compiled_model_path": "./build/model.pth",
         "mode": "dependency_aware",
         "finetuning_epochs": 1,
         "finetuning_batch_size": 2,
         "confidence": 2,
-        "criterion": "kenning.compilers.nni_pruning.TmpLoss",
-        "optimizer": "torch.optim.Adam",
+        "criterion": "kenning.utils.yolov4_loss.YOLOv4Loss",
+        "optimizer": "torch.optim.SGD",
         "pruning_on_cuda": false,
-        "finetuning_learning_rate": 0.0015
+        "finetuning_learning_rate": 0.0001,
+        "exclude_last_layer": false
       }
     }
   ],

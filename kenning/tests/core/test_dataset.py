@@ -5,7 +5,7 @@ import shutil
 
 from kenning.core.dataset import Dataset, CannotDownloadDatasetError
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.tests.core.conftest import get_dataset
+from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.tests.core.conftest import get_dataset_download_path
 
 
@@ -14,6 +14,20 @@ DATASET_SUBCLASSES: Final = get_all_subclasses(
     Dataset,
     raise_exception=True
 )
+
+
+@pytest.fixture(scope='function')
+def dataset(request):
+    dataset_cls = request.param
+    try:
+        path = get_reduced_dataset_path(dataset_cls)
+        dataset = dataset_cls(path, download_dataset=False)
+        assert len(dataset.dataX) > 0
+    except CannotDownloadDatasetError:
+        pytest.xfail('Cannot download dataset.')
+    except Exception as e:
+        pytest.fail(f'Exception {e}')
+    return dataset
 
 
 class TestDataset:
@@ -28,8 +42,8 @@ class TestDataset:
         Tests throwing exception when there is no folder with data.
         """
         dataset_download_dir = get_dataset_download_path(dataset_cls)
-        if os.path.isdir(dataset_download_dir):
-            shutil.rmtree(dataset_download_dir, ignore_errors=True)
+        if dataset_download_dir.exists():
+            shutil.rmtree(str(dataset_download_dir), ignore_errors=True)
 
         try:
             dataset = dataset_cls(dataset_download_dir, download_dataset=False)
@@ -41,6 +55,7 @@ class TestDataset:
         except Exception as e:
             pytest.fail(f'Exception {e}')
 
+    @pytest.mark.skip(reason='avoiding hitting download rate limit')
     @pytest.mark.parametrize('dataset_cls', [
         pytest.param(dataset_cls, marks=[
             pytest.mark.dependency(
@@ -66,27 +81,16 @@ class TestDataset:
         except Exception as e:
             pytest.fail(f'Exception {e}')
 
-    @pytest.mark.parametrize('dataset_cls', [
+    @pytest.mark.parametrize('dataset', [
         pytest.param(dataset_cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_download[{dataset_cls.__name__}]']
-            ),
             pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
         ])
         for dataset_cls in DATASET_SUBCLASSES
-    ])
-    def test_iterator(self, dataset_cls: Type[Dataset]):
+    ], indirect=True)
+    def test_iterator(self, dataset: Type[Dataset]):
         """
         Tests dataset iteration.
         """
-        try:
-            dataset = get_dataset(dataset_cls)
-            assert len(dataset.dataX) > 0
-        except CannotDownloadDatasetError:
-            pytest.xfail('Cannot download dataset.')
-        except Exception as e:
-            pytest.fail(f'Exception {e}')
-
         for i, (x, y) in enumerate(dataset):
             assert x is not None
             assert y is not None
@@ -95,51 +99,29 @@ class TestDataset:
 
         assert len(dataset) > 0
 
-    @pytest.mark.parametrize('dataset_cls', [
+    @pytest.mark.parametrize('dataset', [
         pytest.param(dataset_cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_download[{dataset_cls.__name__}]']
-            ),
             pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
         ])
         for dataset_cls in DATASET_SUBCLASSES
-    ])
-    def test_data_equal_length(self, dataset_cls: Type[Dataset]):
+    ], indirect=True)
+    def test_data_equal_length(self, dataset: Type[Dataset]):
         """
         Tests dataset iteration.
         """
-        try:
-            dataset = get_dataset(dataset_cls)
-            assert len(dataset.dataX) > 0
-        except CannotDownloadDatasetError:
-            pytest.xfail('Cannot download dataset.')
-        except Exception as e:
-            pytest.fail(f'Exception {e}')
-
         assert len(dataset) == len(dataset.dataX)
         assert len(dataset.dataX) == len(dataset.dataY)
 
-    @pytest.mark.parametrize('dataset_cls', [
+    @pytest.mark.parametrize('dataset', [
         pytest.param(dataset_cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_download[{dataset_cls.__name__}]']
-            ),
             pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
         ])
         for dataset_cls in DATASET_SUBCLASSES
-    ])
-    def test_train_test_split(self, dataset_cls: Type[Dataset]):
+    ], indirect=True)
+    def test_train_test_split(self, dataset: Type[Dataset]):
         """
         Tests the `train_test_split_representations` method.
         """
-        try:
-            dataset = get_dataset(dataset_cls)
-            assert len(dataset.dataX) > 0
-        except CannotDownloadDatasetError:
-            pytest.xfail('Cannot download dataset.')
-        except Exception as e:
-            pytest.fail(f'Exception {e}')
-
         test_fraction = 0.25
         dataXtrain, dataXtest, dataYtrain, dataYtest = \
             dataset.train_test_split_representations(test_fraction)

@@ -1,7 +1,9 @@
 import pytest
-from typing import Type, Final
+from typing import Type, Final, Tuple
 
 from kenning.core.runtime import Runtime
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
@@ -16,6 +18,19 @@ RUNTIME_SUBCLASSES: Final = get_all_subclasses(
 RUNTIME_INPUTTYPES: Final = [
     (run, inp) for run in RUNTIME_SUBCLASSES for inp in run.inputtypes
 ]
+
+
+def prepare_objects(
+        runtime_cls: Type[Runtime],
+        inputtype: str) -> Tuple[Runtime, Dataset, ModelWrapper]:
+    try:
+        dataset, model = get_default_dataset_model(inputtype)
+    except UnknownFramework:
+        pytest.xfail(f'Unknown framework: {inputtype}')
+
+    runtime = runtime_cls(protocol=None, modelpath=model.modelpath)
+
+    return runtime, dataset, model
 
 
 class TestRuntime:
@@ -33,12 +48,7 @@ class TestRuntime:
         """
         Tests runtime initialization.
         """
-        try:
-            _, model = get_default_dataset_model(inputtype)
-        except UnknownFramework:
-            pytest.xfail(f'Unknown framework: {inputtype}')
-
-        _ = runtime_cls(protocol=None, modelpath=model)
+        _ = prepare_objects(runtime_cls, inputtype)
 
     @pytest.mark.parametrize('runtime_cls,inputtype', [
         pytest.param(runtime_cls, inputtype, marks=[
@@ -54,12 +64,7 @@ class TestRuntime:
         """
         Tests the `preprocess_input` method.
         """
-        try:
-            dataset, model = get_default_dataset_model(inputtype)
-        except UnknownFramework:
-            pytest.xfail(f'Unknown framework: {inputtype}')
-
-        runtime = runtime_cls(None, modelpath=model.modelpath)
+        runtime, _, _ = prepare_objects(runtime_cls, inputtype)
 
         assert runtime.prepare_local()
 
@@ -76,11 +81,6 @@ class TestRuntime:
         """
         Tests the `run_locally` method.
         """
-        try:
-            dataset, model = get_default_dataset_model(inputtype)
-        except UnknownFramework:
-            pytest.xfail(f'Unknown framework: {inputtype}')
-
-        runtime = runtime_cls(None, modelpath=model.modelpath)
+        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
 
         runtime.run_locally(dataset, model, str(model.modelpath))

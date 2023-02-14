@@ -6,7 +6,6 @@ from typing import Type, List
 import numpy as np
 from pathlib import Path
 from random import shuffle
-import os
 import cv2
 
 from kenning.core.dataset import Dataset
@@ -29,7 +28,7 @@ class RandomizedClassificationDataset(Dataset):
             'argparse_name': '--num-samples',
             'description': 'Number of samples to process',
             'type': int,
-            'default': 1000
+            'default': 100
         },
         'numclasses': {
             'argparse_name': '--num-classes',
@@ -43,13 +42,6 @@ class RandomizedClassificationDataset(Dataset):
             'type': int,
             'default': [224, 224, 3],
             'is_list': True
-        },
-        'outputdims': {
-            'argparse_name': '--output-dims',
-            'description': 'Dimensionality of the outputs',
-            'type': int,
-            'default': [1000, ],
-            'is_list': True
         }
     }
 
@@ -58,7 +50,7 @@ class RandomizedClassificationDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            samplescount: int = 1000,
+            samplescount: int = 100,
             numclasses: int = 3,
             integer_classes: bool = False,
             inputdims: List = [224, 224, 3],
@@ -98,12 +90,12 @@ class RandomizedClassificationDataset(Dataset):
     @classmethod
     def from_argparse(cls, args):
         return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            False,
-            args.num_samples,
-            args.num_classes,
-            args.input_dims
+            root=args.dataset_root,
+            batch_size=args.inference_batch_size,
+            download_dataset=False,
+            samplescount=args.num_samples,
+            numclasses=args.num_classes,
+            inputdims=args.input_dims
         )
 
     def get_class_names(self):
@@ -119,10 +111,7 @@ class RandomizedClassificationDataset(Dataset):
         self.dataY = [j % self.numclasses for j in range(self.samplescount)]
         shuffle(self.dataY)
 
-        if not os.path.isdir(self.root):
-            os.mkdir(self.root)
-        if not os.path.isdir(self.root / 'images'):
-            os.mkdir(self.root / 'images')
+        (self.root / 'images').mkdir(parents=True, exist_ok=True)
         samples = self.prepare_input_samples(self.dataX)
         for img_path, img_data in zip(self.dataX, samples):
             cv2.imwrite(img_path, img_data)
@@ -132,7 +121,7 @@ class RandomizedClassificationDataset(Dataset):
 
     def prepare_input_samples(self, samples):
         result = []
-        for sample in samples:
+        for _ in samples:
             result.append(np.random.randn(*self.inputdims).astype(self.dtype))
         return result
 
@@ -166,7 +155,7 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
             'argparse_name': '--num-samples',
             'description': 'Number of samples to process',
             'type': int,
-            'default': 1000
+            'default': 100
         },
         'numclasses': {
             'argparse_name': '--num-classes',
@@ -180,13 +169,6 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
             'type': int,
             'default': [224, 224, 3],
             'is_list': True
-        },
-        'outputdims': {
-            'argparse_name': '--output-dims',
-            'description': 'Dimensionality of the outputs',
-            'type': int,
-            'default': [1000, ],
-            'is_list': True
         }
     }
 
@@ -195,7 +177,7 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            samplescount: int = 1000,
+            samplescount: int = 100,
             numclasses: int = 3,
             inputdims: List = [224, 224, 3],
             dtype: Type = np.float32):
@@ -229,12 +211,12 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
     @classmethod
     def from_argparse(cls, args):
         return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            False,
-            args.num_samples,
-            args.num_classes,
-            args.input_dims
+            root=args.dataset_root,
+            batch_size=args.inference_batch_size,
+            download_dataset=False,
+            samplescount=args.num_samples,
+            numclasses=args.num_classes,
+            inputdims=args.input_dims
         )
 
     def get_class_names(self):

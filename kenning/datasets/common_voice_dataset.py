@@ -1,32 +1,33 @@
-from kenning.core.dataset import Dataset
-from kenning.core.measurements import Measurements
+from typing import Any, List, Tuple, Union
 from pathlib import Path
 import tarfile
-from kenning.utils.logger import download_url
-import pandas as pd
+import tempfile
 import string
-from copy import copy
-from typing import Any, List, Tuple, Union
+import pandas as pd
+
+from kenning.core.dataset import Dataset
+from kenning.core.measurements import Measurements
+from kenning.utils.logger import download_url
 
 
 def dynamic_levenshtein_distance(a: str, b: str) -> int:
     """
-    Computes the Levenshtein Distance metric between strings
+    Computes the Levenshtein Distance metric between strings.
 
     Parameters
     ----------
     a : str
-        first string
+        First string
     b : str
-        second string
+        Second string
 
     Returns
     -------
-    int : Levenshtein Distance
+    int :
+        Levenshtein Distance
     """
     la, lb = len(a), len(b)
-    dynamic_array = [0 for i in range(la+1)]
-    dynamic_array = [copy(dynamic_array) for i in range(lb+1)]
+    dynamic_array = [[0 for _ in range(la+1)] for _ in range(lb+1)]
     for i in range(1, la+1):
         dynamic_array[0][i] = i
 
@@ -35,10 +36,7 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
 
     for j in range(1, lb+1):
         for i in range(1, la+1):
-            if a[i-1] == b[j-1]:
-                cost = 0
-            else:
-                cost = 1
+            cost = int(a[i-1] != b[j-1])
             dynamic_array[j][i] = min(
                 dynamic_array[j][i-1] + 1,
                 dynamic_array[j-1][i] + 1,
@@ -49,11 +47,12 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
 
 def char_eval(pred: str, gt: str) -> float:
     """
-    Evaluates the prediction on a character basis
+    Evaluates the prediction on a character basis.
 
     The algorithm used to determine the distance between the
     strings is a dynamic programming implementation of the
-    Levenshtein Distance metric
+    Levenshtein Distance metric.
+
     Parameters
     ----------
     pred : str
@@ -71,17 +70,45 @@ def char_eval(pred: str, gt: str) -> float:
     ).lower().strip()
     pred = pred.strip()
     dld = dynamic_levenshtein_distance(pred, gt)
-    return 1-float(dld)/float(len(gt))
+    return 1 - float(dld)/float(len(gt))
 
 
 class CommonVoiceDataset(Dataset):
+
+    arguments_structure = {
+        'language': {
+            'argparse_name': '--language',
+            'description': 'Determines language of recordings',
+            'default': 'en',
+            'enum': ['en', 'pl']
+        },
+        'annotation_type': {
+            'argparse_name': '--annotation-type',
+            'description': 'Type of annotations to load',
+            'default': 'test',
+            'enum': ['train', 'validated', 'test']
+        },
+        'sample_size': {
+            'argparse_name': '--sample-size',
+            'description': 'Size of sample',
+            'type': int,
+            'default': 10
+        },
+        'selection_method': {
+            'argparse_name': '--selection-method',
+            'description': 'Method to group the data',
+            'default': 'accent',
+            'enum': ['length', 'accent']
+        }
+    }
+
     def __init__(
             self,
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
             language: str = 'en',
-            annotations_type: str = "test",
+            annotations_type: str = 'test',
             sample_size: int = 1000,
             selection_method: str = 'accent'):
         self.language = language
@@ -90,7 +117,7 @@ class CommonVoiceDataset(Dataset):
         self.sample_size = sample_size
         super().__init__(root, batch_size, download_dataset)
 
-    def download_dataset(self, lang: str = 'en'):
+    def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
         # Mozilla made sure that machines cannot download this dataset
         # in it's most recent form. however, the version 6.1 has a
@@ -98,23 +125,21 @@ class CommonVoiceDataset(Dataset):
 
         # 7.0 has it blocked because GDPR for now
         # (I will do some additional digging to maybe find something else)
-        url_format = "https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/cv-corpus-6.1-2020-12-11/{}.tar.gz"  # noqa: E501
+        url_format = 'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/cv-corpus-6.1-2020-12-11/{}.tar.gz'  # noqa: E501
 
-        with self.root as directory:
-            tarpath = Path(directory) / 'dataset.tar.gz'
-            download_url(url_format.format('en'), tarpath)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tarpath = Path(tmpdir) / 'dataset.tar.gz'
+            download_url(url_format.format(self.language), tarpath)
             tf = tarfile.open(tarpath)
-            unpacked = (self.root / 'unpacked')
-            unpacked.mkdir(parents=True, exist_ok=True)
-            tf.extractall(unpacked)
+            tf.extractall(self.root)
 
     def prepare(self):
-        voice_folder = Path(self.root / "unpacked").glob("*")
+        voice_folder = Path(self.root).glob('*')
         # take the first found folder inside unpacked tar archive
         # it will be the dataset
         voice_folder = Path([i for i in voice_folder][0] / self.language)
         metadata = pd.read_csv(
-            Path(voice_folder / "{}.tsv".format(self.annotations_type)),
+            Path(voice_folder / f'{self.annotations_type}.tsv'),
             sep='\t'
         )
 
@@ -169,43 +194,6 @@ class CommonVoiceDataset(Dataset):
         for i, j, k in sampled_dataset:
             self.dataX.append(i)
             self.dataY.append((j, k))
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            "--dataset-root",
-            type=Path,
-            required=True
-        )
-        group.add_argument(
-            "--batch-size",
-            type=int,
-            default=1
-        )
-        group.add_argument(
-            "--language",
-            type=str,
-            choices=['en', 'pl'],
-            default='en'
-        )
-        group.add_argument(
-            '--annotations-type',
-            help='Type of annotations to load',
-            choices=['train', 'validated', 'test'],
-            default='test'
-        )
-        group.add_argument(
-            "--sample-size",
-            type=int,
-            default=1000
-        )
-        group.add_argument(
-            '--selection-metric',
-            help='Metric to group the data',
-            choices=['length', 'accent']
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

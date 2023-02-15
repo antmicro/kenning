@@ -21,8 +21,6 @@ from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
 
 
 KENNING_MODELS_PATH: Final = Path(r'kenning/resources/models/')
-# use only 10% of original dataset to save time
-RANDOM_DATASET_SAMPLES: Final = 256
 
 
 def get_tmp_path() -> Path:
@@ -51,10 +49,10 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     Path :
         Path to the model copy
     """
-    if os.path.isfile(modelpath):
+    if modelpath.is_file():
         tmp_modelpath = get_tmp_path().with_suffix(modelpath.suffix)
         shutil.copy(modelpath, tmp_modelpath)
-    elif os.path.isdir(modelpath):
+    elif modelpath.is_dir():
         tmp_modelpath = get_tmp_path()
         shutil.copytree(modelpath, tmp_modelpath)
     else:
@@ -125,6 +123,8 @@ def get_default_dataset_model(
             dataset=dataset,
             from_file=True
         )
+        # save whole model instead of state dict
+        model.save_model(modelpath, export_dict=False)
 
     elif framework == 'darknet':
         dataset = get_dataset_random_mock(COCODataset2017)
@@ -149,9 +149,9 @@ def remove_file_or_dir(path: str):
     path : str
         Path of given directory or file
     """
-    if os.path.isfile(path):
+    if Path(path).is_file():
         os.remove(path)
-    elif os.path.isdir(path):
+    elif Path(path).is_dir():
         shutil.rmtree(path)
 
 

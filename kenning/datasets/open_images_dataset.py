@@ -15,7 +15,6 @@ The downloader part of the script is based on Open Images Dataset V6::
 # - add support for instance segmentation and other scenarios.
 
 from math import floor, ceil
-import os
 import cv2
 import sys
 import psutil
@@ -110,7 +109,7 @@ def download_one_image(
     try:
         bucket.download_file(
             f'{split}/{image_id}.jpg',
-            os.path.join(download_folder, f'{image_id}.jpg')
+            download_folder / f'{image_id}.jpg'
         )
     except botocore.exceptions.ClientError as exception:
         sys.exit(
@@ -510,10 +509,26 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             self.prepare_instance_segmentation()
         self.numclasses = len(self.classmap)
 
+    def get_sample_image_path(self, image_id: str) -> str:
+        """
+        Returns path to image of given id.
+
+        Parameters
+        ----------
+        image_id : str
+            Id of image
+
+        Returns
+        -------
+        str :
+            Path to the image
+        """
+        return str(self.root / 'img' / f'{image_id}.jpg')
+
     def prepare_input_samples(self, samples):
         result = []
         for sample in samples:
-            img = cv2.imread(str(self.root / 'img' / f'{sample}.jpg'))
+            img = cv2.imread(self.get_sample_image_path(sample))
             img = cv2.resize(img, (self.image_width, self.image_height))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             npimg = np.array(img, dtype=np.float32) / 255.0

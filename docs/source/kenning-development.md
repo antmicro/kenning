@@ -38,7 +38,7 @@ The example metadata file looks as follows (for ResNet50 for the ImageNet classi
 }
 ```
 
-The sample metadata JSON file may look as follows (for YOLOv4 detection model):
+A sample metadata JSON file may look as follows (for the YOLOv4 detection model):
 
 ```json
 {
@@ -101,7 +101,7 @@ Parameters specific to `input` and `output`:
   Present only if the input/output requires quantization/dequantization,
 * `prequantized_dtype` - input/output data type before quantization.
 * `class_name` - list of class names from the dataset.
-  It is used by output collectors to present the data in human-readable way.
+  It is used by output collectors to present the data in a human-readable way.
 
 Parameters specific to `input`:
 
@@ -111,10 +111,10 @@ Parameters specific to `input`:
 Parameters specific to `output` and `processed_output`:
 
 * `class_name` - list of class names from the dataset.
-  It is used by output collectors to present the data in human-readable way.
+  It is used by output collectors to present the data in a human-readable way.
 
 Parameters specific to `processed_input` and `processed_output`:
-* `type` - input/output type if different than `np.ndarray` (i.e. `List[SegmObject]` in segmentation model's postprocessed output).
+* `type` - input/output type if different than `np.ndarray` (i.e. `List[SegmObject]` in segmentation model postprocessed output).
 
 The model metadata is used by all classes in Kenning in order to understand the format of the inputs and outputs.
 
@@ -603,22 +603,21 @@ This sums up the Kenning development process.
 ## Implementing Kenning runtime blocks
 
 (implementing-runner)=
-### Implementing a new Runner for KenningFlow
+### Implementing new Runners for KenningFlow
 
-The process of creating new [](runner-api) is almost the same as described above process of implementing Kenning component.
-There are few more things to be done.
+The process of creating new [](runner-api) is almost the same as the process of implementing Kenning components described above, with a few additional steps.
 
-First of all, the new component must inherit from Runner class (not necessarily directly).
-Then one need to implement following methods:
+First of all, the new component needs to inherit from a Runner class (not necessarily directly).
+Then you need to implement the following methods:
 * `cleanup` - cleans resources after execution is stopped
-* `should_close` - (*optional*) returns boolean indicating whether runner ended processing and requests closing
-  Possible reasons can be signal from terminal, user request in GUI, end of data to process, error and more.
+* `should_close` - (*optional*) returns boolean indicating whether a runner ended processing and requests closing
+  Possible reasons: a signal from terminal, user request in GUI, end of data to process, an error, and more.
   Default implementation always returns `False`
-* `run` - method that gets runner inputs, process them and returns obtained results.
+* `run` - method that gets runner inputs, processes them and returns obtained results.
 
-Inputs of the runner are passed to the `run` method as a dictionary where key is the name of the input same as specified in KenningFlow JSON and the value is simply input's value.
+Inputs for the runner are passed to the `run` method as a dictionary where the key is the input name specified in the KenningFlow JSON and the value is simply the input value.
 
-In example for `DetectionVisualizer` defined in JSON as
+E.g. for `DetectionVisualizer` defined in JSON as
 
 ```{code-block} json
 ---
@@ -650,6 +649,6 @@ def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
 ```
 
 ```{note}
-In the example above, the `run` method does not have `return` statement, because this runner does not have any outputs.
-If one want to create runner with outputs then this method should return similar dictionary with outputs.
+In the example above, the `run` method does not contain a `return` statement, because this runner does not have any outputs.
+If you want to create a runner with outputs, this method should return a similar dictionary containing outputs.
 ```

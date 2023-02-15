@@ -64,8 +64,8 @@ The final report is generated as an RST file containing figures, as can be obser
 (kenningflow-api)=
 ## KenningFlow
 
-`kenning.core.flow.KenningFlow` class allows creation and execution of arbitrary flows built of runners.
-It is responsible for validating all runners provided in config file and their IO compatibility.
+`kenning.core.flow.KenningFlow` class allows for creation and execution of arbitrary flows built of runners.
+It is responsible for validating all runners provided in a config file and their IO compatibility.
 
 ```{eval-rst}
 .. autoclass:: kenning.core.flow.KenningFlow

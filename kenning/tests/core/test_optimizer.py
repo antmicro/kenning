@@ -1,5 +1,5 @@
 import pytest
-from typing import Type, Final, Tuple
+from typing import Type, Tuple
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
@@ -11,13 +11,13 @@ from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
 
 
-OPTIMIZER_SUBCLASSES: Final = get_all_subclasses(
+OPTIMIZER_SUBCLASSES = get_all_subclasses(
     'kenning.compilers',
     Optimizer,
     raise_exception=True
 )
 
-OPTIMIZER_INPUTTYPES: Final = [
+OPTIMIZER_INPUTTYPES = [
     (opt, inp) for opt in OPTIMIZER_SUBCLASSES for inp in opt.inputtypes
 ]
 

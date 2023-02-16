@@ -1,5 +1,5 @@
 import pytest
-from typing import Type, Final
+from typing import Type
 from pathlib import Path
 import shutil
 import inspect
@@ -12,7 +12,7 @@ from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.tests.core.conftest import get_dataset_download_path
 
 
-DATASET_SUBCLASSES: Final = get_all_subclasses(
+DATASET_SUBCLASSES = get_all_subclasses(
     'kenning.datasets',
     Dataset,
     raise_exception=True
@@ -22,8 +22,17 @@ DATASET_SUBCLASSES: Final = get_all_subclasses(
 @pytest.fixture(scope='function')
 def dataset(request):
     dataset_cls = request.param
+
+    path = path_reduced = get_reduced_dataset_path(dataset_cls)
+    if not path.exists():
+        path = get_dataset_download_path(dataset_cls)
+    if not path.exists() and 'Random' not in dataset_cls.__name__:
+        pytest.xfail(
+            f'Dataset {dataset_cls.__name__} not found in any of {path} and '
+            f'{path_reduced} directories'
+        )
+
     try:
-        path = get_reduced_dataset_path(dataset_cls)
         dataset = dataset_cls(path, download_dataset=False)
         assert len(dataset.dataX) > 0
     except CannotDownloadDatasetError:
@@ -121,7 +130,7 @@ class TestDataset:
                   hasattr(dataset, 'get_sample_image_path')))):
             pytest.skip('dataset inputs are not images')
 
-        N: Final = 10
+        N = 10
 
         # disable images preprocessing
         dataset.standardize = False

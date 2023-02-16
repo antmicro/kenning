@@ -3,9 +3,18 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict
+from kenning.core.flow import KenningFlow
 
 from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node
 from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
+
+
+def json_to_kenningflow(json_cfg):
+    return KenningFlow.from_json(json_cfg)
+
+
+def run_kenningflow(flow):
+    return flow.run()
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -31,7 +40,12 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         nodes, io_mapping = KenningFlowHandler.get_nodes(
             pipeline_nodes, io_mapping)
-        super().__init__(nodes, io_mapping, None, None)  # TODO
+        super().__init__(
+            nodes,
+            io_mapping,
+            json_to_kenningflow,
+            run_kenningflow
+        )
 
     def create_dataflow(self, pipeline: Dict):
         pass  # TODO

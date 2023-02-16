@@ -8,13 +8,86 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Tuple
 
 from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
 from kenning.core.measurements import MeasurementsCollector
 
-from kenning.utils.pipeline_manager.misc import get_specification, parse_dataflow, create_dataflow  # noqa: E501
-from kenning.utils.pipeline_runner import run_pipeline, parse_json_pipeline
+from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.utils.pipeline_manager.flow_handler import KenningFlowHandler
+from kenning.utils.pipeline_manager.core import BaseDataflowHandler
+
+
+def parse_message(
+        dataflow_handler: BaseDataflowHandler,
+        message_type: MessageType,
+        data: bytes,
+        output_file_path: Path
+) -> Tuple[MessageType, bytes]:
+    """
+    Uses dataflow_handler to parse the incoming data from Pipeline Manager
+    according to the action that is to be performed.
+
+    Parameters
+    ----------
+    dataflow_handler : BaseDataflowHandler
+        Used to convert to and from Pipeline Manager JSON formats,
+        create and run dataflows defined in manager.
+    message_type : MessageType
+        Action requested by the Pipeline Manager to perform
+    data : bytes
+        Data send by Manager
+    output_file_path : Path
+        Path where the optional output will be saved
+
+    Returns
+    -------
+    Tuple[MessageType, bytes]
+        Return answer to send to the Manager.
+    """
+    if message_type == MessageType.SPECIFICATION:
+        specification = dataflow_handler.get_specification()
+        feedback_msg = json.dumps(specification)
+
+    if (message_type == MessageType.VALIDATE or
+            message_type == MessageType.RUN or
+            message_type == MessageType.EXPORT):
+
+        dataflow = json.loads(data)
+        successful, msg = dataflow_handler.parse_dataflow(dataflow)
+
+        if not successful:
+            return MessageType.ERROR, msg.encode()
+        try:
+            scenario_tuple = dataflow_handler.parse_json(msg)
+
+            if message_type == MessageType.EXPORT:
+                with open(output_file_path, 'w') as f:
+                    json.dump(msg, f, indent=4)
+
+            if message_type == MessageType.RUN:
+                MeasurementsCollector.clear()
+                dataflow_handler.run_dataflow(
+                    *scenario_tuple,
+                    output_file_path
+                )
+        except Exception as ex:
+            return MessageType.ERROR, str(ex).encode()
+
+        if message_type == MessageType.VALIDATE:
+            feedback_msg = 'Successfuly validated'
+        elif message_type == MessageType.RUN:
+            feedback_msg = f'Successfuly run. Output saved in {output_file_path}'  # noqa: E501
+        elif message_type == MessageType.EXPORT:
+            feedback_msg = f'Successfuly exported. Output saved in {output_file_path}'  # noqa: E501
+
+    if message_type == MessageType.IMPORT:
+        pipeline = json.loads(data)
+        dataflow = dataflow_handler.create_dataflow(pipeline)
+        feedback_msg = json.dumps(dataflow)
+
+    return MessageType.OK, feedback_msg.encode(encoding='UTF-8')
 
 
 def main(argv):
@@ -37,71 +110,39 @@ def main(argv):
         help='Path where inference output will be stored',
         required=True
     )
+    parser.add_argument(
+        '--spec-type',
+        type=str,
+        help='',
+        choices=('pipeline', 'flow'),
+        default='pipeline'
+    )
     args, _ = parser.parse_known_args(argv[1:])
 
     client = CommunicationBackend(args.host, args.port)
     client.initialize_client()
 
+    if args.spec_type == "pipeline":
+        dataflow_handler = PipelineHandler()
+    elif args.spec_type == "flow":
+        dataflow_handler = KenningFlowHandler()
+    else:
+        RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
+
     while client.client_socket:
         status, message = client.wait_for_message()
         if status == Status.DATA_READY:
             message_type, data = message
-
-            if message_type == MessageType.SPECIFICATION:
-                client.send_message(
-                    MessageType.OK,
-                    json.dumps(get_specification()).encode(encoding='UTF-8')
-                )
-
-            if (message_type == MessageType.VALIDATE or
-                    message_type == MessageType.RUN or
-                    message_type == MessageType.EXPORT):
-
-                dataflow = json.loads(data)
-                successful, msg = parse_dataflow(dataflow)
-
-                if not successful:
-                    client.send_message(MessageType.ERROR, msg.encode())
-                    continue
-                try:
-                    scenario_tuple = parse_json_pipeline(msg)
-
-                    if message_type == MessageType.EXPORT:
-                        with open(args.file_path, 'w') as f:
-                            json.dump(msg, f, indent=4)
-
-                    if message_type == MessageType.RUN:
-                        MeasurementsCollector.clear()
-                        run_pipeline(
-                            *scenario_tuple,
-                            args.file_path
-                        )
-                except Exception as ex:
-                    client.send_message(MessageType.ERROR, str(ex).encode())
-                    continue
-
-                feedback_msg = ''
-                if message_type == MessageType.VALIDATE:
-                    feedback_msg = 'Successfuly validated'
-                elif message_type == MessageType.RUN:
-                    feedback_msg = f'Successfuly run. Output saved in {args.file_path}'  # noqa: E501
-                elif message_type == MessageType.EXPORT:
-                    feedback_msg = f'Successfuly exported. Output saved in {args.file_path}'  # noqa: E501
-
-                client.send_message(
-                    MessageType.OK,
-                    feedback_msg.encode()
-                )
-                continue
-
-            if message_type == MessageType.IMPORT:
-                pipeline = json.loads(data)
-                dataflow = create_dataflow(pipeline)
-
-                client.send_message(
-                    MessageType.OK,
-                    json.dumps(dataflow).encode(encoding='UTF-8')
-                )
+            return_status, return_message = parse_message(
+                dataflow_handler,
+                message_type,
+                data,
+                args.file_path
+            )
+            client.send_message(
+                return_status,
+                return_message
+            )
 
 
 if __name__ == '__main__':

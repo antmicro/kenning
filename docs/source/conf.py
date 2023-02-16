@@ -48,14 +48,13 @@ sphinx_immaterial_override_builtin_admonitions = False
 numfig = True
 
 # If you need to add extensions just add to those lists
-extensions = default_extensions
-myst_enable_extensions = default_myst_enable_extensions
-
-extensions.extend([
+extensions = list(set(default_extensions + [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
-])
+]))
+
+myst_enable_extensions = default_myst_enable_extensions
 
 dev = 'https://github.com/antmicro/kenning'
 

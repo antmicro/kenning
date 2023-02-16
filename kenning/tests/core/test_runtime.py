@@ -1,5 +1,5 @@
 import pytest
-from typing import Type, Final, Tuple
+from typing import Type, Tuple
 
 from kenning.core.runtime import Runtime
 from kenning.core.dataset import Dataset
@@ -9,13 +9,13 @@ from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
 
 
-RUNTIME_SUBCLASSES: Final = get_all_subclasses(
+RUNTIME_SUBCLASSES = get_all_subclasses(
     'kenning.runtimes',
     Runtime,
     raise_exception=True
 )
 
-RUNTIME_INPUTTYPES: Final = [
+RUNTIME_INPUTTYPES = [
     (run, inp) for run in RUNTIME_SUBCLASSES for inp in run.inputtypes
 ]
 

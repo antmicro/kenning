@@ -156,13 +156,18 @@ class BaseDataflowHandler:
                         new_property['type'] = 'integer'
                     elif 'number' in props['type']:
                         new_property['type'] = 'number'
+                    elif 'object' in props['type']:
+                        # Object arguments should be defined in specification
+                        # as node inputs, rather than properties
+                        new_property = None
                     else:
                         new_property['type'] = 'text'
                 # If no type is specified then text is used
                 else:
                     new_property['type'] = 'text'
 
-                properties.append(new_property)
+                if new_property is not None:
+                    properties.append(new_property)
 
             specification['nodes'].append({
                 'name': node.name,

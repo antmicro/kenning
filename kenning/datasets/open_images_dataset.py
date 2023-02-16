@@ -599,27 +599,3 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
     def get_class_names(self):
         return self.classnames
-
-    def train_test_split_representations(
-            self,
-            test_fraction: float = 0.25,
-            seed: int = 12345):
-        """
-        Splits the data representations into train dataset and test dataset.
-
-        Parameters
-        ----------
-        test_fraction : float
-            The fraction of data to leave for model validation
-        seed : int
-            The seed for random state
-        """
-        from sklearn.model_selection import train_test_split
-        dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
-            self.dataX,
-            self.dataY,
-            test_size=test_fraction,
-            random_state=seed,
-            shuffle=True,
-        )
-        return (dataXtrain, dataXtest, dataYtrain, dataYtest)

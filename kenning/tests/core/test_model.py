@@ -1,6 +1,5 @@
 import pytest
-from typing import Type, Final
-import os
+from typing import Type
 
 from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import get_all_subclasses
@@ -9,13 +8,11 @@ from kenning.tests.core.conftest import remove_file_or_dir
 from kenning.tests.core.conftest import get_dataset_random_mock
 
 
-MODELWRAPPER_SUBCLASSES: Final = get_all_subclasses(
+MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     'kenning.modelwrappers',
     ModelWrapper,
     raise_exception=True
 )
-
-os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 
 
 @pytest.fixture(autouse=True, scope='module')

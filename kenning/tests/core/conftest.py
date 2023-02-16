@@ -1,4 +1,9 @@
-from typing import Final, Tuple, Type
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+import pytest
+from typing import Tuple, Type
 from pathlib import Path
 import tempfile
 import shutil
@@ -20,7 +25,7 @@ from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
 from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
 
 
-KENNING_MODELS_PATH: Final = Path(r'kenning/resources/models/')
+KENNING_MODELS_PATH = Path(r'kenning/resources/models/')
 
 
 def get_tmp_path() -> Path:
@@ -32,7 +37,8 @@ def get_tmp_path() -> Path:
     Path :
         Temporary path
     """
-    return Path(tempfile.gettempdir()) / next(tempfile._get_candidate_names())
+    return (pytest.test_directory / 'tmp' /
+            next(tempfile._get_candidate_names()))
 
 
 def copy_model_to_tmp(modelpath: Path) -> Path:
@@ -49,11 +55,12 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     Path :
         Path to the model copy
     """
+    tmp_path = get_tmp_path()
     if modelpath.is_file():
-        tmp_modelpath = get_tmp_path().with_suffix(modelpath.suffix)
+        tmp_modelpath = tmp_path.with_suffix(modelpath.suffix)
         shutil.copy(modelpath, tmp_modelpath)
     elif modelpath.is_dir():
-        tmp_modelpath = get_tmp_path()
+        tmp_modelpath = tmp_path
         shutil.copytree(modelpath, tmp_modelpath)
     else:
         raise FileNotFoundError
@@ -169,7 +176,7 @@ def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
     Path :
         Temporary path for dataset download
     """
-    return Path(f'/tmp/{dataset_cls.__name__}')
+    return pytest.test_directory / 'datasets' / dataset_cls.__name__
 
 
 def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
@@ -186,7 +193,7 @@ def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
     Path :
         Path to reduced dataset
     """
-    return Path(f'/datasets-reduced/{dataset_cls.__name__}')
+    return pytest.test_directory / 'datasets-reduced' / dataset_cls.__name__
 
 
 def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:

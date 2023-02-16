@@ -1,0 +1,53 @@
+[
+  {
+    "type": "kenning.dataproviders.camera_dataprovider.CameraDataProvider",
+    "parameters": {
+      "video_file_path": "/dev/video0",
+      "input_memory_layout": "NCHW",
+      "input_width": 608,
+      "input_height": 608
+    },
+    "outputs": {
+      "frame": "cam_frame"
+    }
+  },
+  {
+    "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
+    "parameters": {
+      "model_wrapper": {
+        "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+        "parameters": {
+          "model_path": "./kenning/resources/models/detection/yolov4.onnx"
+        }
+      },
+      "runtime": {
+        "type": "kenning.runtimes.onnx.ONNXRuntime",
+        "parameters":
+        {
+          "save_model_path": "./kenning/resources/models/detection/yolov4.onnx",
+          "execution_providers": ["CUDAExecutionProvider"]
+        }
+      }
+    },
+    "inputs": {
+      "input": "cam_frame"
+    },
+    "outputs": {
+      "detection_output": "predictions"
+    }
+  },
+  {
+    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer",
+    "parameters": {
+      "viewer_width": 512,
+      "viewer_height": 512,
+      "input_memory_layout": "NCHW",
+      "input_color_format": "BGR"
+    },
+    "inputs": {
+      "frame": "cam_frame",
+      "detection_data": "predictions"
+    }
+  }
+]
+

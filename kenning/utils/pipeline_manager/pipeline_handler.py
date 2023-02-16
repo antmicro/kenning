@@ -2,10 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List, Tuple, Union
+from typing import Dict, Tuple, Union
 from collections import defaultdict as dd
 
-from kenning.utils.pipeline_manager.core import BaseDataflowHandler, Node, add_node  # noqa: E501
+from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node  # noqa: E501
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 from kenning.utils import logger
 
@@ -437,9 +437,11 @@ class PipelineHandler(BaseDataflowHandler):
         return True, final_scenario
 
     @staticmethod
-    def get_nodes(nodes: List[Node] = None) -> Tuple[List[Node], Dict]:
+    def get_nodes(nodes=None, io_mapping=None):
         if nodes is None:
             nodes = []
+        if io_mapping is None:
+            io_mapping = {}
 
         # Datasets
         add_node(
@@ -593,6 +595,7 @@ class PipelineHandler(BaseDataflowHandler):
         )
 
         io_mapping = {
+            **io_mapping,
             'dataset': {
                 'inputs': [],
                 'outputs': [

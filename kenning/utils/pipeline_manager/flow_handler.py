@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, List
+from typing import Dict
 
 from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node
 from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
@@ -10,8 +10,27 @@ from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
 
 class KenningFlowHandler(BaseDataflowHandler):
     def __init__(self):
-        pipeline_nodes, _ = PipelineHandler.get_nodes()
-        nodes, io_mapping = KenningFlowHandler.get_nodes(pipeline_nodes)
+        pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()
+
+        # Nodes from PipelineHandler are used only as arguments for
+        # different runners. Therefore they should have no inputs and
+        # only single output, themselves, so that they can be passed
+        # as runner input
+        io_mapping = {
+            node_type: {
+                'inputs': [],
+                'outputs': [
+                    {
+                        'name': str.capitalize(node_type.replace('_', ' ')),
+                        'type': node_type,
+                        'required': True
+                    }
+                ]
+            } for node_type in pipeline_io_dict.keys()
+        }
+
+        nodes, io_mapping = KenningFlowHandler.get_nodes(
+            pipeline_nodes, io_mapping)
         super().__init__(nodes, io_mapping, None, None)  # TODO
 
     def create_dataflow(self, pipeline: Dict):
@@ -21,9 +40,12 @@ class KenningFlowHandler(BaseDataflowHandler):
         pass  # TODO
 
     @staticmethod
-    def get_nodes(nodes: List = None):
+    def get_nodes(nodes=None, io_mapping=None):
         if nodes is None:
             nodes = []
+        if io_mapping is None:
+            io_mapping = {}
+
         # Runners
         add_node(
             nodes,
@@ -63,6 +85,7 @@ class KenningFlowHandler(BaseDataflowHandler):
         )
 
         io_mapping = {
+            **io_mapping,
             'data_provider': {
                 'inputs': [],
                 'outputs': [
@@ -78,6 +101,16 @@ class KenningFlowHandler(BaseDataflowHandler):
                     {
                         'name': 'Input data',
                         'type': 'dataset',
+                        'required': True
+                    },
+                    {
+                        'name': 'Model Wrapper',
+                        'type': 'model_wrapper',
+                        'required': True
+                    },
+                    {
+                        'name': 'Runtime',
+                        'type': 'runtime',
                         'required': True
                     }
                 ],

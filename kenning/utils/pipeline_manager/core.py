@@ -244,7 +244,10 @@ class BaseDataflowHandler:
         raise NotImplementedError
 
     @staticmethod
-    def get_nodes(nodes: List[Node] = None) -> Tuple[List[Node], Dict]:
+    def get_nodes(
+        nodes: List[Node] = None,
+        io_mapping: Dict = None
+    ) -> Tuple[List[Node], Dict]:
         """
         Defines specification for the dataflow type that will be managed
         in Pipeline Manager.

@@ -13,7 +13,7 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Set
 import json
 import numpy as np
 import re
@@ -31,7 +31,6 @@ from kenning.core.drawing import true_positive_iou_histogram
 from kenning.core.drawing import true_positives_per_iou_range_histogram
 from kenning.core.drawing import draw_plot
 from kenning.core.drawing import draw_violin_comparison_plot
-from kenning.core.drawing import draw_multiple_time_series
 from kenning.core.drawing import draw_radar_chart
 from kenning.core.drawing import draw_bubble_plot
 from kenning.utils import logger
@@ -39,9 +38,28 @@ from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
 from kenning.core.metrics import compute_performance_metrics, \
     compute_classification_metrics, compute_detection_metrics
-from servis import render_time_series_plot_with_histogram
+from servis import (
+    render_time_series_plot_with_histogram,
+    render_multiple_time_series_plot
+)
 
 log = logger.get_logger()
+
+
+SERVIS_PLOT_OPTIONS = {
+    'png': {
+        'outputext': ['png'],
+        'backend': 'matplotlib'
+    },
+    'html': {
+        'outputext': ['html'],
+        'figsize': (670, 390)
+    },
+    'svg': {
+        'outputext': ['svg'],
+        'backend': 'matplotlib'
+    }
+}
 
 
 def get_model_name(filepath: Path) -> str:
@@ -65,7 +83,8 @@ def performance_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         imgprefix: str,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates performance section of the report.
 
@@ -101,43 +120,24 @@ def performance_report(
 
     if inference_step:
         usepath = imgdir / f'{imgprefix}inference_time'
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata[inference_step],
-            xdata=measurementsdata[f'{inference_step}_timestamp'],
-            title='Inference time',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Inference time',
-            yunit='s',
-            outpath=str(usepath),
-            outputext=['png'],
-            skipfirst=True,
-            plottype='scatter',
-            backend='matplotlib'
-        )
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata[inference_step],
-            xdata=measurementsdata[f'{inference_step}_timestamp'],
-            title='Inference time',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Inference time',
-            yunit='s',
-            outpath=str(usepath),
-            outputext=['html'],
-            skipfirst=True,
-            plottype='scatter',
-            figsize=(670, 390)
-        )
+        for ext in image_formats:
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata[inference_step],
+                xdata=measurementsdata[f'{inference_step}_timestamp'],
+                title='Inference time',
+                xtitle='Time',
+                xunit='s',
+                ytitle='Inference time',
+                yunit='s',
+                outpath=str(usepath),
+                skipfirst=True,
+                plottype='scatter',
+                **SERVIS_PLOT_OPTIONS[ext]
+            )
 
-        usepath_png = Path(f'{usepath}.png')
-        usepath_html = Path(f'{usepath}.html')
-
+        usepath_astrix = Path(f'{usepath}.*')
         measurementsdata['inferencetimepath'] = str(
-            usepath_png.relative_to(rootdir)
-        )
-        measurementsdata['inferencetimepathhtml'] = str(
-            usepath_html.relative_to(rootdir)
+            usepath_astrix.relative_to(rootdir)
         )
 
         measurementsdata['inferencetime'] = \
@@ -146,43 +146,24 @@ def performance_report(
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_memory_usage'
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_mem_percent'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Memory usage',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Memory usage',
-            yunit='%',
-            outpath=str(usepath),
-            outputext=['png'],
-            skipfirst=True,
-            plottype='scatter',
-            backend='matplotlib'
-        )
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_mem_percent'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Memory usage',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Memory usage',
-            yunit='%',
-            outpath=str(usepath),
-            outputext=['html'],
-            skipfirst=True,
-            plottype='scatter',
-            figsize=(670, 390)
-        )
+        for ext in image_formats:
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata['session_utilization_mem_percent'],
+                xdata=measurementsdata['session_utilization_timestamp'],
+                title='Memory usage',
+                xtitle='Time',
+                xunit='s',
+                ytitle='Memory usage',
+                yunit='%',
+                outpath=str(usepath),
+                skipfirst=True,
+                plottype='scatter',
+                **SERVIS_PLOT_OPTIONS[ext]
+            )
 
-        usepath_png = Path(f'{usepath}.png')
-        usepath_html = Path(f'{usepath}.html')
-
+        usepath_astrix = Path(f'{usepath}.*')
         measurementsdata['memusagepath'] = str(
-            usepath_png.relative_to(rootdir)
-        )
-        measurementsdata['memusagepathhtml'] = str(
-            usepath_html.relative_to(rootdir)
+            usepath_astrix.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
@@ -190,43 +171,24 @@ def performance_report(
     if 'session_utilization_cpus_percent' in measurementsdata:
         log.info('Using target measurements CPU usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_usage'
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Average CPU usage',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Average CPU usage',
-            yunit='%',
-            outpath=str(usepath),
-            outputext=['png'],
-            skipfirst=True,
-            plottype='scatter',
-            backend='matplotlib'
-        )
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Average CPU usage',
-            xtitle='Time',
-            xunit='s',
-            ytitle='Average CPU usage',
-            yunit='%',
-            outpath=str(usepath),
-            outputext=['html'],
-            skipfirst=True,
-            plottype='scatter',
-            figsize=(670, 390)
-        )
+        for ext in image_formats:
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata['session_utilization_cpus_percent_avg'],
+                xdata=measurementsdata['session_utilization_timestamp'],
+                title='Average CPU usage',
+                xtitle='Time',
+                xunit='s',
+                ytitle='Average CPU usage',
+                yunit='%',
+                outpath=str(usepath),
+                skipfirst=True,
+                plottype='scatter',
+                **SERVIS_PLOT_OPTIONS[ext]
+            )
 
-        usepath_png = Path(f'{usepath}.png')
-        usepath_html = Path(f'{usepath}.html')
-
+        usepath_astrix = Path(f'{usepath}.*')
         measurementsdata['cpuusagepath'] = str(
-            usepath_png.relative_to(rootdir)
-        )
-        measurementsdata['cpuusagepathhtml'] = str(
-            usepath_html.relative_to(rootdir)
+            usepath_astrix.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
@@ -240,43 +202,25 @@ def performance_report(
                 'Incorrectly collected data for GPU memory utilization'
             )
         else:
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata[gpumemmetric],
-                xdata=measurementsdata['session_utilization_gpu_timestamp'],
-                title='GPU memory usage',
-                xtitle='Time',
-                xunit='s',
-                ytitle='GPU memory usage',
-                yunit='%',
-                outpath=str(usepath),
-                outputext=['png'],
-                skipfirst=True,
-                plottype='scatter',
-                backend='matplotlib'
-            )
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata[gpumemmetric],
-                xdata=measurementsdata['session_utilization_gpu_timestamp'],
-                title='GPU memory usage',
-                xtitle='Time',
-                xunit='s',
-                ytitle='GPU memory usage',
-                yunit='%',
-                outpath=str(usepath),
-                outputext=['html'],
-                skipfirst=True,
-                plottype='scatter',
-                figsize=(670, 390)
-            )
+            for ext in image_formats:
+                render_time_series_plot_with_histogram(
+                    ydata=measurementsdata[gpumemmetric],
+                    xdata=measurementsdata[
+                        'session_utilization_gpu_timestamp'],
+                    title='GPU memory usage',
+                    xtitle='Time',
+                    xunit='s',
+                    ytitle='GPU memory usage',
+                    yunit='%',
+                    outpath=str(usepath),
+                    skipfirst=True,
+                    plottype='scatter',
+                    **SERVIS_PLOT_OPTIONS[ext]
+                )
 
-            usepath_png = Path(f'{usepath}.png')
-            usepath_html = Path(f'{usepath}.html')
-
+            usepath_astrix = Path(f'{usepath}.*')
             measurementsdata['gpumemusagepath'] = str(
-                usepath_png.relative_to(rootdir)
-            )
-            measurementsdata['gpumemusagepathhtml'] = str(
-                usepath_html.relative_to(rootdir)
+                usepath_astrix.relative_to(rootdir)
             )
     else:
         log.warning('No GPU memory usage measurements in the report')
@@ -287,43 +231,26 @@ def performance_report(
         if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
             log.warning('Incorrectly collected data for GPU utilization')
         else:
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata['session_utilization_gpu_utilization'],
-                xdata=measurementsdata['session_utilization_gpu_timestamp'],
-                title='GPU utilization',
-                xtitle='Time',
-                xunit='s',
-                ytitle='Utilization',
-                yunit='%',
-                outpath=str(usepath),
-                outputext=['png'],
-                skipfirst=True,
-                plottype='scatter',
-                backend='matplotlib'
-            )
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata['session_utilization_gpu_utilization'],
-                xdata=measurementsdata['session_utilization_gpu_timestamp'],
-                title='GPU utilization',
-                xtitle='Time',
-                xunit='s',
-                ytitle='Utilization',
-                yunit='%',
-                outpath=str(usepath),
-                outputext=['html'],
-                skipfirst=True,
-                plottype='scatter',
-                figsize=(670, 390)
-            )
+            for ext in image_formats:
+                render_time_series_plot_with_histogram(
+                    ydata=measurementsdata[
+                        'session_utilization_gpu_utilization'],
+                    xdata=measurementsdata[
+                        'session_utilization_gpu_timestamp'],
+                    title='GPU utilization',
+                    xtitle='Time',
+                    xunit='s',
+                    ytitle='Utilization',
+                    yunit='%',
+                    outpath=str(usepath),
+                    skipfirst=True,
+                    plottype='scatter',
+                    **SERVIS_PLOT_OPTIONS[ext]
+                )
 
-            usepath_png = Path(f'{usepath}.png')
-            usepath_html = Path(f'{usepath}.html')
-
+            usepath_astrix = Path(f'{usepath}.*')
             measurementsdata['gpuusagepath'] = str(
-                usepath_png.relative_to(rootdir)
-            )
-            measurementsdata['gpuusagepathhtml'] = str(
-                usepath_html.relative_to(rootdir)
+                usepath_astrix.relative_to(rootdir)
             )
     else:
         log.warning('No GPU utilization measurements in the report')
@@ -338,7 +265,8 @@ def performance_report(
 def comparison_performance_report(
         measurementsdata: List[Dict],
         imgdir: Path,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates performance comparison section of report.
 
@@ -356,6 +284,8 @@ def comparison_performance_report(
     str : content of the report in MyST format
     """
     log.info('Running comparison_performance_report')
+    # HTML plots format unsupported, removing html
+    _image_formats = image_formats-{'html'}
 
     metric_names = {
         'inference_step': ('Inference time', 's'),
@@ -420,17 +350,21 @@ def comparison_performance_report(
             if metric in data:
                 metric_data[data['modelname']] = data[metric]
         if len(metric_data) > 1:
-            usepath = imgdir / f"{metric}_comparison.png"
-            draw_multiple_time_series(
-                usepath,
-                f"{metric_name} comparison",
-                timestamps,
-                "Time [s]",
-                metric_data,
-                f"{metric_name} [{unit}]",
-                skipfirst=True,
-                smooth=101
-            )
+            for format in image_formats:
+                usepath = imgdir / f"{metric}_comparison"
+                render_multiple_time_series_plot(
+                    [metric_data[k] for k in metric_data.keys()],
+                    [timestamps[k] for k in timestamps.keys()],
+                    "Test",
+                    list(metric_data.keys()),
+                    ["Time" for _ in metric_data.keys()],
+                    ['s' for _ in metric_data.keys()],
+                    [metric_name for _ in metric_data.keys()],
+                    [unit for _ in metric_data.keys()],
+                    outpath=usepath,
+                    **SERVIS_PLOT_OPTIONS[format]
+                )
+            usepath = imgdir / f"{metric}_comparison.*"
             report_variables[f"{metric}_path"] = str(
                 usepath.relative_to(rootdir)
             )
@@ -442,14 +376,16 @@ def comparison_performance_report(
             data[metric] for metric in common_metrics
         ]
 
-    usepath = imgdir / 'mean_performance_comparison.png'
-    draw_violin_comparison_plot(
-        usepath,
-        "Performance comparison plot",
-        [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
-            for metric in common_metrics],
-        visualizationdata
-    )
+    for format in _image_formats:
+        usepath = imgdir / f'mean_performance_comparison.{format}'
+        draw_violin_comparison_plot(
+            usepath,
+            "Performance comparison plot",
+            [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
+                for metric in common_metrics],
+            visualizationdata
+        )
+    usepath = imgdir / 'mean_performance_comparison.*'
     report_variables["meanperformancepath"] = str(
         usepath.relative_to(rootdir)
     )
@@ -462,13 +398,15 @@ def comparison_performance_report(
             for metric in hardware_usage_metrics
         ]
 
-    usepath = imgdir / "hardware_usage_comparison.png"
-    draw_radar_chart(
-        usepath,
-        "Resource usage comparison",
-        usage_visualization,
-        [metric_names[metric][0] for metric in hardware_usage_metrics]
-    )
+    for format in _image_formats:
+        usepath = imgdir / f"hardware_usage_comparison.{format}"
+        draw_radar_chart(
+            usepath,
+            "Resource usage comparison",
+            usage_visualization,
+            [metric_names[metric][0] for metric in hardware_usage_metrics]
+        )
+    usepath = imgdir / "hardware_usage_comparison.*"
     report_variables["hardwareusagepath"] = str(
         usepath.relative_to(rootdir)
     )
@@ -484,7 +422,8 @@ def classification_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         imgprefix: str,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates classification quality section of the report.
 
@@ -506,18 +445,22 @@ def classification_report(
     log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
+    # HTML plots format unsupported, removing html
+    _image_formats = image_formats-{'html'}
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
         return ''
     log.info('Using confusion matrix')
-    confusionpath = imgdir / f'{imgprefix}confusion_matrix.png'
-    draw_confusion_matrix(
-        measurementsdata['eval_confusion_matrix'],
-        str(confusionpath),
-        'Confusion matrix',
-        measurementsdata['class_names']
-    )
+    for format in _image_formats:
+        confusionpath = imgdir / f'{imgprefix}confusion_matrix.{format}'
+        draw_confusion_matrix(
+            measurementsdata['eval_confusion_matrix'],
+            str(confusionpath),
+            'Confusion matrix',
+            measurementsdata['class_names']
+        )
+    confusionpath = imgdir / f'{imgprefix}confusion_matrix.*'
     measurementsdata['confusionpath'] = str(
         confusionpath.relative_to(rootdir)
     )
@@ -531,7 +474,8 @@ def classification_report(
 def comparison_classification_report(
         measurementsdata: List[Dict],
         imgdir: Path,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates classification comparison section of report.
 
@@ -549,6 +493,8 @@ def comparison_classification_report(
     str : content of the report in MyST format
     """
     log.info('Running comparison_classification_report')
+    # HTML plots format unsupported, removing html
+    _image_formats = image_formats-{'html'}
 
     report_variables = {
         'reportname': measurementsdata[0]['reportname'],
@@ -590,28 +536,32 @@ def comparison_classification_report(
             model_sensitivity
         ]
 
-    usepath = imgdir / "accuracy_vs_inference_time.png"
-    draw_bubble_plot(
-        usepath,
-        "Accuracy vs Mean inference time",
-        mean_inference_time,
-        "Mean inference time [s]",
-        accuracy,
-        "Accuracy",
-        model_sizes,
-        names
-    )
+    for format in _image_formats:
+        usepath = imgdir / f"accuracy_vs_inference_time.{format}"
+        draw_bubble_plot(
+            usepath,
+            "Accuracy vs Mean inference time",
+            mean_inference_time,
+            "Mean inference time [s]",
+            accuracy,
+            "Accuracy",
+            model_sizes,
+            names
+        )
+    usepath = imgdir / "accuracy_vs_inference_time.*"
     report_variables['bubbleplotpath'] = str(
         usepath.relative_to(rootdir)
     )
 
-    usepath = imgdir / "classification_metric_comparison.png"
-    draw_radar_chart(
-        usepath,
-        "Metric comparison",
-        metric_visualization,
-        ["Accuracy", "Mean precision", "Mean recall"]
-    )
+    for format in _image_formats:
+        usepath = imgdir / f"classification_metric_comparison.{format}"
+        draw_radar_chart(
+            usepath,
+            "Metric comparison",
+            metric_visualization,
+            ["Accuracy", "Mean precision", "Mean recall"]
+        )
+    usepath = imgdir / "classification_metric_comparison.*"
     report_variables['radarchartpath'] = str(
         usepath.relative_to(rootdir)
     )
@@ -632,7 +582,8 @@ def detection_report(
         measurementsdata: Dict[str, List],
         imgdir: Path,
         imgprefix: str,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates detection quality section of the report.
 
@@ -662,31 +613,38 @@ def detection_report(
     measurementsdata |= metrics
 
     lines = get_recall_precision(measurementsdata, 0.5)
+    # HTML plots format unsupported, removing html
+    _image_formats = image_formats-{'html'}
 
     aps = []
     for line in lines:
         aps.append(compute_ap(line[0], line[1]))
 
-    curvepath = imgdir / f'{imgprefix}recall_precision_curves.png'
-    recall_precision_curves(
-        str(curvepath),
-        'Recall-Precision curves',
-        lines,
-        measurementsdata['class_names']
-    )
+    for format in _image_formats:
+        curvepath = imgdir / f'{imgprefix}recall_precision_curves.{format}'
+        recall_precision_curves(
+            str(curvepath),
+            'Recall-Precision curves',
+            lines,
+            measurementsdata['class_names']
+        )
+    curvepath = imgdir / f'{imgprefix}recall_precision_curves.*'
     measurementsdata['curvepath'] = str(
         curvepath.relative_to(rootdir)
     )
 
-    gradientpath = imgdir / f'{imgprefix}recall_precision_gradients.png'
-    recall_precision_gradients(
-        str(gradientpath),
-        'Average precision plots',
-        lines,
-        measurementsdata['class_names'],
-        aps,
-        measurementsdata['mAP']
-    )
+    for format in _image_formats:
+        gradientpath = imgdir / \
+            f'{imgprefix}recall_precision_gradients.{format}'
+        recall_precision_gradients(
+            str(gradientpath),
+            'Average precision plots',
+            lines,
+            measurementsdata['class_names'],
+            aps,
+            measurementsdata['mAP']
+        )
+    gradientpath = imgdir / f'{imgprefix}recall_precision_gradients.*'
     measurementsdata['gradientpath'] = str(
         gradientpath.relative_to(rootdir)
     )
@@ -702,25 +660,30 @@ def detection_report(
             all_tp_ious.extend(det_tp_iou)
         else:
             tp_iou.append(0)
-    tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.png'
-    iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.png'
 
-    true_positive_iou_histogram(
-        str(tpioupath),
-        'Average True Positive IoU values',
-        tp_iou,
-        measurementsdata['class_names'],
-    )
+    for format in _image_formats:
+        tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.{format}'
+        true_positive_iou_histogram(
+            str(tpioupath),
+            'Average True Positive IoU values',
+            tp_iou,
+            measurementsdata['class_names'],
+        )
+    tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.*'
     measurementsdata['tpioupath'] = str(
         tpioupath.relative_to(rootdir)
     )
 
     if len(all_tp_ious) > 0:
-        true_positives_per_iou_range_histogram(
-            str(iouhistpath),
-            "Histogram of True Positive IoU values",
-            all_tp_ious
-        )
+        for format in _image_formats:
+            iouhistpath = imgdir / \
+                f'{imgprefix}histogram_tp_iou_values.{format}'
+            true_positives_per_iou_range_histogram(
+                str(iouhistpath),
+                "Histogram of True Positive IoU values",
+                all_tp_ious
+            )
+        iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.*'
         measurementsdata['iouhistpath'] = str(
             iouhistpath.relative_to(rootdir)
         )
@@ -728,16 +691,18 @@ def detection_report(
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
 
-    mappath = imgdir / f'{imgprefix}map.png'
-    draw_plot(
-        str(mappath),
-        'mAP value change over objectness threshold values',
-        'threshold',
-        None,
-        'mAP',
-        None,
-        [[thresholds, mapvalues]]
-    )
+    for format in _image_formats:
+        mappath = imgdir / f'{imgprefix}map.{format}'
+        draw_plot(
+            str(mappath),
+            'mAP value change over objectness threshold values',
+            'threshold',
+            None,
+            'mAP',
+            None,
+            [[thresholds, mapvalues]]
+        )
+    mappath = imgdir / f'{imgprefix}map.*'
     measurementsdata['mappath'] = str(
         mappath.relative_to(rootdir)
     )
@@ -754,7 +719,8 @@ def detection_report(
 def comparison_detection_report(
         measurementsdata: List[Dict],
         imgdir: Path,
-        rootdir: Path) -> str:
+        rootdir: Path,
+        image_formats: Set[str]) -> str:
     """
     Creates detection comparison section of report.
 
@@ -781,6 +747,8 @@ def comparison_detection_report(
         'reportname_simple': measurementsdata[0]['reportname_simple'],
         'modelnames': []
     }
+    # HTML plots format unsupported, removing html
+    _image_formats = image_formats-{'html'}
 
     visualization_data = []
     for data in measurementsdata:
@@ -789,17 +757,19 @@ def comparison_detection_report(
         visualization_data.append((thresholds, mapvalues))
         report_variables['modelnames'].append(data['modelname'])
 
-    usepath = imgdir / "detection_map_thresholds.png"
-    draw_plot(
-        usepath,
-        "mAP values comparison over different threshold values",
-        'threshold',
-        None,
-        'mAP',
-        None,
-        visualization_data,
-        report_variables['modelnames']
-    )
+    for format in _image_formats:
+        usepath = imgdir / f"detection_map_thresholds.{format}"
+        draw_plot(
+            usepath,
+            "mAP values comparison over different threshold values",
+            'threshold',
+            None,
+            'mAP',
+            None,
+            visualization_data,
+            report_variables['modelnames']
+        )
+    usepath = imgdir / "detection_map_thresholds.*"
     report_variables['mapcomparisonpath'] = str(
         usepath.relative_to(rootdir)
     )
@@ -818,6 +788,7 @@ def generate_report(
         imgdir: Path,
         report_types: List[str],
         rootdir: Path,
+        image_formats: Set[str],
         command: List[str] = []) -> str:
     """
     Generates an MyST report based on Measurements data.
@@ -842,6 +813,8 @@ def generate_report(
         When the report is a part of a larger MyST document (i.e. Sphinx docs),
         the rootdir parameter defines thte root directory of the document.
         It is used to compute relative paths in the document's references.
+    image_formats: Set[str]
+        Iterable object with extensions, in which images should be generated.
     command : List[str]
         Full command used to render this report, split into separate lines.
     """
@@ -883,9 +856,11 @@ def generate_report(
                 imgprefix = model_data["modelname"] + "_"
             else:
                 imgprefix = ""
-            content += reptypes[typ](model_data, imgdir, imgprefix, rootdir)
+            content += reptypes[typ](
+                model_data, imgdir, imgprefix, rootdir, image_formats)
         if len(data) > 1:
-            content += comparereptypes[typ](data, imgdir, rootdir)
+            content += comparereptypes[typ](
+                data, imgdir, rootdir, image_formats)
 
     content = re.sub(r'[ \t]+$', "", content, 0, re.M)
 
@@ -938,6 +913,11 @@ def main(argv):
         type=str
     )
     parser.add_argument(
+        '--force-png-images',
+        help="Forcing format of images to PNG",
+        action="store_true"
+    )
+    parser.add_argument(
         '--verbosity',
         help='Verbosity level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
@@ -956,6 +936,10 @@ def main(argv):
             len(args.measurements) != len(args.model_names):
         log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
         args.model_names = None
+
+    image_formats = {'png'}
+    if not args.force_png_images:
+        image_formats |= {'html'}
 
     measurementsdata = []
     for i, measurementspath in enumerate(args.measurements):
@@ -988,6 +972,7 @@ def main(argv):
         img_dir,
         args.report_types,
         args.root_dir,
+        image_formats,
         command
     )
 

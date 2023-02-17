@@ -41,6 +41,11 @@ class KenningFlowHandler(BaseDataflowHandler):
             } for node_type in pipeline_io_dict.keys()
         }
 
+        # Everything that is not Runner
+        self.primitive_modules = {
+            node.name for node in pipeline_nodes
+        }
+
         nodes, io_mapping = KenningFlowHandler.get_nodes(
             pipeline_nodes, io_mapping)
         super().__init__(
@@ -198,7 +203,98 @@ class KenningFlowHandler(BaseDataflowHandler):
         return dataflow
 
     def parse_dataflow(self, dataflow: Dict):
-        pass  # TODO
+        runners, primitives = {}, {}
+        runner_list = []
+        for dn in dataflow["nodes"]:
+            kenning_node = [
+                node for node in self.nodes if node.name == dn['name']
+            ][0]
+            kenning_parameters = dict(dn['options'])
+
+            if kenning_node.name in self.primitive_modules:
+                assert len(dn['interfaces']) == 1, ""
+                _, output_interface = dn['interfaces'][0]
+                primitives[output_interface['id']] = kenning_node.type, {
+                    'type': f"{kenning_node.cls.__module__}.{kenning_node.cls.__name__}",  # noqa: E501
+                    'parameters': kenning_parameters
+                }
+            else:
+                for _, connection_port in dn['interfaces']:
+                    new_node = {
+                        'type': f"{kenning_node.cls.__module__}.{kenning_node.cls.__name__}",  # noqa: E501
+                        'parameters': kenning_parameters,
+                        'inputs': {},
+                        'outputs': {}
+                    }
+                    if new_node not in runner_list:
+                        runner_list.append(new_node)
+                    runners[connection_port['id']] = runner_list.index(
+                        new_node)
+
+        # Add primitives to runner parameters
+        for conn in dataflow['connections']:
+            _, conn_from, conn_to = conn['id'], conn['from'], conn['to']
+            if conn_from in primitives:
+                node_to = runners[conn_to]
+                primitive_type, node_from = primitives[conn_from]
+                runner_list[node_to]['parameters'][primitive_type] = node_from
+
+        def get_runner_io(runner_node):
+            runner_obj = load_class(runner_node['type'])
+            runner_instance = runner_obj.from_json(
+                runner_node['parameters'],
+                inputs_sources={},
+                inputs_specs={},
+                outputs={}
+            )
+            runner_spec = runner_instance.get_io_specification()
+            runner_instance.cleanup()
+            return runner_spec
+
+        def is_match(arg1, arg2):
+            # TODO: other cases (?)
+            if 'type' in arg1 and 'type' in arg2:
+                return arg1['type'] == arg2['type']
+            if 'shape' in arg1 and 'shape' in arg2:
+                if arg1['dtype'] != arg2['dtype']:
+                    return False
+                shape1, shape2 = arg1['shape'], arg2['shape']
+                if len(shape1) != len(shape2):
+                    return False
+                for dim1, dim2 in zip(shape1, shape2):
+                    if dim1 != -1 and dim2 != -1 and dim1 != dim2:
+                        return False
+                return True
+            return False
+
+        def find_matching_arguments(from_runner, to_runner):
+            output_key = "processed_output"
+            if output_key not in from_runner:
+                output_key = "output"
+            from_arguments = from_runner[output_key]
+            input_key = "processed_input"
+            if input_key not in to_runner:
+                input_key = "input"
+            to_arguments = to_runner[input_key]
+            for arg1, arg2 in itertools.product(
+                    from_arguments, to_arguments):
+                if is_match(arg1, arg2):
+                    return arg1['name'], arg2['name']
+            raise RuntimeError("")
+
+        # Connect runners
+        for conn in dataflow['connections']:
+            conn_id, conn_from, conn_to = conn['id'], conn['from'], conn['to']
+            if conn_from in runners:
+                node_from, node_to = runners[conn_from], runners[conn_to]
+                from_io_spec = get_runner_io(runner_list[node_from])
+                to_io_spec = get_runner_io(runner_list[node_to])
+                from_argname, to_argame = find_matching_arguments(
+                    from_io_spec, to_io_spec)
+                runner_list[node_from]['outputs'][from_argname] = conn_id
+                runner_list[node_to]['inputs'][to_argame] = conn_id
+
+        return True, runner_list
 
     @staticmethod
     def get_nodes(nodes=None, io_mapping=None):

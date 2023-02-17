@@ -63,8 +63,8 @@ MDL_RT_RUNNER_YOLACT_JSON = {
             "type": "kenning.datasets.coco_dataset.COCODataset2017",
             "parameters":
             {
-                "dataset_root": "./build/coco-dataset",
-                "download_dataset": True
+                "dataset_root": "./build/COCODataset2017",
+                "download_dataset": False
             }
         },
         "model_wrapper": {

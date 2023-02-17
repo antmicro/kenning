@@ -28,6 +28,8 @@ from antmicro_sphinx_utils.defaults import (
 )
 
 sys.path.insert(0, os.path.abspath('../..'))
+# Folder with custom extensions
+sys.path.append(os.path.abspath('./_ext'))
 
 # -- Project information -----------------------------------------------------
 
@@ -54,6 +56,7 @@ extensions = list(set(default_extensions + [
     'sphinx.ext.githubpages',
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
+    'select_image_format_html',
 ]))
 
 myst_enable_extensions = default_myst_enable_extensions + ["attrs_block"]

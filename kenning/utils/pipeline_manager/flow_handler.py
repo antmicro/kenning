@@ -105,7 +105,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                 'outputs': [
                     {
                         'name': 'Data',
-                        'type': 'dataset',
+                        'type': 'data_runner',
                         'required': True
                     }
                 ]
@@ -114,7 +114,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                 'inputs': [
                     {
                         'name': 'Input data',
-                        'type': 'dataset',
+                        'type': 'data_runner',
                         'required': True
                     },
                     {
@@ -126,6 +126,10 @@ class KenningFlowHandler(BaseDataflowHandler):
                         'name': 'Runtime',
                         'type': 'runtime',
                         'required': True
+                    },
+                    {
+                        'name': 'Calibration dataset',
+                        'type': 'dataset'
                     }
                 ],
                 'outputs': [
@@ -141,6 +145,11 @@ class KenningFlowHandler(BaseDataflowHandler):
                     {
                         'name': 'Model output',
                         'type': 'model_output',
+                        'required': True
+                    },
+                    {
+                        'name': 'Input frames',
+                        'type': 'data_runner',
                         'required': True
                     }
                 ],

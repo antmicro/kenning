@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+
 """
 Mozilla Common Voice Dataset wrapper
 """
@@ -10,7 +11,10 @@ from pathlib import Path
 import tarfile
 import tempfile
 import string
+import numpy as np
 import pandas as pd
+import wave
+import sox
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -81,11 +85,66 @@ def char_eval(pred: str, gt: str) -> float:
     return 1 - float(dld)/float(len(gt))
 
 
+def resample_wave(
+        input_wave: np.array,
+        orig_sample_rate: int,
+        dest_sample_rate) -> np.array:
+    """
+    Resamples provided wave.
+
+    Parameters
+    ----------
+    input_wave : np.array
+        Wave to be resampled
+    orig_sample_rate : int
+        Sample rate of provided wave
+    dest_sample_rate : int
+        Sample rate of the resample wave
+
+    Returns
+    -------
+    np.array :
+        Resampled wave
+    """
+    tfm = sox.Transformer()
+    tfm.set_input_format(rate=orig_sample_rate, file_type='s16', channels=1)
+    tfm.set_output_format(rate=dest_sample_rate, file_type='s16', channels=1)
+    return tfm.build_array(
+        input_array=input_wave,
+        sample_rate_in=orig_sample_rate
+    )
+
+
+def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
+    """
+    Convert mp3 file at abspath to wav placed in subdir directory
+
+    Parameters
+    ----------
+    abspath : Path
+        Absolute path to the .mp3 file
+    subfolder : str
+        a name of the subdirectory that will contain the converted file(s)
+
+    Returns
+    -------
+    str :
+        The string-typed path to the converted file
+    """
+    from pydub import AudioSegment
+    sound = AudioSegment.from_mp3(str(abspath))
+    dst_folder = Path(abspath.parent / subdir)
+    dst_folder.mkdir(parents=True, exist_ok=True)
+    dst = str(Path(dst_folder / (abspath.stem + '.wav')))
+    sound.export(dst, format='wav')
+    return dst
+
+
 class CommonVoiceDataset(Dataset):
 
     languages = ['en', 'pl']
     annotations_types = ['train', 'validation', 'test']
-    selection_methods = ['length', 'accent']
+    selection_methods = [None, 'length', 'accent']
 
     arguments_structure = {
         'language': {
@@ -106,6 +165,12 @@ class CommonVoiceDataset(Dataset):
             'type': int,
             'default': 10
         },
+        'sample_rate': {
+            'argparse_name': '--sample-rate',
+            'description': 'Recording sample rate',
+            'type': int,
+            'default': 16000
+        },
         'selection_method': {
             'argparse_name': '--selection-method',
             'description': 'Method to group the data',
@@ -123,6 +188,7 @@ class CommonVoiceDataset(Dataset):
             language: str = 'en',
             annotations_type: str = 'test',
             sample_size: int = 1000,
+            sample_rate: int = 16000,
             selection_method: str = 'accent'):
         """
         Prepares all structures and data required for providing data samples.
@@ -154,18 +220,31 @@ class CommonVoiceDataset(Dataset):
         assert annotations_type in self.annotations_types, (
             f'Unsupported annotations type {annotations_type}, should be one'
             f'of {self.annotations_types}')
-        assert selection_method in ['length', 'accent'], (
+        assert selection_method in self.selection_methods, (
             f'Unsupported selection method {selection_method}, should be one'
             f'of {self.selection_methods}')
         self.language = language
         self.annotations_type = annotations_type
         self.sample_size = sample_size
+        self.sample_rate = sample_rate
         self.selection_method = selection_method
         super().__init__(
             root,
             batch_size,
             download_dataset,
             external_calibration_dataset
+        )
+
+    @classmethod
+    def from_argparse(cls, args):
+        return cls(
+            root=args.dataset_root,
+            batch_size=args.batch_size,
+            download_dataset=args.download_dataset,
+            language=args.language,
+            annotations_type=args.annotations_type,
+            sample_size=args.sample_size,
+            selection_method=args.selection_method
         )
 
     def download_dataset_fun(self):
@@ -225,6 +304,29 @@ class CommonVoiceDataset(Dataset):
             assert self.sample_size <= len(self.dataX)
             self.select_representative_sample(metric_values)
 
+    def prepare_input_samples(self, samples: List):
+        result = []
+        for sample in samples:
+            x = Path(sample)
+            # check file type
+            if x.suffix == '.mp3':
+                audio_path = str(convert_mp3_to_wav(x, 'waves'))
+            else:
+                audio_path = str(x)
+            loaded_wav = wave.open(audio_path, 'rb')
+            audio = np.frombuffer(
+                loaded_wav.readframes(loaded_wav.getnframes()),
+                np.int16
+            )
+            if loaded_wav.getframerate() != self.sample_rate:
+                audio = resample_wave(
+                    audio,
+                    loaded_wav.getframerate(),
+                    self.sample_rate
+                )
+            result.append(audio)
+        return result
+
     def select_representative_sample(self, metric_values: List[Any]):
         """
         Returns the representative sample from dataset based on provided metric
@@ -251,18 +353,6 @@ class CommonVoiceDataset(Dataset):
         for x, *y in sampled_dataset:
             self.dataX.append(x)
             self.dataY.append(y)
-
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            root=args.dataset_root,
-            batch_size=args.batch_size,
-            download_dataset=args.download_dataset,
-            language=args.language,
-            annotations_type=args.annotations_type,
-            sample_size=args.sample_size,
-            selection_method=args.selection_method
-        )
 
     def evaluate(
             self,

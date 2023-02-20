@@ -193,7 +193,7 @@ def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
     Path :
         Path to reduced dataset
     """
-    return pytest.test_directory / 'datasets-reduced' / dataset_cls.__name__
+    return pytest.test_directory / dataset_cls.__name__
 
 
 def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:

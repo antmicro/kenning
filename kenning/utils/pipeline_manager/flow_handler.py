@@ -51,9 +51,13 @@ class KenningFlowHandler(BaseDataflowHandler):
         super().__init__(
             nodes,
             io_mapping,
-            json_to_kenningflow,
-            run_kenningflow
         )
+
+    def parse_json(self, json_cfg):
+        return KenningFlow.from_json(json_cfg)
+
+    def run_dataflow(self, kenningflow, output_file):
+        return kenningflow.run()
 
     def create_dataflow(self, pipeline: Dict):
 
@@ -248,7 +252,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                 outputs={}
             )
             runner_spec = runner_instance.get_io_specification()
-            runner_instance.cleanup()
+            # runner_instance.cleanup()
             return runner_spec
 
         def is_match(arg1, arg2):

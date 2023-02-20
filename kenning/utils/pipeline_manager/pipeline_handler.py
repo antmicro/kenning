@@ -10,10 +10,20 @@ from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 from kenning.utils import logger
 
 
+def pipeline_runner_wrapper(args, output_file_path):
+    return run_pipeline(*args, output=output_file_path)
+
+
 class PipelineHandler(BaseDataflowHandler):
     def __init__(self):
         nodes, io_mapping = PipelineHandler.get_nodes()
-        super().__init__(nodes, io_mapping, parse_json_pipeline, run_pipeline)
+        super().__init__(nodes, io_mapping)
+
+    def parse_json(self, json_cfg):
+        return parse_json_pipeline(json_cfg)
+
+    def run_dataflow(pipeline_tuple, output_file):
+        return run_pipeline(*pipeline_tuple, output=output_file)
 
     def create_dataflow(self, pipeline: Dict) -> Dict:
         dataflow_nodes = []

@@ -50,7 +50,7 @@ def parse_message(
         specification = dataflow_handler.get_specification()
         feedback_msg = json.dumps(specification)
 
-    if (message_type == MessageType.VALIDATE or
+    elif (message_type == MessageType.VALIDATE or
             message_type == MessageType.RUN or
             message_type == MessageType.EXPORT):
 
@@ -60,7 +60,7 @@ def parse_message(
         if not successful:
             return MessageType.ERROR, msg.encode()
         try:
-            scenario_tuple = dataflow_handler.parse_json(msg)
+            prepared_runner = dataflow_handler.parse_json(msg)
 
             if message_type == MessageType.EXPORT:
                 with open(output_file_path, 'w') as f:
@@ -69,7 +69,7 @@ def parse_message(
             if message_type == MessageType.RUN:
                 MeasurementsCollector.clear()
                 dataflow_handler.run_dataflow(
-                    *scenario_tuple,
+                    prepared_runner,
                     output_file_path
                 )
         except Exception as ex:
@@ -82,7 +82,7 @@ def parse_message(
         elif message_type == MessageType.EXPORT:
             feedback_msg = f'Successfuly exported. Output saved in {output_file_path}'  # noqa: E501
 
-    if message_type == MessageType.IMPORT:
+    elif message_type == MessageType.IMPORT:
         pipeline = json.loads(data)
         dataflow = dataflow_handler.create_dataflow(pipeline)
         feedback_msg = json.dumps(dataflow)

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Any, Callable, Dict, NamedTuple, List, Tuple, Union
+from typing import Any, Dict, NamedTuple, List, Tuple, Union
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
@@ -67,9 +67,7 @@ class BaseDataflowHandler:
     def __init__(
             self,
             nodes: List[Node],
-            io_mapping: Dict,
-            json_parser_f: Callable,
-            runner_f: Callable
+            io_mapping: Dict
     ):
         """
         Base class for handling different types of kenning specification,
@@ -83,16 +81,9 @@ class BaseDataflowHandler:
         io_mapping : Dict
             Mapping used by Pipeline Manager for defining the shape
             of each node type.
-        json_parser_f : Callable
-            Function for parsing JSON to Kenning objects
-        runner_f : Callable
-            Function running Kenning objects that were parsed with
-            json_parser_f
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
-        self._json_parser = json_parser_f
-        self._runner = runner_f
 
     def get_specification(self) -> Dict:
         """
@@ -195,13 +186,13 @@ class BaseDataflowHandler:
         Any
             Kenning objects that can be later run with `run_dataflow`
         """
-        return self._json_parser(json_cfg)
+        return NotImplementedError
 
     def run_dataflow(self, *args, **kwargs):
         """
         Runs Kenning object created with `parse_json` method.
         """
-        return self._runner(*args, **kwargs)
+        return NotImplementedError
 
     def create_dataflow(self, pipeline: Dict) -> Dict:
         """

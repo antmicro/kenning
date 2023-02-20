@@ -25,8 +25,15 @@ import numpy as np
 from pathlib import Path
 import shutil
 from typing import List
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.datasets.coco_dataset import COCODataset2017
+from kenning.resources.models import detection
 
 
 def yolov4_remove_postprocessing(
@@ -61,6 +68,8 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
+    pretrained_modelpath = files(detection) / 'yolov4.onnx'
+    default_dataset = COCODataset2017
     arguments_structure = {}
 
     def postprocess_outputs(self, y):

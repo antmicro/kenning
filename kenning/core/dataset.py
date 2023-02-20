@@ -390,7 +390,9 @@ class Dataset(object):
     def train_test_split_representations(
             self,
             test_fraction: float = 0.25,
-            seed: int = 12345):
+            seed: int = 1234,
+            validation: bool = False,
+            validation_fraction: float = 0.1) -> Tuple[List, ...]:
         """
         Splits the data representations into train dataset and test dataset.
 
@@ -400,7 +402,18 @@ class Dataset(object):
             The fraction of data to leave for model validation
         seed : int
             The seed for random state
+        validation: bool
+            Whether to return a third, validation dataset
+        validation_fraction: float
+            The fraction (of the total size) that should be split out of
+            the training set
+
+        Returns
+        -------
+        Tuple[List, ...] :
+            Data splitted into train, test and optionally validation subsets
         """
+        assert test_fraction + validation_fraction < 1.0
         from sklearn.model_selection import train_test_split
         dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
             self.dataX,
@@ -410,6 +423,23 @@ class Dataset(object):
             shuffle=True,
             stratify=self.dataY
         )
+        if validation:
+            dataXtrain, dataXval, dataYtrain, dataYval = train_test_split(
+                dataXtrain,
+                dataYtrain,
+                test_size=validation_fraction/(1 - test_fraction),
+                random_state=seed,
+                shuffle=True,
+                stratify=dataYtrain
+            )
+            return (
+                dataXtrain,
+                dataXtest,
+                dataYtrain,
+                dataYtest,
+                dataXval,
+                dataYval
+            )
         return (dataXtrain, dataXtest, dataYtrain, dataYtest)
 
     def calibration_dataset_generator(
@@ -539,3 +569,7 @@ class Dataset(object):
             'data_x': next[0],
             'data_y': next[1]
         }
+
+
+class CannotDownloadDatasetError(Exception):
+    pass

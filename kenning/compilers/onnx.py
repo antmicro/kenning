@@ -11,7 +11,10 @@ import onnx
 from typing import Optional, Dict, List
 
 from kenning.core.dataset import Dataset
-from kenning.core.optimizer import Optimizer, CompilationError, IOSpecificationNotFoundError  # noqa: E501
+from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import ConversionError
+from kenning.core.optimizer import CompilationError
+from kenning.core.optimizer import IOSpecificationNotFoundError
 
 
 def kerasconversion(model_path, input_spec, output_names):
@@ -65,11 +68,12 @@ def torchconversion(model_path, input_spec, output_names):
 
 def tfliteconversion(model_path, input_spec, output_names):
     import tf2onnx
-    modelproto, _ = tf2onnx.convert.from_tflite(
-        str(model_path),
-        input_names=[input['name'] for input in input_spec],
-        output_names=output_names
-    )
+    try:
+        modelproto, _ = tf2onnx.convert.from_tflite(
+            str(model_path)
+        )
+    except ValueError as e:
+        raise ConversionError(e)
 
     return modelproto
 

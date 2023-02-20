@@ -8,15 +8,25 @@ Contains Tensorflow models for the classification problem.
 Pretrained on ImageNet dataset.
 """
 
+from typing import List, Dict
 from pathlib import Path
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
+
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import load_class
-from typing import List, Dict
+from kenning.datasets.imagenet_dataset import ImageNetDataset
+from kenning.resources.models import classification
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
 
+    default_dataset = ImageNetDataset
+    pretrained_modelpath = files(classification) / 'tensorflow_imagenet_mobilenetv3small.h5'   # noqa: 501
     arguments_structure = {
         'modelcls': {
             'argparse_name': '--model-cls',

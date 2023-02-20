@@ -17,6 +17,7 @@ from pytest import LogCaptureFixture
 
 
 @pytest.mark.fast
+@pytest.mark.xdist_group(name='use_socket')
 class RuntimeTests:
     runtimecls: Type[Runtime]
     runtimeprotocolcls: Type[RuntimeProtocol]

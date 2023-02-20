@@ -1,3 +1,4 @@
 kenning/resources/models/**/*.h5 filter=lfs diff=lfs merge=lfs -text
 kenning/resources/models/**/*.pth filter=lfs diff=lfs merge=lfs -text
 kenning/resources/models/**/*.onnx filter=lfs diff=lfs merge=lfs -text
+kenning/resources/models/**/*.tflite filter=lfs diff=lfs merge=lfs -text

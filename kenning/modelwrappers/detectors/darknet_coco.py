@@ -11,12 +11,21 @@ Except for the actual model output, there is
 additional metadata from the CFG model definition stored in the outputs
 from TVM-compiled model.
 """
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.datasets.coco_dataset import COCODataset2017
+from kenning.resources.models import detection
 
 
 class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
+    pretrained_modelpath = files(detection) / 'yolov3.cfg'
+    default_dataset = COCODataset2017
     arguments_structure = {}
 
     def get_io_specification_from_model(self):

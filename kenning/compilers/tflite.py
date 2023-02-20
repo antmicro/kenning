@@ -33,7 +33,7 @@ def kerasconversion(modelpath: Path):
 
 def tensorflowconversion(modelpath: Path):
     import tensorflow as tf
-    converter = tf.lite.TFLiteConverter.from_saved_model(modelpath)
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(modelpath))
     return converter
 
 

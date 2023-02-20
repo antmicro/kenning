@@ -123,6 +123,8 @@ class MagicWandDataset(Dataset):
         tmp_dataY = []
         for class_name in self.classnames.values():
             path = self.root / class_name
+            if not path.is_dir():
+                raise FileNotFoundError
             class_id = self.rev_class_id(class_name)
             for file in glob.glob(str(path / '*.txt')):
                 data_frame = []
@@ -148,7 +150,7 @@ class MagicWandDataset(Dataset):
             ))
             for sample in padded_data:
                 self.dataX.append(sample)
-                self.dataY.append(label)
+                self.dataY.append(np.eye(self.numclasses)[label])
 
         assert len(self.dataX) == len(self.dataY)
 
@@ -265,82 +267,3 @@ class MagicWandDataset(Dataset):
         return np.array(np.array_split(
             data_frame, len(data_frame) // self.window_size, axis=0
         ))
-
-    def train_test_split_representations(
-            self,
-            test_fraction: float = 0.25,
-            seed: int = 1234,
-            validation: bool = False,
-            validation_fraction: float = 0.1) -> Tuple[List, ...]:
-        """
-        Splits the data representations into train dataset and test dataset.
-
-        Parameters
-        ----------
-        test_fraction : float
-            The fraction of data to leave for model validation
-        seed : int
-            The seed for random state
-        validation: bool
-            Whether to return a third, validation dataset
-        validation_fraction: float
-            The fraction (of the total size) that should be split out of
-            the training set
-
-        Returns
-        -------
-        Tuple[List, ...] :
-            Data splitted into train, test and optionally validation subsets
-        """
-        from sklearn.model_selection import train_test_split
-        dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
-            self.dataX,
-            self.dataY,
-            test_size=test_fraction,
-            random_state=seed,
-            shuffle=True,
-            stratify=self.dataY
-        )
-        if validation:
-            dataXtrain, dataXval, dataYtrain, dataYval = train_test_split(
-                dataXtrain,
-                dataYtrain,
-                test_size=validation_fraction/(1 - test_fraction),
-                random_state=seed,
-                shuffle=True,
-                stratify=dataYtrain
-            )
-            return (
-                dataXtrain,
-                dataXtest,
-                dataYtrain,
-                dataYtest,
-                dataXval,
-                dataYval
-            )
-        return (dataXtrain, dataXtest, dataYtrain, dataYtest)
-
-    def prepare_tf_dataset(self, in_features: List, in_labels: List):
-        """
-        Converts data to tensorflow Dataset class.
-
-        Parameters
-        ----------
-        in_features : List
-            Dataset features
-        in_labels : List
-            Dataset labels
-
-        Returns
-        -------
-        tensorflow.data.Dataset :
-            Dataset in tensorflow format
-        """
-        assert len(in_features) == len(in_labels)
-        from tensorflow.data import Dataset
-        features = np.array(in_features)
-        labels = np.array(in_labels)
-        dataset = Dataset.from_tensor_slices(
-            (features, labels.astype(np.int32))
-        )
-        return dataset

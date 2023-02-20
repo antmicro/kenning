@@ -9,6 +9,11 @@ Pretrained on ImageNet dataset, trained on Pet Dataset
 """
 
 from pathlib import Path
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 import tensorflow as tf
 import numpy as np
@@ -16,9 +21,13 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.interfaces.io_interface import IOInterface
+from kenning.datasets.pet_dataset import PetDataset
+from kenning.resources.models import classification
 
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
+    default_dataset = PetDataset
+    pretrained_modelpath = files(classification) / 'tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: 501
     arguments_structure = {}
 
     def __init__(

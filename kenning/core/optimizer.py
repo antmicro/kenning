@@ -17,9 +17,16 @@ from kenning.utils.args_manager import add_parameterschema_argument, add_argpars
 from kenning.utils.logger import get_logger
 
 
+class ConversionError(Exception):
+    """
+    General purpose exception raised when the model conversion process fails.
+    """
+    pass
+
+
 class CompilationError(Exception):
     """
-    General purpose exception raised when the compilation proccess fails.
+    General purpose exception raised when the compilation process fails.
     """
     pass
 

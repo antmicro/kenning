@@ -2,14 +2,23 @@ from typing import Dict, List
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
+import sys
+if sys.version_info.minor < 9:
+    from importlib_resources import files
+else:
+    from importlib.resources import files
 
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
+from kenning.datasets.magic_wand_dataset import MagicWandDataset
+from kenning.resources.models import classification
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
 
+    default_dataset = MagicWandDataset
+    pretrained_modelpath = files(classification) / 'magic_wand.h5'
     arguments_structure = {
         'window_size': {
             'argparse_name': '--window-size',
@@ -24,11 +33,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             dataset: Dataset,
             from_file: bool,
             window_size: int = 128):
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
         """
         Creates the Magic Wand model wrapper.
 
@@ -43,9 +47,16 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         windows_size : int
             Size of single sample window
         """
+        super().__init__(
+            modelpath,
+            dataset,
+            from_file
+        )
         self.window_size = window_size
-        self.class_names = self.dataset.get_class_names()
-        self.numclasses = len(self.class_names)
+        if dataset is not None:
+            self.class_names = self.dataset.get_class_names()
+            self.numclasses = len(self.class_names)
+            self.save_io_specification(self.modelpath)
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):
@@ -115,10 +126,15 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             learning_rate=0.001,
             epochs=50,
             logdir='/tmp/tflite_magic_wand_logs'):
+        def convert_to_tf_dataset(features: List, labels: List):
+            return tf.data.Dataset.from_tensor_slices(
+                (np.array(self.dataset.prepare_input_samples(features)),
+                 np.array(self.dataset.prepare_output_samples(labels)))
+            )
         log = get_logger()
         self.model.compile(
             optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
-            loss='sparse_categorical_crossentropy',
+            loss='categorical_crossentropy',
             metrics=['accuracy']
         )
         train_data, test_data,\
@@ -126,19 +142,15 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             val_data, val_labels = \
             self.dataset.train_test_split_representations(validation=True)
 
-        train_dataset = self.dataset.prepare_tf_dataset(
-            train_data,
-            train_labels
+        train_dataset = convert_to_tf_dataset(
+            train_data, train_labels
         ).batch(batch_size).repeat()
-        val_dataset = self.dataset.prepare_tf_dataset(
-            val_data,
-            val_labels
+        val_dataset = convert_to_tf_dataset(
+            val_data, val_labels
         ).batch(batch_size)
-        test_dataset = self.dataset.prepare_tf_dataset(
-            test_data,
-            test_labels
+        test_dataset = convert_to_tf_dataset(
+            test_data, test_labels
         ).batch(batch_size)
-        test_labels = np.concatenate([y for _, y in test_dataset], axis=0)
 
         self.model.fit(
             train_dataset,

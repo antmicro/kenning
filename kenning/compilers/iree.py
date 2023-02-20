@@ -11,7 +11,9 @@ from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
 
-from kenning.core.optimizer import Optimizer, IOSpecificationNotFoundError
+from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import CompilationError
+from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
 
 
@@ -70,7 +72,7 @@ def kerasconversion(model_path, input_spec):
         WrapperModule(), exported_names=['main'], import_only=True)
 
 
-def tfconversion(model_path, input_spec):
+def tensorflowconversion(model_path, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
     model = tf.saved_model.load(model_path)
@@ -110,7 +112,7 @@ class IREECompiler(Optimizer):
 
     inputtypes = {
         'keras': kerasconversion,
-        'tf': tfconversion,
+        'tensorflow': tensorflowconversion,
         'tflite': tfliteconversion
     }
 
@@ -142,7 +144,7 @@ class IREECompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            backend: str,
+            backend: str = 'vmvx',
             modelframework: str = 'keras',
             compiler_args: Optional[List[str]] = None):
         """
@@ -211,12 +213,15 @@ class IREECompiler(Optimizer):
 
         self.model_load = self.inputtypes[self.inputtype]
         imported_model = self.model_load(inputmodelpath, input_spec)
-        compiled_buffer = ireecmp.compile_str(
-            imported_model,
-            input_type=self.compiler_input_type,
-            extra_args=self.parsed_compiler_args,
-            target_backends=[self.converted_backend]
-        )
+        try:
+            compiled_buffer = ireecmp.compile_str(
+                imported_model,
+                input_type=self.compiler_input_type,
+                extra_args=self.parsed_compiler_args,
+                target_backends=[self.converted_backend]
+            )
+        except ireecmp.CompilerToolError as e:
+            raise CompilationError(e)
 
         with open(self.compiled_model_path, "wb") as f:
             f.write(compiled_buffer)

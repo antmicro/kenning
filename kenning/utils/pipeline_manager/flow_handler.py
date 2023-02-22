@@ -12,14 +12,6 @@ from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node
 from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
 
 
-def json_to_kenningflow(json_cfg):
-    return KenningFlow.from_json(json_cfg)
-
-
-def run_kenningflow(flow):
-    return flow.run()
-
-
 class KenningFlowHandler(BaseDataflowHandler):
     def __init__(self):
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()

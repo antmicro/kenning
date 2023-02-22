@@ -125,6 +125,12 @@ html_title = project
 
 html_show_sourcelink = False
 
+html_static_path = ['_static']
+
+html_css_files = [
+    'css/bokeh.css',
+]
+
 # -- Options for HTMLHelp output ---------------------------------------------
 
 # Output file base name for HTML help builder.

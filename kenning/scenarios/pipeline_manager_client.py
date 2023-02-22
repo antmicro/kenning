@@ -62,16 +62,20 @@ def parse_message(
         try:
             prepared_runner = dataflow_handler.parse_json(msg)
 
-            if message_type == MessageType.EXPORT:
-                with open(output_file_path, 'w') as f:
-                    json.dump(msg, f, indent=4)
-
             if message_type == MessageType.RUN:
                 MeasurementsCollector.clear()
                 dataflow_handler.run_dataflow(
                     prepared_runner,
                     output_file_path
                 )
+            else:
+                if message_type == MessageType.EXPORT:
+                    with open(output_file_path, 'w') as f:
+                        json.dump(msg, f, indent=4)
+
+                # runner is created without processing it through
+                # 'run_dataflow', it should be destroyed manually.
+                dataflow_handler.destroy_dataflow(prepared_runner)
         except Exception as ex:
             return MessageType.ERROR, str(ex).encode()
 

@@ -59,6 +59,9 @@ class KenningFlowHandler(BaseDataflowHandler):
     def run_dataflow(self, kenningflow, output_file):
         return kenningflow.run()
 
+    def destroy_dataflow(self, kenningflow):
+        kenningflow.cleanup()
+
     def create_dataflow(self, pipeline: Dict):
 
         def create_id_generator(id_=-1):

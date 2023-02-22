@@ -194,6 +194,13 @@ class BaseDataflowHandler:
         """
         return NotImplementedError
 
+    def destroy_dataflow(self, *args, **kwargs):
+        """
+        Destroys Kenning objects allocated with `parse_json` to free
+        the resources allocated during initialization.
+        """
+        return NotImplementedError
+
     def create_dataflow(self, pipeline: Dict) -> Dict:
         """
         Parses a Kenning JSON into a Pipeline Manager dataflow format

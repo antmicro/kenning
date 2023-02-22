@@ -25,6 +25,9 @@ class PipelineHandler(BaseDataflowHandler):
     def run_dataflow(pipeline_tuple, output_file):
         return run_pipeline(*pipeline_tuple, output=output_file)
 
+    def destroy_dataflow(self, *args, **kwargs):
+        pass
+
     def create_dataflow(self, pipeline: Dict) -> Dict:
         dataflow_nodes = []
         dataflow = {

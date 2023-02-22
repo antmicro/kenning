@@ -244,11 +244,13 @@ class ModelRuntimeRunner(Runner):
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         return self._get_io_specification(self.model)
 
-    def run(
-            self,
-            inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        model_input = inputs.get('processed_input')
+        if model_input is None:
+            model_input = inputs['input']
+
         preds = self.runtime.infer(
-            inputs['input'],
+            model_input,
             self.model,
             postprocess=False
         )

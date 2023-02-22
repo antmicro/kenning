@@ -13,7 +13,8 @@ import colorsys
 import threading
 from scipy.special import softmax
 
-from kenning.utils.args_manager import add_parameterschema_argument
+from kenning.utils.args_manager import add_parameterschema_argument, \
+    get_parsed_json_dict
 from kenning.utils.args_manager import add_argparse_argument
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DectObject
@@ -183,6 +184,20 @@ class BaseRealTimeVisualizer(OutputCollector):
             args.viewer_width,
             args.viewer_height
         )
+
+    @classmethod
+    def _get_io_specification(cls, input_memory_layout):
+        raise NotImplementedError
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        return self._get_io_specification(self.input_memory_layout)
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        return cls._get_io_specification(
+            parsed_json_dict["input_memory_layout"])
 
     def cleanup(self):
         self.process_data.close()
@@ -391,8 +406,9 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         self.layer = None
         super().__init__('Real time detection visualizer', *args, **kwargs)
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.input_memory_layout == 'NCHW':
+    @classmethod
+    def _get_io_specification(cls, input_memory_layout):
+        if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)
@@ -502,8 +518,9 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
             args.viewer_height
         )
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.input_memory_layout == 'NCHW':
+    @classmethod
+    def _get_io_specification(cls, input_memoty_layout):
+        if input_memoty_layout == 'NCHW':
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)
@@ -668,8 +685,9 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
 
         dpg.set_viewport_width(self.width + _PADDING*2 + _SIDE_PANEL_WIDTH)
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.input_memory_layout == 'NCHW':
+    @classmethod
+    def _get_io_specification(cls, input_memory_layout):
+        if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)

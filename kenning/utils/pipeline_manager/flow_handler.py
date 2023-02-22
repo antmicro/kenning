@@ -245,15 +245,9 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         def get_runner_io(runner_node):
             runner_obj = load_class(runner_node['type'])
-            runner_instance = runner_obj.from_json(
-                runner_node['parameters'],
-                inputs_sources={},
-                inputs_specs={},
-                outputs={}
+            return runner_obj.parse_io_specification_from_json(
+                runner_node['parameters']
             )
-            runner_spec = runner_instance.get_io_specification()
-            # runner_instance.cleanup()
-            return runner_spec
 
         def is_match(arg1, arg2):
             # TODO: other cases (?)

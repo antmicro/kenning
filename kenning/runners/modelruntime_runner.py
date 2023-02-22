@@ -216,8 +216,12 @@ class ModelRuntimeRunner(Runner):
             protocol=None,
             json_dict=json_dict['parameters'])
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        model_io_spec = self.model.get_io_specification()
+    @classmethod
+    def _get_io_specification(cls, model: ModelWrapper):
+        """
+        Creates runner IO specification from chosen parameters
+        """
+        model_io_spec = model.get_io_specification()
         for io in ('input', 'output'):
             if f'processed_{io}' not in model_io_spec.keys():
                 model_io_spec[f'processed_{io}'] = []
@@ -227,6 +231,18 @@ class ModelRuntimeRunner(Runner):
                 model_io_spec[f'processed_{io}'].append(spec)
 
         return model_io_spec
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        model_json_dict = parsed_json_dict['model_wrapper']
+        model = cls._create_model(None, model_json_dict)
+        return cls._get_io_specification(model)
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        return self._get_io_specification(self.model)
 
     def run(
             self,

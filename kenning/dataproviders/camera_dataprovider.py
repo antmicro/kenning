@@ -153,11 +153,20 @@ class CameraDataProvider(DataProvider):
         if self.device:
             self.device.release()
 
-    def get_io_specification(self) -> Dict[str, List[Dict]]:
-        if self.input_memory_layout == 'NCHW':
-            frame_shape = (1, 3, self.input_height, self.input_width)
+    @classmethod
+    def _get_io_specification(
+            cls,
+            input_memory_layout,
+            input_height,
+            input_width
+    ):
+        """
+        Creates runner IO specification from chosen parameters
+        """
+        if input_memory_layout == 'NCHW':
+            frame_shape = (1, 3, input_height, input_width)
         else:
-            frame_shape = (1, self.input_height, self.input_width, 3)
+            frame_shape = (1, input_height, input_width, 3)
         return {
             'input': [],
             'output': [{
@@ -166,6 +175,23 @@ class CameraDataProvider(DataProvider):
                 'dtype': 'float32'
             }]
         }
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        return self._get_io_specification(
+            self.input_memory_layout,
+            self.input_height,
+            self.input_width
+        )
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        return cls._get_io_specification(
+            parsed_json_dict["input_memory_layout"],
+            parsed_json_dict["input_width"],
+            parsed_json_dict["input_height"]
+        )
 
     def run(
             self,

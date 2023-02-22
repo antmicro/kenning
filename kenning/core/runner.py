@@ -129,6 +129,29 @@ class Runner(IOInterface):
         """
         raise NotImplementedError
 
+    @classmethod
+    def parse_io_specification_from_json(
+            cls, json_dict: Dict) -> Dict[str, List[Dict]]:
+        """
+        Return dictionary with 'input' and 'output' keys that will map to input
+        and output specification of an object created by the argument json
+        schema
+
+        A single specification is a list of dictionaries with names, shapes and
+        dtypes for each layer.
+
+        Parameters
+        ----------
+        json_dict : Dict
+            Parameters for object constructor in JSON format.
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output layers specification
+        """
+        return NotImplementedError
+
     def _run(
             self,
             flow_state: List[Dict[str, Any]]):

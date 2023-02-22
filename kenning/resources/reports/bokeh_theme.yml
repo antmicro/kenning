@@ -1,0 +1,23 @@
+define: &text_color "#777777"
+define: &text_style "normal"
+
+attrs:
+  Plot:
+    background_fill_alpha: 0.1
+    background_fill_color: "#7F7F7F"
+    border_fill_alpha: 0.0
+    outline_line_alpha: 0.0
+  Axis:
+    axis_line_color: "#000000"
+    axis_label_text_color: *text_color
+    major_label_text_color: *text_color
+    axis_label_text_font_style: *text_style
+    major_label_text_font_style: *text_style
+  Grid:
+    grid_line_color: "#00000044"
+  Legend:
+    background_fill_color: !!null
+    label_text_color: *text_color
+    label_text_font_style: "normal"
+    border_line_alpha: 0.0
+

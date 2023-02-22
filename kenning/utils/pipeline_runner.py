@@ -39,7 +39,11 @@ def assert_io_formats(model, optimizers, runtime) -> None:
     chain = [block for block in chain if block is not None]
 
     for previous_block, next_block in zip(chain, chain[1:]):
-        if (set(next_block.get_input_formats()) &
+        check_model_type = getattr(next_block, 'consult_model_type', None)
+        if callable(check_model_type):
+            check_model_type(previous_block)
+            continue
+        elif (set(next_block.get_input_formats()) &
                 set(previous_block.get_output_formats())):
             continue
 

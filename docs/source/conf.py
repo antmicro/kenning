@@ -108,7 +108,7 @@ html_show_sphinx = False
     html_logo,
     html_theme_options,
     html_context
-) = antmicro_html(pdf_url=f"{basic_filename}.pdf")
+) = antmicro_html(gh_slug="antmicro/kenning", pdf_url=f"{basic_filename}.pdf")
 
 # The name for this set of Sphinx documents. If None, it defaults to
 # "<project> v<release> documentation".

@@ -284,7 +284,12 @@ class KenningFlowHandler(BaseDataflowHandler):
                 to_io_spec = get_runner_io(runner_list[node_to])
                 from_argname, to_argame = find_matching_arguments(
                     from_io_spec, to_io_spec)
-                runner_list[node_from]['outputs'][from_argname] = conn_id
+                if from_argname in runner_list[node_from]['outputs']:
+                    # Previous runner has connected to this node and named
+                    # the output globally
+                    conn_id = runner_list[node_from]['outputs'][from_argname]
+                else:
+                    runner_list[node_from]['outputs'][from_argname] = conn_id
                 runner_list[node_to]['inputs'][to_argame] = conn_id
 
         return True, runner_list

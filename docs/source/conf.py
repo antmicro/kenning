@@ -20,6 +20,7 @@ import os
 import sys
 
 from antmicro_sphinx_utils.defaults import (
+    numfig_format as default_numfig_format,
     extensions as default_extensions,
     myst_enable_extensions as default_myst_enable_extensions,
     antmicro_html,
@@ -46,6 +47,7 @@ sphinx_immaterial_override_builtin_admonitions = False
 
 # -- General configuration ---------------------------------------------------
 numfig = True
+numfig_format = default_numfig_format
 
 # If you need to add extensions just add to those lists
 extensions = list(set(default_extensions + [

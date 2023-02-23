@@ -187,6 +187,19 @@ class BaseRealTimeVisualizer(OutputCollector):
 
     @classmethod
     def _get_io_specification(cls, input_memory_layout):
+        """
+        Creates runner IO specification from chosen parameters
+
+        Parameters
+        ---------
+        input_memory_layout : str
+            Constructor argument
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output layers specification
+        """
         raise NotImplementedError
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
@@ -519,8 +532,8 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         )
 
     @classmethod
-    def _get_io_specification(cls, input_memoty_layout):
-        if input_memoty_layout == 'NCHW':
+    def _get_io_specification(cls, input_memory_layout):
+        if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)

@@ -220,6 +220,16 @@ class ModelRuntimeRunner(Runner):
     def _get_io_specification(cls, model: ModelWrapper):
         """
         Creates runner IO specification from chosen parameters
+
+        Parameters
+        ----------
+        model : ModelWrapper
+            Argument for `ModelRuntimeRunner` constructor
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output layers specification
         """
         model_io_spec = model.get_io_specification()
         for io in ('input', 'output'):

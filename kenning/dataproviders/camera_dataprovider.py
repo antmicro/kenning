@@ -162,6 +162,16 @@ class CameraDataProvider(DataProvider):
     ):
         """
         Creates runner IO specification from chosen parameters
+
+        Parameters
+        ----------
+        input_memory_layout, input_height, input_width :
+            Arguments for `CameraDataProvider` constructor
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output layers specification
         """
         if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, input_height, input_width)

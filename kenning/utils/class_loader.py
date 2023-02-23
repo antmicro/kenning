@@ -62,6 +62,7 @@ def get_all_subclasses(
                 module_classes[sub_module.name].append(c)
             # try import
             try:
+                importlib.import_module(sub_module.name)
                 sub_module_name = pkgutil.resolve_name(sub_module.name)
                 if sub_module.ispkg:
                     queue.append(sub_module_name)
@@ -74,7 +75,7 @@ def get_all_subclasses(
     for module_name in module_classes.keys():
         if module_name not in module_import_error.keys():
             continue
-        logger.warn(
+        logger.warning(
             f'Could not import module {module_name}, skipped classes: '
             f'{[c.name for c in module_classes[module_name]]}'
         )
@@ -94,18 +95,23 @@ def get_all_subclasses(
     # get subclasses that could not be imported
     if raise_exception:
         not_imported_subclasses = []
+        exceptions = []
         all_classes_names = [r.__name__ for r in all_classes]
         # iterate over modules with errors
-        for module, _ in module_import_error.items():
+        for module, e in module_import_error.items():
             for class_def in module_classes[module]:
                 # if any base class is in all_classes
                 class_def_bases = [b.id for b in class_def.bases]
                 if len(set(all_classes_names) & set(class_def_bases)):
                     not_imported_subclasses.append(class_def.name)
+                    exceptions.append((module, e))
         if len(not_imported_subclasses):
             logger.error(
                 f'Could not import subclasses: {not_imported_subclasses}'
             )
+            logger.error('Found problems:')
+            for module, e in exceptions:
+                logger.error(f'\tModule: {module}, exception: {e}')
             raise ImportError
 
     return result

@@ -8,7 +8,7 @@ project-readme
 dl-deployment-stack
 json-scenarios
 cmd-usage
-measurements
+kenning-measurements
 onnx-conversion-support
 sample-report
 kenning-flow

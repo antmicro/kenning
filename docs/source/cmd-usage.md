@@ -413,7 +413,7 @@ It requires:
 * `--img-dir` specifying the path where the figures should be saved,
 * `--report-types`, which is a list describing the types the report falls into.
 
-An example call and the resulting RST file can be observed in {doc}`sample-report`.
+An example call and the resulting RST file can be observed in [](sample-report).
 
 As for now, the available report types are:
 

@@ -142,7 +142,7 @@ It contains information such as:
 This information can be later used for [](report-generation).
 
 ```{note}
-Check {doc}`measurements` for more information.
+Check {doc}`kenning-measurements` for more information.
 ```
 
 ## Optimizing and running a model on a single device

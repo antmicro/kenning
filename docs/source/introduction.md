@@ -8,7 +8,7 @@ This documentation consists of the following chapters:
 * The [](dl-deployment-stack) section describes a typical model deployment flow on edge devices,
 * The [](json-scenarios) section describes a way to create advanced optimization scenarios with JSON config,
 * The [](cmd-usage) section describes executable scripts available in |projecturl|,
-* The [](measurements) section describes data gathered during the compilation and evaluation process,
+* The [](kenning-measurements) section describes data gathered during the compilation and evaluation process,
 * The [](onnx-conversion-support) section covers ONNX model format support in deep learning frameworks,
 * The [](sample-report) section provides a sample report generated using {{projecturl}},
 * The [](kenning-flow) section describes KenningFlow and its usage,

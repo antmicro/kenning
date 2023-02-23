@@ -390,3 +390,43 @@ class CommonVoiceDataset(Dataset):
                 lambda: 0
             )
         return measurements
+
+    def train_test_split_representations(
+            self,
+            test_fraction: float = 0.25,
+            seed: int = 1234,
+            validation: bool = False,
+            validation_fraction: float = 0.1) -> Tuple[List, ...]:
+        from sklearn.model_selection import train_test_split
+        dataY_indices = list(range(len(self.dataY)))
+        (dataXtrain, dataXtest, dataYtrain_indices, dataYtest_indices) = \
+            train_test_split(
+                self.dataX,
+                dataY_indices,
+                test_size=test_fraction,
+                random_state=seed,
+                shuffle=True
+            )
+        dataYtest = [self.dataY[i] for i in dataYtest_indices]
+        if validation:
+            dataXtrain, dataXval, dataYtrain_indices, dataYval_indices = \
+                train_test_split(
+                    dataXtrain,
+                    dataYtrain_indices,
+                    test_size=validation_fraction/(1 - test_fraction),
+                    random_state=seed,
+                    shuffle=True
+                )
+            dataYtrain = [self.dataY[i] for i in dataYtrain_indices]
+            dataYval = [self.dataY[i] for i in dataYval_indices]
+            return (
+                dataXtrain,
+                dataXtest,
+                dataYtrain,
+                dataYtest,
+                dataXval,
+                dataYval
+            )
+        dataYtrain = [self.dataY[i] for i in dataYtrain_indices]
+
+        return (dataXtrain, dataXtest, dataYtrain, dataYtest)

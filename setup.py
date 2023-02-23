@@ -70,6 +70,10 @@ setuptools.setup(
             'pandas>=1.2.1',
             'pycocotools'
         ],
+        'speech_to_text': [
+            'pydub',
+            'sox'
+        ],
         ":python_version<'3.9'": [
             'importlib_resources>=5.1.4'
         ],

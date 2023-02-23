@@ -266,7 +266,10 @@ class CommonVoiceDataset(Dataset):
     def prepare(self):
         # take the first found folder containing language subfolder inside
         # unpacked tar archive - it will be the dataset
-        voice_folder = next(self.root.glob(f'*/{self.language}'))
+        try:
+            voice_folder = next(self.root.glob(f'*/{self.language}'))
+        except StopIteration:
+            raise FileNotFoundError
         metadata = pd.read_csv(
             voice_folder / f'{self.annotations_type}.tsv',
             sep='\t'

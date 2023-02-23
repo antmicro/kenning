@@ -80,7 +80,7 @@ jobs:
           cp -r inferencetest docs/source/generated
           cp onnxconversion/onnx-support.md docs/source/generated
           cd docs
-          make SPHINXOPTS="-A commit=$GITHUB_SHA -A branch=$GITHUB_REF_NAME" html latexpdf
+          make html latexpdf
           make linkcheck
           cp build/latex/*.pdf build/html/
       - uses: actions/upload-artifact@v3

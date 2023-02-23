@@ -31,6 +31,7 @@ setuptools.setup(
         'scikit_learn>=0.24.1',
         'tqdm>=4.56.2',
         'jsonschema>=4.16.0',
+        'scipy~=1.10.1',
     ],
     extras_require={
         'docs': [
@@ -87,10 +88,15 @@ setuptools.setup(
         ],
         'test': [
             'pytest',
-            'pytest-mock'
+            'pytest-mock',
+            'pytest-dependency',
+            'pytest-xdist'
         ],
         'real_time_visualization': [
             'dearpygui>=1.6.2'
+        ],
+        'pipeline_manager': [
+            'pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git'  # noqa: E501
         ]
     },
 )

@@ -143,12 +143,14 @@ class KenningFlowHandler(BaseDataflowHandler):
             conn_from[connection_name] = prim_ind
             conn_to[connection_name].append(parent_node_ind)
 
-        def get_matching_io_specs(from_io_spec, to_io_spec):
+        def get_matching_io_specs(
+                from_io_spec, to_io_spec, from_name, to_name):
             for from_port, to_port in itertools.product(
                     from_io_spec, to_io_spec):
                 if to_port['type'] == from_port['type']:
                     return from_port, to_port
-            raise RuntimeError("")
+            raise RuntimeError(f"Couldn't find matching connection between"
+                               f"{from_name} and {to_name}")
 
         # Finalize connections between all nodes
         conn_names = set(conn_to.keys())
@@ -160,6 +162,7 @@ class KenningFlowHandler(BaseDataflowHandler):
             spec_node = [
                 node for node in self.nodes if node.name == from_node['type']
             ][0]
+            from_name = spec_node.name
             from_node_int_id = id_gen()
             from_io_spec = self.io_mapping[spec_node.type]['outputs']
             for to_node_ind in conn_to[conn_name]:
@@ -169,7 +172,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                 ][0]
                 to_io_spec = self.io_mapping[spec_node.type]['inputs']
                 from_port, to_port = get_matching_io_specs(
-                    from_io_spec, to_io_spec)
+                    from_io_spec, to_io_spec, from_name, spec_node.name)
 
                 to_node_int_id = id_gen()
 
@@ -211,7 +214,8 @@ class KenningFlowHandler(BaseDataflowHandler):
             kenning_parameters = dict(dn['options'])
 
             if kenning_node.name in self.primitive_modules:
-                assert len(dn['interfaces']) == 1, ""
+                assert len(dn['interfaces']) == 1, "Primitive module should " \
+                                                   "only have single output"
                 _, output_interface = dn['interfaces'][0]
                 primitives[output_interface['id']] = kenning_node.type, {
                     'type': f"{kenning_node.cls.__module__}.{kenning_node.cls.__name__}",  # noqa: E501
@@ -260,7 +264,12 @@ class KenningFlowHandler(BaseDataflowHandler):
                 return True
             return False
 
-        def find_matching_arguments(from_runner, to_runner):
+        def find_matching_arguments(
+                from_runner,
+                to_runner,
+                from_name,
+                to_name
+        ):
             output_key = "processed_output"
             if output_key not in from_runner:
                 output_key = "output"
@@ -273,7 +282,8 @@ class KenningFlowHandler(BaseDataflowHandler):
                     from_arguments, to_arguments):
                 if is_match(arg1, arg2):
                     return arg1['name'], arg2['name']
-            raise RuntimeError("")
+            raise RuntimeError(f"Couldn't find matching connection between"
+                               f"{from_name} and {to_name}")
 
         # Connect runners
         for conn in dataflow['connections']:
@@ -283,7 +293,11 @@ class KenningFlowHandler(BaseDataflowHandler):
                 from_io_spec = get_runner_io(runner_list[node_from])
                 to_io_spec = get_runner_io(runner_list[node_to])
                 from_argname, to_argame = find_matching_arguments(
-                    from_io_spec, to_io_spec)
+                    from_io_spec,
+                    to_io_spec,
+                    runner_list[node_from]['type'],
+                    runner_list[node_to]['type']
+                )
                 if from_argname in runner_list[node_from]['outputs']:
                     # Previous runner has connected to this node and named
                     # the output globally

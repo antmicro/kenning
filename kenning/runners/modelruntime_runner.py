@@ -238,7 +238,12 @@ class ModelRuntimeRunner(Runner):
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
         model_json_dict = parsed_json_dict['model_wrapper']
-        model = cls._create_model(None, model_json_dict)
+        if 'dataset' in parsed_json_dict.keys():
+            dataset = cls._create_dataset(parsed_json_dict['dataset'])
+        else:
+            dataset = None
+
+        model = cls._create_model(dataset, model_json_dict)
         return cls._get_io_specification(model)
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:

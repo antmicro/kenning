@@ -552,10 +552,8 @@ To use the implemented block in the JSON scenario (as described in [](json-scena
 Let's assume that the class was implemented in the `my_optimizer.py` file.
 The scenario can look as follows:
 
-```{code-block} json
----
-emphasize-lines: 18-29
----
+{ emphasize-lines="18-29" }
+```json
 {
     "model_wrapper":
     {
@@ -619,10 +617,8 @@ Inputs for the runner are passed to the `run` method as a dictionary where the k
 
 E.g. for `DetectionVisualizer` defined in JSON as
 
-```{code-block} json
----
-emphasize-lines: 8-9
----
+{ emphasize-lines="8-9" }
+```json
 {
     "type": "kenning.outputcollectors.detection_visualizer.DetectionVisualizer",
     "parameters": {
@@ -638,10 +634,8 @@ emphasize-lines: 8-9
 
 the `run` method access inputs as follows
 
-```{code-block} python
----
-emphasize-lines: 2-3
----
+{ emphasize-lines="2-3" }
+```python
 def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
     input_data = inputs['frame']
     output_data = inputs['detection_data']

@@ -47,6 +47,14 @@ def assert_io_formats(model, optimizers, runtime) -> None:
                 set(previous_block.get_output_formats())):
             continue
 
+        if next_block == runtime:
+            log = logger.get_logger()
+            log.warn(
+                f'Runtime {next_block} has no matching format with the previous block: {previous_block}\n' +  # noqa: E501
+                'Model may not run correctly'
+            )
+            continue
+
         raise ValueError(
             f'No matching formats between two objects: {previous_block} and ' +  # noqa: E501
             f'{next_block}\n' +

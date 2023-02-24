@@ -8,6 +8,8 @@ Kenning is a framework for creating deployment flows and runtimes for Deep Neura
 
 [Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning)
 
+![](img/model-analysis.png)
+
 Kenning aims towards providing modular execution blocks for:
 
 * dataset management,
@@ -26,6 +28,8 @@ This means that any change in the application, especially in hardware, may end u
 Kenning addresses this issue by providing a unified API that focuses on deployment tasks rather than their implementation - the developer decides which implementation should be used for each task, and with Kenning, it is possible to do in a seamless way.
 This way, switching to another target platform results, in most cases, in a very small change in the code, instead of reimplementing larger parts of a project.
 This is how Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
+
+Seamless nature of Kenning also allows developers to quickly evaluate the model on various stages of optimizations and compare them as shown in [Example use case of Kenning](#example-use-case-of-kenning---optimizing-a-classifier).
 
 ## Kenning installation
 
@@ -292,6 +296,8 @@ python -m kenning.scenarios.render_report 'tflite-fp32' build/benchmarks/tflite-
 While it depends on the platform used, there should be a significant improvement in both inference time (model ca. 10-15x faster model compared to the native model) and memory usage (output model ca. 2x smaller).
 What’s worth noting is that we get a significant improvement with no harm to the quality of the model - the outputs stay the same.
 
+![Confusion matrix](img/confusion-matrix.png)
+
 ### Quantizing a model using TensorFlow Lite
 
 To further reduce memory usage, we can quantize the model - it is a process where all weights and activations in a model are calibrated to work with the `INT8` precision, instead of the `FP32` precision.
@@ -441,6 +447,40 @@ The summary of passes can be seen below:
 | tflite-fp32   | 15.79405698 | 0.9572730984 |     1.965973551 |
 | tflite-int8   | 1.683232669 | 0.9519662539 |      7.02033412 |
 | tvm-avx2-int8 | 41.61514549 | 0.9487005035 |     3.229375069 |
+
+### Automated comparison of models
+
+The `kenning.scenarios.render_report` script also allows to compare the evaluation results of multiple models.
+Apart from creating table summary of models, it also creates plots aggregating the measurements collected during the evaluation process.
+
+To create comparison report for above experiments, run:
+
+```bash
+python -m kenning.scenarios.render_report "summary-report"
+    build/benchmarks/summary.md \
+    --measurements \
+        build/native.json \
+        build/tflite-fp32.json \
+        build/tflite-int8.json \
+        build/tvm-avx2-int8.json \
+    --root-dir build/benchmarks \
+    --report-types performance classification \
+    --img-dir build/benchmarks/imgs \
+    --model-names \
+        native \
+        tflite-fp32 \
+        tflite-int8 \
+        tvm-avx2-int8
+```
+
+Some examples of rendered comparisons between various models:
+
+* Accuracy, inference time and model size comparison:
+  ![](img/accuracy-inference-time-comparison.png)
+* Distribution of resources' utilization:
+  ![](img/utilization-comparison.png)
+* Comparison of classification metrics:
+  ![](img/classification-metrics-comparison.png)
 
 ## Using Kenning as a library in Python scripts
 

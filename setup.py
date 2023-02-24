@@ -35,13 +35,13 @@ setuptools.setup(
     ],
     extras_require={
         'docs': [
-            'docutils',
             'antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git',  # noqa: E501
-            'sphinxcontrib-internal @ git+https://github.com/antmicro/sphinxcontrib-internal.git',  # noqa: E501
-            'sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl',  # noqa: E501
-            'myst-parser',
+            'docutils',
+            'myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git',
             'sphinx',
+            'sphinxcontrib-internal @ git+https://github.com/antmicro/sphinxcontrib-internal.git',  # noqa: E501
             'sphinxcontrib-napoleon',
+            'sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl',  # noqa: E501
             'sphinx_tabs',
         ],
         'tensorflow': [

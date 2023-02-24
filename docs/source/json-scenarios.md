@@ -161,10 +161,8 @@ For example, a model can be subjected to the following optimizations:
 
 Such case will result is the following scenario:
 
-```{code-block} json
----
-emphasize-lines: 18-47
----
+{ emphasize-lines="18-47" }
+```json
 {
     "model_wrapper":
     {
@@ -254,10 +252,8 @@ It depends on the [](runtimeprotocol-api) used.
 
 Let's start with client configuration by adding a `runtime_protocol` entry:
 
-```{code-block} json
----
-emphasize-lines: 48-57
----
+{ emphasize-lines="48-57" }
+```json
 {
     "model_wrapper":
     {
@@ -323,7 +319,7 @@ The `runtime` block is still needed to perform runtime-specific data preprocessi
 
 The server configuration looks as follows:
 
-```{code-block} json
+```json
 {
     "runtime":
     {

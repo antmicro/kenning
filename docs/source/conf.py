@@ -56,7 +56,7 @@ extensions = list(set(default_extensions + [
     'sphinx.ext.extlinks',
 ]))
 
-myst_enable_extensions = default_myst_enable_extensions
+myst_enable_extensions = default_myst_enable_extensions + ["attrs_block"]
 
 dev = 'https://github.com/antmicro/kenning'
 

@@ -383,7 +383,7 @@ def draw_bubble_plot(
     minsize = min(bubblesize)
     for x, y, bsize, label, c in zip(xdata, ydata, bubblesize,
                                      bubblename, colors):
-        size = (bsize - minsize) / (maxsize - minsize) * 100
+        size = (bsize - minsize) / (maxsize - minsize + 1) * 100
         marker = ax.scatter(x, y, s=(15 + size**1.75), label=label, color=c,
                             alpha=0.5, edgecolors='black')
         markers.append(marker)

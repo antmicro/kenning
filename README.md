@@ -223,7 +223,7 @@ Before the TensorFlow Lite Interpreter (runtime for the TensorFlow Lite library)
 Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to a FlatBuffer format, as well as TensorFlow Lite Runtime that will execute the model:
 
 <!-- name="json-scenario" -->
-```{code-block} json
+```json
 {
     "model_wrapper":
     {
@@ -301,7 +301,7 @@ The model can be quantized during the compilation process in TensorFlow Lite.
 With Kenning, it can be achieved with the following simple additions:
 
 <!-- name="json-scenario" -->
-```{code-block} json
+```json
 {
     "model_wrapper":
     {
@@ -364,7 +364,7 @@ For this, let's use the Apache TVM framework to compile efficient runtimes for v
 The scenario looks like this:
 
 <!-- name="json-scenario" -->
-```{code-block} json
+```json
 {
     "model_wrapper":
     {

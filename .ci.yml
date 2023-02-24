@@ -8,6 +8,7 @@ stages:
     - lint
     - tests
     - docs
+    - docs-deploy
 
 flake8:
     stage: lint
@@ -63,8 +64,6 @@ sample-pipeline-optimization:
 
 docs:
     stage: docs
-    tags:
-        - docs
     variables:
         DOCS_DIR: './docs'
     script:
@@ -88,3 +87,15 @@ linkcheck:
         - cd $DOCS_DIR
         - make linkcheck
     allow_failure: true
+
+docs-deploy:
+    image: $CI_DOCS_DOCKER_IMAGE
+    stage: docs-deploy
+    tags:
+        - docs
+    script:
+        - echo 'Deploying docs'
+    artifacts:
+        paths:
+            - $CI_DOCS_ARCHIVE
+    allow_failure: false

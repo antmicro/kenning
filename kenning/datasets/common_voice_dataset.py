@@ -154,9 +154,9 @@ class CommonVoiceDataset(Dataset):
     *Page*: `Common Voice site <https://commonvoice.mozilla.org/>`_.
     """
 
-    languages = ['en', 'pl']
+    languages = ['en']
     annotations_types = ['train', 'validation', 'test']
-    selection_methods = [None, 'length', 'accent']
+    selection_methods = ['none', 'length', 'accent']
 
     arguments_structure = {
         'language': {
@@ -226,7 +226,7 @@ class CommonVoiceDataset(Dataset):
         selection_method : str
             Method to group the data.
         """
-        assert language in ['en', 'pl'], (
+        assert language in self.languages, (
             f'Unsupported language {language}, should be one'
             f'of {self.languages}')
         assert annotations_type in self.annotations_types, (
@@ -261,10 +261,6 @@ class CommonVoiceDataset(Dataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        # Mozilla made sure that machines cannot download this dataset
-        # in it's most recent form. however, the version 6.1 has a
-        # not-very-public download link that can be used to download them all
-
         # 7.0 has it blocked because GDPR for now
         # TODO: find a way to obtain dataset version 7.0
         url_format = 'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/cv-corpus-6.1-2020-12-11/{}.tar.gz'  # noqa: E501
@@ -294,28 +290,27 @@ class CommonVoiceDataset(Dataset):
         self.dataX, self.dataY = metadata['path'], metadata['sentence']
         self.dataY = [str(y) for y in self.dataY]
 
-        if self.selection_method:
-            if self.selection_method == 'length':
-                metric_values = [len(i.strip().split()) for i in self.dataY]
-            elif self.selection_method == 'accent':
-                metric_values = [str(i) for i in metadata['accent']]
-                # filter empty values
-                new_dataX, new_dataY, new_metric_values = [], [], []
-                assert len(metric_values) == len(self.dataX)
-                for x, y, m in zip(self.dataX, self.dataY, metric_values):
-                    if m != 'nan':
-                        new_dataX.append(x)
-                        new_dataY.append(y)
-                        new_metric_values.append(m)
-                self.dataX = new_dataX
-                self.dataY = new_dataY
-                metric_values = new_metric_values
+        if self.selection_method == 'length':
+            metric_values = [len(i.strip().split()) for i in self.dataY]
+        elif self.selection_method == 'accent':
+            metric_values = [str(i) for i in metadata['accent']]
+            # filter empty values
+            new_dataX, new_dataY, new_metric_values = [], [], []
+            assert len(metric_values) == len(self.dataX)
+            for x, y, m in zip(self.dataX, self.dataY, metric_values):
+                if m != 'nan':
+                    new_dataX.append(x)
+                    new_dataY.append(y)
+                    new_metric_values.append(m)
+            self.dataX = new_dataX
+            self.dataY = new_dataY
+            metric_values = new_metric_values
 
         self.dataX = [
             str(Path(voice_folder / 'clips' / x).resolve())
             for x in self.dataX
         ]
-        if self.selection_method is not None:
+        if self.selection_method != 'none':
             assert self.sample_size <= len(self.dataX)
             self.select_representative_sample(metric_values)
 

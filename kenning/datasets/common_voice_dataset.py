@@ -38,20 +38,18 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
         Levenshtein Distance
     """
     la, lb = len(a), len(b)
-    dynamic_array = [[0 for _ in range(la+1)] for _ in range(lb+1)]
-    for i in range(1, la+1):
-        dynamic_array[0][i] = i
+    dynamic_array = np.zeros((lb + 1, la + 1), dtype=int)
 
-    for i in range(1, lb+1):
-        dynamic_array[i][0] = i
+    dynamic_array[0, :] = np.arange(1, la + 2)
+    dynamic_array[:, 0] = np.arange(1, lb + 2)
 
-    for j in range(1, lb+1):
-        for i in range(1, la+1):
+    for j in range(1, lb + 1):
+        for i in range(1, la + 1):
             cost = int(a[i-1] != b[j-1])
-            dynamic_array[j][i] = min(
-                dynamic_array[j][i-1] + 1,
-                dynamic_array[j-1][i] + 1,
-                dynamic_array[j-1][i-1] + cost
+            dynamic_array[j, i] = min(
+                dynamic_array[j, i-1] + 1,
+                dynamic_array[j-1, i] + 1,
+                dynamic_array[j-1, i-1] + cost
             )
     return dynamic_array[lb][la]
 

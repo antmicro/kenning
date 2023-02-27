@@ -157,6 +157,10 @@ class CommonVoiceDataset(Dataset):
     languages = ['en']
     annotations_types = ['train', 'validation', 'test']
     selection_methods = ['none', 'length', 'accent']
+    dataset_versions = [
+        '1', '2', '3', '4', '5.1', '6.1', '7.0', '8.0', '9.0', '10.0', '11.0',
+        '12.0'
+    ]
 
     arguments_structure = {
         'language': {
@@ -188,6 +192,12 @@ class CommonVoiceDataset(Dataset):
             'description': 'Method to group the data',
             'default': 'accent',
             'enum': selection_methods
+        },
+        'dataset_version': {
+            'argparse_name': '--dataset-version',
+            'description': 'Version of the dataset',
+            'default': '12.0',
+            'enum': dataset_versions
         }
     }
 
@@ -201,7 +211,8 @@ class CommonVoiceDataset(Dataset):
             annotations_type: str = 'test',
             sample_size: int = 1000,
             sample_rate: int = 16000,
-            selection_method: str = 'accent'):
+            selection_method: str = 'accent',
+            dataset_version: str = '12.0'):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -240,6 +251,7 @@ class CommonVoiceDataset(Dataset):
         self.sample_size = sample_size
         self.sample_rate = sample_rate
         self.selection_method = selection_method
+        self.dataset_version = dataset_version
         super().__init__(
             root,
             batch_size,
@@ -256,18 +268,31 @@ class CommonVoiceDataset(Dataset):
             language=args.language,
             annotations_type=args.annotations_type,
             sample_size=args.sample_size,
-            selection_method=args.selection_method
+            selection_method=args.selection_method,
+            dataset_version=args.dataset_version
         )
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        # 7.0 has it blocked because GDPR for now
-        # TODO: find a way to obtain dataset version 7.0
-        url_format = 'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/cv-corpus-6.1-2020-12-11/{}.tar.gz'  # noqa: E501
+        url_per_version = {
+            '1': 'cv-corpus-1/',
+            '2': 'cv-corpus-2/',
+            '3': 'cv-corpus-3/',
+            '4': 'cv-corpus-4-2019-12-10/',
+            '5.1': 'cv-corpus-5.1-2020-06-22/',
+            '6.1': 'cv-corpus-6.1-2020-12-11/',
+            '7.0': 'cv-corpus-7.0-2021-07-21/cv-corpus-7.0-2021-07-21-',
+            '8.0': 'cv-corpus-8.0-2022-01-19/cv-corpus-8.0-2022-01-19-',
+            '9.0': 'cv-corpus-9.0-2022-04-27/cv-corpus-9.0-2022-04-27-',
+            '10.0': 'cv-corpus-10.0-2022-07-04/cv-corpus-10.0-2022-07-04-',
+            '11.0': 'cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-',
+            '12.0': 'cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-'
+        }
+        dataset_url = f'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{url_per_version[self.dataset_version]}{self.language}.tar.gz'  # noqa: E501
 
         with tempfile.TemporaryDirectory() as tmpdir:
             tarpath = Path(tmpdir) / 'dataset.tar.gz'
-            download_url(url_format.format(self.language), tarpath)
+            download_url(dataset_url, tarpath)
             tf = tarfile.open(tarpath)
             tf.extractall(self.root)
 

@@ -141,6 +141,20 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
 
 
 class CommonVoiceDataset(Dataset):
+    """
+    The Mozilla Common Voice Dataset
+
+    https://commonvoice.mozilla.org/
+
+    The Common Voice dataset consists of a unique MP3 and corresponding text
+    file. Many of the 9,283 recorded hours in the dataset also include
+    demographic metadata like age, sex, and accent that can help train the
+    accuracy of speech recognition engines.
+
+    *License*: CC0 1.0 Universal (CC0 1.0) Public Domain Dedication License.
+
+    *Page*: `Common Voice site <https://commonvoice.mozilla.org/>`_.
+    """
 
     languages = ['en', 'pl']
     annotations_types = ['train', 'validation', 'test']

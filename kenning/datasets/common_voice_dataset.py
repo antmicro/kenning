@@ -374,25 +374,32 @@ class CommonVoiceDataset(Dataset):
         # making 1-(2/5) = 0.6
         MIN_SCORE_FOUND_GT = 0.6
         measurements = Measurements()
+        currindex = self._dataindex - len(predictions)
         for pred, gt in zip(predictions, ground_truths):
             if isinstance(gt, tuple):
                 gt, metric = gt
+                type_suffix = f'/{metric}'
             else:
-                metric = hash(gt)
+                type_suffix = ''
             score = char_eval(pred, gt)
             found_gt = 1 if score >= MIN_SCORE_FOUND_GT else 0
             # not a detector therefore no confidence score is given so a new
             # render report method will need to be added for STT Models
             measurements.add_measurement(
-                f'eval_stt/{metric}',
-                [[
-                    float(found_gt),
-                    float(score)
-                ]],
+                f'eval_stt{type_suffix}',
+                [{
+                    'found_ground_truth': float(found_gt),
+                    'score': float(score),
+                    'true_text': gt,
+                    'predicted_text': pred,
+                    'audio_path': str(
+                        Path(self.dataX[currindex]).relative_to(self.root)
+                    )
+                }],
                 lambda: list()
             )
             measurements.accumulate(
-                f'eval_gtcount/{metric}',
+                f'eval_gtcount{type_suffix}',
                 1,
                 lambda: 0
             )

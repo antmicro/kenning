@@ -57,6 +57,7 @@ extensions = list(set(default_extensions + [
 ]))
 
 myst_enable_extensions = default_myst_enable_extensions + ["attrs_block"]
+myst_heading_anchors = 3
 
 dev = 'https://github.com/antmicro/kenning'
 

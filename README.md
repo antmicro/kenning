@@ -29,7 +29,7 @@ Kenning addresses this issue by providing a unified API that focuses on deployme
 This way, switching to another target platform results, in most cases, in a very small change in the code, instead of reimplementing larger parts of a project.
 This is how Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
-Seamless nature of Kenning also allows developers to quickly evaluate the model on various stages of optimizations and compare them as shown in [Example use case of Kenning](#example-use-case-of-kenning---optimizing-a-classifier).
+Seamless nature of Kenning also allows developers to quickly evaluate the model on various stages of optimizations and compare them as shown in [Example use case of Kenning](#example-use-case-of-kenning).
 
 ## Kenning installation
 
@@ -127,7 +127,7 @@ Kenning scenarios are executable scripts for:
 
 For more details on each of the above scenarios, check the [Kenning documentation](https://antmicro.github.io/kenning/).
 
-## Example use case of Kenning - optimizing a classifier
+## Example use case of Kenning
 
 Let's consider a simple scenario, where we want to optimize the inference time and memory usage of the classification model executed on a x86 CPU.
 
@@ -481,6 +481,7 @@ Some examples of rendered comparisons between various models:
   ![](img/utilization-comparison.png)
 * Comparison of classification metrics:
   ![](img/classification-metrics-comparison.png)
+* And more
 
 ## Using Kenning as a library in Python scripts
 

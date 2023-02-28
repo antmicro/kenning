@@ -2,7 +2,6 @@ import pytest
 from typing import Final, Dict
 from contextlib import nullcontext as does_not_raise
 import numpy as np
-import time
 from copy import deepcopy
 
 from kenning.core.flow import KenningFlow
@@ -261,9 +260,7 @@ def mock_dear_py_gui():
     """
     def _gui_thread(self):
         while not self.stop:
-            if self.thread_data:
-                _ = self.thread_data.pop(0)
-            time.sleep(.01)
+            _ = self.process_data.get()
 
     BaseRealTimeVisualizer._gui_thread = _gui_thread
     BaseRealTimeVisualizer.should_close = lambda self: False

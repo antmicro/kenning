@@ -6,8 +6,8 @@ from typing import Dict, Tuple, List, Any
 from collections import defaultdict
 from copy import deepcopy
 import dearpygui.dearpygui as dpg
+import multiprocessing as mp
 import numpy as np
-import time
 import cv2
 import colorsys
 import threading
@@ -106,13 +106,13 @@ class BaseRealTimeVisualizer(OutputCollector):
             lambda: [*colorsys.hsv_to_rgb(np.random.rand(), 1, 1), 1.]
         )
 
-        self.thread_data = []
         self.stop = False
-        self.thread = threading.Thread(
+        self.process_data = mp.Queue()
+        self.process = mp.Process(
             target=BaseRealTimeVisualizer._gui_thread,
             args=(self,)
         )
-        self.thread.start()
+        self.process.start()
 
         super().__init__(
             inputs_sources=inputs_sources,
@@ -185,8 +185,8 @@ class BaseRealTimeVisualizer(OutputCollector):
         )
 
     def cleanup(self):
-        self.stop = True
-        self.thread.join()
+        self.process.terminate()
+        self.process.join()
 
     def setup_gui(self):
         """
@@ -240,16 +240,17 @@ class BaseRealTimeVisualizer(OutputCollector):
 
     def _gui_thread(self):
         """
-        Method that performs data processing. Called in another thread to
+        Method that performs data processing. Called in another process to
         improve performance.
         """
         self.setup_gui()
 
         while not self.stop:
-            if self.thread_data:
-                data = self.thread_data.pop(0)
+            if dpg.is_dearpygui_running():
+                data = self.process_data.get()
                 self.process_output(*data)
-            time.sleep(.01)
+            else:
+                self.stop = True
 
         self.detach_from_output()
 
@@ -332,7 +333,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         dpg.destroy_context()
 
     def should_close(self) -> bool:
-        return not dpg.is_dearpygui_running()
+        return not self.process.is_alive()
 
     def visualize_output(
             self,
@@ -372,7 +373,7 @@ class BaseRealTimeVisualizer(OutputCollector):
             inputs: Dict[str, Any]) -> Dict[str, Any]:
         input_data = inputs['frame']
         output_data = self.get_output_data(inputs)
-        self.thread_data.append((deepcopy(input_data), deepcopy(output_data)))
+        self.process_data.put((deepcopy(input_data), deepcopy(output_data)))
         return {}
 
 

@@ -64,6 +64,9 @@ sample-pipeline-optimization:
 
 docs:
     stage: docs
+    dependencies:
+        - onnx-conversions
+        - sample-compilation
     variables:
         DOCS_DIR: './docs'
     script:
@@ -81,6 +84,9 @@ docs:
 
 linkcheck:
     stage: docs
+    dependencies:
+        - onnx-conversions
+        - sample-compilation
     variables:
         DOCS_DIR: './docs'
     script:
@@ -90,6 +96,10 @@ linkcheck:
 
 docs-deploy:
     image: $CI_DOCS_DOCKER_IMAGE
+    dependencies:
+        - docs
+    variables:
+        GIT_STRATEGY: none
     stage: docs-deploy
     tags:
         - docs

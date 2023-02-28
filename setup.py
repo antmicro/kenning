@@ -72,7 +72,7 @@ setuptools.setup(
         ],
         'speech_to_text': [
             'pydub',
-            'sox'
+            'librosa'
         ],
         ":python_version<'3.9'": [
             'importlib_resources>=5.1.4'

@@ -14,7 +14,7 @@ import string
 import numpy as np
 import pandas as pd
 import wave
-import sox
+import librosa
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -84,33 +84,31 @@ def char_eval(pred: str, gt: str) -> float:
 
 
 def resample_wave(
-        input_wave: np.array,
+        input_wave: np.ndarray,
         orig_sample_rate: int,
-        dest_sample_rate) -> np.array:
+        target_sample_rate: int) -> np.ndarray:
     """
     Resamples provided wave.
 
     Parameters
     ----------
-    input_wave : np.array
+    input_wave : np.ndarray
         Wave to be resampled
     orig_sample_rate : int
         Sample rate of provided wave
-    dest_sample_rate : int
-        Sample rate of the resample wave
+    target_sample_rate : int
+        Sample rate of the resampled wave
 
     Returns
     -------
-    np.array :
+    np.ndarray :
         Resampled wave
     """
-    tfm = sox.Transformer()
-    tfm.set_input_format(rate=orig_sample_rate, file_type='s16', channels=1)
-    tfm.set_output_format(rate=dest_sample_rate, file_type='s16', channels=1)
-    return tfm.build_array(
-        input_array=input_wave,
-        sample_rate_in=orig_sample_rate
-    )
+    return librosa.resample(
+        input_wave.astype(np.float32),
+        orig_sr=orig_sample_rate,
+        target_sr=target_sample_rate
+    ).astype(np.int16)
 
 
 def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:

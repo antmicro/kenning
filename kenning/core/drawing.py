@@ -8,7 +8,7 @@ Wrappers for drawing plots for reports.
 
 from matplotlib import pyplot as plt
 from matplotlib import patheffects
-from typing import List, Tuple, Optional, Dict
+from typing import List, Tuple, Optional, Dict, Union
 import numpy as np
 import itertools
 from pathlib import Path
@@ -438,6 +438,53 @@ def draw_bubble_plot(
     plt.close()
 
 
+def _set_text_contour(
+        text,
+        width: float = 1.,
+        color: str = 'black',
+        weight: Union[str, float] = 'bold'):
+    """
+    Sets effects for text, like contour.
+
+    Parameters
+    ----------
+    text :
+        Text object to set contour for
+    width : float
+        Width of the contour
+    color : str
+        Color of the contour
+    weight : str | float
+        Font weight for text
+    """
+    text.set_path_effects([
+        patheffects.withStroke(linewidth=width, foreground=color)
+    ])
+    text.set_fontweight(weight)
+
+
+def _value_to_nondiagonal_color(
+        value: Union[float, np.ndarray], cmap) -> np.ndarray:
+    """
+    Calculates colors of non-diagonal cells in confusion matrix.
+
+    Parameters
+    ----------
+    value : float | np.ndarray
+        Values from confusion matrix
+    cmap :
+        Color map assosiating values with colors
+
+    Returns
+    -------
+    np.ndarray :
+        Calcualted colors
+    """
+    color = np.asarray(cmap(1-np.log2(value*99+1)/np.log2(100)))
+    color[..., 3] = np.log2(value*99+1)/np.log2(100)
+    return color
+
+
 def draw_confusion_matrix(
         confusion_matrix: np.ndarray,
         outpath: Optional[Path],
@@ -445,7 +492,9 @@ def draw_confusion_matrix(
         class_names: List[str],
         cmap=None,
         figsize: Optional[Tuple] = None,
-        dpi: Optional[int] = None):
+        dpi: Optional[int] = None,
+        backend: str = 'matplotlib',
+        format: str = 'png'):
     """
     Creates a confusion matrix plot.
 
@@ -467,6 +516,12 @@ def draw_confusion_matrix(
     dpi : Optional[int]
         The dpi of the plot
     """
+    available_backends = ('matplotlib', 'bokeh')
+    assert backend in available_backends, (
+        f"Backend has to be one of: {' '.join(available_backends)}")
+    available_formats = ('png', 'html')
+    assert format in available_formats, (
+        f"Format has to be one of: {' '.join(available_formats)}")
     if cmap is None:
         if len(class_names) < 50:
             cmap = plt.get_cmap('BuPu')
@@ -483,6 +538,8 @@ def draw_confusion_matrix(
     correctpredicted = \
         confusion_matrix.diagonal() / confusion_matrix.sum(axis=0)
     correctpredicted = correctpredicted.reshape(len(class_names), 1)
+    # change nan to 0
+    correctpredicted[np.isnan(correctpredicted)] = 0.
 
     # compute overall accuracy
     accuracy = np.trace(confusion_matrix) / np.sum(confusion_matrix)
@@ -490,6 +547,34 @@ def draw_confusion_matrix(
     # normalize confusion matrix
     confusion_matrix /= confusion_matrix.sum(axis=0)
     confusion_matrix = confusion_matrix.transpose()
+    # change nan to 0
+    confusion_matrix[np.isnan(confusion_matrix)] = 0.
+
+    # Calculate colors for confusion matrix
+    colors = np.zeros(confusion_matrix.shape+(4,))
+    for i in range(confusion_matrix.shape[0]):
+        for j in range(confusion_matrix.shape[1]):
+            if i == j:
+                colors[i, j] = cmap(confusion_matrix[i, j])
+            else:
+                colors[i, j] = _value_to_nondiagonal_color(
+                    confusion_matrix[i, j], cmap
+                )
+
+    if backend == "bokeh" or format == "html":
+        return draw_confusion_matrix_bokeh(
+            output_path=outpath,
+            class_names=class_names,
+            confusion_matrix=confusion_matrix,
+            confusion_matrix_colors=colors,
+            sensitivity=correctactual,
+            precision=correctpredicted,
+            accuracy=accuracy,
+            width=figsize[0] if figsize else 900,
+            height=figsize[1] if figsize else 778,
+            title=title,
+            cmap=cmap,
+            formats=(format,))
 
     if figsize is None:
         figsize = [35, 35]
@@ -536,6 +621,10 @@ def draw_confusion_matrix(
         axConfMatrix.set_yticks(ticks)
         axConfMatrix.set_yticklabels(class_names, fontsize='large')
         axConfMatrix.xaxis.set_ticks_position('top')
+        for ticklabel in itertools.chain(
+            axConfMatrix.get_xticklabels(),
+                axConfMatrix.get_yticklabels()):
+            _set_text_contour(ticklabel)
     else:
         # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
         # plt.setp(axConfMatrix.get_xticklabels(), visible=False)
@@ -548,10 +637,16 @@ def draw_confusion_matrix(
             labelbottom=False
         )
     axConfMatrix.xaxis.set_label_position('top')
-    axConfMatrix.set_xlabel('Actual class', fontsize='x-large')
-    axConfMatrix.set_ylabel('Predicted class', fontsize='x-large')
+    axConfMatrix.set_xlabel(
+        'Actual class', fontsize='x-large', fontweight='bold',
+        path_effects=[patheffects.withStroke(linewidth=1.5,
+                                             foreground='black')])
+    axConfMatrix.set_ylabel(
+        'Predicted class', fontsize='x-large', fontweight='bold',
+        path_effects=[patheffects.withStroke(linewidth=1.5,
+                                             foreground='black')])
     img = axConfMatrix.imshow(
-        confusion_matrix,
+        colors,
         # norm=colors.PowerNorm(0.5),
         interpolation='nearest',
         cmap=cmap,
@@ -571,20 +666,21 @@ def draw_confusion_matrix(
                     else f'{100.0 * confusion_matrix[i,j]:3.1f}'),
                 ha='center',
                 va='center',
-                color='black',
-                fontsize='medium')
-            txt.set_path_effects([
-                patheffects.withStroke(linewidth=5, foreground='w')
-            ])
+                color='white',
+                fontsize='large')
+            _set_text_contour(txt, 1.5)
 
         # configure and draw sensitivity percentages
         axPredicted.set_xticks(ticks)
         axPredicted.set_yticks([0])
-        axPredicted.set_xlabel('Sensitivity', fontsize='large')
+        axPredicted.set_xlabel(
+            'Sensitivity', fontsize='large', fontweight='bold',
+            path_effects=[patheffects.withStroke(linewidth=1.5,
+                                                 foreground='black')])
         axPredicted.imshow(
             correctactual,
             interpolation='nearest',
-            cmap='RdYlGn',
+            cmap='RdYlGn' if cmap is None else cmap,
             aspect='auto',
             vmin=0.0,
             vmax=1.0
@@ -596,21 +692,22 @@ def draw_confusion_matrix(
                     else f'{100.0 * correctactual[0, i]:3.1f}'),
                 ha='center',
                 va='center',
-                color='black',
-                fontsize='medium')
-            txt.set_path_effects([
-                patheffects.withStroke(linewidth=5, foreground='w')
-            ])
+                color='white',
+                fontsize='large')
+            _set_text_contour(txt, 1.5)
 
         # configure and draw precision percentages
         axActual.set_xticks([0])
         axActual.set_yticks(ticks)
-        axActual.set_ylabel('Precision', fontsize='large')
+        axActual.set_ylabel(
+            'Precision', fontsize='large', fontweight='bold',
+            path_effects=[patheffects.withStroke(linewidth=1.5,
+                                                 foreground='black')])
         axActual.yaxis.set_label_position('right')
         axActual.imshow(
             correctpredicted,
             interpolation='nearest',
-            cmap='RdYlGn',
+            cmap='RdYlGn' if cmap is None else cmap,
             aspect='auto',
             vmin=0.0,
             vmax=1.0
@@ -622,20 +719,21 @@ def draw_confusion_matrix(
                     else f'{100.0 * correctpredicted[i, 0]:3.1f}'),
                 ha='center',
                 va='center',
-                color='black',
-                fontsize='medium')
-            txt.set_path_effects([
-                patheffects.withStroke(linewidth=5, foreground='w')
-            ])
+                color='white',
+                fontsize='large')
+            _set_text_contour(txt, 1.5)
 
         # configure and draw total accuracy
         axTotal.set_xticks([0])
         axTotal.set_yticks([0])
-        axTotal.set_xlabel('Accuracy', fontsize='large')
+        axTotal.set_xlabel(
+            'Accuracy', fontsize='large', fontweight='bold',
+            path_effects=[patheffects.withStroke(linewidth=1.5,
+                                                 foreground='black')])
         axTotal.imshow(
             np.array([[accuracy]]),
             interpolation='nearest',
-            cmap='RdYlGn',
+            cmap='RdYlGn' if cmap is None else cmap,
             aspect='auto',
             vmin=0.0,
             vmax=1.0
@@ -645,12 +743,10 @@ def draw_confusion_matrix(
             f'{100 * accuracy:3.1f}',
             ha='center',
             va='center',
-            color='black',
-            fontsize='medium'
+            color='white',
+            fontsize='large'
         )
-        txt.set_path_effects([
-            patheffects.withStroke(linewidth=5, foreground='w')
-        ])
+        _set_text_contour(txt)
 
         # disable axes for other matrices than confusion matrix
         for a in (axPredicted, axActual, axTotal):
@@ -665,23 +761,388 @@ def draw_confusion_matrix(
         ticks=np.linspace(0.0, 1.0, 11),
         pad=0.1
     )
+    cbar.ax.set_yticks(np.linspace(0.0, 1., 11),
+                       labels=list(range(0, 101, 10)))
     for t in cbar.ax.get_yticklabels():
         t.set_fontsize('medium')
-    suptitlehandle = fig.suptitle(
-        f'{title} (ACC={accuracy:.5f})',
-        fontsize='xx-large'
-    )
+        _set_text_contour(t)
+    suptitlehandle = None
+    if title:
+        suptitlehandle = fig.suptitle(
+            f'{title} (ACC={accuracy:.5f})',
+            fontsize='xx-large'
+        )
     if outpath is None:
         plt.show()
     else:
         plt.savefig(
-            outpath,
+            f"{outpath}.{format}",
             dpi=dpi,
             bbox_inches='tight',
-            bbox_extra_artists=[suptitlehandle],
-            pad_inches=0.1
+            bbox_extra_artists=[suptitlehandle] if suptitlehandle else None,
+            pad_inches=0.1,
         )
     plt.close()
+
+
+def _create_custom_hover_template(
+        names: List[str],
+        values: List[str] = None,
+        units: List[str] = None
+) -> str:
+    """
+    Function creating custom template for tooltip displaying when hover
+    event occurs. This tooltip is part of bokeh features
+
+    Parameters
+    ----------
+    names : List[str]
+        List with names, displayed before values
+    values : List[str]
+        List with names of fields (in source object) containing values
+    units : List[str]
+        List with units, displayed afrer values
+
+    Returns
+    -------
+    str :
+        HTML template for tooltip
+    """
+    if values is None:
+        values = names
+    if units is None:
+        units = ['' for _ in names]
+    else:
+        units = ['' if unit is None else unit for unit in units]
+    template = """
+    <tr class="bk-tooltip-entry">
+        <td class="bk-tt-entry-name">%s</td>
+        <td class="bk-tt-entry-value">@{%s}%s</td>
+    </tr>
+    """
+    result = "<table>"
+    for name, value, unit in zip(names, values, units):
+        result += template % (name, value, unit)
+    result += "</table>"
+    return result
+
+
+def draw_confusion_matrix_bokeh(
+    confusion_matrix: np.ndarray,
+    confusion_matrix_colors: np.ndarray,
+    sensitivity: np.ndarray,
+    precision: np.ndarray,
+    accuracy: np.ndarray,
+    class_names: List[str],
+    width: int = 900,
+    height: int = 778,
+    output_path: Optional[str] = None,
+    title: Optional[str] = None,
+    cmap=None,
+    formats: Tuple[str] = ('html',),
+):
+    """
+    Function drawing interactive confusion matrix with bokeh backend.
+
+    Parameters
+    ----------
+    confusion_matrix : np.ndarray
+        Values of confusion matrix, from 0 to 1
+    confusion_matrix_colors : np.ndarray
+        Colors for calculated based on confusion matrix
+    sensitivity : np.ndarray
+        Ordered values with sensitivity
+    precision : np.ndarray
+        Ordered values with precision
+    accuracy : np.ndarray | float
+        Overall accuracy
+    class_names : List[str]
+        List with names of classes
+    width : int
+        Width of the generated plot
+    height : int
+        Height of the generated plot
+    output_path : str | None
+        Path to the file, where plot will be saved to. If not specified,
+        result won't be saved
+    title : str | None
+        Title of the plot
+    cmap :
+        Color map which will be used for drawing plot. If not specified,
+        'RdYlGn' color map from matplotlib will be chosen
+    formats : Tuple[str]
+        Tuple with formats names
+
+    """
+    from bokeh.plotting import figure, output_file, save, row, show
+    from bokeh.models import ColumnDataSource, HoverTool, FactorRange, Range1d
+    from bokeh.layouts import Spacer, gridplot
+    from bokeh.io import export_png, export_svg
+    from matplotlib.cm import get_cmap
+
+    if cmap is None:
+        cmap = get_cmap('RdYlGn')
+
+    # === Confusion Matrix ===
+
+    # Calculate confusion matrix sizes
+    cm_width = int(width / (1+1/15+1/13+1/11))
+    cm_height = int(height / (1+1/15))
+
+    # Prepare figure
+    confusion_matrix_fig = figure(
+        title=None, x_range=FactorRange(
+            factors=class_names, bounds=(0, len(class_names))),
+        y_range=FactorRange(
+            factors=class_names[::-1], bounds=(0, len(class_names))),
+        tools="pan,box_zoom,wheel_zoom,reset,save",
+        toolbar_location=None,
+        x_axis_location="above",
+        width=cm_width,
+        height=cm_height,
+    )
+
+    # Preprocess data
+    confusion_matrix_colors = np.rot90(
+        confusion_matrix_colors, k=-1).reshape((-1, 4))
+    coords = np.array(list(itertools.product(
+        class_names, class_names)), dtype=str)
+    coords[:, 1] = coords[::-1, 1]
+    percentage = np.rot90(confusion_matrix, k=-1).flatten()*100
+    source = ColumnDataSource(data={
+        'Actual class': coords[:, 0],
+        'Predicted class': coords[:, 1],
+        'color': confusion_matrix_colors,
+        'Percentage': percentage,
+    })
+
+    # Draw confusion matrix
+    confusion_matrix_fig.rect(
+        x='Actual class', y='Predicted class',
+        color='color',
+        line_color=None,
+        width=1, height=1,
+        source=source,)
+
+    # Set labels and styles
+    confusion_matrix_fig.xaxis.axis_label = "Actual class"
+    confusion_matrix_fig.yaxis.axis_label = "Predicted class"
+    confusion_matrix_fig.xaxis.major_label_orientation = 'vertical'
+    confusion_matrix_fig.grid.visible = False
+
+    # Set custom tooltips
+    confusion_matrix_fig.add_tools(HoverTool(
+        tooltips=_create_custom_hover_template(
+            ["Actual class", "Predicted class", "Percentage"],
+            units=[None, None, '%']
+        )
+    ))
+
+    # === Sensitivity ===
+
+    # Prepare figure
+    sensitivity_fig = figure(
+        title=None,
+        x_range=confusion_matrix_fig.x_range,
+        y_range=FactorRange(factors=['Sensivity'], bounds=(0, 1)),
+        width=confusion_matrix_fig.width,
+        height=confusion_matrix_fig.height//15,
+        toolbar_location=None,
+    )
+
+    # Preprocess data
+    cc = cmap(sensitivity).reshape((-1, 4))
+    sensitivity_source = ColumnDataSource(data={
+        'y': ['Sensivity' for _ in class_names],
+        'Class': class_names,
+        'color': cc,
+        "Sensitivity": sensitivity.flatten()*100,
+    })
+
+    # Draw sensitivity
+    sensitivity_fig.rect(
+        x='Class', y='y', color='color',
+        source=sensitivity_source,
+        line_color='black',
+        line_width=0.1,
+        width=1,
+        height=1,
+    )
+
+    # Add label and custom tooltip
+    sensitivity_fig.xaxis.axis_label = "Sensitivity"
+    sensitivity_fig.add_tools(HoverTool(
+        tooltips=_create_custom_hover_template(
+            ["Class", "Sensitivity"],
+            units=[None, '%']
+        )
+    ))
+
+    # === Precision ===
+
+    # Prepare figure
+    precision_fig = figure(
+        title=None,
+        x_range=FactorRange(factors=['Precision'], bounds=(0, 1)),
+        y_range=confusion_matrix_fig.y_range,
+        width=confusion_matrix_fig.width//15,
+        height=confusion_matrix_fig.height,
+        toolbar_location=None,
+        y_axis_location='right',
+    )
+
+    # Preprocess data
+    cc2 = cmap(precision).reshape((-1, 4))
+    precision_source = ColumnDataSource(data={
+        'x': ['Precision' for _ in class_names],
+        'Class': class_names,
+        'color': cc2,
+        'Precision': precision.flatten()*100,
+    })
+
+    # Draw sensitivity
+    precision_fig.rect(
+        x='x',
+        y='Class',
+        color='color',
+        source=precision_source,
+        height=1,
+        width=1,
+        line_color='black',
+        line_width=0.1,
+    )
+
+    # Add label and custom tooltip
+    precision_fig.yaxis.axis_label = "Precision"
+    precision_fig.add_tools(HoverTool(
+        tooltips=_create_custom_hover_template(
+            ["Class", "Precision"],
+            units=[None, '%']
+        ),
+        attachment='left',
+    ))
+
+    # === Accuracy ===
+
+    # Prepare figure
+    accuracy_fig = figure(
+        title=None,
+        x_range=FactorRange(factors=['x'], bounds=(0, 1)),
+        y_range=FactorRange(factors=['y'], bounds=(0, 1)),
+        width=precision_fig.width,
+        height=sensitivity_fig.height,
+        toolbar_location=None,
+    )
+
+    # Preprocess data
+    c = cmap(accuracy)
+    color_str = f"#{int(c[0]*255):02X}{int(c[1]*255):02X}{int(c[2]*255):02X}"
+    accuracy_source = ColumnDataSource(data={
+        'x': ['x'], 'y': ['y'],
+        'Accuracy': [float(accuracy)*100],
+    })
+
+    # Draw sensitivity
+    accuracy_fig.rect(
+        x='x',
+        y='y',
+        color=color_str,
+        source=accuracy_source,
+        width=1,
+        height=1,
+        line_color='black',
+        line_width=0.1,
+    )
+
+    # Add label and custom tooltip
+    accuracy_fig.xaxis.axis_label = "ACC"
+    accuracy_fig.add_tools(HoverTool(
+        tooltips=_create_custom_hover_template(
+            ['Accuracy'], units=['%']
+        ),
+        attachment='left',
+    ))
+
+    # Set style for Sensitivity, Precision and Accuracy
+    for fig in (sensitivity_fig, precision_fig, accuracy_fig):
+        fig.yaxis.major_label_text_alpha = 0.0
+        fig.xaxis.major_label_text_alpha = 0.0
+        fig.yaxis.major_tick_line_alpha = 0.0
+        fig.xaxis.major_tick_line_alpha = 0.0
+        fig.xaxis.axis_line_alpha = 0.0
+        fig.yaxis.axis_line_alpha = 0.0
+        fig.grid.visible = False
+
+    # === Scale ===
+
+    # Prepare figure
+    scale_fig = figure(
+        title=None,
+        x_range=['color'],
+        y_range=Range1d(0., 100.),
+        width=confusion_matrix_fig.width//11,
+        height=height//2,
+        tools="",
+        toolbar_location=None,
+        x_axis_location='above',
+        y_axis_location='right',
+        margin=(height // 4, 0, height // 4, 0)
+    )
+    # Draw scale
+    scale_fig.hbar(
+        y=np.linspace(0., 100., 256),
+        left=[0.]*256,
+        right=[1.]*256,
+        color=cmap(np.linspace(0., 1., 256))
+    )
+
+    # Set styles for scale
+    scale_fig.xaxis.major_tick_line_alpha = 0.0
+    scale_fig.yaxis.major_tick_line_alpha = 0.0
+    scale_fig.yaxis.minor_tick_line_alpha = 0.0
+    scale_fig.xaxis.axis_line_alpha = 0.0
+    scale_fig.yaxis.axis_line_alpha = 0.0
+    scale_fig.xaxis.major_label_text_alpha = 0.0
+
+    # === Saving to file ===
+
+    grid_fig = gridplot(
+        [
+            [confusion_matrix_fig, precision_fig,],
+            [sensitivity_fig, accuracy_fig,]
+        ],
+        merge_tools=True,
+        toolbar_location='above',
+        toolbar_options={'logo': None},
+    )
+    plot_with_scale = row(
+        grid_fig,
+        Spacer(width=confusion_matrix_fig.width//13),
+        scale_fig,
+    )
+    if output_path is None:
+        show(plot_with_scale)
+        return
+
+    if 'html' in formats:
+        output_file(f"{output_path}.html", mode='inline')
+        save(plot_with_scale)
+
+    grid_fig = gridplot(
+        [
+            [confusion_matrix_fig, precision_fig,],
+            [sensitivity_fig, accuracy_fig,]
+        ]
+    )
+    plot_with_scale = row(
+        grid_fig,
+        Spacer(width=confusion_matrix_fig.width//13),
+        scale_fig,
+    )
+    if 'png' in formats:
+        export_png(plot_with_scale, f"{output_path}.png")
+    if 'svg' in formats:
+        export_svg(plot_with_scale, f"{output_path}.svg")
 
 
 def recall_precision_curves(

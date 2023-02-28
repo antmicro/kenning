@@ -67,7 +67,7 @@ class BaseDataflowHandler:
     def __init__(
             self,
             nodes: List[Node],
-            io_mapping: Dict
+            io_mapping: Dict[str, Dict]
     ):
         """
         Base class for handling different types of kenning specification,
@@ -78,7 +78,7 @@ class BaseDataflowHandler:
         ----------
         nodes : List[Node]
             List of available nodes for this dataflow type
-        io_mapping : Dict
+        io_mapping : Dict[str, Dict]
             Mapping used by Pipeline Manager for defining the shape
             of each node type.
         """
@@ -183,7 +183,7 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Any
+        Any :
             Kenning objects that can be later run with `run_dataflow`
         """
         return NotImplementedError
@@ -244,8 +244,8 @@ class BaseDataflowHandler:
     @staticmethod
     def get_nodes(
         nodes: List[Node] = None,
-        io_mapping: Dict = None
-    ) -> Tuple[List[Node], Dict]:
+        io_mapping: Dict[str, Dict] = None
+    ) -> Tuple[List[Node], Dict[str, Dict]]:
         """
         Defines specification for the dataflow type that will be managed
         in Pipeline Manager.
@@ -264,7 +264,7 @@ class BaseDataflowHandler:
             using specific Kenning configuration, all non available items(for
             example due to lack of needed dependency) are filtered out.
 
-        Dict:
+        Dict[str, Dict]:
             Mapping used by Pipeline Manager to define the inputs and
             outputs of each node type that will later appear in manager's
             graph.

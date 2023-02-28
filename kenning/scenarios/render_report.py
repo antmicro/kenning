@@ -17,6 +17,12 @@ from typing import Dict, List, Set
 import json
 import numpy as np
 import re
+from matplotlib.colors import ListedColormap
+from matplotlib import pyplot as plt
+from servis import (
+    render_time_series_plot_with_histogram,
+    render_multiple_time_series_plot
+)
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -38,28 +44,42 @@ from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
 from kenning.core.metrics import compute_performance_metrics, \
     compute_classification_metrics, compute_detection_metrics
-from servis import (
-    render_time_series_plot_with_histogram,
-    render_multiple_time_series_plot
-)
 
 log = logger.get_logger()
 
-
+IMMATERIAL_COLORS = ['#d52a2a', '#1c7d4d', '#3f6ec6']
 SERVIS_PLOT_OPTIONS = {
     'png': {
         'outputext': ['png'],
-        'backend': 'matplotlib'
+        'backend': 'matplotlib',
+        'plottype': 'bar',
+        'colormap': IMMATERIAL_COLORS,
     },
     'html': {
         'outputext': ['html'],
-        'figsize': (670, 390)
+        'figsize': (670, 390),
+        'plottype': 'scatter',
+        'colormap': IMMATERIAL_COLORS,
     },
     'svg': {
         'outputext': ['svg'],
-        'backend': 'matplotlib'
+        'backend': 'matplotlib',
+        'plottype': 'bar',
+        'colormap': IMMATERIAL_COLORS,
     }
 }
+# Creating colormap from immaterial colors
+vals = np.ones((256, 4))
+changes = ((0, 1),)
+part = 256//len(changes)
+for i, (f, s) in enumerate(changes):
+    for ch in range(3):
+        pos = 1+2*ch
+        vals[i*part:(i+1)*part, ch] = np.linspace(
+            int(IMMATERIAL_COLORS[f][pos:pos+2], 16),
+            int(IMMATERIAL_COLORS[s][pos:pos+2], 16), part)
+vals[:, :3] /= 255
+COLORMAP_FROM_IMMATERIAL = ListedColormap(vals, name='Immaterial')
 
 
 def get_model_name(filepath: Path) -> str:
@@ -124,14 +144,12 @@ def performance_report(
             render_time_series_plot_with_histogram(
                 ydata=measurementsdata[inference_step],
                 xdata=measurementsdata[f'{inference_step}_timestamp'],
-                title='Inference time',
                 xtitle='Time',
                 xunit='s',
                 ytitle='Inference time',
                 yunit='s',
                 outpath=str(usepath),
                 skipfirst=True,
-                plottype='scatter',
                 **SERVIS_PLOT_OPTIONS[ext]
             )
 
@@ -150,14 +168,12 @@ def performance_report(
             render_time_series_plot_with_histogram(
                 ydata=measurementsdata['session_utilization_mem_percent'],
                 xdata=measurementsdata['session_utilization_timestamp'],
-                title='Memory usage',
                 xtitle='Time',
                 xunit='s',
                 ytitle='Memory usage',
                 yunit='%',
                 outpath=str(usepath),
                 skipfirst=True,
-                plottype='scatter',
                 **SERVIS_PLOT_OPTIONS[ext]
             )
 
@@ -175,14 +191,12 @@ def performance_report(
             render_time_series_plot_with_histogram(
                 ydata=measurementsdata['session_utilization_cpus_percent_avg'],
                 xdata=measurementsdata['session_utilization_timestamp'],
-                title='Average CPU usage',
                 xtitle='Time',
                 xunit='s',
                 ytitle='Average CPU usage',
                 yunit='%',
                 outpath=str(usepath),
                 skipfirst=True,
-                plottype='scatter',
                 **SERVIS_PLOT_OPTIONS[ext]
             )
 
@@ -207,14 +221,12 @@ def performance_report(
                     ydata=measurementsdata[gpumemmetric],
                     xdata=measurementsdata[
                         'session_utilization_gpu_timestamp'],
-                    title='GPU memory usage',
                     xtitle='Time',
                     xunit='s',
                     ytitle='GPU memory usage',
                     yunit='%',
                     outpath=str(usepath),
                     skipfirst=True,
-                    plottype='scatter',
                     **SERVIS_PLOT_OPTIONS[ext]
                 )
 
@@ -237,14 +249,12 @@ def performance_report(
                         'session_utilization_gpu_utilization'],
                     xdata=measurementsdata[
                         'session_utilization_gpu_timestamp'],
-                    title='GPU utilization',
                     xtitle='Time',
                     xunit='s',
                     ytitle='Utilization',
                     yunit='%',
                     outpath=str(usepath),
                     skipfirst=True,
-                    plottype='scatter',
                     **SERVIS_PLOT_OPTIONS[ext]
                 )
 
@@ -352,16 +362,19 @@ def comparison_performance_report(
         if len(metric_data) > 1:
             for format in image_formats:
                 usepath = imgdir / f"{metric}_comparison"
+                t_min = {k: min(v) for k, v in timestamps.items()}
                 render_multiple_time_series_plot(
                     [metric_data[k] for k in metric_data.keys()],
-                    [timestamps[k] for k in timestamps.keys()],
-                    "Test",
+                    [[t-t_min[k] for t in timestamps[k]]
+                        for k in timestamps.keys()],
+                    None,
                     list(metric_data.keys()),
-                    ["Time" for _ in metric_data.keys()],
-                    ['s' for _ in metric_data.keys()],
-                    [metric_name for _ in metric_data.keys()],
-                    [unit for _ in metric_data.keys()],
+                    ["Time"],
+                    ['s'],
+                    [metric_name],
+                    [unit],
                     outpath=usepath,
+                    render_one_plot=True,
                     **SERVIS_PLOT_OPTIONS[format]
                 )
             usepath = imgdir / f"{metric}_comparison.*"
@@ -445,20 +458,20 @@ def classification_report(
     log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats-{'html'}
 
     if 'eval_confusion_matrix' not in measurementsdata:
         log.error('Confusion matrix not present for classification report')
         return ''
     log.info('Using confusion matrix')
-    for format in _image_formats:
-        confusionpath = imgdir / f'{imgprefix}confusion_matrix.{format}'
+    for format in image_formats:
+        confusionpath = imgdir / f'{imgprefix}confusion_matrix'
         draw_confusion_matrix(
             measurementsdata['eval_confusion_matrix'],
             str(confusionpath),
-            'Confusion matrix',
-            measurementsdata['class_names']
+            None,
+            measurementsdata['class_names'],
+            cmap=COLORMAP_FROM_IMMATERIAL,
+            format=format,
         )
     confusionpath = imgdir / f'{imgprefix}confusion_matrix.*'
     measurementsdata['confusionpath'] = str(
@@ -932,6 +945,16 @@ def main(argv):
         img_dir = args.img_dir
     img_dir.mkdir(parents=True, exist_ok=True)
 
+    # Set theme for bokeh
+    try:
+        from bokeh.io import curdoc
+        from bokeh.themes import Theme
+        theme = Theme(filename=Path('kenning', 'resources',
+                      'reports', 'bokeh_theme.yml'))
+        curdoc().theme = theme
+    except ModuleNotFoundError:
+        pass
+
     if args.model_names is not None and \
             len(args.measurements) != len(args.model_names):
         log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
@@ -965,16 +988,18 @@ def main(argv):
                 indent=4
             ).split('\n')
 
-    generate_report(
-        args.reportname,
-        measurementsdata,
-        args.output,
-        img_dir,
-        args.report_types,
-        args.root_dir,
-        image_formats,
-        command
-    )
+    # Set theme for matplotlib
+    with plt.style.context('kenning/resources/reports/matplotlib_theme_rc'):
+        generate_report(
+            args.reportname,
+            measurementsdata,
+            args.output,
+            img_dir,
+            args.report_types,
+            args.root_dir,
+            image_formats,
+            command
+        )
 
 
 if __name__ == '__main__':

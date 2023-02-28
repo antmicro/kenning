@@ -58,6 +58,9 @@ class TestDataset:
         Tests throwing exception when there is no folder with data.
         """
         dataset_download_dir = get_dataset_download_path(dataset_cls)
+        dataset_download_dir = dataset_download_dir.with_name(
+            dataset_download_dir.name + '_none'
+        )
         if dataset_download_dir.exists():
             shutil.rmtree(str(dataset_download_dir), ignore_errors=True)
 

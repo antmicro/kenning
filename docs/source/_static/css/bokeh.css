@@ -1,11 +1,11 @@
-/*Background for bokeh plots*/
+/* Background for bokeh plots */
 .bk-root {
   background: var(--md-code-bg-color);
-  padding: 1em 0.5em 0.5em 0.5em;
+  padding: 0.5em;
   border-radius: 0.1rem;
 }
 
-/*Centring of bokeh plots in divs instead of figure*/
+/* Centring of bokeh plots in divs instead of figure */
 div.figure.align-center {
   display: flex !important;
   flex-direction: column;

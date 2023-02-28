@@ -8,8 +8,8 @@ from typing import Dict
 from kenning.core.flow import KenningFlow
 from kenning.utils.class_loader import load_class
 
-from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node
-from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.pipeline_manager.core import BaseDataflowHandler, add_node
+from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 
 class KenningFlowHandler(BaseDataflowHandler):

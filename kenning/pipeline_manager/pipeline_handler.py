@@ -5,7 +5,7 @@
 from typing import Dict, Tuple, Union
 from collections import defaultdict as dd
 
-from kenning.utils.pipeline_manager.core import BaseDataflowHandler, add_node  # noqa: E501
+from kenning.pipeline_manager.core import BaseDataflowHandler, add_node  # noqa: E501
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 from kenning.utils import logger
 

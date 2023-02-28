@@ -14,9 +14,9 @@ from pipeline_manager_backend_communication.communication_backend import Communi
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
 from kenning.core.measurements import MeasurementsCollector
 
-from kenning.utils.pipeline_manager.pipeline_handler import PipelineHandler
-from kenning.utils.pipeline_manager.flow_handler import KenningFlowHandler
-from kenning.utils.pipeline_manager.core import BaseDataflowHandler
+from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.pipeline_manager.flow_handler import KenningFlowHandler
+from kenning.pipeline_manager.core import BaseDataflowHandler
 
 
 def parse_message(

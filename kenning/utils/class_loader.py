@@ -10,7 +10,6 @@ from typing import Type
 import importlib
 from typing import ClassVar, List
 from pathlib import Path
-import pkgutil
 import ast
 
 from kenning.utils.logger import get_logger
@@ -41,78 +40,85 @@ def get_all_subclasses(
     """
     logger = get_logger()
 
-    result = []
-    queue = [pkgutil.resolve_name(modulepath)]
-    module_classes = {}
-    module_import_error = {}
-    # BFS over modules
-    while queue:
-        module = queue.pop()
-        prefix = module.__name__ + '.'
-        # iterate submodules
-        for sub_module in pkgutil.iter_modules(module.__path__, prefix):
-            # get list of classes in module
-            file_path = pkgutil.get_loader(sub_module.name).path
-            with open(file_path, 'r') as mod_file:
-                parsed_file = ast.parse(mod_file.read())
-            module_classes[sub_module.name] = []
-            for c in parsed_file.body:
-                if not isinstance(c, ast.ClassDef):
-                    continue
-                module_classes[sub_module.name].append(c)
-            # try import
-            try:
-                importlib.import_module(sub_module.name)
-                sub_module_name = pkgutil.resolve_name(sub_module.name)
-                if sub_module.ispkg:
-                    queue.append(sub_module_name)
-                else:
-                    result.append(sub_module_name)
-            except Exception as e:
-                module_import_error[sub_module.name] = e
-
-    # log warn message with unimported classes
-    for module_name in module_classes.keys():
-        if module_name not in module_import_error.keys():
+    root_module = importlib.util.find_spec(modulepath)
+    modules_to_parse = [root_module]
+    i = 0
+    # get all submodules
+    while i < len(modules_to_parse):
+        module = modules_to_parse[i]
+        i += 1
+        if '__init__' not in module.origin:
             continue
-        logger.warning(
-            f'Could not import module {module_name}, skipped classes: '
-            f'{[c.name for c in module_classes[module_name]]}'
-        )
-
-    # BFS over classes
-    result = []
-    all_classes = []
-    queue = [cls]
-    while queue:
-        q = queue.pop()
-        all_classes.append(q)
-        if len(q.__subclasses__()) == 0:
-            result.append(q)
-        for sub_q in q.__subclasses__():
-            queue.append(sub_q)
-
-    # get subclasses that could not be imported
-    if raise_exception:
-        not_imported_subclasses = []
-        exceptions = []
-        all_classes_names = [r.__name__ for r in all_classes]
-        # iterate over modules with errors
-        for module, e in module_import_error.items():
-            for class_def in module_classes[module]:
-                # if any base class is in all_classes
-                class_def_bases = [b.id for b in class_def.bases]
-                if len(set(all_classes_names) & set(class_def_bases)):
-                    not_imported_subclasses.append(class_def.name)
-                    exceptions.append((module, e))
-        if len(not_imported_subclasses):
-            logger.error(
-                f'Could not import subclasses: {not_imported_subclasses}'
+        # iterate python files
+        for submodule_path in Path(module.origin).parent.glob('*.py'):
+            if '__init__' == submodule_path.stem:
+                continue
+            modules_to_parse.append(importlib.util.find_spec(
+                f'{module.name}.{submodule_path.stem}'
+            ))
+        # iterate subdirectories
+        for submodule_path in Path(module.origin).parent.glob('*'):
+            if not submodule_path.is_dir():
+                continue
+            module_spec = importlib.util.find_spec(
+                f'{module.name}.{submodule_path.name}'
             )
-            logger.error('Found problems:')
-            for module, e in exceptions:
-                logger.error(f'\tModule: {module}, exception: {e}')
-            raise ImportError
+            if module_spec.has_location:
+                modules_to_parse.append(module_spec)
+
+    # get all class definitions from all files
+    classes_defs = dict()
+    classes_modules = dict()
+    for module in modules_to_parse:
+        with open(module.origin, 'r') as f:
+            parsed_file = ast.parse(f.read())
+        for elem in parsed_file.body:
+            if not isinstance(elem, ast.ClassDef):
+                continue
+            classes_defs[elem.name] = elem
+            classes_modules[elem.name] = module
+
+    # recursively filter subclasses
+    subclasses = set()
+    checked_classes = {cls.__name__}
+    non_final_subclasses = set()
+
+    def check_if_subclass(class_def: ast.ClassDef) -> bool:
+        checked_classes.add(class_def.name)
+        for b in class_def.bases:
+            non_final_subclasses.add(b.id)
+            if b.id == cls.__name__:
+                subclasses.add(class_def.name)
+            elif b.id in subclasses or (
+                    b.id in classes_defs and
+                    check_if_subclass(classes_defs[b.id])):
+                subclasses.add(class_def.name)
+
+    for class_name, class_def in classes_defs.items():
+        if class_name not in checked_classes:
+            check_if_subclass(class_def)
+
+    # try importing subclasses
+    result = []
+    for subclass_name in subclasses:
+        # filter non final subclasses
+        if subclass_name in non_final_subclasses:
+            continue
+        subclass_module = classes_modules[subclass_name]
+        try:
+            subclass = getattr(
+                importlib.import_module(subclass_module.name),
+                subclass_name
+            )
+            result.append(subclass)
+        except ImportError as e:
+            logger.error(
+                f'Could not import subclass: {subclass_name}, error: {e}'
+            )
+            if raise_exception:
+                raise
+
+    result.sort(key=lambda c: c.__name__)
 
     return result
 

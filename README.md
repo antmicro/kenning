@@ -8,16 +8,15 @@ Kenning is a framework for creating deployment flows and runtimes for Deep Neura
 
 [Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning)
 
-![](img/model-analysis.png)
+![](img/report-mosaic.png)
 
 Kenning aims towards providing modular execution blocks for:
 
 * dataset management,
 * model training,
 * model optimization and compilation for a given target hardware,
-* model evaluation and performance reports,
 * running models using efficient runtimes on target device,
-* model input and output processing (i.e. normalizing frames or computing final predictions from model outputs).
+* model evaluation and performance reports.
 
 These can be used seamlessly regardless of underlying frameworks for the above-mentioned steps.
 
@@ -78,6 +77,8 @@ git lfs pull
 ```
 
 ## Kenning structure
+
+![](img/class-flow.png)
 
 The `kenning` module consists of the following submodules:
 
@@ -476,10 +477,13 @@ python -m kenning.scenarios.render_report "summary-report"
 Some examples of rendered comparisons between various models:
 
 * Accuracy, inference time and model size comparison:
+
   ![](img/accuracy-inference-time-comparison.png)
 * Distribution of resources' utilization:
+
   ![](img/utilization-comparison.png)
 * Comparison of classification metrics:
+
   ![](img/classification-metrics-comparison.png)
 * And more
 

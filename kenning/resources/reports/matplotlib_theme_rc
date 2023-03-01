@@ -1,0 +1,18 @@
+savefig.transparent: False
+axes.facecolor: "#7F7F7F1A"
+figure.facecolor: None
+scatter.edgecolors: None
+
+legend.framealpha: 0.0
+legend.labelcolor: "#777777"
+
+grid.color: "#000000"
+grid.alpha: 0.266
+
+axes.axisbelow: True
+
+text.color: "#777777"
+axes.labelcolor: "#777777"
+xtick.labelcolor: "#777777"
+ytick.labelcolor: "#777777"
+

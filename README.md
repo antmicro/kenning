@@ -449,12 +449,12 @@ The summary of passes can be seen below:
 | tflite-int8   | 1.683232669 | 0.9519662539 |      7.02033412 |
 | tvm-avx2-int8 | 41.61514549 | 0.9487005035 |     3.229375069 |
 
-### Automated comparison of models
+### Automated model comparison
 
-The `kenning.scenarios.render_report` script also allows to compare the evaluation results of multiple models.
-Apart from creating table summary of models, it also creates plots aggregating the measurements collected during the evaluation process.
+The `kenning.scenarios.render_report` script also allows us to compare evaluation results for multiple models.
+Apart from creating a table with a summary of models, it also creates plots aggregating measurements collected during the evaluation process.
 
-To create comparison report for above experiments, run:
+To create a comparison report for the above experiments, run:
 
 ```bash
 python -m kenning.scenarios.render_report "summary-report"
@@ -474,12 +474,12 @@ python -m kenning.scenarios.render_report "summary-report"
         tvm-avx2-int8
 ```
 
-Some examples of rendered comparisons between various models:
+Some examples of comparisons between various models rendered with the script:
 
 * Accuracy, inference time and model size comparison:
 
   ![](img/accuracy-inference-time-comparison.png)
-* Distribution of resources' utilization:
+* Resource utilization distribution:
 
   ![](img/utilization-comparison.png)
 * Comparison of classification metrics:

@@ -2,12 +2,23 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import itertools
 from typing import Any, Dict, NamedTuple, List, Tuple, Union
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
 
 _LOGGER = get_logger()
+_UNIQUE_ID = -1
+
+
+def get_id():
+    """
+    Utility function for unique ID generator
+    """
+    global _UNIQUE_ID
+    _UNIQUE_ID += 1
+    return str(_UNIQUE_ID)
 
 
 class Node(NamedTuple):
@@ -86,6 +97,7 @@ class BaseDataflowHandler:
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
+        self.pm_graph = PipelineManagerGraphCreator(io_mapping)
 
     def get_specification(self) -> Dict:
         """
@@ -245,8 +257,8 @@ class BaseDataflowHandler:
 
     @staticmethod
     def get_nodes(
-        nodes: Dict[str, Node] = None,
-        io_mapping: Dict[str, Dict] = None
+            nodes: Dict[str, Node] = None,
+            io_mapping: Dict[str, Dict] = None
     ) -> Tuple[Dict[str, Node], Dict[str, Dict]]:
         """
         Defines specification for the dataflow type that will be managed
@@ -278,3 +290,135 @@ class BaseDataflowHandler:
             graph.
         """
         raise NotImplementedError
+
+
+class GraphCreator:
+    def __init__(self):
+        self.start_new_graph()
+
+    def start_new_graph(self):
+        self.nodes = {}
+        self.connections = []
+        self.interf_map = {}
+        self.graph = self.init_graph()
+
+    def init_graph(self):
+        raise NotImplementedError
+
+    def create_node(self):
+        raise NotImplementedError
+
+    def register_connection(self):
+        raise NotImplementedError
+
+    def create_connection(self):
+        raise NotImplementedError
+
+
+class PipelineManagerGraphCreator(GraphCreator):
+    def __init__(
+            self,
+            io_mapping,
+            start_x_pos=50,
+            start_y_pos=50,
+            node_width=300,
+            node_x_offset=50
+    ):
+        self.start_x_pos = start_x_pos
+        self.x_pos = start_x_pos
+        self.y_pos = start_y_pos
+        self.node_width = node_width
+        self.node_x_offset = node_x_offset
+        self.io_mapping = io_mapping
+        super().__init__()
+
+    def init_graph(self):
+        return {
+            'panning': {
+                'x': 0,
+                'y': 0
+            },
+            'scaling': 1
+        }
+
+    def update_position(self):
+        self.x_pos += self.node_width + self.node_x_offset
+
+    def reset_position(self):
+        self.x_pos = self.start_x_pos
+
+    def _create_interface(self, io_spec, is_input):
+        interf_id = get_id()
+        interface = [io_spec['name'], {
+            'id': interf_id,
+            'value': None,
+            'isInput': is_input,
+            'type': io_spec['type']
+        }]
+        return interf_id, interface
+
+    def create_node(self, node, options):
+        node_id = get_id()
+        io_map = self.io_mapping[node.type]
+
+        interfaces = []
+        for io_spec in io_map['inputs']:
+            interf_id, interface = self._create_interface(io_spec, True)
+            interfaces.append(interface)
+            self.interf_map[interf_id] = io_spec
+        for io_spec in io_map['outputs']:
+            interf_id, interface = self._create_interface(io_spec, False)
+            interfaces.append(interface)
+            self.interf_map[interf_id] = io_spec
+
+        self.nodes[node_id] = {
+            'type': node.name,
+            'id': node_id,
+            'name': node.name,
+            'options': options,
+            'state': {},
+            'interfaces': interfaces,
+            'position': {
+                'x': self.x_pos,
+                'y': self.y_pos,
+            },
+            'width': self.node_width,
+            'twoColumn': False,
+            'customClasses': ""
+        }
+        self.update_position()
+        return node_id
+
+    def find_compatible_conn(self, from_id, to_id):
+        # TODO: I'm assuming here that there is only one pair of matching
+        # input-output interfaces
+        from_interf_arr = self.nodes[from_id]['interfaces']
+        to_interf_arr = self.nodes[to_id]['interfaces']
+        for (_, from_interf), (_, to_interf) in itertools.product(
+                from_interf_arr, to_interf_arr):
+            from_interf_id, to_interf_id = from_interf['id'], to_interf['id']
+            from_io_spec = self.interf_map[from_interf_id]
+            to_io_spec = self.interf_map[to_interf_id]
+            if not from_interf['isInput'] \
+                    and to_interf['isInput'] \
+                    and from_io_spec['type'] == to_io_spec['type']:
+                return from_interf_id, to_interf_id
+        raise RuntimeError("No compatible connections were found")
+
+    def create_connection(self, from_id, to_id):
+        from_interf_id, to_interf_id = self.find_compatible_conn(
+            from_id, to_id
+        )
+        self.connections.append({
+            'id': get_id(),
+            'from': from_interf_id,
+            'to': to_interf_id
+        })
+
+    def flush_graph(self):
+        self.graph['nodes'] = list(self.nodes.values())
+        self.graph['connections'] = self.connections
+        finished_graph = self.graph
+        self.start_new_graph()
+        self.reset_position()
+        return finished_graph

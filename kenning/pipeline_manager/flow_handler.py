@@ -8,7 +8,7 @@ from typing import Dict
 from kenning.core.flow import KenningFlow
 from kenning.utils.class_loader import load_class
 
-from kenning.pipeline_manager.core import BaseDataflowHandler, add_node
+from kenning.pipeline_manager.core import BaseDataflowHandler, add_node, get_id
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 
@@ -55,154 +55,55 @@ class KenningFlowHandler(BaseDataflowHandler):
         kenningflow.cleanup()
 
     def create_dataflow(self, pipeline: Dict):
-
-        def create_id_generator(id_=-1):
-            def get_id():
-                nonlocal id_
-                id_ += 1
-                return str(id_)
-            return get_id
-
-        id_gen = create_id_generator()
-
-        dataflow_nodes = []
-        dataflow_connections = []
-        dataflow = {
-            'panning': {
-                'x': 0,
-                'y': 0
-            },
-            'scaling': 1
-        }
-
-        x_pos = 50
-        y_pos = 50
-        node_width = 300
-        node_x_offset = 50
-
-        def add_node(node_type, options, ):
-            nonlocal x_pos
-            new_node_ind = len(dataflow_nodes)
-            dataflow_nodes.append({
-                'type': node_type,
-                'id': id_gen(),
-                'name': node_type,
-                'options': options,
-                'state': {},
-                'interfaces': [],
-                'position': {
-                    'x': x_pos,
-                    'y': y_pos
-                },
-                'width': node_width,
-                'twoColumn': False,
-                'customClasses': ""
-            })
-            x_pos += node_width + node_x_offset
-            return new_node_ind
-
         # Create runner nodes and register connections between them.
         conn_to, conn_from = defaultdict(list), {}
-        primitives = []
-        for node_ind, kenning_node in enumerate(pipeline):
-            kenning_type = load_class(kenning_node['type']).__name__
+        for kenning_node in pipeline:
             parameters = kenning_node['parameters']
             inputs = kenning_node.get('inputs', {})
             outputs = kenning_node.get('outputs', {})
 
             node_options = []
+            primitives = []
             for name, value in parameters.items():
                 if isinstance(value, dict):
-                    # Primitive should be separate node, not an option
-                    primitives.append((value, node_ind))
+                    # Primitive should be a separate node, not an option
+                    primitive_name = load_class(value['type']).__name__
+                    spec_node = self.nodes[primitive_name]
+                    prim_options = value['parameters']
+                    prim_options = [
+                        [param_name, param_value]
+                        for param_name, param_value in prim_options.items()
+                    ]
+                    prim_id = self.pm_graph.create_node(
+                        spec_node,
+                        prim_options
+                    )
+                    primitives.append(prim_id)
                 else:
                     node_options.append([name, value])
 
+            kenning_name = load_class(kenning_node['type']).__name__
+            spec_node = self.nodes[kenning_name]
+            node_id = self.pm_graph.create_node(spec_node, node_options)
+
+            for primitive_id in primitives:
+                self.pm_graph.create_connection(primitive_id, node_id)
+
             # Register connections to be later added to respective interfaces
             for global_name in inputs.values():
-                conn_to[global_name].append(node_ind)
+                conn_to[global_name].append(node_id)
             for global_name in outputs.values():
-                assert global_name not in conn_from
-                conn_from[global_name] = node_ind
-
-            add_node(kenning_type, node_options)
-
-        # Create primitive nodes, bind them to their parent
-        for primitive, parent_node_ind in primitives:
-            prim_type = load_class(primitive['type']).__name__
-            prim_options = primitive['parameters']
-            prim_options = [
-                [param_name, param_value]
-                for param_name, param_value in prim_options.items()
-            ]
-            prim_ind = add_node(prim_type, prim_options)
-
-            connection_name = id_gen()
-            while connection_name in conn_from:
-                connection_name = id_gen()
-            conn_from[connection_name] = prim_ind
-            conn_to[connection_name].append(parent_node_ind)
-
-        def get_matching_io_specs(
-                from_io_spec, to_io_spec, from_name, to_name):
-            for from_port, to_port in itertools.product(
-                    from_io_spec, to_io_spec):
-                if to_port['type'] == from_port['type']:
-                    return from_port, to_port
-            raise RuntimeError(f"Couldn't find matching connection between"
-                               f"{from_name} and {to_name}")
+                assert global_name not in conn_from, \
+                    "Invalid Kenningflow"
+                conn_from[global_name] = node_id
 
         # Finalize connections between all nodes
         conn_names = set(conn_to.keys())
-        # TODO: Is this condition necessary?
-        assert conn_names == set(conn_from.keys())
-
         for conn_name in conn_names:
-            from_node = dataflow_nodes[conn_from[conn_name]]
-            spec_node = [
-                node for node in self.nodes if node.name == from_node['type']
-            ][0]
-            from_name = spec_node.name
-            from_node_int_id = id_gen()
-            from_io_spec = self.io_mapping[spec_node.type]['outputs']
-            for to_node_ind in conn_to[conn_name]:
-                to_node = dataflow_nodes[to_node_ind]
-                spec_node = [
-                    node for node in self.nodes if node.name == to_node['type']
-                ][0]
-                to_io_spec = self.io_mapping[spec_node.type]['inputs']
-                from_port, to_port = get_matching_io_specs(
-                    from_io_spec, to_io_spec, from_name, spec_node.name)
-
-                to_node_int_id = id_gen()
-
-                dataflow_connections.append({
-                    'id': conn_name,
-                    'from': from_node_int_id,
-                    'to': to_node_int_id
-                })
-                # TODO: Assure correct order of interfaces
-                to_node['interfaces'].append([
-                    to_port['name'], {
-                        'id': to_node_int_id,
-                        'value': None,
-                        'isInput': True,
-                        'type': to_port['type']
-                    }
-                ])
-                from_node['interfaces'].append([
-                    from_port['name'], {
-                        'id': from_node_int_id,
-                        'value': None,
-                        'isInput': False,
-                        'type': from_port['type']
-                    }
-                ])
-
-        dataflow['nodes'] = dataflow_nodes
-        dataflow['connections'] = dataflow_connections
-
-        return dataflow
+            from_id = conn_from[conn_name]
+            for to_id in conn_to[conn_name]:
+                self.pm_graph.create_connection(from_id, to_id)
+        return self.pm_graph.flush_graph()
 
     def parse_dataflow(self, dataflow: Dict):
         runners, primitives = {}, {}

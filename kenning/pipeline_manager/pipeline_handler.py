@@ -452,7 +452,7 @@ class PipelineHandler(BaseDataflowHandler):
     @staticmethod
     def get_nodes(nodes=None, io_mapping=None):
         if nodes is None:
-            nodes = []
+            nodes = {}
         if io_mapping is None:
             io_mapping = {}
 

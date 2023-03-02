@@ -32,7 +32,7 @@ class Node(NamedTuple):
 
 
 def add_node(
-        node_list: List,
+        node_list: Dict[str, Node],
         nodemodule: str,
         category: str,
         type: str):
@@ -54,7 +54,9 @@ def add_node(
     """
     try:
         nodeclass = load_class(nodemodule)
-        node_list.append(Node(nodeclass.__name__, category, type, nodeclass))
+        node_list[nodeclass.__name__] = (
+            Node(nodeclass.__name__, category, type, nodeclass)
+        )
     except (ModuleNotFoundError, ImportError, Exception) as err:
         msg = f'Could not add {nodemodule}. Reason:'
         _LOGGER.warn('-' * len(msg))
@@ -115,7 +117,7 @@ class BaseDataflowHandler:
                 for io in io_list
             ]
 
-        for node in self.nodes:
+        for node in self.nodes.values():
             parameterschema = node.cls.form_parameterschema()
 
             properties = []
@@ -243,26 +245,32 @@ class BaseDataflowHandler:
 
     @staticmethod
     def get_nodes(
-        nodes: List[Node] = None,
+        nodes: Dict[str, Node] = None,
         io_mapping: Dict[str, Dict] = None
-    ) -> Tuple[List[Node], Dict[str, Dict]]:
+    ) -> Tuple[Dict[str, Node], Dict[str, Dict]]:
         """
         Defines specification for the dataflow type that will be managed
         in Pipeline Manager.
 
         Parameters
         ----------
-        nodes : List[Node], optional
-            If None, new list of nodes is created, otherwise all items are
-            appended to the provided argument.
+        nodes : Dict[str, Node], optional
+            If None, new nodes list is created, otherwise all items are
+            added to the provided argument.
+
+        io_mapping : Dict[str, Dict], optional
+            If None, new IO map is created, otherwise all items are
+            added to the provided argument.
 
         Returns
         -------
-        List[Node]:
-            List of all available items applicable for the chosen dataflow
-            type. It is checked at the runtime whether the item can be loaded
-            using specific Kenning configuration, all non available items(for
-            example due to lack of needed dependency) are filtered out.
+        Dict[str, Node]:
+            Mapping containing all available items applicable for the chosen
+            dataflow type. Keys are the names of Kenning modules, values are
+            created items. It is checked at the runtime whether the item can
+            be loaded using specific Kenning configuration, all non available
+            items(for example due to lack of needed dependency) are filtered
+            out.
 
         Dict[str, Dict]:
             Mapping used by Pipeline Manager to define the inputs and

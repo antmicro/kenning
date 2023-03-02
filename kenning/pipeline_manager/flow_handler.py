@@ -35,7 +35,7 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         # Everything that is not Runner
         self.primitive_modules = {
-            node.name for node in pipeline_nodes
+            node.name for node in pipeline_nodes.values()
         }
 
         nodes, io_mapping = KenningFlowHandler.get_nodes(
@@ -311,7 +311,7 @@ class KenningFlowHandler(BaseDataflowHandler):
     @staticmethod
     def get_nodes(nodes=None, io_mapping=None):
         if nodes is None:
-            nodes = []
+            nodes = {}
         if io_mapping is None:
             io_mapping = {}
 

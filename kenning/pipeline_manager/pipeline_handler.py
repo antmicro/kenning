@@ -2,17 +2,16 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Dict, Tuple, Union
+from typing import Dict
 
-from kenning.pipeline_manager.core import BaseDataflowHandler, add_node  # noqa: E501
+from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator, add_node  # noqa: E501
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
-from kenning.utils import logger
 
 
 class PipelineHandler(BaseDataflowHandler):
     def __init__(self):
         nodes, io_mapping = PipelineHandler.get_nodes()
-        super().__init__(nodes, io_mapping)
+        super().__init__(nodes, io_mapping, PipelineGraphCreator())
 
     def parse_json(self, json_cfg):
         return parse_json_pipeline(json_cfg)
@@ -72,219 +71,6 @@ class PipelineHandler(BaseDataflowHandler):
             )
 
         return self.pm_graph.flush_graph()
-
-    def parse_dataflow(self, dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
-        log = logger.get_logger()
-
-        def return_error(msg: str) -> Tuple[bool, str]:
-            """
-            Logs `msg` and returns a Tuple[bool, msg]
-
-            Parameters
-            ----------
-            msg : str
-                Message that is logged and that is returned as a feedback
-                message.
-
-            Returns
-            -------
-            Tuple[bool, str] :
-                Tuple that means that parsing was unsuccessful.
-            """
-            log.error(msg)
-            return False, msg
-
-        def strip_node(node: Dict) -> Dict:
-            """
-            This method picks only `type` and `parameters` keys for the node.
-
-            Returns
-            -------
-            Dict :
-                Dict that contains `module` and `parameters`
-                values of the input `node`.
-            """
-            return {
-                'type': node['module'],
-                'parameters': node['parameters']
-            }
-
-        def get_connected_node(
-                socket_id: str,
-                edges: Dict,
-                nodes: Dict) -> Dict:
-            """
-            Get node connected to a given socket_id that is the nodes.
-
-            Parameters
-            ----------
-            socket_id: str
-                Socket for which node is searched
-            edges: Dict
-                Edges to look for the connection
-            nodes: Dict
-                Nodes to look for the connected node
-
-            Returns
-            -------
-            Dict :
-                Node that is in `nodes` dictionary, is connected to the
-                `socket_id` with an edge that is in `edges` dictionary.
-                None otherwise
-            """
-            connection = [
-                edge for edge in edges
-                if socket_id == edge['from'] or socket_id == edge['to']
-            ]
-
-            if not connection:
-                return None
-
-            connection = connection[0]
-            corresponding_socket_id = (
-                connection['to']
-                if connection['from'] == socket_id else
-                connection['from']
-            )
-
-            for node in nodes:
-                for inp in node['inputs']:
-                    if corresponding_socket_id == inp['id']:
-                        return node
-
-                for out in node['outputs']:
-                    if corresponding_socket_id == out['id']:
-                        return node
-
-            # The node connected wasn't int the `nodes` argument
-            return None
-
-        dataflow_nodes = dataflow['nodes']
-        dataflow_edges = dataflow['connections']
-
-        # Creating a list of every node with its kenning path and parameters
-        kenning_nodes = []
-        for dn in dataflow_nodes:
-            kenning_node = [
-                node for node in self.nodes if node.name == dn['name']
-            ][0]
-            kenning_parameters = dn['options']
-
-            parameters = {name: value for name, value in kenning_parameters}
-            kenning_nodes.append({
-                'module': f'{kenning_node.cls.__module__}.{kenning_node.name}',
-                'type': kenning_node.type,
-                'parameters': parameters,
-                'inputs': [
-                    interface[1]
-                    for interface in dn['interfaces']
-                    if interface[1]['isInput']
-                ],
-                'outputs': [
-                    interface[1]
-                    for interface in dn['interfaces']
-                    if not interface[1]['isInput']
-                ]
-            })
-
-        pipeline = {
-            'model_wrapper': [],
-            'runtime': [],
-            'optimizer': [],
-            'dataset': []
-        }
-
-        for node in kenning_nodes:
-            pipeline[node['type']].append(node)
-
-        # Checking cardinality of the nodes
-        if len(pipeline['dataset']) != 1:
-            mes = (
-                'Multiple instances of dataset class'
-                if len(pipeline['dataset']) > 1
-                else 'No dataset class instance'
-            )
-            return return_error(mes)
-        if len(pipeline['runtime']) != 1:
-            mes = (
-                'Multiple instances of runtime class'
-                if len(pipeline['runtime']) > 1
-                else 'No runtime class instance'
-            )
-            return return_error(mes)
-        if len(pipeline['model_wrapper']) != 1:
-            mes = (
-                'Multiple instances of model_wrapper class'
-                if len(pipeline['model_wrapper']) > 1
-                else 'No model_wrapper class instance'
-            )
-            return return_error(mes)
-
-        dataset = pipeline['dataset'][0]
-        model_wrapper = pipeline['model_wrapper'][0]
-        runtime = pipeline['runtime'][0]
-        optimizers = pipeline['optimizer']
-
-        # Checking required connections between found nodes
-        for current_node in kenning_nodes:
-            inputs = current_node['inputs']
-            outputs = current_node['outputs']
-            node_type = current_node['type']
-
-            for mapping, io in zip(
-                [self.io_mapping[node_type]['inputs'], self.io_mapping[node_type]['outputs']],  # noqa: E501
-                [inputs, outputs]
-            ):
-                for connection in mapping:
-                    if not connection['required']:
-                        continue
-
-                    corresponding_socket = [
-                        inp for inp in io
-                        if inp['type'] == connection['type']
-                    ][0]
-
-                    if get_connected_node(
-                        corresponding_socket['id'],
-                        dataflow_edges,
-                        kenning_nodes
-                    ) is None:
-                        return return_error(f'There is no required connection for {node_type} class')  # noqa: E501
-
-        # finding order of optimizers
-        previous_block = model_wrapper
-        next_block = None
-        ordered_optimizers = []
-        while True:
-            out_socket_id = [
-                output['id']
-                for output in previous_block['outputs']
-                if output['type'] == 'model'
-            ][0]
-
-            next_block = get_connected_node(out_socket_id, dataflow_edges, optimizers)  # noqa: E501
-
-            if next_block is None:
-                break
-
-            if next_block in ordered_optimizers:
-                return return_error('Cycle in the optimizer connections')
-
-            ordered_optimizers.append(next_block)
-            previous_block = next_block
-            next_block = None
-
-        if len(ordered_optimizers) != len(optimizers):
-            return return_error('Cycle in the optimizer connections')
-
-        final_scenario = {
-            'model_wrapper': strip_node(model_wrapper),
-            'optimizers': [strip_node(optimizer) for optimizer in ordered_optimizers],  # noqa: E501
-            'runtime': strip_node(runtime),
-            'dataset': strip_node(dataset)
-        }
-
-        return True, final_scenario
 
     @staticmethod
     def get_nodes(nodes=None, io_mapping=None):
@@ -536,3 +322,73 @@ class PipelineHandler(BaseDataflowHandler):
         }
 
         return nodes, io_mapping
+
+
+class PipelineGraphCreator(GraphCreator):
+    def reset_graph(self):
+        self.type_to_id = {}
+        self.id_to_type = {}
+        self.optimizer_order = {}
+        self.first_optimizer = None
+        self.necessary_conn = {
+            ('dataset', 'model_wrapper'): False,
+            ('model_wrapper', 'runtime'): False
+        }
+
+    def create_node(self, node, parameters):
+        node_id = self.gen_id()
+        self.nodes[node_id] = {
+            'type': f'{node.cls.__module__}.{node.name}',
+            'parameters': parameters
+        }
+        if node.type == 'optimizer':
+            self.type_to_id[node.type] = self.type_to_id.get(node.type, [])
+            self.type_to_id[node.type].append(node_id)
+        else:
+            if node.type in self.type_to_id:
+                raise RuntimeError("")  # TODO
+            self.type_to_id[node.type] = node_id
+        self.id_to_type[node_id] = node.type
+        return node_id
+
+    def create_connection(self, from_id, to_id):
+        # Registers if it's one of the necessary connections, and
+        # estabilishes the order of optimizers. Due to the rigid structure
+        # of the pipeline, connection between nodes don't have to be
+        # directly estabilished in the graph
+
+        from_type = self.id_to_type[from_id]
+        to_type = self.id_to_type[to_id]
+        if from_type != "optimizer" and to_type == "optimizer":
+            self.first_optimizer = to_id
+        if from_type == "optimizer" and to_type == "optimizer":
+            if from_id in self.optimizer_order:
+                raise RuntimeError("Nonlinear optimizer arrangment")
+            self.optimizer_order[from_id] = to_id
+        if from_type == "optimizer" and to_type != "optimizer":
+            if from_id in self.optimizer_order:
+                raise RuntimeError("Nonlinear optimizer arrangment")
+            self.optimizer_order[from_id] = None
+
+        if (from_type, to_type) in self.necessary_conn:
+            self.necessary_conn[(from_type, to_type)] = True
+
+    def flush_graph(self):
+        for (from_name, to_name), exists in self.necessary_conn.items():
+            if not exists:
+                raise RuntimeError(f"No estabilished connection between"
+                                   f"{from_name} and {to_name}")
+
+        pipeline = {}
+        types = ['model_wrapper', 'runtime', 'dataset', 'runtime_protocol']
+        for type_ in types:
+            if type_ in self.type_to_id:
+                pipeline[type_] = self.nodes[self.type_to_id[type_]]
+        optimizers = []
+        opt_node = self.first_optimizer
+        while opt_node is not None:
+            optimizers.append(self.nodes[opt_node])
+            opt_node = self.optimizer_order[opt_node]
+        pipeline['optimizers'] = optimizers
+        self.start_new_graph()
+        return pipeline

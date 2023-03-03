@@ -17,8 +17,7 @@ from typing import Dict, List, Set
 import json
 import numpy as np
 import re
-from matplotlib.colors import ListedColormap
-from matplotlib import pyplot as plt
+import copy
 from servis import (
     render_time_series_plot_with_histogram,
     render_multiple_time_series_plot
@@ -30,15 +29,16 @@ else:
     from importlib.resources import path
 
 from kenning.resources import reports
-from kenning.core.drawing import draw_confusion_matrix
-from kenning.core.drawing import recall_precision_curves
-from kenning.core.drawing import recall_precision_gradients
-from kenning.core.drawing import true_positive_iou_histogram
-from kenning.core.drawing import true_positives_per_iou_range_histogram
-from kenning.core.drawing import draw_plot
-from kenning.core.drawing import draw_violin_comparison_plot
-from kenning.core.drawing import draw_radar_chart
-from kenning.core.drawing import draw_bubble_plot
+from kenning.core.drawing import (
+    draw_confusion_matrix,
+    recall_precision_curves,
+    recall_precision_gradients,
+    true_positive_iou_histogram,
+    true_positives_per_iou_range_histogram,
+    draw_plot, draw_radar_chart,
+    draw_violin_comparison_plot,
+    draw_bubble_plot, choose_theme,
+    IMMATERIAL_COLORS, RED_GREEN_CMAP)
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
@@ -47,39 +47,11 @@ from kenning.core.metrics import compute_performance_metrics, \
 
 log = logger.get_logger()
 
-IMMATERIAL_COLORS = ['#d52a2a', '#1c7d4d', '#3f6ec6']
 SERVIS_PLOT_OPTIONS = {
-    'png': {
-        'outputext': ['png'],
-        'backend': 'matplotlib',
-        'plottype': 'bar',
-        'colormap': IMMATERIAL_COLORS,
-    },
-    'html': {
-        'outputext': ['html'],
-        'figsize': (670, 390),
-        'plottype': 'scatter',
-        'colormap': IMMATERIAL_COLORS,
-    },
-    'svg': {
-        'outputext': ['svg'],
-        'backend': 'matplotlib',
-        'plottype': 'bar',
-        'colormap': IMMATERIAL_COLORS,
-    }
+    'figsize': (900, 500),
+    'plottype': 'scatter',
+    'backend': 'matplotlib',
 }
-# Creating colormap from immaterial colors
-vals = np.ones((256, 4))
-changes = ((0, 1),)
-part = 256//len(changes)
-for i, (f, s) in enumerate(changes):
-    for ch in range(3):
-        pos = 1+2*ch
-        vals[i*part:(i+1)*part, ch] = np.linspace(
-            int(IMMATERIAL_COLORS[f][pos:pos+2], 16),
-            int(IMMATERIAL_COLORS[s][pos:pos+2], 16), part)
-vals[:, :3] /= 255
-COLORMAP_FROM_IMMATERIAL = ListedColormap(vals, name='Immaterial')
 
 
 def get_model_name(filepath: Path) -> str:
@@ -104,7 +76,10 @@ def performance_report(
         imgdir: Path,
         imgprefix: str,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        color_offset: int = 0,
+        draw_titles: bool = True,
+        **kwargs) -> str:
     """
     Creates performance section of the report.
 
@@ -118,6 +93,8 @@ def performance_report(
         Prefix to the image file name
     rootdir : Path
         Path to the root of the documentation project involving this report
+    color_offset : int
+        How many colors from default color list should be skipped
 
     Returns
     -------
@@ -127,6 +104,10 @@ def performance_report(
     log.info(f'Running performance_report for {measurementsdata["modelname"]}')
     metrics = compute_performance_metrics(measurementsdata)
     measurementsdata |= metrics
+
+    # Shifting colors to match color_offset
+    plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
+    plot_options['colormap'] = plot_options['colormap'][color_offset:]
 
     inference_step = None
     if 'target_inference_step' in measurementsdata:
@@ -140,22 +121,23 @@ def performance_report(
 
     if inference_step:
         usepath = imgdir / f'{imgprefix}inference_time'
-        for ext in image_formats:
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata[inference_step],
-                xdata=measurementsdata[f'{inference_step}_timestamp'],
-                xtitle='Time',
-                xunit='s',
-                ytitle='Inference time',
-                yunit='s',
-                outpath=str(usepath),
-                skipfirst=True,
-                **SERVIS_PLOT_OPTIONS[ext]
-            )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata[inference_step],
+            xdata=measurementsdata[f'{inference_step}_timestamp'],
+            title='Inference time' if draw_titles else None,
+            xtitle='Time',
+            xunit='s',
+            ytitle='Inference time',
+            yunit='s',
+            outpath=str(usepath),
+            skipfirst=True,
+            outputext=image_formats,
+            **plot_options,
+        )
 
-        usepath_astrix = Path(f'{usepath}.*')
+        usepath_asterisk = Path(f'{usepath}.*')
         measurementsdata['inferencetimepath'] = str(
-            usepath_astrix.relative_to(rootdir)
+            usepath_asterisk.relative_to(rootdir)
         )
 
         measurementsdata['inferencetime'] = \
@@ -164,22 +146,23 @@ def performance_report(
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_memory_usage'
-        for ext in image_formats:
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata['session_utilization_mem_percent'],
-                xdata=measurementsdata['session_utilization_timestamp'],
-                xtitle='Time',
-                xunit='s',
-                ytitle='Memory usage',
-                yunit='%',
-                outpath=str(usepath),
-                skipfirst=True,
-                **SERVIS_PLOT_OPTIONS[ext]
-            )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_mem_percent'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Memory usage' if draw_titles else None,
+            xtitle='Time',
+            xunit='s',
+            ytitle='Memory usage',
+            yunit='%',
+            outpath=str(usepath),
+            skipfirst=True,
+            outputext=image_formats,
+            **plot_options,
+        )
 
-        usepath_astrix = Path(f'{usepath}.*')
+        usepath_asterisk = Path(f'{usepath}.*')
         measurementsdata['memusagepath'] = str(
-            usepath_astrix.relative_to(rootdir)
+            usepath_asterisk.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
@@ -187,22 +170,23 @@ def performance_report(
     if 'session_utilization_cpus_percent' in measurementsdata:
         log.info('Using target measurements CPU usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_usage'
-        for ext in image_formats:
-            render_time_series_plot_with_histogram(
-                ydata=measurementsdata['session_utilization_cpus_percent_avg'],
-                xdata=measurementsdata['session_utilization_timestamp'],
-                xtitle='Time',
-                xunit='s',
-                ytitle='Average CPU usage',
-                yunit='%',
-                outpath=str(usepath),
-                skipfirst=True,
-                **SERVIS_PLOT_OPTIONS[ext]
-            )
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
+            xdata=measurementsdata['session_utilization_timestamp'],
+            title='Average CPU usage' if draw_titles else None,
+            xtitle='Time',
+            xunit='s',
+            ytitle='Average CPU usage',
+            yunit='%',
+            outpath=str(usepath),
+            skipfirst=True,
+            outputext=image_formats,
+            **plot_options,
+        )
 
-        usepath_astrix = Path(f'{usepath}.*')
+        usepath_asterisk = Path(f'{usepath}.*')
         measurementsdata['cpuusagepath'] = str(
-            usepath_astrix.relative_to(rootdir)
+            usepath_asterisk.relative_to(rootdir)
         )
     else:
         log.warning('No memory usage measurements in the report')
@@ -216,23 +200,24 @@ def performance_report(
                 'Incorrectly collected data for GPU memory utilization'
             )
         else:
-            for ext in image_formats:
-                render_time_series_plot_with_histogram(
-                    ydata=measurementsdata[gpumemmetric],
-                    xdata=measurementsdata[
-                        'session_utilization_gpu_timestamp'],
-                    xtitle='Time',
-                    xunit='s',
-                    ytitle='GPU memory usage',
-                    yunit='%',
-                    outpath=str(usepath),
-                    skipfirst=True,
-                    **SERVIS_PLOT_OPTIONS[ext]
-                )
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata[gpumemmetric],
+                xdata=measurementsdata[
+                    'session_utilization_gpu_timestamp'],
+                title='GPU memory usage' if draw_titles else None,
+                xtitle='Time',
+                xunit='s',
+                ytitle='GPU memory usage',
+                yunit='%',
+                outpath=str(usepath),
+                skipfirst=True,
+                outputext=image_formats,
+                **plot_options,
+            )
 
-            usepath_astrix = Path(f'{usepath}.*')
+            usepath_asterisk = Path(f'{usepath}.*')
             measurementsdata['gpumemusagepath'] = str(
-                usepath_astrix.relative_to(rootdir)
+                usepath_asterisk.relative_to(rootdir)
             )
     else:
         log.warning('No GPU memory usage measurements in the report')
@@ -243,24 +228,25 @@ def performance_report(
         if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
             log.warning('Incorrectly collected data for GPU utilization')
         else:
-            for ext in image_formats:
-                render_time_series_plot_with_histogram(
-                    ydata=measurementsdata[
-                        'session_utilization_gpu_utilization'],
-                    xdata=measurementsdata[
-                        'session_utilization_gpu_timestamp'],
-                    xtitle='Time',
-                    xunit='s',
-                    ytitle='Utilization',
-                    yunit='%',
-                    outpath=str(usepath),
-                    skipfirst=True,
-                    **SERVIS_PLOT_OPTIONS[ext]
-                )
+            render_time_series_plot_with_histogram(
+                ydata=measurementsdata[
+                    'session_utilization_gpu_utilization'],
+                xdata=measurementsdata[
+                    'session_utilization_gpu_timestamp'],
+                title='GPU Utilization' if draw_titles else None,
+                xtitle='Time',
+                xunit='s',
+                ytitle='Utilization',
+                yunit='%',
+                outpath=str(usepath),
+                skipfirst=True,
+                outputext=image_formats,
+                **plot_options,
+            )
 
-            usepath_astrix = Path(f'{usepath}.*')
+            usepath_asterisk = Path(f'{usepath}.*')
             measurementsdata['gpuusagepath'] = str(
-                usepath_astrix.relative_to(rootdir)
+                usepath_asterisk.relative_to(rootdir)
             )
     else:
         log.warning('No GPU utilization measurements in the report')
@@ -276,7 +262,10 @@ def comparison_performance_report(
         measurementsdata: List[Dict],
         imgdir: Path,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        colors=None,
+        draw_titles: bool = True,
+        **kwargs) -> str:
     """
     Creates performance comparison section of report.
 
@@ -360,23 +349,21 @@ def comparison_performance_report(
             if metric in data:
                 metric_data[data['modelname']] = data[metric]
         if len(metric_data) > 1:
-            for format in image_formats:
-                usepath = imgdir / f"{metric}_comparison"
-                t_min = {k: min(v) for k, v in timestamps.items()}
-                render_multiple_time_series_plot(
-                    [metric_data[k] for k in metric_data.keys()],
-                    [[t-t_min[k] for t in timestamps[k]]
-                        for k in timestamps.keys()],
-                    None,
-                    list(metric_data.keys()),
-                    ["Time"],
-                    ['s'],
-                    [metric_name],
-                    [unit],
-                    outpath=usepath,
-                    render_one_plot=True,
-                    **SERVIS_PLOT_OPTIONS[format]
-                )
+            usepath = imgdir / f"{metric}_comparison"
+            render_multiple_time_series_plot(
+                ydatas=[list(metric_data.values())],
+                xdatas=[list(timestamps.values())],
+                title=f'{metric_name} comparison' if draw_titles else None,
+                subtitles=None,
+                xtitles=['Time'],
+                xunits=['s'],
+                ytitles=[metric_name],
+                yunits=[unit],
+                legend_labels=list(metric_data.keys()),
+                outpath=usepath,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS,
+            )
             usepath = imgdir / f"{metric}_comparison.*"
             report_variables[f"{metric}_path"] = str(
                 usepath.relative_to(rootdir)
@@ -393,10 +380,11 @@ def comparison_performance_report(
         usepath = imgdir / f'mean_performance_comparison.{format}'
         draw_violin_comparison_plot(
             usepath,
-            "Performance comparison plot",
+            "Performance comparison plot" if draw_titles else None,
             [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
                 for metric in common_metrics],
-            visualizationdata
+            visualizationdata,
+            colors=colors,
         )
     usepath = imgdir / 'mean_performance_comparison.*'
     report_variables["meanperformancepath"] = str(
@@ -415,9 +403,10 @@ def comparison_performance_report(
         usepath = imgdir / f"hardware_usage_comparison.{format}"
         draw_radar_chart(
             usepath,
-            "Resource usage comparison",
+            "Resource usage comparison" if draw_titles else None,
             usage_visualization,
-            [metric_names[metric][0] for metric in hardware_usage_metrics]
+            [metric_names[metric][0] for metric in hardware_usage_metrics],
+            colors=colors
         )
     usepath = imgdir / "hardware_usage_comparison.*"
     report_variables["hardwareusagepath"] = str(
@@ -436,7 +425,10 @@ def classification_report(
         imgdir: Path,
         imgprefix: str,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        cmap=None,
+        draw_titles: bool = True,
+        **kwargs) -> str:
     """
     Creates classification quality section of the report.
 
@@ -468,10 +460,10 @@ def classification_report(
         draw_confusion_matrix(
             measurementsdata['eval_confusion_matrix'],
             str(confusionpath),
-            None,
+            'Confusion matrix' if draw_titles else None,
             measurementsdata['class_names'],
-            cmap=COLORMAP_FROM_IMMATERIAL,
             format=format,
+            cmap=cmap,
         )
     confusionpath = imgdir / f'{imgprefix}confusion_matrix.*'
     measurementsdata['confusionpath'] = str(
@@ -488,7 +480,10 @@ def comparison_classification_report(
         measurementsdata: List[Dict],
         imgdir: Path,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        colors=None,
+        draw_titles: bool = True,
+        **kwargs) -> str:
     """
     Creates classification comparison section of report.
 
@@ -553,13 +548,14 @@ def comparison_classification_report(
         usepath = imgdir / f"accuracy_vs_inference_time.{format}"
         draw_bubble_plot(
             usepath,
-            "Accuracy vs Mean inference time",
+            "Accuracy vs Mean inference time" if draw_titles else None,
             mean_inference_time,
             "Mean inference time [s]",
             accuracy,
             "Accuracy",
             model_sizes,
-            names
+            names,
+            colors=colors,
         )
     usepath = imgdir / "accuracy_vs_inference_time.*"
     report_variables['bubbleplotpath'] = str(
@@ -570,9 +566,10 @@ def comparison_classification_report(
         usepath = imgdir / f"classification_metric_comparison.{format}"
         draw_radar_chart(
             usepath,
-            "Metric comparison",
+            "Metric comparison" if draw_titles else None,
             metric_visualization,
-            ["Accuracy", "Mean precision", "Mean recall"]
+            ["Accuracy", "Mean precision", "Mean recall"],
+            colors=colors,
         )
     usepath = imgdir / "classification_metric_comparison.*"
     report_variables['radarchartpath'] = str(
@@ -596,7 +593,11 @@ def detection_report(
         imgdir: Path,
         imgprefix: str,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        color_offset: int = 0,
+        cmap=None,
+        colors=None,
+        draw_titles: bool = True) -> str:
     """
     Creates detection quality section of the report.
 
@@ -610,6 +611,8 @@ def detection_report(
         Prefix to the image file name
     rootdir : Path
         Path to the root of the documentation project involving this report
+    color_offset : int
+        How many colors from default color list should be skipped
 
     Returns
     -------
@@ -637,7 +640,7 @@ def detection_report(
         curvepath = imgdir / f'{imgprefix}recall_precision_curves.{format}'
         recall_precision_curves(
             str(curvepath),
-            'Recall-Precision curves',
+            'Recall-Precision curves' if draw_titles else None,
             lines,
             measurementsdata['class_names']
         )
@@ -651,11 +654,12 @@ def detection_report(
             f'{imgprefix}recall_precision_gradients.{format}'
         recall_precision_gradients(
             str(gradientpath),
-            'Average precision plots',
+            'Average precision plots' if draw_titles else None,
             lines,
             measurementsdata['class_names'],
             aps,
-            measurementsdata['mAP']
+            measurementsdata['mAP'],
+            cmap=cmap,
         )
     gradientpath = imgdir / f'{imgprefix}recall_precision_gradients.*'
     measurementsdata['gradientpath'] = str(
@@ -678,9 +682,11 @@ def detection_report(
         tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.{format}'
         true_positive_iou_histogram(
             str(tpioupath),
-            'Average True Positive IoU values',
+            'Average True Positive IoU values' if draw_titles else None,
             tp_iou,
             measurementsdata['class_names'],
+            colors=colors,
+            color_offset=color_offset,
         )
     tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.*'
     measurementsdata['tpioupath'] = str(
@@ -693,8 +699,11 @@ def detection_report(
                 f'{imgprefix}histogram_tp_iou_values.{format}'
             true_positives_per_iou_range_histogram(
                 str(iouhistpath),
-                "Histogram of True Positive IoU values",
-                all_tp_ious
+                "Histogram of True Positive IoU values" if draw_titles
+                else None,
+                all_tp_ious,
+                colors=colors,
+                color_offset=color_offset,
             )
         iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.*'
         measurementsdata['iouhistpath'] = str(
@@ -708,12 +717,15 @@ def detection_report(
         mappath = imgdir / f'{imgprefix}map.{format}'
         draw_plot(
             str(mappath),
-            'mAP value change over objectness threshold values',
+            'mAP value change over objectness threshold values' if draw_titles
+            else None,
             'threshold',
             None,
             'mAP',
             None,
-            [[thresholds, mapvalues]]
+            [[thresholds, mapvalues]],
+            colors=colors,
+            color_offset=color_offset,
         )
     mappath = imgdir / f'{imgprefix}map.*'
     measurementsdata['mappath'] = str(
@@ -733,7 +745,10 @@ def comparison_detection_report(
         measurementsdata: List[Dict],
         imgdir: Path,
         rootdir: Path,
-        image_formats: Set[str]) -> str:
+        image_formats: Set[str],
+        colors=None,
+        draw_titles: bool = True,
+        **kwargs) -> str:
     """
     Creates detection comparison section of report.
 
@@ -774,13 +789,15 @@ def comparison_detection_report(
         usepath = imgdir / f"detection_map_thresholds.{format}"
         draw_plot(
             usepath,
-            "mAP values comparison over different threshold values",
+            "mAP values comparison over different threshold values"
+            if draw_titles else None,
             'threshold',
             None,
             'mAP',
             None,
             visualization_data,
-            report_variables['modelnames']
+            report_variables['modelnames'],
+            colors=colors,
         )
     usepath = imgdir / "detection_map_thresholds.*"
     report_variables['mapcomparisonpath'] = str(
@@ -802,7 +819,10 @@ def generate_report(
         report_types: List[str],
         rootdir: Path,
         image_formats: Set[str],
-        command: List[str] = []) -> str:
+        command: List[str] = [],
+        cmap=None,
+        colors=None,
+        draw_titles: bool = True) -> str:
     """
     Generates an MyST report based on Measurements data.
 
@@ -864,16 +884,19 @@ def generate_report(
         )
 
     for typ in report_types:
-        for model_data in data:
+        for i, model_data in enumerate(data):
             if len(data) > 1:
                 imgprefix = model_data["modelname"] + "_"
             else:
                 imgprefix = ""
             content += reptypes[typ](
-                model_data, imgdir, imgprefix, rootdir, image_formats)
+                model_data, imgdir, imgprefix, rootdir,
+                image_formats, color_offset=i, cmap=cmap, colors=colors,
+                draw_titles=draw_titles)
         if len(data) > 1:
             content += comparereptypes[typ](
-                data, imgdir, rootdir, image_formats)
+                data, imgdir, rootdir, image_formats,
+                cmap=cmap, colors=colors, draw_titles=draw_titles)
 
     content = re.sub(r'[ \t]+$', "", content, 0, re.M)
 
@@ -926,9 +949,14 @@ def main(argv):
         type=str
     )
     parser.add_argument(
-        '--force-png-images',
-        help="Forcing format of images to PNG",
+        '--only-png-images',
+        help="Forcing to generate images only in PNG format, if not specified also images in HTML will be generated",  # noqa: E501
         action="store_true"
+    )
+    parser.add_argument(
+        '--use-default-theme',
+        help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
+        action='store_true'
     )
     parser.add_argument(
         '--verbosity',
@@ -945,23 +973,13 @@ def main(argv):
         img_dir = args.img_dir
     img_dir.mkdir(parents=True, exist_ok=True)
 
-    # Set theme for bokeh
-    try:
-        from bokeh.io import curdoc
-        from bokeh.themes import Theme
-        theme = Theme(filename=Path('kenning', 'resources',
-                      'reports', 'bokeh_theme.yml'))
-        curdoc().theme = theme
-    except ModuleNotFoundError:
-        pass
-
     if args.model_names is not None and \
             len(args.measurements) != len(args.model_names):
         log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
         args.model_names = None
 
     image_formats = {'png'}
-    if not args.force_png_images:
+    if not args.only_png_images:
         image_formats |= {'html'}
 
     measurementsdata = []
@@ -988,8 +1006,18 @@ def main(argv):
                 indent=4
             ).split('\n')
 
-    # Set theme for matplotlib
-    with plt.style.context('kenning/resources/reports/matplotlib_theme_rc'):
+    cmap, colors = None, None
+    if not args.use_default_theme:
+        SERVIS_PLOT_OPTIONS['colormap'] = IMMATERIAL_COLORS
+        cmap = RED_GREEN_CMAP
+        colors = IMMATERIAL_COLORS
+    elif 'colormap' in SERVIS_PLOT_OPTIONS:
+        del SERVIS_PLOT_OPTIONS['colormap']
+
+    with choose_theme(
+        custom_bokeh_theme=not args.use_default_theme,
+        custom_matplotlib_theme=not args.use_default_theme,
+    ):
         generate_report(
             args.reportname,
             measurementsdata,
@@ -998,7 +1026,10 @@ def main(argv):
             args.report_types,
             args.root_dir,
             image_formats,
-            command
+            command,
+            cmap=cmap,
+            colors=colors,
+            draw_titles=args.use_default_theme,
         )
 
 

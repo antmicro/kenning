@@ -16,7 +16,7 @@ class PipelineHandler(BaseDataflowHandler):
     def parse_json(self, json_cfg):
         return parse_json_pipeline(json_cfg)
 
-    def run_dataflow(pipeline_tuple, output_file):
+    def run_dataflow(self, pipeline_tuple, output_file):
         return run_pipeline(*pipeline_tuple, output=output_file)
 
     def destroy_dataflow(self, *args, **kwargs):

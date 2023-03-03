@@ -10,3 +10,4 @@ align: center
 ---
 The plot demonstrates the change of mAP metric depending on objectness threshold for all compared models
 ```
+

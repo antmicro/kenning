@@ -9,16 +9,6 @@ from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
 
 _LOGGER = get_logger()
-_UNIQUE_ID = -1
-
-
-def get_id():
-    """
-    Utility function for unique ID generator
-    """
-    global _UNIQUE_ID
-    _UNIQUE_ID += 1
-    return str(_UNIQUE_ID)
 
 
 class Node(NamedTuple):
@@ -79,20 +69,26 @@ def add_node(
 class GraphCreator:
     def __init__(self):
         self.start_new_graph()
+        self.id_ = -1
 
     def start_new_graph(self):
         self.nodes = {}
-        self.connections = []
-        self.interf_map = {}
-        self.graph = self.init_graph()
+        self.reset_graph()
 
-    def init_graph(self):
+    def gen_id(self):
+        """
+        Utility function for unique ID generation
+        """
+        self.id_ += 1
+        return str(self.id_)
+
+    def reset_graph(self):
         raise NotImplementedError
 
     def create_node(self):
         raise NotImplementedError
 
-    def register_connection(self):
+    def find_compatible_conn(self):
         raise NotImplementedError
 
     def create_connection(self):
@@ -239,9 +235,13 @@ class BaseDataflowHandler:
             interface_to_id = {}
             for dn in dataflow['nodes']:
                 kenning_node = self.nodes[dn['name']]
+                parameters = dn['options']
+                parameters = {
+                    arg: value for arg, value in parameters
+                }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node,
-                    dn['options']
+                    parameters
                 )
                 for _, interf in dn['interfaces']:
                     interface_to_id[interf['id']] = node_id
@@ -254,6 +254,7 @@ class BaseDataflowHandler:
 
             return True, self.dataflow_graph.flush_graph()
         except RuntimeError as e:
+            self.dataflow_graph.start_new_graph()
             return False, str(e)
 
     def parse_json(self, json_cfg: Dict) -> Any:
@@ -359,14 +360,10 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.io_mapping = io_mapping
         super().__init__()
 
-    def init_graph(self):
-        return {
-            'panning': {
-                'x': 0,
-                'y': 0
-            },
-            'scaling': 1
-        }
+    def reset_graph(self):
+        self.connections = []
+        self.interf_map = {}
+        self.reset_position()
 
     def update_position(self):
         self.x_pos += self.node_width + self.node_x_offset
@@ -375,7 +372,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.x_pos = self.start_x_pos
 
     def _create_interface(self, io_spec, is_input):
-        interf_id = get_id()
+        interf_id = self.gen_id()
         interface = [io_spec['name'], {
             'id': interf_id,
             'value': None,
@@ -385,7 +382,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         return interf_id, interface
 
     def create_node(self, node, parameters):
-        node_id = get_id()
+        node_id = self.gen_id()
         io_map = self.io_mapping[node.type]
 
         interfaces = []
@@ -437,15 +434,20 @@ class PipelineManagerGraphCreator(GraphCreator):
             from_id, to_id
         )
         self.connections.append({
-            'id': get_id(),
+            'id': self.gen_id(),
             'from': from_interf_id,
             'to': to_interf_id
         })
 
     def flush_graph(self):
-        self.graph['nodes'] = list(self.nodes.values())
-        self.graph['connections'] = self.connections
-        finished_graph = self.graph
+        finished_graph = {
+            'panning': {
+                'x': 0,
+                'y': 0
+            },
+            'scaling': 1,
+            'nodes': list(self.nodes.values()),
+            'connections': self.connections
+        }
         self.start_new_graph()
-        self.reset_position()
         return finished_graph

@@ -8,8 +8,7 @@ from typing import Dict
 from kenning.core.flow import KenningFlow
 from kenning.utils.class_loader import load_class
 
-from kenning.pipeline_manager.core import (BaseDataflowHandler, add_node,
-                                           GraphCreator, get_id)
+from kenning.pipeline_manager.core import BaseDataflowHandler, add_node, GraphCreator  # noqa: E501
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 
@@ -217,17 +216,13 @@ class KenningFlowHandler(BaseDataflowHandler):
 class FlowGraphCreator(GraphCreator):
     def __init__(self, primitive_modules):
         self.primitive_modules = primitive_modules
-        self.primitives = []
         super().__init__()
 
-    def init_graph(self):
-        return []
+    def reset_graph(self):
+        self.primitives = []
 
     def create_node(self, node, parameters):
-        node_id = get_id()
-        parameters = {
-            arg: value for arg, value in parameters
-        }
+        node_id = self.gen_id()
         if node.name in self.primitive_modules:
             self.nodes[node_id] = node.type, {
                 'type': f"{node.cls.__module__}.{node.cls.__name__}",
@@ -243,14 +238,14 @@ class FlowGraphCreator(GraphCreator):
             }
         return node_id
 
-    def get_runner_io(self, node_id):
+    def _get_runner_io(self, node_id):
         runner_node = self.nodes[node_id]
         runner_obj = load_class(runner_node['type'])
         return runner_obj.parse_io_specification_from_json(
             runner_node['parameters']
         )
 
-    def is_match(self, arg1, arg2):
+    def _is_match(self, arg1, arg2):
         # TODO: other cases (?)
         if 'type' in arg1 and 'type' in arg2:
             return arg1['type'] == arg2['type']
@@ -267,8 +262,8 @@ class FlowGraphCreator(GraphCreator):
         return False
 
     def find_compatible_conn(self, from_id, to_id):
-        from_runner_io = self.get_runner_io(from_id)
-        to_runner_io = self.get_runner_io(to_id)
+        from_runner_io = self._get_runner_io(from_id)
+        to_runner_io = self._get_runner_io(to_id)
 
         output_key = "processed_output"
         if output_key not in from_runner_io:
@@ -279,7 +274,7 @@ class FlowGraphCreator(GraphCreator):
             input_key = "input"
         to_args = to_runner_io[input_key]
         for arg1, arg2 in itertools.product(from_args, to_args):
-            if self.is_match(arg1, arg2):
+            if self._is_match(arg1, arg2):
                 return arg1['name'], arg2['name']
         from_name = self.nodes[from_id]['type']
         to_name = self.nodes[to_id]['type']
@@ -301,12 +296,11 @@ class FlowGraphCreator(GraphCreator):
             if local_from in from_['outputs']:
                 conn_id = from_['outputs'][local_from]
             else:
-                conn_id = get_id()
+                conn_id = self.gen_id()
                 from_['outputs'][local_from] = conn_id
             to_['inputs'][local_to] = conn_id
 
     def flush_graph(self):
-        self.primitives = []
         finished_graph = list(self.nodes.values())
         self.start_new_graph()
         return finished_graph

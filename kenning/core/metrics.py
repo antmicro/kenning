@@ -9,6 +9,7 @@ import numpy as np
 from kenning.utils import logger
 
 log = logger.get_logger()
+EPS = 1e-8
 
 
 def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]):
@@ -34,7 +35,7 @@ def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
     """
     return np.mean(
         np.array(confusion_matrix).diagonal() /
-        np.sum(confusion_matrix, axis=1)
+        (np.sum(confusion_matrix, axis=0)+EPS)
     )
 
 
@@ -49,7 +50,7 @@ def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
     """
     return np.mean(
         np.array(confusion_matrix).diagonal() /
-        np.sum(confusion_matrix, axis=0)
+        (np.sum(confusion_matrix, axis=1)+EPS)
     )
 
 
@@ -64,7 +65,7 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
     """
     return np.float_power(np.prod(
         np.array(confusion_matrix).diagonal() /
-        np.sum(confusion_matrix, axis=0)
+        (np.sum(confusion_matrix, axis=1)+EPS)
     ), 1.0 / np.array(confusion_matrix).shape[0])
 
 
@@ -180,15 +181,16 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     # If confusion matrix is not present in the measurementsdata, then
     # classification metrics can not be calculated.
     if 'eval_confusion_matrix' in measurementsdata:
+        confusion_matrix = np.asarray(
+            measurementsdata['eval_confusion_matrix'])
+        confusion_matrix[np.isnan(confusion_matrix)] = 0.
         return {
-            'accuracy': accuracy(measurementsdata['eval_confusion_matrix']),
+            'accuracy': accuracy(confusion_matrix),
             'top_5_accuracy':
                 measurementsdata['top_5_count'] / measurementsdata['total'],
-            'mean_precision':
-                mean_precision(measurementsdata['eval_confusion_matrix']),
-            'mean_sensitivity':
-                mean_sensitivity(measurementsdata['eval_confusion_matrix']),
-            'g_mean': g_mean(measurementsdata['eval_confusion_matrix']),
+            'mean_precision': mean_precision(confusion_matrix),
+            'mean_sensitivity': mean_sensitivity(confusion_matrix),
+            'g_mean': g_mean(confusion_matrix),
         }
     return {}
 
@@ -215,7 +217,9 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     # If ground truths count is not present in the measurementsdata, then
     # mAP metric can not be calculated.
-    if 'eval_gtcount' in measurementsdata:
+    if any(
+            [key.startswith('eval_gtcount') for key in measurementsdata.keys()]
+    ):
         return {
             'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]
         }

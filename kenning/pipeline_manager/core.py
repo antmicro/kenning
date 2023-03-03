@@ -76,11 +76,38 @@ def add_node(
         _LOGGER.warn('-' * len(msg))
 
 
+class GraphCreator:
+    def __init__(self):
+        self.start_new_graph()
+
+    def start_new_graph(self):
+        self.nodes = {}
+        self.connections = []
+        self.interf_map = {}
+        self.graph = self.init_graph()
+
+    def init_graph(self):
+        raise NotImplementedError
+
+    def create_node(self):
+        raise NotImplementedError
+
+    def register_connection(self):
+        raise NotImplementedError
+
+    def create_connection(self):
+        raise NotImplementedError
+
+    def flush_graph(self):
+        raise NotImplementedError
+
+
 class BaseDataflowHandler:
     def __init__(
             self,
             nodes: List[Node],
-            io_mapping: Dict[str, Dict]
+            io_mapping: Dict[str, Dict],
+            graph_creator: GraphCreator
     ):
         """
         Base class for handling different types of kenning specification,
@@ -94,10 +121,13 @@ class BaseDataflowHandler:
         io_mapping : Dict[str, Dict]
             Mapping used by Pipeline Manager for defining the shape
             of each node type.
+        graph_creator : GraphCreator
+            TODO
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
         self.pm_graph = PipelineManagerGraphCreator(io_mapping)
+        self.dataflow_graph = graph_creator
 
     def get_specification(self) -> Dict:
         """
@@ -185,6 +215,47 @@ class BaseDataflowHandler:
 
         return specification
 
+    def parse_dataflow(self, dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
+        """
+        Parses a `dataflow` that comes from Pipeline Manager application.
+        If any error during parsing occurs it is returned.
+        If parsing is successful a kenning pipeline is returned.
+
+        Parameters
+        ----------
+        dataflow : Dict
+            Dataflow that comes from Pipeline Manager application.
+
+        Returns
+        -------
+        Tuple[bool, Union[Dict, str]] :
+            If parsing is successful then (True, pipeline) is returned where
+            pipeline is a valid JSON that can be used to run an inference.
+            Otherwise (False, error_message) is returned where error_message
+            is an error that occured during parsing process.
+        """
+
+        try:
+            interface_to_id = {}
+            for dn in dataflow['nodes']:
+                kenning_node = self.nodes[dn['name']]
+                node_id = self.dataflow_graph.create_node(
+                    kenning_node,
+                    dn['options']
+                )
+                for _, interf in dn['interfaces']:
+                    interface_to_id[interf['id']] = node_id
+
+            for conn in dataflow['connections']:
+                self.dataflow_graph.create_connection(
+                    interface_to_id[conn['from']],
+                    interface_to_id[conn['to']]
+                )
+
+            return True, self.dataflow_graph.flush_graph()
+        except RuntimeError as e:
+            return False, str(e)
+
     def parse_json(self, json_cfg: Dict) -> Any:
         """
         Creates Kenning objects that can be later used for inference
@@ -234,27 +305,6 @@ class BaseDataflowHandler:
         """
         raise NotImplementedError
 
-    def parse_dataflow(self, dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:
-        """
-        Parses a `dataflow` that comes from Pipeline Manager application.
-        If any error during parsing occurs it is returned.
-        If parsing is successful a kenning pipeline is returned.
-
-        Parameters
-        ----------
-        dataflow : Dict
-            Dataflow that comes from Pipeline Manager application.
-
-        Returns
-        -------
-        Tuple[bool, Union[Dict, str]] :
-            If parsing is successful then (True, pipeline) is returned where
-            pipeline is a valid JSON that can be used to run an inference.
-            Otherwise (False, error_message) is returned where error_message
-            is an error that occured during parsing process.
-        """
-        raise NotImplementedError
-
     @staticmethod
     def get_nodes(
             nodes: Dict[str, Node] = None,
@@ -289,29 +339,6 @@ class BaseDataflowHandler:
             outputs of each node type that will later appear in manager's
             graph.
         """
-        raise NotImplementedError
-
-
-class GraphCreator:
-    def __init__(self):
-        self.start_new_graph()
-
-    def start_new_graph(self):
-        self.nodes = {}
-        self.connections = []
-        self.interf_map = {}
-        self.graph = self.init_graph()
-
-    def init_graph(self):
-        raise NotImplementedError
-
-    def create_node(self):
-        raise NotImplementedError
-
-    def register_connection(self):
-        raise NotImplementedError
-
-    def create_connection(self):
         raise NotImplementedError
 
 
@@ -357,7 +384,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         }]
         return interf_id, interface
 
-    def create_node(self, node, options):
+    def create_node(self, node, parameters):
         node_id = get_id()
         io_map = self.io_mapping[node.type]
 
@@ -375,7 +402,7 @@ class PipelineManagerGraphCreator(GraphCreator):
             'type': node.name,
             'id': node_id,
             'name': node.name,
-            'options': options,
+            'options': parameters,
             'state': {},
             'interfaces': interfaces,
             'position': {

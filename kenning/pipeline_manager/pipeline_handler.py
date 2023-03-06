@@ -326,6 +326,9 @@ class PipelineHandler(BaseDataflowHandler):
 
 class PipelineGraphCreator(GraphCreator):
     def reset_graph(self):
+        """
+        Creates graph in a standard Kenning pipeline format
+        """
         self.type_to_id = {}
         self.id_to_type = {}
         self.optimizer_order = {}
@@ -355,7 +358,8 @@ class PipelineGraphCreator(GraphCreator):
         # Registers if it's one of the necessary connections, and
         # estabilishes the order of optimizers. Due to the rigid structure
         # of the pipeline, connection between nodes don't have to be
-        # directly estabilished in the graph
+        # directly estabilished in the graph (there is no need to modify
+        # the graph)
 
         from_type = self.id_to_type[from_id]
         to_type = self.id_to_type[to_id]

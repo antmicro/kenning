@@ -4,7 +4,7 @@
 
 from collections import defaultdict
 import itertools
-from typing import Dict
+from typing import Any, Dict, Iterable, List
 from kenning.core.flow import KenningFlow
 from kenning.utils.class_loader import load_class
 
@@ -214,7 +214,16 @@ class KenningFlowHandler(BaseDataflowHandler):
 
 
 class FlowGraphCreator(GraphCreator):
-    def __init__(self, primitive_modules):
+    def __init__(self, primitive_modules: Iterable[str]):
+        """
+        Creates graph in the KenningFlow format
+
+        Parameters
+        ----------
+        primitive_modules : Iterable[str]
+            Names of kenning types that can be used as runner
+            parameter
+        """
         self.primitive_modules = primitive_modules
         super().__init__()
 
@@ -238,14 +247,41 @@ class FlowGraphCreator(GraphCreator):
             }
         return node_id
 
-    def _get_runner_io(self, node_id):
+    def _get_runner_io(self, node_id: str) -> Dict[str, List[Dict]]:
+        """
+        Parses runner name and returns its IO specification
+
+        Parameters
+        ----------
+        node_id : str
+            ID of input node
+
+        Returns
+        -------
+        Dict[str, List[Dict]]
+            IO specification defined by the runner
+        """
         runner_node = self.nodes[node_id]
         runner_obj = load_class(runner_node['type'])
         return runner_obj.parse_io_specification_from_json(
             runner_node['parameters']
         )
 
-    def _is_match(self, arg1, arg2):
+    def _is_match(self, arg1: Dict[str, Any], arg2: Dict[str, Any]) -> bool:
+        """Checks two IO specification items whether they are
+        compatible with each other (there is possible connection
+        between them).
+
+        Parameters
+        ----------
+        arg1, arg2 : Dict[str, Any]
+            Elements of list returned by runners IO specification
+
+        Returns
+        -------
+        bool
+            Whether IO specification items are compatible with each other
+        """
         # TODO: other cases (?)
         if 'type' in arg1 and 'type' in arg2:
             return arg1['type'] == arg2['type']
@@ -261,7 +297,9 @@ class FlowGraphCreator(GraphCreator):
             return True
         return False
 
-    def find_compatible_conn(self, from_id, to_id):
+    def find_compatible_IO(self, from_id, to_id):
+        # TODO: I'm assuming here that there is only one pair of matching
+        # input-output interfaces
         from_runner_io = self._get_runner_io(from_id)
         to_runner_io = self._get_runner_io(to_id)
 
@@ -287,7 +325,7 @@ class FlowGraphCreator(GraphCreator):
             self.nodes[to_id]['parameters'][kenning_type] = node
             del self.nodes[from_id]
         else:
-            local_from, local_to = self.find_compatible_conn(from_id, to_id)
+            local_from, local_to = self.find_compatible_IO(from_id, to_id)
             from_ = self.nodes[from_id]
             to_ = self.nodes[to_id]
             if local_to in to_['inputs']:

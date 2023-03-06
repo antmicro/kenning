@@ -67,34 +67,103 @@ def add_node(
 
 
 class GraphCreator:
+    """
+    Base class for generating graphs in a particular JSON format.
+    """
     def __init__(self):
         self.start_new_graph()
-        self.id_ = -1
+        self._id = -1
 
     def start_new_graph(self):
+        """
+        Starts creating new graph
+        """
         self.nodes = {}
         self.reset_graph()
 
-    def gen_id(self):
+    def gen_id(self) -> str:
         """
         Utility function for unique ID generation
         """
-        self.id_ += 1
-        return str(self.id_)
+        self._id += 1
+        return str(self._id)
 
     def reset_graph(self):
+        """
+        Resets the internal state of graph creator
+        """
         raise NotImplementedError
 
-    def create_node(self):
+    def create_node(
+            self,
+            node: Node,
+            parameters: Any
+    ) -> str:
+        """
+        Creates new node in a graph
+
+        Parameters
+        ----------
+        node : Node
+            Kenning Node that should be represented in a graph
+        parameters : Any
+            Format specific parameters of the graph node
+
+        Returns
+        -------
+        str :
+            ID of newly created graph node
+        """
         raise NotImplementedError
 
-    def find_compatible_conn(self):
+    def find_compatible_IO(
+            self,
+            from_id: str,
+            to_id: str
+    ) -> Tuple[Any, Any]:
+        """
+        Some graph formats have inputs/outputs of nodes that have a name, or
+        are otherwise identifiable. That means that whenever a node has a
+        connection, there needs to be a check to what IO the connection is
+        associated with. This method finds the pair of matching IO names
+        that are utilized by a particular connection.
+
+        Parameters
+        ----------
+        from_id, to_id :
+            IDs of connected graph nodes
+
+        Returns
+        -------
+        Tuple[Any, Any] :
+            Format specific identification of named input and output
+        """
         raise NotImplementedError
 
-    def create_connection(self):
+    def create_connection(
+            self,
+            from_id: str,
+            to_id: str
+    ):
+        """
+        Creates connection between two nodes
+
+        Parameters
+        ----------
+        from_id, to_id :
+            IDs of graph nodes to be connected
+        """
         raise NotImplementedError
 
-    def flush_graph(self):
+    def flush_graph(self) -> Any:
+        """
+        Ends and resets graph creation process
+
+        Returns
+        -------
+        Any :
+            Finalized graph
+        """
         raise NotImplementedError
 
 
@@ -116,9 +185,10 @@ class BaseDataflowHandler:
             List of available nodes for this dataflow type
         io_mapping : Dict[str, Dict]
             Mapping used by Pipeline Manager for defining the shape
-            of each node type.
+            of each node type
         graph_creator : GraphCreator
-            TODO
+            Creator used for parsing Pipeline manager dataflows into specific
+            JSON format
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
@@ -272,20 +342,20 @@ class BaseDataflowHandler:
         Any :
             Kenning objects that can be later run with `run_dataflow`
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def run_dataflow(self, *args, **kwargs):
         """
         Runs Kenning object created with `parse_json` method.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def destroy_dataflow(self, *args, **kwargs):
         """
         Destroys Kenning objects allocated with `parse_json` to free
         the resources allocated during initialization.
         """
-        return NotImplementedError
+        raise NotImplementedError
 
     def create_dataflow(self, pipeline: Dict) -> Dict:
         """
@@ -346,12 +416,26 @@ class BaseDataflowHandler:
 class PipelineManagerGraphCreator(GraphCreator):
     def __init__(
             self,
-            io_mapping,
-            start_x_pos=50,
-            start_y_pos=50,
-            node_width=300,
-            node_x_offset=50
+            io_mapping: Dict,
+            start_x_pos: int = 50,
+            start_y_pos: int = 50,
+            node_width: int = 300,
+            node_x_offset: int = 50
     ):
+        """
+        Creates graph in the Pipeline Manager dataflow format.
+
+        Parameters
+        ----------
+        io_mapping : Dict[str, Dict]
+            IO mapping based on the input nodes specification
+        start_x_pos, start_y_pos : int
+            Position of the first graph node
+        node_width : int
+            Width of nodes
+        node_x_offset : int
+            Spacing between two nodes
+        """
         self.start_x_pos = start_x_pos
         self.x_pos = start_x_pos
         self.y_pos = start_y_pos
@@ -366,12 +450,37 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.reset_position()
 
     def update_position(self):
+        """
+        Calculates position for a new node based on previous (x,y)
+        """
         self.x_pos += self.node_width + self.node_x_offset
 
     def reset_position(self):
+        """
+        Returns the position to it's original value
+        """
         self.x_pos = self.start_x_pos
 
-    def _create_interface(self, io_spec, is_input):
+    def _create_interface(
+            self,
+            io_spec: Dict[str, List],
+            is_input: bool
+    ) -> Tuple[str, List]:
+        """
+        Creates a node interface based on it's IO specification
+
+        Parameters
+        ----------
+        io_spec: Dict[str, List]
+            IO specification of an input
+        is_input: bool
+            True if interface is an input of the node
+
+        Returns
+        -------
+        Tuple[str, List]
+            Created interface together with its ID
+        """
         interf_id = self.gen_id()
         interface = [io_spec['name'], {
             'id': interf_id,
@@ -413,7 +522,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.update_position()
         return node_id
 
-    def find_compatible_conn(self, from_id, to_id):
+    def find_compatible_IO(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
         from_interf_arr = self.nodes[from_id]['interfaces']
@@ -430,7 +539,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         raise RuntimeError("No compatible connections were found")
 
     def create_connection(self, from_id, to_id):
-        from_interf_id, to_interf_id = self.find_compatible_conn(
+        from_interf_id, to_interf_id = self.find_compatible_IO(
             from_id, to_id
         )
         self.connections.append({

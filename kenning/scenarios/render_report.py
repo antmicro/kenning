@@ -61,7 +61,7 @@ def get_model_name(filepath: Path) -> str:
 
     Parameters
     ----------
-    filepath: Path
+    filepath : Path
         Path to the measurements file
 
     Returns
@@ -93,8 +93,12 @@ def performance_report(
         Prefix to the image file name
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
     color_offset : int
         How many colors from default color list should be skipped
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -277,6 +281,10 @@ def comparison_performance_report(
         Path to the directory for images
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -284,7 +292,7 @@ def comparison_performance_report(
     """
     log.info('Running comparison_performance_report')
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats-{'html'}
+    _image_formats = image_formats - {'html'}
 
     metric_names = {
         'inference_step': ('Inference time', 's'),
@@ -442,6 +450,10 @@ def classification_report(
         Prefix to the image file name
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -495,6 +507,10 @@ def comparison_classification_report(
         Path to the directory for images
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -502,7 +518,7 @@ def comparison_classification_report(
     """
     log.info('Running comparison_classification_report')
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats-{'html'}
+    _image_formats = image_formats - {'html'}
 
     report_variables = {
         'reportname': measurementsdata[0]['reportname'],
@@ -611,8 +627,12 @@ def detection_report(
         Prefix to the image file name
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
     color_offset : int
         How many colors from default color list should be skipped
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -630,7 +650,7 @@ def detection_report(
 
     lines = get_recall_precision(measurementsdata, 0.5)
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats-{'html'}
+    _image_formats = image_formats - {'html'}
 
     aps = []
     for line in lines:
@@ -760,6 +780,10 @@ def comparison_detection_report(
         Path to the directory for images
     rootdir : Path
         Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    draw_titles : bool
+        Should titles be drawn on the plot
 
     Returns
     -------
@@ -776,7 +800,7 @@ def comparison_detection_report(
         'modelnames': []
     }
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats-{'html'}
+    _image_formats = image_formats - {'html'}
 
     visualization_data = []
     for data in measurementsdata:
@@ -846,10 +870,14 @@ def generate_report(
         When the report is a part of a larger MyST document (i.e. Sphinx docs),
         the rootdir parameter defines thte root directory of the document.
         It is used to compute relative paths in the document's references.
-    image_formats: Set[str]
+    image_formats : Set[str]
         Iterable object with extensions, in which images should be generated.
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
     command : List[str]
         Full command used to render this report, split into separate lines.
+    draw_titles : bool
+        Should titles be drawn on the plot
     """
 
     reptypes = {

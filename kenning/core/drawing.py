@@ -36,10 +36,10 @@ GREEN = '#1c7d4d'
 # Creating colormap for confusion matrix
 cmap_values = np.ones((256, 4))
 for channel in range(3):
-    pos = 1+channel*2
+    pos = 1 + 2*channel
     cmap_values[:, channel] = np.linspace(
-        int(RED[pos:pos+2], 16),
-        int(GREEN[pos:pos+2], 16), 256)
+        int(RED[pos:pos + 2], 16),
+        int(GREEN[pos:pos + 2], 16), 256)
 cmap_values[:, :3] /= 255
 RED_GREEN_CMAP = ListedColormap(cmap_values, name='red_green_colormap')
 
@@ -122,11 +122,11 @@ def time_series_plot(
     trimxvalues : bool
         True if all values for the X dimension should be subtracted by
         the minimal value on this dimension
-    skipfirst: bool
+    skipfirst : bool
         True if the first entry should be removed from plotting.
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
-    bins: int
+    bins : int
         Number of bins for value histograms
     """
     start = 1 if skipfirst else 0
@@ -197,7 +197,7 @@ def draw_multiple_time_series(
         Mapping between name of the model and y coordinates of samples.
     ytitle : str
         Name of the Y axis
-    skipfirst: bool
+    skipfirst : bool
         True if the first entry should be removed from plotting.
     smooth : Optional[int]
         If None, raw point coordinates are plotted in a line plot.
@@ -340,12 +340,12 @@ def draw_radar_chart(
     angles = [n / n_categories * 2 * pi for n in range(n_categories)]
     fig, ax = plt.subplots(1, 1, figsize=figsize,
                            subplot_kw={'projection': 'polar'})
-    ax.set_theta_offset(pi/2)
+    ax.set_theta_offset(pi / 2)
     ax.set_theta_direction(-1)
     ax.set_xticks(angles, labelnames)
-    ax.set_rlabel_position(1/(n_categories * 2) * 2 * pi)
+    ax.set_rlabel_position(1 / (n_categories * 2) * 2 * pi)
     ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
-    ax.set_ylim((0, 1.))
+    ax.set_ylim((0, 1.0))
     bbox_extra = []
     if title:
         bbox_extra.append(fig.suptitle(title, fontsize='x-large'))
@@ -484,7 +484,8 @@ def draw_bubble_plot(
     bbox_extra.append(bubblelegend)
 
     box = ax.get_position()
-    ax.set_position([box.x0, box.y0+0.05, box.width * 0.85, box.height-0.05])
+    ax.set_position(
+        [box.x0, box.y0 + 0.05, box.width * 0.85, box.height - 0.05])
 
     if title:
         bbox_extra.append(fig.suptitle(title))
@@ -518,8 +519,8 @@ def _value_to_nondiagonal_color(
     np.ndarray :
         Calcualted colors
     """
-    color = np.asarray(cmap(1-np.log2(value*99+1)/np.log2(100)))
-    color[..., 3] = np.log2(value*99+1)/np.log2(100)
+    color = np.asarray(cmap(1 - np.log2(99*value + 1) / np.log2(100)))
+    color[..., 3] = np.log2(99*value + 1) / np.log2(100)
     return color
 
 
@@ -553,6 +554,10 @@ def draw_confusion_matrix(
         The size of the plot
     dpi : Optional[int]
         The dpi of the plot
+    backend : str
+        Which library should be used to generate plot - bokeh or matplotlib
+    format : str
+        Which format should be used to save plot to file - png or html
     """
     available_backends = ('matplotlib', 'bokeh')
     assert backend in available_backends, (
@@ -577,7 +582,7 @@ def draw_confusion_matrix(
         confusion_matrix.diagonal() / confusion_matrix.sum(axis=0)
     correctpredicted = correctpredicted.reshape(len(class_names), 1)
     # change nan to 0
-    correctpredicted[np.isnan(correctpredicted)] = 0.
+    correctpredicted[np.isnan(correctpredicted)] = 0.0
 
     # compute overall accuracy
     accuracy = np.trace(confusion_matrix) / np.sum(confusion_matrix)
@@ -586,10 +591,10 @@ def draw_confusion_matrix(
     confusion_matrix /= confusion_matrix.sum(axis=0)
     confusion_matrix = confusion_matrix.transpose()
     # change nan to 0
-    confusion_matrix[np.isnan(confusion_matrix)] = 0.
+    confusion_matrix[np.isnan(confusion_matrix)] = 0.0
 
     # Calculate colors for confusion matrix
-    colors = np.zeros(confusion_matrix.shape+(4,))
+    colors = np.zeros(confusion_matrix.shape + (4,))
     for i in range(confusion_matrix.shape[0]):
         for j in range(confusion_matrix.shape[1]):
             if i == j:
@@ -820,7 +825,7 @@ def draw_confusion_matrix_matplotlib(
         ticks=np.linspace(0.0, 1.0, 11),
         pad=0.1
     )
-    cbar.ax.set_yticks(np.linspace(0.0, 1., 11),
+    cbar.ax.set_yticks(np.linspace(0.0, 1.0, 11),
                        labels=list(range(0, 101, 10)))
     for t in cbar.ax.get_yticklabels():
         t.set_fontsize('medium')
@@ -947,8 +952,8 @@ def draw_confusion_matrix_bokeh(
     # === Confusion Matrix ===
 
     # Calculate confusion matrix sizes
-    cm_width = int(width / (1+1/15+1/13+1/11))
-    cm_height = int(height / (1+1/15))
+    cm_width = int(width / (1 + 1/15 + 1/13 + 1/11))
+    cm_height = int(height / (1 + 1/15))
 
     # Prepare figure
     confusion_matrix_fig = figure(
@@ -970,7 +975,7 @@ def draw_confusion_matrix_bokeh(
     coords = np.array(list(itertools.product(
         class_names, class_names)), dtype=str)
     coords[:, 1] = coords[::-1, 1]
-    percentage = np.rot90(confusion_matrix, k=-1).flatten()*100
+    percentage = np.rot90(confusion_matrix, k=-1).flatten() * 100
     source = ColumnDataSource(data={
         'Actual class': coords[:, 0],
         'Predicted class': coords[:, 1],
@@ -992,12 +997,12 @@ def draw_confusion_matrix_bokeh(
     if len(class_names) < 50:
         confusion_matrix_fig.xaxis.major_label_orientation = 'vertical'
     else:
-        confusion_matrix_fig.xaxis.major_label_text_alpha = 0.
-        confusion_matrix_fig.yaxis.major_label_text_alpha = 0.
-        confusion_matrix_fig.xaxis.major_tick_line_alpha = 0.
-        confusion_matrix_fig.yaxis.major_tick_line_alpha = 0.
-    confusion_matrix_fig.xaxis.axis_line_alpha = 0.
-    confusion_matrix_fig.yaxis.axis_line_alpha = 0.
+        confusion_matrix_fig.xaxis.major_label_text_alpha = 0.0
+        confusion_matrix_fig.yaxis.major_label_text_alpha = 0.0
+        confusion_matrix_fig.xaxis.major_tick_line_alpha = 0.0
+        confusion_matrix_fig.yaxis.major_tick_line_alpha = 0.0
+    confusion_matrix_fig.xaxis.axis_line_alpha = 0.0
+    confusion_matrix_fig.yaxis.axis_line_alpha = 0.0
     confusion_matrix_fig.grid.visible = False
 
     # Set custom tooltips
@@ -1016,7 +1021,7 @@ def draw_confusion_matrix_bokeh(
         x_range=confusion_matrix_fig.x_range,
         y_range=FactorRange(factors=['Sensivity'], bounds=(0, 1)),
         width=confusion_matrix_fig.width,
-        height=confusion_matrix_fig.height//15,
+        height=confusion_matrix_fig.height // 15,
         toolbar_location=None,
         output_backend='webgl',
     )
@@ -1027,7 +1032,7 @@ def draw_confusion_matrix_bokeh(
         'y': ['Sensivity' for _ in class_names],
         'Class': class_names,
         'color': cc,
-        "Sensitivity": sensitivity.flatten()*100,
+        "Sensitivity": sensitivity.flatten() * 100,
     })
 
     # Draw sensitivity
@@ -1057,7 +1062,7 @@ def draw_confusion_matrix_bokeh(
         title=None,
         x_range=FactorRange(factors=['Precision'], bounds=(0, 1)),
         y_range=confusion_matrix_fig.y_range,
-        width=confusion_matrix_fig.width//15,
+        width=confusion_matrix_fig.width // 15,
         height=confusion_matrix_fig.height,
         toolbar_location=None,
         y_axis_location='right',
@@ -1070,7 +1075,7 @@ def draw_confusion_matrix_bokeh(
         'x': ['Precision' for _ in class_names],
         'Class': class_names,
         'color': cc2,
-        'Precision': precision.flatten()*100,
+        'Precision': precision.flatten() * 100,
     })
 
     # Draw sensitivity
@@ -1110,10 +1115,11 @@ def draw_confusion_matrix_bokeh(
 
     # Preprocess data
     c = cmap(accuracy)
-    color_str = f"#{int(c[0]*255):02X}{int(c[1]*255):02X}{int(c[2]*255):02X}"
+    color_str = (f"#{int(255 * c[0]):02X}{int(255 * c[1]):02X}"
+                 f"{int(255 * c[2]):02X}")
     accuracy_source = ColumnDataSource(data={
         'x': ['x'], 'y': ['y'],
-        'Accuracy': [float(accuracy)*100],
+        'Accuracy': [float(accuracy) * 100],
     })
 
     # Draw sensitivity
@@ -1153,9 +1159,9 @@ def draw_confusion_matrix_bokeh(
     scale_fig = figure(
         title=None,
         x_range=['color'],
-        y_range=Range1d(0., 100.),
-        width=confusion_matrix_fig.width//11,
-        height=height//2,
+        y_range=Range1d(0.0, 100.0),
+        width=confusion_matrix_fig.width // 11,
+        height=height // 2,
         tools="",
         toolbar_location=None,
         x_axis_location='above',
@@ -1165,10 +1171,10 @@ def draw_confusion_matrix_bokeh(
     )
     # Draw scale
     scale_fig.hbar(
-        y=np.linspace(0., 100., 256),
-        left=[0.]*256,
-        right=[1.]*256,
-        color=cmap(np.linspace(0., 1., 256))
+        y=np.linspace(0.0, 100.0, 256),
+        left=[0.0] * 256,
+        right=[1.0] * 256,
+        color=cmap(np.linspace(0.0, 1.0, 256))
     )
 
     # Set styles for scale
@@ -1192,7 +1198,7 @@ def draw_confusion_matrix_bokeh(
     )
     plot_with_scale = row(
         grid_fig,
-        Spacer(width=confusion_matrix_fig.width//13),
+        Spacer(width=confusion_matrix_fig.width // 13),
         scale_fig,
     )
     if output_path is None:
@@ -1211,7 +1217,7 @@ def draw_confusion_matrix_bokeh(
     )
     plot_with_scale = row(
         grid_fig,
-        Spacer(width=confusion_matrix_fig.width//13),
+        Spacer(width=confusion_matrix_fig.width // 13),
         scale_fig,
     )
     if 'png' in formats:
@@ -1240,7 +1246,7 @@ def recall_precision_curves(
         values
     class_names : List[str]
         List of the class names
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
     """
     fig = plt.figure(figsize=figsize)
@@ -1301,7 +1307,7 @@ def true_positive_iou_histogram(
         Per-class list of floats with IoU values
     class_names : List[str]
         List of the class names
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
     color_offset : int
         How many colors from default color list should be skipped
@@ -1354,7 +1360,7 @@ def true_positives_per_iou_range_histogram(
         All True Positive IoU values
     range_fraction : float
         Fraction by which the range should be divided (1/number_of_segments)
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
     color_offset : int
         How many colors from default color list should be skipped
@@ -1363,8 +1369,8 @@ def true_positives_per_iou_range_histogram(
         color = 'purple'
     else:
         color = colors[color_offset]
-    lower_bound = floor(min(lines)*10)/10
-    x_range = np.arange(lower_bound, 1.01, (1-lower_bound)*range_fraction)
+    lower_bound = floor(10*min(lines)) / 10
+    x_range = np.arange(lower_bound, 1.01, (1 - lower_bound) * range_fraction)
     plt.figure(figsize=figsize)
     plt.hist(
         lines,
@@ -1410,9 +1416,9 @@ def recall_precision_gradients(
         values
     class_names : List[str]
         List of the class names
-    aps: List[float]
+    aps : List[float]
         Per-class AP values
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
     """
     if cmap is None:
@@ -1490,7 +1496,7 @@ def draw_plot(
         values
     linelabels : Optional[List[str]]
         Optional list of labels naming each line
-    figsize: Tuple
+    figsize : Tuple
         The size of the figure
     color_offset : int
         How many colors from default color list should be skipped
@@ -1520,7 +1526,7 @@ def draw_plot(
             plt.legend(
                 linelabels,
                 loc='upper center',
-                bbox_to_anchor=[.5, -.06],
+                bbox_to_anchor=[0.5, -0.06],
                 ncols=2)
         )
 

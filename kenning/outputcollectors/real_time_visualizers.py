@@ -185,6 +185,8 @@ class BaseRealTimeVisualizer(OutputCollector):
         )
 
     def cleanup(self):
+        self.process_data.close()
+        self.process_data.join_thread()
         self.process.terminate()
         self.process.join()
 

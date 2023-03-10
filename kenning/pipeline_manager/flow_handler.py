@@ -6,10 +6,12 @@ from collections import defaultdict
 import itertools
 from typing import Any, Dict, Iterable, List
 from kenning.core.flow import KenningFlow
-from kenning.utils.class_loader import load_class
+from kenning.core.runner import Runner
+from kenning.utils.class_loader import get_all_subclasses, load_class
 
-from kenning.pipeline_manager.core import BaseDataflowHandler, add_node, GraphCreator  # noqa: E501
+from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator  # noqa: E501
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.pipeline_manager.node_utils import add_node, get_category_name
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -116,47 +118,29 @@ class KenningFlowHandler(BaseDataflowHandler):
         if io_mapping is None:
             io_mapping = {}
 
-        # Runners
-        add_node(
-            nodes,
-            'kenning.dataproviders.camera_dataprovider.CameraDataProvider',
-            'DataProviders',
-            'data_provider'
-        )
-        add_node(
-            nodes,
-            'kenning.runners.modelruntime_runner.ModelRuntimeRunner',
-            'Runner',
-            'runtime_runner'
-        )
-        add_node(
-            nodes,
-            'kenning.outputcollectors.detection_visualizer.DetectionVisualizer',  # noqa: E501
-            'OutputCollector',
-            'output_collector'
-        )
-        add_node(
-            nodes,
-            'kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer',  # noqa: E501
-            'OutputCollector',
-            'output_collector'
-        )
-        add_node(
-            nodes,
-            'kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualization',  # noqa: E501
-            'OutputCollector',
-            'output_collector'
-        )
-        add_node(
-            nodes,
-            'kenning.outputcollectors.real_time_visualizers.RealTimeClassificationVisualization',  # noqa: E501
-            'OutputCollector',
-            'output_collector'
-        )
+        base_modules = [
+            'kenning.outputcollectors',
+            'kenning.dataproviders',
+            # It's possible that as Kenningflows develop, new runners are
+            # created such that their IO is incompatible with the
+            # 'modelruntime_runner'. In that case, these modules should be
+            # treated separately, adding individually each item to nodes
+            # and IO mapping
+            'kenning.runners'
+        ]
+        for base_module in base_modules:
+            classes = get_all_subclasses(base_module, Runner)
+            for kenning_class in classes:
+                add_node(
+                    nodes,
+                    f"{kenning_class.__module__}.{kenning_class.__name__}",
+                    get_category_name(kenning_class),
+                    base_module.split(".")[-1]
+                )
 
         io_mapping = {
             **io_mapping,
-            'data_provider': {
+            'dataproviders': {
                 'inputs': [],
                 'outputs': [
                     {
@@ -166,7 +150,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                     }
                 ]
             },
-            'runtime_runner': {
+            'runners': {
                 'inputs': [
                     {
                         'name': 'Input data',
@@ -196,7 +180,7 @@ class KenningFlowHandler(BaseDataflowHandler):
                     }
                 ]
             },
-            'output_collector': {
+            'outputcollectors': {
                 'inputs': [
                     {
                         'name': 'Model output',

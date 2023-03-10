@@ -3,8 +3,15 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
+from kenning.core.runtime import Runtime
+from kenning.core.runtimeprotocol import RuntimeProtocol
 
-from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator, add_node  # noqa: E501
+from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator
+from kenning.pipeline_manager.node_utils import add_node, get_category_name
+from kenning.utils.class_loader import get_all_subclasses  # noqa: E501
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 
 
@@ -86,156 +93,22 @@ class PipelineHandler(BaseDataflowHandler):
         if io_mapping is None:
             io_mapping = {}
 
-        # Datasets
-        add_node(
-            nodes,
-            'kenning.datasets.coco_dataset.COCODataset2017',
-            'Dataset',
-            'dataset'
-        )
-        add_node(
-            nodes,
-            'kenning.datasets.imagenet_dataset.ImageNetDataset',
-            'Dataset',
-            'dataset'
-        )
-        add_node(
-            nodes,
-            'kenning.datasets.open_images_dataset.OpenImagesDatasetV6',
-            'Dataset',
-            'dataset'
-        )
-        add_node(
-            nodes,
-            'kenning.datasets.pet_dataset.PetDataset',
-            'Dataset',
-            'dataset'
-        )
-        add_node(
-            nodes,
-            'kenning.datasets.random_dataset.RandomizedClassificationDataset',
-            'Dataset',
-            'dataset'
-        )
-
-        # ModelWrappers
-        # classification
-        add_node(
-            nodes,
-            'kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2',  # noqa: E501
-            'ModelWrapper - Classification',
-            'model_wrapper'
-        )
-        add_node(
-            nodes,
-            'kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet',  # noqa: E501
-            'ModelWrapper - Classification',
-            'model_wrapper'
-        )
-        add_node(
-            nodes,
-            'kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
-            'ModelWrapper - Classification',
-            'model_wrapper'
-        )
-        # detectors
-        add_node(
-            nodes,
-            'kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3',  # noqa: E501
-            'ModelWrapper - Detectors',
-            'model_wrapper'
-        )
-        add_node(
-            nodes,
-            'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
-            'ModelWrapper - Detectors',
-            'model_wrapper'
-        )
-        # instance segmentation
-        add_node(
-            nodes,
-            'kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN',  # noqa: E501
-            'ModelWrapper - Segmentation',
-            'model_wrapper'
-        )
-        add_node(
-            nodes,
-            'kenning.modelwrappers.instance_segmentation.yolact.YOLACT',
-            'ModelWrapper - Segmentation',
-            'model_wrapper'
-        )
-
-        # RuntimeProtocols
-        add_node(
-            nodes,
-            'kenning.runtimeprotocols.network.NetworkProtocol',
-            'RuntimeProtocol',
-            'runtime_protocol'
-        )
-
-        # Runtimes
-        add_node(
-            nodes,
-            'kenning.runtimes.iree.IREERuntime',
-            'Runtime',
-            'runtime'
-        )
-        add_node(
-            nodes,
-            'kenning.runtimes.onnx.ONNXRuntime',
-            'Runtime',
-            'runtime'
-        )
-        add_node(
-            nodes,
-            'kenning.runtimes.tflite.TFLiteRuntime',
-            'Runtime',
-            'runtime'
-        )
-        add_node(
-            nodes,
-            'kenning.runtimes.tvm.TVMRuntime',
-            'Runtime',
-            'runtime'
-        )
-
-        # Optimizers
-        add_node(
-            nodes,
-            'kenning.compilers.iree.IREECompiler',
-            'Optimizer',
-            'optimizer'
-        )
-        add_node(
-            nodes,
-            'kenning.compilers.onnx.ONNXCompiler',
-            'Optimizer',
-            'optimizer'
-        )
-        add_node(
-            nodes,
-            'kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer',  # noqa: E501
-            'Optimizer',
-            'optimizer'
-        )
-        add_node(
-            nodes,
-            'kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer',
-            'Optimizer',
-            'optimizer'
-        )
-        add_node(
-            nodes,
-            'kenning.compilers.tflite.TFLiteCompiler',
-            'Optimizer',
-            'optimizer'
-        )
-        add_node(
-            nodes,
-            'kenning.compilers.tvm.TVMCompiler',
-            'Optimizer',
-            'optimizer'
-        )
+        base_classes = [
+            ('kenning.datasets', Dataset),
+            ('kenning.modelwrappers', ModelWrapper),
+            ('kenning.runtimeprotocols', RuntimeProtocol),
+            ('kenning.runtimes', Runtime),
+            ('kenning.compilers', Optimizer)
+        ]
+        for base_module, base_type in base_classes:
+            classes = get_all_subclasses(base_module, base_type)
+            for kenning_class in classes:
+                add_node(
+                    nodes,
+                    f"{kenning_class.__module__}.{kenning_class.__name__}",
+                    get_category_name(kenning_class),
+                    str.lower(base_type.__name__)
+                )
 
         io_mapping = {
             **io_mapping,
@@ -249,7 +122,7 @@ class PipelineHandler(BaseDataflowHandler):
                     }
                 ]
             },
-            'model_wrapper': {
+            'modelwrapper': {
                 'inputs': [
                     {
                         'name': 'Dataset',
@@ -306,7 +179,7 @@ class PipelineHandler(BaseDataflowHandler):
                 ],
                 'outputs': []
             },
-            'runtime_protocol': {
+            'runtimeprotocol': {
                 'inputs': [],
                 'outputs': [
                     {
@@ -315,16 +188,6 @@ class PipelineHandler(BaseDataflowHandler):
                         'required': True
                     }
                 ]
-            },
-            'output_collector': {
-                'inputs': [
-                    {
-                        'name': 'Model output',
-                        'type': 'model_output',
-                        'required': True
-                    }
-                ],
-                'outputs': []
             }
         }
 

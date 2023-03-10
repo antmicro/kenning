@@ -37,7 +37,7 @@ setuptools.setup(
         'docs': [
             'antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git',  # noqa: E501
             'docutils',
-            'myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git',
+            'myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git',  # noqa: E501
             'sphinx',
             'sphinxcontrib-internal @ git+https://github.com/antmicro/sphinxcontrib-internal.git',  # noqa: E501
             'sphinxcontrib-napoleon',

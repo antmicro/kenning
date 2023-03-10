@@ -24,7 +24,7 @@ setuptools.setup(
     install_requires=[
         'Pillow>=8.1.0',
         'matplotlib>=3.3.4',
-        'numpy~=1.23.5',
+        'numpy>=1.23.4',
         'onnx>=1.7.0',
         'psutil>=5.8.0',
         'scikit_learn>=0.24.1',
@@ -102,7 +102,7 @@ setuptools.setup(
         ],
         'reports': [
             'Jinja2>=2.11.2',
-            'git+https://github.com/antmicro/servis#egg=servis[bokeh,matplotlib]'  # noqa: E501
+            'servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis'
         ]
     },
 )

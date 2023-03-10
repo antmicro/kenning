@@ -1,7 +1,7 @@
 """
 Provides a runner that performs inference.
 """
-
+import json
 from typing import Dict, List, Tuple, Any
 from copy import deepcopy
 
@@ -217,13 +217,13 @@ class ModelRuntimeRunner(Runner):
             json_dict=json_dict['parameters'])
 
     @classmethod
-    def _get_io_specification(cls, model: ModelWrapper):
+    def _get_io_specification(cls, model_io_spec: Dict[str, List[Dict]]):
         """
         Creates runner IO specification from chosen parameters
 
         Parameters
         ----------
-        model : ModelWrapper
+        model : Dict[str, List[Dict]]
             Argument for `ModelRuntimeRunner` constructor
 
         Returns
@@ -231,14 +231,13 @@ class ModelRuntimeRunner(Runner):
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output layers specification
         """
-        model_io_spec = model.get_io_specification()
         for io in ('input', 'output'):
             if f'processed_{io}' not in model_io_spec.keys():
                 model_io_spec[f'processed_{io}'] = []
                 for spec in model_io_spec[io]:
                     spec = deepcopy(spec)
                     spec['name'] = 'processed_' + spec['name']
-                model_io_spec[f'processed_{io}'].append(spec)
+                    model_io_spec[f'processed_{io}'].append(spec)
 
         return model_io_spec
 
@@ -248,16 +247,16 @@ class ModelRuntimeRunner(Runner):
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
         model_json_dict = parsed_json_dict['model_wrapper']
-        if 'dataset' in parsed_json_dict.keys():
-            dataset = cls._create_dataset(parsed_json_dict['dataset'])
-        else:
-            dataset = None
-
-        model = cls._create_model(dataset, model_json_dict)
-        return cls._get_io_specification(model)
+        model_path = model_json_dict['parameters']['model_path']
+        try:
+            with open(model_path + ".json") as f:
+                model_io_spec = json.load(f)
+                return cls._get_io_specification(model_io_spec)
+        except:
+            raise
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
-        return self._get_io_specification(self.model)
+        return self._get_io_specification(self.model.get_io_specification())
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         model_input = inputs.get('processed_input')

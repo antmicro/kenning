@@ -235,6 +235,7 @@ class FlowGraphCreator(GraphCreator):
 
     def reset_graph(self):
         self.primitives = []
+        self.connections = []
 
     def create_node(self, node, parameters):
         node_id = self.gen_id()
@@ -319,9 +320,9 @@ class FlowGraphCreator(GraphCreator):
         for arg1, arg2 in itertools.product(from_args, to_args):
             if self._is_match(arg1, arg2):
                 return arg1['name'], arg2['name']
-        from_name = self.nodes[from_id]['type']
-        to_name = self.nodes[to_id]['type']
-        raise RuntimeError(f"Couldn't find matching connection between"
+        from_name = self.nodes[from_id]['type'].split(".")[-1]
+        to_name = self.nodes[to_id]['type'].split(".")[-1]
+        raise RuntimeError(f"Couldn't find matching connection between "
                            f"{from_name} and {to_name}")
 
     def create_connection(self, from_id, to_id):
@@ -330,11 +331,20 @@ class FlowGraphCreator(GraphCreator):
             self.nodes[to_id]['parameters'][kenning_type] = node
             del self.nodes[from_id]
         else:
+            # Connections between nodes can only be created at the end,
+            # when all primitives have been added to appropriate runners.
+            # Here connections are only registered, they will be finished
+            # when the `flush_graph` method is called.
+            self.connections.append((from_id, to_id))
+
+    def flush_graph(self):
+        # Finalize connection creation
+        for from_id, to_id in self.connections:
             local_from, local_to = self.find_compatible_IO(from_id, to_id)
             from_ = self.nodes[from_id]
             to_ = self.nodes[to_id]
             if local_to in to_['inputs']:
-                raise RuntimeError(f"Input {local_to} has more than one"
+                raise RuntimeError(f"Input {local_to} has more than one "
                                    f"connection")
             if local_from in from_['outputs']:
                 conn_id = from_['outputs'][local_from]
@@ -343,7 +353,6 @@ class FlowGraphCreator(GraphCreator):
                 from_['outputs'][local_from] = conn_id
             to_['inputs'][local_to] = conn_id
 
-    def flush_graph(self):
         finished_graph = list(self.nodes.values())
         self.start_new_graph()
         return finished_graph

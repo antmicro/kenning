@@ -9,6 +9,10 @@ from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 
 
 class PipelineHandler(BaseDataflowHandler):
+    """
+    Defines interpretation of graphs coming from Pipeline manager as Kenning
+    optimization pipelines.
+    """
     def __init__(self):
         nodes, io_mapping = PipelineHandler.get_nodes()
         super().__init__(nodes, io_mapping, PipelineGraphCreator())
@@ -20,6 +24,9 @@ class PipelineHandler(BaseDataflowHandler):
         return run_pipeline(*pipeline_tuple, output=output_file)
 
     def destroy_dataflow(self, *args, **kwargs):
+        # There is no explicit method for cleanup of Kenning objects (such as
+        # runtimes, optimizers etc.), so this method doesn't need to do
+        # anything
         pass
 
     def create_dataflow(self, pipeline: Dict) -> Dict:
@@ -325,6 +332,9 @@ class PipelineHandler(BaseDataflowHandler):
 
 
 class PipelineGraphCreator(GraphCreator):
+    """
+    Creates JSON defining Kenning optimization pipeline
+    """
     def reset_graph(self):
         """
         Creates graph in a standard Kenning pipeline format
@@ -349,7 +359,8 @@ class PipelineGraphCreator(GraphCreator):
             self.type_to_id[node.type].append(node_id)
         else:
             if node.type in self.type_to_id:
-                raise RuntimeError("")  # TODO
+                raise RuntimeError(f"There should be only one {node.type} in "
+                                   f"a pipeline")
             self.type_to_id[node.type] = node_id
         self.id_to_type[node_id] = node.type
         return node_id
@@ -359,7 +370,11 @@ class PipelineGraphCreator(GraphCreator):
         # estabilishes the order of optimizers. Due to the rigid structure
         # of the pipeline, connection between nodes don't have to be
         # directly estabilished in the graph (there is no need to modify
-        # the graph)
+        # the nodes of a graph)
+
+        error_message = ("Nonlinear optimizer arrangement. Optimizers should "
+                         "be arranged as a single linear flow running from "
+                         "model wrapper to runtime")
 
         from_type = self.id_to_type[from_id]
         to_type = self.id_to_type[to_id]
@@ -367,11 +382,11 @@ class PipelineGraphCreator(GraphCreator):
             self.first_optimizer = to_id
         if from_type == "optimizer" and to_type == "optimizer":
             if from_id in self.optimizer_order:
-                raise RuntimeError("Nonlinear optimizer arrangment")
+                raise RuntimeError(error_message)
             self.optimizer_order[from_id] = to_id
         if from_type == "optimizer" and to_type != "optimizer":
             if from_id in self.optimizer_order:
-                raise RuntimeError("Nonlinear optimizer arrangment")
+                raise RuntimeError(error_message)
             self.optimizer_order[from_id] = None
 
         if (from_type, to_type) in self.necessary_conn:
@@ -380,7 +395,7 @@ class PipelineGraphCreator(GraphCreator):
     def flush_graph(self):
         for (from_name, to_name), exists in self.necessary_conn.items():
             if not exists:
-                raise RuntimeError(f"No estabilished connection between"
+                raise RuntimeError(f"No estabilished connection between "
                                    f"{from_name} and {to_name}")
 
         pipeline = {}

@@ -117,7 +117,8 @@ def main(argv):
     parser.add_argument(
         '--spec-type',
         type=str,
-        help='',
+        help='Type of graph that should be represented in a Pipeline Manager '
+        '- can choose between optimization pipeline or Kenningflow',
         choices=('pipeline', 'flow'),
         default='pipeline'
     )
@@ -131,7 +132,7 @@ def main(argv):
     elif args.spec_type == "flow":
         dataflow_handler = KenningFlowHandler()
     else:
-        RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
+        raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 
     while client.client_socket:
         status, message = client.wait_for_message()

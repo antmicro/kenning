@@ -13,6 +13,9 @@ from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 
 class KenningFlowHandler(BaseDataflowHandler):
+    """
+    Defines the Kenningflow specification to use with Pipeline Manager
+    """
     def __init__(self):
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()
 
@@ -214,6 +217,9 @@ class KenningFlowHandler(BaseDataflowHandler):
 
 
 class FlowGraphCreator(GraphCreator):
+    """
+    Abstraction of graph generation representing Kenningflow
+    """
     def __init__(self, primitive_modules: Iterable[str]):
         """
         Creates graph in the KenningFlow format
@@ -282,7 +288,6 @@ class FlowGraphCreator(GraphCreator):
         bool
             Whether IO specification items are compatible with each other
         """
-        # TODO: other cases (?)
         if 'type' in arg1 and 'type' in arg2:
             return arg1['type'] == arg2['type']
         if 'shape' in arg1 and 'shape' in arg2:

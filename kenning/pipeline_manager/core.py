@@ -100,7 +100,11 @@ class GraphCreator:
             parameters: Any
     ) -> str:
         """
-        Creates new node in a graph
+        Creates new node in a graph. Graph creator abstracts away the
+        implementation specific details of a node representation in a graph,
+        which means that the handler only needs to work with the unique ID
+        that the graph creator assigns to each node. This ID should be later
+        used by a handler to create connections between nodes.
 
         Parameters
         ----------
@@ -136,7 +140,10 @@ class GraphCreator:
         Returns
         -------
         Tuple[Any, Any] :
-            Format specific identification of named input and output
+            Format specific identification of named input and output. First
+            element of tuple is name of output port of a starting node,
+            second is identification of input of a node where the connection
+            ends.
         """
         raise NotImplementedError
 
@@ -168,6 +175,13 @@ class GraphCreator:
 
 
 class BaseDataflowHandler:
+    """
+    Base class used for interpretation of graphs comming from Pipeline
+    manager. Subclasses are used to define specifics of one of the Kenning
+    graph formats (such as Kenningflow or Kenning optimization pipeline).
+    Defines conversion to and from Pipeline Manager format, parsing and
+    running incoming dataflows with Kenning.
+    """
     def __init__(
             self,
             nodes: List[Node],
@@ -175,9 +189,9 @@ class BaseDataflowHandler:
             graph_creator: GraphCreator
     ):
         """
-        Base class for handling different types of kenning specification,
-        converting to and from Pipeline Manager formats, and running them
-        in Kenning.
+        Prepares the dataflow handler, creates graph creators - `pm_graph` for
+        creating graph in Pipeline Manager format and `dataflow_graph` for
+        creating JSON with a specific Kenning dataflow.
 
         Parameters
         ----------
@@ -303,9 +317,9 @@ class BaseDataflowHandler:
 
         try:
             interface_to_id = {}
-            for dn in dataflow['nodes']:
-                kenning_node = self.nodes[dn['name']]
-                parameters = dn['options']
+            for dataflow_node in dataflow['nodes']:
+                kenning_node = self.nodes[dataflow_node['name']]
+                parameters = dataflow_node['options']
                 parameters = {
                     arg: value for arg, value in parameters
                 }
@@ -313,7 +327,7 @@ class BaseDataflowHandler:
                     kenning_node,
                     parameters
                 )
-                for _, interf in dn['interfaces']:
+                for _, interf in dataflow_node['interfaces']:
                     interface_to_id[interf['id']] = node_id
 
             for conn in dataflow['connections']:
@@ -329,8 +343,10 @@ class BaseDataflowHandler:
 
     def parse_json(self, json_cfg: Dict) -> Any:
         """
-        Creates Kenning objects that can be later used for inference
-        using JSON config.
+        Parses incoming JSON dataflow into Kenning objects that can be later
+        used to run inference (for example flow handler will create
+        a Kenningflow instance, while pipeline handler will create Kenning
+        objects such as Optimizers, Dataset, Runtime, etc.).
 
         Parameters
         ----------
@@ -357,12 +373,19 @@ class BaseDataflowHandler:
         """
         raise NotImplementedError
 
-    def create_dataflow(self, pipeline: Dict) -> Dict:
+    def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
         """
         Parses a Kenning JSON into a Pipeline Manager dataflow format
-        that can be loaded into the Pipeline Manager editor.
+        that can be loaded into the Pipeline Manager editor. Should
+        utilize Pipeline Manager graph creator to abstract the details
+        of graph representation, so the method should only deal with parsing
+        the nodes with its parameters and connections between them.
 
         It is assumed that the passed pipeline is valid.
+
+        For the details of the shape of resulting dictionary, check the
+        Pipeline Manager graph representation detailed in
+        `PipelineManagerGraphCreator` documentation
 
         Parameters
         ----------
@@ -371,8 +394,10 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Dict :
-            Dataflow that is a valid save in Pipeline Manager format.
+        Dict[str, Union[float, Dict]] :
+            JSON representation of a dataflow in Pipeline Manager format.
+            Should not be created directly, but rather should be the result of
+            `flush_graph` method from graph creator.
         """
         raise NotImplementedError
 
@@ -414,6 +439,54 @@ class BaseDataflowHandler:
 
 
 class PipelineManagerGraphCreator(GraphCreator):
+    """
+    Abstraction for graph generation in Pipeline Manager format.
+
+    Graphs in Pipeline Manager are represented in a following JSON dictionary:
+    {
+        'panning' - is a dictionary of two values: 'x', 'y', which defines the
+        placement point of Pipeline Manager browser window
+        'scaling' - is a single number defining the zoom level of Pipeline
+        Manager window
+        'nodes' - list of nodes
+        'connections' - list of connections
+    }
+
+    Each node is represented by a dictionary:
+    {
+        'type' - type of a node as defined in 'get_nodes' method of
+        dataflow handler
+        'id' - node's unique ID string
+        'name' - title of a node
+        'options' - dictionary of parameters parsed JSON file defining
+        specific Kenning module.
+        'interfaces' - list of IO ports of a node,
+        'position' - dictionary containing two values: 'x' and 'y' that
+        define the placement of a node
+        'width' - width of a node
+        'twoColumn' - boolean value that represents whether the node parameters
+        should be splitted into two columns
+        'customClasses' - should be empty string
+        'state' - should be empty dictionary
+    }
+
+    Each IO interface is defined as a dictionary:
+    {
+        'id' - ID of an interface
+        'isInput' - boolean value, True if a port represents input of a node,
+        False if it's an output
+        'type' - type of an IO as defined in IO mapping created by dataflow
+        handler
+        'value' - should be None
+    }
+
+    Connection is defined as a dictionary:
+    {
+        'id' - connection's unique ID,
+        'from' - ID of a interface that is a starting point of a connection
+        'to' - ID of a interface that is an ending point of a connection
+    }
+    """
     def __init__(
             self,
             io_mapping: Dict,
@@ -423,7 +496,7 @@ class PipelineManagerGraphCreator(GraphCreator):
             node_x_offset: int = 50
     ):
         """
-        Creates graph in the Pipeline Manager dataflow format.
+        Prepares the Graph creator for Pipeline Manager.
 
         Parameters
         ----------
@@ -446,7 +519,7 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def reset_graph(self):
         self.connections = []
-        self.interf_map = {}
+        self.interface_map = {}
         self.reset_position()
 
     def update_position(self):
@@ -481,14 +554,14 @@ class PipelineManagerGraphCreator(GraphCreator):
         Tuple[str, List]
             Created interface together with its ID
         """
-        interf_id = self.gen_id()
+        interface_id = self.gen_id()
         interface = [io_spec['name'], {
-            'id': interf_id,
+            'id': interface_id,
             'value': None,
             'isInput': is_input,
             'type': io_spec['type']
         }]
-        return interf_id, interface
+        return interface_id, interface
 
     def create_node(self, node, parameters):
         node_id = self.gen_id()
@@ -496,13 +569,13 @@ class PipelineManagerGraphCreator(GraphCreator):
 
         interfaces = []
         for io_spec in io_map['inputs']:
-            interf_id, interface = self._create_interface(io_spec, True)
+            interface_id, interface = self._create_interface(io_spec, True)
             interfaces.append(interface)
-            self.interf_map[interf_id] = io_spec
+            self.interface_map[interface_id] = io_spec
         for io_spec in io_map['outputs']:
-            interf_id, interface = self._create_interface(io_spec, False)
+            interface_id, interface = self._create_interface(io_spec, False)
             interfaces.append(interface)
-            self.interf_map[interf_id] = io_spec
+            self.interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
             'type': node.name,
@@ -525,27 +598,28 @@ class PipelineManagerGraphCreator(GraphCreator):
     def find_compatible_IO(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
-        from_interf_arr = self.nodes[from_id]['interfaces']
-        to_interf_arr = self.nodes[to_id]['interfaces']
-        for (_, from_interf), (_, to_interf) in itertools.product(
-                from_interf_arr, to_interf_arr):
-            from_interf_id, to_interf_id = from_interf['id'], to_interf['id']
-            from_io_spec = self.interf_map[from_interf_id]
-            to_io_spec = self.interf_map[to_interf_id]
-            if not from_interf['isInput'] \
-                    and to_interf['isInput'] \
+        from_interface_arr = self.nodes[from_id]['interfaces']
+        to_interface_arr = self.nodes[to_id]['interfaces']
+        for (_, from_interface), (_, to_interface) in itertools.product(
+                from_interface_arr, to_interface_arr):
+            from_interface_id = from_interface['id']
+            to_interface_id = to_interface['id']
+            from_io_spec = self.interface_map[from_interface_id]
+            to_io_spec = self.interface_map[to_interface_id]
+            if not from_interface['isInput'] \
+                    and to_interface['isInput'] \
                     and from_io_spec['type'] == to_io_spec['type']:
-                return from_interf_id, to_interf_id
+                return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")
 
     def create_connection(self, from_id, to_id):
-        from_interf_id, to_interf_id = self.find_compatible_IO(
+        from_interface_id, to_interface_id = self.find_compatible_IO(
             from_id, to_id
         )
         self.connections.append({
             'id': self.gen_id(),
-            'from': from_interf_id,
-            'to': to_interf_id
+            'from': from_interface_id,
+            'to': to_interface_id
         })
 
     def flush_graph(self):

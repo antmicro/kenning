@@ -102,6 +102,33 @@ class IOInterface(object):
         """
         return NotImplementedError
 
+    @classmethod
+    def parse_io_specification_from_json(
+            cls, json_dict: Dict) -> Dict[str, List[Dict]]:
+        """
+        Return dictionary with 'input' and 'output' keys that will map to input
+        and output specification of an object created by the argument json
+        schema
+
+        A single specification is a list of dictionaries with names, shapes and
+        dtypes for each layer.
+
+        Since no object initialization is done for this method, some IO
+        specification may be incomplete, this method fils in -1 in case
+        the information is missing from the JSON dictionary
+
+        Parameters
+        ----------
+        json_dict : Dict
+            Parameters for object constructor in JSON format.
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output layers specification
+        """
+        return NotImplementedError
+
     def save_io_specification(self, path: Path):
         """
         Saves input/output specification to a file named `path` + `.json`. This

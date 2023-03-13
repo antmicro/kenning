@@ -1,8 +1,10 @@
-from typing import Dict, List
+from typing import List
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
 import sys
+
+from kenning.utils.args_manager import get_parsed_json_dict
 if sys.version_info.minor < 9:
     from importlib_resources import files
 else:
@@ -67,20 +69,34 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             args.window_size
         )
 
-    def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
-        return {
+    @classmethod
+    def _get_io_specification(
+            cls, window_size, numclasses=-1, class_names=None):
+        io_spec = {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, self.window_size, 3, 1),
+                'shape': (1, window_size, 3, 1),
                 'dtype': 'float32'
             }],
             'output': [{
                 'name': 'out_layer',
-                'shape': (1, self.numclasses),
+                'shape': (1, numclasses),
                 'dtype': 'float32',
-                'class_names': self.class_names
             }]
         }
+        if class_names is not None:
+            io_spec['output'][0]['class_names'] = class_names
+        return io_spec
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        return cls._get_io_specification(parsed_json_dict['window_size'])
+
+    def get_io_specification_from_model(self):
+        return self._get_io_specification(
+            self.window_size, self.class_names, self.numclasses)
 
     def prepare_model(self):
         if self.model_prepared:

@@ -28,9 +28,10 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
     default_dataset = COCODataset2017
     arguments_structure = {}
 
-    def get_io_specification_from_model(self):
+    @classmethod
+    def _get_io_specification(cls, keyparams):
         return {
-            'input': [{'name': 'data', 'shape': (1, 3, self.keyparams['width'], self.keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
+            'input': [{'name': 'data', 'shape': (1, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
             'output': []
         }
 

@@ -11,6 +11,8 @@ Pretrained on ImageNet dataset.
 from typing import List, Dict
 from pathlib import Path
 import sys
+
+from kenning.utils.args_manager import get_parsed_json_dict
 if sys.version_info.minor < 9:
     from importlib_resources import files
 else:
@@ -121,11 +123,34 @@ class TensorFlowImageNet(TensorFlowWrapper):
             from_file
         )
 
-    def get_io_specification_from_model(self):
+    @classmethod
+    def _get_io_specification(
+            cls, modelinputname, inputshape, modeloutputname, outputshape):
         return {
-            'input': [{'name': self.modelinputname, 'shape': self.inputshape, 'dtype': 'float32'}],  # noqa: E501
-            'output': [{'name': self.modeloutputname, 'shape': self.outputshape, 'dtype': 'float32'}]  # noqa: E501
+            'input': [{'name': modelinputname, 'shape': inputshape, 'dtype': 'float32'}],  # noqa: E501
+            'output': [{'name': modeloutputname, 'shape': outputshape, 'dtype': 'float32'}]  # noqa: E501
         }
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        input_shape = parsed_json_dict['inputshape']
+        output_shape = [input_shape[0], parsed_json_dict['numclasses']]
+        return cls._get_io_specification(
+            parsed_json_dict['modelinputname'],
+            input_shape,
+            parsed_json_dict['modeloutputname'],
+            output_shape
+        )
+
+    def get_io_specification_from_model(self):
+        return self._get_io_specification(
+            self.modelinputname,
+            self.inputshape,
+            self.modeloutputname,
+            self.outputshape
+        )
 
     def prepare_model(self):
         if self.model_prepared:

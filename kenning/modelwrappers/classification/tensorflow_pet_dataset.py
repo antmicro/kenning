@@ -72,14 +72,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             from_file
         )
 
-    def get_io_specification_from_model(self):
-        mean = self.mean
-        std = self.std
-        if isinstance(mean, np.ndarray):
-            mean = mean.tolist()
-        if isinstance(std, np.ndarray):
-            std = std.tolist()
-        return {
+    @classmethod
+    def _get_io_specification(cls, numclasses, class_names=None,
+                              mean=None, std=None):
+        io_spec = {
             'input': [{
                 'name': 'input_1',
                 'shape': (1, 224, 224, 3),
@@ -89,11 +85,31 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             }],
             'output': [{
                 'name': 'out_layer',
-                'shape': (1, self.numclasses),
-                'dtype': 'float32',
-                'class_names': self.class_names
+                'shape': (1, numclasses),
+                'dtype': 'float32'
             }],
         }
+        if class_names is not None:
+            io_spec['output'][0]['class_names'] = class_names
+        if mean is not None:
+            io_spec['input'][0]['mean'] = mean
+        if std is not None:
+            io_spec['input'][0]['std'] = std
+        return io_spec
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        return cls._get_io_specification(-1)
+
+    def get_io_specification_from_model(self):
+        mean = self.mean
+        std = self.std
+        if isinstance(mean, np.ndarray):
+            mean = mean.tolist()
+        if isinstance(std, np.ndarray):
+            std = std.tolist()
+        return self._get_io_specification(self.numclasses, self.class_names,
+                                          mean, std)
 
     def prepare_model(self):
         if self.model_prepared:

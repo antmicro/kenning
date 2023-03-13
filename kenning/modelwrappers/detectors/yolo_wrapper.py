@@ -15,7 +15,7 @@ from kenning.resources import coco_detection
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_dect_iou  # noqa: E501
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
 
 from pathlib import Path
 if sys.version_info.minor < 9:
@@ -110,26 +110,31 @@ class YOLOWrapper(ModelWrapper):
             )
         return parameterschema
 
-    def load_model(self, modelpath):
-        self.keyparams = {}
-        self.perlayerparams = defaultdict(list)
+    @classmethod
+    def load_config_file(cls, config_path):
         keyparamsrgx = re.compile(r'(width|height|classes)=(\d+)')
         perlayerrgx = re.compile(r'(mask|anchors|num)=((\d+,?)+)')
-
-        with open(self.modelpath.with_suffix('.cfg'), 'r') as config:
+        keyparams = {}
+        perlayerparams = defaultdict(list)
+        with open(config_path.with_suffix(".cfg"), 'r') as config:
             for line in config:
                 line = line.replace(' ', '')
                 res = keyparamsrgx.match(line)
                 if res:
-                    self.keyparams[res.group(1)] = int(res.group(2))
-                    continue
+                    keyparams[res.group(1)] = int(res.group(2))
                 res = perlayerrgx.match(line)
                 if res:
-                    self.perlayerparams[res.group(1)].append(res.group(2))
-        self.perlayerparams = {
+                    perlayerparams[res.group(1)].append(res.group(2))
+        perlayerparams = {
             k: [np.array([int(x) for x in s.split(',')]) for s in v]
-            for k, v in self.perlayerparams.items()
+            for k, v in perlayerparams.items()
         }
+        return keyparams, perlayerparams
+
+    def load_model(self, modelpath):
+        self.keyparams, self.perlayerparams = self.load_config_file(
+            self.modelpath.with_suffix('.cfg')
+        )
         self.save_io_specification(self.modelpath)
 
     def prepare_model(self):
@@ -304,3 +309,13 @@ class YOLOWrapper(ModelWrapper):
 
     def convert_output_from_bytes(self, outputdata):
         return np.frombuffer(outputdata, dtype='float32')
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        keyparams, _ = cls.load_config_file(parsed_json_dict['modelpath'])
+        return cls._get_io_specification(keyparams)
+
+    def get_io_specification_from_model(self):
+        return self._get_io_specification(self.keyparams)

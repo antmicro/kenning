@@ -348,7 +348,8 @@ class YOLACT(ModelWrapper):
 
         return result
 
-    def get_io_specification_from_model(self):
+    @classmethod
+    def _get_io_specification(cls):
         return {
             'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
             'output': [
@@ -360,7 +361,15 @@ class YOLACT(ModelWrapper):
             ],
             'processed_output': [{
                 'name': 'segmentation_output',
-                'type': 'List[SegmObject]',
-                'class_names': self.class_names
+                'type': 'List[SegmObject]'
             }]
         }
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        return cls._get_io_specification()
+
+    def get_io_specification_from_model(self):
+        io_spec = self._get_io_specification()
+        io_spec['processed_output'][0]['class_names'] = self.class_names
+        return io_spec

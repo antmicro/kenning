@@ -127,7 +127,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
         return [result]
 
-    def get_io_specification_from_model(self):
+    @classmethod
+    def _get_io_specification(cls):
         return {
             'input': [{'name': 'input.1', 'shape': (1, 3, 416, 416), 'dtype': 'float32'}],  # noqa: E501
             'output': [
@@ -137,6 +138,13 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                 {'name': 'masks', 'shape': (-1, 1, 416, 416), 'dtype': 'float32'}  # noqa: E501
             ]
         }
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        return cls._get_io_specification()
+
+    def get_io_specification_from_model(self):
+        return self._get_io_specification()
 
 
 def dict_to_tuple(out_dict):

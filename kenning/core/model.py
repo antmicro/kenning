@@ -6,6 +6,7 @@
 Provides a wrapper for deep learning models.
 """
 
+import json
 from typing import List, Any, Tuple, Dict, Type, Optional
 import argparse
 from pathlib import Path
@@ -450,6 +451,43 @@ class ModelWrapper(IOInterface):
         if not hasattr(self, 'io_specification'):
             self.io_specification = self.get_io_specification_from_model()
         return self.io_specification
+
+    @classmethod
+    def parse_io_specification_from_json(cls, json_dict):
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+        modelpath = parsed_json_dict['modelpath']
+        try:
+            with open(modelpath.parent / (modelpath.name + ".json"), 'r') as f:
+                return json.load(f)
+        except FileNotFoundError:
+            return cls.derive_io_spec_from_json_params(parsed_json_dict)
+
+    @classmethod
+    def derive_io_spec_from_json_params(
+        cls,
+        json_dict: Dict
+    ) -> Dict[str, List[Dict]]:
+        """
+        Creates IO specification by deriving parameters from parsed JSON
+        dictionary. The resulting IO specification may differ from the results
+        of `get_io_specification`, information that couldn't be retrieved from
+        JSON parameters are absent from final IO spec or are filled with
+        general value (example: '-1' for unknown dimension shape)
+
+        Parameters
+        ----------
+        json_dict : Dict
+            JSON dictionary formed by parsing the input JSON with
+            ModelWrapper's parameterschema
+
+        Returns
+        -------
+        Dict[str, List[Dict]] :
+            Dictionary that conveys input and output
+            layers specification
+        """
+        raise NotImplementedError
 
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
         """

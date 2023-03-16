@@ -384,20 +384,18 @@ def comparison_performance_report(
             data[metric] for metric in common_metrics
         ]
 
-    for format in _image_formats:
-        usepath = imgdir / f'mean_performance_comparison.{format}'
-        draw_violin_comparison_plot(
-            usepath,
-            "Performance comparison plot" if draw_titles else None,
-            [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
-                for metric in common_metrics],
-            visualizationdata,
-            colors=colors,
-        )
-    usepath = imgdir / 'mean_performance_comparison.*'
-    report_variables["meanperformancepath"] = str(
-        usepath.relative_to(rootdir)
+    usepath = imgdir / 'mean_performance_comparison'
+    draw_violin_comparison_plot(
+        usepath,
+        "Performance comparison plot" if draw_titles else None,
+        [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
+            for metric in common_metrics],
+        visualizationdata,
+        colors=colors,
+        outext=_image_formats,
     )
+    report_variables["meanperformancepath"] = str(
+        usepath.relative_to(rootdir)) + '.*'
 
     hardware_usage_metrics = sorted(list(hardware_usage_metrics))
     usage_visualization = {}
@@ -407,19 +405,17 @@ def comparison_performance_report(
             for metric in hardware_usage_metrics
         ]
 
-    for format in _image_formats:
-        usepath = imgdir / f"hardware_usage_comparison.{format}"
-        draw_radar_chart(
-            usepath,
-            "Resource usage comparison" if draw_titles else None,
-            usage_visualization,
-            [metric_names[metric][0] for metric in hardware_usage_metrics],
-            colors=colors
-        )
-    usepath = imgdir / "hardware_usage_comparison.*"
-    report_variables["hardwareusagepath"] = str(
-        usepath.relative_to(rootdir)
+    usepath = imgdir / "hardware_usage_comparison"
+    draw_radar_chart(
+        usepath,
+        "Resource usage comparison" if draw_titles else None,
+        usage_visualization,
+        [metric_names[metric][0] for metric in hardware_usage_metrics],
+        colors=colors,
+        outext=_image_formats,
     )
+    report_variables["hardwareusagepath"] = str(
+        usepath.relative_to(rootdir)) + '.*'
 
     with path(reports, 'performance_comparison.md') as reporttemplate:
         return create_report_from_measurements(
@@ -467,20 +463,17 @@ def classification_report(
         log.error('Confusion matrix not present for classification report')
         return ''
     log.info('Using confusion matrix')
-    for format in image_formats:
-        confusionpath = imgdir / f'{imgprefix}confusion_matrix'
-        draw_confusion_matrix(
-            measurementsdata['eval_confusion_matrix'],
-            str(confusionpath),
-            'Confusion matrix' if draw_titles else None,
-            measurementsdata['class_names'],
-            format=format,
-            cmap=cmap,
-        )
-    confusionpath = imgdir / f'{imgprefix}confusion_matrix.*'
-    measurementsdata['confusionpath'] = str(
-        confusionpath.relative_to(rootdir)
+    confusionpath = imgdir / f'{imgprefix}confusion_matrix'
+    draw_confusion_matrix(
+        measurementsdata['eval_confusion_matrix'],
+        str(confusionpath),
+        'Confusion matrix' if draw_titles else None,
+        measurementsdata['class_names'],
+        cmap=cmap,
+        outext=image_formats,
     )
+    measurementsdata['confusionpath'] = str(
+        confusionpath.relative_to(rootdir)) + '.*'
     with path(reports, 'classification.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
@@ -560,37 +553,33 @@ def comparison_classification_report(
             model_sensitivity
         ]
 
-    for format in _image_formats:
-        usepath = imgdir / f"accuracy_vs_inference_time.{format}"
-        draw_bubble_plot(
-            usepath,
-            "Accuracy vs Mean inference time" if draw_titles else None,
-            mean_inference_time,
-            "Mean inference time [s]",
-            accuracy,
-            "Accuracy",
-            model_sizes,
-            names,
-            colors=colors,
-        )
-    usepath = imgdir / "accuracy_vs_inference_time.*"
+    usepath = imgdir / "accuracy_vs_inference_time"
+    draw_bubble_plot(
+        usepath,
+        "Accuracy vs Mean inference time" if draw_titles else None,
+        mean_inference_time,
+        "Mean inference time [s]",
+        accuracy,
+        "Accuracy",
+        model_sizes,
+        names,
+        colors=colors,
+        outext=_image_formats,
+    )
     report_variables['bubbleplotpath'] = str(
-        usepath.relative_to(rootdir)
-    )
+        usepath.relative_to(rootdir)) + '.*'
 
-    for format in _image_formats:
-        usepath = imgdir / f"classification_metric_comparison.{format}"
-        draw_radar_chart(
-            usepath,
-            "Metric comparison" if draw_titles else None,
-            metric_visualization,
-            ["Accuracy", "Mean precision", "Mean recall"],
-            colors=colors,
-        )
-    usepath = imgdir / "classification_metric_comparison.*"
-    report_variables['radarchartpath'] = str(
-        usepath.relative_to(rootdir)
+    usepath = imgdir / "classification_metric_comparison"
+    draw_radar_chart(
+        usepath,
+        "Metric comparison" if draw_titles else None,
+        metric_visualization,
+        ["Accuracy", "Mean precision", "Mean recall"],
+        colors=colors,
+        outext=_image_formats,
     )
+    report_variables['radarchartpath'] = str(
+        usepath.relative_to(rootdir)) + '.*'
     report_variables['modelnames'] = names
     report_variables = {
         **report_variables,
@@ -656,35 +645,30 @@ def detection_report(
     for line in lines:
         aps.append(compute_ap(line[0], line[1]))
 
-    for format in _image_formats:
-        curvepath = imgdir / f'{imgprefix}recall_precision_curves.{format}'
-        recall_precision_curves(
-            str(curvepath),
-            'Recall-Precision curves' if draw_titles else None,
-            lines,
-            measurementsdata['class_names']
-        )
-    curvepath = imgdir / f'{imgprefix}recall_precision_curves.*'
+    curvepath = imgdir / '{imgprefix}recall_precision_curves'
+    recall_precision_curves(
+        str(curvepath),
+        'Recall-Precision curves' if draw_titles else None,
+        lines,
+        measurementsdata['class_names'],
+        outext=_image_formats,
+    )
     measurementsdata['curvepath'] = str(
-        curvepath.relative_to(rootdir)
-    )
+        curvepath.relative_to(rootdir)) + '.*'
 
-    for format in _image_formats:
-        gradientpath = imgdir / \
-            f'{imgprefix}recall_precision_gradients.{format}'
-        recall_precision_gradients(
-            str(gradientpath),
-            'Average precision plots' if draw_titles else None,
-            lines,
-            measurementsdata['class_names'],
-            aps,
-            measurementsdata['mAP'],
-            cmap=cmap,
-        )
-    gradientpath = imgdir / f'{imgprefix}recall_precision_gradients.*'
-    measurementsdata['gradientpath'] = str(
-        gradientpath.relative_to(rootdir)
+    gradientpath = imgdir / f'{imgprefix}recall_precision_gradients'
+    recall_precision_gradients(
+        str(gradientpath),
+        'Average precision plots' if draw_titles else None,
+        lines,
+        measurementsdata['class_names'],
+        aps,
+        measurementsdata['mAP'],
+        cmap=cmap,
+        outext=_image_formats,
     )
+    measurementsdata['gradientpath'] = str(
+        gradientpath.relative_to(rootdir)) + '.*'
 
     tp_iou = []
     all_tp_ious = []
@@ -698,59 +682,53 @@ def detection_report(
         else:
             tp_iou.append(0)
 
-    for format in _image_formats:
-        tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.{format}'
-        true_positive_iou_histogram(
-            str(tpioupath),
-            'Average True Positive IoU values' if draw_titles else None,
-            tp_iou,
-            measurementsdata['class_names'],
-            colors=colors,
-            color_offset=color_offset,
-        )
-    tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram.*'
-    measurementsdata['tpioupath'] = str(
-        tpioupath.relative_to(rootdir)
+    tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram'
+    true_positive_iou_histogram(
+        str(tpioupath),
+        'Average True Positive IoU values' if draw_titles else None,
+        tp_iou,
+        measurementsdata['class_names'],
+        colors=colors,
+        color_offset=color_offset,
+        outext=_image_formats,
     )
+    measurementsdata['tpioupath'] = str(
+        tpioupath.relative_to(rootdir)) + '.*'
 
     if len(all_tp_ious) > 0:
-        for format in _image_formats:
-            iouhistpath = imgdir / \
-                f'{imgprefix}histogram_tp_iou_values.{format}'
-            true_positives_per_iou_range_histogram(
-                str(iouhistpath),
-                "Histogram of True Positive IoU values" if draw_titles
-                else None,
-                all_tp_ious,
-                colors=colors,
-                color_offset=color_offset,
-            )
+        iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values'
+        true_positives_per_iou_range_histogram(
+            str(iouhistpath),
+            "Histogram of True Positive IoU values" if draw_titles
+            else None,
+            all_tp_ious,
+            colors=colors,
+            color_offset=color_offset,
+            outext=_image_formats,
+        )
         iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.*'
         measurementsdata['iouhistpath'] = str(
-            iouhistpath.relative_to(rootdir)
-        )
+            iouhistpath.relative_to(rootdir)) + '.*'
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
 
-    for format in _image_formats:
-        mappath = imgdir / f'{imgprefix}map.{format}'
-        draw_plot(
-            str(mappath),
-            'mAP value change over objectness threshold values' if draw_titles
-            else None,
-            'threshold',
-            None,
-            'mAP',
-            None,
-            [[thresholds, mapvalues]],
-            colors=colors,
-            color_offset=color_offset,
-        )
-    mappath = imgdir / f'{imgprefix}map.*'
-    measurementsdata['mappath'] = str(
-        mappath.relative_to(rootdir)
+    mappath = imgdir / f'{imgprefix}map'
+    draw_plot(
+        str(mappath),
+        'mAP value change over objectness threshold values' if draw_titles
+        else None,
+        'threshold',
+        None,
+        'mAP',
+        None,
+        [[thresholds, mapvalues]],
+        colors=colors,
+        color_offset=color_offset,
+        outext=_image_formats,
     )
+    measurementsdata['mappath'] = str(
+        mappath.relative_to(rootdir)) + '.*'
     measurementsdata['max_mAP'] = max(mapvalues)
     measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
 
@@ -809,24 +787,22 @@ def comparison_detection_report(
         visualization_data.append((thresholds, mapvalues))
         report_variables['modelnames'].append(data['modelname'])
 
-    for format in _image_formats:
-        usepath = imgdir / f"detection_map_thresholds.{format}"
-        draw_plot(
-            usepath,
-            "mAP values comparison over different threshold values"
-            if draw_titles else None,
-            'threshold',
-            None,
-            'mAP',
-            None,
-            visualization_data,
-            report_variables['modelnames'],
-            colors=colors,
-        )
-    usepath = imgdir / "detection_map_thresholds.*"
-    report_variables['mapcomparisonpath'] = str(
-        usepath.relative_to(rootdir)
+    usepath = imgdir / "detection_map_thresholds"
+    draw_plot(
+        usepath,
+        "mAP values comparison over different threshold values"
+        if draw_titles else None,
+        'threshold',
+        None,
+        'mAP',
+        None,
+        visualization_data,
+        report_variables['modelnames'],
+        colors=colors,
+        outext=_image_formats,
     )
+    report_variables['mapcomparisonpath'] = str(
+        usepath.relative_to(rootdir)) + '.*'
 
     with path(reports, 'detection_comparison.md') as reporttemplate:
         return create_report_from_measurements(

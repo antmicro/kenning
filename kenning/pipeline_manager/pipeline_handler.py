@@ -100,6 +100,11 @@ class PipelineHandler(BaseDataflowHandler):
             ('kenning.runtimes', Runtime),
             ('kenning.compilers', Optimizer)
         ]
+        base_type_names = {
+            base_type: str.lower(base_type.__name__)
+            for _, base_type in base_classes
+        }
+        base_type_names[ModelWrapper] = "model_wrapper"
         for base_module, base_type in base_classes:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
@@ -107,7 +112,7 @@ class PipelineHandler(BaseDataflowHandler):
                     nodes,
                     f"{kenning_class.__module__}.{kenning_class.__name__}",
                     get_category_name(kenning_class),
-                    str.lower(base_type.__name__)
+                    base_type_names[base_type]
                 )
 
         io_mapping = {
@@ -122,7 +127,7 @@ class PipelineHandler(BaseDataflowHandler):
                     }
                 ]
             },
-            'modelwrapper': {
+            'model_wrapper': {
                 'inputs': [
                     {
                         'name': 'Dataset',

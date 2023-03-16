@@ -1,7 +1,6 @@
 """
 Provides a runner that performs inference.
 """
-import json
 from typing import Dict, List, Tuple, Any
 from copy import deepcopy
 
@@ -247,17 +246,11 @@ class ModelRuntimeRunner(Runner):
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
         model_json_dict = parsed_json_dict['model_wrapper']
-        model_path = model_json_dict['parameters']['model_path']
-        try:
-            with open(model_path + ".json", 'r') as f:
-                model_io_spec = json.load(f)
-                return cls._get_io_specification(model_io_spec)
-        except FileNotFoundError:
-            model_cls = load_class(model_json_dict['type'])
-            model_io_spec = model_cls.parse_io_specification_from_json(
+        model_cls = load_class(model_json_dict['type'])
+        model_io_spec = model_cls.parse_io_specification_from_json(
                 model_json_dict['parameters']
             )
-            return cls._get_io_specification(model_io_spec)
+        return cls._get_io_specification(model_io_spec)
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         return self._get_io_specification(self.model.get_io_specification())

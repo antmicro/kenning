@@ -89,10 +89,13 @@ def get_all_subclasses(
             non_final_subclasses.add(b.id)
             if b.id == cls.__name__:
                 subclasses.add(class_def.name)
+                return True
             elif b.id in subclasses or (
                     b.id in classes_defs and
                     check_if_subclass(classes_defs[b.id])):
                 subclasses.add(class_def.name)
+                return True
+        return False
 
     for class_name, class_def in classes_defs.items():
         if class_name not in checked_classes:

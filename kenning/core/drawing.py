@@ -9,7 +9,7 @@ Wrappers for drawing plots for reports.
 import sys
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from typing import List, Tuple, Optional, Dict, Union
+from typing import List, Tuple, Optional, Dict, Union, Iterable
 import numpy as np
 import itertools
 from pathlib import Path
@@ -179,6 +179,7 @@ def draw_multiple_time_series(
         smooth: Optional[int] = None,
         figsize: Tuple = (11, 8.5),
         colors: Optional[List] = None,
+        outext: Iterable[str] = ['png'],
 ):
     """
     Draws multiple time series plots.
@@ -206,7 +207,10 @@ def draw_multiple_time_series(
         where `smooth` is the window size parameter.
     figsize : Tuple
         The size of the figure
-
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     start = 1 if skipfirst else 0
     fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -236,7 +240,8 @@ def draw_multiple_time_series(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath)
+        for ext in outext:
+            plt.savefig(f"{outpath}.{ext}")
     plt.close()
 
 
@@ -246,6 +251,7 @@ def draw_violin_comparison_plot(
         xnames: List[str],
         data: Dict[str, List],
         colors: Optional[List] = None,
+        outext: Iterable[str] = ['png'],
 ):
     """
     Draws violin plots comparing different metrics.
@@ -253,13 +259,18 @@ def draw_violin_comparison_plot(
     Parameters
     ----------
     outpath : Optional[Path]
-        Path where the plot will be saved. If None, the plot will be displayed.
+        Path where the plot will be saved without extension. If None,
+        the plot will be displayed.
     title : str
         Title of the plot
     xnames : List[str]
         Names of the metrics in order
     data : Dict[str, List]
         Map between name of the model and list of metrics to visualize
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
 
     num_plots = len(xnames)
@@ -305,9 +316,11 @@ def draw_violin_comparison_plot(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath,
-                    bbox_extra_artists=bbox_extra,
-                    bbox_inches='tight')
+        for ext in outext:
+            plt.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=bbox_extra,
+                bbox_inches='tight')
     plt.close()
 
 
@@ -318,6 +331,7 @@ def draw_radar_chart(
         labelnames: List,
         figsize: Tuple = (11, 12),
         colors: Optional[List] = None,
+        outext: Iterable[str] = ['png'],
 ):
     """
     Draws radar plot.
@@ -334,6 +348,10 @@ def draw_radar_chart(
         Names of the labels in order
     figsize : Optional[Tuple]
         The size of the plot
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     n_categories = len(labelnames)
 
@@ -395,9 +413,11 @@ def draw_radar_chart(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath,
-                    bbox_extra_artists=bbox_extra,
-                    bbox_inches='tight')
+        for ext in outext:
+            plt.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=bbox_extra,
+                bbox_inches='tight')
     plt.close()
 
 
@@ -412,6 +432,7 @@ def draw_bubble_plot(
         bubblename: List[str],
         figsize: Tuple = (11, 10),
         colors: Optional[List] = None,
+        outext: Iterable[str] = ['png'],
 ):
     """
     Draws bubble plot
@@ -436,6 +457,10 @@ def draw_bubble_plot(
         Labels for consecutive bubbles
     figsize : Tuple
         The size of the plot
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     if colors is None:
@@ -494,11 +519,12 @@ def draw_bubble_plot(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(
-            outpath,
-            bbox_extra_artists=bbox_extra,
-            bbox_inches='tight'
-        )
+        for ext in outext:
+            plt.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=bbox_extra,
+                bbox_inches='tight'
+            )
     plt.close()
 
 
@@ -533,7 +559,8 @@ def draw_confusion_matrix(
         figsize: Optional[Tuple] = None,
         dpi: Optional[int] = None,
         backend: str = 'matplotlib',
-        format: str = 'png'):
+        outext: Iterable[str] = ['png'],
+):
     """
     Creates a confusion matrix plot.
 
@@ -556,15 +583,12 @@ def draw_confusion_matrix(
         The dpi of the plot
     backend : str
         Which library should be used to generate plot - bokeh or matplotlib
-    format : str
-        Which format should be used to save plot to file - png or html
+    outext : Iterable[str]
+        List with files extensions, should be supported by chosen backend
     """
     available_backends = ('matplotlib', 'bokeh')
     assert backend in available_backends, (
         f"Backend has to be one of: {' '.join(available_backends)}")
-    available_formats = ('png', 'html')
-    assert format in available_formats, (
-        f"Format has to be one of: {' '.join(available_formats)}")
     if cmap is None:
         if len(class_names) < 50:
             cmap = plt.get_cmap('BuPu')
@@ -604,8 +628,8 @@ def draw_confusion_matrix(
                     confusion_matrix[i, j], cmap
                 )
 
-    if backend == "bokeh" or format == "html":
-        return draw_confusion_matrix_bokeh(
+    if backend == "bokeh" or "html" in outext:
+        draw_confusion_matrix_bokeh(
             output_path=outpath,
             class_names=class_names,
             confusion_matrix=confusion_matrix,
@@ -617,8 +641,10 @@ def draw_confusion_matrix(
             height=figsize[1] if figsize else None,
             title=title,
             cmap=cmap,
-            formats=(format,))
-    return draw_confusion_matrix_matplotlib(
+            formats=outext if backend == 'bokeh' else ['html'])
+        outext = set(outext)
+        outext.discard('html')
+    draw_confusion_matrix_matplotlib(
         output_path=outpath,
         class_names=class_names,
         confusion_matrix=confusion_matrix,
@@ -629,7 +655,8 @@ def draw_confusion_matrix(
         figsize=figsize,
         dpi=dpi,
         title=title,
-        cmap=cmap,)
+        cmap=cmap,
+        outext=outext)
 
 
 def draw_confusion_matrix_matplotlib(
@@ -644,7 +671,38 @@ def draw_confusion_matrix_matplotlib(
     output_path: Optional[str] = None,
     title: Optional[str] = None,
     cmap=None,
+    outext: Iterable[str] = ['png'],
 ):
+    """
+    Function drawing interactive confusion matrix with bokeh backend.
+
+    Parameters
+    ----------
+    confusion_matrix : np.ndarray
+        Values of confusion matrix, from 0 to 1
+    confusion_matrix_colors : np.ndarray
+        Colors for calculated based on confusion matrix
+    sensitivity : np.ndarray
+        Ordered values with sensitivity
+    precision : np.ndarray
+        Ordered values with precision
+    accuracy : np.ndarray | float
+        Overall accuracy
+    class_names : List[str]
+        List with names of classes
+    figsize : Optional[Tuple[int]]
+        Tuple with width and height of figure
+    output_path : str | None
+        Path to the file, where plot will be saved to. If not specified,
+        result won't be saved
+    title : str | None
+        Title of the plot
+    cmap :
+        Color map which will be used for drawing plot. If not specified,
+        'RdYlGn' color map from matplotlib will be chosen
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
+    """
 
     if figsize is None:
         figsize = [35, 35]
@@ -838,13 +896,15 @@ def draw_confusion_matrix_matplotlib(
     if output_path is None:
         plt.show()
     else:
-        plt.savefig(
-            f"{output_path}.png",
-            dpi=dpi,
-            bbox_inches='tight',
-            bbox_extra_artists=[suptitlehandle] if suptitlehandle else None,
-            pad_inches=0.1,
-        )
+        for ext in outext:
+            plt.savefig(
+                f"{output_path}.{ext}",
+                dpi=dpi,
+                bbox_inches='tight',
+                bbox_extra_artists=[
+                    suptitlehandle] if suptitlehandle else None,
+                pad_inches=0.1,
+            )
     plt.close()
 
 
@@ -1231,7 +1291,9 @@ def recall_precision_curves(
         title: str,
         lines: List[Tuple[List, List]],
         class_names: List[str],
-        figsize: Tuple = (15, 15)):
+        figsize: Tuple = (15, 15),
+        outext: Iterable[str] = ['png'],
+):
     """
     Draws Recall-Precision curves for AP measurements.
 
@@ -1248,6 +1310,8 @@ def recall_precision_curves(
         List of the class names
     figsize : Tuple
         The size of the figure
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
@@ -1278,11 +1342,12 @@ def recall_precision_curves(
     if outpath is None:
         plt.show()
     else:
-        fig.savefig(
-            outpath,
-            bbox_extra_artists=[legendhandle],
-            bbox_inches='tight'
-        )
+        for ext in outext:
+            fig.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=[legendhandle],
+                bbox_inches='tight'
+            )
     plt.close()
 
 
@@ -1293,7 +1358,9 @@ def true_positive_iou_histogram(
         class_names: List[str],
         figsize: Tuple = (10, 25),
         colors: Optional[List] = None,
-        color_offset: int = 0):
+        color_offset: int = 0,
+        outext: Iterable[str] = ['png'],
+):
     """
     Draws per-class True Positive IoU precision plot
 
@@ -1309,8 +1376,12 @@ def true_positive_iou_histogram(
         List of the class names
     figsize : Tuple
         The size of the figure
+    colors : Optional[List]
+        List with colors which should be used to draw plots
     color_offset : int
         How many colors from default color list should be skipped
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     if colors is None:
         color = 'purple'
@@ -1335,7 +1406,8 @@ def true_positive_iou_histogram(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath)
+        for ext in outext:
+            plt.savefig(f"{outpath}.{ext}")
     plt.close()
 
 
@@ -1346,7 +1418,9 @@ def true_positives_per_iou_range_histogram(
         range_fraction: float = 0.05,
         figsize: Tuple = (10, 10),
         colors: Optional[List] = None,
-        color_offset: int = 0):
+        color_offset: int = 0,
+        outext: Iterable[str] = ['png'],
+):
     """
     Draws histogram of True Positive IoU values
 
@@ -1362,8 +1436,12 @@ def true_positives_per_iou_range_histogram(
         Fraction by which the range should be divided (1/number_of_segments)
     figsize : Tuple
         The size of the figure
+    colors : Optional[List]
+        List with colors which should be used to draw plots
     color_offset : int
         How many colors from default color list should be skipped
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     if colors is None:
         color = 'purple'
@@ -1387,7 +1465,8 @@ def true_positives_per_iou_range_histogram(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath)
+        for ext in outext:
+            plt.savefig(f"{outpath}.{ext}")
     plt.close()
 
 
@@ -1399,7 +1478,9 @@ def recall_precision_gradients(
         aps: List[float],
         map: float,
         figsize: Tuple = (10, 25),
-        cmap=None):
+        cmap=None,
+        outext: Iterable[str] = ['png'],
+):
     """
     Draws per-class gradients of precision dependent to recall.
 
@@ -1420,6 +1501,10 @@ def recall_precision_gradients(
         Per-class AP values
     figsize : Tuple
         The size of the figure
+    cmap : Any
+        Color map for the plot
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     if cmap is None:
         cmap = plt.get_cmap('RdYlGn')
@@ -1458,7 +1543,8 @@ def recall_precision_gradients(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(outpath)
+        for ext in outext:
+            plt.savefig(f"{outpath}.{ext}")
     plt.close()
 
 
@@ -1473,7 +1559,9 @@ def draw_plot(
         linelabels: Optional[List[str]] = None,
         figsize: Tuple = (15, 15),
         colors: Optional[List] = None,
-        color_offset: int = 0):
+        color_offset: int = 0,
+        outext: Iterable[str] = ['png'],
+):
     """
     Draws plot.
 
@@ -1498,8 +1586,12 @@ def draw_plot(
         Optional list of labels naming each line
     figsize : Tuple
         The size of the figure
+    colors : Optional[List]
+        List with colors which should be used to draw plots
     color_offset : int
         How many colors from default color list should be skipped
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
     """
     plt.figure(figsize=figsize)
 
@@ -1533,10 +1625,11 @@ def draw_plot(
     if outpath is None:
         plt.show()
     else:
-        plt.savefig(
-            outpath,
-            bbox_extra_artists=bbox_extra,
-            bbox_inches='tight')
+        for ext in outext:
+            plt.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=bbox_extra,
+                bbox_inches='tight')
     plt.close()
 
 

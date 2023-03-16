@@ -15,7 +15,7 @@ from kenning.resources import coco_detection
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_dect_iou  # noqa: E501
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 from pathlib import Path
 if sys.version_info.minor < 9:
@@ -311,10 +311,8 @@ class YOLOWrapper(ModelWrapper):
         return np.frombuffer(outputdata, dtype='float32')
 
     @classmethod
-    def parse_io_specification_from_json(cls, json_dict):
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-        keyparams, _ = cls.load_config_file(parsed_json_dict['modelpath'])
+    def derive_io_spec_from_json_params(cls, json_dict):
+        keyparams, _ = cls.load_config_file(json_dict['modelpath'])
         return cls._get_io_specification(keyparams)
 
     def get_io_specification_from_model(self):

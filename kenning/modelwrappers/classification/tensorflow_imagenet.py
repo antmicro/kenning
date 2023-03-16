@@ -12,7 +12,6 @@ from typing import List, Dict
 from pathlib import Path
 import sys
 
-from kenning.utils.args_manager import get_parsed_json_dict
 if sys.version_info.minor < 9:
     from importlib_resources import files
 else:
@@ -132,15 +131,13 @@ class TensorFlowImageNet(TensorFlowWrapper):
         }
 
     @classmethod
-    def parse_io_specification_from_json(cls, json_dict):
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-        input_shape = parsed_json_dict['inputshape']
-        output_shape = [input_shape[0], parsed_json_dict['numclasses']]
+    def derive_io_spec_from_json_params(cls, json_dict):
+        input_shape = json_dict['inputshape']
+        output_shape = [input_shape[0], json_dict['numclasses']]
         return cls._get_io_specification(
-            parsed_json_dict['modelinputname'],
+            json_dict['modelinputname'],
             input_shape,
-            parsed_json_dict['modeloutputname'],
+            json_dict['modeloutputname'],
             output_shape
         )
 

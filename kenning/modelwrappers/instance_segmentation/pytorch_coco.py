@@ -140,7 +140,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         }
 
     @classmethod
-    def parse_io_specification_from_json(cls, json_dict):
+    def derive_io_spec_from_json_params(cls, json_dict):
         return cls._get_io_specification()
 
     def get_io_specification_from_model(self):

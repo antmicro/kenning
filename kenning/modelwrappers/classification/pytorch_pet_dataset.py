@@ -19,8 +19,7 @@ else:
 
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-from kenning.utils.args_manager import (add_parameterschema_argument,
-                                        get_parsed_json_dict)
+from kenning.utils.args_manager import add_parameterschema_argument
 from kenning.utils.args_manager import add_argparse_argument
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.resources.models import classification
@@ -94,10 +93,8 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         }
 
     @classmethod
-    def parse_io_specification_from_json(cls, json_dict):
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-        return cls._get_io_specification(parsed_json_dict['class_count'])
+    def derive_io_spec_from_json_params(cls, json_dict):
+        return cls._get_io_specification(json_dict['class_count'])
 
     def get_io_specification_from_model(self):
         return self._get_io_specification(self.numclasses)

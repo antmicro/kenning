@@ -25,6 +25,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             'argparse_name': '--window-size',
             'description': 'Determines the size of single sample window',
             'default': 128,
+            'type': int
         }
     }
 

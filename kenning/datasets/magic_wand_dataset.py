@@ -27,16 +27,19 @@ class MagicWandDataset(Dataset):
             'argparse_name': '--window-size',
             'description': 'Determines the size of single sample window',
             'default': 128,
+            'type': int
         },
         'window_shift': {
             'argparse_name': '--window-shift',
             'description': 'Determines the shift of single sample window',
             'default': 128,
+            'type': int
         },
         'noise_level': {
             'argparse_name': '--noise-level',
             'description': 'Determines the level of noise added as padding',
             'default': 20,
+            'type': int
         }
     }
 

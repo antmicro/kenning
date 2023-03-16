@@ -5,7 +5,10 @@
 from collections import defaultdict
 import itertools
 from typing import Any, Dict, Iterable, List
+
+from kenning.core.dataprovider import DataProvider
 from kenning.core.flow import KenningFlow
+from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.utils.class_loader import get_all_subclasses, load_class
 
@@ -119,17 +122,17 @@ class KenningFlowHandler(BaseDataflowHandler):
             io_mapping = {}
 
         base_modules = [
-            'kenning.outputcollectors',
-            'kenning.dataproviders',
+            ('kenning.outputcollectors', OutputCollector),
+            ('kenning.dataproviders', DataProvider),
             # It's possible that as Kenningflows develop, new runners are
             # created such that their IO is incompatible with the
             # 'modelruntime_runner'. In that case, these modules should be
             # treated separately, adding individually each item to nodes
             # and IO mapping
-            'kenning.runners'
+            ('kenning.runners', Runner)
         ]
-        for base_module in base_modules:
-            classes = get_all_subclasses(base_module, Runner)
+        for base_module, base_type in base_modules:
+            classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
                 add_node(
                     nodes,

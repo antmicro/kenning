@@ -125,12 +125,12 @@ def _parse_iree_stats(data: bytes) -> Dict[str, int]:
     """
     stats = np.frombuffer(data, dtype=np.uint32, count=6)
     stats_json = {
-        'host_bytes_peak': stats[0],
-        'host_bytes_allocated': stats[1],
-        'host_bytes_freed': stats[2],
-        'device_bytes_peak': stats[3],
-        'device_bytes_allocated': stats[4],
-        'device_bytes_freed': stats[5],
+        'host_bytes_peak': int(stats[0]),
+        'host_bytes_allocated': int(stats[1]),
+        'host_bytes_freed': int(stats[2]),
+        'device_bytes_peak': int(stats[3]),
+        'device_bytes_allocated': int(stats[4]),
+        'device_bytes_freed': int(stats[5]),
     }
     return stats_json
 

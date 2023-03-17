@@ -228,13 +228,13 @@ class FlowGraphCreator(GraphCreator):
         node_id = self.gen_id()
         if node.name in self.primitive_modules:
             self.nodes[node_id] = node.type, {
-                'type': f"{node.cls.__module__}.{node.cls.__name__}",
+                'type': node.cls_name,
                 'parameters': parameters
             }
             self.primitives.append(node_id)
         else:
             self.nodes[node_id] = {
-                'type': f"{node.cls.__module__}.{node.cls.__name__}",
+                'type': node.cls_name,
                 'parameters': parameters,
                 'inputs': {},
                 'outputs': {}

@@ -219,7 +219,7 @@ class PipelineGraphCreator(GraphCreator):
     def create_node(self, node, parameters):
         node_id = self.gen_id()
         self.nodes[node_id] = {
-            'type': f'{node.cls.__module__}.{node.name}',
+            'type': node.cls_name,
             'parameters': parameters
         }
         if node.type == 'optimizer':

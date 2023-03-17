@@ -5,6 +5,8 @@
 import itertools
 from typing import Any, Dict, NamedTuple, List, Tuple, Union
 
+from kenning.utils.class_loader import load_class
+
 
 class Node(NamedTuple):
     """
@@ -18,13 +20,13 @@ class Node(NamedTuple):
         Category of the node (where it appears in the available blocks menu)
     type : str
         Type of the block (for internal usage in pipeline manager)
-    cls : object
-        Class object to extract parameters from.
+    cls_name :
+        Full name of class (including module names) that the node represents
     """
     name: str
     category: str
     type: str
-    cls: object
+    cls_name: str
 
 
 class GraphCreator:
@@ -201,7 +203,8 @@ class BaseDataflowHandler:
             ]
 
         for node in self.nodes.values():
-            parameterschema = node.cls.form_parameterschema()
+            node_cls = load_class(node.cls_name)
+            parameterschema = node_cls.form_parameterschema()
 
             properties = []
             for name, props in parameterschema['properties'].items():

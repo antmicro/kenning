@@ -1,0 +1,40 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
+        "parameters": {
+            "dataset_root": "./build/magic-wand-dataset"
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
+        "parameters": {
+            "model_path": "./kenning/resources/models/classification/magic_wand.h5"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.iree.IREECompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/tflite-magic-wand.vmfb",
+                "backend": "vmvx",
+                "model_framework": "keras"
+            }
+        }
+    ],
+    "runtime": {
+        "type": "kenning.runtimes.iree.IREERuntime",
+        "parameters": {
+            "driver": "local-task"
+        }
+    },
+    "runtime_protocol": {
+        "type": "kenning.runtimeprotocols.iree_uart.IREEUARTProtocol",
+        "parameters": {
+            "port": "/tmp/uart",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

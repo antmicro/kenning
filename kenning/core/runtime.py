@@ -579,7 +579,13 @@ class Runtime(object):
                 return True
 
             with open(path, 'rb') as f:
-                io_spec = json.load(f)
+                try:
+                    io_spec = json.load(f)
+                except json.JSONDecodeError as e:
+                    self.log.warning(
+                        f"Error while parsing IO specification: {e}"
+                    )
+                    return True
         else:
             io_spec = json.loads(input_data)
 

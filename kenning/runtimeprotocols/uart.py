@@ -6,13 +6,10 @@
 UART-based inference communication protocol.
 """
 
-from typing import Any, Tuple, List, Optional, Dict
+from typing import Any, Tuple, List, Optional
 from pathlib import Path
-import re
-import json
 import time
 import serial
-import numpy as np
 
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import MessageType
@@ -23,6 +20,11 @@ import kenning.utils.logger as logger
 
 
 class UARTProtocol(RuntimeProtocol):
+    """
+    An UART-base runtime protocol.
+
+    It is implemented using pyserial.
+    """
 
     arguments_structure = {
         'port': {
@@ -47,6 +49,18 @@ class UARTProtocol(RuntimeProtocol):
             port: str,
             baudrate: int = 9600,
             endianness: str = 'little'):
+        """
+        Initializes UARTProtocol.
+
+        Parameters
+        ----------
+        port : str
+            UART port
+        baudrate : int
+            UART baudrate
+        endiannes : str
+            endianness of the communication
+        """
         self.port = port
         self.baudrate = baudrate
         self.endianness = endianness
@@ -71,7 +85,7 @@ class UARTProtocol(RuntimeProtocol):
 
         try:
             return [ServerStatus.DATA_READY, self.receive_data()]
-        except:
+        except Exception:
             return [ServerStatus.CLIENT_DISCONNECTED, None]
 
     def send_data(self, data: bytes) -> bool:
@@ -161,9 +175,6 @@ class UARTProtocol(RuntimeProtocol):
     def request_processing(self) -> bool:
         self.log.debug('Requesting processing')
         self.send_message(MessageType.PROCESS)
-        ret = self.receive_confirmation()[0]
-        if not ret:
-            return False
         start = time.perf_counter()
         ret = self.receive_confirmation()[0]
         if not ret:

@@ -48,10 +48,10 @@ class TestCoreRuntimeProtocol:
         """
         while True:
             server = self.initprotocol()
-            client = self.initprotocol()
             if server.initialize_server() is False:
                 self.port += 1
                 continue
+            client = self.initprotocol()
             client.initialize_client()
             break
         yield server, client

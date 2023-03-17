@@ -39,7 +39,11 @@ def get_category_name(kenning_class):
     Turns 'kenning.module.submodule1.submodule2. ... .specific_module'
     into 'module (submodule1, submodule2, ...)'
     """
-    names = kenning_class.__module__.split(".")[1:-1]
+    names = kenning_class.__module__
+    # Optionally remove kenning.
+    names = re.sub(r"kenning\.", "", names)
+    # Remove last class name
+    names = names.split(".")[:-1]
     base_module, *submodules = names
     submodules = ', '.join(submodules)
     base_module = str.capitalize(base_module)

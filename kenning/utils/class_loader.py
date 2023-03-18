@@ -83,23 +83,39 @@ def get_all_subclasses(
     checked_classes = {cls.__name__}
     non_final_subclasses = set()
 
-    def check_if_subclass(class_def: ast.ClassDef) -> bool:
+    def collect_subclasses(class_def: ast.ClassDef) -> bool:
+        """
+        Updates the set of subclasses with subclasses for a given class.
+
+        It is an internal function updating the `subclasses`,
+        `checked_classes` structures.
+
+        Parameters
+        ----------
+        class_def : ast.ClassDef
+            Class to collect subclasses for
+
+        Returns
+        -------
+        bool : True if class_def is subclass of cls
+        """
+        found_subclass = False
         checked_classes.add(class_def.name)
         for b in class_def.bases:
             non_final_subclasses.add(b.id)
             if b.id == cls.__name__:
                 subclasses.add(class_def.name)
-                return True
+                found_subclass = True
             elif b.id in subclasses or (
                     b.id in classes_defs and
-                    check_if_subclass(classes_defs[b.id])):
+                    collect_subclasses(classes_defs[b.id])):
                 subclasses.add(class_def.name)
-                return True
-        return False
+                found_subclass = True
+        return found_subclass
 
     for class_name, class_def in classes_defs.items():
         if class_name not in checked_classes:
-            check_if_subclass(class_def)
+            collect_subclasses(class_def)
 
     # try importing subclasses
     result = []

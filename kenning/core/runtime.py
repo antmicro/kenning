@@ -161,7 +161,8 @@ class Runtime(object):
 
         Returns
         -------
-        RuntimeProtocol : object of class RuntimeProtocol
+        RuntimeProtocol :
+            object of class RuntimeProtocol
         """
         return cls(
             protocol,
@@ -175,7 +176,8 @@ class Runtime(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = {
             "type": "object",
@@ -196,7 +198,8 @@ class Runtime(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != Runtime.arguments_structure:
@@ -224,7 +227,8 @@ class Runtime(object):
 
         Returns
         -------
-        Runtime : object of class Runtime
+        Runtime :
+            object of class Runtime
         """
 
         parameterschema = cls.form_parameterschema()
@@ -285,11 +289,16 @@ class Runtime(object):
         """
         self.shouldwork = False
 
-    def prepare_server(self):
+    def prepare_server(self) -> bool:
         """
         Runs initialization of the server.
+
+        Returns
+        -------
+        bool :
+            True if succeded
         """
-        self.protocol.initialize_server()
+        return self.protocol.initialize_server()
 
     def prepare_client(self):
         """
@@ -489,11 +498,13 @@ class Runtime(object):
 
         Returns
         -------
-        bytes : Postprocessed output converted to bytes
+        bytes :
+            Postprocessed output converted to bytes
 
         Raises
         ------
-        AttributeError : Raised if output specification is not loaded.
+        AttributeError :
+            Raised if output specification is not loaded.
         """
         if self.output_spec is None:
             raise AttributeError("You must load the output specification first.")  # noqa: E501
@@ -571,13 +582,13 @@ class Runtime(object):
         Returns
         -------
         bool :
-            Whether the parsing of IO specification was succesfull
+            True if succeded
         """
         if input_data is None:
             path = self.get_io_spec_path(self.modelpath)
             if not path.exists():
                 self.log.info("No Input/Output specification found")
-                return True
+                return False
 
             with open(path, 'rb') as f:
                 try:
@@ -608,7 +619,8 @@ class Runtime(object):
 
         Returns
         -------
-        Path : Returns path to the specification
+        Path :
+            Returns path to the specification
         """
         modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
@@ -624,7 +636,6 @@ class Runtime(object):
             Not used here
         """
         self.log.debug('Processing input')
-        self.protocol.request_success()
         self._run()
         self.protocol.request_success()
         self.log.debug('Input processed')
@@ -647,7 +658,8 @@ class Runtime(object):
 
         Raises
         ------
-        ModelNotLoadedError : Raised if model is not loaded
+        ModelNotLoadedError :
+            Raised if model is not loaded
         """
         raise NotImplementedError
 
@@ -667,11 +679,13 @@ class Runtime(object):
 
         Returns
         -------
-        bytes : data to send to the client
+        bytes :
+            data to send to the client
 
         Raises
         ------
-        ModelNotLoadedError : Raised if model is not loaded
+        ModelNotLoadedError :
+            Raised if model is not loaded
         """
         raise NotImplementedError
 
@@ -711,7 +725,8 @@ class Runtime(object):
 
         Returns
         -------
-        bytes : statistics to be sent to the client
+        bytes :
+            statistics to be sent to the client
         """
         self.log.debug('Uploading stats')
         stats = json.dumps(MeasurementsCollector.measurements.data)
@@ -741,7 +756,8 @@ class Runtime(object):
 
         Returns
         -------
-        bool: True if initialized successfully
+        bool:
+            True if initialized successfully
         """
         return (self.prepare_model(None) and
                 self.prepare_io_specification(None))
@@ -766,7 +782,8 @@ class Runtime(object):
 
         Returns
         -------
-        bool : True if executed successfully
+        bool :
+            True if executed successfully
         """
         compiledmodelpath = Path(compiledmodelpath)
         from kenning.utils.logger import TqdmCallback
@@ -860,7 +877,8 @@ class Runtime(object):
 
         Returns
         -------
-        bool : True if executed successfully
+        bool :
+            True if executed successfully
         """
         from tqdm import tqdm
         if self.protocol is None:
@@ -905,20 +923,20 @@ class Runtime(object):
         """
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
-        self.prepare_server()
+        status = self.prepare_server()
+        if not status:
+            self.log.debug('Server prepare failed')
+            return
+
         self.shouldwork = True
+        self.log.debug('Server started')
+
         while self.shouldwork:
-            actions = self.protocol.wait_for_activity()
-            for status, data in actions:
-                if status == ServerStatus.DATA_READY:
-                    if len(data) != 1:
-                        self.log.error('Too many messages')
-                        self.close_server()
-                        self.shouldwork = False
-                    msgtype, content = self.protocol.parse_message(data[0])
-                    self.callbacks[msgtype](content)
-                elif status == ServerStatus.DATA_INVALID:
-                    self.log.error('Invalid message received')
-                    self.log.error('Client will be disconnected')
-                    self.disconnect()
+            server_status, message = self.protocol.receive_message(timeout=1)
+            if server_status == ServerStatus.DATA_READY:
+                self.callbacks[message.message_type](message.payload)
+            elif server_status == ServerStatus.DATA_INVALID:
+                self.log.error('Invalid message received')
+                self.log.error('Client will be disconnected')
+
         self.protocol.disconnect()

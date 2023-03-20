@@ -9,10 +9,9 @@ TCP-based inference communication protocol.
 import socket
 import selectors
 from typing import Tuple
-from typing import Optional, List
+from typing import Optional
 
 from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import ServerStatus
 
 
@@ -136,42 +135,6 @@ class NetworkProtocol(RuntimeProtocol):
             self.receive_data
         )
         return True
-
-    def collect_messages(
-            self) -> Tuple['ServerStatus', Optional[List[Message]]]:
-        """
-        Parses received data and returns collected messages.
-
-        It takes everything received from the client at a current model.
-        It stores incomplete messages until they are fully collected.
-        Once the message or multiple messages are fully collected, the
-        method returns the list of the messages in form of bytes arrays.
-
-        Parameters
-        ----------
-        data : bytes
-            The currently received bytes from the client
-
-        Returns
-        -------
-        Tuple[ServerStatus, Optional[List[bytes]]] :
-            The method returns the status of the communication (NOTHING if
-            message is incomplete, DATA_READY if there are messages to process)
-            and optionally it returns list of bytes arrays containing separate
-            messages.
-        """
-        messages = []
-        if len(self.input_buffer) == 0:
-            return ServerStatus.NOTHING, None
-
-        while len(self.input_buffer) > 0:
-            server_status, message = self.receive_message()
-            if server_status == ServerStatus.CLIENT_DISCONNECTED:
-                return server_status, messages
-
-            messages.append(message)
-
-        return ServerStatus.DATA_READY, messages
 
     def receive_data(
             self,

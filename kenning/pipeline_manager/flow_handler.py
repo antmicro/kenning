@@ -290,7 +290,7 @@ class FlowGraphCreator(GraphCreator):
             return True
         return False
 
-    def find_compatible_IO(self, from_id, to_id):
+    def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
         from_runner_io = self._get_runner_io(from_id)
@@ -327,7 +327,7 @@ class FlowGraphCreator(GraphCreator):
     def flush_graph(self):
         # Finalize connection creation
         for from_id, to_id in self.connections:
-            local_from, local_to = self.find_compatible_IO(from_id, to_id)
+            local_from, local_to = self.find_compatible_io(from_id, to_id)
             from_ = self.nodes[from_id]
             to_ = self.nodes[to_id]
             if local_to in to_['inputs']:

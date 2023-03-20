@@ -20,7 +20,7 @@ class Node(NamedTuple):
         Category of the node (where it appears in the available blocks menu)
     type : str
         Type of the block (for internal usage in pipeline manager)
-    cls_name :
+    cls_name : str
         Full name of class (including module names) that the node represents
     """
     name: str
@@ -83,7 +83,7 @@ class GraphCreator:
         """
         raise NotImplementedError
 
-    def find_compatible_IO(
+    def find_compatible_io(
             self,
             from_id: str,
             to_id: str
@@ -559,7 +559,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.update_position()
         return node_id
 
-    def find_compatible_IO(self, from_id, to_id):
+    def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
         from_interface_arr = self.nodes[from_id]['interfaces']
@@ -577,7 +577,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         raise RuntimeError("No compatible connections were found")
 
     def create_connection(self, from_id, to_id):
-        from_interface_id, to_interface_id = self.find_compatible_IO(
+        from_interface_id, to_interface_id = self.find_compatible_io(
             from_id, to_id
         )
         self.connections.append({

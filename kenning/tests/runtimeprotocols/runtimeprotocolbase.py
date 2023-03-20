@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from kenning.core.measurements import Measurements
+from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import MessageType
 from kenning.core.runtimeprotocol import RuntimeProtocol, ServerStatus
 from test_coreprotocol import TestCoreRuntimeProtocol
@@ -40,9 +41,9 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         client.disconnect()
         server.disconnect()
 
-    def test_wait_for_activity(self, serverandclient):
+    def test_receive_message(self, serverandclient):
         """
-        Tests client status using `wait_for_activity()` method.
+        Tests client status using `receive_message()` method.
 
         Parameters
         ----------
@@ -52,23 +53,23 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         server, client = serverandclient
 
         # Connect via Client
-        status, received_data = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.CLIENT_CONNECTED
-        assert received_data is None
+        assert message is None
 
         # Disconnect client
         client.disconnect()
-        status, received_data = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.CLIENT_DISCONNECTED
-        assert received_data is None
+        assert message is None
 
         # Timeout is reached
-        status, received_data = server.wait_for_activity()[0]
-        assert status == ServerStatus.NOTHING and received_data is None
+        status, message = server.receive_message(timeout=1)
+        assert status == ServerStatus.NOTHING and message is None
 
-    def test_wait_for_activity_send_data(self, serverandclient):
+    def test_receive_message_send_data(self, serverandclient):
         """
-        Tests the `wait_for_activity()` method by sending data.
+        Tests the `receive_message()` method by sending data.
 
         Parameters
         ----------
@@ -76,43 +77,43 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        status, received_data = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.CLIENT_CONNECTED
-        assert received_data is None
+        assert message is None
 
         # Send data
-        data, _ = self.generate_byte_data()
-        client.send_message(MessageType.OK, data)
-        status, message = server.wait_for_activity()[0]
+        data = self.generate_byte_data()
+        client.send_message(Message(MessageType.OK, data))
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.DATA_READY
-        messagetype, received_data = server.parse_message(message[0])
-        assert received_data == data and messagetype == MessageType.OK
+        assert (message.payload == data and
+                message.message_type == MessageType.OK)
 
-    def test_wait_for_activity_send_error(self, serverandclient):
+    def test_receive_message_send_error(self, serverandclient):
         """
-        Tests the `wait_for_activity()` method by sending error message.
+        Tests the `receive_message()` method by sending error message.
 
         Parameters
         ----------
         serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
             Fixture to get initialized server and client
         """
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         server, client = serverandclient
-        status, received_data = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.CLIENT_CONNECTED
-        assert received_data is None
+        assert message is None
 
         # Send error message
-        client.send_message(MessageType.ERROR, data)
-        status, message = server.wait_for_activity()[0]
+        client.send_message(Message(MessageType.ERROR, data))
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.DATA_READY
-        message_status, received_data = server.parse_message(message[0])
-        assert received_data == data and message_status == MessageType.ERROR
+        assert (message.payload == data and
+                message.message_type == MessageType.ERROR)
 
-    def test_wait_for_activity_send_empty(self, serverandclient):
+    def test_receive_message_send_empty(self, serverandclient):
         """
-        Tests the `wait_for_activity()` method by sending empty message.
+        Tests the `receive_message()` method by sending empty message.
 
         Parameters
         ----------
@@ -120,19 +121,19 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        status, received_data = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.CLIENT_CONNECTED
-        assert received_data is None
+        assert message is None
 
         # Send empty message
-        class EmptyMessage:
+        class EmptyMessage(object):
             def to_bytes(self):
                 return b''
 
-        client.send_message(EmptyMessage(), b'')
-        status, received_data = server.wait_for_activity()[0]
-        assert received_data == [b'']
-        assert status == ServerStatus.DATA_READY
+        client.send_message(EmptyMessage())
+        status, message = server.receive_message(timeout=1)
+        assert message is None
+        assert status == ServerStatus.NOTHING, status
 
     def test_send_data(self, serverandclient):
         """
@@ -144,7 +145,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         assert client.send_data(data) is True
 
     def test_receive_data(self, serverandclient):
@@ -170,13 +171,13 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         server.accept_client(server.serversocket, None)
 
         assert client.send_data(data) is True
         status, received_data = server.receive_data(None, None)
         assert status is ServerStatus.DATA_READY
-        assert [data] == received_data
+        assert data == received_data
 
     def test_receive_client_disconnect(self, serverandclient):
         """
@@ -240,29 +241,6 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         protocol = self.initprotocol()
         assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
 
-    def test_collect_messages(self):
-        """
-        Tests the `collect_messages()` method.
-        """
-        # Valid data
-        protocol = self.initprotocol()
-        assert not protocol.collecteddata
-        data, answer = self.generate_byte_data()
-        status, output = protocol.collect_messages(data)
-        assert output == answer and status == ServerStatus.DATA_READY
-
-        # Empty data
-        protocol = self.initprotocol()
-        assert not protocol.collecteddata
-        status, output = protocol.collect_messages(b'')
-        assert output is None and status == ServerStatus.NOTHING
-
-        # Wrong amount of bytes to be read
-        data = (10*4).to_bytes(4, 'little', signed=False)
-        data += (1).to_bytes(4, 'little', signed=False)
-        status, output = protocol.collect_messages(data)
-        assert output is None and status == ServerStatus.NOTHING
-
     def test_wait_send(self, serverandclient):
         """
         Tests the `wait_send()` method.
@@ -274,7 +252,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
-        data, answer = self.generate_byte_data()
+        data = self.generate_byte_data()
 
         for i in range(10):
             # Send the data
@@ -284,11 +262,11 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             # Receive data
             server_status, server_data = server.receive_data(None, None)
             assert server_status == ServerStatus.DATA_READY
-            assert server_data == answer
+            assert server_data == data, f'{server_data}!={data}'
 
     def test_send_message(self, serverandclient):
         """
-        Tests the `send_message()` method.
+        Tests the `send_message(Message())` method.
 
         Parameters
         ----------
@@ -297,13 +275,13 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
 
-        assert client.send_message(MessageType.DATA, data=data) is True
-        assert server.send_message(MessageType.DATA, data=data) is True
+        assert client.send_message(Message(MessageType.DATA, data)) is True
+        assert server.send_message(Message(MessageType.DATA, data)) is True
         client.disconnect()
         with pytest.raises(ConnectionResetError):
-            server.send_message(MessageType.OK, data=b'')
+            server.send_message(Message(MessageType.OK))
 
     @pytest.mark.parametrize('message,expected', [
         ((MessageType.OK, b''), (True, b'')),
@@ -332,7 +310,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        client.send_message(*message)
+        client.send_message(Message(*message))
         output = server.receive_confirmation()
         assert output == expected
 
@@ -369,19 +347,18 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             shared_list.append(output)
 
         server.accept_client(server.serversocket, None)
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         shared_list = (multiprocessing.Manager()).list()
         thread = multiprocessing.Process(target=upload,
                                          args=(client, data, shared_list))
 
         thread.start()
         time.sleep(0.1)
-        status, message = server.wait_for_activity()[0]
-        message_status, received_data = server.parse_message(message[0])
-        server.send_message(MessageType.OK, b'')
+        status, message = server.receive_message(timeout=1)
+        server.send_message(Message(MessageType.OK, b''))
         thread.join()
         assert status == ServerStatus.DATA_READY
-        assert received_data == data
+        assert message.payload == data
         assert shared_list[0] is True
 
     def test_upload_model(self, serverandclient, tmpfolder):
@@ -397,7 +374,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         path = tmpfolder / uuid.uuid4().hex
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         with open(path, "wb") as file:
             file.write(data)
 
@@ -414,7 +391,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             """
             status, received_model = server.receive_data(None, None)
             shared_list.append((status, received_model))
-            output = server.send_message(MessageType.OK, b'')
+            output = server.send_message(Message(MessageType.OK))
             shared_list.append(output)
 
         shared_list = (multiprocessing.Manager()).list()
@@ -427,8 +404,9 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert shared_list[1] is True
         receive_status, received_data = shared_list[0]
         assert receive_status == ServerStatus.DATA_READY
-        answer = (MessageType.MODEL, data)
-        assert client.parse_message(received_data[0]) == answer
+        answer = Message(MessageType.MODEL, data)
+        parsed_message = client.parse_message(received_data)
+        assert parsed_message == answer, f'{parsed_message}!={answer}'
 
     def test_upload_io_specification(self, serverandclient, tmpfolder):
         """
@@ -461,7 +439,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             """
             status, received = server.receive_data(None, None)
             shared_list.append((status, received))
-            output = server.send_message(MessageType.OK, b'')
+            output = server.send_message(Message(MessageType.OK))
             shared_list.append(output)
 
         shared_list = (multiprocessing.Manager()).list()
@@ -479,8 +457,9 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert send_message_status is True
         assert receive_status == ServerStatus.DATA_READY
         encoded_data = (json.dumps(io_specification)).encode()
-        answer = (MessageType.IOSPEC, encoded_data)
-        assert client.parse_message(received_data[0]) == answer
+        answer = Message(MessageType.IOSPEC, encoded_data)
+        parsed_message = client.parse_message(received_data)
+        assert parsed_message == answer, f'{parsed_message}!={answer}'
 
     def test_download_output(self, serverandclient):
         """
@@ -492,10 +471,10 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = serverandclient
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         server.accept_client(server.serversocket, None)
 
-        assert server.send_message(MessageType.OK, data) is True
+        assert server.send_message(Message(MessageType.OK, data)) is True
         status, downloaded_data = client.download_output()
         assert status is True
         assert downloaded_data == data
@@ -525,7 +504,7 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
             shared_list : List
                 Shared list to append downloaded statistics
             """
-            client.send_message(MessageType.OK)
+            client.send_message(Message(MessageType.OK))
             client.receive_confirmation()
             output = client.download_statistics()
             shared_list.append(output)
@@ -537,14 +516,14 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         output = server.receive_confirmation()
         assert output == (True, b'')
-        server.send_message(MessageType.OK)
+        server.send_message(Message(MessageType.OK))
 
         time.sleep(0.1)
-        status, message = server.wait_for_activity()[0]
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.DATA_READY
-        message_type, message = server.parse_message(message[0])
-        assert message_type == MessageType.STATS and message == b''
-        assert server.send_message(MessageType.OK, to_send) is True
+        assert (message.message_type == MessageType.STATS and
+                message.payload == b'')
+        assert server.send_message(Message(MessageType.OK, to_send)) is True
         thread_send.join()
 
         downloaded_stats = shared_list[0]
@@ -569,15 +548,14 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         messagetype : MessageType
             A MessageType to send along with data
         """
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
 
-        client.send_message(messagetype, data)
-        status, message = server.wait_for_activity()[0]
+        client.send_message(Message(messagetype, data))
+        status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.DATA_READY
-        received_type, received_data = server.parse_message(message[0])
-        assert data == received_data and received_type == messagetype
+        assert data == message.payload and messagetype == message.message_type
 
     def test_disconnect(self, serverandclient):
         """
@@ -590,16 +568,16 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
-        assert client.send_message(MessageType.OK) is True
-        assert server.send_message(MessageType.OK) is True
+        assert client.send_message(Message(MessageType.OK)) is True
+        assert server.send_message(Message(MessageType.OK)) is True
         client.disconnect()
         with pytest.raises(OSError):
-            client.send_message(MessageType.OK)
+            client.send_message(Message(MessageType.OK))
         with pytest.raises(ConnectionResetError):
-            server.send_message(MessageType.OK)
+            server.send_message(Message(MessageType.OK))
         server.disconnect()
         with pytest.raises(OSError):
-            server.send_message(MessageType.OK)
+            server.send_message(Message(MessageType.OK))
 
     def test_request_processing(self, serverandclient):
         """
@@ -613,26 +591,21 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
 
-        def send_confirmation(client):
-            client.send_message(MessageType.OK)
-            time.sleep(0.1)
-            client.send_message(MessageType.OK)
+        def send_ok(client):
+            client.send_message(Message(MessageType.OK))
 
-        def send_reject_first(client):
-            client.send_message(MessageType.ERROR)
+        def send_error(client):
+            client.send_message(Message(MessageType.ERROR))
 
-        def send_reject_second(client):
-            client.send_message(MessageType.OK)
-            client.send_message(MessageType.ERROR)
-
-        functions = (send_confirmation, send_reject_first, send_reject_second)
-        expected = (True, False, False)
+        functions = (send_ok, send_error)
+        expected = (True, False)
         args = (client, )
 
         for function, expected in zip(functions, expected):
             thread_send = multiprocessing.Process(target=function, args=args)
             thread_send.start()
-            assert server.request_processing() is expected
+            response = server.request_processing()
+            assert response is expected, f'{response}!={expected}'
             thread_send.join()
 
     def test_request_failure(self, serverandclient):
@@ -649,8 +622,9 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         server.request_failure()
         status, message = client.receive_data(None, None)
         assert status == ServerStatus.DATA_READY
-        message_type, message = client.parse_message(message[0])
-        assert message_type == MessageType.ERROR and message == b''
+        message = client.parse_message(message)
+        assert (message.message_type == MessageType.ERROR and
+                message.payload == b'')
 
     def test_request_success(self, serverandclient):
         """
@@ -663,9 +637,10 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         """
         server, client = serverandclient
         server.accept_client(server.serversocket, None)
-        data, _ = self.generate_byte_data()
+        data = self.generate_byte_data()
         server.request_success(data)
         status, message = client.receive_data(None, None)
         assert status == ServerStatus.DATA_READY
-        message_type, message = client.parse_message(message[0])
-        assert message_type == MessageType.OK and message == data
+        message = client.parse_message(message)
+        assert (message.message_type == MessageType.OK and
+                message.payload == data)

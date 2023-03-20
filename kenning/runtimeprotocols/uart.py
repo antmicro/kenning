@@ -17,7 +17,8 @@ import kenning.utils.logger as logger
 
 class UARTProtocol(RuntimeProtocol):
     """
-    An UART-base runtime protocol.
+    An UART-base runtime protocol. It supports only client-side as a server is
+    expected to be bare-metal platform.
 
     It is implemented using pyserial.
     """

@@ -12,6 +12,7 @@ import re
 import json
 import numpy as np
 
+from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import MessageType
 from kenning.core.measurements import Measurements
 from kenning.runtimeprotocols.uart import UARTProtocol
@@ -138,17 +139,20 @@ def _parse_iree_stats(data: bytes) -> Dict[str, int]:
 class IREEUARTProtocol(UARTProtocol):
 
     def upload_io_specification(self, path: Path) -> bool:
-        self.log.debug('Uploading io specification')
+        self.log.debug('Uploading IREE io specification')
         with open(path, 'rb') as io_spec_file:
             io_spec = json.load(io_spec_file)
 
         data = _io_spec_to_iree_model_struct(io_spec)
 
-        self.send_message(MessageType.IOSPEC, data)
+        message = Message(MessageType.IOSPEC, data)
+
+        self.send_message(message)
         return self.receive_confirmation()[0]
 
     def download_statistics(self) -> 'Measurements':
-        self.send_message(MessageType.STATS)
+        self.log.debug('Downloading statistics')
+        self.send_message(Message(MessageType.STATS))
         status, data = self.receive_confirmation()
         measurements = Measurements()
         if status and isinstance(data, bytes) and len(data) > 0:

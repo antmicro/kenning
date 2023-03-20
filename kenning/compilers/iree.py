@@ -92,7 +92,7 @@ def tensorflowconversion(model_path, input_spec):
 def tfliteconversion(model_path, input_spec):
     from iree.compiler import tflite as ireetflite
 
-    return ireetflite.compile_file(model_path, import_only=True)
+    return ireetflite.compile_file(str(model_path), import_only=True)
 
 
 backend_convert = {

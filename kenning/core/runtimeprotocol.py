@@ -9,12 +9,23 @@ the client.
 
 from enum import Enum
 from pathlib import Path
+import selectors
 import argparse
+import time
+import json
 
-from typing import Any, Tuple, List, Optional, Union, Dict
+from typing import Any, Tuple, Optional, Union, Dict
 
 from kenning.core.measurements import Measurements
-from kenning.utils.args_manager import get_parsed_json_dict, add_argparse_argument, add_parameterschema_argument  # noqa: E501
+from kenning.core.measurements import MeasurementsCollector
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import add_argparse_argument
+from kenning.utils.args_manager import add_parameterschema_argument
+import kenning.utils.logger as logger
+
+
+MSG_SIZE_LEN = 4
+MSG_TYPE_LEN = 2
 
 
 class RequestFailure(Exception):
@@ -46,7 +57,8 @@ def check_request(
 
     Returns
     -------
-    Union[bool, Tuple[bool, Optional[bytes]]] : the request given in the input
+    Union[bool, Tuple[bool, Optional[bytes]]] :
+        the request given in the input
     """
     if isinstance(request, bool):
         if not request:
@@ -84,9 +96,9 @@ class MessageType(Enum):
     STATS = 6
     IOSPEC = 7
 
-    def to_bytes(self, endianness: str = 'little') -> str:
+    def to_bytes(self, endianness: str = 'little') -> bytes:
         """
-        Converts MessageType enum to bytes in uint16 format.
+        Converts MessageType enum to bytes in format.
 
         Parameters
         ----------
@@ -95,9 +107,10 @@ class MessageType(Enum):
 
         Returns
         -------
-        bytes : converted message type
+        bytes :
+            converted message type
         """
-        return int(self.value).to_bytes(2, endianness, signed=False)
+        return int(self.value).to_bytes(MSG_TYPE_LEN, endianness, signed=False)
 
     @classmethod
     def from_bytes(
@@ -105,7 +118,7 @@ class MessageType(Enum):
             value: bytes,
             endianness: str = 'little') -> 'MessageType':
         """
-        Converts 2-byte bytes to MessageType enum.
+        Converts bytes to MessageType enum.
 
         Parameters
         ----------
@@ -116,9 +129,90 @@ class MessageType(Enum):
 
         Returns
         -------
-        MessageType : enum value
+        MessageType :
+            enum value
         """
         return MessageType(int.from_bytes(value, endianness, signed=False))
+
+
+class Message(object):
+    """
+    Class representing single message used in protocol.
+
+    It consists of message type and optional payload and supports conversion
+    from/to bytes.
+
+    It can be converted to byte array and has following format:
+
+    <num-bytes><msg-type>[<data>]
+
+    Where:
+
+    * num-bytes - tells the size of <msg-type>[<data>] part of the message,
+      in bytes
+    * msg-type - the type of the message. For message types check the
+      MessageType enum from kenning.core.runtimeprotocol
+    * data - optional data that comes with the message of MessageType
+
+    """
+
+    def __init__(self, messsage_type: MessageType, payload: bytes = b''):
+        self.message_type = messsage_type
+        self.payload = payload
+
+    @property
+    def message_size(self) -> int:
+        return MSG_TYPE_LEN + len(self.payload)
+
+    @classmethod
+    def from_bytes(cls, data: bytes, endianness: str = 'little') -> 'Message':
+        """
+        Converts bytes to Message.
+
+        Parameters
+        ----------
+        data : bytes
+            Data to be converted to Message
+        endianness : str
+            Endiannes of the bytes
+
+        Returns
+        -------
+        Message :
+            Message obtained from given bytes
+        """
+        assert len(data) >= MSG_SIZE_LEN + MSG_TYPE_LEN
+        message_type = MessageType.from_bytes(
+            data[MSG_SIZE_LEN: MSG_SIZE_LEN + MSG_TYPE_LEN],
+            endianness=endianness
+        )
+        message_payload = data[MSG_SIZE_LEN + MSG_TYPE_LEN:]
+
+        return cls(message_type, message_payload)
+
+    def to_bytes(self, endianness: str = 'little') -> bytes:
+        """
+        Converts Message to bytes.
+
+        Parameters
+        ----------
+        endianness : str
+            Endiannes of the bytes
+
+        Returns
+        -------
+        bytes :
+            Message converted to bytes
+        """
+        message_size = self.message_size
+        data = message_size.to_bytes(MSG_SIZE_LEN, byteorder=endianness)
+        data += self.message_type.to_bytes(endianness)
+        data += self.payload
+
+        return data
+
+    def __repr__(self) -> str:
+        return f'Message(type={self.message_type}, size={self.message_size})'
 
 
 class ServerStatus(Enum):
@@ -158,10 +252,28 @@ class RuntimeProtocol(object):
     of the communication with the target device.
     """
 
-    arguments_structure = {}
+    arguments_structure = {
+        'packet_size': {
+            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
+            'type': int,
+            'default': 4096
+        },
+        'endianness': {
+            'description': 'The endianness of data to transfer',
+            'default': 'little',
+            'enum': ['big', 'little']
+        }
+    }
 
-    def __init__(self):
-        pass
+    def __init__(
+            self,
+            packet_size: int = 4096,
+            endianness: str = 'little'):
+        self.packet_size = packet_size
+        self.endianness = endianness
+        self.selector = selectors.DefaultSelector()
+        self.log = logger.get_logger()
+        self.input_buffer = b''
 
     @classmethod
     def _form_argparse(cls):
@@ -214,7 +326,8 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        RuntimeProtocol : object of class RuntimeProtocol
+        RuntimeProtocol :
+            object of class RuntimeProtocol
         """
         return cls()
 
@@ -226,7 +339,8 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = {
             "type": "object",
@@ -242,7 +356,8 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Dict : schema for the class
+        Dict :
+            schema for the class
         """
         parameterschema = cls._form_parameterschema()
         if cls.arguments_structure != RuntimeProtocol.arguments_structure:
@@ -268,7 +383,8 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        RuntimeProtocol : object of class RuntimeProtocol
+        RuntimeProtocol :
+            object of class RuntimeProtocol
         """
 
         parameterschema = cls.form_parameterschema()
@@ -288,7 +404,8 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if succeded
+        bool :
+            True if succeded
         """
         raise NotImplementedError
 
@@ -302,23 +419,71 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if succeded
+        bool :
+            True if succeded
         """
         raise NotImplementedError
 
-    def wait_for_activity(self) -> List[Tuple['ServerStatus', Any]]:
+    def send_message(self, message: Message) -> bool:
         """
-        Waits for incoming data from the other side of connection.
+        Sends message to the target device.
 
-        This method should wait for the input data to arrive and return the
-        appropriate status code along with received data.
+        Parameters
+        ----------
+        message : Message
+            Message to be sent
 
         Returns
         -------
-        List[Tuple['ServerStatus', Any]] :
-            list of messages along with status codes.
+        bool :
+            True if succeeded
         """
-        raise NotImplementedError
+        self.log.debug(f'Sending message {message}')
+        self.send_data(message.to_bytes())
+
+    def receive_message(
+            self,
+            timeout: Optional[float] = None) -> Tuple[ServerStatus, Message]:
+        """
+        Receives single message.
+
+        Parameters
+        ----------
+        timeout : int
+            Receive timeout in seconds. If timeout > 0, this specifies the
+            maximum wait time, in seconds. If timeout <= 0, the call won't
+            block, and will report the currently ready file objects. If timeout
+            is None, the call will block until a monitored file object becomes
+            ready.
+
+        Returns
+        -------
+        Tuple(ServerStatus, Message) :
+            Tuple containing server status and received message. The status is
+            NOTHING if message is incomplete and DATA_READY if it is complete
+        """
+        server_status, data = self._receive_data(timeout)
+        if data is None:
+            return server_status, None
+
+        self.input_buffer += data
+        if len(self.input_buffer) < MSG_SIZE_LEN:
+            return ServerStatus.NOTHING, None
+
+        data_to_load_len = int.from_bytes(
+            self.input_buffer[:MSG_SIZE_LEN],
+            byteorder=self.endianness,
+            signed=False)
+        if len(self.input_buffer) - MSG_SIZE_LEN < data_to_load_len:
+            return ServerStatus.NOTHING, None
+
+        self.log.debug(self.input_buffer[:MSG_SIZE_LEN + data_to_load_len])
+        message = Message.from_bytes(
+            self.input_buffer[:MSG_SIZE_LEN + data_to_load_len]
+        )
+        self.log.debug(f'Received message {message}')
+
+        return ServerStatus.DATA_READY, message
 
     def send_data(self, data: bytes) -> bool:
         """
@@ -333,22 +498,102 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if successful
+        bool :
+            True if successful
         """
         raise NotImplementedError
 
-    def receive_data(self) -> Tuple['ServerStatus', Any]:
+    def receive_data(
+            self,
+            connection: Any,
+            mask: int) -> Tuple[ServerStatus, Optional[bytes]]:
         """
-        Gathers data from the client.
+        Receives data from the target device.
 
-        This method should be called by wait_for_activity method in order to
-        receive data from the client.
+        Parameters
+        ----------
+        connection : Any
+            Connection used to read data
+        mask : int
+            Selector mask from the event
 
         Returns
         -------
-        Tuple[ServerStatus, Any] : receive status along with received data
+        Tuple[ServerStatus, Optional[bytes]] :
+            Status of receive and optionally data that was received
         """
         raise NotImplementedError
+
+    def _receive_data(
+            self,
+            timeout: Optional[float] = None
+            ) -> Tuple[ServerStatus, Optional[bytes]]:
+        """
+        Gathers data from the client.
+
+        Parameters
+        ----------
+        timeout : int
+            Receive timeout in seconds. If timeout > 0, this specifies the
+            maximum wait time, in seconds. If timeout <= 0, the call won't
+            block, and will report the currently ready file objects. If timeout
+            is None, the call will block until a monitored file object becomes
+            ready.
+
+        Returns
+        -------
+        Tuple[ServerStatus, Any] :
+            receive status along with received data
+        """
+        events = self.selector.select(timeout=timeout)
+
+        results = b''
+        for key, mask in events:
+            if mask & selectors.EVENT_READ:
+                callback = key.data
+                server_status, data = callback(key.fileobj, mask)
+                if (server_status == ServerStatus.CLIENT_DISCONNECTED
+                        or data is None):
+                    return server_status, None
+
+                results += data
+
+        if len(results) == 0:
+            return ServerStatus.NOTHING, None
+
+        return ServerStatus.DATA_READY, results
+
+    def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
+        """
+        Waits until the OK message is received.
+
+        Method waits for the OK message from the other side of connection.
+
+        Returns
+        -------
+        bool :
+            True if OK received, False otherwise
+        """
+        while True:
+            status, message = self.receive_message()
+
+            if status == ServerStatus.DATA_READY:
+                if message.message_type == MessageType.ERROR:
+                    self.log.error('Error during uploading input')
+                    return False, None
+                if message.message_type != MessageType.OK:
+                    self.log.error('Unexpected message')
+                    return False, None
+                self.log.debug('Upload finished successfully')
+                return True, message.payload
+
+            elif status == ServerStatus.CLIENT_DISCONNECTED:
+                self.log.error('Client is disconnected')
+                return False, None
+
+            elif status == ServerStatus.DATA_INVALID:
+                self.log.error('Received invalid packet')
+                return False, None
 
     def upload_input(self, data: bytes) -> bool:
         """
@@ -364,9 +609,15 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if ready for inference
+        bool :
+            True if ready for inference
         """
-        raise NotImplementedError
+        self.log.debug('Uploading input')
+
+        message = Message(MessageType.DATA, data)
+
+        self.send_message(message)
+        return self.receive_confirmation()[0]
 
     def upload_model(self, path: Path) -> bool:
         """
@@ -385,9 +636,17 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if model upload finished successfully
+        bool :
+            True if model upload finished successfully
         """
-        raise NotImplementedError
+        self.log.debug('Uploading model')
+        with open(path, 'rb') as modfile:
+            data = modfile.read()
+
+        message = Message(MessageType.MODEL, data)
+
+        self.send_message(message)
+        return self.receive_confirmation()[0]
 
     def upload_io_specification(self, path: Path) -> bool:
         """
@@ -406,9 +665,17 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if data upload finished successfully
+        bool :
+            True if data upload finished successfully
         """
-        raise NotImplementedError
+        self.log.debug('Uploading io specification')
+        with open(path, 'rb') as detfile:
+            data = detfile.read()
+
+        message = Message(MessageType.IOSPEC, data)
+
+        self.send_message(message)
+        return self.receive_confirmation()[0]
 
     def request_processing(self) -> bool:
         """
@@ -424,9 +691,23 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if inference finished successfully
+        bool :
+            True if inference finished successfully
         """
-        raise NotImplementedError
+        self.log.debug('Requesting processing')
+        self.send_message(Message(MessageType.PROCESS))
+        start = time.perf_counter()
+        ret = self.receive_confirmation()[0]
+        if not ret:
+            return False
+
+        duration = time.perf_counter() - start
+        measurementname = 'protocol_inference_step'
+        MeasurementsCollector.measurements += {
+            measurementname: [duration],
+            f'{measurementname}_timestamp': [time.perf_counter()]
+        }
+        return True
 
     def download_output(self) -> Tuple[bool, Optional[bytes]]:
         """
@@ -437,10 +718,12 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Tuple[bool, Optional[bytes]] : tuple with download status (True if
-            successful) and downloaded data
+        Tuple[bool, Optional[bytes]] :
+            tuple with download status (True if successful) and downloaded data
         """
-        raise NotImplementedError
+        self.log.debug('Downloading output')
+        self.send_message(Message(MessageType.OUTPUT))
+        return self.receive_confirmation()
 
     def download_statistics(self) -> 'Measurements':
         """
@@ -450,9 +733,18 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Measurements : inference statistics on target device
+        Measurements :
+            inference statistics on target device
         """
-        return Measurements()
+        self.log.debug('Downloading statistics')
+        self.send_message(Message(MessageType.STATS))
+        status, dat = self.receive_confirmation()
+        measurements = Measurements()
+        if status and isinstance(dat, bytes) and len(dat) > 0:
+            jsonstr = dat.decode('utf8')
+            jsondata = json.loads(jsonstr)
+            measurements += jsondata
+        return measurements
 
     def request_success(self, data: bytes = bytes()) -> bool:
         """
@@ -465,9 +757,14 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if sent successfully
+        bool :
+            True if sent successfully
         """
-        raise NotImplementedError
+        self.log.debug('Sending OK')
+
+        message = Message(MessageType.OK, data)
+
+        return self.send_message(message)
 
     def request_failure(self) -> bool:
         """
@@ -475,11 +772,14 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        bool : True if sent successfully
+        bool :
+            True if sent successfully
         """
-        raise NotImplementedError
+        self.log.debug('Sending ERROR')
 
-    def parse_message(self, message: bytes) -> Tuple['MessageType', bytes]:
+        return self.send_message(Message(MessageType.ERROR))
+
+    def parse_message(self, message: bytes) -> Message:
         """
         Parses message received in the wait_for_activity method.
 
@@ -493,9 +793,10 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Tuple['MessageType', bytes] : message type and accompanying data
+        Message :
+            Parsed message
         """
-        raise NotImplementedError
+        return Message.from_bytes(message)
 
     def disconnect(self):
         """

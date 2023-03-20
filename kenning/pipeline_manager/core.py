@@ -6,6 +6,10 @@ import itertools
 from typing import Any, Dict, NamedTuple, List, Tuple, Union
 
 from kenning.utils.class_loader import load_class
+from kenning.utils.logger import get_logger
+
+
+_LOGGER = get_logger()
 
 
 class Node(NamedTuple):
@@ -202,8 +206,18 @@ class BaseDataflowHandler:
                 for io in io_list
             ]
 
-        for node in self.nodes.values():
-            node_cls = load_class(node.cls_name)
+        toremove = set()
+        for key, node in self.nodes.items():
+            try:
+                node_cls = load_class(node.cls_name)
+            except (ModuleNotFoundError, ImportError, Exception) as err:
+                msg = f'Could not add {node_cls}. Reason:'
+                _LOGGER.warn('-' * len(msg))
+                _LOGGER.warn(msg)
+                _LOGGER.warn(err)
+                _LOGGER.warn('-' * len(msg))
+                toremove.add(key)
+                continue
             parameterschema = node_cls.form_parameterschema()
 
             properties = []
@@ -257,6 +271,8 @@ class BaseDataflowHandler:
                 'outputs': strip_io(self.io_mapping[node.type]['outputs'])
             })
 
+        for key in toremove:
+            del self.nodes[key]
         return specification
 
     def parse_dataflow(self, dataflow: Dict) -> Tuple[bool, Union[Dict, str]]:

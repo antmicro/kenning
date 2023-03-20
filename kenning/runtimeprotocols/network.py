@@ -8,17 +8,12 @@ TCP-based inference communication protocol.
 
 import socket
 import selectors
-import kenning.utils.logger as logger
 from typing import Tuple
-import json
 from typing import Optional, List
-import time
 
 from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.core.runtimeprotocol import MessageType
+from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import ServerStatus
-from kenning.core.measurements import Measurements
-from kenning.core.measurements import MeasurementsCollector
 
 
 class NetworkProtocol(RuntimeProtocol):
@@ -26,18 +21,6 @@ class NetworkProtocol(RuntimeProtocol):
     A TCP-based runtime protocol.
 
     Protocol is implemented using BSD sockets and selectors-based pooling.
-
-    Every message in the network protocol has a format:
-
-    <num-bytes><msg-type>[<data>]
-
-    Where:
-
-    * num-bytes - tells the size of <msg-type>[<data>] part of the message,
-      in bytes
-    * msg-type - the type of the message. For message types check the
-      MessageType enum from kenning.core.runtimeprotocol
-    * <data> - optional data that comes with the message of MessageType
     """
 
     arguments_structure = {
@@ -50,16 +33,6 @@ class NetworkProtocol(RuntimeProtocol):
             'description': 'The port for the target device',
             'type': int,
             'required': True
-        },
-        'packet_size': {
-            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
-            'type': int,
-            'default': 4096
-        },
-        'endianness': {
-            'description': 'The endianness of data to transfer',
-            'default': 'little',
-            'enum': ['big', 'little']
         }
     }
 
@@ -86,13 +59,9 @@ class NetworkProtocol(RuntimeProtocol):
         self.host = host
         self.port = port
         self.collecteddata = bytes()
-        self.endianness = endianness
-        self.log = logger.get_logger()
-        self.selector = selectors.DefaultSelector()
         self.serversocket = None
         self.socket = None
-        self.packet_size = packet_size
-        super().__init__()
+        super().__init__(packet_size=packet_size, endianness=endianness)
 
     @classmethod
     def from_argparse(cls, args):
@@ -133,6 +102,7 @@ class NetworkProtocol(RuntimeProtocol):
             return ServerStatus.CLIENT_CONNECTED, None
 
     def initialize_server(self):
+        self.log.debug(f'Initializing server at {self.host}:{self.port}')
         self.serversocket = socket.socket(
             socket.AF_INET,
             socket.SOCK_STREAM
@@ -154,6 +124,7 @@ class NetworkProtocol(RuntimeProtocol):
         return True
 
     def initialize_client(self):
+        self.log.debug(f'Initializing client at {self.host}:{self.port}')
         self.socket = socket.socket(
             socket.AF_INET,
             socket.SOCK_STREAM
@@ -166,7 +137,8 @@ class NetworkProtocol(RuntimeProtocol):
         )
         return True
 
-    def collect_messages(self, data: bytes) -> Tuple['ServerStatus', Optional[List[bytes]]]:  # noqa: E501
+    def collect_messages(
+            self) -> Tuple['ServerStatus', Optional[List[Message]]]:
         """
         Parses received data and returns collected messages.
 
@@ -188,31 +160,23 @@ class NetworkProtocol(RuntimeProtocol):
             and optionally it returns list of bytes arrays containing separate
             messages.
         """
-        self.collecteddata += data
-        if len(self.collecteddata) < 4:
-            return ServerStatus.NOTHING, None
-        datatoload = int.from_bytes(
-            self.collecteddata[:4],
-            byteorder=self.endianness,
-            signed=False
-        )
-        if len(self.collecteddata) - 4 < datatoload:
-            return ServerStatus.NOTHING, None
         messages = []
-        while len(self.collecteddata) - 4 >= datatoload:
-            self.collecteddata = self.collecteddata[4:]
-            message = self.collecteddata[:datatoload]
+        if len(self.input_buffer) == 0:
+            return ServerStatus.NOTHING, None
+
+        while len(self.input_buffer) > 0:
+            server_status, message = self.receive_message()
+            if server_status == ServerStatus.CLIENT_DISCONNECTED:
+                return server_status, messages
+
             messages.append(message)
-            self.collecteddata = self.collecteddata[datatoload:]
-            if len(self.collecteddata) > 4:
-                datatoload = int.from_bytes(
-                    self.collecteddata[:4],
-                    byteorder=self.endianness,
-                    signed=False
-                )
+
         return ServerStatus.DATA_READY, messages
 
-    def receive_data(self, socket, mask) -> Tuple['ServerStatus', Optional[List[bytes]]]:  # noqa: E501
+    def receive_data(
+            self,
+            socket: socket.socket,
+            mask: int) -> Tuple[ServerStatus, Optional[bytes]]:
         data = self.socket.recv(self.packet_size)
         if not data:
             self.log.info('Client disconnected from the server')
@@ -221,19 +185,7 @@ class NetworkProtocol(RuntimeProtocol):
             self.socket = None
             return ServerStatus.CLIENT_DISCONNECTED, None
         else:
-            return self.collect_messages(data)
-
-    def wait_for_activity(self):
-        events = self.selector.select(timeout=1)
-        results = []
-        for key, mask in events:
-            if mask & selectors.EVENT_READ:
-                callback = key.data
-                code, data = callback(key.fileobj, mask)
-                results.append((code, data))
-        if len(results) == 0:
-            return [(ServerStatus.NOTHING, None)]
-        return results
+            return ServerStatus.DATA_READY, data
 
     def wait_send(self, data: bytes):
         """
@@ -247,145 +199,26 @@ class NetworkProtocol(RuntimeProtocol):
 
         Returns
         -------
-        int : The number of bytes sent
+            int : The number of bytes sent
         """
+        if self.socket is None:
+            return -1
+
         ret = self.socket.send(data)
         while True:
             events = self.selector.select(timeout=1)
             for key, mask in events:
                 if key.fileobj == self.socket and mask & selectors.EVENT_WRITE:
                     return ret
-        return ret
 
     def send_data(self, data: bytes):
-        length = (len(data)).to_bytes(4, self.endianness, signed=False)
-        packet = length + data
         index = 0
-        while index < len(packet):
-            ret = self.wait_send(packet[index:])
+        while index < len(data):
+            ret = self.wait_send(data[index:])
             if ret < 0:
                 return False
             index += ret
         return True
-
-    def send_message(self, messagetype: 'MessageType', data=bytes()) -> bool:
-        """
-        Sends message of a given type to the other side of connection.
-
-        Parameters
-        ----------
-        messagetype : MessageType
-            The type of the message
-        data : bytes
-            The additional data for a given message type
-
-        Returns
-        -------
-        bool : True if succeded
-        """
-        mt = messagetype.to_bytes()
-        return self.send_data(mt + data)
-
-    def parse_message(self, message):
-        mt = MessageType.from_bytes(message[:2], self.endianness)
-        data = message[2:]
-        return mt, data
-
-    def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
-        """
-        Waits until the OK message is received.
-
-        Method waits for the OK message from the other side of connection.
-
-        Returns
-        -------
-        bool : True if OK received, False otherwise
-        """
-        while True:
-            for status, data in self.wait_for_activity():
-                if status == ServerStatus.DATA_READY:
-                    if len(data) != 1:
-                        # this should not happen
-                        # TODO handle this scenario
-                        self.log.error('There are more messages than expected')
-                        return False, None
-                    typ, dat = self.parse_message(data[0])
-                    if typ == MessageType.ERROR:
-                        self.log.error('Error during uploading input')
-                        return False, None
-                    if typ != MessageType.OK:
-                        self.log.error('Unexpected message')
-                        return False, None
-                    self.log.debug('Upload finished successfully')
-                    return True, dat
-                elif status == ServerStatus.CLIENT_DISCONNECTED:
-                    self.log.error('Client is disconnected')
-                    return False, None
-                elif status == ServerStatus.DATA_INVALID:
-                    self.log.error('Received invalid packet')
-                    return False, None
-        return False, None
-
-    def upload_input(self, data):
-        self.log.debug('Uploading input')
-        self.send_message(MessageType.DATA, data)
-        return self.receive_confirmation()[0]
-
-    def upload_model(self, path):
-        self.log.debug('Uploading model')
-        with open(path, 'rb') as modfile:
-            data = modfile.read()
-            self.send_message(MessageType.MODEL, data)
-            return self.receive_confirmation()[0]
-
-    def upload_io_specification(self, path):
-        self.log.debug('Uploading io specification')
-        with open(path, 'rb') as detfile:
-            data = detfile.read()
-            self.send_message(MessageType.IOSPEC, data)
-            return self.receive_confirmation()[0]
-
-    def request_processing(self):
-        self.log.debug('Requesting processing')
-        self.send_message(MessageType.PROCESS)
-        ret = self.receive_confirmation()[0]
-        if not ret:
-            return False
-        start = time.perf_counter()
-        ret = self.receive_confirmation()[0]
-        if not ret:
-            return False
-        duration = time.perf_counter() - start
-        measurementname = 'protocol_inference_step'
-        MeasurementsCollector.measurements += {
-            measurementname: [duration],
-            f'{measurementname}_timestamp': [time.perf_counter()]
-        }
-        return True
-
-    def download_output(self):
-        self.log.debug('Downloading output')
-        self.send_message(MessageType.OUTPUT)
-        return self.receive_confirmation()
-
-    def download_statistics(self):
-        self.log.debug('Downloading statistics')
-        self.send_message(MessageType.STATS)
-        status, dat = self.receive_confirmation()
-        measurements = Measurements()
-        if status and isinstance(dat, bytes) and len(dat) > 0:
-            jsonstr = dat.decode('utf8')
-            jsondata = json.loads(jsonstr)
-            measurements += jsondata
-        return measurements
-
-    def request_success(self, data=bytes()):
-        self.log.debug('Sending OK')
-        return self.send_message(MessageType.OK, data)
-
-    def request_failure(self):
-        self.log.debug('Sending ERROR')
-        return self.send_message(MessageType.ERROR)
 
     def disconnect(self):
         if self.serversocket:

@@ -211,6 +211,12 @@ class Message(object):
 
         return data
 
+    def __eq__(self, other: 'Message') -> bool:
+        if not isinstance(other, Message):
+            return False
+        return (self.message_type == other.message_type and
+                self.payload == other.payload)
+
     def __repr__(self) -> str:
         return f'Message(type={self.message_type}, size={self.message_size})'
 
@@ -439,7 +445,7 @@ class RuntimeProtocol(object):
             True if succeeded
         """
         self.log.debug(f'Sending message {message}')
-        self.send_data(message.to_bytes())
+        return self.send_data(message.to_bytes())
 
     def receive_message(
             self,
@@ -467,7 +473,7 @@ class RuntimeProtocol(object):
             return server_status, None
 
         self.input_buffer += data
-        if len(self.input_buffer) < MSG_SIZE_LEN:
+        if len(self.input_buffer) < MSG_SIZE_LEN + MSG_TYPE_LEN:
             return ServerStatus.NOTHING, None
 
         data_to_load_len = int.from_bytes(
@@ -477,10 +483,10 @@ class RuntimeProtocol(object):
         if len(self.input_buffer) - MSG_SIZE_LEN < data_to_load_len:
             return ServerStatus.NOTHING, None
 
-        self.log.debug(self.input_buffer[:MSG_SIZE_LEN + data_to_load_len])
         message = Message.from_bytes(
             self.input_buffer[:MSG_SIZE_LEN + data_to_load_len]
         )
+        self.input_buffer = self.input_buffer[MSG_SIZE_LEN + data_to_load_len:]
         self.log.debug(f'Received message {message}')
 
         return ServerStatus.DATA_READY, message
@@ -781,10 +787,7 @@ class RuntimeProtocol(object):
 
     def parse_message(self, message: bytes) -> Message:
         """
-        Parses message received in the wait_for_activity method.
-
-        The message type is determined from its contents and the optional data
-        is returned along with it.
+        Parses message from bytes.
 
         Parameters
         ----------

@@ -147,7 +147,7 @@ class BaseDataflowHandler:
     """
     def __init__(
             self,
-            nodes: List[Node],
+            nodes: Dict[str, Node],
             io_mapping: Dict[str, Dict],
             graph_creator: GraphCreator
     ):
@@ -158,7 +158,7 @@ class BaseDataflowHandler:
 
         Parameters
         ----------
-        nodes : List[Node]
+        nodes : Dict[str, Node]
             List of available nodes for this dataflow type
         io_mapping : Dict[str, Dict]
             Mapping used by Pipeline Manager for defining the shape

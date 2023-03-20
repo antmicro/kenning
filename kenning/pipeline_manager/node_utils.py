@@ -19,7 +19,7 @@ def add_node(
 
     Parameters
     ----------
-    node_list: List[Node]
+    node_list: Dict[str, Node]
         List of nodes to add to the specification
     nodemodule : str
         Python-like path to the class holding a block to add to specification

@@ -5,6 +5,7 @@
 from kenning.compilers.tflite import TFLiteCompiler
 from kenning.compilers.tvm import TVMCompiler
 from kenning.runtimeprotocols.network import NetworkProtocol
+from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import MessageType
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
@@ -93,7 +94,7 @@ class TestRuntimeNetwork:
             print(data, file=model)
         runtime.prepare_client()
         server.accept_client(server.serversocket, None)
-        server.send_message(MessageType.OK)
+        server.send_message(Message(MessageType.OK))
         runtime.upload_essentials(path)
 
     def test_process_input(self, server, runtime):

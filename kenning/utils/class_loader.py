@@ -130,10 +130,12 @@ def get_all_subclasses(
                 subclass_name
             )
             result.append(subclass)
-        except ImportError as e:
-            logger.error(
-                f'Could not import subclass: {subclass_name}, error: {e}'
-            )
+        except (ModuleNotFoundError, ImportError, Exception) as e:
+            msg = f'Could not add {subclass_name}. Reason:'
+            logger.warn('-' * len(msg))
+            logger.warn(msg)
+            logger.warn(e)
+            logger.warn('-' * len(msg))
             if raise_exception:
                 raise
 

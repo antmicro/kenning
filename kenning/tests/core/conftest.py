@@ -59,6 +59,14 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     if modelpath.is_file():
         tmp_modelpath = tmp_path.with_suffix(modelpath.suffix)
         shutil.copy(modelpath, tmp_modelpath)
+        jsonpath = modelpath.parent / (modelpath.name + ".json")
+        if jsonpath.exists():
+            tmp_jsonpath = tmp_modelpath.parent / (tmp_modelpath.name + ".json")  # noqa: E501
+            shutil.copy(jsonpath, tmp_jsonpath)
+        configfile = modelpath.with_suffix('.cfg')
+        if configfile.exists():
+            tmp_configfile = tmp_modelpath.with_suffix(".cfg")
+            shutil.copy(configfile, tmp_configfile)
     elif modelpath.is_dir():
         tmp_modelpath = tmp_path
         shutil.copytree(modelpath, tmp_modelpath)

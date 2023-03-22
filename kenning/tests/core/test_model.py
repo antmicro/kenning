@@ -10,6 +10,7 @@ from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_tmp_path
 from kenning.tests.core.conftest import remove_file_or_dir
 from kenning.tests.core.conftest import get_dataset_random_mock
+from kenning.tests.core.conftest import copy_model_to_tmp
 
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
@@ -34,23 +35,25 @@ def prepare_models_io_specs():
         model.save_io_specification(model_path)
 
 
+def create_model(model_cls, dataset):
+    if model_cls.pretrained_modelpath is not None:
+        model_path = copy_model_to_tmp(model_cls.pretrained_modelpath)
+        from_file = True
+    else:
+        model_path = get_tmp_path()
+        remove_file_or_dir(model_path)
+        from_file = False
+    return model_cls(model_path, dataset, from_file)
+
+
 @pytest.fixture(scope='function')
 def model(request):
     model_cls = request.param
-    modelpath = get_tmp_path()
-    remove_file_or_dir(modelpath)
 
     dataset_cls = model_cls.default_dataset
     dataset = get_dataset_random_mock(dataset_cls)
 
-    if model_cls.pretrained_modelpath is not None:
-        model_path = model_cls.pretrained_modelpath
-        from_file = True
-    else:
-        model_path = modelpath
-        from_file = False
-
-    return model_cls(model_path, dataset, from_file)
+    return create_model(model_cls, dataset)
 
 
 class TestModelWrapper:
@@ -65,17 +68,7 @@ class TestModelWrapper:
         """
         Tests model initialization without specified dataset.
         """
-        modelpath = get_tmp_path()
-        remove_file_or_dir(modelpath)
-
-        if model_cls.pretrained_modelpath is not None:
-            model_path = model_cls.pretrained_modelpath
-            from_file = True
-        else:
-            model_path = modelpath
-            from_file = False
-
-        _ = model_cls(model_path, None, from_file)
+        _ = create_model(model_cls, None)
 
     @pytest.mark.parametrize('model_cls', [
         pytest.param(cls, marks=[
@@ -90,20 +83,9 @@ class TestModelWrapper:
         """
         Tests model initialization with specified dataset.
         """
-        modelpath = get_tmp_path()
-        remove_file_or_dir(modelpath)
-
         dataset_cls = model_cls.default_dataset
         dataset = get_dataset_random_mock(dataset_cls)
-
-        if model_cls.pretrained_modelpath is not None:
-            model_path = model_cls.pretrained_modelpath
-            from_file = True
-        else:
-            model_path = modelpath
-            from_file = False
-
-        _ = model_cls(model_path, dataset, from_file)
+        _ = create_model(model_cls, dataset)
 
     @pytest.mark.parametrize('model', [
         pytest.param(cls, marks=[

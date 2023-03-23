@@ -559,8 +559,8 @@ class Runtime(object):
         from another source (i.e. from existing file). If it can not be
         found in this path, io_specification is not loaded.
 
-        The function returns True, as some Runtimes may not need
-        io_specification to run the inference.
+        When no specification file is found, the function returns True as some
+        Runtimes may not need io_specification to run the inference.
 
         Parameters
         ----------
@@ -570,7 +570,8 @@ class Runtime(object):
 
         Returns
         -------
-        bool : True
+        bool :
+            Whether the parsing of IO specification was succesfull
         """
         if input_data is None:
             path = self.get_io_spec_path(self.modelpath)
@@ -585,7 +586,7 @@ class Runtime(object):
                     self.log.warning(
                         f"Error while parsing IO specification: {e}"
                     )
-                    return True
+                    return False
         else:
             io_spec = json.loads(input_data)
 

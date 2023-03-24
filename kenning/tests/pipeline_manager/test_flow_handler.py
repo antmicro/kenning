@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests
+from kenning.tests.pipeline_manager.handlertests import HandlerTests, create_dataflow_test_factory  # noqa: E501
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 
 
@@ -68,7 +68,7 @@ ONNXRUNTIME_DATAFLOW_NODE = {
     "name": "ONNXRuntime",
     "options": [
         ["disable_performance_measurements", True],
-        ["save_model_path", "./kenning/resources/models/detection/yolov4.onnx"],
+        ["save_model_path", "./kenning/resources/models/detection/yolov4.onnx"],  # noqa: E501
         ["execution_providers", ["CUDAExecutionProvider"]]
     ],
     "state": {},
@@ -206,11 +206,10 @@ class TestFlowHandler(HandlerTests):
             "to": "16"
         }
     ]
+    test_create_dataflow = create_dataflow_test_factory(
+        "./scripts/jsonflowconfigs"
+    )
 
     @pytest.fixture(scope="class")
     def handler(self):
         return KenningFlowHandler()
-
-    @pytest.fixture(scope="class")
-    def pipeline_json(self):
-        return {}

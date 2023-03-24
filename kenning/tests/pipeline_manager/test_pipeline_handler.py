@@ -3,8 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
+
 from kenning.tests.pipeline_manager.handlertests import HandlerTests
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.datasets.pet_dataset import PetDataset
+from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2  # noqa: E501
+from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.compilers.tflite import TFLiteCompiler
+from kenning.utils.args_manager import get_parsed_json_dict
 
 PET_DATASET_DATAFLOW_NODE = {
     "type": "PetDataset",
@@ -190,3 +196,26 @@ class TestPipelineHandler(HandlerTests):
     @pytest.fixture(scope="class")
     def handler(self):
         return PipelineHandler()
+
+    @pytest.fixture(scope="class")
+    def pipeline_json(self):
+        clss = [
+            ('dataset', PetDataset, {'dataset_root': './build/PetDataset'}),
+            ('model_wrapper', TensorFlowPetDatasetMobileNetV2, {'model_path': './kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'}),  # noqa: E501
+            ('optimizers', TFLiteCompiler, {'compiled_model_path': './build/model.tflite'}),  # noqa: E501
+            ('runtime', TFLiteRuntime, {}),
+        ]
+        json = {}
+        for type_, cls, arg_json in clss:
+            parameterschema = cls.form_parameterschema()
+            kenning_parameters = get_parsed_json_dict(
+                parameterschema, arg_json
+            )
+            kenning_module = {
+                'type': f'{cls.__module__}.{cls.__name__}',
+                'parameters': kenning_parameters
+            }
+            if type_ == 'optimizers':
+                kenning_module = [kenning_module]
+            json[type_] = kenning_module
+        return json

@@ -19,6 +19,11 @@ class HandlerTests(ABC):
 
     @pytest.fixture(scope="class")
     @abstractmethod
+    def pipeline_json(self):
+        raise NotImplementedError
+
+    @pytest.fixture(scope="class")
+    @abstractmethod
     def handler(self):
         raise NotImplementedError
 
@@ -29,3 +34,6 @@ class HandlerTests(ABC):
     def test_validate_dataflow(self, dataflow_json, handler):
         _, pipeline_json = handler.parse_dataflow(dataflow_json)
         handler.parse_json(pipeline_json)
+
+    def test_create_dataflow(self, pipeline_json, handler):
+        _ = handler.create_dataflow(pipeline_json)

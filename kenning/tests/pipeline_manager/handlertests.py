@@ -8,7 +8,7 @@ import pytest
 import json
 
 
-def create_dataflow_test_factory(path_to_json_files):
+def factory_tests_with_json(path_to_json_files):
     path_to_json_files = Path(path_to_json_files)
     assert path_to_json_files.exists()
 
@@ -23,7 +23,20 @@ def create_dataflow_test_factory(path_to_json_files):
     )
     def test_create_dataflow(self, pipeline_json, handler):
         _ = handler.create_dataflow(pipeline_json)
-    return test_create_dataflow
+
+    # Pipeline 4 17
+    @pytest.mark.parametrize(
+        'pipeline_json',
+        pipeline_jsons
+    )
+    def test_equivalence(self, pipeline_json, handler):
+        dataflow = handler.create_dataflow(pipeline_json)
+        status, result_json = handler.parse_dataflow(dataflow)
+        if not status:
+            pytest.xfail('JSON file is incompatible with Pipeline Manager')
+        assert result_json == pipeline_json
+
+    return test_create_dataflow, test_equivalence
 
 
 class HandlerTests(ABC):
@@ -48,4 +61,5 @@ class HandlerTests(ABC):
 
     def test_validate_dataflow(self, dataflow_json, handler):
         _, pipeline_json = handler.parse_dataflow(dataflow_json)
-        handler.parse_json(pipeline_json)
+        pipeline = handler.parse_json(pipeline_json)
+        handler.destroy_dataflow(pipeline)

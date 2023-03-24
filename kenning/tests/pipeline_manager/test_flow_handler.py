@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests, create_dataflow_test_factory  # noqa: E501
+from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_tests_with_json  # noqa: E501
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 
 
@@ -206,7 +206,7 @@ class TestFlowHandler(HandlerTests):
             "to": "16"
         }
     ]
-    test_create_dataflow = create_dataflow_test_factory(
+    test_create_dataflow, test_equivalence = factory_tests_with_json(
         "./scripts/jsonflowconfigs"
     )
 

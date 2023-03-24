@@ -105,6 +105,7 @@ class PipelineHandler(BaseDataflowHandler):
             for _, base_type in base_classes
         }
         base_type_names[ModelWrapper] = "model_wrapper"
+        base_type_names[RuntimeProtocol] = "runtime_protocol"
         for base_module, base_type in base_classes:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
@@ -184,7 +185,7 @@ class PipelineHandler(BaseDataflowHandler):
                 ],
                 'outputs': []
             },
-            'runtimeprotocol': {
+            'runtime_protocol': {
                 'inputs': [],
                 'outputs': [
                     {

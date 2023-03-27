@@ -30,7 +30,7 @@
       }
     },
     "inputs": {
-      "input": "cam_frame"
+      "processed_input": "cam_frame"
     },
     "outputs": {
       "detection_output": "predictions"

@@ -57,12 +57,8 @@ def extend_default_translator(app: Sphinx):
             depart_image
             """
             if 'candidates' not in image or len(image['candidates']) == 1:
-                self.logger.info(
-                    "Figure node have at most one candidate - it's "
-                    "not possible to check other avaiable formats")
                 return super().visit_image(image)
             if 'image/x-html' not in image['candidates']:
-                self.logger.debug("There is no HTML candidate for this image")
                 return super().visit_image(image)
             # Backup image
             self.BACKUP_IMAGE = copy.deepcopy(image)

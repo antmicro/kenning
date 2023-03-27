@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_tests_with_json  # noqa: E501
+from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 
 
@@ -206,10 +206,39 @@ class TestFlowHandler(HandlerTests):
             "to": "16"
         }
     ]
-    test_create_dataflow, test_equivalence = factory_tests_with_json(
-        "./scripts/jsonflowconfigs"
-    )
 
     @pytest.fixture(scope="class")
     def handler(self):
         return KenningFlowHandler()
+
+    def equivalence_check(self, dataflow1, dataflow2):
+        conn_name_mapping = {}
+
+        def connection_check(node1_io, node2_io, local_name):
+            global_name1 = node1_io[local_name]
+            global_name2 = node2_io[local_name]
+            if global_name1 in conn_name_mapping:
+                assert conn_name_mapping[global_name1] == global_name2
+            else:
+                assert global_name2 not in conn_name_mapping.values()
+                conn_name_mapping[global_name1] = global_name2
+
+        for node1, node2 in zip(dataflow1, dataflow2):
+            for local_name in node1.get('inputs', {}):
+                connection_check(node1['inputs'], node2['inputs'], local_name)
+
+            for local_name in node1.get('outputs', {}):
+                connection_check(
+                    node1['outputs'],  node2['outputs'], local_name
+                )
+        return True
+
+    PATH_TO_JSON_SCRIPTS = "./scripts/jsonflowconfigs"
+
+    test_create_dataflow = factory_test_create_dataflow(
+        PATH_TO_JSON_SCRIPTS
+    )
+
+    test_equivalence = factory_test_equivalence(
+        PATH_TO_JSON_SCRIPTS
+    )

@@ -8,7 +8,7 @@ import pytest
 import json
 
 
-def factory_tests_with_json(path_to_json_files):
+def load_json_files(path_to_json_files):
     path_to_json_files = Path(path_to_json_files)
     assert path_to_json_files.exists()
 
@@ -16,6 +16,11 @@ def factory_tests_with_json(path_to_json_files):
     for json_file in Path(path_to_json_files).iterdir():
         with open(json_file) as f:
             pipeline_jsons.append(json.load(f))
+    return pipeline_jsons
+
+
+def factory_test_create_dataflow(path_to_json_files):
+    pipeline_jsons = load_json_files(path_to_json_files)
 
     @pytest.mark.parametrize(
         "pipeline_json",
@@ -24,7 +29,12 @@ def factory_tests_with_json(path_to_json_files):
     def test_create_dataflow(self, pipeline_json, handler):
         _ = handler.create_dataflow(pipeline_json)
 
-    # Pipeline 4 17
+    return test_create_dataflow
+
+
+def factory_test_equivalence(path_to_json_files):
+    pipeline_jsons = load_json_files(path_to_json_files)
+
     @pytest.mark.parametrize(
         'pipeline_json',
         pipeline_jsons
@@ -34,9 +44,9 @@ def factory_tests_with_json(path_to_json_files):
         status, result_json = handler.parse_dataflow(dataflow)
         if not status:
             pytest.xfail('JSON file is incompatible with Pipeline Manager')
-        assert result_json == pipeline_json
+        assert self.equivalence_check(result_json, pipeline_json)
 
-    return test_create_dataflow, test_equivalence
+    return test_equivalence
 
 
 class HandlerTests(ABC):
@@ -53,6 +63,10 @@ class HandlerTests(ABC):
     @pytest.fixture(scope="class")
     @abstractmethod
     def handler(self):
+        raise NotImplementedError
+
+    @abstractmethod
+    def equivalence_check(self, dataflow1, dataflow2):
         raise NotImplementedError
 
     def test_parse_dataflow(self, dataflow_json, handler):

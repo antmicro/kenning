@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_tests_with_json  # noqa: E501
+from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 PET_DATASET_DATAFLOW_NODE = {
@@ -192,6 +192,15 @@ class TestPipelineHandler(HandlerTests):
     def handler(self):
         return PipelineHandler()
 
-    test_create_dataflow, test_equivalence = factory_tests_with_json(
-        "./scripts/jsonconfigs"
+    def equivalence_check(self, dataflow1, dataflow2):
+        return dataflow1 == dataflow2
+
+    PATH_TO_JSON_SCRIPTS = "./scripts/jsonconfigs"
+
+    test_create_dataflow = factory_test_create_dataflow(
+        PATH_TO_JSON_SCRIPTS
+    )
+
+    test_equivalence = factory_test_equivalence(
+        PATH_TO_JSON_SCRIPTS
     )

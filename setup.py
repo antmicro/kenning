@@ -38,7 +38,7 @@ setuptools.setup(
             'docutils',
             'myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git',  # noqa: E501
             'sphinx',
-            'sphinxcontrib-internal @ git+https://github.com/antmicro/sphinxcontrib-internal.git',  # noqa: E501
+            'sphinxcontrib-mermaid',
             'sphinxcontrib-napoleon',
             'sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl',  # noqa: E501
             'sphinx_tabs',

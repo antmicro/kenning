@@ -51,7 +51,7 @@ jobs:
              gcc g++ build-essential cmake llvm protobuf-compiler \
              libprotoc-dev libtinfo-dev zlib1g-dev libedit-dev libxml2-dev \
              llvm curl wget
-          python -m pip install .[tensorflow,docs,tvm]
+          python -m pip install .[tensorflow,docs,tvm,reports]
       - name: Run sample compilation and inference
         run: |
           ./scripts/tvm-tensorflow-classification-cpu.sh

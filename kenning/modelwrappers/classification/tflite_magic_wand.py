@@ -94,7 +94,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
     def get_io_specification_from_model(self):
         return self._get_io_specification(
-            self.window_size, self.class_names, self.numclasses)
+            self.window_size, self.numclasses, self.class_names)
 
     def prepare_model(self):
         if self.model_prepared:

@@ -24,7 +24,7 @@ setuptools.setup(
     install_requires=[
         'Pillow>=8.1.0',
         'matplotlib>=3.3.4',
-        'numpy>=1.23.4',
+        'numpy~=1.23.5',
         'onnx>=1.7.0',
         'psutil>=5.8.0',
         'scikit_learn>=0.24.1',

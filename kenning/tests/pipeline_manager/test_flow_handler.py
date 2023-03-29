@@ -212,6 +212,9 @@ class TestFlowHandler(HandlerTests):
         return KenningFlowHandler()
 
     def equivalence_check(self, dataflow1, dataflow2):
+        # There is a degree of freedom when naming global connections when
+        # defining KenningFlows. Two JSOns are equivalent when there is
+        # 1-to-1 mapping between global connection names.
         conn_name_mapping = {}
 
         def connection_check(node1_io, node2_io, local_name):

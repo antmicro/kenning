@@ -11,11 +11,12 @@ import selectors
 from typing import Tuple
 from typing import Optional
 
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import ServerStatus
+from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.utils.args_manager import add_parameterschema_argument
 
 
-class NetworkProtocol(RuntimeProtocol):
+class NetworkProtocol(BytesBasedProtocol):
     """
     A TCP-based runtime protocol.
 
@@ -71,6 +72,18 @@ class NetworkProtocol(RuntimeProtocol):
             args.endianness
         )
 
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+
+        if cls.arguments_structure != super().arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                NetworkProtocol.arguments_structure
+            )
+
+        return parameterschema
+
     def accept_client(self, socket, mask) -> Tuple['ServerStatus', Optional[bytes]]:  # noqa: E501
         """
         Accepts the new client.
@@ -82,7 +95,8 @@ class NetworkProtocol(RuntimeProtocol):
 
         Returns
         -------
-        Tuple['ServerStatus', bytes] : client addition status
+        Tuple['ServerStatus', bytes] :
+            client addition status
         """
         sock, addr = socket.accept()
         if self.socket is not None:
@@ -162,7 +176,8 @@ class NetworkProtocol(RuntimeProtocol):
 
         Returns
         -------
-            int : The number of bytes sent
+        int :
+            The number of bytes sent
         """
         if self.socket is None:
             return -1

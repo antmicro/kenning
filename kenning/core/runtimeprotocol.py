@@ -9,7 +9,6 @@ the client.
 
 from enum import Enum
 from pathlib import Path
-import selectors
 import argparse
 import time
 import json
@@ -258,28 +257,10 @@ class RuntimeProtocol(object):
     of the communication with the target device.
     """
 
-    arguments_structure = {
-        'packet_size': {
-            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
-            'type': int,
-            'default': 4096
-        },
-        'endianness': {
-            'description': 'The endianness of data to transfer',
-            'default': 'little',
-            'enum': ['big', 'little']
-        }
-    }
+    arguments_structure = {}
 
-    def __init__(
-            self,
-            packet_size: int = 4096,
-            endianness: str = 'little'):
-        self.packet_size = packet_size
-        self.endianness = endianness
-        self.selector = selectors.DefaultSelector()
+    def __init__(self):
         self.log = logger.get_logger()
-        self.input_buffer = b''
 
     @classmethod
     def _form_argparse(cls):
@@ -444,8 +425,7 @@ class RuntimeProtocol(object):
         bool :
             True if succeeded
         """
-        self.log.debug(f'Sending message {message}')
-        return self.send_data(message.to_bytes())
+        raise NotImplementedError
 
     def receive_message(
             self,
@@ -468,30 +448,9 @@ class RuntimeProtocol(object):
             Tuple containing server status and received message. The status is
             NOTHING if message is incomplete and DATA_READY if it is complete
         """
-        server_status, data = self._receive_data(timeout)
-        if data is None:
-            return server_status, None
+        raise NotImplementedError
 
-        self.input_buffer += data
-        if len(self.input_buffer) < MSG_SIZE_LEN + MSG_TYPE_LEN:
-            return ServerStatus.NOTHING, None
-
-        data_to_load_len = int.from_bytes(
-            self.input_buffer[:MSG_SIZE_LEN],
-            byteorder=self.endianness,
-            signed=False)
-        if len(self.input_buffer) - MSG_SIZE_LEN < data_to_load_len:
-            return ServerStatus.NOTHING, None
-
-        message = Message.from_bytes(
-            self.input_buffer[:MSG_SIZE_LEN + data_to_load_len]
-        )
-        self.input_buffer = self.input_buffer[MSG_SIZE_LEN + data_to_load_len:]
-        self.log.debug(f'Received message {message}')
-
-        return ServerStatus.DATA_READY, message
-
-    def send_data(self, data: bytes) -> bool:
+    def send_data(self, data: Any) -> bool:
         """
         Sends data to the target device.
 
@@ -499,7 +458,7 @@ class RuntimeProtocol(object):
 
         Parameters
         ----------
-        data : bytes
+        data : Any
             Data to send
 
         Returns
@@ -512,7 +471,7 @@ class RuntimeProtocol(object):
     def receive_data(
             self,
             connection: Any,
-            mask: int) -> Tuple[ServerStatus, Optional[bytes]]:
+            mask: int) -> Tuple[ServerStatus, Optional[Any]]:
         """
         Receives data from the target device.
 
@@ -525,15 +484,15 @@ class RuntimeProtocol(object):
 
         Returns
         -------
-        Tuple[ServerStatus, Optional[bytes]] :
+        Tuple[ServerStatus, Optional[Any]] :
             Status of receive and optionally data that was received
         """
         raise NotImplementedError
 
-    def _receive_data(
+    def gather_data(
             self,
             timeout: Optional[float] = None
-            ) -> Tuple[ServerStatus, Optional[bytes]]:
+            ) -> Tuple[ServerStatus, Optional[Any]]:
         """
         Gathers data from the client.
 
@@ -551,23 +510,7 @@ class RuntimeProtocol(object):
         Tuple[ServerStatus, Any] :
             receive status along with received data
         """
-        events = self.selector.select(timeout=timeout)
-
-        results = b''
-        for key, mask in events:
-            if mask & selectors.EVENT_READ:
-                callback = key.data
-                server_status, data = callback(key.fileobj, mask)
-                if (server_status == ServerStatus.CLIENT_DISCONNECTED
-                        or data is None):
-                    return server_status, None
-
-                results += data
-
-        if len(results) == 0:
-            return ServerStatus.NOTHING, None
-
-        return ServerStatus.DATA_READY, results
+        raise NotImplementedError
 
     def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
         """
@@ -784,22 +727,6 @@ class RuntimeProtocol(object):
         self.log.debug('Sending ERROR')
 
         return self.send_message(Message(MessageType.ERROR))
-
-    def parse_message(self, message: bytes) -> Message:
-        """
-        Parses message from bytes.
-
-        Parameters
-        ----------
-        message : bytes
-            Received message
-
-        Returns
-        -------
-        Message :
-            Parsed message
-        """
-        return Message.from_bytes(message)
 
     def disconnect(self):
         """

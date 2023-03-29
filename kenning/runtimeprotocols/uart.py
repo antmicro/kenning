@@ -10,12 +10,12 @@ from typing import Tuple, Optional
 import selectors
 import serial
 
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import ServerStatus
-import kenning.utils.logger as logger
+from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.utils.args_manager import add_parameterschema_argument
 
 
-class UARTProtocol(RuntimeProtocol):
+class UARTProtocol(BytesBasedProtocol):
     """
     An UART-base runtime protocol. It supports only client-side as a server is
     expected to be bare-metal platform.
@@ -58,7 +58,6 @@ class UARTProtocol(RuntimeProtocol):
         self.baudrate = baudrate
         self.collecteddata = bytes()
         self.connection = None
-        self.log = logger.get_logger()
         super().__init__(packet_size=packet_size, endianness=endianness)
 
     @classmethod
@@ -68,6 +67,18 @@ class UARTProtocol(RuntimeProtocol):
             baudrate=args.baudrate,
             endianness=args.endianness
         )
+
+    @classmethod
+    def form_parameterschema(cls):
+        parameterschema = super().form_parameterschema()
+
+        if cls.arguments_structure != super().arguments_structure:
+            add_parameterschema_argument(
+                parameterschema,
+                UARTProtocol.arguments_structure
+            )
+
+        return parameterschema
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=1)

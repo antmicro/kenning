@@ -103,6 +103,9 @@ setuptools.setup(
         'reports': [
             'Jinja2>=2.11.2',
             'servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis'
+        ],
+        'uart': [
+            'pyserial'
         ]
     },
 )

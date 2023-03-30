@@ -25,6 +25,8 @@ MAX_MODEL_OUTPUTS = 12
 MAX_LENGTH_ENTRY_FUNC_NAME = 20
 MAX_LENGTH_MODEL_NAME = 20
 
+IREE_MODEL_STRUCT_SIZE = 160
+
 
 def _io_spec_to_iree_model_struct(
         io_spec: Dict[str, Any],
@@ -105,7 +107,7 @@ def _io_spec_to_iree_model_struct(
 
     result += str_to_bytes(model_name, MAX_LENGTH_MODEL_NAME)
 
-    assert len(result) == 160, 'Wrong struct size'
+    assert len(result) == IREE_MODEL_STRUCT_SIZE, 'Wrong struct size'
 
     return result
 

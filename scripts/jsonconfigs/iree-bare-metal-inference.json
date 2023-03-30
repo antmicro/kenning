@@ -2,7 +2,8 @@
     "dataset": {
         "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
         "parameters": {
-            "dataset_root": "./build/magic-wand-dataset"
+            "dataset_root": "./build/magic-wand-dataset",
+            "download_dataset": true
         }
     },
     "model_wrapper": {

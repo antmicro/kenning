@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
+from kenning.tests.pipeline_manager.handler_tests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 PET_DATASET_DATAFLOW_NODE = {

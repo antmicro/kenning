@@ -89,7 +89,7 @@ ONNXRUNTIME_DATAFLOW_NODE = {
     "customClasses": ""
 }
 
-NODELRUNTIMERUNNER_DATAFLOW_NODE = {
+MODELRUNTIMERUNNER_DATAFLOW_NODE = {
     "type": "ModelRuntimeRunner",
     "id": "6",
     "name": "ModelRuntimeRunner",
@@ -176,7 +176,7 @@ class TestFlowHandler(HandlerTests):
         CAMERA_DATAPROVIDER_DATAFLOW_NODE,
         ONNXYOLO_DATAFLOW_NODE,
         ONNXRUNTIME_DATAFLOW_NODE,
-        NODELRUNTIMERUNNER_DATAFLOW_NODE,
+        MODELRUNTIMERUNNER_DATAFLOW_NODE,
         DETECTIONVISUALIZER_DATAFLOW_NODE
     ]
     dataflow_connections = [

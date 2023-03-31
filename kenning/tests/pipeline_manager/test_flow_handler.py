@@ -4,9 +4,10 @@
 
 import pytest
 
-from kenning.tests.pipeline_manager.handlertests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
+from kenning.runners.modelruntime_runner import ModelRuntimeRunner
+from kenning.tests.pipeline_manager.handler_tests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
-
+from kenning.utils.class_loader import load_class
 
 CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
     "type": "CameraDataProvider",
@@ -171,6 +172,32 @@ DETECTIONVISUALIZER_DATAFLOW_NODE = {
 }
 
 
+@pytest.fixture(scope='function')
+def use_static_io_spec_parser():
+    """
+    Changes the ModelRuntimeRunner `get_io_specification` implementation to use
+    runtime's static IO spec parser.
+    """
+    def _create_model(dataset, json_dict):
+        cls = load_class(json_dict['type'])
+        model = cls.from_json(
+            dataset=dataset,
+            json_dict=json_dict['parameters'])
+        model._json_dict = json_dict['parameters']
+        return model
+
+    def get_io_specification(self):
+        return self._get_io_specification(
+            self.model.parse_io_specification_from_json(
+                self.model._json_dict
+            )
+        )
+
+    ModelRuntimeRunner._create_model = _create_model
+    ModelRuntimeRunner.get_io_specification = get_io_specification
+
+
+@pytest.mark.usefixtures('use_static_io_spec_parser')
 class TestFlowHandler(HandlerTests):
     dataflow_nodes = [
         CAMERA_DATAPROVIDER_DATAFLOW_NODE,

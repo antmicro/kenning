@@ -12,7 +12,6 @@ import selectors
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.runtimeprotocol import Message
-from kenning.core.runtimeprotocol import MSG_SIZE_LEN, MSG_TYPE_LEN
 from kenning.utils.args_manager import add_parameterschema_argument
 
 
@@ -71,20 +70,14 @@ class BytesBasedProtocol(RuntimeProtocol):
             return server_status, None
 
         self.input_buffer += data
-        if len(self.input_buffer) < MSG_SIZE_LEN + MSG_TYPE_LEN:
-            return ServerStatus.NOTHING, None
 
-        data_to_load_len = int.from_bytes(
-            self.input_buffer[:MSG_SIZE_LEN],
-            byteorder=self.endianness,
-            signed=False)
-        if len(self.input_buffer) - MSG_SIZE_LEN < data_to_load_len:
-            return ServerStatus.NOTHING, None
-
-        message = Message.from_bytes(
-            self.input_buffer[:MSG_SIZE_LEN + data_to_load_len]
+        message, data_parsed = Message.from_bytes(
+            self.input_buffer
         )
-        self.input_buffer = self.input_buffer[MSG_SIZE_LEN + data_to_load_len:]
+        if message is None:
+            return ServerStatus.NOTHING, None
+
+        self.input_buffer = self.input_buffer[data_parsed:]
         self.log.debug(f'Received message {message}')
 
         return ServerStatus.DATA_READY, message
@@ -125,4 +118,4 @@ class BytesBasedProtocol(RuntimeProtocol):
         Message :
             Parsed message
         """
-        return Message.from_bytes(message)
+        return Message.from_bytes(message)[0]

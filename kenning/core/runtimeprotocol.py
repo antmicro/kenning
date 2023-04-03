@@ -97,7 +97,7 @@ class MessageType(Enum):
 
     def to_bytes(self, endianness: str = 'little') -> bytes:
         """
-        Converts MessageType enum to bytes in format.
+        Converts MessageType enum to bytes.
 
         Parameters
         ----------
@@ -164,7 +164,10 @@ class Message(object):
         return MSG_TYPE_LEN + len(self.payload)
 
     @classmethod
-    def from_bytes(cls, data: bytes, endianness: str = 'little') -> 'Message':
+    def from_bytes(
+            cls,
+            data: bytes,
+            endianness: str = 'little') -> Tuple[Optional['Message'], int]:
         """
         Converts bytes to Message.
 
@@ -173,21 +176,30 @@ class Message(object):
         data : bytes
             Data to be converted to Message
         endianness : str
-            Endiannes of the bytes
+            Endianness of the bytes
 
         Returns
         -------
-        Message :
-            Message obtained from given bytes
+        Tuple['Message', int] :
+            Message obtained from given bytes and number of bytes used to parse
+            the message
         """
-        assert len(data) >= MSG_SIZE_LEN + MSG_TYPE_LEN
+        assert len(data) >= MSG_SIZE_LEN + MSG_TYPE_LEN, \
+            f'Not enough data to parse: {len(data)}'
+        message_size = int.from_bytes(
+            data[:MSG_SIZE_LEN],
+            byteorder=endianness,
+        )
+        if len(data) < MSG_SIZE_LEN + message_size:
+            return None, 0
+
         message_type = MessageType.from_bytes(
             data[MSG_SIZE_LEN: MSG_SIZE_LEN + MSG_TYPE_LEN],
             endianness=endianness
         )
-        message_payload = data[MSG_SIZE_LEN + MSG_TYPE_LEN:]
+        message_payload = data[MSG_SIZE_LEN + MSG_TYPE_LEN:][:message_size]
 
-        return cls(message_type, message_payload)
+        return cls(message_type, message_payload), MSG_SIZE_LEN + message_size
 
     def to_bytes(self, endianness: str = 'little') -> bytes:
         """
@@ -431,7 +443,10 @@ class RuntimeProtocol(object):
             self,
             timeout: Optional[float] = None) -> Tuple[ServerStatus, Message]:
         """
-        Receives single message.
+        Waits for incoming data from the other side of connection.
+
+        This method should wait for the input data to arrive and return the
+        appropriate status code along with received data.
 
         Parameters
         ----------
@@ -495,6 +510,9 @@ class RuntimeProtocol(object):
             ) -> Tuple[ServerStatus, Optional[Any]]:
         """
         Gathers data from the client.
+
+        This method should be called by receive_message in order to get data
+        from the client.
 
         Parameters
         ----------

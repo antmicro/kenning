@@ -925,7 +925,7 @@ class Runtime(object):
             raise RequestFailure('Protocol is not provided')
         status = self.prepare_server()
         if not status:
-            self.log.debug('Server prepare failed')
+            self.log.error('Server prepare failed')
             return
 
         self.shouldwork = True

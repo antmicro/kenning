@@ -101,7 +101,8 @@ backend_convert = {
     'vmvx': 'vmvx',
     # GPU backends
     'vulkan': 'vulkan-spirv',
-    'cuda': 'cuda'
+    'cuda': 'cuda',
+    'llvm-cpu': 'llvm-cpu'
 }
 
 

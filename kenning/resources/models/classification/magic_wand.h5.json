@@ -1,1 +1,1 @@
-{"input": [{"name": "input_1", "shape": [1, 128, 3, 1], "dtype": "float32"}], "output": [{"name": "out_layer", "shape": [1, ["wing", "ring", "slope", "negative"]], "dtype": "float32", "class_names": 4}]}
+{"input": [{"name": "input_1", "shape": [1, 128, 3, 1], "dtype": "float32"}], "output": [{"name": "out_layer", "shape": [1, 4], "dtype": "float32", "class_names": ["wing", "ring", "slope", "negative"]}]}

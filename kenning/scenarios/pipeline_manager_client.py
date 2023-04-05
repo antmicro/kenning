@@ -8,22 +8,24 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Tuple
+from typing import Tuple, Dict
 
 from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
-from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
-from kenning.core.measurements import MeasurementsCollector
 
-from kenning.pipeline_manager.pipeline_handler import PipelineHandler
-from kenning.pipeline_manager.flow_handler import KenningFlowHandler
+from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
+
+from kenning.core.measurements import MeasurementsCollector
 from kenning.pipeline_manager.core import BaseDataflowHandler
+from kenning.pipeline_manager.flow_handler import KenningFlowHandler
+from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.utils.logger import Callback, TqdmCallback
 
 
 def parse_message(
-        dataflow_handler: BaseDataflowHandler,
-        message_type: MessageType,
-        data: bytes,
-        output_file_path: Path
+    dataflow_handler: BaseDataflowHandler,
+    message_type: MessageType,
+    data: bytes,
+    output_file_path: Path,
 ) -> Tuple[MessageType, bytes]:
     """
     Uses dataflow_handler to parse the incoming data from Pipeline Manager
@@ -50,10 +52,11 @@ def parse_message(
         specification = dataflow_handler.get_specification()
         feedback_msg = json.dumps(specification)
 
-    elif (message_type == MessageType.VALIDATE or
-            message_type == MessageType.RUN or
-            message_type == MessageType.EXPORT):
-
+    elif (
+        message_type == MessageType.VALIDATE
+        or message_type == MessageType.RUN
+        or message_type == MessageType.EXPORT
+    ):
         dataflow = json.loads(data)
         successful, msg = dataflow_handler.parse_dataflow(dataflow)
 
@@ -65,8 +68,7 @@ def parse_message(
             if message_type == MessageType.RUN:
                 MeasurementsCollector.clear()
                 dataflow_handler.run_dataflow(
-                    prepared_runner,
-                    output_file_path
+                    prepared_runner, output_file_path
                 )
             else:
                 if message_type == MessageType.EXPORT:
@@ -94,25 +96,41 @@ def parse_message(
     return MessageType.OK, feedback_msg.encode(encoding='UTF-8')
 
 
+def send_progress(state: Dict, client: CommunicationBackend) -> None:
+    """
+    Sends progress message to Pipeline Manager
+
+    Parameters
+    ----------
+    state : Dict
+        format_dict that comes from tqdm. It is used to determine the progress
+        of the inference.
+    client : CommunicationBackend
+        Client used to send the message.
+    """
+    progress = int(state["n"] / state["total"] * 100)
+    client.send_message(MessageType.PROGRESS, str(progress).encode('UTF-8'))
+
+
 def main(argv):
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
         '--host',
         type=str,
         help='The address of the Pipeline Manager Server',
-        default='127.0.0.1'
+        default='127.0.0.1',
     )
     parser.add_argument(
         '--port',
         type=int,
         help='The port of the Pipeline Manager Server',
-        default=9000
+        default=9000,
     )
     parser.add_argument(
         '--file-path',
         type=Path,
         help='Path where inference output will be stored',
-        required=True
+        required=True,
     )
     parser.add_argument(
         '--spec-type',
@@ -120,7 +138,7 @@ def main(argv):
         help='Type of graph that should be represented in a Pipeline Manager '
         '- can choose between optimization pipeline or Kenningflow',
         choices=('pipeline', 'flow'),
-        default='pipeline'
+        default='pipeline',
     )
     args, _ = parser.parse_known_args(argv[1:])
 
@@ -134,20 +152,19 @@ def main(argv):
     else:
         raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 
+    callback_percent = Callback('runtime', send_progress, 1.0, client)
+    TqdmCallback.register_callback(callback_percent)
+
     while client.client_socket:
         status, message = client.wait_for_message()
         if status == Status.DATA_READY:
             message_type, data = message
             return_status, return_message = parse_message(
-                dataflow_handler,
-                message_type,
-                data,
-                args.file_path
+                dataflow_handler, message_type, data, args.file_path
             )
-            client.send_message(
-                return_status,
-                return_message
-            )
+            client.send_message(return_status, return_message)
+
+    TqdmCallback.unregister_callback(callback_percent)
 
 
 if __name__ == '__main__':

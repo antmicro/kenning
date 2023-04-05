@@ -769,12 +769,12 @@ class Runtime(object):
         bool : True if executed successfully
         """
         compiledmodelpath = Path(compiledmodelpath)
-        from tqdm import tqdm
+        from kenning.utils.logger import TqdmCallback
         measurements = Measurements()
         try:
             self.inference_session_start()
             self.prepare_local()
-            for X, y in tqdm(iter(dataset)):
+            for X, y in TqdmCallback('runtime', iter(dataset)):
                 prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 succeed = self.prepare_input(prepX)

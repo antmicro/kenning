@@ -4,11 +4,22 @@
 
 """
 Module for preparing the logging structures.
+
+Module also implements a tqdm loading bar that enables adding callbacks
+that are called in specified intervals.
+
+Callbacks are registered and unregistered globally for specific tags and only
+tqdm instances of the same tags are going to use those callbacks.
+
 """
 
-import logging
 import io
+import logging
 import urllib.request
+from dataclasses import dataclass
+from typing import Any, Callable, Optional, Union
+
+from tqdm import tqdm
 
 
 def string_to_verbosity(level: str):
@@ -41,6 +52,9 @@ def get_logger():
     FORMAT = '[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s'  # noqa: E501
     logging.basicConfig(format=FORMAT)
     return logger
+
+# ----------------
+# Tqdm Loading bar
 
 
 class LoggerProgressBar(io.StringIO):
@@ -84,3 +98,132 @@ def download_url(url, output_path):
             filename=output_path,
             reporthook=t.update_to
         )
+
+# ----------------
+# Tqdm callbacks
+
+
+class Callback:
+    def __init__(self, tag: str, fun: Callable, sec_interval: int, *args: Any):
+        """
+        Callback that can be registered for a given `tag`. Whenever
+        TqdmCallback is used, all registered Callbacks of this tag are
+        gathered and invoked every `sec_interval` seconds.
+
+        Parameters
+        ----------
+        tag : str
+            Tag associated with this callback.
+        fun : Callable
+            Function to be used every `sec_interval` seconds. This function
+            takes `format_dict` as the first argument. The rest of the
+            arguments are passed using `*args`.
+        sec_interval : int
+            Specifies the time interval in seconds for the callback function
+            to be invoked.
+        *args : Any
+            Any additional arguments that are passed to the `fun`.
+        """
+        self.tag = tag
+        self.fun = fun
+        self.sec_interval = sec_interval
+        self.args = args
+
+
+@dataclass
+class CallbackInstance:
+    """
+    Internal class that specifies a single callback that is used
+    in a TqdmCallback instance.
+
+    Attributes
+    ----------
+    callback : Callback
+        Callback that is used.
+    last_call_timestamp : int
+        Timestamp used to determine when was the callback invoked.
+    """
+
+    callback: Callback
+    last_call_timestamp: int = 0
+
+
+class TqdmCallback(tqdm):
+    """
+    Subclass of tqdm that enables adding callbacks for loading bars.
+    """
+
+    callbacks = []
+
+    def __init__(self, tag: str, *args, **kwargs):
+        """
+        Initializes the class with a tag. All registered callbacks of the same
+        tag are used.
+
+        Parameters
+        ----------
+        tag : str
+            Tag of the class.
+        """
+        super().__init__(*args, **kwargs)
+        self.tag = tag
+        self.tagged_callbacks = []
+
+        for callback in self.callbacks:
+            if callback.tag == self.tag:
+                callback.fun(self.format_dict, *callback.args)
+                self.tagged_callbacks.append(CallbackInstance(callback))
+
+    @classmethod
+    def register_callback(cls, callback: Callback):
+        """
+        Registers the callback in the static list of callbacks.
+
+        Parameters
+        ----------
+        callback : Callback
+            callback to be registered.
+        """
+        cls.callbacks.append(callback)
+
+    @classmethod
+    def unregister_callback(cls, callback: Callback):
+        """
+        Removes the callback from the static list of callbacks.
+
+        Parameters
+        ----------
+        callback : Callback
+            callback to be unregistered.
+        """
+        cls.callbacks = [clb for clb in cls.callbacks if clb != callback]
+
+    def update(self, n: Optional[Union[float, int]] = 1) -> bool:
+        """
+        Updates the displayed progress bar and checks whether any callback
+        should be invoked.
+
+        Parameters
+        ----------
+        n : Optional[Union[int, float]]
+            Increment that is added to the internal counter
+
+        Returns
+        -------
+        bool :
+            True if a `display()` was triggered.
+        """
+        if not super().update(n):
+            return False
+        for tagged_callback in self.tagged_callbacks:
+            format_dict = self.format_dict
+            elapsed = format_dict["elapsed"]
+            if (
+                elapsed - tagged_callback.last_call_timestamp
+                >= tagged_callback.callback.sec_interval
+            ):
+                tagged_callback.last_call_timestamp = elapsed
+                tagged_callback.callback.fun(
+                    format_dict, *tagged_callback.callback.args
+                )
+        return True

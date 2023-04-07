@@ -8,7 +8,7 @@ Module for preparing and serializing class arguments.
 
 import jsonschema
 import argparse
-from typing import Dict
+from typing import Dict, Tuple
 from pathlib import Path
 import numpy as np
 
@@ -421,3 +421,81 @@ def add_parameterschema_argument(
         if 'nullable' in prop and prop['nullable']:
             if 'type' in keywords:
                 keywords['type'] += ['null']
+
+
+class ArgumentsHandler(object):
+    """
+    Class responsible for creating parsers for arguments from command line or
+    json configs.
+
+    The child class should define its own `arguments_structure` and
+    from_argparse/from_json methods so that it could be instantiated from
+    command line arguments or json config.
+    """
+
+    arguments_structure = {}
+
+    @classmethod
+    def form_parameterschema(cls) -> Dict:
+        """
+        Creates parameter schema based on `arguments_structure` of class and
+        its all parent classes.
+
+        Returns
+        -------
+        Dict:
+            Parameter schema for the class
+        """
+        classes = [cls]
+        parameterschema = {
+            'type': 'object',
+            'additionalProperties': False
+        }
+
+        while len(classes):
+            curr_cls = classes.pop(0)
+            classes.extend(curr_cls.__bases__)
+            if not hasattr(curr_cls, 'arguments_structure'):
+                continue
+            add_parameterschema_argument(
+                parameterschema,
+                curr_cls.arguments_structure
+            )
+
+        return parameterschema
+
+    @classmethod
+    def form_argparse(
+            cls) -> Tuple[argparse.ArgumentParser, argparse._ArgumentGroup]:
+        """
+        Creates argparse parser based on `arguments_structure` of class and its
+        all parent classes.
+
+        Returns
+        -------
+        Tuple[argparse.ArgumentParser, argparse._ArgumentGroup] :
+            Tuple with the argument parser object that can act as parent for
+            program's argument parser, and the corresponding arguments' group
+            pointer
+        """
+        classes = [cls]
+        parser = argparse.ArgumentParser(
+            add_help=False,
+            conflict_handler='resolve'
+        )
+        group = None
+
+        while len(classes):
+            curr_cls = classes.pop(0)
+            classes.extend(curr_cls.__bases__)
+            if not hasattr(curr_cls, 'arguments_structure'):
+                continue
+            group = parser.add_argument_group(
+                title='{curr_cls.__name__} arguments'
+            )
+            add_argparse_argument(
+                group,
+                curr_cls.arguments_structure
+            )
+
+        return parser, group

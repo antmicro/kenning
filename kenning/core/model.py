@@ -8,7 +8,6 @@ Provides a wrapper for deep learning models.
 
 import json
 from typing import List, Any, Tuple, Dict, Type, Optional
-import argparse
 from pathlib import Path
 from collections import defaultdict
 
@@ -18,10 +17,10 @@ from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
 from kenning.core.measurements import systemstatsmeasurements
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 
 
-class ModelWrapper(IOInterface):
+class ModelWrapper(IOInterface, ArgumentsHandler):
     """
     Wraps the given model.
     """
@@ -78,47 +77,6 @@ class ModelWrapper(IOInterface):
         return self.modelpath
 
     @classmethod
-    def _form_argparse(cls):
-        """
-        Wrapper for creating argparse structure for the ModelWrapper class.
-
-        Returns
-        -------
-        ArgumentParser :
-            The argument parser object that can act as parent for program's
-            argument parser
-        """
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            conflict_handler='resolve'
-        )
-        group = parser.add_argument_group(title='Inference model arguments')
-        add_argparse_argument(
-            group,
-            ModelWrapper.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
-    def form_argparse(cls):
-        """
-        Creates argparse parser for the ModelWrapper object.
-
-        Returns
-        -------
-        ArgumentParser :
-            the argument parser object that can act as parent for program's
-            argument parser
-        """
-        parser, group = cls._form_argparse()
-        if cls.arguments_structure != ModelWrapper.arguments_structure:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
-
-    @classmethod
     def from_argparse(
             cls,
             dataset: Dataset,
@@ -142,47 +100,6 @@ class ModelWrapper(IOInterface):
             object of class ModelWrapper
         """
         return cls(args.model_path, dataset, from_file)
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure
-        for the ModelWrapper class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = {
-            "type": "object",
-            "additionalProperties": False
-        }
-
-        add_parameterschema_argument(
-            parameterschema,
-            ModelWrapper.arguments_structure,
-        )
-
-        return parameterschema
-
-    @classmethod
-    def form_parameterschema(cls):
-        """
-        Creates schema for the ModelWrapper class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = cls._form_parameterschema()
-        if cls.arguments_structure != ModelWrapper.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
 
     @classmethod
     def from_json(

@@ -7,10 +7,8 @@ Provides an API for processing and returning data from models and dataprovider
 """
 
 from typing import Any, Dict, Tuple
-import argparse
 
 from kenning.core.runner import Runner
-from kenning.utils.args_manager import add_parameterschema_argument
 from kenning.utils.args_manager import get_parsed_json_dict
 
 
@@ -42,27 +40,6 @@ class OutputCollector(Runner):
         )
 
     @classmethod
-    def form_argparse(cls):
-        """
-        Creates argparse parser for the OutputCollector object.
-
-        This method is used to create a list of arguments for the object so
-        it is possible to configure the object from the level of command
-        line.
-
-        Returns
-        -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
-        """
-        parser = argparse.ArgumentParser(add_help=False)
-        group = parser.add_argument_group(title='OutputCollector arguments')
-
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, args):
         """
         Constructor wrapper that takes the parameters from argparse args.
@@ -80,16 +57,6 @@ class OutputCollector(Runner):
         OutputCollector : object of class OutputCollector
         """
         return cls()
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = cls._form_parameterschema()
-        if cls.arguments_structure != OutputCollector.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
 
     @classmethod
     def from_json(

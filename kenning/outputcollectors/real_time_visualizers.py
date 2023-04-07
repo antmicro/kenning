@@ -13,9 +13,7 @@ import colorsys
 import threading
 from scipy.special import softmax
 
-from kenning.utils.args_manager import add_parameterschema_argument, \
-    get_parsed_json_dict
-from kenning.utils.args_manager import add_argparse_argument
+from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DectObject
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
@@ -120,50 +118,6 @@ class BaseRealTimeVisualizer(OutputCollector):
             inputs_specs=inputs_specs,
             outputs=outputs
         )
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure
-        for the BaseRealTimeVisualizer class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = {
-            'type': 'object',
-            'additionalProperties': False
-        }
-
-        add_parameterschema_argument(
-            parameterschema,
-            BaseRealTimeVisualizer.arguments_structure
-        )
-
-        return parameterschema
-
-    @classmethod
-    def form_argparse(cls):
-        """
-        Creates argparse parser for the BaseRealTimeVisualizer object.
-
-        Returns
-        -------
-        ArgumentParser :
-            the argument parser object that can act as parent for program's
-            argument parser
-        """
-        parser, group = super(cls, cls).form_argparse()
-
-        if (cls.arguments_structure
-                != BaseRealTimeVisualizer.arguments_structure):
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

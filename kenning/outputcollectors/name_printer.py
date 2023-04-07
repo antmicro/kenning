@@ -14,6 +14,22 @@ from pathlib import Path
 
 
 class NamePrinter(OutputCollector):
+    arguments_structure = {
+        'print_type': {
+            'argparse_name': '--print-name',
+            'description': 'What is the type of model that will input data to '
+                           'the NamePrinter',
+            'enum': ['detector', 'classificator'],
+            'default': 'detector'
+        },
+        'classification_class_names': {
+            'argparse_name': '--classification-class-names',
+            'description': 'File with class names used to identify the output '
+                           'from classification models',
+            'type': Path
+        }
+    }
+
     def __init__(self, print_type: str = "detector", file_path: Path = None):
         self.frame_counter = 0
         self.print_type = print_type
@@ -24,22 +40,6 @@ class NamePrinter(OutputCollector):
                 for line in f:
                     self.classnames.append(line.strip())
         super().__init__()
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--print-type',
-            help='What is the type of model that will input data to the NamePrinter',  # noqa: E501
-            choices=['detector', 'classificator'],
-            default='detector'
-        )
-        group.add_argument(
-            '--classification-class-names',
-            help='File with class names used to identify the output from classification models',  # noqa: E501
-            type=Path
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

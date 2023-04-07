@@ -19,8 +19,6 @@ else:
 
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-from kenning.utils.args_manager import add_parameterschema_argument
-from kenning.utils.args_manager import add_argparse_argument
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.resources.models import classification
 
@@ -54,17 +52,6 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     @classmethod
-    def form_argparse(cls, no_dataset: bool = False):
-        parser, group = cls._form_argparse()
-        if no_dataset:
-            add_argparse_argument(
-                group,
-                PyTorchPetDatasetMobileNetV2.arguments_structure,
-                'class_count'
-            )
-        return parser, group
-
-    @classmethod
     def from_argparse(
             cls,
             dataset: Dataset,
@@ -73,17 +60,6 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         if dataset is None:
             return cls(args.model_path, dataset, from_file, args.num_classes)
         return cls(args.model_path, dataset, from_file, dataset.numclasses)
-
-    @classmethod
-    def form_parameterschema(cls, no_dataset: bool = False):
-        parameterschema = cls._form_parameterschema()
-        if no_dataset:
-            add_parameterschema_argument(
-                parameterschema,
-                PyTorchPetDatasetMobileNetV2.arguments_structure,
-                'class_count'
-            )
-        return parameterschema
 
     @classmethod
     def _get_io_specification(cls, numclasses):

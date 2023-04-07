@@ -8,7 +8,6 @@ data on input images and display/save them.
 """
 
 import cv2
-import sys
 import numpy as np
 import colorsys
 from typing import Tuple, List, Dict
@@ -121,34 +120,6 @@ class DetectionVisualizer(OutputCollector):
             inputs_specs=inputs_specs,
             outputs=outputs
         )
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super().form_argparse()
-        group.add_argument(
-            '--output-width',
-            help='Width of the output window or file',
-            type=int,
-            default=1024
-        )
-        group.add_argument(
-            '--output-height',
-            help='Height of the output window or file',
-            type=int,
-            default=576
-        )
-        group.add_argument(
-            '--save-to-file',
-            help='Save visualized output to file',
-            action='store_true'
-        )
-        group.add_argument(
-            '--save-path',
-            help='Path to save the output images',
-            required='--save-to-file' in sys.argv,
-            type=Path
-        )
-        return parser, group
 
     @classmethod
     def from_argparse(cls, args):

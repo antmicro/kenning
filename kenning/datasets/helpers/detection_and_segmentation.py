@@ -12,7 +12,6 @@ from pathlib import Path
 from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
@@ -316,34 +315,6 @@ class ObjectDetectionSegmentationDataset(Dataset):
             download_dataset,
             external_calibration_dataset
         )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super(
-            ObjectDetectionSegmentationDataset,
-            ObjectDetectionSegmentationDataset
-        ).form_parameterschema()
-
-        if cls != ObjectDetectionSegmentationDataset:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super(
-            ObjectDetectionSegmentationDataset,
-            ObjectDetectionSegmentationDataset
-        ).form_argparse()
-
-        if cls != ObjectDetectionSegmentationDataset:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
 
     def train_test_split_representations(
             self,

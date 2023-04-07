@@ -8,15 +8,14 @@ Provides an API for dataset loading, creation and configuration.
 
 from typing import Tuple, List, Any, Dict, Optional, Generator
 import random
-import argparse
 from pathlib import Path
 from tqdm import tqdm
 
 from .measurements import Measurements
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 
 
-class Dataset(object):
+class Dataset(ArgumentsHandler):
     """
     Wraps the datasets for training, evaluation and optimization.
 
@@ -116,53 +115,6 @@ class Dataset(object):
         }
 
     @classmethod
-    def _form_argparse(cls):
-        """
-        Wrapper for creating argparse structure for the Dataset class.
-
-        Returns
-        -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
-        """
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            conflict_handler='resolve'
-        )
-        group = parser.add_argument_group(title='Dataset arguments')
-        add_argparse_argument(
-            group,
-            Dataset.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
-    def form_argparse(cls):
-        """
-        Creates argparse parser for the Dataset object.
-
-        This method is used to create a list of arguments for the object so
-        it is possible to configure the object from the level of command
-        line.
-
-        Returns
-        -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
-        """
-        parser, group = cls._form_argparse()
-        if cls.arguments_structure != Dataset.arguments_structure:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, args):
         """
         Constructor wrapper that takes the parameters from argparse args.
@@ -185,46 +137,6 @@ class Dataset(object):
             args.inference_batch_size,
             args.download_dataset
         )
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure for the Dataset class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = {
-            "type": "object",
-            "additionalProperties": False
-        }
-
-        add_parameterschema_argument(
-            parameterschema,
-            Dataset.arguments_structure,
-        )
-
-        return parameterschema
-
-    @classmethod
-    def form_parameterschema(cls):
-        """
-        Creates schema for the Dataset class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = cls._form_parameterschema()
-        if cls.arguments_structure != Dataset.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
 
     @classmethod
     def from_json(cls, json_dict: Dict):

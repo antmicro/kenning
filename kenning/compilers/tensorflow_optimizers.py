@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import List, Tuple, Optional
 import tensorflow as tf
 
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 
@@ -78,34 +77,6 @@ class TensorFlowOptimizer(Optimizer):
         self.optimizer = optimizer
         self.disable_from_logits = disable_from_logits
         super().__init__(dataset, compiled_model_path)
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super(
-            TensorFlowOptimizer,
-            TensorFlowOptimizer
-        ).form_parameterschema()
-
-        if cls.arguments_structure != TensorFlowOptimizer.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
-
-    @classmethod
-    def form_argparse(cls):
-        parser, group = super(
-            TensorFlowOptimizer,
-            TensorFlowOptimizer
-        ).form_argparse()
-
-        if cls.arguments_structure != TensorFlowOptimizer.arguments_structure:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
 
     def prepare_train_validation(self) -> Tuple:
         """

@@ -6,14 +6,13 @@
 Provides an API for model compilers.
 """
 
-import argparse
 from pathlib import Path
 from typing import Any, List, Dict, Tuple, Optional, Union
 import json
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument, get_parsed_json_dict  # noqa: E501
+from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.logger import get_logger
 
 
@@ -38,7 +37,7 @@ class IOSpecificationNotFoundError(Exception):
     pass
 
 
-class Optimizer(object):
+class Optimizer(ArgumentsHandler):
     """
     Compiles the given model to a different format or runtime.
     """
@@ -83,49 +82,6 @@ class Optimizer(object):
         }
 
     @classmethod
-    def _form_argparse(cls):
-        """
-        Wrapper for creating argparse structure for the Optimizer class.
-
-        Returns
-        -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
-        """
-        parser = argparse.ArgumentParser(
-            add_help=False,
-            conflict_handler='resolve'
-        )
-        group = parser.add_argument_group(title='Compiler arguments')
-        add_argparse_argument(
-            group,
-            Optimizer.arguments_structure
-        )
-        return parser, group
-
-    @classmethod
-    def form_argparse(cls):
-        """
-        Creates argparse parser for the Optimizer object.
-
-        Returns
-        -------
-        (ArgumentParser, ArgumentGroup) :
-            tuple with the argument parser object that can act as parent for
-            program's argument parser, and the corresponding arguments' group
-            pointer
-        """
-        parser, group = cls._form_argparse()
-        if cls.arguments_structure != Optimizer.arguments_structure:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
-
-    @classmethod
     def from_argparse(cls, dataset: Dataset, args):
         """
         Constructor wrapper that takes the parameters from argparse args.
@@ -146,45 +102,6 @@ class Optimizer(object):
             dataset,
             args.compiled_model_path
         )
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure for the Optimizer class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = {
-            "type": "object",
-            "additionalProperties": False
-        }
-
-        add_parameterschema_argument(
-            parameterschema,
-            Optimizer.arguments_structure
-        )
-        return parameterschema
-
-    @classmethod
-    def form_parameterschema(cls):
-        """
-        Creates schema for the Optimizer class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = cls._form_parameterschema()
-        if cls.arguments_structure != Optimizer.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
 
     @classmethod
     def from_json(cls, dataset: Dataset, json_dict: Dict):

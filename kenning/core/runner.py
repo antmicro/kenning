@@ -6,10 +6,10 @@ from typing import Dict, List, Tuple, Any
 
 from kenning.interfaces.io_interface import IOInterface
 from kenning.interfaces.io_interface import IOCompatibilityError
-from kenning.utils.args_manager import add_parameterschema_argument
+from kenning.utils.args_manager import ArgumentsHandler
 
 
-class Runner(IOInterface):
+class Runner(IOInterface, ArgumentsHandler):
     """
     Represents an operation block in Kenning Flow.
     """
@@ -73,29 +73,6 @@ class Runner(IOInterface):
             True if there was some exit indication
         """
         return False
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure
-        for the DataProvider class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = {
-            "type": "object",
-            "additionalProperties": False
-        }
-
-        add_parameterschema_argument(
-            parameterschema,
-            cls.arguments_structure,
-        )
-
-        return parameterschema
 
     @classmethod
     def from_json(

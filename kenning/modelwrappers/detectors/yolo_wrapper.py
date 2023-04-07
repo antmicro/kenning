@@ -15,7 +15,6 @@ from kenning.resources import coco_detection
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_dect_iou  # noqa: E501
-from kenning.utils.args_manager import add_parameterschema_argument, add_argparse_argument  # noqa: E501
 
 from pathlib import Path
 if sys.version_info.minor < 9:
@@ -69,46 +68,12 @@ class YOLOWrapper(ModelWrapper):
         self.model_prepared = True
 
     @classmethod
-    def form_argparse(cls, no_dataset: bool = False):
-        parser, group = cls._form_argparse()
-        if no_dataset:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure,
-                'class_names'
-            )
-
-        if cls.arguments_structure != YOLOWrapper.arguments_structure:
-            add_argparse_argument(
-                group,
-                cls.arguments_structure
-            )
-        return parser, group
-
-    @classmethod
     def from_argparse(
             cls,
             dataset: Dataset,
             args,
             from_file: bool = True):
         return cls(args.model_path, dataset, from_file, args.classes)
-
-    @classmethod
-    def form_parameterschema(cls, no_dataset: bool = False):
-        parameterschema = cls._form_parameterschema()
-        if no_dataset:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure,
-                'class_names'
-            )
-
-        if cls.arguments_structure != YOLOWrapper.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                cls.arguments_structure
-            )
-        return parameterschema
 
     @classmethod
     def load_config_file(cls, config_path):

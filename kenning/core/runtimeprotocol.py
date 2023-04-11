@@ -184,8 +184,9 @@ class Message(object):
             Message obtained from given bytes and number of bytes used to parse
             the message
         """
-        assert len(data) >= MSG_SIZE_LEN + MSG_TYPE_LEN, \
-            f'Not enough data to parse: {len(data)}'
+        if len(data) < MSG_SIZE_LEN + MSG_TYPE_LEN:
+            return None, 0
+
         message_size = int.from_bytes(
             data[:MSG_SIZE_LEN],
             byteorder=endianness,

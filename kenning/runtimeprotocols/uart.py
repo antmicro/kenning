@@ -208,7 +208,7 @@ class UARTProtocol(BytesBasedProtocol):
         return parameterschema
 
     def initialize_client(self) -> bool:
-        self.connection = serial.Serial(self.port, self.baudrate, timeout=1)
+        self.connection = serial.Serial(self.port, self.baudrate, timeout=0)
         self.selector.register(
             self.connection,
             selectors.EVENT_READ | selectors.EVENT_WRITE,

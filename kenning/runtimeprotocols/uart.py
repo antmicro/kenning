@@ -19,7 +19,6 @@ from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import MessageType
 from kenning.core.measurements import Measurements
 from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
-from kenning.utils.args_manager import add_parameterschema_argument
 
 
 # model constraints
@@ -186,26 +185,6 @@ class UARTProtocol(BytesBasedProtocol):
         self.collecteddata = bytes()
         self.connection = None
         super().__init__(packet_size=packet_size, endianness=endianness)
-
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            port=args.port,
-            baudrate=args.baudrate,
-            endianness=args.endianness
-        )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-
-        if cls.arguments_structure != super().arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                UARTProtocol.arguments_structure
-            )
-
-        return parameterschema
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=0)

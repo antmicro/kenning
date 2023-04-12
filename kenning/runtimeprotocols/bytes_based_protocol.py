@@ -12,7 +12,6 @@ import selectors
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.runtimeprotocol import Message
-from kenning.utils.args_manager import add_parameterschema_argument
 
 
 class BytesBasedProtocol(RuntimeProtocol):
@@ -39,24 +38,6 @@ class BytesBasedProtocol(RuntimeProtocol):
         self.selector = selectors.DefaultSelector()
         self.input_buffer = b''
         super().__init__()
-
-    @classmethod
-    def form_parameterschema(cls):
-        """
-        Creates schema for the RuntimeProtocol class.
-
-        Returns
-        -------
-        Dict :
-            schema for the class
-        """
-        parameterschema = cls._form_parameterschema()
-        if cls.arguments_structure != BytesBasedProtocol.arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                BytesBasedProtocol.arguments_structure
-            )
-        return parameterschema
 
     def send_message(self, message: Message) -> bool:
         self.log.debug(f'Sending message {message}')

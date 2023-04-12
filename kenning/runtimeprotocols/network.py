@@ -13,7 +13,6 @@ from typing import Optional
 
 from kenning.core.runtimeprotocol import ServerStatus
 from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
-from kenning.utils.args_manager import add_parameterschema_argument
 
 
 class NetworkProtocol(BytesBasedProtocol):
@@ -62,27 +61,6 @@ class NetworkProtocol(BytesBasedProtocol):
         self.serversocket = None
         self.socket = None
         super().__init__(packet_size=packet_size, endianness=endianness)
-
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.host,
-            args.port,
-            args.packet_size,
-            args.endianness
-        )
-
-    @classmethod
-    def form_parameterschema(cls):
-        parameterschema = super().form_parameterschema()
-
-        if cls.arguments_structure != super().arguments_structure:
-            add_parameterschema_argument(
-                parameterschema,
-                NetworkProtocol.arguments_structure
-            )
-
-        return parameterschema
 
     def accept_client(self, socket, mask) -> Tuple['ServerStatus', Optional[bytes]]:  # noqa: E501
         """

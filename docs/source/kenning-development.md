@@ -153,9 +153,9 @@ To support all three methods, the newly implemented class requires creating a di
 
 This structure is used to create:
 
-* an `argparse` group, to configure class parameters from terminal level (via the `form_argparse` method).
+* an `argparse` group, to configure class parameters from terminal level (via the [](argumentshandler-api)'s `form_argparse` method).
   Later, a class can be created with the `from_argparse` method.
-* a JSON schema to configure the class from a JSON file (via the `form_parameterschema` method).
+* a JSON schema to configure the class from a JSON file (via the [](argumentshandler-api)'s `form_parameterschema` method).
   Later, a class can be created with the `from_parameterschema` method.
 
 `arguments_structure` is a dictionary in the following form:
@@ -255,6 +255,8 @@ class TensorFlowLiteCompiler(Optimizer):
 In addition to defined arguments, there are also default [](optimizer-api) arguments - the [](dataset-api) object and path to save the model (`compiled_model_path`).
 
 Also, a `from_argparse` object creator is implemented, since there are additional parameters (`dataset`) to handle. The `from_parameterschema` function is created automatically.
+
+Additionally, if the new class does not inherit from any Kenning core classes, then it should inherit directly from [](argumentshandler-api) class which is responsible for creating `argparse` groups and JSON schema from `arguments_structure`.
 
 The above implementation of arguments is common for all core classes.
 

@@ -341,3 +341,16 @@ Example implementations:
 .. autoclass:: kenning.core.outputcollector.OutputCollector
    :members:
 ```
+
+(argumentshandler-api)=
+
+## ArgumentsHandler
+
+The `ArgumentsHandler` class is responsible for concatenating `arguments_structure` and creating parsers for command line and JSON config arguments.
+
+In order to make some class being able to be instantiated from command line arguments or JSON config it is required to inherit from this class or its child class and implement `from_argparse` or `from_json` methods as described in [](defining-arguments-for-core-classes).
+
+```{eval-rst}
+.. autoclass:: kenning.utils.args_manager.ArgumentsHandler
+   :members:
+```

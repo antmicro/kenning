@@ -184,14 +184,16 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
         confusion_matrix = np.asarray(
             measurementsdata['eval_confusion_matrix'])
         confusion_matrix[np.isnan(confusion_matrix)] = 0.
-        return {
+        metrics = {
             'accuracy': accuracy(confusion_matrix),
-            'top_5_accuracy':
-                measurementsdata['top_5_count'] / measurementsdata['total'],
             'mean_precision': mean_precision(confusion_matrix),
             'mean_sensitivity': mean_sensitivity(confusion_matrix),
             'g_mean': g_mean(confusion_matrix),
         }
+        if 'top_5_count' in measurementsdata.keys():
+            metrics['top_5_accuracy'] = \
+                measurementsdata['top_5_count'] / measurementsdata['total']
+        return metrics
     return {}
 
 

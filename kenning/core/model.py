@@ -58,13 +58,6 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         self.from_file = from_file
         self.model_prepared = False
 
-        self.actions = {
-            'infer': self.action_infer,
-            'preprocess': self.action_preprocess,
-            'train': self.action_train,
-            'postprocess': self.action_postprocess
-        }
-
     def get_path(self) -> Path:
         """
         Returns path to the model in a form of a Path object.
@@ -439,30 +432,3 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
             Output data to feed to postprocess_outputs
         """
         raise NotImplementedError
-
-    def action_infer(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        # get_io_specification returns dictionary with multiple possible inputs
-        # Currently we do not expect to support more than single input though
-        # Hence we assume every model will have its working input at index 0
-        # TODO add support for multiple inputs / outputs
-        default_name = self.get_io_specification()['input'][0]['name']
-        return {
-            'out_infer': self.run_inference(
-                self.preprocess_input(input[default_name])
-            )
-        }
-
-    def action_preprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = self.get_io_specification()['input'][0]['name']
-        return {
-            'out_pre': self.preprocess_input(input[default_name])
-        }
-
-    def action_train(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        raise NotImplementedError
-
-    def action_postprocess(self, input: Dict[str, Any]) -> Dict[str, Any]:
-        default_name = self.get_io_specification()['input'][0]['name']
-        return {
-            'out_post': self.postprocess_outputs(input[default_name])
-        }

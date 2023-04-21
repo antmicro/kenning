@@ -7,7 +7,7 @@ Provides an API for model compilers.
 """
 
 from pathlib import Path
-from typing import Any, List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Tuple, Optional, Union
 import json
 
 from kenning.core.dataset import Dataset
@@ -76,10 +76,6 @@ class Optimizer(ArgumentsHandler):
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.log = get_logger()
-
-        self.actions = {
-            'compile': self.action_compile
-        }
 
     @classmethod
     def from_argparse(cls, dataset: Dataset, args):
@@ -278,9 +274,6 @@ class Optimizer(ArgumentsHandler):
         modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
         return Path(spec_path)
-
-    def action_compile(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        raise NotImplementedError
 
     def save_io_specification(
             self,

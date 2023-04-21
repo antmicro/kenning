@@ -110,10 +110,6 @@ class Dataset(ArgumentsHandler):
             self.download_dataset_fun()
         self.prepare()
 
-        self.actions = {
-            'stream': self.action_stream
-        }
-
     @classmethod
     def from_argparse(cls, args):
         """
@@ -474,13 +470,6 @@ class Dataset(ArgumentsHandler):
             List of class names
         """
         raise NotImplementedError
-
-    def action_stream(self, _: Dict[str, Any]) -> Dict[str, Any]:
-        next = self.__next__()
-        return {
-            'data_x': next[0],
-            'data_y': next[1]
-        }
 
 
 class CannotDownloadDatasetError(Exception):

@@ -2,19 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import cv2
-from typing import Optional
-import numpy as np
+from typing import Optional, Union, List, Dict, Tuple
 from collections import namedtuple
-from typing import Union, List, Dict, Tuple
 from pathlib import Path
+import numpy as np
+import cv2
+from matplotlib import pyplot as plt
+from matplotlib import patches as patches
 
 from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 
-from matplotlib import pyplot as plt
-from matplotlib import patches as patches
 
 DectObject = namedtuple(
     'DectObject',
@@ -210,7 +209,8 @@ def compute_dect_iou(b1: DectObject, b2: DectObject) -> float:
 
     Returns
     -------
-    float : IoU value
+    float :
+        IoU value
     """
     xmn = max(b1.xmin, b2.xmin)
     ymn = max(b1.ymin, b2.ymin)
@@ -230,24 +230,25 @@ def compute_dect_iou(b1: DectObject, b2: DectObject) -> float:
     return iou
 
 
-def compute_segm_iou(mask1: np.array, mask2: np.array) -> float:
+def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     """
-    Computes IoU between two masks
+    Computes IoU between two segmentation objects
 
     Parameters
     ----------
-    mask1 : np.array
-        First mask
-    mask2 : np.array
-        Second mask
+    segm_pred : SegmObject
+        Predicted segmentation
+    segm_true : SegmObject
+        True segmentation
 
     Returns
     -------
-    float : IoU value
+    float :
+        IoU value
     """
 
-    mask_i = np.logical_and(mask1, mask2)
-    mask_u = np.logical_or(mask1, mask2)
+    mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
+    mask_u = np.logical_or(segm_pred.mask, segm_true.mask)
 
     mask_u_nonzero = np.count_nonzero(mask_u)
     # in empty masks union is zero
@@ -390,7 +391,10 @@ class ObjectDetectionSegmentationDataset(Dataset):
                 )
         return hashable
 
-    def compute_iou(self, b1: DectObject, b2: DectObject) -> float:
+    def compute_iou(
+            self,
+            b1: Union[DectObject, SegmObject],
+            b2: Union[DectObject, SegmObject]) -> float:
         """
         Computes the IoU between two bounding boxes.
 

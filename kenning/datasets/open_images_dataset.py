@@ -59,7 +59,8 @@ def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
 
     Returns
     -------
-    Tuple[str, str]: tuple containing split and image ID
+    Tuple[str, str]:
+        tuple containing split and image ID
     """
     split, image_id = re.match(REGEX, image).groups()
     yield split, image_id
@@ -76,7 +77,8 @@ def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
 
     Yields
     ------
-    Tuple[str, str] : download entries
+    Tuple[str, str] :
+        download entries
     """
     for line_number, image in enumerate(image_list):
         try:
@@ -109,7 +111,7 @@ def download_one_image(
     try:
         bucket.download_file(
             f'{split}/{image_id}.jpg',
-            download_folder / f'{image_id}.jpg'
+            str(download_folder / f'{image_id}.jpg')
         )
     except botocore.exceptions.ClientError as exception:
         sys.exit(
@@ -178,9 +180,6 @@ def download_instance_segmentation_zip_file(
         Directory to download and extract the zip file into
     url: str
         Download URL
-
-    Returns
-    -------
     """
     download_url(url, zipdir)
     with zipfile.ZipFile(zipdir, 'r') as zip_ref:
@@ -434,7 +433,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
     def prepare_instance_segmentation(self):
         annotations = defaultdict(list)
         annotationsfile = pd.read_csv(self.root / 'annotations.csv')
-        for index, row in annotationsfile.iterrows():
+        for _, row in annotationsfile.iterrows():
             annotations[row['ImageID']].append(SegmObject(
                 clsname=self.classmap[row['LabelName']],
                 maskpath=self.root / 'masks' / row['MaskPath'],
@@ -443,7 +442,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                 xmax=row['BoxXMax'],
                 ymax=row['BoxYMax'],
                 mask=None,
-                score=1.0
+                score=1.0,
+                iscrowd=False
             ))
         for k, v in annotations.items():
             self.dataX.append(k)

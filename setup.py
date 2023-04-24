@@ -106,6 +106,10 @@ setuptools.setup(
         ],
         'uart': [
             'pyserial'
+        ],
+        'renode': [
+            'pyrenode @ git+https://github.com/antmicro/pyrenode',
+            'renode-run @ git+https://github.com/antmicro/renode-run'
         ]
     },
 )

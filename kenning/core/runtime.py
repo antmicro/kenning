@@ -218,13 +218,18 @@ class Runtime(ArgumentsHandler):
         """
         return self.protocol.initialize_server()
 
-    def prepare_client(self):
+    def prepare_client(self) -> bool:
         """
         Runs initialization for the client.
-        """
-        self.protocol.initialize_client()
 
-    def prepare_input(self, input_data: bytes):
+        Returns
+        -------
+        bool :
+            True if succeded
+        """
+        return self.protocol.initialize_client()
+
+    def prepare_input(self, input_data: bytes) -> bool:
         """
         Loads and converts delivered data to the accelerator for inference.
 
@@ -252,7 +257,7 @@ class Runtime(ArgumentsHandler):
         else:
             self.protocol.request_failure()
 
-    def _prepare_model(self, input_data: Optional[bytes]):
+    def _prepare_model(self, input_data: Optional[bytes]) -> bool:
         """
         Internal call for preparing a model for inference task.
 
@@ -607,7 +612,15 @@ class Runtime(ArgumentsHandler):
         """
         raise NotImplementedError
 
-    def _upload_output(self, input_data: bytes) -> bytes:
+    def _upload_output(self, input_data: bytes):
+        """
+        Wrapper for uploading output.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here
+        """
         out = self.upload_output(input_data)
         if out:
             self.protocol.request_success(out)
@@ -650,7 +663,7 @@ class Runtime(ArgumentsHandler):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
-    def upload_essentials(self, compiledmodelpath: Path):
+    def upload_essentials(self, compiledmodelpath: Path) -> bool:
         """
         Wrapper for uploading data to the server.
         Uploads model by default.
@@ -660,13 +673,17 @@ class Runtime(ArgumentsHandler):
         compiledmodelpath : Path
             Path to the file with a compiled model
 
+        Returns
+        -------
+        bool :
+            True if succeded
         """
         spec_path = self.get_io_spec_path(compiledmodelpath)
         if spec_path.exists():
             self.protocol.upload_io_specification(spec_path)
         else:
             self.log.info("No Input/Output specification found")
-        self.protocol.upload_model(compiledmodelpath)
+        return self.protocol.upload_model(compiledmodelpath)
 
     def prepare_local(self) -> bool:
         """
@@ -685,7 +702,7 @@ class Runtime(ArgumentsHandler):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
-            compiledmodelpath: Path):
+            compiledmodelpath: Path) -> bool:
         """
         Runs inference locally using a given runtime.
 
@@ -767,7 +784,7 @@ class Runtime(ArgumentsHandler):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
-            compiledmodelpath: Path):
+            compiledmodelpath: Path) -> bool:
         """
         Main runtime client program.
 
@@ -801,10 +818,13 @@ class Runtime(ArgumentsHandler):
         from tqdm import tqdm
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
-        self.prepare_client()
-        self.upload_essentials(compiledmodelpath)
-        measurements = Measurements()
         try:
+            check_request(self.prepare_client(), 'prepare client')
+            check_request(
+                    self.upload_essentials(compiledmodelpath),
+                    'upload essentials'
+            )
+            measurements = Measurements()
             for X, y in tqdm(iter(dataset)):
                 prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)

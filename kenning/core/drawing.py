@@ -9,7 +9,7 @@ Wrappers for drawing plots for reports.
 import sys
 import matplotlib as mpl
 from matplotlib import pyplot as plt
-from typing import List, Tuple, Optional, Dict, Union, Iterable
+from typing import List, Tuple, Optional, Dict, Union, Iterable, Any
 import numpy as np
 import itertools
 from pathlib import Path
@@ -1621,6 +1621,53 @@ def draw_plot(
                 bbox_to_anchor=[0.5, -0.06],
                 ncols=2)
         )
+
+    if outpath is None:
+        plt.show()
+    else:
+        for ext in outext:
+            plt.savefig(
+                f"{outpath}.{ext}",
+                bbox_extra_artists=bbox_extra,
+                bbox_inches='tight')
+    plt.close()
+
+
+def draw_barplot(
+        outpath: Optional[Path],
+        title: str,
+        xtitle: str,
+        xunit: str,
+        ytitle: str,
+        yunit: str,
+        xdata: List[Any],
+        ydata: List[Union[int, float]],
+        figsize: Tuple = (15, 15),
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+        outext: Iterable[str] = ['png'],
+):
+    plt.figure(figsize=figsize)
+
+    bbox_extra = []
+    if colors is None:
+        color = 'purple'
+    else:
+        color = colors[color_offset]
+    plt.bar(xdata, ydata, color=color)
+    plt.xticks(rotation=90)
+    xlabel = xtitle
+    if xunit is not None:
+        xlabel += f' [{xunit}]'
+    ylabel = ytitle
+    if yunit is not None:
+        ylabel += f' [{yunit}]'
+    plt.xlabel(xlabel, fontsize='large')
+    plt.ylabel(ylabel, fontsize='large')
+    plt.ticklabel_format(style='plain', axis='y')
+    plt.grid()
+    if title:
+        bbox_extra.append(plt.title(title))
 
     if outpath is None:
         plt.show()

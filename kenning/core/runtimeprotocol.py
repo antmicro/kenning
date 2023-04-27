@@ -9,10 +9,9 @@ the client.
 
 from enum import Enum
 from pathlib import Path
-import time
 import json
-
-from typing import Any, Tuple, Optional, Union, Dict
+import time
+from typing import Any, Tuple, Optional, Union, Dict, Callable
 
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
@@ -567,7 +566,9 @@ class RuntimeProtocol(ArgumentsHandler):
         self.send_message(message)
         return self.receive_confirmation()[0]
 
-    def request_processing(self) -> bool:
+    def request_processing(
+            self,
+            get_time_func: Callable[[], float] = time.perf_counter) -> bool:
         """
         Requests processing of input data and waits for acknowledgement.
 
@@ -579,6 +580,11 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Target may send its own measurements in the statistics.
 
+        Parameters
+        ---------
+        get_time_func : Callable[[], float]
+            Function that returns current timestamp
+
         Returns
         -------
         bool :
@@ -586,16 +592,16 @@ class RuntimeProtocol(ArgumentsHandler):
         """
         self.log.debug('Requesting processing')
         self.send_message(Message(MessageType.PROCESS))
-        start = time.perf_counter()
+        start = get_time_func()
         ret = self.receive_confirmation()[0]
         if not ret:
             return False
 
-        duration = time.perf_counter() - start
+        duration = get_time_func() - start
         measurementname = 'protocol_inference_step'
         MeasurementsCollector.measurements += {
             measurementname: [duration],
-            f'{measurementname}_timestamp': [time.perf_counter()]
+            f'{measurementname}_timestamp': [get_time_func()]
         }
         return True
 

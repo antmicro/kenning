@@ -10,6 +10,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 from pathlib import Path
 from typing import Optional, Dict, List, Any
+import time
 import json
 import numpy as np
 
@@ -829,7 +830,10 @@ class Runtime(ArgumentsHandler):
                 prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')
-                check_request(self.protocol.request_processing(), 'inference')
+                check_request(
+                    self.protocol.request_processing(self.get_time),
+                    'inference'
+                )
                 _, preds = check_request(
                     self.protocol.download_output(),
                     'receive output'
@@ -849,6 +853,17 @@ class Runtime(ArgumentsHandler):
             MeasurementsCollector.measurements += measurements
         self.protocol.disconnect()
         return True
+
+    def get_time(self) -> float:
+        """
+        Returns current timestamp
+
+        Returns
+        -------
+        float :
+            Current timestamp
+        """
+        return time.perf_counter()
 
     def run_server(self):
         """

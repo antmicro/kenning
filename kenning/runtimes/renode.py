@@ -8,6 +8,7 @@ Runtime implementation for Renode
 
 from typing import Dict
 from pathlib import Path
+import re
 from pyrenode import Pyrenode
 
 from kenning.core.runtime import Runtime
@@ -59,26 +60,13 @@ class RenodeRuntime(Runtime):
         """
         self.runtime_binary_path = runtime_binary_path
         self.platform_resc_path = platform_resc_path
+        self.virtual_time_regex = re.compile(
+            r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
+        )
         super().__init__(
             protocol,
             collect_performance_data
         )
-
-    def run_client(
-            self,
-            dataset: Dataset,
-            modelwrapper: ModelWrapper,
-            compiledmodelpath: Path):
-        with Pyrenode() as renode_handler:
-            self.init_renode(renode_handler)
-
-            ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
-
-            MeasurementsCollector.measurements += {
-                'opcode_counters': self.get_opcode_stats(renode_handler)
-            }
-
-        return ret
 
     @classmethod
     def from_argparse(cls, protocol, args):
@@ -88,6 +76,44 @@ class RenodeRuntime(Runtime):
             platform_resc_path=args.platform_resc_path,
             collect_performance_data=args.disable_performance_measurements
         )
+
+    def run_client(
+            self,
+            dataset: Dataset,
+            modelwrapper: ModelWrapper,
+            compiledmodelpath: Path):
+        with Pyrenode() as renode_handler:
+            self.renode_handler = renode_handler
+            self.init_renode(renode_handler)
+
+            ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
+
+            MeasurementsCollector.measurements += {
+                'opcode_counters': self.get_opcode_stats(renode_handler)
+            }
+
+            self.renode_handler = None
+
+        return ret
+
+    def get_time(self):
+        if self.renode_handler is None:
+            return 0
+
+        elapsed_time_str = self.renode_handler.run_robot_keyword(
+            'ExecuteCommand', 'machine ElapsedVirtualTime'
+        )
+        match = self.virtual_time_regex.search(elapsed_time_str)
+        if match is None:
+            return 0
+
+        groups = match.groups()
+
+        h = int(groups[0])
+        m = int(groups[1])
+        s = float(groups[2])
+
+        return 3600*h + 60*m + s
 
     def init_renode(self, renode_handler: Pyrenode):
         """

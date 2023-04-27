@@ -38,6 +38,7 @@ from kenning.core.drawing import (
     draw_plot, draw_radar_chart,
     draw_violin_comparison_plot,
     draw_bubble_plot, choose_theme,
+    draw_barplot,
     IMMATERIAL_COLORS, RED_GREEN_CMAP)
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
@@ -811,6 +812,109 @@ def comparison_detection_report(
         )
 
 
+def renode_stats_report(
+        measurementsdata: Dict[str, List],
+        imgdir: Path,
+        imgprefix: str,
+        rootdir: Path,
+        image_formats: Set[str],
+        color_offset: int = 0,
+        draw_titles: bool = True,
+        colors=None,
+        **kwargs) -> str:
+    """
+    Creates Renode stats section of the report.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    imgprefix : str
+        Prefix to the image file name
+    rootdir : Path
+        Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    color_offset : int
+        How many colors from default color list should be skipped
+    draw_titles : bool
+        Should titles be drawn on the plot
+
+    Returns
+    -------
+    str :
+        content of the report in MyST format
+    """
+    log.info(
+        f'Running renode_stats_report for {measurementsdata["modelname"]}'
+    )
+
+    if 'opcode_counters' not in measurementsdata:
+        log.error('Opcode counters not present for classification report')
+        return ''
+
+    _image_formats = image_formats - {'html'}
+
+    opcode_counters = []
+    vector_opcode_counters = []
+    for opcode, counter in measurementsdata['opcode_counters'].items():
+        if counter > 0:
+            opcode_counters.append((opcode, counter))
+            if opcode[0] == 'v':
+                vector_opcode_counters.append((opcode, counter))
+
+    opcode_counters.sort(key=lambda x: x[1], reverse=True)
+    vector_opcode_counters.sort(key=lambda x: x[1], reverse=True)
+
+    instr_barplot_path = imgdir / f'{imgprefix}instr_histogram'
+
+    draw_barplot(
+        str(instr_barplot_path),
+        'Instructions histogram' if draw_titles
+        else None,
+        'Opcode',
+        None,
+        'Counter',
+        None,
+        [x[0] for x in opcode_counters],
+        [x[1] for x in opcode_counters],
+        colors=colors,
+        color_offset=color_offset,
+        outext=_image_formats,
+    )
+
+    measurementsdata['instructionspath'] = str(
+        instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_histogram'
+
+    draw_barplot(
+        str(vector_instr_barplot_path),
+        'Vector instructions histogram' if draw_titles
+        else None,
+        'Opcode',
+        None,
+        'Counter',
+        None,
+        [x[0] for x in vector_opcode_counters],
+        [x[1] for x in vector_opcode_counters],
+        colors=colors,
+        color_offset=color_offset,
+        outext=_image_formats,
+    )
+
+    measurementsdata['vectorinstructionspath'] = str(
+        vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    with path(reports, 'renode_stats.md') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            measurementsdata
+        )
+
+
 def generate_report(
         reportname: str,
         data: List[Dict],
@@ -859,7 +963,8 @@ def generate_report(
     reptypes = {
         'performance': performance_report,
         'classification': classification_report,
-        'detection': detection_report
+        'detection': detection_report,
+        'renode_stats': renode_stats_report,
     }
     comparereptypes = {
         'performance': comparison_performance_report,

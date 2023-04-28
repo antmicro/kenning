@@ -813,9 +813,107 @@ def comparison_detection_report(
 
 
 def renode_stats_report(
-        measurementsdata: Dict[str, List],
+        measurementsdata: Dict,
         imgdir: Path,
         imgprefix: str,
+        rootdir: Path,
+        image_formats: Set[str],
+        draw_titles: bool = True,
+        colors=None,
+        **kwargs) -> str:
+    """
+    Creates Renode stats section of the report.
+
+    Parameters
+    ----------
+    measurementsdata : Dict
+        Statistics from the Measurements class
+    imgdir : Path
+        Path to the directory for images
+    imgprefix : str
+        Prefix to the image file name
+    rootdir : Path
+        Path to the root of the documentation project involving this report
+    image_formats : Set[str]
+        Collection with formats which should be used to generate plots
+    color_offset : int
+        How many colors from default color list should be skipped
+    draw_titles : bool
+        Should titles be drawn on the plot
+
+    Returns
+    -------
+    str :
+        content of the report in MyST format
+    """
+    log.info(
+        f'Running renode_stats_report for {measurementsdata["modelname"]}'
+    )
+
+    if 'opcode_counters' not in measurementsdata:
+        log.error('Opcode counters not present for Renode stats report')
+        return ''
+
+    # _image_formats = image_formats - {'html'}
+
+    opcode_counters = []
+    vector_opcode_counters = []
+    for opcode, counter in measurementsdata['opcode_counters'].items():
+        if counter > 0:
+            opcode_counters.append((opcode, counter))
+            if opcode[0] == 'v':
+                vector_opcode_counters.append((opcode, counter))
+
+    opcode_counters.sort(key=lambda x: x[1], reverse=True)
+    vector_opcode_counters.sort(key=lambda x: x[1], reverse=True)
+
+    instr_barplot_path = imgdir / f'{imgprefix}instr_histogram'
+
+    draw_barplot(
+        str(instr_barplot_path),
+        'Instructions histogram' if draw_titles else None,
+        'Opcode',
+        None,
+        'Counter',
+        None,
+        [x[0] for x in opcode_counters],
+        {'counters': [x[1] for x in opcode_counters]},
+        colors=colors,
+        outext=image_formats,
+    )
+
+    measurementsdata['instrhistpath'] = str(
+        instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_histogram'
+
+    draw_barplot(
+        str(vector_instr_barplot_path),
+        'Vector instructions histogram' if draw_titles
+        else None,
+        'Opcode',
+        None,
+        'Counter',
+        None,
+        [x[0] for x in vector_opcode_counters],
+        {'counters': [x[1] for x in vector_opcode_counters]},
+        colors=colors,
+        outext=image_formats,
+    )
+
+    measurementsdata['vectorinstrhistpath'] = str(
+        vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    with path(reports, 'renode_stats.md') as reporttemplate:
+        return create_report_from_measurements(
+            reporttemplate,
+            measurementsdata
+        )
+
+
+def comparison_renode_stats_report(
+        measurementsdata: List[Dict],
+        imgdir: Path,
         rootdir: Path,
         image_formats: Set[str],
         color_offset: int = 0,
@@ -847,48 +945,63 @@ def renode_stats_report(
     str :
         content of the report in MyST format
     """
-    log.info(
-        f'Running renode_stats_report for {measurementsdata["modelname"]}'
+    log.info('Running comparison_renode_stats_report')
+
+    for data in measurementsdata:
+        if 'opcode_counters' not in data:
+            log.error('Opcode counters not present for Renode stats report')
+            return ''
+
+    report_variables = {
+        'reportname': measurementsdata[0]['reportname'],
+        'reportname_simple': measurementsdata[0]['reportname_simple']
+    }
+
+    all_opcodes = set()
+    all_vector_opcodes = set()
+    for data in measurementsdata:
+        for opcode, counter in data['opcode_counters'].items():
+            if counter > 0:
+                all_opcodes.add(opcode)
+                if opcode[0] == 'v':
+                    all_vector_opcodes.add(opcode)
+
+    all_opcodes = list(all_opcodes)
+    all_vector_opcodes = list(all_vector_opcodes)
+
+    all_opcodes.sort(
+        key=lambda x: (measurementsdata[0]['opcode_counters'][x], x),
+        reverse=True
+    )
+    all_vector_opcodes.sort(
+        key=lambda x: (measurementsdata[0]['opcode_counters'][x], x),
+        reverse=True
     )
 
-    if 'opcode_counters' not in measurementsdata:
-        log.error('Opcode counters not present for classification report')
-        return ''
-
-    _image_formats = image_formats - {'html'}
-
-    opcode_counters = []
-    vector_opcode_counters = []
-    for opcode, counter in measurementsdata['opcode_counters'].items():
-        if counter > 0:
-            opcode_counters.append((opcode, counter))
-            if opcode[0] == 'v':
-                vector_opcode_counters.append((opcode, counter))
-
-    opcode_counters.sort(key=lambda x: x[1], reverse=True)
-    vector_opcode_counters.sort(key=lambda x: x[1], reverse=True)
-
-    instr_barplot_path = imgdir / f'{imgprefix}instr_histogram'
+    instr_barplot_path = imgdir / 'instr_histogram_comparison'
 
     draw_barplot(
         str(instr_barplot_path),
-        'Instructions histogram' if draw_titles
-        else None,
+        'Instructions histogram' if draw_titles else None,
         'Opcode',
         None,
         'Counter',
         None,
-        [x[0] for x in opcode_counters],
-        [x[1] for x in opcode_counters],
+        all_opcodes,
+        {
+            data['modelname']: [
+                data['opcode_counters'][opcode] for opcode in all_opcodes
+            ]
+            for data in measurementsdata
+        },
         colors=colors,
-        color_offset=color_offset,
-        outext=_image_formats,
+        outext=image_formats,
     )
 
-    measurementsdata['instructionspath'] = str(
+    report_variables['instrhistpath'] = str(
         instr_barplot_path.relative_to(rootdir)) + '.*'
 
-    vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_histogram'
+    vector_instr_barplot_path = imgdir / 'vector_instr_histogram_comparison'
 
     draw_barplot(
         str(vector_instr_barplot_path),
@@ -898,20 +1011,25 @@ def renode_stats_report(
         None,
         'Counter',
         None,
-        [x[0] for x in vector_opcode_counters],
-        [x[1] for x in vector_opcode_counters],
+        all_vector_opcodes,
+        {
+            data['modelname']: [
+                data['opcode_counters'][opcode]
+                for opcode in all_vector_opcodes
+            ]
+            for data in measurementsdata
+        },
         colors=colors,
-        color_offset=color_offset,
-        outext=_image_formats,
+        outext=image_formats,
     )
 
-    measurementsdata['vectorinstructionspath'] = str(
+    report_variables['vectorinstrhistpath'] = str(
         vector_instr_barplot_path.relative_to(rootdir)) + '.*'
 
     with path(reports, 'renode_stats.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
-            measurementsdata
+            report_variables
         )
 
 
@@ -964,12 +1082,13 @@ def generate_report(
         'performance': performance_report,
         'classification': classification_report,
         'detection': detection_report,
-        'renode_stats': renode_stats_report,
+        'renode_stats': renode_stats_report
     }
     comparereptypes = {
         'performance': comparison_performance_report,
         'classification': comparison_classification_report,
-        'detection': comparison_detection_report
+        'detection': comparison_detection_report,
+        'renode_stats': comparison_renode_stats_report
     }
 
     header_data = {
@@ -991,7 +1110,6 @@ def generate_report(
             reporttemplate,
             header_data
         )
-
     for typ in report_types:
         for i, model_data in enumerate(data):
             if len(data) > 1:

@@ -86,10 +86,16 @@ class RenodeRuntime(Runtime):
             self.renode_handler = renode_handler
             self.init_renode(renode_handler)
 
+            pre_opcode_stats = self.get_opcode_stats(renode_handler)
+
             ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
 
+            post_opcode_stats = self.get_opcode_stats(renode_handler)
+
             MeasurementsCollector.measurements += {
-                'opcode_counters': self.get_opcode_stats(renode_handler)
+                'opcode_counters': self._opcode_stats_diff(
+                    pre_opcode_stats, post_opcode_stats
+                )
             }
 
             self.renode_handler = None
@@ -121,6 +127,9 @@ class RenodeRuntime(Runtime):
         """
         renode_handler.initialize()
         renode_handler.run_robot_keyword(
+            'CreateLogTester', timeout=5.0
+        )
+        renode_handler.run_robot_keyword(
             'ExecuteCommand', f'$bin=@{self.runtime_binary_path}'
         )
         renode_handler.run_robot_keyword(
@@ -131,6 +140,9 @@ class RenodeRuntime(Runtime):
         )
         renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
+        )
+        renode_handler.run_robot_keyword(
+            'WaitForLogEntry', r'.*Runtime started.*', treatAsRegex=True
         )
 
     def get_opcode_stats(self, renode_handler: Pyrenode) -> Dict[str, int]:
@@ -160,3 +172,29 @@ class RenodeRuntime(Runtime):
             stats[opcode.strip()] = int(counter.strip())
 
         return stats
+
+    @staticmethod
+    def _opcode_stats_diff(
+            opcode_stats_a: Dict[str, int],
+            opcode_stats_b: Dict[str, int]) -> Dict[str, int]:
+        """
+        Computes difference of opcode counters. It is assumed that counters
+        from second dict are greater.
+
+        Parameters
+        ----------
+        opcode_stats_a : Dict[str, int]
+            First opcode stats
+        opcode_stats_b : Dict[str, int]
+            Seconds opcode stats
+
+        Returns
+        -------
+        Dict[str, int] :
+            Difference between two opcode stats
+        """
+        ret = {}
+        for opcode in opcode_stats_b.keys():
+            ret[opcode] = (opcode_stats_b[opcode] -
+                           opcode_stats_a.get(opcode, 0))
+        return ret

@@ -54,7 +54,7 @@ def check_request(
     Returns
     -------
     Union[bool, Tuple[bool, Optional[bytes]]] :
-        the request given in the input
+        The request given in the input
     """
     if isinstance(request, bool):
         if not request:
@@ -104,7 +104,7 @@ class MessageType(Enum):
         Returns
         -------
         bytes :
-            converted message type
+            Converted message type
         """
         return int(self.value).to_bytes(MSG_TYPE_LEN, endianness, signed=False)
 
@@ -119,14 +119,14 @@ class MessageType(Enum):
         Parameters
         ----------
         value : bytes
-            enum in bytes
+            Enum in bytes
         endiannes : str
-            endianness in bytes
+            Endianness in bytes
 
         Returns
         -------
         MessageType :
-            enum value
+            Enum value
         """
         return MessageType(int.from_bytes(value, endianness, signed=False))
 
@@ -177,7 +177,7 @@ class Message(object):
 
         Returns
         -------
-        Tuple['Message', int] :
+        Tuple[Optional['Message'], int] :
             Message obtained from given bytes and number of bytes used to parse
             the message
         """
@@ -280,12 +280,12 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         args : Dict
-            arguments from RuntimeProtocol object
+            Arguments from RuntimeProtocol object
 
         Returns
         -------
         RuntimeProtocol :
-            object of class RuntimeProtocol
+            Object of class RuntimeProtocol
         """
         return cls()
 
@@ -306,7 +306,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         RuntimeProtocol :
-            object of class RuntimeProtocol
+            Object of class RuntimeProtocol
         """
 
         parameterschema = cls.form_parameterschema()
@@ -373,7 +373,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Parameters
         ----------
-        timeout : int
+        timeout : Optional[float]
             Receive timeout in seconds. If timeout > 0, this specifies the
             maximum wait time, in seconds. If timeout <= 0, the call won't
             block, and will report the currently ready file objects. If timeout
@@ -439,7 +439,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Parameters
         ----------
-        timeout : int
+        timeout : Optional[float]
             Receive timeout in seconds. If timeout > 0, this specifies the
             maximum wait time, in seconds. If timeout <= 0, the call won't
             block, and will report the currently ready file objects. If timeout
@@ -448,8 +448,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[ServerStatus, Any] :
-            receive status along with received data
+        Tuple[ServerStatus, Optional[Any]] :
+            Receive status along with received data
         """
         raise NotImplementedError
 
@@ -461,8 +461,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if OK received, False otherwise
+        Tuple[bool, Optional[bytes]] :
+            True if OK received and attached message data, False otherwise
         """
         while True:
             status, message = self.receive_message()
@@ -609,7 +609,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Tuple[bool, Optional[bytes]] :
-            tuple with download status (True if successful) and downloaded data
+            Tuple with download status (True if successful) and downloaded data
         """
         self.log.debug('Downloading output')
         self.send_message(Message(MessageType.OUTPUT))
@@ -624,7 +624,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Measurements :
-            inference statistics on target device
+            Inference statistics on target device
         """
         self.log.debug('Downloading statistics')
         self.send_message(Message(MessageType.STATS))
@@ -636,13 +636,13 @@ class RuntimeProtocol(ArgumentsHandler):
             measurements += jsondata
         return measurements
 
-    def request_success(self, data: bytes = bytes()) -> bool:
+    def request_success(self, data: Optional[bytes] = bytes()) -> bool:
         """
         Sends OK message back to the client once the request is finished.
 
         Parameters
         ----------
-        data : bytes
+        data : Optional[bytes]
             Optional data upon success, if any
 
         Returns

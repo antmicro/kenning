@@ -109,7 +109,7 @@ def time_series_plot(
         Title of the plot
     xtitle : str
         Name of the X axis
-    xuint : str
+    xunit : str
         Unit for the X axis
     ytitle : str
         Name of the Y axis
@@ -1573,7 +1573,7 @@ def draw_plot(
         Title of the plot
     xtitle : str
         Name of the X axis
-    xuint : str
+    xunit : str
         Unit for the X axis
     ytitle : str
         Name of the Y axis
@@ -1634,37 +1634,257 @@ def draw_plot(
 
 
 def draw_barplot(
-        outpath: Optional[Path],
-        title: str,
-        xtitle: str,
-        xunit: str,
-        ytitle: str,
-        yunit: str,
-        xdata: List[Any],
-        ydata: List[Union[int, float]],
-        figsize: Tuple = (15, 15),
-        colors: Optional[List] = None,
-        color_offset: int = 0,
-        outext: Iterable[str] = ['png'],
+    outpath: Optional[Path],
+    title: str,
+    xtitle: str,
+    xunit: str,
+    ytitle: str,
+    yunit: str,
+    xdata: List[Any],
+    ydata: Dict[str, List[Union[int, float]]],
+    figsize: Optional[Tuple] = None,
+    colors: Optional[List] = None,
+    backend: str = 'matplotlib',
+    outext: Iterable[str] = ['png'],
 ):
-    plt.figure(figsize=figsize)
+    """
+    Draws barplot.
 
-    bbox_extra = []
-    if colors is None:
-        color = 'purple'
-    else:
-        color = colors[color_offset]
-    plt.bar(xdata, ydata, color=color)
-    plt.xticks(rotation=90)
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xtitle : str
+        Name of the X axis
+    xunit : str
+        Unit for the X axis
+    ytitle : str
+        Name of the Y axis
+    yunit : str
+        Unit for the Y axis
+    xdata : List[Any]
+        List of x labels for bars
+    ydata : Dict[str, List[Union[int, float]]]
+        Dictionary of values
+    figsize : Tuple
+        The size of the figure
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    backend : str
+        Which library should be used to generate plot - bokeh or matplotlib
+    outext : Iterable[str]
+        List with files extensions, should be supported by matplotlib
+    """
     xlabel = xtitle
     if xunit is not None:
         xlabel += f' [{xunit}]'
     ylabel = ytitle
     if yunit is not None:
         ylabel += f' [{yunit}]'
+
+    bar_width = .8 / len(ydata)
+    if len(ydata) == 1:
+        bar_offset = [0.]
+    else:
+        bar_offset = np.linspace(
+            -.4 + bar_width/2,
+            .4 - bar_width/2,
+            len(ydata)
+        ).tolist()
+
+    if backend == 'bokeh' or 'html' in outext:
+        draw_barplot_bokeh(
+            outpath=outpath,
+            title=title,
+            xlabel=xlabel,
+            ylabel=ylabel,
+            xdata=xdata,
+            ydata=ydata,
+            width=figsize[0] if figsize else None,
+            height=figsize[1] if figsize else None,
+            colors=colors,
+            bar_width=bar_width,
+            bar_offset=bar_offset,
+            formats=outext if backend == 'bokeh' else ['html']
+        )
+        outext = set(outext)
+        outext.discard('html')
+    draw_barplot_matplotlib(
+        outpath=outpath,
+        title=title,
+        xlabel=xlabel,
+        ylabel=ylabel,
+        xdata=xdata,
+        ydata=ydata,
+        figsize=figsize,
+        colors=colors,
+        bar_width=bar_width,
+        bar_offset=bar_offset,
+        outext=outext
+    )
+
+
+def draw_barplot_bokeh(
+    outpath: Optional[Path],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    xdata: List[Any],
+    ydata: Dict[str, List[Union[int, float]]],
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    colors: Optional[List] = None,
+    bar_width: float = 0.,
+    bar_offset: List[float] = [0.],
+    formats: Tuple[str] = ('html',)
+):
+    """
+    Draws barplot using bokeh library.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xlabel : str
+        Label of the X axis
+    ylabel : str
+        Label of the Y axis
+    xdata : List[Any]
+        List of x labels for bars
+    ydata : Dict[str, List[Union[int, float]]]
+        Dictionary of values
+    width : Optional[int]
+        Width of the plot
+    height : Optional[int]
+        Height of the plot
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    bar_width : float
+        Width of the single bar
+    bar_offset : List[float]
+        Offsets of the bars from different groups
+    formats : Tuple[str]
+        Tuple with formats names
+    """
+    from bokeh.plotting import figure, output_file, save, show
+    from bokeh.models import Range1d, HoverTool
+    from bokeh.io import export_png, export_svg
+    from bokeh.transform import dodge
+
+    if width is None:
+        width = 900
+    if height is None:
+        height = 778
+
+    barplot_fig = figure(
+        title=title,
+        x_range=xdata,
+        y_range=Range1d(0, max([max(y) for y in ydata.values()])),
+        tools='pan,box_zoom,wheel_zoom,reset,save',
+        toolbar_location='above',
+        width=width,
+        height=height,
+        x_axis_label=xlabel,
+        y_axis_label=ylabel,
+        output_backend='webgl',
+    )
+
+    data = dict(ydata, xdata=xdata)
+
+    for i, label in enumerate(ydata.keys()):
+        vbar = barplot_fig.vbar(
+            x=dodge('xdata', bar_offset[i], range=barplot_fig.x_range),
+            top=label,
+            source=data,
+            bottom=0,
+            fill_color=colors[i],
+            width=bar_width
+        )
+        barplot_fig.add_tools(HoverTool(
+            renderers=[vbar],
+            tooltips=[(xlabel, '@xdata'), (ylabel, f'@{{{label}}}')],
+        ))
+
+    barplot_fig.xaxis.major_label_orientation = 'vertical'
+
+    if outpath is None:
+        show(barplot_fig)
+        return
+
+    if 'html' in formats:
+        output_file(f'{outpath}.html', mode='inline')
+        save(barplot_fig)
+    if 'png' in formats:
+        export_png(barplot_fig, filename=f'{outpath}.png')
+    if 'svg' in formats:
+        export_svg(barplot_fig, filename=f'{outpath}.svg')
+
+
+def draw_barplot_matplotlib(
+    outpath: Optional[Path],
+    title: str,
+    xlabel: str,
+    ylabel: str,
+    xdata: List[Any],
+    ydata: Dict[str, List[Union[int, float]]],
+    figsize: Tuple = (15, 15),
+    colors: Optional[List] = None,
+    bar_width: float = 0.,
+    bar_offset: List[float] = [0.],
+    outext: Iterable[str] = ['png'],
+):
+    """
+    Draws barplot using matplotlib library.
+
+    Parameters
+    ----------
+    outpath : Optional[Path]
+        Output path for the plot image. If None, the plot will be displayed.
+    title : str
+        Title of the plot
+    xlabel : str
+        Label of the X axis
+    ylabel : str
+        Label of the Y axis
+    xdata : List[Any]
+        List of x labels for bars
+    ydata : Dict[str, List[Union[int, float]]]
+        Dictionary of values
+    figsize : Tuple
+        The size of the figure
+    colors : Optional[List]
+        List with colors which should be used to draw plots
+    bar_width : float
+        Width of the single bar
+    bar_offset : List[float]
+        Offsets of the bars from different groups
+    outext : Iterable[str]
+        List with files extensions
+    """
+    plt.figure(figsize=figsize)
+
+    x_range = np.arange(0, len(xdata))
+
+    bbox_extra = []
+    for i, (label, values) in enumerate(ydata.items()):
+        plt.bar(
+            x_range + bar_offset[i],
+            values,
+            width=bar_width,
+            color=colors[i],
+            label=label
+        )
+
+    plt.xticks(x_range, xdata, rotation=90)
     plt.xlabel(xlabel, fontsize='large')
     plt.ylabel(ylabel, fontsize='large')
     plt.ticklabel_format(style='plain', axis='y')
+    if len(ydata) > 1:
+        plt.legend()
     plt.grid()
     if title:
         bbox_extra.append(plt.title(title))

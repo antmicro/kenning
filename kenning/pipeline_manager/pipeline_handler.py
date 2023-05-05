@@ -51,9 +51,11 @@ class PipelineHandler(BaseDataflowHandler):
             spec_node = self.nodes[kenning_name]
             return self.pm_graph.create_node(
                 spec_node,
-                [[key, value]
-                 for key, value in kenning_block['parameters'].items()]
-                )
+                {
+                    key: {'value': value}
+                    for key, value in kenning_block['parameters'].items()
+                }
+            )
 
         node_ids = {}
 

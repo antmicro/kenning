@@ -297,20 +297,26 @@ class BaseDataflowHandler:
 
         try:
             interface_to_id = {}
-            for dataflow_node in dataflow['nodes']:
-                kenning_node = self.nodes[dataflow_node['name']]
-                parameters = dataflow_node['options']
+            graph = dataflow['graph']
+            for dataflow_node in graph['nodes']:
+                kenning_node = self.nodes[dataflow_node['title']]
+                parameters = dataflow_node['properties']
                 parameters = {
-                    arg: value for arg, value in parameters
+                    name: parameter['value']
+                    for name, parameter in parameters.items()
                 }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node,
                     parameters
                 )
-                for _, interf in dataflow_node['interfaces']:
-                    interface_to_id[interf['id']] = node_id
 
-            for conn in dataflow['connections']:
+                for _, input in dataflow_node['inputs'].items():
+                    interface_to_id[input['id']] = node_id
+
+                for _, output in dataflow_node['outputs'].items():
+                    interface_to_id[output['id']] = node_id
+
+            for conn in graph['connections']:
                 self.dataflow_graph.create_connection(
                     interface_to_id[conn['from']],
                     interface_to_id[conn['to']]
@@ -424,12 +430,13 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     Graphs in Pipeline Manager are represented in a following JSON dictionary:
     {
-        'panning' - is a dictionary of two values: 'x', 'y', which defines the
-        placement point of Pipeline Manager browser window
-        'scaling' - is a single number defining the zoom level of Pipeline
-        Manager window
-        'nodes' - list of nodes
-        'connections' - list of connections
+        'graph': {
+            'nodes' - list of nodes
+            'connections' - list of connections
+            'inputs' - dictionary of inputs of the main graph
+            'outputs' - dictionary of outputs of the main graph
+        },
+        'graphTemplates: {}
     }
 
     Each node is represented by a dictionary:
@@ -437,27 +444,27 @@ class PipelineManagerGraphCreator(GraphCreator):
         'type' - type of a node as defined in 'get_nodes' method of
         dataflow handler
         'id' - node's unique ID string
-        'name' - title of a node
-        'options' - dictionary of parameters parsed JSON file defining
+        'title' - title of a node
+        'properties' - dictionary of parameters parsed JSON file defining
         specific Kenning module.
-        'interfaces' - list of IO ports of a node,
+        'inputs' - dictionary of input ports of a node,
+        'outputs' - dictionary of output ports of a node,
         'position' - dictionary containing two values: 'x' and 'y' that
         define the placement of a node
         'width' - width of a node
         'twoColumn' - boolean value that represents whether the node parameters
         should be splitted into two columns
-        'customClasses' - should be empty string
-        'state' - should be empty dictionary
     }
 
-    Each IO interface is defined as a dictionary:
-    {
+    Each property defined as a dictionary:
+    'name': {
+        'value' - value of the property
+    }
+
+
+    Each input and output interface is defined as a dictionary:
+    'name': {
         'id' - ID of an interface
-        'isInput' - boolean value, True if a port represents input of a node,
-        False if it's an output
-        'type' - type of an IO as defined in IO mapping created by dataflow
-        handler
-        'value' - should be None
     }
 
     Connection is defined as a dictionary:
@@ -517,7 +524,6 @@ class PipelineManagerGraphCreator(GraphCreator):
     def _create_interface(
             self,
             io_spec: Dict[str, List],
-            is_input: bool
     ) -> Tuple[str, List]:
         """
         Creates a node interface based on it's IO specification
@@ -526,8 +532,6 @@ class PipelineManagerGraphCreator(GraphCreator):
         ----------
         io_spec: Dict[str, List]
             IO specification of an input
-        is_input: bool
-            True if interface is an input of the node
 
         Returns
         -------
@@ -535,42 +539,39 @@ class PipelineManagerGraphCreator(GraphCreator):
             Created interface together with its ID
         """
         interface_id = self.gen_id()
-        interface = [io_spec['name'], {
-            'id': interface_id,
-            'value': None,
-            'isInput': is_input,
-            'type': io_spec['type']
-        }]
+        interface = {
+            io_spec['name']: {'id': interface_id}
+        }
         return interface_id, interface
 
     def create_node(self, node, parameters):
         node_id = self.gen_id()
         io_map = self.io_mapping[node.type]
 
-        interfaces = []
+        inputs = {}
+        outputs = {}
         for io_spec in io_map['inputs']:
-            interface_id, interface = self._create_interface(io_spec, True)
-            interfaces.append(interface)
+            interface_id, interface = self._create_interface(io_spec)
+            inputs |= interface
             self.interface_map[interface_id] = io_spec
         for io_spec in io_map['outputs']:
-            interface_id, interface = self._create_interface(io_spec, False)
-            interfaces.append(interface)
+            interface_id, interface = self._create_interface(io_spec)
+            outputs |= interface
             self.interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
             'type': node.name,
             'id': node_id,
-            'name': node.name,
-            'options': parameters,
-            'state': {},
-            'interfaces': interfaces,
+            'title': node.name,
+            'properties': parameters,
+            'inputs': inputs,
+            'outputs': outputs,
             'position': {
                 'x': self.x_pos,
                 'y': self.y_pos,
             },
             'width': self.node_width,
-            'twoColumn': False,
-            'customClasses': ""
+            'twoColumn': False
         }
         self.update_position()
         return node_id
@@ -578,17 +579,18 @@ class PipelineManagerGraphCreator(GraphCreator):
     def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
-        from_interface_arr = self.nodes[from_id]['interfaces']
-        to_interface_arr = self.nodes[to_id]['interfaces']
-        for (_, from_interface), (_, to_interface) in itertools.product(
-                from_interface_arr, to_interface_arr):
+        from_interface_dict = self.nodes[from_id]['outputs']
+        to_interface_dict = self.nodes[to_id]['inputs']
+
+        for from_interface, to_interface in itertools.product(
+                from_interface_dict.values(), to_interface_dict.values()):
+
             from_interface_id = from_interface['id']
             to_interface_id = to_interface['id']
             from_io_spec = self.interface_map[from_interface_id]
             to_io_spec = self.interface_map[to_interface_id]
-            if not from_interface['isInput'] \
-                    and to_interface['isInput'] \
-                    and from_io_spec['type'] == to_io_spec['type']:
+
+            if from_io_spec['type'] == to_io_spec['type']:
                 return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")
 
@@ -604,13 +606,14 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def flush_graph(self):
         finished_graph = {
-            'panning': {
-                'x': 0,
-                'y': 0
+            'graph': {
+                'id': self.gen_id(),
+                'nodes': list(self.nodes.values()),
+                'connections': self.connections,
+                'inputs': [],
+                'outputs': []
             },
-            'scaling': 1,
-            'nodes': list(self.nodes.values()),
-            'connections': self.connections
+            'graphTemplates': []
         }
         self.start_new_graph()
         return finished_graph

@@ -71,29 +71,29 @@ class KenningFlowHandler(BaseDataflowHandler):
             inputs = kenning_node.get('inputs', {})
             outputs = kenning_node.get('outputs', {})
 
-            node_options = []
+            node_properties = {}
             primitives = []
             for name, value in parameters.items():
                 if isinstance(value, dict):
-                    # Primitive should be a separate node, not an option
+                    # Primitive should be a separate node, not a property
                     primitive_name = load_class(value['type']).__name__
                     spec_node = self.nodes[primitive_name]
-                    prim_options = value['parameters']
-                    prim_options = [
-                        [param_name, param_value]
-                        for param_name, param_value in prim_options.items()
-                    ]
+                    prim_properties = value['parameters']
+                    prim_properties = {
+                        param_name: {"value": param_value}
+                        for param_name, param_value in prim_properties.items()
+                    }
                     prim_id = self.pm_graph.create_node(
                         spec_node,
-                        prim_options
+                        prim_properties
                     )
                     primitives.append(prim_id)
                 else:
-                    node_options.append([name, value])
+                    node_properties[name] = {"value": value}
 
             kenning_name = load_class(kenning_node['type']).__name__
             spec_node = self.nodes[kenning_name]
-            node_id = self.pm_graph.create_node(spec_node, node_options)
+            node_id = self.pm_graph.create_node(spec_node, node_properties)
 
             for primitive_id in primitives:
                 self.pm_graph.create_connection(primitive_id, node_id)

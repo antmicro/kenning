@@ -177,5 +177,6 @@ myst_substitutions = {
     'project': project,
     'projecturl': f'[{project}]({dev})',
     'json_compilation_script': '`kenning.scenarios.json_inference_tester`',
-    'json_flow_runner_script': '`kenning.scenarios.json_flow_runner`'
+    'json_flow_runner_script': '`kenning.scenarios.json_flow_runner`',
+    'optimization_runner_script': '`kenning.scenarios.optimization_runner`'
 }

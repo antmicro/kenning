@@ -10,6 +10,7 @@ json-scenarios
 cmd-usage
 kenning-measurements
 onnx-conversion-support
+pipeline-optimizer
 sample-report
 kenning-flow
 kenning-development

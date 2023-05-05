@@ -10,6 +10,7 @@ This documentation consists of the following chapters:
 * The [](cmd-usage) section describes executable scripts available in |projecturl|,
 * The [](kenning-measurements) section describes data gathered during the compilation and evaluation process,
 * The [](onnx-conversion-support) section covers ONNX model format support in deep learning frameworks,
+* The [](pipeline-optimizer) section describes a way to run multiple pipelines and search for the one that achieves best result
 * The [](sample-report) section provides a sample report generated using {{projecturl}},
 * The [](kenning-flow) section describes KenningFlow and its usage,
 * The [](kenning-development) section describes a way to develop new Kenning components,

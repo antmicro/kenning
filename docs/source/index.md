@@ -8,6 +8,7 @@ project-readme
 dl-deployment-stack
 json-scenarios
 cmd-usage
+pipeline-manager
 kenning-measurements
 onnx-conversion-support
 pipeline-optimizer

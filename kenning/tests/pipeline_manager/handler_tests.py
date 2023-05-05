@@ -108,10 +108,13 @@ class HandlerTests(ABC):
         Example of dataflow in Pipeline Manager Format
         """
         return {
-            'panning': {'x': 0, 'y': 0},
-            'scaling': 1,
-            'nodes': self.dataflow_nodes,
-            'connections': self.dataflow_connections
+            'graph': {
+                'nodes': self.dataflow_nodes,
+                'connections': self.dataflow_connections,
+                'inputs': {},
+                'outputs': {},
+            },
+            'graphTemplates': {}
         }
 
     @pytest.fixture(scope="class")

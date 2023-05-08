@@ -61,6 +61,12 @@ To install the extra requirements, e.g. `tensorflow`, run:
 sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorflow]
 ```
 
+or, in newer `pip` releases:
+
+```
+pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
+```
+
 ### Working directly with the repository
 
 For development purposes, and for usage of additional resources (as sample scripts or trained models), clone repository with:

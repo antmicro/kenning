@@ -4,7 +4,6 @@
 
 from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
 from typing import Tuple, List
-from time import time
 import pytest
 import random
 import socket
@@ -42,7 +41,6 @@ class TestCoreRuntimeProtocol:
         """
         Sets random free port number within dynamic port range.
         """
-        random.seed(time())
         count = 0
 
         # Check if port is not used

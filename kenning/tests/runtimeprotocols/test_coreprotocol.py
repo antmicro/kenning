@@ -4,8 +4,10 @@
 
 from kenning.core.runtimeprotocol import RuntimeProtocol, MessageType
 from typing import Tuple, List
+from time import time
 import pytest
 import random
+import socket
 
 
 @pytest.mark.fast
@@ -36,23 +38,49 @@ class TestCoreRuntimeProtocol:
         return protocol
 
     @pytest.fixture
-    def serverandclient(self):
+    def randomport(self, record_property):
+        """
+        Sets random free port number within dynamic port range.
+        """
+        random.seed(time())
+        count = 0
+
+        # Check if port is not used
+        while True:
+            try:
+                self.port = random.randint(49152, 65535)
+                count += 1
+                s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                s.bind(('', self.port))
+                s.close()
+                break
+            except OSError:
+                if count > 5:
+                    pytest.fail('Cannot find free port')
+                continue
+        record_property('random_port', self.port)
+
+    @pytest.fixture
+    def serverandclient(self, randomport):
         """
         Initializes server and client.
+
+        Parameters
+        ----------
+        randomport : None
+            Fixture to set free random port number within dynamic port range.
 
         Returns
         -------
         Tuple[RuntimeProtocol, RuntimeProtocol] :
             A tuple containing initialized server and client objects
         """
-        while True:
-            server = self.initprotocol()
-            if server.initialize_server() is False:
-                self.port += 1
-                continue
-            client = self.initprotocol()
-            client.initialize_client()
-            break
+        server = self.initprotocol()
+        if server.initialize_server() is False:
+            pytest.fail(f'Server initialization failed, port: {self.port}')
+        client = self.initprotocol()
+        client.initialize_client()
+
         yield server, client
         client.disconnect()
         server.disconnect()

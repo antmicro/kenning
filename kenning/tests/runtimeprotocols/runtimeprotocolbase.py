@@ -15,11 +15,15 @@ import time
 import uuid
 
 
-@pytest.mark.xdist_group(name='use_socket')
 class RuntimeProtocolTests(TestCoreRuntimeProtocol):
-    def test_initialize_server(self):
+    def test_initialize_server(self, randomport):
         """
         Tests the `initialize_server()` method.
+
+        Parameters
+        ----------
+        randomport : None
+            Fixture to set free random port number within dynamic port range.
         """
         server = self.initprotocol()
         assert server.initialize_server() is True
@@ -28,9 +32,14 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert second_server.serversocket is None
         server.disconnect()
 
-    def test_initialize_client(self):
+    def test_initialize_client(self, randomport):
         """
         Tests the `initialize_client()` method.
+
+        Parameters
+        ----------
+        randomport : None
+            Fixture to set free random port number within dynamic port range.
         """
         client = self.initprotocol()
         with pytest.raises(ConnectionRefusedError):
@@ -196,9 +205,14 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
         assert status == ServerStatus.CLIENT_DISCONNECTED
         assert received_data is None
 
-    def test_accept_client(self):
+    def test_accept_client(self, randomport):
         """
         Tests the `accept_client()` method.
+
+        Parameters
+        ----------
+        randomport : None
+            Fixture to set free random port number within dynamic port range.
         """
 
         def connect():

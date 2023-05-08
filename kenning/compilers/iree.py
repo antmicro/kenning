@@ -49,7 +49,7 @@ def kerasconversion(model_path, input_spec):
 
     # Calling the .fit() method of keras model taints the state of the model,
     # breaking the IREE compiler. Because of that, the workaround is needed.
-    original_model = tf.keras.models.load_model(model_path)
+    original_model = tf.keras.models.load_model(model_path, compile=False)
     model = tf.keras.models.clone_model(original_model)
     model.set_weights(original_model.get_weights())
     del original_model

@@ -1249,8 +1249,8 @@ def draw_confusion_matrix_bokeh(
 
     grid_fig = gridplot(
         [
-            [confusion_matrix_fig, precision_fig,],
-            [sensitivity_fig, accuracy_fig,]
+            [confusion_matrix_fig, precision_fig, ],
+            [sensitivity_fig, accuracy_fig, ]
         ],
         merge_tools=True,
         toolbar_location='above',
@@ -1271,8 +1271,8 @@ def draw_confusion_matrix_bokeh(
 
     grid_fig = gridplot(
         [
-            [confusion_matrix_fig, precision_fig,],
-            [sensitivity_fig, accuracy_fig,]
+            [confusion_matrix_fig, precision_fig, ],
+            [sensitivity_fig, accuracy_fig, ]
         ]
     )
     plot_with_scale = row(

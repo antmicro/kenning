@@ -6,42 +6,56 @@
 
 ## Installing Pipeline Manager
 
-Kenning requires extra dependencies to run integration with Pipeline Manager. To install them run: 
+Kenning requires extra dependencies to run integration with Pipeline Manager. To install them run:
 ```bash
 pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
 ```
 
-The following script will download, setup and run the Pipeline Manager server:
+To use Pipeline Manager, clone the repository:
+
 ```bash
 git clone https://github.com/antmicro/kenning-pipeline-manager.git
 cd kenning-pipeline-manager
-pip install -r requirements.txt
+```
+
+And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager#prerequisites).
+
+After this, build the server application for Pipeline Manager with:
+
+```bash
 ./build server-app
-./run
 ```
 
 ## Running Pipeline Manager with Kenning
 
-The server can be started with the following command:
+Firstly, in the Pipeline Manager project start the server with:
+
 ```bash
 ./run
 ```
 
-Kenning client can be started with the following command:
-```bash
-python3 -m kenning.scenarios.pipeline_manager_client --file-path <FILE_PATH>
-```
-`file-path` allows to define path where the output of a Pipeline Manager command will be stored.
+The server now waits for Kenning application to connect.
 
-Optional client arguments:
-* `spec-type` - There are two graph formats that are defined within the Kenning - [Optimization pipelines](json-scenarios) and [KenningFlows](kenning-flow). The `pipeline` option will allow you to create and edit the optimization pipelines, while `flow` will allow for handling the KenningFlows. Default is `pipeline`
-* `host` - Address of Pipeline Manager server
-* `port` - Port of  Pipeline Manager server
+Secondly, start the Kenning pipeline manager with:
+
+```bash
+python3 -m kenning.scenarios.pipeline_manager_client [OPTIONS]
+```
+
+Where possible options are:
+
+* `--spec-type` - the type of Kenning scenarios to run, can be either `pipeline` (for [optimization and deployment pipeline](json-scenarios)) or `flow` (for creating [runtime scenarios](kenning-flow)).
+  By default it is `pipeline`
+* `--file-path` - the file to either store pipeline optimization measurements, or flow's runtime data.
+* `--host` - the address of the Pipeline Manager server, default `127.0.0.1`
+* `--port` - the port of the Pipeline Manager server, default `9000`
+* `--verbosity` - verbosity of the logs
 
 When the Pipeline Manager is started, the editing of graph can begin - adding or removing nodes and connections, editing node options, etc. The following commands are available when working with the manager:
-* `Load file` - Loads JSON describing Kenning dataflow to Pipeline Manager
-* `Validate` - Kenning will parse and return the information whether the dataflow is valid (for example it will return error when two optimizer in the chain are incompatible with each other)
-* `Run` - Kenning will create and run the dataflow that is in the Pipeline Manager. The results of the run is stored in the output file provided as a client argument
-* `Save file` - Exports graph and saves the JSON in the output path
+* `Load file` - Loads JSON describing Kenning scenario to Pipeline Manager
+* `Validate` - Validates and returns the information whether the scenario is valid (for example it will return error when two optimizers in the chain are incompatible with each other)
+* `Run` - Creates and runs the optimization pipeline or [Kenning runtime flow](kenning-flow).
+  The results of the run are stored in the output file provided as a client argument.
+* `Save file` - Saves the JSON scenario of Kenning to a specified path.
 
-More information regarding information how to work with Pipeline Manager are available in the [project's documentation](https://antmicro.github.io/kenning-pipeline-manager/introduction.html)
+More information regarding information how to work with Pipeline Manager are available in the [Pipeline Manager documentation](https://antmicro.github.io/kenning-pipeline-manager/introduction.html)

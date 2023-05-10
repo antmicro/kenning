@@ -2,15 +2,15 @@
 
 The {{optimization_runner_script}} script allows to optimize over multiple pipelines and to choose the best performing based on a specified criteria
 
-The script can be run with the following command
+The script can be run as follows:
+
 ```bash
-python3 -m kenning.scenarios.optimization_runner <CONFIG JSON> <OUTPUT PATH>
+python3 -m kenning.scenarios.optimization_runner <CONFIG_JSON> <OUTPUT_PATH>.json
 ```
 
 With the arguments:
-* `CONFIG JSON` - describes the configuration, which pipelines would be executed and optimization settings
-* `OUTPUT PATH` - base path to the output files
-
+* `<CONFIG_JSON>` - describes the configuration, which pipelines would be executed and optimization settings
+* `<OUTPUT_PATH>.json` - base path to the output files with measurements.
 
 ## Optimization config specification
 
@@ -31,7 +31,7 @@ The example configuration looks like this:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5" 
+            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -39,7 +39,7 @@ The example configuration looks like this:
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./build/pet-dataset" 
+            "dataset_root": "./build/pet-dataset"
         }
     },
     "optimizers":
@@ -86,21 +86,25 @@ The example configuration looks like this:
 The highlighted part describes the settings of the optimization run.
 * `strategy` - Describes how the pipelines are chosen for optimization. Currently only available option is `grid_search`, which generates cartesian product of all blocks that should be optimized and runs all compatible pipelines
 * `optimizable` - Which Kenning block should be variable in the pipeline. The {{optimization_runner_script}} script will choose the Kenning block out of multiple provided in the later part of configuration based on `strategy`.
-* `metric` - [Kenning metric](kenning-measurements) over which the optimization should be performed
+* `metric` - one of the metrics from [Kenning measurements](kenning-measurements) over which the optimization should be performed
 * `policy` - `min` or `max`, depending on whether the metric should be maximized or minimized
 
-The later part of the JSON configuration describes the pipeline in a format similar to [standard JSON scenario](json-scenarios). The only difference is within the blocks chosen in the `optimizable` field, which should be list of blocks instead of singular definition. Every block in the list has defined list of arguments for all of it's parameters, this allows to choose the best argument for a particular block option 
+The rest of the JSON configuration describes the pipeline in a format similar to [standard JSON scenarios](json-scenarios). The only difference is within the blocks chosen in the `optimizable` field, which should be list of blocks instead of singular definition. Every block in the list has defined list of arguments for all of it's parameters, this allows to choose the best argument for a particular block option
 * For `optimizers` block, since there can be more than one in the pipeline, all possible combinations are tested.
 * For the rest of the blocks one of all possible blocks is chosen for each run.
+
+Kenning checks automatically whether a selected combination of blocks (model, optimizations and runtime) is compatible.
 
 ## Output details
 
 The {{optimization_runner_script}} outputs multiple JSON files:
-* `<OUTPUT PATH>` - Most optimal pipeline with it's metrics
-* `<OUTPUT PATH>_all_results.json` - All pipeline configs and their respective metrics gathered into single file
-* `<OUTPUT PATH>_<RUN ID>.json` - Output of each pipeline run
 
-The example `<OUTPUT PATH>` JSON file can look like this:
+* `<OUTPUT PATH>.json` - Most optimal pipeline with it's aggregated metrics
+* `<OUTPUT PATH>_all_results.json` - All pipeline configs and their respective metrics gathered into single file
+* `<OUTPUT PATH>_<RUN ID>.json` - Full benchmark output for every optimization run.
+
+The example `<OUTPUT PATH>.json` JSON file can look like this:
+
 ```JSON
 {
     "pipeline": {
@@ -152,3 +156,6 @@ The example `<OUTPUT PATH>` JSON file can look like this:
     }
 }
 ```
+
+* The `pipeline` contains the definition of the best optimization pipeline.
+* The `metrics` contains list of all aggregated metrics that can be considered in `metric` field `optimization_parameters`.

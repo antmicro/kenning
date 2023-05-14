@@ -18,7 +18,7 @@ git clone https://github.com/antmicro/kenning-pipeline-manager.git
 cd kenning-pipeline-manager
 ```
 
-And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager#prerequisites).
+And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager).
 
 After this, build the server application for Pipeline Manager with:
 

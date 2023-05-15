@@ -21,6 +21,7 @@ pytest:
     script:
         - mkdir -p build
         - cp -r /data/* build/
+        - cp -r /renode-resources/* build/renode-resources/
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -n=auto --dist=loadgroup --color=yes --report-log=log.json
     artifacts:
         paths:

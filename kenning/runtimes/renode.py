@@ -60,6 +60,7 @@ class RenodeRuntime(Runtime):
         """
         self.runtime_binary_path = runtime_binary_path
         self.platform_resc_path = platform_resc_path
+        self.renode_handler = None
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
         )
@@ -84,13 +85,13 @@ class RenodeRuntime(Runtime):
             compiledmodelpath: Path):
         with Pyrenode() as renode_handler:
             self.renode_handler = renode_handler
-            self.init_renode(renode_handler)
+            self.init_renode()
 
-            pre_opcode_stats = self.get_opcode_stats(renode_handler)
+            pre_opcode_stats = self.get_opcode_stats()
 
             ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
 
-            post_opcode_stats = self.get_opcode_stats(renode_handler)
+            post_opcode_stats = self.get_opcode_stats()
 
             MeasurementsCollector.measurements += {
                 'opcode_counters': self._opcode_stats_diff(
@@ -121,31 +122,31 @@ class RenodeRuntime(Runtime):
 
         return 3600*h + 60*m + s
 
-    def init_renode(self, renode_handler: Pyrenode):
+    def init_renode(self):
         """
         Initializes Renode process and starts runtime.
         """
-        renode_handler.initialize()
-        renode_handler.run_robot_keyword(
+        self.renode_handler.initialize()
+        self.renode_handler.run_robot_keyword(
             'CreateLogTester', timeout=5.0
         )
-        renode_handler.run_robot_keyword(
+        self.renode_handler.run_robot_keyword(
             'ExecuteCommand', f'$bin=@{self.runtime_binary_path}'
         )
-        renode_handler.run_robot_keyword(
+        self.renode_handler.run_robot_keyword(
             'ExecuteCommand', f'i @{self.platform_resc_path}'
         )
-        renode_handler.run_robot_keyword(
+        self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'start'
         )
-        renode_handler.run_robot_keyword(
+        self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
         )
-        renode_handler.run_robot_keyword(
+        self.renode_handler.run_robot_keyword(
             'WaitForLogEntry', r'.*Runtime started.*', treatAsRegex=True
         )
 
-    def get_opcode_stats(self, renode_handler: Pyrenode) -> Dict[str, int]:
+    def get_opcode_stats(self) -> Dict[str, int]:
         """
         Retrieves opcode counters from Renode.
 
@@ -155,7 +156,7 @@ class RenodeRuntime(Runtime):
             Dict where the keys are opcodes and the values are counters
         """
         # retrieve opcode counters
-        stats_raw = renode_handler.run_robot_keyword(
+        stats_raw = self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.cpu GetAllOpcodesCounters'
         )
         # remove double newlines

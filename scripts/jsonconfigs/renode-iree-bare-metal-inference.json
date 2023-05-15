@@ -36,8 +36,8 @@
     "runtime": {
         "type": "kenning.runtimes.renode.RenodeRuntime",
         "parameters": {
-            "runtime_binary_path": "kenning/resources/renode/springbok/iree-runtime/iree_runtime",
-            "platform_resc_path": "kenning/resources/renode/springbok/sim/config/springbok.resc"
+            "runtime_binary_path": "build/renode-resources/springbok/iree_runtime",
+            "platform_resc_path": "build/renode-resources/springbok/sim/config/springbok.resc"
         }
     },
     "runtime_protocol": {

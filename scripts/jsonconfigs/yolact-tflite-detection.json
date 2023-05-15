@@ -12,7 +12,7 @@
         "type": "kenning.datasets.open_images_dataset.OpenImagesDatasetV6",
         "parameters":
         {
-            "dataset_root": "./build/COCOdataset",
+            "dataset_root": "./build/COCODataset",
             "download_dataset": false,
             "inference_batch_size": 1,
             "task": "instance_segmentation"

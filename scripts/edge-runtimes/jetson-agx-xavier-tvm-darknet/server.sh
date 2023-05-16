@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python3 -m kenning.scenarios.inference_server \
+python -m kenning.scenarios.inference_server \
     kenning.runtimeprotocols.network.NetworkProtocol \
     kenning.runtimes.tvm.TVMRuntime \
     --host 0.0.0.0 \

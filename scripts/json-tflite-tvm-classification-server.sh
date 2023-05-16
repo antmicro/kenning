@@ -4,6 +4,6 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python3 -m kenning.scenarios.json_inference_server \
+python -m kenning.scenarios.json_inference_server \
     ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
     --verbosity INFO

@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python3 -m kenning.scenarios.inference_tester \
+python -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \
     ./build/cpu-tvm-darknet.json \

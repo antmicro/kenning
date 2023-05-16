@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python3 -m kenning.scenarios.inference_tester \
+python -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/google-coral-devboard-tflite-pytorch.json \

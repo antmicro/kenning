@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python3 -m kenning.scenarios.inference_tester \
+python -m kenning.scenarios.inference_tester \
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     kenning.datasets.pet_dataset.PetDataset \
     ./build/local-gpu-tvm-tensorflow-classification.json \

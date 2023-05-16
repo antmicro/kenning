@@ -9,5 +9,5 @@ import pytest
 
 
 @pytest.mark.parametrize('runtimemodel', [TVMCompiler], indirect=True)
-class TestTFLiteRuntime(RuntimeWithModel):
+class TestTVMRuntime(RuntimeWithModel):
     runtimecls = TVMRuntime

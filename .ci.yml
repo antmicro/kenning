@@ -31,7 +31,6 @@ pytest:
 onnx-conversions:
     stage: tests
     script:
-        - ln /usr/bin/python3 /usr/bin/python
         - ./scripts/onnxconversions.sh
         - mkdir -p docs/source/generated
         - cp build/onnx-support.md docs/source/generated/onnx-support.md
@@ -43,7 +42,6 @@ onnx-conversions:
 sample-compilation:
     stage: tests
     script:
-        - ln /usr/bin/python3 /usr/bin/python
         - mkdir build
         - ln -s /pet-dataset build/pet-dataset
         - sed -i '/download-dataset/d' ./scripts/tvm-tensorflow-classification-cpu.sh
@@ -57,7 +55,6 @@ sample-compilation:
 sample-pipeline-optimization:
     stage: tests
     script:
-        - ln /usr/bin/python3 /usr/bin/python
         - mkdir build
         - ln -s /pet-dataset build/pet-dataset
         - ./scripts/optimization-tflite-tvm-tensorflow-pet-dataset.sh

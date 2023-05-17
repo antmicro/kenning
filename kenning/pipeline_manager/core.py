@@ -299,7 +299,7 @@ class BaseDataflowHandler:
             interface_to_id = {}
             graph = dataflow['graph']
             for dataflow_node in graph['nodes']:
-                kenning_node = self.nodes[dataflow_node['title']]
+                kenning_node = self.nodes[dataflow_node['type']]
                 parameters = dataflow_node['properties']
                 parameters = {
                     name: parameter['value']
@@ -562,7 +562,6 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.nodes[node_id] = {
             'type': node.name,
             'id': node_id,
-            'title': node.name,
             'properties': parameters,
             'inputs': inputs,
             'outputs': outputs,

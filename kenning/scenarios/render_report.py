@@ -13,7 +13,7 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Set
+from typing import Dict, List, Set, Optional
 import json
 import numpy as np
 import re
@@ -819,7 +819,7 @@ def renode_stats_report(
         rootdir: Path,
         image_formats: Set[str],
         draw_titles: bool = True,
-        colors=None,
+        colors: Optional[List] = None,
         **kwargs) -> str:
     """
     Creates Renode stats section of the report.
@@ -854,8 +854,7 @@ def renode_stats_report(
         log.error('Opcode counters not present for Renode stats report')
         return ''
 
-    # _image_formats = image_formats - {'html'}
-
+    # retrieve vector instructions counters
     opcode_counters = []
     vector_opcode_counters = []
     for opcode, counter in measurementsdata['opcode_counters'].items():
@@ -864,14 +863,16 @@ def renode_stats_report(
             if opcode[0] == 'v':
                 vector_opcode_counters.append((opcode, counter))
 
+    # sort by counters
     opcode_counters.sort(key=lambda x: x[1], reverse=True)
     vector_opcode_counters.sort(key=lambda x: x[1], reverse=True)
 
-    instr_barplot_path = imgdir / f'{imgprefix}instr_histogram'
+    # opcode counter barplot
+    instr_barplot_path = imgdir / f'{imgprefix}instr_barplot'
 
     draw_barplot(
         str(instr_barplot_path),
-        'Instructions histogram' if draw_titles else None,
+        'Instructions barplot' if draw_titles else None,
         'Opcode',
         None,
         'Counter',
@@ -882,27 +883,169 @@ def renode_stats_report(
         outext=image_formats,
     )
 
-    measurementsdata['instrhistpath'] = str(
+    measurementsdata['instrbarpath'] = str(
         instr_barplot_path.relative_to(rootdir)) + '.*'
 
-    vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_histogram'
+    # vector opcode counter barplot
+    if len(vector_opcode_counters):
+        vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_barplot'
 
-    draw_barplot(
-        str(vector_instr_barplot_path),
-        'Vector instructions histogram' if draw_titles
-        else None,
-        'Opcode',
-        None,
-        'Counter',
-        None,
-        [x[0] for x in vector_opcode_counters],
-        {'counters': [x[1] for x in vector_opcode_counters]},
-        colors=colors,
-        outext=image_formats,
+        draw_barplot(
+            str(vector_instr_barplot_path),
+            'Vector instructions barplot' if draw_titles
+            else None,
+            'Opcode',
+            None,
+            'Counter',
+            None,
+            [x[0] for x in vector_opcode_counters],
+            {'counters': [x[1] for x in vector_opcode_counters]},
+            colors=colors,
+            outext=image_formats,
+        )
+
+        measurementsdata['vectorinstrbarpath'] = str(
+            vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    # executed instructions plot
+    measurementsdata['executedinstrplotpath'] = {}
+
+    for cpu, measurements in measurementsdata['executed_instructions'].items():
+        executed_instructions_plot_path = \
+            imgdir / f'{imgprefix}executed_instructions_{cpu}_plot'
+
+        render_time_series_plot_with_histogram(
+            ydata=measurements,
+            xdata=measurementsdata['profiler_timestamps'],
+            title=f'Executed instructions for {cpu}' if draw_titles else None,
+            xtitle='Time',
+            xunit='s',
+            ytitle='Executed instructions',
+            yunit=None,
+            outpath=str(executed_instructions_plot_path),
+            skipfirst=True,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
+
+        measurementsdata['executedinstrplotpath'][cpu] = str(
+            executed_instructions_plot_path.relative_to(rootdir)) + '.*'
+
+    # memory accesses plot
+    measurementsdata['memoryaccessesplotpath'] = {}
+
+    memory_reads_plot_path = imgdir / f'{imgprefix}memory_reads_plot'
+
+    render_time_series_plot_with_histogram(
+        ydata=measurementsdata['memory_accesses']['read'],
+        xdata=measurementsdata['profiler_timestamps'],
+        title='Memory reads' if draw_titles else None,
+        xtitle='Time',
+        xunit='s',
+        ytitle='Memory reads',
+        yunit=None,
+        outpath=str(memory_reads_plot_path),
+        skipfirst=True,
+        outputext=image_formats,
+        **SERVIS_PLOT_OPTIONS
     )
 
-    measurementsdata['vectorinstrhistpath'] = str(
-        vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+    measurementsdata['memoryaccessesplotpath']['reads'] = str(
+        memory_reads_plot_path.relative_to(rootdir)) + '.*'
+
+    memory_writes_plot_path = imgdir / f'{imgprefix}memory_writes_plot'
+
+    render_time_series_plot_with_histogram(
+        ydata=measurementsdata['memory_accesses']['write'],
+        xdata=measurementsdata['profiler_timestamps'],
+        title='Memory writes' if draw_titles else None,
+        xtitle='Time',
+        xunit='s',
+        ytitle='Memory writes',
+        yunit=None,
+        outpath=str(memory_writes_plot_path),
+        skipfirst=True,
+        outputext=image_formats,
+        **SERVIS_PLOT_OPTIONS
+    )
+
+    measurementsdata['memoryaccessesplotpath']['writes'] = str(
+        memory_writes_plot_path.relative_to(rootdir)) + '.*'
+
+    # peripheral accesses plot
+    measurementsdata['peripheralaccessesplotpath'] = {}
+
+    for (peripheral,
+         measurements) in measurementsdata['peripheral_accesses'].items():
+        paths = {}
+
+        if sum(measurements['read']):
+            peripheral_reads_plot_path = \
+                imgdir / f'{imgprefix}peripheral_{peripheral}_reads_plot'
+
+            render_time_series_plot_with_histogram(
+                ydata=measurements['read'],
+                xdata=measurementsdata['profiler_timestamps'],
+                title=f'Peripheral reads for {peripheral}'
+                      if draw_titles else None,
+                xtitle='Time',
+                xunit='s',
+                ytitle='Peripheral reads',
+                yunit=None,
+                outpath=str(peripheral_reads_plot_path),
+                skipfirst=True,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS
+            )
+
+            paths['reads'] = str(
+                peripheral_reads_plot_path.relative_to(rootdir)) + '.*'
+
+        if sum(measurements['write']):
+            peripheral_writes_plot_path = \
+                imgdir / f'{imgprefix}peripheral_{peripheral}_writes_plot'
+
+            render_time_series_plot_with_histogram(
+                ydata=measurements['write'],
+                xdata=measurementsdata['profiler_timestamps'],
+                title=f'Peripheral writes for {peripheral}'
+                      if draw_titles else None,
+                xtitle='Time',
+                xunit='s',
+                ytitle='Peripheral writes',
+                yunit=None,
+                outpath=str(peripheral_writes_plot_path),
+                skipfirst=True,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS
+            )
+
+            paths['writes'] = str(
+                peripheral_writes_plot_path.relative_to(rootdir)) + '.*'
+
+        if len(paths):
+            measurementsdata['peripheralaccessesplotpath'][peripheral] = paths
+
+    # exceptions plot
+    if sum(measurementsdata['exceptions']):
+        exceptions_plot_path = imgdir / f'{imgprefix}exceptions_plot'
+
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['exceptions'],
+            xdata=measurementsdata['profiler_timestamps'],
+            title='Exceptions' if draw_titles else None,
+            xtitle='Time',
+            xunit='s',
+            ytitle='Exceptions',
+            yunit=None,
+            outpath=str(exceptions_plot_path),
+            skipfirst=True,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
+
+        measurementsdata['exceptionsplotpath'] = str(
+            exceptions_plot_path.relative_to(rootdir)) + '.*'
 
     with path(reports, 'renode_stats.md') as reporttemplate:
         return create_report_from_measurements(
@@ -918,7 +1061,7 @@ def comparison_renode_stats_report(
         image_formats: Set[str],
         color_offset: int = 0,
         draw_titles: bool = True,
-        colors=None,
+        colors: Optional[List] = None,
         **kwargs) -> str:
     """
     Creates Renode stats section of the report.
@@ -957,6 +1100,7 @@ def comparison_renode_stats_report(
         'reportname_simple': measurementsdata[0]['reportname_simple']
     }
 
+    # retrieve vector instructions counters
     all_opcodes = set()
     all_vector_opcodes = set()
     for data in measurementsdata:
@@ -969,20 +1113,28 @@ def comparison_renode_stats_report(
     all_opcodes = list(all_opcodes)
     all_vector_opcodes = list(all_vector_opcodes)
 
+    # sort by counters
     all_opcodes.sort(
-        key=lambda x: (measurementsdata[0]['opcode_counters'][x], x),
+        key=lambda x: (
+            sum(m['opcode_counters'][x] for m in measurementsdata),
+            x
+        ),
         reverse=True
     )
     all_vector_opcodes.sort(
-        key=lambda x: (measurementsdata[0]['opcode_counters'][x], x),
+        key=lambda x: (
+            sum(m['opcode_counters'][x] for m in measurementsdata),
+            x
+        ),
         reverse=True
     )
 
-    instr_barplot_path = imgdir / 'instr_histogram_comparison'
+    # opcode counter barplot
+    instr_barplot_path = imgdir / 'instr_barplot_comparison'
 
     draw_barplot(
         str(instr_barplot_path),
-        'Instructions histogram' if draw_titles else None,
+        'Instructions barplot' if draw_titles else None,
         'Opcode',
         None,
         'Counter',
@@ -998,14 +1150,15 @@ def comparison_renode_stats_report(
         outext=image_formats,
     )
 
-    report_variables['instrhistpath'] = str(
+    report_variables['instrbarpath'] = str(
         instr_barplot_path.relative_to(rootdir)) + '.*'
 
-    vector_instr_barplot_path = imgdir / 'vector_instr_histogram_comparison'
+    # vector opcode counter barplot
+    vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
 
     draw_barplot(
         str(vector_instr_barplot_path),
-        'Vector instructions histogram' if draw_titles
+        'Vector instructions barplot' if draw_titles
         else None,
         'Opcode',
         None,
@@ -1023,8 +1176,221 @@ def comparison_renode_stats_report(
         outext=image_formats,
     )
 
-    report_variables['vectorinstrhistpath'] = str(
+    report_variables['vectorinstrbarpath'] = str(
         vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+
+    # executed instructions plot
+    report_variables['executedinstrplotpath'] = {}
+
+    all_cpus = set()
+
+    for data in measurementsdata:
+        all_cpus = all_cpus.union(
+            data['executed_instructions'].keys()
+        )
+
+    for cpu in all_cpus:
+        executed_instructions_plot_path = \
+            imgdir / f'executed_instructions_{cpu}_plot_comparison'
+
+        ydata = []
+        xdata = []
+        labels = []
+        for m in measurementsdata:
+            if cpu not in m['executed_instructions'].keys():
+                continue
+
+            ydata.append(m['executed_instructions'][cpu])
+            xdata.append(m['profiler_timestamps'])
+            labels.append(m['modelname'])
+
+        render_multiple_time_series_plot(
+            ydatas=[ydata],
+            xdatas=[xdata],
+            title=f'Executed instructions for {cpu} comparison'
+                  if draw_titles else None,
+            subtitles=None,
+            xtitles=['Time'],
+            xunits=['s'],
+            ytitles=['Executed instructions'],
+            yunits=None,
+            legend_labels=labels,
+            outpath=executed_instructions_plot_path,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
+
+        report_variables['executedinstrplotpath'][cpu] = str(
+            executed_instructions_plot_path.relative_to(rootdir)) + '.*'
+
+    # memory accesses plot
+    report_variables['memoryaccessesplotpath'] = {}
+
+    memory_reads_plot_path = imgdir / 'memory_reads_plot_comparison'
+
+    render_multiple_time_series_plot(
+        ydatas=[[m['memory_accesses']['read'] for m in measurementsdata]],
+        xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
+        title='Memory reads comparison' if draw_titles else None,
+        subtitles=None,
+        xtitles=['Time'],
+        xunits=['s'],
+        ytitles=['Memory reads'],
+        yunits=None,
+        legend_labels=[m['modelname'] for m in measurementsdata],
+        outpath=memory_reads_plot_path,
+        outputext=image_formats,
+        **SERVIS_PLOT_OPTIONS
+    )
+
+    report_variables['memoryaccessesplotpath']['reads'] = str(
+        memory_reads_plot_path.relative_to(rootdir)) + '.*'
+
+    memory_writes_plot_path = imgdir / 'memory_writes_plot_comparison'
+
+    render_multiple_time_series_plot(
+        ydatas=[[m['memory_accesses']['write'] for m in measurementsdata]],
+        xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
+        title='Memory writes comparison' if draw_titles else None,
+        subtitles=None,
+        xtitles=['Time'],
+        xunits=['s'],
+        ytitles=['Memory writes'],
+        yunits=None,
+        legend_labels=[m['modelname'] for m in measurementsdata],
+        outpath=memory_writes_plot_path,
+        outputext=image_formats,
+        **SERVIS_PLOT_OPTIONS
+    )
+
+    report_variables['memoryaccessesplotpath']['writes'] = str(
+        memory_writes_plot_path.relative_to(rootdir)) + '.*'
+
+    # peripheral accesses plot
+    report_variables['peripheralaccessesplotpath'] = {}
+
+    all_peripherals = set()
+
+    for data in measurementsdata:
+        all_peripherals = all_peripherals.union(
+            data['peripheral_accesses'].keys()
+        )
+
+    for peripheral in all_peripherals:
+        paths = {}
+
+        ydata = []
+        xdata = []
+        labels = []
+        for m in measurementsdata:
+            if peripheral not in m['peripheral_accesses'].keys():
+                continue
+
+            reads = m['peripheral_accesses'][peripheral]['read']
+            if sum(reads) == 0:
+                continue
+
+            ydata.append(reads)
+            xdata.append(m['profiler_timestamps'])
+            labels.append(m['modelname'])
+
+        if len(ydata):
+            peripheral_reads_plot_path = \
+                imgdir / f'peripheral_{peripheral}_reads_plot_comparison'
+
+            render_multiple_time_series_plot(
+                ydatas=[ydata],
+                xdatas=[xdata],
+                title=f'Peripheral reads for {peripheral} comparison'
+                      if draw_titles else None,
+                subtitles=None,
+                xtitles=['Time'],
+                xunits=['s'],
+                ytitles=['Peripheral reads'],
+                yunits=None,
+                legend_labels=labels,
+                outpath=peripheral_reads_plot_path,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS
+            )
+
+            paths['reads'] = str(
+                peripheral_reads_plot_path.relative_to(rootdir)) + '.*'
+
+        ydata = []
+        xdata = []
+        labels = []
+        for m in measurementsdata:
+            if peripheral not in m['peripheral_accesses'].keys():
+                continue
+
+            writes = m['peripheral_accesses'][peripheral]['write']
+            if sum(writes) == 0:
+                continue
+
+            ydata.append(writes)
+            xdata.append(m['profiler_timestamps'])
+            labels.append(m['modelname'])
+
+        if len(ydata):
+            peripheral_writes_plot_path = \
+                imgdir / f'peripheral_{peripheral}_writes_plot_comparison'
+
+            render_multiple_time_series_plot(
+                ydatas=[ydata],
+                xdatas=[xdata],
+                title=f'Peripheral writes for {peripheral} comparison'
+                      if draw_titles else None,
+                subtitles=None,
+                xtitles=['Time'],
+                xunits=['s'],
+                ytitles=['Peripheral writes'],
+                yunits=None,
+                legend_labels=labels,
+                outpath=peripheral_writes_plot_path,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS
+            )
+
+            paths['writes'] = str(
+                peripheral_writes_plot_path.relative_to(rootdir)) + '.*'
+
+        if len(paths):
+            report_variables['peripheralaccessesplotpath'][peripheral] = paths
+
+    # exceptions plot
+    ydata = []
+    xdata = []
+    labels = []
+    for m in measurementsdata:
+        exceptions = m['exceptions']
+        if sum(exceptions) == 0:
+            continue
+
+        ydata.append(exceptions)
+        xdata.append(m['profiler_timestamps'])
+        labels.append(m['modelname'])
+
+    if len(ydata):
+        exceptions_plot_path = imgdir / 'exceptions_plot_comparison'
+
+        render_multiple_time_series_plot(
+            ydatas=[ydata],
+            xdatas=[xdata],
+            title='Exceptions comparison' if draw_titles else None,
+            subtitles=None,
+            xtitles=['Time'],
+            xunits=['s'],
+            ytitles=['Exceptions'],
+            yunits=None,
+            legend_labels=labels,
+            outpath=exceptions_plot_path,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
+
+        report_variables['exceptionsplotpath'] = str(
+            exceptions_plot_path.relative_to(rootdir)) + '.*'
 
     with path(reports, 'renode_stats.md') as reporttemplate:
         return create_report_from_measurements(

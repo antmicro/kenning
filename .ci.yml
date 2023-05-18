@@ -73,6 +73,7 @@ docs:
         DOCS_DIR: './docs'
     script:
         - cd $DOCS_DIR
+        - echo -en "\nhtml_js_files = [ '$ANNOTANT' ]" >> source/conf.py
         - make html latexpdf
         - cp build/latex/*.pdf build/html/
         - tar cf $CI_DOCS_ARCHIVE -C build/html/ .

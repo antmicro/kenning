@@ -14,8 +14,9 @@ import onnx
 import cv2
 import numpy as np
 from functools import reduce
-from typing import Tuple
+from typing import Tuple, Dict, Optional
 import operator
+import pyximport
 import shutil
 import sys
 if sys.version_info.minor < 9:
@@ -24,11 +25,15 @@ else:
     from importlib.resources import files
 
 from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import SegmObject
+from kenning.datasets.helpers.detection_and_segmentation import SegmObject  # noqa: E501
 from kenning.core.model import ModelWrapper
 from kenning.interfaces.io_interface import IOInterface
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.resources.models import instance_segmentation
+
+pyximport.install(setup_args={"include_dirs": np.get_include()},
+                  reload_support=True)
+from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: E402, E501
 
 
 def crop(
@@ -363,3 +368,282 @@ class YOLACT(ModelWrapper):
         io_spec = self._get_io_specification()
         io_spec['processed_output'][0]['class_names'] = self.class_names
         return io_spec
+
+
+class YOLACTCore(YOLACT):
+
+    pretrained_modelpath = (files(instance_segmentation) /
+                            'yolact_core.onnx')
+
+    def preprocess_input(self, X):
+        if len(X) > 1:
+            raise RuntimeError(
+                "YOLACT model expects only single image in a batch."
+            )
+        _, self.w, self.h = X[0].shape
+
+        X = X[0]
+        X = np.transpose(X, (1, 2, 0))
+        X = cv2.resize(X, (550, 550))
+        X = np.expand_dims(X, axis=0)
+        X = np.transpose(X, (0, 3, 1, 2))
+        X = (X * 255. - MEANS) / STD
+        X = X[:, [2, 1, 0], :, :]
+        return X.astype(np.float32)
+
+    def postprocess_outputs(self, y):
+        y = self._detect(y)
+        if y is None:
+            return []
+
+        masks = y['proto'] @ y['mask'].T
+        masks = sigmoid(masks)
+        masks = crop(masks, y['box'])
+
+        # If masks too many, resize them in parts to avoid memory error
+        if masks.shape[2] > 500:
+            masks_tmp = np.zeros((self.h, self.w, masks.shape[2]))
+            part_size = 500
+            num_parts = masks.shape[2] // part_size
+            for i in range(num_parts):
+                masks_tmp[:, :, i * part_size:(i + 1) * part_size
+                          ] = cv2.resize(
+                    masks[:, :, i * part_size:(i + 1) * part_size],
+                    (self.w, self.h),
+                    interpolation=cv2.INTER_LINEAR
+                )
+
+            masks_tmp[:, :, num_parts * part_size:] = cv2.resize(
+                masks[:, :, num_parts * part_size:],
+                (self.w, self.h),
+                interpolation=cv2.INTER_LINEAR
+            )
+            masks = masks_tmp
+        else:
+            masks = cv2.resize(
+                masks, (self.w, self.h),
+                interpolation=cv2.INTER_LINEAR)
+
+        if len(masks.shape) == 2:
+            masks = masks[:, :, None]
+
+        masks = masks.transpose(2, 0, 1)
+        y['mask'] = (masks >= 0.5).astype(np.float32) * 255.
+
+        boxes = y['box']
+        boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
+            boxes[:, 0],
+            boxes[:, 2],
+            550
+        )
+        boxes[:, 1], boxes[:, 3] = sanitize_coordinates(
+            boxes[:, 1],
+            boxes[:, 3],
+            550
+        )
+        y['box'] = (boxes / 550)
+
+        if self.top_k is not None:
+            idx = np.argsort(y['score'], 0)[:-(self.top_k + 1):-1]
+            for k in y:
+                if k != 'proto':
+                    y[k] = y[k][idx]
+
+        keep = y['score'] >= self.score_threshold
+        for k in y:
+            if k != 'proto':
+                y[k] = y[k][keep]
+
+        Y = []
+        for i in range(len(y['score'])):
+            x1, y1, x2, y2 = y['box'][i, :]
+            Y.append(SegmObject(
+                clsname=self.class_names[y['class'][i]],
+                maskpath=None,
+                xmin=x1,
+                ymin=y1,
+                xmax=x2,
+                ymax=y2,
+                mask=y['mask'][i],
+                score=y['score'][i],
+                iscrowd=False
+            ))
+        return [Y]
+
+    def convert_output_from_bytes(self, outputdata):
+        # Signatures of outputs of the model:
+        # LOC:    size=(1, num_dets, 4)     dtype=float32
+        # CONF:   size=(1, num_dets, 81)    dtype=float32
+        # MASK:   size=(1, num_dets, 32)    dtype=float32
+        # PRIORS: size=(num_dets, 4)        dtype=float32
+        # PROTO:  size=(1, 138, 138, 32) dtype=float32
+        # Where num_dets is a number of detected objects.
+        # Because it is a variable dependent on model input,
+        # some maths is required to retrieve it.
+
+        S = len(outputdata)
+        f = np.dtype(np.float32).itemsize
+        num_dets = (S - 138 * 138 * 32 * f) // (121 * f)
+
+        output_specification = self.get_io_specification()['output']
+
+        result = {}
+        for spec in output_specification:
+            name = spec['name']
+            shape = list(
+                num_dets if val == -1 else val for val in spec['shape']
+            )
+            dtype = np.dtype(spec['dtype'])
+            tensorsize = reduce(operator.mul, shape) * dtype.itemsize
+
+            # Copy of numpy array is needed because the result of np.frombuffer
+            # is not writeable, which breaks output postprocessing.
+            outputtensor = np.array(np.frombuffer(
+                outputdata[:tensorsize],
+                dtype=dtype
+            )).reshape(shape)
+            result[name] = outputtensor
+            outputdata = outputdata[tensorsize:]
+
+        return result
+
+    def _decode(self, loc: np.ndarray, priors: np.ndarray) -> np.ndarray:
+        """
+        Decodes bounding boxes from the model outputs.
+
+        Parameters
+        ----------
+        loc : numpy.ndarray
+            Array of locations.
+        priors : numpy.ndarray
+            Array of priors.
+
+        Returns
+        -------
+        numpy.ndarray :
+            Array of bounding boxes.
+        """
+        variances = [0.1, 0.2]
+
+        boxes = np.concatenate((
+            priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
+            priors[:, 2:] * np.exp(loc[:, 2:] * variances[1])), 1)
+        boxes[:, :2] -= boxes[:, 2:] / 2
+        boxes[:, 2:] += boxes[:, :2]
+        return boxes
+
+    def _filter_detections(self,
+                           conf_preds: np.ndarray,
+                           decode_boxes: np.ndarray,
+                           mask_data: np.ndarray,
+                           conf_thresh: Optional[float] = 0.05,
+                           nms_thresh: Optional[float] = 0.5
+                           ) -> Dict[str, np.ndarray]:
+        """
+        Filters detections using confidence threshold and NMS.
+
+        Parameters
+        ----------
+        conf_preds : numpy.ndarray
+            Array of confidence predictions.
+        decode_boxes: numpy.ndarray
+            Array of decoded bounding boxes.
+        mask_data : numpy.ndarray
+            Array of mask data.
+        conf_thresh : Optional[float]
+            Confidence threshold.
+        nms_thresh : Optional[float]
+            NMS threshold.
+
+        Returns
+        -------
+        Dict[str, numpy.ndarray] :
+            Dictionary of detected objects.
+        """
+
+        # Remove predictions with the background label
+        cur_scores = conf_preds[1:, :]
+
+        conf_scores = np.max(cur_scores, axis=0)
+        keep = (conf_scores > conf_thresh)
+        scores = cur_scores[:, keep]
+        boxes = decode_boxes[keep, :]
+        masks = mask_data[keep, :]
+
+        if scores.shape[1] == 0:
+            return None
+
+        # Apply NMS to boxes for each class separately
+        idx_lst, cls_lst, scr_lst = [], [], []
+
+        for _cls in range(scores.shape[0]):
+            cls_scores = scores[_cls, :]
+            conf_mask = cls_scores > conf_thresh
+            idx = np.arange(cls_scores.size)
+
+            cls_scores = cls_scores[conf_mask]
+            if cls_scores.shape[0] == 0:
+                continue
+            cls_boxes = boxes[conf_mask]
+
+            keep = nms(cls_boxes, cls_scores, nms_thresh)
+
+            idx_lst.append((idx[conf_mask])[keep])
+            cls_lst.append(keep * 0 + _cls)
+            scr_lst.append(cls_scores[keep])
+
+        idx = np.concatenate(idx_lst, axis=0)
+        classes = np.concatenate(cls_lst, axis=0)
+        scores = np.concatenate(scr_lst, axis=0)
+
+        scores, idx2 = np.sort(scores)[::-1], np.argsort(scores)[::-1]
+        idx = idx[idx2]
+        return {'box': boxes[idx], 'mask': masks[idx], 'class': classes[idx2],
+                'score': scores}
+
+    def _detect(self, y: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+        """
+        Detects objects from the model outputs.
+
+        The signature of the y output:
+        * output_0 - LOC
+        * output_1 - CONF
+        * output_2 - MASK
+        * output_3 - PRIORS
+        * output_4 - PROTO
+
+        Parameters
+        ----------
+        y : Dict[str, np.ndarray]
+            Dictionary of model outputs.
+
+        Returns
+        -------
+        Dict[str, np.ndarray] :
+            Dictionary of model outputs with detected objects.
+        """
+        conf_preds = y['output_1'].squeeze(0).T
+
+        decode_boxes = self._decode(y['output_0'].squeeze(0), y['output_3'])
+        result = self._filter_detections(conf_preds, decode_boxes,
+                                         y['output_2'].squeeze(0))
+        if result is not None:
+            result['proto'] = y['output_4'].squeeze(0)
+        return result
+
+    @classmethod
+    def _get_io_specification(cls):
+        return {
+            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],    # noqa: E501
+            'output': [
+                {'name': 'output_0', 'shape': (1, -1, 4), 'dtype': 'float32'},   # noqa: E501
+                {'name': 'output_1', 'shape': (1, -1, 81), 'dtype': 'float32'},  # noqa: E501
+                {'name': 'output_2', 'shape': (1, -1, 32), 'dtype': 'float32'},  # noqa: E501
+                {'name': 'output_3', 'shape': (-1, 4), 'dtype': 'float32'},
+                {'name': 'output_4', 'shape': (1, 138, 138, 32), 'dtype': 'float32'}    # noqa: E501
+            ],
+            'processed_output': [{
+                'name': 'segmentation_output',
+                'type': 'List[SegmObject]'
+            }]
+        }

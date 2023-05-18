@@ -276,6 +276,8 @@ def draw_violin_comparison_plot(
     num_plots = len(xnames)
     legend_lines, legend_labels = [], []
     fig, axs = plt.subplots(num_plots, 1, figsize=(12, 3.5*num_plots))
+    if num_plots == 1:
+        axs = np.array([axs])
     axs = axs.flatten()
     bbox_extra = []
     if title:
@@ -1694,6 +1696,9 @@ def draw_barplot(
             len(ydata)
         ).tolist()
 
+    if colors is None:
+        colors = get_comparison_color_scheme(len(ydata))
+
     if backend == 'bokeh' or 'html' in outext:
         draw_barplot_bokeh(
             outpath=outpath,
@@ -1804,9 +1809,12 @@ def draw_barplot_bokeh(
             fill_color=colors[i],
             width=bar_width
         )
+        tooltips = [(xlabel, '@xdata'), (ylabel, f'@{{{label}}}')]
+        if len(ydata) > 1:
+            tooltips.insert(0, ('File', label))
         barplot_fig.add_tools(HoverTool(
             renderers=[vbar],
-            tooltips=[(xlabel, '@xdata'), (ylabel, f'@{{{label}}}')],
+            tooltips=tooltips,
         ))
 
     barplot_fig.xaxis.major_label_orientation = 'vertical'

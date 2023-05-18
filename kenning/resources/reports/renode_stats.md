@@ -1,25 +1,93 @@
 ## Inference Renode metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
-```{figure} {{data["instrhistpath"]}}
+```{figure} {{data["instrbarpath"]}}
 ---
-name: {{basename}}_instrhistogram
-alt: Opcode histogram
+name: {{basename}}_instrbarplot
+alt: Opcodes barplot
 align: center
 ---
 
-Opcode histogram
+Opcodes barplot
 ```
 
-```{figure} {{data["vectorinstrhistpath"]}}
+{%- if data['vectorinstrbarpath'] %}
+```{figure} {{data["vectorinstrbarpath"]}}
 ---
-name: {{basename}}_vectorinstrhistogram
-alt: Vector opcode histogram
+name: {{basename}}_vectorinstrbarplot
+alt: Vector opcodes barplot
 align: center
 ---
 
-Vector instructions histogram
+Vector opcodes barplot
 ```
+{%- endif %}
+
+{%- for cpu, plotpath in data['executedinstrplotpath'].items() %}
+```{figure} {{plotpath}}
+---
+name: {{basename}}_{{cpu}}_executedinstrplotpath
+alt: Executed instructions plot for {{cpu}}
+align: center
+---
+
+Executed instructions plot for {{cpu}}
+```
+{%- endfor %}
+
+```{figure} {{data['memoryaccessesplotpath']['reads']}}
+---
+name: {{basename}}_memoryreadsplotpath
+alt: Memory reads plot
+align: center
+---
+
+Memory reads plot
+```
+
+```{figure} {{data['memoryaccessesplotpath']['writes']}}
+---
+name: {{basename}}_memorywritessplotpath
+alt: Memory writes plot
+align: center
+---
+
+Memory writes plot
+```
+
+{%- for peripheral, plotpath in data['peripheralaccessesplotpath'].items() %}
+```{figure} {{plotpath['reads']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
+alt: Peripheral reads for {{peripheral}}
+align: center
+---
+
+Peripheral reads for {{peripheral}}
+```
+
+```{figure} {{plotpath['writes']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
+alt: Peripheral writes for {{peripheral}}
+align: center
+---
+
+Peripheral writes for {{peripheral}}
+```
+{%- endfor %}
+
+{%- if data['exceptionsplotpath'] %}
+```{figure} {{data['exceptionsplotpath']}}
+---
+name: {{basename}}_exceptionsplotpath
+alt: Exceptions plot
+align: center
+---
+
+Exceptions plot
+```
+{%- endif %}
 
 {%- if data['host_bytes_peak'] %}
 * *Host bytes peak*: **{{ data['host_bytes_peak'] }}**

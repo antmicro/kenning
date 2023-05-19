@@ -399,24 +399,29 @@ def comparison_performance_report(
         usepath.relative_to(rootdir)) + '.*'
 
     hardware_usage_metrics = sorted(list(hardware_usage_metrics))
-    usage_visualization = {}
+    measurements_metrics = set()
     for data in measurementsdata:
-        usage_visualization[data['modelname']] = [
-            np.mean(data.get(metric, 0))/100
-            for metric in hardware_usage_metrics
-        ]
+        measurements_metrics = measurements_metrics.union(data.keys())
 
-    usepath = imgdir / "hardware_usage_comparison"
-    draw_radar_chart(
-        usepath,
-        "Resource usage comparison" if draw_titles else None,
-        usage_visualization,
-        [metric_names[metric][0] for metric in hardware_usage_metrics],
-        colors=colors,
-        outext=_image_formats,
-    )
-    report_variables["hardwareusagepath"] = str(
-        usepath.relative_to(rootdir)) + '.*'
+    if set(hardware_usage_metrics).intersection(measurements_metrics):
+        usage_visualization = {}
+        for data in measurementsdata:
+            usage_visualization[data['modelname']] = [
+                np.mean(data.get(metric, 0))/100
+                for metric in hardware_usage_metrics
+            ]
+
+        usepath = imgdir / "hardware_usage_comparison"
+        draw_radar_chart(
+            usepath,
+            "Resource usage comparison" if draw_titles else None,
+            usage_visualization,
+            [metric_names[metric][0] for metric in hardware_usage_metrics],
+            colors=colors,
+            outext=_image_formats,
+        )
+        report_variables["hardwareusagepath"] = str(
+            usepath.relative_to(rootdir)) + '.*'
 
     with path(reports, 'performance_comparison.md') as reporttemplate:
         return create_report_from_measurements(
@@ -881,6 +886,7 @@ def renode_stats_report(
         ydata={'counters': [x[1] for x in opcode_counters]},
         colors=colors,
         outext=image_formats,
+        max_bars_matplotlib=32
     )
 
     measurementsdata['instrbarpath'] = str(
@@ -901,6 +907,7 @@ def renode_stats_report(
             ydata={'counters': [x[1] for x in vector_opcode_counters]},
             colors=colors,
             outext=image_formats,
+            max_bars_matplotlib=32
         )
 
         measurementsdata['vectorinstrbarpath'] = str(
@@ -1147,35 +1154,38 @@ def comparison_renode_stats_report(
         },
         colors=colors,
         outext=image_formats,
+        max_bars_matplotlib=32
     )
 
     report_variables['instrbarpath'] = str(
         instr_barplot_path.relative_to(rootdir)) + '.*'
 
     # vector opcode counter barplot
-    vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
+    if len(all_vector_opcodes):
+        vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
 
-    draw_barplot(
-        outpath=vector_instr_barplot_path,
-        title='Vector instructions barplot' if draw_titles else None,
-        xtitle='Opcode',
-        xunit=None,
-        ytitle='Counter',
-        yunit=None,
-        xdata=all_vector_opcodes,
-        ydata={
-            data['modelname']: [
-                data['opcode_counters'][opcode]
-                for opcode in all_vector_opcodes
-            ]
-            for data in measurementsdata
-        },
-        colors=colors,
-        outext=image_formats,
-    )
+        draw_barplot(
+            outpath=vector_instr_barplot_path,
+            title='Vector instructions barplot' if draw_titles else None,
+            xtitle='Opcode',
+            xunit=None,
+            ytitle='Counter',
+            yunit=None,
+            xdata=all_vector_opcodes,
+            ydata={
+                data['modelname']: [
+                    data['opcode_counters'][opcode]
+                    for opcode in all_vector_opcodes
+                ]
+                for data in measurementsdata
+            },
+            colors=colors,
+            outext=image_formats,
+            max_bars_matplotlib=32
+        )
 
-    report_variables['vectorinstrbarpath'] = str(
-        vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+        report_variables['vectorinstrbarpath'] = str(
+            vector_instr_barplot_path.relative_to(rootdir)) + '.*'
 
     # executed instructions plot
     report_variables['executedinstrplotpath'] = {}

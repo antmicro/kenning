@@ -27,6 +27,8 @@ class RenodeRuntime(Runtime):
     runtimes executed on Renode simulated platform.
     """
 
+    PROFILER_DUMP_PATH = Path('/tmp/profiler.dump')
+
     arguments_structure = {
         'runtime_binary_path': {
             'argparse_name': '--runtime-binary-path',
@@ -147,7 +149,8 @@ class RenodeRuntime(Runtime):
         )
         if self.collect_performance_data:
             self.renode_handler.run_robot_keyword(
-                'ExecuteCommand', 'machine EnableProfiler @/tmp/profiler.dump'
+                'ExecuteCommand',
+                f'machine EnableProfiler @{self.PROFILER_DUMP_PATH}'
             )
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
@@ -197,7 +200,7 @@ class RenodeRuntime(Runtime):
         """
         self.log.info('Parsing Renode profiler dump')
 
-        parser = _ProfilerDumpParser('/tmp/profiler.dump')
+        parser = _ProfilerDumpParser(self.PROFILER_DUMP_PATH)
 
         return parser.parse()
 
@@ -229,6 +232,22 @@ class RenodeRuntime(Runtime):
 
 
 class _ProfilerDumpParser(object):
+    ENTRY_TYPE_INSTRUCTIONS = b'\x00'
+    ENTRY_TYPE_MEM0RY = b'\x01'
+    ENTRY_TYPE_PERIPHERALS = b'\x02'
+    ENTRY_TYPE_EXCEPTIONS = b'\x03'
+
+    ENTRY_FORMAT_INSTRUCTIONS = '<cQ'
+    ENTRY_FORMAT_MEM0RY = 'c'
+    ENTRY_FORMAT_PERIPHERALS = '<cQ'
+    ENTRY_FORMAT_EXCEPTIONS = 'Q'
+
+    MEMORY_OPERATION_READ = b'\x02'
+    MEMORY_OPERATION_WRITE = b'\x03'
+
+    PERIPHERAL_OPERATION_READ = b'\x00'
+    PERIPHERAL_OPERATION_WRITE = b'\x01'
+
     def __init__(self, dump_path: Path):
         self.dump_path = dump_path
 
@@ -281,8 +300,8 @@ class _ProfilerDumpParser(object):
                 interval_start /= 1000.
                 if (len(profiler_timestamps) == 0 or
                         profiler_timestamps[-1] != interval_start):
-                    # new interval - need to add its start and append new
-                    # counters to each stats list
+                    # new interval - need to add its start timestamp and append
+                    # new counters to each stats list
                     profiler_timestamps.append(interval_start)
                     stats_to_update = [stats]
                     while len(stats_to_update):
@@ -292,10 +311,13 @@ class _ProfilerDumpParser(object):
                         elif isinstance(s, dict):
                             stats_to_update.extend(s.values())
 
-                if entry_type == b'\x00':
+                if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
                     # parse executed instruction entry
                     output_list = stats['executed_instructions']
-                    cpu_id, instr_counter = self._read('<cQ', f)
+                    cpu_id, instr_counter = self._read(
+                        self.ENTRY_FORMAT_INSTRUCTIONS,
+                        f
+                    )
 
                     cpu = cpus[cpu_id[0]]
                     output_list = output_list[cpu]
@@ -303,15 +325,15 @@ class _ProfilerDumpParser(object):
                     output_list[-1] += instr_counter - prev_instr_counter[cpu]
                     prev_instr_counter[cpu] = instr_counter
 
-                elif entry_type == b'\x01':
+                elif entry_type == self.ENTRY_TYPE_MEM0RY:
                     # parse memory access entry
                     output_list = stats['memory_accesses']
-                    operation = self._read('c', f)[0]
+                    operation = self._read(self.ENTRY_FORMAT_MEM0RY, f)[0]
 
-                    if operation == b'\x02':
+                    if operation == self.MEMORY_OPERATION_READ:
                         # read
                         output_list = output_list['read']
-                    elif operation == b'\x03':
+                    elif operation == self.MEMORY_OPERATION_WRITE:
                         # write
                         output_list = output_list['write']
                     else:
@@ -320,10 +342,13 @@ class _ProfilerDumpParser(object):
 
                     output_list[-1] += 1
 
-                elif entry_type == b'\x02':
+                elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
                     # parse peripheral access entry
                     output_list = stats['peripheral_accesses']
-                    operation, address = self._read('<cQ', f)
+                    operation, address = self._read(
+                        self.ENTRY_FORMAT_PERIPHERALS,
+                        f
+                    )
 
                     peripheral_found = False
                     for peripheral, address_range in peripherals.items():
@@ -335,10 +360,10 @@ class _ProfilerDumpParser(object):
                     if not peripheral_found:
                         continue
 
-                    if operation == b'\x00':
+                    if operation == self.PERIPHERAL_OPERATION_READ:
                         # read
                         output_list = output_list['read']
-                    elif operation == b'\x01':
+                    elif operation == self.PERIPHERAL_OPERATION_WRITE:
                         # write
                         output_list = output_list['write']
                     else:
@@ -347,10 +372,10 @@ class _ProfilerDumpParser(object):
 
                     output_list[-1] += 1
 
-                elif entry_type == b'\x03':
+                elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
                     # parse exception entry
                     output_list = stats['exceptions']
-                    _ = self._read('Q', f)
+                    _ = self._read(self.ENTRY_FORMAT_EXCEPTIONS, f)
 
                     output_list[-1] += 1
 

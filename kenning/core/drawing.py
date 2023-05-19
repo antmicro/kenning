@@ -1648,6 +1648,7 @@ def draw_barplot(
     colors: Optional[List] = None,
     backend: str = 'matplotlib',
     outext: Iterable[str] = ['png'],
+    max_bars_matplotlib: Optional[int] = None
 ):
     """
     Draws barplot.
@@ -1678,6 +1679,8 @@ def draw_barplot(
         Which library should be used to generate plot - bokeh or matplotlib
     outext : Iterable[str]
         List with files extensions, should be supported by matplotlib
+    max_bars_matplotlib : Optional[int]
+        Max number of bars for matplotlib backend
     """
     xlabel = xtitle
     if xunit is not None:
@@ -1716,6 +1719,14 @@ def draw_barplot(
         )
         outext = set(outext)
         outext.discard('html')
+
+    if max_bars_matplotlib is not None:
+        xdata = xdata[:max_bars_matplotlib]
+        ydata = {
+            name: values[:max_bars_matplotlib]
+            for name, values in ydata.items()
+        }
+
     draw_barplot_matplotlib(
         outpath=outpath,
         title=title,

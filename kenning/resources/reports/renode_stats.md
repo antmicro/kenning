@@ -1,6 +1,9 @@
 ## Inference Renode metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
+
+### Executed instructions opcodes stats
+
 ```{figure} {{data["instrbarpath"]}}
 ---
 name: {{basename}}_instrbarplot
@@ -23,6 +26,8 @@ Vector opcodes barplot
 ```
 {%- endif %}
 
+### Executed instructions counters
+
 {%- for cpu, plotpath in data['executedinstrplotpath'].items() %}
 ```{figure} {{plotpath}}
 ---
@@ -34,6 +39,8 @@ align: center
 Executed instructions plot for {{cpu}}
 ```
 {%- endfor %}
+
+### Memory access counters
 
 ```{figure} {{data['memoryaccessesplotpath']['reads']}}
 ---
@@ -54,6 +61,8 @@ align: center
 
 Memory writes plot
 ```
+
+### Peripheral access counters
 
 {%- for peripheral, plotpath in data['peripheralaccessesplotpath'].items() %}
 ```{figure} {{plotpath['reads']}}
@@ -78,6 +87,8 @@ Peripheral writes for {{peripheral}}
 {%- endfor %}
 
 {%- if data['exceptionsplotpath'] %}
+### Exceptions counters
+
 ```{figure} {{data['exceptionsplotpath']}}
 ---
 name: {{basename}}_exceptionsplotpath
@@ -88,6 +99,8 @@ align: center
 Exceptions plot
 ```
 {%- endif %}
+
+### Memory allocation stats
 
 {%- if data['host_bytes_peak'] %}
 * *Host bytes peak*: **{{ data['host_bytes_peak'] }}**

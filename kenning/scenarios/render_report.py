@@ -871,14 +871,14 @@ def renode_stats_report(
     instr_barplot_path = imgdir / f'{imgprefix}instr_barplot'
 
     draw_barplot(
-        str(instr_barplot_path),
-        'Instructions barplot' if draw_titles else None,
-        'Opcode',
-        None,
-        'Counter',
-        None,
-        [x[0] for x in opcode_counters],
-        {'counters': [x[1] for x in opcode_counters]},
+        outpath=instr_barplot_path,
+        title='Instructions barplot' if draw_titles else None,
+        xtitle='Opcode',
+        xunit=None,
+        ytitle='Counter',
+        yunit=None,
+        xdata=[x[0] for x in opcode_counters],
+        ydata={'counters': [x[1] for x in opcode_counters]},
         colors=colors,
         outext=image_formats,
     )
@@ -891,15 +891,14 @@ def renode_stats_report(
         vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_barplot'
 
         draw_barplot(
-            str(vector_instr_barplot_path),
-            'Vector instructions barplot' if draw_titles
-            else None,
-            'Opcode',
-            None,
-            'Counter',
-            None,
-            [x[0] for x in vector_opcode_counters],
-            {'counters': [x[1] for x in vector_opcode_counters]},
+            outpath=vector_instr_barplot_path,
+            title='Vector instructions barplot' if draw_titles else None,
+            xtitle='Opcode',
+            xunit=None,
+            ytitle='Counter',
+            yunit=None,
+            xdata=[x[0] for x in vector_opcode_counters],
+            ydata={'counters': [x[1] for x in vector_opcode_counters]},
             colors=colors,
             outext=image_formats,
         )
@@ -1133,14 +1132,14 @@ def comparison_renode_stats_report(
     instr_barplot_path = imgdir / 'instr_barplot_comparison'
 
     draw_barplot(
-        str(instr_barplot_path),
-        'Instructions barplot' if draw_titles else None,
-        'Opcode',
-        None,
-        'Counter',
-        None,
-        all_opcodes,
-        {
+        outpath=instr_barplot_path,
+        title='Instructions barplot' if draw_titles else None,
+        xtitle='Opcode',
+        xunit=None,
+        ytitle='Counter',
+        yunit=None,
+        xdata=all_opcodes,
+        ydata={
             data['modelname']: [
                 data['opcode_counters'][opcode] for opcode in all_opcodes
             ]
@@ -1157,15 +1156,14 @@ def comparison_renode_stats_report(
     vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
 
     draw_barplot(
-        str(vector_instr_barplot_path),
-        'Vector instructions barplot' if draw_titles
-        else None,
-        'Opcode',
-        None,
-        'Counter',
-        None,
-        all_vector_opcodes,
-        {
+        outpath=vector_instr_barplot_path,
+        title='Vector instructions barplot' if draw_titles else None,
+        xtitle='Opcode',
+        xunit=None,
+        ytitle='Counter',
+        yunit=None,
+        xdata=all_vector_opcodes,
+        ydata={
             data['modelname']: [
                 data['opcode_counters'][opcode]
                 for opcode in all_vector_opcodes
@@ -1476,6 +1474,7 @@ def generate_report(
             reporttemplate,
             header_data
         )
+
     for typ in report_types:
         for i, model_data in enumerate(data):
             if len(data) > 1:

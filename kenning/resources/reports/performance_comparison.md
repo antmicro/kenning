@@ -73,6 +73,7 @@ align: center
 Violin chart representing distribution of values for performance metrics for models
 ```
 
+{%- if 'hardwareusagepath' in data %}
 ### Hardware usage comparison
 
 ```{figure} {{data["hardwareusagepath"]}}
@@ -83,5 +84,6 @@ align: center
 ---
 Radar chart representing the resource usage of models
 ```
+{%- endif %}
 
 

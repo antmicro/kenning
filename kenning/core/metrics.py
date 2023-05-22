@@ -226,3 +226,77 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
             'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]
         }
     return {}
+
+
+def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
+    """
+    Computes Renode metrics based on `measurementsdata` argument.
+    If there is no Renode metrics returns an empty dictionary.
+
+    Computes instructions counter for all opcodes and for V-Extension opcodes.
+
+    Parameters
+    ----------
+    measurementsdata : Dict[str, List]
+        Statistics from the Measurements class
+
+    Returns
+    -------
+    Dict :
+        Gathered computed metrics
+    """
+    if not any(('opcode_counters' in data for data in measurementsdata)):
+        return {}
+
+    # retrieve all opcodes with non zero counters
+    all_opcodes = set()
+    for data in measurementsdata:
+        for opcode, counter in data['opcode_counters'].items():
+            if counter > 0:
+                all_opcodes.add(opcode)
+
+    # retrieve counters
+    opcode_counters = []
+
+    for opcode in all_opcodes:
+        counters = [opcode]
+        for data in measurementsdata:
+            counters.append(data['opcode_counters'].get(opcode, 0))
+        opcode_counters.append(counters)
+
+    opcode_counters.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
+
+    vector_opcode_counters = [
+        counters for counters in opcode_counters if counters[0][0] == 'v'
+    ]
+
+    ret = {}
+    if len(opcode_counters):
+        ret['sorted_opcode_counters'] = {}
+        transposed = list(zip(*opcode_counters))
+        ret['sorted_opcode_counters']['opcodes'] = transposed[0]
+        if len(measurementsdata) == 1:
+            ret['sorted_opcode_counters']['counters'] = {
+                'counters': transposed[1]
+            }
+        else:
+            ret['sorted_opcode_counters']['counters'] = {
+                measurementsdata[i]['modelname']: transposed[i + 1]
+                for i in range(len(measurementsdata))
+            }
+
+    if len(vector_opcode_counters):
+        ret['sorted_vector_opcode_counters'] = {}
+        transposed = list(zip(*vector_opcode_counters))
+        ret['sorted_vector_opcode_counters']['opcodes'] = transposed[0]
+        if len(measurementsdata) == 1:
+            ret['sorted_vector_opcode_counters']['counters'] = {
+                'counters': transposed[1]
+            }
+        else:
+            ret['sorted_vector_opcode_counters']['counters'] = {
+                measurementsdata[i]['modelname']: transposed[i + 1]
+                for i in range(len(measurementsdata))
+            }
+
+    return ret

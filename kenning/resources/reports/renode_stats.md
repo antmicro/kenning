@@ -1,102 +1,114 @@
-## Inference Renode metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Renode performance measurements {% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
 
 {% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
 
-### Executed instructions opcodes stats
+{%- if 'instrbarpath' in data %}
+### Count of instructions used during inference
 
 ```{figure} {{data["instrbarpath"]}}
 ---
 name: {{basename}}_instrbarplot
-alt: Opcodes barplot
+alt: Count of used instructions during inference
 align: center
 ---
 
-Opcodes barplot
+Count of used instructions during inference
 ```
 
-{%- if data['vectorinstrbarpath'] %}
+{%- if 'vectorinstrbarpath' in data %}
 ```{figure} {{data["vectorinstrbarpath"]}}
 ---
 name: {{basename}}_vectorinstrbarplot
-alt: Vector opcodes barplot
+alt: Utilization of V-Extension instructions during inference
 align: center
 ---
 
-Vector opcodes barplot
+Utilization of V-Extension instructions during inference
 ```
 {%- endif %}
+{%- endif %}
 
+{%- if 'executedinstrplotpath' in data %}
 ### Executed instructions counters
 
 {%- for cpu, plotpath in data['executedinstrplotpath'].items() %}
 ```{figure} {{plotpath}}
 ---
 name: {{basename}}_{{cpu}}_executedinstrplotpath
-alt: Executed instructions plot for {{cpu}}
+alt: Figure showing count of executed instructions for {{cpu}}
 align: center
 ---
 
-Executed instructions plot for {{cpu}}
+Figure showing count of executed instructions for {{cpu}}
 ```
 {%- endfor %}
+{%- endif %}
 
+{%- if 'memoryaccessesplotpath' in data %}
 ### Memory access counters
 
+{%- if 'reads' in data['memoryaccessesplotpath'] %}
 ```{figure} {{data['memoryaccessesplotpath']['reads']}}
 ---
 name: {{basename}}_memoryreadsplotpath
-alt: Memory reads plot
+alt: Figure showing count of memory reads
 align: center
 ---
 
-Memory reads plot
+Figure showing count of memory reads
 ```
+{%- endif %}
 
+{%- if 'writes' in data['memoryaccessesplotpath'] %}
 ```{figure} {{data['memoryaccessesplotpath']['writes']}}
 ---
 name: {{basename}}_memorywritessplotpath
-alt: Memory writes plot
+alt: Figure showing count of memory writes
 align: center
 ---
 
-Memory writes plot
+Figure showing count of memory writes
 ```
+{%- endif %}
+{%- endif %}
 
+{%- if 'peripheralaccessesplotpath' in data %}
 ### Peripheral access counters
 
 {%- for peripheral, plotpath in data['peripheralaccessesplotpath'].items() %}
 ```{figure} {{plotpath['reads']}}
 ---
 name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
-alt: Peripheral reads for {{peripheral}}
+alt: Figure showing count of {{peripheral}} reads
 align: center
 ---
 
-Peripheral reads for {{peripheral}}
+Figure showing count of {{peripheral}} reads
 ```
 
 ```{figure} {{plotpath['writes']}}
 ---
 name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
-alt: Peripheral writes for {{peripheral}}
+alt: Figure showing count of {{peripheral}} writes
 align: center
 ---
 
-Peripheral writes for {{peripheral}}
+Figure showing count of {{peripheral}} writes
 ```
 {%- endfor %}
+{%- endif %}
 
-{%- if data['exceptionsplotpath'] %}
+{%- if 'exceptionsplotpath' in data %}
 ### Exceptions counters
 
 ```{figure} {{data['exceptionsplotpath']}}
 ---
 name: {{basename}}_exceptionsplotpath
-alt: Exceptions plot
+alt: Figure showing count of raised exceptions
 align: center
 ---
 
-Exceptions plot
+Figure showing count of raised exceptions
 ```
 {%- endif %}
 

@@ -13,7 +13,7 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Set, Optional
+from typing import Dict, List, Set, Optional, Tuple
 import json
 import numpy as np
 import re
@@ -43,8 +43,11 @@ from kenning.core.drawing import (
 from kenning.utils import logger
 from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
-from kenning.core.metrics import compute_performance_metrics, \
-    compute_classification_metrics, compute_detection_metrics
+from kenning.core.metrics import (
+    compute_performance_metrics,
+    compute_classification_metrics,
+    compute_detection_metrics,
+    compute_renode_metrics)
 
 log = logger.get_logger()
 
@@ -145,8 +148,7 @@ def performance_report(
             usepath_asterisk.relative_to(rootdir)
         )
 
-        measurementsdata['inferencetime'] = \
-            measurementsdata[inference_step]
+        measurementsdata['inferencetime'] = measurementsdata[inference_step]
 
     if 'session_utilization_mem_percent' in measurementsdata:
         log.info('Using target measurements memory usage percentage')
@@ -395,8 +397,8 @@ def comparison_performance_report(
         colors=colors,
         outext=_image_formats,
     )
-    report_variables["meanperformancepath"] = str(
-        usepath.relative_to(rootdir)) + '.*'
+    report_variables["meanperformancepath"] = \
+        f'{usepath.relative_to(rootdir)}.*'
 
     hardware_usage_metrics = sorted(list(hardware_usage_metrics))
     measurements_metrics = set()
@@ -420,8 +422,8 @@ def comparison_performance_report(
             colors=colors,
             outext=_image_formats,
         )
-        report_variables["hardwareusagepath"] = str(
-            usepath.relative_to(rootdir)) + '.*'
+        report_variables["hardwareusagepath"] = \
+            f'{usepath.relative_to(rootdir)}.*'
 
     with path(reports, 'performance_comparison.md') as reporttemplate:
         return create_report_from_measurements(
@@ -584,8 +586,7 @@ def comparison_classification_report(
         colors=colors,
         outext=_image_formats,
     )
-    report_variables['radarchartpath'] = str(
-        usepath.relative_to(rootdir)) + '.*'
+    report_variables['radarchartpath'] = f'{usepath.relative_to(rootdir)}.*'
     report_variables['modelnames'] = names
     report_variables = {
         **report_variables,
@@ -659,8 +660,7 @@ def detection_report(
         measurementsdata['class_names'],
         outext=_image_formats,
     )
-    measurementsdata['curvepath'] = str(
-        curvepath.relative_to(rootdir)) + '.*'
+    measurementsdata['curvepath'] = f'{curvepath.relative_to(rootdir)}.*'
 
     gradientpath = imgdir / f'{imgprefix}recall_precision_gradients'
     recall_precision_gradients(
@@ -673,8 +673,7 @@ def detection_report(
         cmap=cmap,
         outext=_image_formats,
     )
-    measurementsdata['gradientpath'] = str(
-        gradientpath.relative_to(rootdir)) + '.*'
+    measurementsdata['gradientpath'] = f'{gradientpath.relative_to(rootdir)}.*'
 
     tp_iou = []
     all_tp_ious = []
@@ -698,8 +697,7 @@ def detection_report(
         color_offset=color_offset,
         outext=_image_formats,
     )
-    measurementsdata['tpioupath'] = str(
-        tpioupath.relative_to(rootdir)) + '.*'
+    measurementsdata['tpioupath'] = f'{tpioupath.relative_to(rootdir)}.*'
 
     if len(all_tp_ious) > 0:
         iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values'
@@ -713,8 +711,8 @@ def detection_report(
             outext=_image_formats,
         )
         iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.*'
-        measurementsdata['iouhistpath'] = str(
-            iouhistpath.relative_to(rootdir)) + '.*'
+        measurementsdata['iouhistpath'] = \
+            f'{iouhistpath.relative_to(rootdir)}.*'
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
@@ -807,8 +805,7 @@ def comparison_detection_report(
         colors=colors,
         outext=_image_formats,
     )
-    report_variables['mapcomparisonpath'] = str(
-        usepath.relative_to(rootdir)) + '.*'
+    report_variables['mapcomparisonpath'] = f'{usepath.relative_to(rootdir)}.*'
 
     with path(reports, 'detection_comparison.md') as reporttemplate:
         return create_report_from_measurements(
@@ -841,10 +838,10 @@ def renode_stats_report(
         Path to the root of the documentation project involving this report
     image_formats : Set[str]
         Collection with formats which should be used to generate plots
-    color_offset : int
-        How many colors from default color list should be skipped
     draw_titles : bool
         Should titles be drawn on the plot
+    colors : Optional[List]
+        Colors used for plots
 
     Returns
     -------
@@ -855,45 +852,34 @@ def renode_stats_report(
         f'Running renode_stats_report for {measurementsdata["modelname"]}'
     )
 
-    if 'opcode_counters' not in measurementsdata:
-        log.error('Opcode counters not present for Renode stats report')
-        return ''
-
-    # retrieve vector instructions counters
-    opcode_counters = []
-    vector_opcode_counters = []
-    for opcode, counter in measurementsdata['opcode_counters'].items():
-        if counter > 0:
-            opcode_counters.append((opcode, counter))
-            if opcode[0] == 'v':
-                vector_opcode_counters.append((opcode, counter))
-
-    # sort by counters
-    opcode_counters.sort(key=lambda x: x[1], reverse=True)
-    vector_opcode_counters.sort(key=lambda x: x[1], reverse=True)
+    measurementsdata |= compute_renode_metrics([measurementsdata])
 
     # opcode counter barplot
-    instr_barplot_path = imgdir / f'{imgprefix}instr_barplot'
+    if 'sorted_opcode_counters' in measurementsdata:
+        opcode_counters = measurementsdata['sorted_opcode_counters']
+        instr_barplot_path = imgdir / f'{imgprefix}instr_barplot'
 
-    draw_barplot(
-        outpath=instr_barplot_path,
-        title='Instructions barplot' if draw_titles else None,
-        xtitle='Opcode',
-        xunit=None,
-        ytitle='Counter',
-        yunit=None,
-        xdata=[x[0] for x in opcode_counters],
-        ydata={'counters': [x[1] for x in opcode_counters]},
-        colors=colors,
-        outext=image_formats,
-        max_bars_matplotlib=32
-    )
+        draw_barplot(
+            outpath=instr_barplot_path,
+            title='Instructions barplot' if draw_titles else None,
+            xtitle='Opcode',
+            xunit=None,
+            ytitle='Counter',
+            yunit=None,
+            xdata=opcode_counters['opcodes'],
+            ydata=opcode_counters['counters'],
+            colors=colors,
+            outext=image_formats,
+            max_bars_matplotlib=32
+        )
 
-    measurementsdata['instrbarpath'] = str(
-        instr_barplot_path.relative_to(rootdir)) + '.*'
+        measurementsdata['instrbarpath'] = \
+            f'{instr_barplot_path.relative_to(rootdir)}.*'
 
     # vector opcode counter barplot
-    if len(vector_opcode_counters):
+    if 'sorted_vector_opcode_counters' in measurementsdata:
+        vector_opcode_counters = \
+            measurementsdata['sorted_vector_opcode_counters']
         vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_barplot'
 
         draw_barplot(
@@ -903,19 +889,17 @@ def renode_stats_report(
             xunit=None,
             ytitle='Counter',
             yunit=None,
-            xdata=[x[0] for x in vector_opcode_counters],
-            ydata={'counters': [x[1] for x in vector_opcode_counters]},
+            xdata=vector_opcode_counters['opcodes'],
+            ydata=vector_opcode_counters['counters'],
             colors=colors,
             outext=image_formats,
             max_bars_matplotlib=32
         )
 
-        measurementsdata['vectorinstrbarpath'] = str(
-            vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+        measurementsdata['vectorinstrbarpath'] = \
+            f'{vector_instr_barplot_path.relative_to(rootdir)}.*'
 
     # executed instructions plot
-    measurementsdata['executedinstrplotpath'] = {}
-
     for cpu, measurements in measurementsdata['executed_instructions'].items():
         executed_instructions_plot_path = \
             imgdir / f'{imgprefix}executed_instructions_{cpu}_plot'
@@ -924,9 +908,9 @@ def renode_stats_report(
             ydata=measurements,
             xdata=measurementsdata['profiler_timestamps'],
             title=f'Executed instructions for {cpu}' if draw_titles else None,
-            xtitle='Time',
+            xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Executed instructions',
+            ytitle='Executed instructions within time interval',
             yunit=None,
             outpath=str(executed_instructions_plot_path),
             skipfirst=True,
@@ -934,53 +918,55 @@ def renode_stats_report(
             **SERVIS_PLOT_OPTIONS
         )
 
-        measurementsdata['executedinstrplotpath'][cpu] = str(
-            executed_instructions_plot_path.relative_to(rootdir)) + '.*'
+        if 'executedinstrplotpath' not in measurementsdata:
+            measurementsdata['executedinstrplotpath'] = {}
+        measurementsdata['executedinstrplotpath'][cpu] = \
+            f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
 
     # memory accesses plot
-    measurementsdata['memoryaccessesplotpath'] = {}
+    if len(measurementsdata['memory_accesses']['read']):
+        memory_reads_plot_path = imgdir / f'{imgprefix}memory_reads_plot'
 
-    memory_reads_plot_path = imgdir / f'{imgprefix}memory_reads_plot'
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['memory_accesses']['read'],
+            xdata=measurementsdata['profiler_timestamps'],
+            title='Memory reads' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Memory reads within time interval',
+            yunit=None,
+            outpath=str(memory_reads_plot_path),
+            skipfirst=True,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
 
-    render_time_series_plot_with_histogram(
-        ydata=measurementsdata['memory_accesses']['read'],
-        xdata=measurementsdata['profiler_timestamps'],
-        title='Memory reads' if draw_titles else None,
-        xtitle='Time',
-        xunit='s',
-        ytitle='Memory reads',
-        yunit=None,
-        outpath=str(memory_reads_plot_path),
-        skipfirst=True,
-        outputext=image_formats,
-        **SERVIS_PLOT_OPTIONS
-    )
+        measurementsdata['memoryaccessesplotpath'] = {}
+        measurementsdata['memoryaccessesplotpath']['reads'] = \
+            f'{memory_reads_plot_path.relative_to(rootdir)}.*'
 
-    measurementsdata['memoryaccessesplotpath']['reads'] = str(
-        memory_reads_plot_path.relative_to(rootdir)) + '.*'
+    if len(measurementsdata['memory_accesses']['write']):
+        memory_writes_plot_path = imgdir / f'{imgprefix}memory_writes_plot'
 
-    memory_writes_plot_path = imgdir / f'{imgprefix}memory_writes_plot'
-
-    render_time_series_plot_with_histogram(
-        ydata=measurementsdata['memory_accesses']['write'],
-        xdata=measurementsdata['profiler_timestamps'],
-        title='Memory writes' if draw_titles else None,
-        xtitle='Time',
-        xunit='s',
-        ytitle='Memory writes',
-        yunit=None,
-        outpath=str(memory_writes_plot_path),
-        skipfirst=True,
-        outputext=image_formats,
-        **SERVIS_PLOT_OPTIONS
-    )
-
-    measurementsdata['memoryaccessesplotpath']['writes'] = str(
-        memory_writes_plot_path.relative_to(rootdir)) + '.*'
+        render_time_series_plot_with_histogram(
+            ydata=measurementsdata['memory_accesses']['write'],
+            xdata=measurementsdata['profiler_timestamps'],
+            title='Memory writes' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Memory writes within time interval',
+            yunit=None,
+            outpath=str(memory_writes_plot_path),
+            skipfirst=True,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
+        if 'memoryaccessesplotpath' not in measurementsdata:
+            measurementsdata['memoryaccessesplotpath'] = {}
+        measurementsdata['memoryaccessesplotpath']['writes'] = \
+            f'{memory_writes_plot_path.relative_to(rootdir)}.*'
 
     # peripheral accesses plot
-    measurementsdata['peripheralaccessesplotpath'] = {}
-
     for (peripheral,
          measurements) in measurementsdata['peripheral_accesses'].items():
         paths = {}
@@ -992,11 +978,10 @@ def renode_stats_report(
             render_time_series_plot_with_histogram(
                 ydata=measurements['read'],
                 xdata=measurementsdata['profiler_timestamps'],
-                title=f'Peripheral reads for {peripheral}'
-                      if draw_titles else None,
-                xtitle='Time',
+                title=f'{peripheral} reads' if draw_titles else None,
+                xtitle='Interval timestamp',
                 xunit='s',
-                ytitle='Peripheral reads',
+                ytitle='Peripheral reads within time interval',
                 yunit=None,
                 outpath=str(peripheral_reads_plot_path),
                 skipfirst=True,
@@ -1004,8 +989,8 @@ def renode_stats_report(
                 **SERVIS_PLOT_OPTIONS
             )
 
-            paths['reads'] = str(
-                peripheral_reads_plot_path.relative_to(rootdir)) + '.*'
+            paths['reads'] = \
+                f'{peripheral_reads_plot_path.relative_to(rootdir)}.*'
 
         if sum(measurements['write']):
             peripheral_writes_plot_path = \
@@ -1014,11 +999,10 @@ def renode_stats_report(
             render_time_series_plot_with_histogram(
                 ydata=measurements['write'],
                 xdata=measurementsdata['profiler_timestamps'],
-                title=f'Peripheral writes for {peripheral}'
-                      if draw_titles else None,
-                xtitle='Time',
+                title=f'{peripheral} writes' if draw_titles else None,
+                xtitle='Interval timestamp',
                 xunit='s',
-                ytitle='Peripheral writes',
+                ytitle='Peripheral writes within time interval',
                 yunit=None,
                 outpath=str(peripheral_writes_plot_path),
                 skipfirst=True,
@@ -1026,10 +1010,12 @@ def renode_stats_report(
                 **SERVIS_PLOT_OPTIONS
             )
 
-            paths['writes'] = str(
-                peripheral_writes_plot_path.relative_to(rootdir)) + '.*'
+            paths['writes'] = \
+                f'{peripheral_writes_plot_path.relative_to(rootdir)}.*'
 
         if len(paths):
+            if 'peripheralaccessesplotpath' not in measurementsdata:
+                measurementsdata['peripheralaccessesplotpath'] = {}
             measurementsdata['peripheralaccessesplotpath'][peripheral] = paths
 
     # exceptions plot
@@ -1040,9 +1026,9 @@ def renode_stats_report(
             ydata=measurementsdata['exceptions'],
             xdata=measurementsdata['profiler_timestamps'],
             title='Exceptions' if draw_titles else None,
-            xtitle='Time',
+            xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Exceptions',
+            ytitle='Exceptions count within time interval',
             yunit=None,
             outpath=str(exceptions_plot_path),
             skipfirst=True,
@@ -1050,8 +1036,8 @@ def renode_stats_report(
             **SERVIS_PLOT_OPTIONS
         )
 
-        measurementsdata['exceptionsplotpath'] = str(
-            exceptions_plot_path.relative_to(rootdir)) + '.*'
+        measurementsdata['exceptionsplotpath'] = \
+            f'{exceptions_plot_path.relative_to(rootdir)}.*'
 
     with path(reports, 'renode_stats.md') as reporttemplate:
         return create_report_from_measurements(
@@ -1088,80 +1074,74 @@ def comparison_renode_stats_report(
         How many colors from default color list should be skipped
     draw_titles : bool
         Should titles be drawn on the plot
+    colors : Optional[List]
+        Colors used for plots
 
     Returns
     -------
     str :
         content of the report in MyST format
     """
-    log.info('Running comparison_renode_stats_report')
+    def retrieve_non_zero_profiler_data(
+            measurementsdata: List[Dict],
+            keys: List[str] = []) -> Tuple[List, List, List]:
+        ydata = []
+        xdata = []
+        labels = []
+        for m in measurementsdata:
+            data = m
+            for k in keys:
+                if k in data.keys():
+                    data = data[k]
+                else:
+                    data = None
+                    break
+            if data is None:
+                continue
 
-    for data in measurementsdata:
-        if 'opcode_counters' not in data:
-            log.error('Opcode counters not present for Renode stats report')
-            return ''
+            if sum(data) == 0:
+                continue
+
+            ydata.append(data)
+            xdata.append(m['profiler_timestamps'])
+            labels.append(m['modelname'])
+
+        return xdata, ydata, labels
+
+    log.info('Running comparison_renode_stats_report')
 
     report_variables = {
         'reportname': measurementsdata[0]['reportname'],
         'reportname_simple': measurementsdata[0]['reportname_simple']
     }
 
-    # retrieve vector instructions counters
-    all_opcodes = set()
-    all_vector_opcodes = set()
-    for data in measurementsdata:
-        for opcode, counter in data['opcode_counters'].items():
-            if counter > 0:
-                all_opcodes.add(opcode)
-                if opcode[0] == 'v':
-                    all_vector_opcodes.add(opcode)
-
-    all_opcodes = list(all_opcodes)
-    all_vector_opcodes = list(all_vector_opcodes)
-
-    # sort by counters
-    all_opcodes.sort(
-        key=lambda x: (
-            sum(m['opcode_counters'][x] for m in measurementsdata),
-            x
-        ),
-        reverse=True
-    )
-    all_vector_opcodes.sort(
-        key=lambda x: (
-            sum(m['opcode_counters'][x] for m in measurementsdata),
-            x
-        ),
-        reverse=True
-    )
+    metrics = compute_renode_metrics(measurementsdata)
 
     # opcode counter barplot
-    instr_barplot_path = imgdir / 'instr_barplot_comparison'
+    if 'sorted_opcode_counters' in metrics:
+        opcode_counters = metrics['sorted_opcode_counters']
+        instr_barplot_path = imgdir / 'instr_barplot_comparison'
 
-    draw_barplot(
-        outpath=instr_barplot_path,
-        title='Instructions barplot' if draw_titles else None,
-        xtitle='Opcode',
-        xunit=None,
-        ytitle='Counter',
-        yunit=None,
-        xdata=all_opcodes,
-        ydata={
-            data['modelname']: [
-                data['opcode_counters'][opcode] for opcode in all_opcodes
-            ]
-            for data in measurementsdata
-        },
-        colors=colors,
-        outext=image_formats,
-        max_bars_matplotlib=32
-    )
+        draw_barplot(
+            outpath=instr_barplot_path,
+            title='Instructions barplot' if draw_titles else None,
+            xtitle='Opcode',
+            xunit=None,
+            ytitle='Counter',
+            yunit=None,
+            xdata=opcode_counters['opcodes'],
+            ydata=opcode_counters['counters'],
+            colors=colors,
+            outext=image_formats,
+            max_bars_matplotlib=32
+        )
 
-    report_variables['instrbarpath'] = str(
-        instr_barplot_path.relative_to(rootdir)) + '.*'
+        report_variables['instrbarpath'] = \
+            f'{instr_barplot_path.relative_to(rootdir)}.*'
 
     # vector opcode counter barplot
-    if len(all_vector_opcodes):
+    if 'sorted_vector_opcode_counters' in metrics:
+        vector_opcode_counters = metrics['sorted_vector_opcode_counters']
         vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
 
         draw_barplot(
@@ -1171,21 +1151,15 @@ def comparison_renode_stats_report(
             xunit=None,
             ytitle='Counter',
             yunit=None,
-            xdata=all_vector_opcodes,
-            ydata={
-                data['modelname']: [
-                    data['opcode_counters'][opcode]
-                    for opcode in all_vector_opcodes
-                ]
-                for data in measurementsdata
-            },
+            xdata=vector_opcode_counters['opcodes'],
+            ydata=vector_opcode_counters['counters'],
             colors=colors,
             outext=image_formats,
             max_bars_matplotlib=32
         )
 
-        report_variables['vectorinstrbarpath'] = str(
-            vector_instr_barplot_path.relative_to(rootdir)) + '.*'
+        report_variables['vectorinstrbarpath'] = \
+            f'{vector_instr_barplot_path.relative_to(rootdir)}.*'
 
     # executed instructions plot
     report_variables['executedinstrplotpath'] = {}
@@ -1201,16 +1175,10 @@ def comparison_renode_stats_report(
         executed_instructions_plot_path = \
             imgdir / f'executed_instructions_{cpu}_plot_comparison'
 
-        ydata = []
-        xdata = []
-        labels = []
-        for m in measurementsdata:
-            if cpu not in m['executed_instructions'].keys():
-                continue
-
-            ydata.append(m['executed_instructions'][cpu])
-            xdata.append(m['profiler_timestamps'])
-            labels.append(m['modelname'])
+        xdata, ydata, labels = retrieve_non_zero_profiler_data(
+            measurementsdata,
+            ['executed_instructions', cpu]
+        )
 
         render_multiple_time_series_plot(
             ydatas=[ydata],
@@ -1218,9 +1186,9 @@ def comparison_renode_stats_report(
             title=f'Executed instructions for {cpu} comparison'
                   if draw_titles else None,
             subtitles=None,
-            xtitles=['Time'],
+            xtitles=['Interval timestamp'],
             xunits=['s'],
-            ytitles=['Executed instructions'],
+            ytitles=['Executed instructions within time interval'],
             yunits=None,
             legend_labels=labels,
             outpath=executed_instructions_plot_path,
@@ -1228,51 +1196,52 @@ def comparison_renode_stats_report(
             **SERVIS_PLOT_OPTIONS
         )
 
-        report_variables['executedinstrplotpath'][cpu] = str(
-            executed_instructions_plot_path.relative_to(rootdir)) + '.*'
+        report_variables['executedinstrplotpath'][cpu] = \
+            f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
 
     # memory accesses plot
-    report_variables['memoryaccessesplotpath'] = {}
+    if any(('memory_accesses' in data for data in measurementsdata)):
+        report_variables['memoryaccessesplotpath'] = {}
 
-    memory_reads_plot_path = imgdir / 'memory_reads_plot_comparison'
+        memory_reads_plot_path = imgdir / 'memory_reads_plot_comparison'
 
-    render_multiple_time_series_plot(
-        ydatas=[[m['memory_accesses']['read'] for m in measurementsdata]],
-        xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
-        title='Memory reads comparison' if draw_titles else None,
-        subtitles=None,
-        xtitles=['Time'],
-        xunits=['s'],
-        ytitles=['Memory reads'],
-        yunits=None,
-        legend_labels=[m['modelname'] for m in measurementsdata],
-        outpath=memory_reads_plot_path,
-        outputext=image_formats,
-        **SERVIS_PLOT_OPTIONS
-    )
+        render_multiple_time_series_plot(
+            ydatas=[[m['memory_accesses']['read'] for m in measurementsdata]],
+            xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
+            title='Memory reads comparison' if draw_titles else None,
+            subtitles=None,
+            xtitles=['Interval timestamp'],
+            xunits=['s'],
+            ytitles=['Memory reads within time interval'],
+            yunits=None,
+            legend_labels=[m['modelname'] for m in measurementsdata],
+            outpath=memory_reads_plot_path,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
 
-    report_variables['memoryaccessesplotpath']['reads'] = str(
-        memory_reads_plot_path.relative_to(rootdir)) + '.*'
+        report_variables['memoryaccessesplotpath']['reads'] = \
+            f'{memory_reads_plot_path.relative_to(rootdir)}.*'
 
-    memory_writes_plot_path = imgdir / 'memory_writes_plot_comparison'
+        memory_writes_plot_path = imgdir / 'memory_writes_plot_comparison'
 
-    render_multiple_time_series_plot(
-        ydatas=[[m['memory_accesses']['write'] for m in measurementsdata]],
-        xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
-        title='Memory writes comparison' if draw_titles else None,
-        subtitles=None,
-        xtitles=['Time'],
-        xunits=['s'],
-        ytitles=['Memory writes'],
-        yunits=None,
-        legend_labels=[m['modelname'] for m in measurementsdata],
-        outpath=memory_writes_plot_path,
-        outputext=image_formats,
-        **SERVIS_PLOT_OPTIONS
-    )
+        render_multiple_time_series_plot(
+            ydatas=[[m['memory_accesses']['write'] for m in measurementsdata]],
+            xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
+            title='Memory writes comparison' if draw_titles else None,
+            subtitles=None,
+            xtitles=['Interval timestamp'],
+            xunits=['s'],
+            ytitles=['Memory writes within time interval'],
+            yunits=None,
+            legend_labels=[m['modelname'] for m in measurementsdata],
+            outpath=memory_writes_plot_path,
+            outputext=image_formats,
+            **SERVIS_PLOT_OPTIONS
+        )
 
-    report_variables['memoryaccessesplotpath']['writes'] = str(
-        memory_writes_plot_path.relative_to(rootdir)) + '.*'
+        report_variables['memoryaccessesplotpath']['writes'] = \
+            f'{memory_writes_plot_path.relative_to(rootdir)}.*'
 
     # peripheral accesses plot
     report_variables['peripheralaccessesplotpath'] = {}
@@ -1287,20 +1256,10 @@ def comparison_renode_stats_report(
     for peripheral in all_peripherals:
         paths = {}
 
-        ydata = []
-        xdata = []
-        labels = []
-        for m in measurementsdata:
-            if peripheral not in m['peripheral_accesses'].keys():
-                continue
-
-            reads = m['peripheral_accesses'][peripheral]['read']
-            if sum(reads) == 0:
-                continue
-
-            ydata.append(reads)
-            xdata.append(m['profiler_timestamps'])
-            labels.append(m['modelname'])
+        xdata, ydata, labels = retrieve_non_zero_profiler_data(
+            measurementsdata,
+            ['peripheral_accesses', peripheral, 'read']
+        )
 
         if len(ydata):
             peripheral_reads_plot_path = \
@@ -1309,12 +1268,12 @@ def comparison_renode_stats_report(
             render_multiple_time_series_plot(
                 ydatas=[ydata],
                 xdatas=[xdata],
-                title=f'Peripheral reads for {peripheral} comparison'
+                title=f'{peripheral} reads comparison'
                       if draw_titles else None,
                 subtitles=None,
-                xtitles=['Time'],
+                xtitles=['Interval timestamp'],
                 xunits=['s'],
-                ytitles=['Peripheral reads'],
+                ytitles=['Peripheral reads within time interval'],
                 yunits=None,
                 legend_labels=labels,
                 outpath=peripheral_reads_plot_path,
@@ -1322,23 +1281,13 @@ def comparison_renode_stats_report(
                 **SERVIS_PLOT_OPTIONS
             )
 
-            paths['reads'] = str(
-                peripheral_reads_plot_path.relative_to(rootdir)) + '.*'
+            paths['reads'] = \
+                f'{peripheral_reads_plot_path.relative_to(rootdir)}.*'
 
-        ydata = []
-        xdata = []
-        labels = []
-        for m in measurementsdata:
-            if peripheral not in m['peripheral_accesses'].keys():
-                continue
-
-            writes = m['peripheral_accesses'][peripheral]['write']
-            if sum(writes) == 0:
-                continue
-
-            ydata.append(writes)
-            xdata.append(m['profiler_timestamps'])
-            labels.append(m['modelname'])
+        xdata, ydata, labels = retrieve_non_zero_profiler_data(
+            measurementsdata,
+            ['peripheral_accesses', peripheral, 'write']
+        )
 
         if len(ydata):
             peripheral_writes_plot_path = \
@@ -1347,12 +1296,12 @@ def comparison_renode_stats_report(
             render_multiple_time_series_plot(
                 ydatas=[ydata],
                 xdatas=[xdata],
-                title=f'Peripheral writes for {peripheral} comparison'
+                title=f'{peripheral} writes comparison'
                       if draw_titles else None,
                 subtitles=None,
-                xtitles=['Time'],
+                xtitles=['Interval timestamp'],
                 xunits=['s'],
-                ytitles=['Peripheral writes'],
+                ytitles=['Peripheral writes within time interval'],
                 yunits=None,
                 legend_labels=labels,
                 outpath=peripheral_writes_plot_path,
@@ -1360,24 +1309,17 @@ def comparison_renode_stats_report(
                 **SERVIS_PLOT_OPTIONS
             )
 
-            paths['writes'] = str(
-                peripheral_writes_plot_path.relative_to(rootdir)) + '.*'
+            paths['writes'] = \
+                f'{peripheral_writes_plot_path.relative_to(rootdir)}.*'
 
         if len(paths):
             report_variables['peripheralaccessesplotpath'][peripheral] = paths
 
     # exceptions plot
-    ydata = []
-    xdata = []
-    labels = []
-    for m in measurementsdata:
-        exceptions = m['exceptions']
-        if sum(exceptions) == 0:
-            continue
-
-        ydata.append(exceptions)
-        xdata.append(m['profiler_timestamps'])
-        labels.append(m['modelname'])
+    xdata, ydata, labels = retrieve_non_zero_profiler_data(
+        measurementsdata,
+        ['exceptions']
+    )
 
     if len(ydata):
         exceptions_plot_path = imgdir / 'exceptions_plot_comparison'
@@ -1387,9 +1329,9 @@ def comparison_renode_stats_report(
             xdatas=[xdata],
             title='Exceptions comparison' if draw_titles else None,
             subtitles=None,
-            xtitles=['Time'],
+            xtitles=['Interval timestamp'],
             xunits=['s'],
-            ytitles=['Exceptions'],
+            ytitles=['Exceptions count within time interval'],
             yunits=None,
             legend_labels=labels,
             outpath=exceptions_plot_path,
@@ -1397,10 +1339,10 @@ def comparison_renode_stats_report(
             **SERVIS_PLOT_OPTIONS
         )
 
-        report_variables['exceptionsplotpath'] = str(
-            exceptions_plot_path.relative_to(rootdir)) + '.*'
+        report_variables['exceptionsplotpath'] = \
+            f'{exceptions_plot_path.relative_to(rootdir)}.*'
 
-    with path(reports, 'renode_stats.md') as reporttemplate:
+    with path(reports, 'renode_stats_comparison.md') as reporttemplate:
         return create_report_from_measurements(
             reporttemplate,
             report_variables

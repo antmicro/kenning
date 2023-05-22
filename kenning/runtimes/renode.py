@@ -9,6 +9,7 @@ Runtime implementation for Renode
 from typing import Dict, Any, Tuple, BinaryIO
 from pathlib import Path
 from collections import defaultdict
+import tempfile
 import struct
 import re
 from pyrenode import Pyrenode
@@ -26,8 +27,6 @@ class RenodeRuntime(Runtime):
     Runtime subclass that provides and API for testing inference on bare-metal
     runtimes executed on Renode simulated platform.
     """
-
-    PROFILER_DUMP_PATH = Path('/tmp/profiler.dump')
 
     arguments_structure = {
         'runtime_binary_path': {
@@ -69,6 +68,7 @@ class RenodeRuntime(Runtime):
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
         )
+        self.profiler_dump_path = None
         self.log = get_logger()
         super().__init__(
             protocol,
@@ -134,6 +134,9 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
+        self.profiler_dump_path = Path(tempfile.mktemp(
+            prefix='renode_profiler_', suffix='.dump'
+        ))
         self.renode_handler.initialize()
         self.renode_handler.run_robot_keyword(
             'CreateLogTester', timeout=5.0
@@ -150,7 +153,7 @@ class RenodeRuntime(Runtime):
         if self.collect_performance_data:
             self.renode_handler.run_robot_keyword(
                 'ExecuteCommand',
-                f'machine EnableProfiler @{self.PROFILER_DUMP_PATH}'
+                f'machine EnableProfiler @{self.profiler_dump_path}'
             )
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
@@ -158,6 +161,7 @@ class RenodeRuntime(Runtime):
         self.renode_handler.run_robot_keyword(
             'WaitForLogEntry', r'.*Runtime started.*', treatAsRegex=True
         )
+        self.log.info(f'Profiler dump path: {self.profiler_dump_path}')
 
     def get_opcode_stats(self) -> Dict[str, int]:
         """
@@ -199,8 +203,11 @@ class RenodeRuntime(Runtime):
             Stats retrieved from Renode profiler dump
         """
         self.log.info('Parsing Renode profiler dump')
+        if self.profiler_dump_path is None:
+            self.log.error('Missing profiler dump file')
+            raise FileNotFoundError
 
-        parser = _ProfilerDumpParser(self.PROFILER_DUMP_PATH)
+        parser = _ProfilerDumpParser(self.profiler_dump_path)
 
         return parser.parse()
 
@@ -237,6 +244,7 @@ class _ProfilerDumpParser(object):
     ENTRY_TYPE_PERIPHERALS = b'\x02'
     ENTRY_TYPE_EXCEPTIONS = b'\x03'
 
+    ENTRY_HEADER_FORMAT = '<qdc'
     ENTRY_FORMAT_INSTRUCTIONS = '<cQ'
     ENTRY_FORMAT_MEM0RY = 'c'
     ENTRY_FORMAT_PERIPHERALS = '<cQ'
@@ -281,7 +289,7 @@ class _ProfilerDumpParser(object):
                 }
 
             startTime = 0
-            entry = struct.Struct('<qdc')
+            entry = struct.Struct(self.ENTRY_HEADER_FORMAT)
             interval_step = 10  # [ms]
             prev_instr_counter = defaultdict(lambda: 0)
 

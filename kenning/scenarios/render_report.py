@@ -822,6 +822,7 @@ def renode_stats_report(
         image_formats: Set[str],
         draw_titles: bool = True,
         colors: Optional[List] = None,
+        color_offset: int = 0,
         **kwargs) -> str:
     """
     Creates Renode stats section of the report.
@@ -842,6 +843,8 @@ def renode_stats_report(
         Should titles be drawn on the plot
     colors : Optional[List]
         Colors used for plots
+    color_offset : int
+        How many colors from default color list should be skipped
 
     Returns
     -------
@@ -851,6 +854,10 @@ def renode_stats_report(
     log.info(
         f'Running renode_stats_report for {measurementsdata["modelname"]}'
     )
+
+    # shift colors to match color_offset
+    plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
+    plot_options['colormap'] = plot_options['colormap'][color_offset:]
 
     measurementsdata |= compute_renode_metrics([measurementsdata])
 
@@ -868,7 +875,7 @@ def renode_stats_report(
             yunit=None,
             xdata=opcode_counters['opcodes'],
             ydata=opcode_counters['counters'],
-            colors=colors,
+            colors=colors[color_offset:],
             outext=image_formats,
             max_bars_matplotlib=32
         )
@@ -891,7 +898,7 @@ def renode_stats_report(
             yunit=None,
             xdata=vector_opcode_counters['opcodes'],
             ydata=vector_opcode_counters['counters'],
-            colors=colors,
+            colors=colors[color_offset:],
             outext=image_formats,
             max_bars_matplotlib=32
         )
@@ -915,7 +922,7 @@ def renode_stats_report(
             outpath=str(executed_instructions_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **plot_options
         )
 
         if 'executedinstrplotpath' not in measurementsdata:
@@ -938,7 +945,7 @@ def renode_stats_report(
             outpath=str(memory_reads_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **plot_options
         )
 
         measurementsdata['memoryaccessesplotpath'] = {}
@@ -959,7 +966,7 @@ def renode_stats_report(
             outpath=str(memory_writes_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **plot_options
         )
         if 'memoryaccessesplotpath' not in measurementsdata:
             measurementsdata['memoryaccessesplotpath'] = {}
@@ -986,7 +993,7 @@ def renode_stats_report(
                 outpath=str(peripheral_reads_plot_path),
                 skipfirst=True,
                 outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS
+                **plot_options
             )
 
             paths['reads'] = \
@@ -1007,7 +1014,7 @@ def renode_stats_report(
                 outpath=str(peripheral_writes_plot_path),
                 skipfirst=True,
                 outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS
+                **plot_options
             )
 
             paths['writes'] = \
@@ -1033,7 +1040,7 @@ def renode_stats_report(
             outpath=str(exceptions_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **plot_options
         )
 
         measurementsdata['exceptionsplotpath'] = \

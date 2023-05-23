@@ -1,0 +1,50 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset",
+        "parameters": {
+            "dataset_root": "./build/VisualWakeWordsDataset",
+            "download_dataset": false
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper",
+        "parameters": {
+            "model_path": "./kenning/resources/models/classification/person_detect.tflite"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.iree.IREECompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/tflite-person-detect.vmfb",
+                "backend": "llvm-cpu",
+                "model_framework": "tflite",
+                "compiler_args": [
+                    "iree-llvm-debug-symbols=false",
+                    "iree-vm-bytecode-module-strip-source-map=true",
+                    "iree-vm-emit-polyglot-zip=false",
+                    "iree-llvm-target-triple=riscv32-pc-linux-elf",
+                    "iree-llvm-target-cpu=generic-rv32",
+                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x",
+                    "iree-llvm-target-abi=ilp32"
+                ]
+            }
+        }
+    ],
+    "runtime": {
+        "type": "kenning.runtimes.iree.IREERuntime",
+        "parameters": {
+            "driver": "local-task"
+        }
+    },
+    "runtime_protocol": {
+        "type": "kenning.runtimeprotocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/tmp/uart",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

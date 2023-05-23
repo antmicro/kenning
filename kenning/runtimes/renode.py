@@ -6,7 +6,7 @@
 Runtime implementation for Renode
 """
 
-from typing import Dict, Any, Tuple, BinaryIO
+from typing import Dict, Any, Tuple, BinaryIO, Optional
 from pathlib import Path
 from collections import defaultdict
 import tempfile
@@ -38,6 +38,12 @@ class RenodeRuntime(Runtime):
             'argparse_name': '--platform-resc-path',
             'description': 'Path to platform script',
             'type': Path
+        },
+        'profiler_dump_path': {
+            'argparse_name': '--profiler-dump-path',
+            'description': 'Path to Renode profiler dump',
+            'type': Path,
+            'default': None
         }
     }
 
@@ -46,6 +52,7 @@ class RenodeRuntime(Runtime):
             protocol: RuntimeProtocol,
             runtime_binary_path: Path,
             platform_resc_path: Path,
+            profiler_dump_path: Optional[Path] = None,
             collect_performance_data: bool = True):
         """
         Constructs Renode runtime.
@@ -62,13 +69,15 @@ class RenodeRuntime(Runtime):
         collect_performance_data : bool
             Disable collection and processing of performance metrics
         """
-        self.runtime_binary_path = runtime_binary_path
-        self.platform_resc_path = platform_resc_path
+        self.runtime_binary_path = runtime_binary_path.resolve()
+        self.platform_resc_path = platform_resc_path.resolve()
+        if profiler_dump_path is not None:
+            profiler_dump_path = profiler_dump_path.resolve()
+        self.profiler_dump_path = profiler_dump_path
         self.renode_handler = None
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
         )
-        self.profiler_dump_path = None
         self.log = get_logger()
         super().__init__(
             protocol,
@@ -134,9 +143,10 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
-        self.profiler_dump_path = Path(tempfile.mktemp(
-            prefix='renode_profiler_', suffix='.dump'
-        ))
+        if self.profiler_dump_path is None:
+            self.profiler_dump_path = Path(tempfile.mktemp(
+                prefix='renode_profiler_', suffix='.dump'
+            ))
         self.renode_handler.initialize()
         self.renode_handler.run_robot_keyword(
             'CreateLogTester', timeout=5.0
@@ -203,7 +213,8 @@ class RenodeRuntime(Runtime):
             Stats retrieved from Renode profiler dump
         """
         self.log.info('Parsing Renode profiler dump')
-        if self.profiler_dump_path is None:
+        if (self.profiler_dump_path is None or
+                not self.profiler_dump_path.exists()):
             self.log.error('Missing profiler dump file')
             raise FileNotFoundError
 
@@ -276,7 +287,7 @@ class _ProfilerDumpParser(object):
             'exceptions': []
         }
 
-        with open('/tmp/profiler.dump', 'rb') as f:
+        with open(self.dump_path, 'rb') as f:
             # parse header
             cpus, peripherals = self._parse_header(f)
 

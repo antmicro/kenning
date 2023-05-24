@@ -601,7 +601,7 @@ class RuntimeProtocol(ArgumentsHandler):
         measurementname = 'protocol_inference_step'
         MeasurementsCollector.measurements += {
             measurementname: [duration],
-            f'{measurementname}_timestamp': [get_time_func()]
+            f'{measurementname}_timestamp': [start]
         }
         return True
 

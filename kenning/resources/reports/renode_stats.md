@@ -32,14 +32,24 @@ Utilization of V-Extension instructions during inference
 ### Executed instructions counters
 
 {%- for cpu, plotpath in data['executedinstrplotpath'].items() %}
-```{figure} {{plotpath}}
+```{figure} {{plotpath['persec']}}
 ---
 name: {{basename}}_{{cpu}}_executedinstrplotpath
-alt: Figure showing count of executed instructions for {{cpu}}
+alt: Count of executed instructions per second for {{cpu}}
 align: center
 ---
 
-Figure showing count of executed instructions for {{cpu}}
+Count of executed instructions per second for {{cpu}} during benchmark
+```
+
+```{figure} {{plotpath['cumulative']}}
+---
+name: {{basename}}_{{cpu}}_executedinstrplotpath
+alt: Cumulative count of executed instructions for {{cpu}}
+align: center
+---
+
+Cumulative count of executed instructions for {{cpu}} during benchmark
 ```
 {%- endfor %}
 {%- endif %}
@@ -47,27 +57,47 @@ Figure showing count of executed instructions for {{cpu}}
 {%- if 'memoryaccessesplotpath' in data %}
 ### Memory access counters
 
-{%- if 'reads' in data['memoryaccessesplotpath'] %}
-```{figure} {{data['memoryaccessesplotpath']['reads']}}
+{%- if 'read' in data['memoryaccessesplotpath'] %}
+```{figure} {{data['memoryaccessesplotpath']['read']['persec']}}
 ---
 name: {{basename}}_memoryreadsplotpath
-alt: Figure showing count of memory reads
+alt: Count of memory reads per second
 align: center
 ---
 
-Figure showing count of memory reads
+Count of memory reads per second during benchmark
+```
+
+```{figure} {{data['memoryaccessesplotpath']['read']['cumulative']}}
+---
+name: {{basename}}_memoryreadsplotpath
+alt: Cumulative count of memory reads
+align: center
+---
+
+Cumulative count of memory reads during benchmark
 ```
 {%- endif %}
 
-{%- if 'writes' in data['memoryaccessesplotpath'] %}
-```{figure} {{data['memoryaccessesplotpath']['writes']}}
+{%- if 'write' in data['memoryaccessesplotpath'] %}
+```{figure} {{data['memoryaccessesplotpath']['write']['persec']}}
 ---
 name: {{basename}}_memorywritessplotpath
-alt: Figure showing count of memory writes
+alt: Count of memory writes per second
 align: center
 ---
 
-Figure showing count of memory writes
+Count of memory writes per second during benchmark
+```
+
+```{figure} {{data['memoryaccessesplotpath']['write']['cumulative']}}
+---
+name: {{basename}}_memorywritessplotpath
+alt: Cumulative count of memory writes
+align: center
+---
+
+Cumulative count of memory writes during benchmark
 ```
 {%- endif %}
 {%- endif %}
@@ -76,24 +106,44 @@ Figure showing count of memory writes
 ### Peripheral access counters
 
 {%- for peripheral, plotpath in data['peripheralaccessesplotpath'].items() %}
-```{figure} {{plotpath['reads']}}
+```{figure} {{plotpath['read']['persec']}}
 ---
 name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
-alt: Figure showing count of {{peripheral}} reads
+alt: Count of {{peripheral}} reads per second
 align: center
 ---
 
-Figure showing count of {{peripheral}} reads
+Count of {{peripheral}} reads per second during benchmark
 ```
 
-```{figure} {{plotpath['writes']}}
+```{figure} {{plotpath['read']['cumulative']}}
 ---
-name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
-alt: Figure showing count of {{peripheral}} writes
+name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
+alt: Cumulative count of {{peripheral}} reads
 align: center
 ---
 
-Figure showing count of {{peripheral}} writes
+Cumulative count of {{peripheral}} reads during benchmark
+```
+
+```{figure} {{plotpath['write']['persec']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
+alt: Count of {{peripheral}} writes per second
+align: center
+---
+
+Count of {{peripheral}} writes per second during benchmark
+```
+
+```{figure} {{plotpath['write']['cumulative']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
+alt: Cumulative count of {{peripheral}} writes
+align: center
+---
+
+Cumulative count of {{peripheral}} writes during benchmark
 ```
 {%- endfor %}
 {%- endif %}
@@ -101,17 +151,49 @@ Figure showing count of {{peripheral}} writes
 {%- if 'exceptionsplotpath' in data %}
 ### Exceptions counters
 
-```{figure} {{data['exceptionsplotpath']}}
+```{figure} {{data['exceptionsplotpath']['persec']}}
 ---
 name: {{basename}}_exceptionsplotpath
-alt: Figure showing count of raised exceptions
+alt: Count of raised exceptions per second
 align: center
 ---
 
-Figure showing count of raised exceptions
+Count of raised exceptions per second during benchmark
+```
+
+```{figure} {{data['exceptionsplotpath']['cumulative']}}
+---
+name: {{basename}}_exceptionsplotpath
+alt: Cumulative count of raised exceptions
+align: center
+---
+
+Cumulative count of raised exceptions during benchmark
 ```
 {%- endif %}
 
+{%- if data['instructions_per_inference_pass'] or 
+       data['vector_opcodes_fraction'] or
+       data['top_10_opcodes_per_inference_pass'] %}
+### Instructions stats
+
+{%- if data['instructions_per_inference_pass'] %}
+* *Instructions counters per inference pass*: **{{ data['instructions_per_inference_pass'] }}**
+{%- endif %}
+{%- if data['vector_opcodes_fraction'] %}
+* *V-Extensionl instructions percentage*: **{{ data['vector_opcodes_fraction']*100 }}** %
+{%- endif %}
+{%- if data['top_10_opcodes_per_inference_pass'] %}
+* *Top 10 instructions and counters per inference pass*:
+{%- for opcode, counter in data['top_10_opcodes_per_inference_pass'] %}
+    - *{{opcode}}*: **{{counter}}**
+{%- endfor %}
+{%- endif %}
+{%- endif %}
+
+{%- if data['host_bytes_peak'] or data['host_bytes_allocated'] or data['host_bytes_freed'] or
+       data['device_bytes_peak'] or data['device_bytes_allocated'] or data['device_bytes_freed'] or
+       data['compiled_model_size'] %}
 ### Memory allocation stats
 
 {%- if data['host_bytes_peak'] %}
@@ -134,5 +216,8 @@ Figure showing count of raised exceptions
 {%- endif %}
 {%- if data['compiled_model_size'] %}
 * *Compiled model size*: **{{ data['compiled_model_size'] }}**
+{%- endif %}
+
+Host refers to the RISC-V platform, while device is the IREE device created by the runtime.
 {%- endif %}
 

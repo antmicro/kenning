@@ -907,118 +907,164 @@ def renode_stats_report(
             f'{vector_instr_barplot_path.relative_to(rootdir)}.*'
 
     # executed instructions plot
-    for cpu, measurements in measurementsdata['executed_instructions'].items():
+    for cpu, data in measurementsdata['executed_instructions'].items():
+        paths = {}
+
         executed_instructions_plot_path = \
             imgdir / f'{imgprefix}executed_instructions_{cpu}_plot'
 
         render_time_series_plot_with_histogram(
-            ydata=measurements,
+            ydata=data,
             xdata=measurementsdata['profiler_timestamps'],
             title=f'Executed instructions for {cpu}' if draw_titles else None,
             xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Executed instructions within time interval',
-            yunit=None,
+            ytitle='Executed instructions',
+            yunit='1/s',
             outpath=str(executed_instructions_plot_path),
             skipfirst=True,
             outputext=image_formats,
             **plot_options
         )
 
-        if 'executedinstrplotpath' not in measurementsdata:
-            measurementsdata['executedinstrplotpath'] = {}
-        measurementsdata['executedinstrplotpath'][cpu] = \
+        paths['persec'] = \
             f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
 
+        cum_executed_instructions_plot_path = \
+            imgdir / f'{imgprefix}cumulative_executed_instructions_{cpu}_plot'
+
+        draw_plot(
+            lines=[[
+                measurementsdata['profiler_timestamps'],
+                np.cumsum(data)
+            ]],
+            title=f'Executed instructions for {cpu}' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Total executed instructions',
+            yunit=None,
+            outpath=str(cum_executed_instructions_plot_path),
+            outext=image_formats.difference({'html'}),
+            colors=plot_options['colormap']
+        )
+
+        paths['cumulative'] = \
+            f'{cum_executed_instructions_plot_path.relative_to(rootdir)}.*'
+
+        if 'executedinstrplotpath' not in measurementsdata:
+            measurementsdata['executedinstrplotpath'] = {}
+
+        measurementsdata['executedinstrplotpath'][cpu] = paths
+
     # memory accesses plot
-    if len(measurementsdata['memory_accesses']['read']):
-        memory_reads_plot_path = imgdir / f'{imgprefix}memory_reads_plot'
+    for access_type in ('read', 'write'):
+        if not len(measurementsdata['memory_accesses'][access_type]):
+            continue
+
+        paths = {}
+
+        memory_access_plot_path = \
+            imgdir / f'{imgprefix}memory_{access_type}s_plot'
 
         render_time_series_plot_with_histogram(
-            ydata=measurementsdata['memory_accesses']['read'],
+            ydata=measurementsdata['memory_accesses'][access_type],
             xdata=measurementsdata['profiler_timestamps'],
-            title='Memory reads' if draw_titles else None,
+            title=f'Memory {access_type}s' if draw_titles else None,
             xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Memory reads within time interval',
-            yunit=None,
-            outpath=str(memory_reads_plot_path),
+            ytitle=f'Memory {access_type}s',
+            yunit='1/s',
+            outpath=str(memory_access_plot_path),
             skipfirst=True,
             outputext=image_formats,
             **plot_options
         )
 
-        measurementsdata['memoryaccessesplotpath'] = {}
-        measurementsdata['memoryaccessesplotpath']['reads'] = \
-            f'{memory_reads_plot_path.relative_to(rootdir)}.*'
+        paths['persec'] = \
+            f'{memory_access_plot_path.relative_to(rootdir)}.*'
 
-    if len(measurementsdata['memory_accesses']['write']):
-        memory_writes_plot_path = imgdir / f'{imgprefix}memory_writes_plot'
+        cum_memory_access_plot_path = \
+            imgdir / f'{imgprefix}cumulative_memory_{access_type}s_plot'
 
-        render_time_series_plot_with_histogram(
-            ydata=measurementsdata['memory_accesses']['write'],
-            xdata=measurementsdata['profiler_timestamps'],
-            title='Memory writes' if draw_titles else None,
+        draw_plot(
+            lines=[[
+                measurementsdata['profiler_timestamps'],
+                np.cumsum(measurementsdata['memory_accesses'][access_type])
+            ]],
+            title=f'Memory {access_type}s' if draw_titles else None,
             xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Memory writes within time interval',
+            ytitle=f'Total memory {access_type}s',
             yunit=None,
-            outpath=str(memory_writes_plot_path),
-            skipfirst=True,
-            outputext=image_formats,
-            **plot_options
+            outpath=str(cum_memory_access_plot_path),
+            outext=image_formats.difference({'html'}),
+            colors=plot_options['colormap']
         )
+
+        paths['cumulative'] = \
+            f'{cum_memory_access_plot_path.relative_to(rootdir)}.*'
+
         if 'memoryaccessesplotpath' not in measurementsdata:
             measurementsdata['memoryaccessesplotpath'] = {}
-        measurementsdata['memoryaccessesplotpath']['writes'] = \
-            f'{memory_writes_plot_path.relative_to(rootdir)}.*'
+
+        measurementsdata['memoryaccessesplotpath'][access_type] = paths
 
     # peripheral accesses plot
     for (peripheral,
          measurements) in measurementsdata['peripheral_accesses'].items():
         paths = {}
 
-        if sum(measurements['read']):
-            peripheral_reads_plot_path = \
-                imgdir / f'{imgprefix}peripheral_{peripheral}_reads_plot'
+        for access_type in ('read', 'write'):
+            if not sum(measurements[access_type]):
+                continue
+
+            peripheral_access_plot_path = (
+                imgdir /
+                f'{imgprefix}_{peripheral}_{access_type}s_plot'
+            )
 
             render_time_series_plot_with_histogram(
-                ydata=measurements['read'],
+                ydata=measurements[access_type],
                 xdata=measurementsdata['profiler_timestamps'],
-                title=f'{peripheral} reads' if draw_titles else None,
+                title=f'{peripheral} {access_type}s'
+                      if draw_titles else None,
                 xtitle='Interval timestamp',
                 xunit='s',
-                ytitle='Peripheral reads within time interval',
-                yunit=None,
-                outpath=str(peripheral_reads_plot_path),
+                ytitle=f'{peripheral} {access_type}s',
+                yunit='1/s',
+                outpath=str(peripheral_access_plot_path),
                 skipfirst=True,
                 outputext=image_formats,
                 **plot_options
             )
 
-            paths['reads'] = \
-                f'{peripheral_reads_plot_path.relative_to(rootdir)}.*'
+            paths[access_type] = {}
+            paths[access_type]['persec'] = \
+                f'{peripheral_access_plot_path.relative_to(rootdir)}.*'
 
-        if sum(measurements['write']):
-            peripheral_writes_plot_path = \
-                imgdir / f'{imgprefix}peripheral_{peripheral}_writes_plot'
-
-            render_time_series_plot_with_histogram(
-                ydata=measurements['write'],
-                xdata=measurementsdata['profiler_timestamps'],
-                title=f'{peripheral} writes' if draw_titles else None,
-                xtitle='Interval timestamp',
-                xunit='s',
-                ytitle='Peripheral writes within time interval',
-                yunit=None,
-                outpath=str(peripheral_writes_plot_path),
-                skipfirst=True,
-                outputext=image_formats,
-                **plot_options
+            cum_peripheral_access_plot_path = (
+                imgdir /
+                f'{imgprefix}cumulative_{peripheral}_{access_type}s_plot'
             )
 
-            paths['writes'] = \
-                f'{peripheral_writes_plot_path.relative_to(rootdir)}.*'
+            draw_plot(
+                lines=[[
+                    measurementsdata['profiler_timestamps'],
+                    np.cumsum(measurements[access_type])
+                ]],
+                title=f'{peripheral} {access_type}s'
+                      if draw_titles else None,
+                xtitle='Interval timestamp',
+                xunit='s',
+                ytitle=f'Total {peripheral} {access_type}s',
+                yunit=None,
+                outpath=str(cum_peripheral_access_plot_path),
+                outext=image_formats.difference({'html'}),
+                colors=plot_options['colormap']
+            )
+
+            paths[access_type]['cumulative'] = \
+                f'{cum_peripheral_access_plot_path.relative_to(rootdir)}.*'
 
         if len(paths):
             if 'peripheralaccessesplotpath' not in measurementsdata:
@@ -1027,6 +1073,8 @@ def renode_stats_report(
 
     # exceptions plot
     if sum(measurementsdata['exceptions']):
+        paths = {}
+
         exceptions_plot_path = imgdir / f'{imgprefix}exceptions_plot'
 
         render_time_series_plot_with_histogram(
@@ -1035,16 +1083,38 @@ def renode_stats_report(
             title='Exceptions' if draw_titles else None,
             xtitle='Interval timestamp',
             xunit='s',
-            ytitle='Exceptions count within time interval',
-            yunit=None,
+            ytitle='Exceptions count',
+            yunit='1/s',
             outpath=str(exceptions_plot_path),
             skipfirst=True,
             outputext=image_formats,
             **plot_options
         )
 
-        measurementsdata['exceptionsplotpath'] = \
-            f'{exceptions_plot_path.relative_to(rootdir)}.*'
+        paths['persec'] = f'{exceptions_plot_path.relative_to(rootdir)}.*'
+
+        cum_exceptions_plot_path = \
+            imgdir / f'{imgprefix}cumulative_exceptions_plot'
+
+        draw_plot(
+            lines=[[
+                measurementsdata['profiler_timestamps'],
+                np.cumsum(measurementsdata['exceptions'])
+            ]],
+            title='Total xceptions' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Total exceptions',
+            yunit=None,
+            outpath=str(cum_exceptions_plot_path),
+            outext=image_formats.difference({'html'}),
+            colors=plot_options['colormap']
+        )
+
+        paths['cumulative'] = \
+            f'{cum_exceptions_plot_path.relative_to(rootdir)}.*'
+
+        measurementsdata['exceptionsplotpath'] = paths
 
     with path(reports, 'renode_stats.md') as reporttemplate:
         return create_report_from_measurements(
@@ -1179,13 +1249,15 @@ def comparison_renode_stats_report(
         )
 
     for cpu in all_cpus:
-        executed_instructions_plot_path = \
-            imgdir / f'executed_instructions_{cpu}_plot_comparison'
-
         xdata, ydata, labels = retrieve_non_zero_profiler_data(
             measurementsdata,
             ['executed_instructions', cpu]
         )
+
+        paths = {}
+
+        executed_instructions_plot_path = \
+            imgdir / f'executed_instructions_{cpu}_plot_comparison'
 
         render_multiple_time_series_plot(
             ydatas=[ydata],
@@ -1195,60 +1267,94 @@ def comparison_renode_stats_report(
             subtitles=None,
             xtitles=['Interval timestamp'],
             xunits=['s'],
-            ytitles=['Executed instructions within time interval'],
-            yunits=None,
+            ytitles=['Executed instructions'],
+            yunits=['1/s'],
             legend_labels=labels,
             outpath=executed_instructions_plot_path,
             outputext=image_formats,
             **SERVIS_PLOT_OPTIONS
         )
 
-        report_variables['executedinstrplotpath'][cpu] = \
+        paths['persec'] = \
             f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
+
+        cum_executed_instructions_plot_path = \
+            imgdir / f'cumulative_executed_instructions_{cpu}_plot_comparison'
+
+        draw_plot(
+            lines=[[x, np.cumsum(y)] for x, y in zip(xdata, ydata)],
+            title=f'Executed instructions for {cpu}' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Total executed instructions',
+            yunit=None,
+            linelabels=labels,
+            outpath=str(cum_executed_instructions_plot_path),
+            outext=image_formats.difference({'html'}),
+            colors=SERVIS_PLOT_OPTIONS['colormap']
+        )
+
+        paths['cumulative'] = \
+            f'{cum_executed_instructions_plot_path.relative_to(rootdir)}.*'
+
+        if 'executedinstrplotpath' not in report_variables:
+            report_variables['executedinstrplotpath'] = {}
+
+        report_variables['executedinstrplotpath'][cpu] = paths
 
     # memory accesses plot
     if any(('memory_accesses' in data for data in measurementsdata)):
-        report_variables['memoryaccessesplotpath'] = {}
+        for access_type in ('read', 'write'):
+            paths = {}
 
-        memory_reads_plot_path = imgdir / 'memory_reads_plot_comparison'
+            memory_access_plot_path = \
+                imgdir / f'memory_{access_type}s_plot_comparison'
 
-        render_multiple_time_series_plot(
-            ydatas=[[m['memory_accesses']['read'] for m in measurementsdata]],
-            xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
-            title='Memory reads comparison' if draw_titles else None,
-            subtitles=None,
-            xtitles=['Interval timestamp'],
-            xunits=['s'],
-            ytitles=['Memory reads within time interval'],
-            yunits=None,
-            legend_labels=[m['modelname'] for m in measurementsdata],
-            outpath=memory_reads_plot_path,
-            outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
-        )
+            render_multiple_time_series_plot(
+                ydatas=[[m['memory_accesses']['read']
+                         for m in measurementsdata]],
+                xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
+                title='Memory reads comparison' if draw_titles else None,
+                subtitles=None,
+                xtitles=['Interval timestamp'],
+                xunits=['s'],
+                ytitles=['Memory reads'],
+                yunits=['1/s'],
+                legend_labels=[m['modelname'] for m in measurementsdata],
+                outpath=memory_access_plot_path,
+                outputext=image_formats,
+                **SERVIS_PLOT_OPTIONS
+            )
 
-        report_variables['memoryaccessesplotpath']['reads'] = \
-            f'{memory_reads_plot_path.relative_to(rootdir)}.*'
+            paths['persec'] = \
+                f'{memory_access_plot_path.relative_to(rootdir)}.*'
 
-        memory_writes_plot_path = imgdir / 'memory_writes_plot_comparison'
+            cum_memory_access_plot_path = \
+                imgdir / f'cumulative_memory_{access_type}s_plot_comparison'
 
-        render_multiple_time_series_plot(
-            ydatas=[[m['memory_accesses']['write'] for m in measurementsdata]],
-            xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
-            title='Memory writes comparison' if draw_titles else None,
-            subtitles=None,
-            xtitles=['Interval timestamp'],
-            xunits=['s'],
-            ytitles=['Memory writes within time interval'],
-            yunits=None,
-            legend_labels=[m['modelname'] for m in measurementsdata],
-            outpath=memory_writes_plot_path,
-            outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
-        )
+            draw_plot(
+                lines=[[
+                    m['profiler_timestamps'],
+                    np.cumsum(m['memory_accesses'][access_type])
+                ] for m in measurementsdata],
+                title=f'Memory {access_type}s' if draw_titles else None,
+                xtitle='Interval timestamp',
+                xunit='s',
+                ytitle=f'Total memory {access_type}s',
+                yunit=None,
+                linelabels=[m['modelname'] for m in measurementsdata],
+                outpath=str(cum_memory_access_plot_path),
+                outext=image_formats.difference({'html'}),
+                colors=SERVIS_PLOT_OPTIONS['colormap']
+            )
 
-        report_variables['memoryaccessesplotpath']['writes'] = \
-            f'{memory_writes_plot_path.relative_to(rootdir)}.*'
+            paths['cumulative'] = \
+                f'{cum_memory_access_plot_path.relative_to(rootdir)}.*'
+
+            if 'memoryaccessesplotpath' not in report_variables:
+                report_variables['memoryaccessesplotpath'] = {}
+
+            report_variables['memoryaccessesplotpath'][access_type] = paths
 
     # peripheral accesses plot
     report_variables['peripheralaccessesplotpath'] = {}
@@ -1263,14 +1369,19 @@ def comparison_renode_stats_report(
     for peripheral in all_peripherals:
         paths = {}
 
-        xdata, ydata, labels = retrieve_non_zero_profiler_data(
-            measurementsdata,
-            ['peripheral_accesses', peripheral, 'read']
-        )
+        for access_type in ('read', 'write'):
+            xdata, ydata, labels = retrieve_non_zero_profiler_data(
+                measurementsdata,
+                ['peripheral_accesses', peripheral, access_type]
+            )
 
-        if len(ydata):
-            peripheral_reads_plot_path = \
-                imgdir / f'peripheral_{peripheral}_reads_plot_comparison'
+            if not len(ydata):
+                continue
+
+            peripheral_access_plot_path = (
+                imgdir /
+                f'{peripheral}_{access_type}s_plot_comparison'
+            )
 
             render_multiple_time_series_plot(
                 ydatas=[ydata],
@@ -1280,44 +1391,38 @@ def comparison_renode_stats_report(
                 subtitles=None,
                 xtitles=['Interval timestamp'],
                 xunits=['s'],
-                ytitles=['Peripheral reads within time interval'],
-                yunits=None,
+                ytitles=[f'{peripheral} {access_type}s'],
+                yunits=['1/s'],
                 legend_labels=labels,
-                outpath=peripheral_reads_plot_path,
+                outpath=peripheral_access_plot_path,
                 outputext=image_formats,
                 **SERVIS_PLOT_OPTIONS
             )
 
-            paths['reads'] = \
-                f'{peripheral_reads_plot_path.relative_to(rootdir)}.*'
+            paths[access_type] = {}
+            paths[access_type]['persec'] = \
+                f'{peripheral_access_plot_path.relative_to(rootdir)}.*'
 
-        xdata, ydata, labels = retrieve_non_zero_profiler_data(
-            measurementsdata,
-            ['peripheral_accesses', peripheral, 'write']
-        )
-
-        if len(ydata):
-            peripheral_writes_plot_path = \
-                imgdir / f'peripheral_{peripheral}_writes_plot_comparison'
-
-            render_multiple_time_series_plot(
-                ydatas=[ydata],
-                xdatas=[xdata],
-                title=f'{peripheral} writes comparison'
-                      if draw_titles else None,
-                subtitles=None,
-                xtitles=['Interval timestamp'],
-                xunits=['s'],
-                ytitles=['Peripheral writes within time interval'],
-                yunits=None,
-                legend_labels=labels,
-                outpath=peripheral_writes_plot_path,
-                outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS
+            cum_peripheral_access_plot_path = (
+                imgdir /
+                f'cumulative_{peripheral}_{access_type}s_plot_comparison'
             )
 
-            paths['writes'] = \
-                f'{peripheral_writes_plot_path.relative_to(rootdir)}.*'
+            draw_plot(
+                lines=[[x, np.cumsum(y)] for x, y in zip(xdata, ydata)],
+                title=f'{peripheral} {access_type}s' if draw_titles else None,
+                xtitle='Interval timestamp',
+                xunit='s',
+                ytitle=f'Total {peripheral} {access_type}s',
+                yunit=None,
+                linelabels=labels,
+                outpath=str(cum_peripheral_access_plot_path),
+                outext=image_formats.difference({'html'}),
+                colors=SERVIS_PLOT_OPTIONS['colormap']
+            )
+
+            paths[access_type]['cumulative'] = \
+                f'{cum_peripheral_access_plot_path.relative_to(rootdir)}.*'
 
         if len(paths):
             report_variables['peripheralaccessesplotpath'][peripheral] = paths
@@ -1329,6 +1434,8 @@ def comparison_renode_stats_report(
     )
 
     if len(ydata):
+        paths = {}
+
         exceptions_plot_path = imgdir / 'exceptions_plot_comparison'
 
         render_multiple_time_series_plot(
@@ -1338,16 +1445,38 @@ def comparison_renode_stats_report(
             subtitles=None,
             xtitles=['Interval timestamp'],
             xunits=['s'],
-            ytitles=['Exceptions count within time interval'],
-            yunits=None,
+            ytitles=['Exceptions count'],
+            yunits='1/s',
             legend_labels=labels,
             outpath=exceptions_plot_path,
             outputext=image_formats,
             **SERVIS_PLOT_OPTIONS
         )
 
-        report_variables['exceptionsplotpath'] = \
-            f'{exceptions_plot_path.relative_to(rootdir)}.*'
+        paths['persec'] = f'{exceptions_plot_path.relative_to(rootdir)}.*'
+
+        cum_exceptions_plot_path = \
+            imgdir / 'cumulative_exceptions_plot_comparison'
+
+        draw_plot(
+            lines=[[
+                measurementsdata['profiler_timestamps'],
+                np.cumsum(measurementsdata['exceptions'])
+            ]],
+            title='Total xceptions' if draw_titles else None,
+            xtitle='Interval timestamp',
+            xunit='s',
+            ytitle='Total exceptions',
+            yunit=None,
+            outpath=str(cum_exceptions_plot_path),
+            outext=image_formats.difference({'html'}),
+            colors=SERVIS_PLOT_OPTIONS['colormap']
+        )
+
+        paths['cumulative'] = \
+            f'{cum_exceptions_plot_path.relative_to(rootdir)}.*'
+
+        report_variables['exceptionsplotpath'] = paths
 
     with path(reports, 'renode_stats_comparison.md') as reporttemplate:
         return create_report_from_measurements(

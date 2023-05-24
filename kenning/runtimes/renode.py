@@ -12,6 +12,7 @@ from collections import defaultdict
 import tempfile
 import struct
 import re
+import tqdm
 from pyrenode import Pyrenode
 
 from kenning.core.runtime import Runtime
@@ -44,6 +45,12 @@ class RenodeRuntime(Runtime):
             'description': 'Path to Renode profiler dump',
             'type': Path,
             'default': None
+        },
+        'profiler_interval_step': {
+            'argparse_name': '--profiler-interval-step',
+            'description': 'Interval step in ms used to parse profiler data',
+            'type': float,
+            'default': 10.
         }
     }
 
@@ -53,6 +60,7 @@ class RenodeRuntime(Runtime):
             runtime_binary_path: Path,
             platform_resc_path: Path,
             profiler_dump_path: Optional[Path] = None,
+            profiler_interval_step: float = 10.,
             collect_performance_data: bool = True):
         """
         Constructs Renode runtime.
@@ -74,6 +82,7 @@ class RenodeRuntime(Runtime):
         if profiler_dump_path is not None:
             profiler_dump_path = profiler_dump_path.resolve()
         self.profiler_dump_path = profiler_dump_path
+        self.profiler_interval_step = profiler_interval_step
         self.renode_handler = None
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
@@ -218,7 +227,22 @@ class RenodeRuntime(Runtime):
             self.log.error('Missing profiler dump file')
             raise FileNotFoundError
 
-        parser = _ProfilerDumpParser(self.profiler_dump_path)
+        inference_timestamps = MeasurementsCollector.measurements.get_values(
+            'protocol_inference_step_timestamp'
+        )
+        inference_durations = MeasurementsCollector.measurements.get_values(
+            'protocol_inference_step_timestamp'
+        )
+
+        start_timestamp = inference_timestamps[0]
+        end_timestamp = inference_timestamps[-1] + inference_durations[-1]
+
+        parser = _ProfilerDumpParser(
+            self.profiler_dump_path,
+            self.profiler_interval_step,
+            start_timestamp,
+            end_timestamp
+        )
 
         return parser.parse()
 
@@ -267,8 +291,16 @@ class _ProfilerDumpParser(object):
     PERIPHERAL_OPERATION_READ = b'\x00'
     PERIPHERAL_OPERATION_WRITE = b'\x01'
 
-    def __init__(self, dump_path: Path):
+    def __init__(
+            self,
+            dump_path: Path,
+            interval_step: float,
+            start_timestamp: float,
+            end_timestamp: float):
         self.dump_path = dump_path
+        self.interval_step = interval_step
+        self.start_timestamp = start_timestamp
+        self.end_timestamp = end_timestamp
 
     def parse(self) -> Dict[str, Any]:
         """
@@ -287,7 +319,11 @@ class _ProfilerDumpParser(object):
             'exceptions': []
         }
 
-        with open(self.dump_path, 'rb') as f:
+        with (tqdm.tqdm(
+                    total=self.dump_path.stat().st_size,
+                    unit='B', unit_scale=True, unit_divisor=1024
+                ) as progress_bar,
+                open(self.dump_path, 'rb') as f):
             # parse header
             cpus, peripherals = self._parse_header(f)
 
@@ -299,28 +335,41 @@ class _ProfilerDumpParser(object):
                     'read': [], 'write': []
                 }
 
-            startTime = 0
             entry = struct.Struct(self.ENTRY_HEADER_FORMAT)
-            interval_step = 10  # [ms]
             prev_instr_counter = defaultdict(lambda: 0)
 
             # parse entries
+            entries_counter = 0
+
             while True:
                 entry_header = f.read(entry.size)
                 if not entry_header:
                     break
-                real_time, virtual_time, entry_type = \
-                    entry.unpack(entry_header)
-                if startTime == 0:
-                    startTime = real_time
-                real_time = (real_time - startTime) / 10000
 
-                interval_start = virtual_time - virtual_time % interval_step
-                interval_start /= 1000.
+                _, virt_time, entry_type = entry.unpack(entry_header)
+                virt_time /= 1000
+
+                # ignore entry
+                if not (self.start_timestamp < virt_time < self.end_timestamp):
+                    if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
+                        self._read(self.ENTRY_FORMAT_INSTRUCTIONS, f)
+                    elif entry_type == self.ENTRY_TYPE_MEM0RY:
+                        self._read(self.ENTRY_FORMAT_MEM0RY, f)
+                    elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
+                        self._read(self.ENTRY_FORMAT_PERIPHERALS, f)
+                    elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
+                        self._read(self.ENTRY_FORMAT_EXCEPTIONS, f)
+                    else:
+                        raise Exception(
+                            f'Invalid entry in profiler dump: {entry_type}'
+                        )
+                    continue
+
+                # parse entry
+                interval_start = \
+                    virt_time - virt_time % (self.interval_step / 1000)
                 if (len(profiler_timestamps) == 0 or
                         profiler_timestamps[-1] != interval_start):
-                    # new interval - need to add its start timestamp and append
-                    # new counters to each stats list
                     profiler_timestamps.append(interval_start)
                     stats_to_update = [stats]
                     while len(stats_to_update):
@@ -402,6 +451,20 @@ class _ProfilerDumpParser(object):
                     raise Exception(
                         f'Invalid entry in profiler dump: {entry_type}'
                     )
+                entries_counter += 1
+                if entries_counter >= 1000:
+                    progress_bar.update(f.tell() - progress_bar.n)
+                    entries_counter = 0
+
+            # multiply counters by 1 sec / interval_step to get counts per sec
+            stats_to_update = [stats]
+            while len(stats_to_update):
+                s = stats_to_update.pop(0)
+                if isinstance(s, list):
+                    for i in range(len(s)):
+                        s[i] *= 1000 / self.interval_step
+                elif isinstance(s, dict):
+                    stats_to_update.extend(s.values())
 
         return dict(stats, profiler_timestamps=profiler_timestamps)
 

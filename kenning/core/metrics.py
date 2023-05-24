@@ -256,47 +256,82 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
                 all_opcodes.add(opcode)
 
     # retrieve counters
-    opcode_counters = []
+    opcode_ctrs = []
 
     for opcode in all_opcodes:
         counters = [opcode]
         for data in measurementsdata:
             counters.append(data['opcode_counters'].get(opcode, 0))
-        opcode_counters.append(counters)
+        opcode_ctrs.append(counters)
 
-    opcode_counters.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
+    opcode_ctrs.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
 
-    vector_opcode_counters = [
-        counters for counters in opcode_counters if counters[0][0] == 'v'
+    v_opcode_ctrs = [
+        counters for counters in opcode_ctrs if counters[0][0] == 'v'
     ]
 
+    # transpose
+    t_opcode_ctrs = list(zip(*opcode_ctrs))
+    t_v_opcode_ctrs = list(zip(*v_opcode_ctrs))
+
     ret = {}
-    if len(opcode_counters):
+    if len(opcode_ctrs):
         ret['sorted_opcode_counters'] = {}
-        transposed = list(zip(*opcode_counters))
-        ret['sorted_opcode_counters']['opcodes'] = transposed[0]
+        ret['sorted_opcode_counters']['opcodes'] = t_opcode_ctrs[0]
         if len(measurementsdata) == 1:
             ret['sorted_opcode_counters']['counters'] = {
-                'counters': transposed[1]
+                'counters': t_opcode_ctrs[1]
             }
         else:
             ret['sorted_opcode_counters']['counters'] = {
-                measurementsdata[i]['modelname']: transposed[i + 1]
+                measurementsdata[i]['modelname']: t_opcode_ctrs[i + 1]
                 for i in range(len(measurementsdata))
             }
 
-    if len(vector_opcode_counters):
+    if len(v_opcode_ctrs):
         ret['sorted_vector_opcode_counters'] = {}
-        transposed = list(zip(*vector_opcode_counters))
-        ret['sorted_vector_opcode_counters']['opcodes'] = transposed[0]
+        ret['sorted_vector_opcode_counters']['opcodes'] = t_v_opcode_ctrs[0]
         if len(measurementsdata) == 1:
             ret['sorted_vector_opcode_counters']['counters'] = {
-                'counters': transposed[1]
+                'counters': t_v_opcode_ctrs[1]
             }
         else:
             ret['sorted_vector_opcode_counters']['counters'] = {
-                measurementsdata[i]['modelname']: transposed[i + 1]
-                for i in range(len(measurementsdata))
+                data['modelname']: t_v_opcode_ctrs[i + 1]
+                for i, data in enumerate(measurementsdata)
             }
+
+    ret['instructions_per_inference_pass'] = {
+        data['modelname']:
+            int(sum(data['opcode_counters'].values()) / data['total'])
+        for data in measurementsdata
+    }
+    if len(v_opcode_ctrs):
+        ret['vector_opcodes_fraction'] = {
+            data['modelname']:
+                sum(t_v_opcode_ctrs[i + 1]) / sum(t_opcode_ctrs[i + 1])
+            for i, data in enumerate(measurementsdata)
+        }
+
+    ret['top_10_opcodes_per_inference_pass'] = {}
+    for data in measurementsdata:
+        opcode_counters = list(map(list, data['opcode_counters'].items()))
+        opcode_counters.sort(key=lambda x: x[::-1], reverse=True)
+        for i in range(len(opcode_counters)):
+            opcode_counters[i][1] //= data['total']
+        top_10 = opcode_counters[:10]
+        ret['top_10_opcodes_per_inference_pass'][data['modelname']] = top_10
+
+    if len(measurementsdata) == 1:
+        ret['instructions_per_inference_pass'] = next(iter(
+            ret['instructions_per_inference_pass'].values()
+        ))
+        ret['top_10_opcodes_per_inference_pass'] = next(iter(
+            ret['top_10_opcodes_per_inference_pass'].values()
+        ))
+        if 'vector_opcodes_fraction' in ret:
+            ret['vector_opcodes_fraction'] = next(iter((
+                ret['vector_opcodes_fraction'].values())
+            ))
 
     return ret

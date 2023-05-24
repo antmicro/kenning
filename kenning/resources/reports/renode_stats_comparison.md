@@ -30,42 +30,71 @@ Utilization of V-Extension instructions during inference
 ### Executed instructions counters
 
 {%- for cpu, plotpath in data['executedinstrplotpath'].items() %}
-```{figure} {{plotpath}}
+```{figure} {{plotpath['persec']}}
 ---
 name: {{basename}}_{{cpu}}_executedinstrplotpath
-alt: Figure showing count of executed instructions for {{cpu}}
+alt: Count of executed instructions per second for {{cpu}}
 align: center
 ---
 
-Figure showing count of executed instructions for {{cpu}}
+Count of executed instructions per second for {{cpu}} during benchmark
+```
+
+```{figure} {{plotpath['cumulative']}}
+---
+name: {{basename}}_{{cpu}}_executedinstrplotpath
+alt: Cumulative count of executed instructions for {{cpu}}
+align: center
+---
+
+Cumulative count of executed instructions for {{cpu}} during benchmark
 ```
 {%- endfor %}
 {%- endif %}
 
 {%- if 'memoryaccessesplotpath' in data %}
 ### Memory access counters
-
-{%- if 'reads' in data['memoryaccessesplotpath'] %}
-```{figure} {{data['memoryaccessesplotpath']['reads']}}
+{%- if 'read' in data['memoryaccessesplotpath'] %}
+```{figure} {{data['memoryaccessesplotpath']['read']['persec']}}
 ---
 name: {{basename}}_memoryreadsplotpath
-alt: Figure showing count of memory reads
+alt: Count of memory reads per second
 align: center
 ---
 
-Figure showing count of memory reads
+Count of memory reads per second during benchmark
+```
+
+```{figure} {{data['memoryaccessesplotpath']['read']['cumulative']}}
+---
+name: {{basename}}_memoryreadsplotpath
+alt: Cumulative count of memory reads
+align: center
+---
+
+Cumulative count of memory reads during benchmark
 ```
 {%- endif %}
 
-{%- if 'writes' in data['memoryaccessesplotpath'] %}
-```{figure} {{data['memoryaccessesplotpath']['writes']}}
+{%- if 'write' in data['memoryaccessesplotpath'] %}
+```{figure} {{data['memoryaccessesplotpath']['write']['persec']}}
 ---
 name: {{basename}}_memorywritessplotpath
-alt: Figure showing count of memory writes
+alt: Count of memory writes per second
 align: center
 ---
 
-Figure showing count of memory writes
+Count of memory writes per second during benchmark
+```
+
+```{figure} {{data['memoryaccessesplotpath']['write']['cumulative']}}
+---
+name: {{basename}}_memorywritessplotpath
+alt: Cumulative count of memory writes
+align: center
+---
+
+Cumulative count of memory writes during benchmark
 ```
 {%- endif %}
 {%- endif %}
@@ -74,24 +103,44 @@ Figure showing count of memory writes
 ### Peripheral access counters
 
 {%- for peripheral, plotpath in data['peripheralaccessesplotpath'].items() %}
-```{figure} {{plotpath['reads']}}
+```{figure} {{plotpath['read']['persec']}}
 ---
 name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
-alt: Figure showing count of {{peripheral}} reads
+alt: Count of {{peripheral}} reads per second
 align: center
 ---
 
-Figure showing count of {{peripheral}} reads
+Count of {{peripheral}} reads per second during benchmark
 ```
 
-```{figure} {{plotpath['writes']}}
+```{figure} {{plotpath['read']['cumulative']}}
 ---
-name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
-alt: Figure showing count of {{peripheral}} writes
+name: {{basename}}_{{peripheral}}_peripheralreadsplotpath
+alt: Cumulative count of {{peripheral}} reads
 align: center
 ---
 
-Figure showing count of {{peripheral}} writes
+Cumulative count of {{peripheral}} reads during benchmark
+```
+
+```{figure} {{plotpath['write']['persec']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
+alt: Count of {{peripheral}} writes per second
+align: center
+---
+
+Count of {{peripheral}} writes per second during benchmark
+```
+
+```{figure} {{plotpath['write']['cumulative']}}
+---
+name: {{basename}}_{{peripheral}}_peripheralwritesplotpath
+alt: Cumulative count of {{peripheral}} writes
+align: center
+---
+
+Cumulative count of {{peripheral}} writes during benchmark
 ```
 {%- endfor %}
 {%- endif %}
@@ -99,14 +148,24 @@ Figure showing count of {{peripheral}} writes
 {%- if 'exceptionsplotpath' in data %}
 ### Exceptions counters
 
-```{figure} {{data['exceptionsplotpath']}}
+```{figure} {{data['exceptionsplotpath']['persec']}}
 ---
 name: {{basename}}_exceptionsplotpath
-alt: Figure showing count of raised exceptions
+alt: Count of raised exceptions per second
 align: center
 ---
 
-Figure showing count of raised exceptions
+Count of raised exceptions per second during benchmark
+```
+
+```{figure} {{data['exceptionsplotpath']['cumulative']}}
+---
+name: {{basename}}_exceptionsplotpath
+alt: Cumulative count of raised exceptions
+align: center
+---
+
+Cumulative count of raised exceptions during benchmark
 ```
 {%- endif %}
 

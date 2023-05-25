@@ -27,7 +27,7 @@
                     "iree-vm-emit-polyglot-zip=false",
                     "iree-llvm-target-triple=riscv32-pc-linux-elf",
                     "iree-llvm-target-cpu=generic-rv32",
-                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x",
+                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f",
                     "iree-llvm-target-abi=ilp32"
                 ]
             }
@@ -37,7 +37,8 @@
         "type": "kenning.runtimes.renode.RenodeRuntime",
         "parameters": {
             "runtime_binary_path": "build/renode-resources/springbok/iree_runtime",
-            "platform_resc_path": "build/renode-resources/springbok/springbok.resc"
+            "platform_resc_path": "build/renode-resources/springbok/springbok.resc",
+            "profiler_dump_path": "build/profiler.dump"
         }
     },
     "runtime_protocol": {

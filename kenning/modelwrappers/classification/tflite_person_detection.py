@@ -110,6 +110,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
         inputdata = inputdata[0]
         inputdata /= io_spec['input'][0]['scale']
         inputdata += io_spec['input'][0]['zero_point']
+        inputdata = np.around(inputdata)
         inputdata = inputdata.astype(io_spec['input'][0]['dtype'])
         return inputdata.tobytes()
 

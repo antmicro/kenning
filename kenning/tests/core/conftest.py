@@ -16,6 +16,7 @@ from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
+from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
 from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: 501
 from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: 501
@@ -247,6 +248,13 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
             samplescount=8,
             numclasses=80,
             inputdims=(3, 608, 608)
+        )
+    if dataset_cls is VisualWakeWordsDataset:
+        return RandomizedClassificationDataset(
+            get_tmp_path(),
+            samplescount=10,
+            numclasses=2,
+            inputdims=(96, 96, 1)
         )
     raise NotImplementedError
 

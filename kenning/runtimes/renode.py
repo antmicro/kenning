@@ -111,21 +111,24 @@ class RenodeRuntime(Runtime):
             self.renode_handler = renode_handler
             self.init_renode()
 
-            pre_opcode_stats = self.get_opcode_stats()
+            if self.collect_performance_data:
+                pre_opcode_stats = self.get_opcode_stats()
 
             ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
 
-            post_opcode_stats = self.get_opcode_stats()
+            if self.collect_performance_data:
+                post_opcode_stats = self.get_opcode_stats()
 
-            MeasurementsCollector.measurements += {
-                'opcode_counters': self._opcode_stats_diff(
-                    pre_opcode_stats, post_opcode_stats
-                )
-            }
+                MeasurementsCollector.measurements += {
+                    'opcode_counters': self._opcode_stats_diff(
+                        pre_opcode_stats, post_opcode_stats
+                    )
+                }
 
             self.renode_handler = None
 
-        MeasurementsCollector.measurements += self.get_profiler_stats()
+        if self.collect_performance_data:
+            MeasurementsCollector.measurements += self.get_profiler_stats()
 
         return ret
 
@@ -301,6 +304,7 @@ class _ProfilerDumpParser(object):
         self.interval_step = interval_step
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
+        self.log = get_logger()
 
     def parse(self) -> Dict[str, Any]:
         """
@@ -340,6 +344,7 @@ class _ProfilerDumpParser(object):
 
             # parse entries
             entries_counter = 0
+            invalid_entries = 0
 
             while True:
                 entry_header = f.read(entry.size)
@@ -361,7 +366,8 @@ class _ProfilerDumpParser(object):
                         self._read(self.ENTRY_FORMAT_EXCEPTIONS, f)
                     else:
                         raise Exception(
-                            f'Invalid entry in profiler dump: {entry_type}'
+                            'Invalid entry in profiler dump: '
+                            f'{entry_type.hex()}'
                         )
                     continue
 
@@ -386,12 +392,17 @@ class _ProfilerDumpParser(object):
                         self.ENTRY_FORMAT_INSTRUCTIONS,
                         f
                     )
+                    if cpu_id[0] in cpus:
+                        cpu = cpus[cpu_id[0]]
+                        output_list = output_list[cpu]
 
-                    cpu = cpus[cpu_id[0]]
-                    output_list = output_list[cpu]
-
-                    output_list[-1] += instr_counter - prev_instr_counter[cpu]
-                    prev_instr_counter[cpu] = instr_counter
+                        output_list[-1] += \
+                            instr_counter - prev_instr_counter[cpu]
+                        prev_instr_counter[cpu] = instr_counter
+                    else:
+                        # invalid cpu id
+                        invalid_entries += 1
+                        continue
 
                 elif entry_type == self.ENTRY_TYPE_MEM0RY:
                     # parse memory access entry
@@ -399,13 +410,12 @@ class _ProfilerDumpParser(object):
                     operation = self._read(self.ENTRY_FORMAT_MEM0RY, f)[0]
 
                     if operation == self.MEMORY_OPERATION_READ:
-                        # read
                         output_list = output_list['read']
                     elif operation == self.MEMORY_OPERATION_WRITE:
-                        # write
                         output_list = output_list['write']
                     else:
                         # invalid operation
+                        invalid_entries += 1
                         continue
 
                     output_list[-1] += 1
@@ -426,16 +436,17 @@ class _ProfilerDumpParser(object):
                             break
 
                     if not peripheral_found:
+                        # invalid address
+                        invalid_entries += 1
                         continue
 
                     if operation == self.PERIPHERAL_OPERATION_READ:
-                        # read
                         output_list = output_list['read']
                     elif operation == self.PERIPHERAL_OPERATION_WRITE:
-                        # write
                         output_list = output_list['write']
                     else:
                         # invalid operation
+                        invalid_entries += 1
                         continue
 
                     output_list[-1] += 1
@@ -449,12 +460,21 @@ class _ProfilerDumpParser(object):
 
                 else:
                     raise Exception(
-                        f'Invalid entry in profiler dump: {entry_type}'
+                        f'Invalid entry in profiler dump: {entry_type.hex()}'
                     )
+
                 entries_counter += 1
                 if entries_counter >= 1000:
                     progress_bar.update(f.tell() - progress_bar.n)
                     entries_counter = 0
+
+            progress_bar.update(f.tell() - progress_bar.n)
+
+            if invalid_entries > 0:
+                self.log.warning(
+                    f'Found {invalid_entries} invalid entries in profiler '
+                    'dump file'
+                )
 
             # multiply counters by 1 sec / interval_step to get counts per sec
             stats_to_update = [stats]

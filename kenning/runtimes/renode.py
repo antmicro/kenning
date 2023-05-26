@@ -155,7 +155,7 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
-        if self.profiler_dump_path is None:
+        if self.collect_performance_data and self.profiler_dump_path is None:
             self.profiler_dump_path = Path(tempfile.mktemp(
                 prefix='renode_profiler_', suffix='.dump'
             ))
@@ -177,13 +177,13 @@ class RenodeRuntime(Runtime):
                 'ExecuteCommand',
                 f'machine EnableProfiler @{self.profiler_dump_path}'
             )
+            self.log.info(f'Profiler dump path: {self.profiler_dump_path}')
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
         )
         self.renode_handler.run_robot_keyword(
             'WaitForLogEntry', r'.*Runtime started.*', treatAsRegex=True
         )
-        self.log.info(f'Profiler dump path: {self.profiler_dump_path}')
 
     def get_opcode_stats(self) -> Dict[str, int]:
         """
@@ -357,7 +357,12 @@ class _ProfilerDumpParser(object):
                 # ignore entry
                 if not (self.start_timestamp < virt_time < self.end_timestamp):
                     if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
-                        self._read(self.ENTRY_FORMAT_INSTRUCTIONS, f)
+                        cpu_id, instr_counter = self._read(
+                            self.ENTRY_FORMAT_INSTRUCTIONS,
+                            f
+                        )
+                        if cpu_id[0] in cpus:
+                            prev_instr_counter[cpus[cpu_id[0]]] = instr_counter
                     elif entry_type == self.ENTRY_TYPE_MEM0RY:
                         self._read(self.ENTRY_FORMAT_MEM0RY, f)
                     elif entry_type == self.ENTRY_TYPE_PERIPHERALS:

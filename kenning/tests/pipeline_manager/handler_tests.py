@@ -4,14 +4,15 @@
 
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Callable, Dict, List, Union
+from typing import Callable, Dict, List, Tuple, Union
 import pytest
 import json
 
 from kenning.pipeline_manager.core import BaseDataflowHandler
 
 
-def load_json_files(path_to_json_files: Union[str, Path]) -> List[Dict]:
+def load_json_files(
+        path_to_json_files: Union[str, Path]) -> Tuple[List[Dict], List[str]]:
     """
     Loads JSON files from given directory.
 
@@ -22,17 +23,19 @@ def load_json_files(path_to_json_files: Union[str, Path]) -> List[Dict]:
 
     Returns
     -------
-    List[Dict] :
-        List of loaded JSON files
+    Tuple[List[Dict], List[str]] :
+        Tuple containing list of loaded JSON files and list of their names
     """
     path_to_json_files = Path(path_to_json_files)
     assert path_to_json_files.exists()
 
     pipeline_jsons = []
+    pipeline_jsons_names = []
     for json_file in Path(path_to_json_files).iterdir():
         with open(json_file) as f:
             pipeline_jsons.append(json.load(f))
-    return pipeline_jsons
+            pipeline_jsons_names.append(json_file.stem)
+    return pipeline_jsons, pipeline_jsons_names
 
 
 def factory_test_create_dataflow(
@@ -52,11 +55,12 @@ def factory_test_create_dataflow(
     Callable :
         Test for `create_dataflow` method.
     """
-    pipeline_jsons = load_json_files(path_to_json_files)
+    pipeline_jsons, pipeline_jsons_names = load_json_files(path_to_json_files)
 
     @pytest.mark.parametrize(
         "pipeline_json",
-        pipeline_jsons
+        pipeline_jsons,
+        ids=pipeline_jsons_names
     )
     def test_create_dataflow(self, pipeline_json, handler):
         _ = handler.create_dataflow(pipeline_json)
@@ -83,11 +87,12 @@ def factory_test_equivalence(path_to_json_files: Union[str, Path]) -> Callable:
         Test whether parsing JSON to Pipeline Manager dataflow and back does
         not change underlying pipeline.
     """
-    pipeline_jsons = load_json_files(path_to_json_files)
+    pipeline_jsons, pipeline_jsons_names = load_json_files(path_to_json_files)
 
     @pytest.mark.parametrize(
         'pipeline_json',
-        pipeline_jsons
+        pipeline_jsons,
+        ids=pipeline_jsons_names
     )
     def test_equivalence(self, pipeline_json, handler):
         dataflow = handler.create_dataflow(pipeline_json)

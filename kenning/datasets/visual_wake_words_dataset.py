@@ -17,6 +17,23 @@ from kenning.datasets.coco_dataset import download_and_extract
 
 
 class VisualWakeWordsDataset(Dataset):
+    """
+    The Visual Wake Words Dataset
+
+    It is a classification dataset for predicting whether some object is
+    present or not in the image. There are 2 classes - 0 for images without
+    selected object and 1 for images with it.
+
+    This dataset is derived from COCO Dataset and the classes are determined
+    based on annotations. If there is bounding box for selected object and its
+    area is above selected threshold then such image class is set to 1. In
+    other case it is 0.
+
+    The selected object can be any of the object from COCO Dataset's
+    categories.
+
+    *Page*: `Visual Wake Words Dataset site <https://arxiv.org/abs/1906.05721>`
+    """
 
     dataset_urls = {
         'train2017': {

@@ -30,7 +30,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
             dataset: Dataset,
             from_file: bool = True):
         """
-        Creates the Person Detect model wrapper.
+        Creates the Person Detection model wrapper.
 
         Parameters
         ----------
@@ -46,11 +46,13 @@ class PersonDetectionModelWrapper(ModelWrapper):
             dataset,
             from_file
         )
-        if dataset is not None:
-            self.class_names = self.dataset.get_class_names()
-            self.numclasses = len(self.class_names)
-            self.save_io_specification(self.modelpath)
+        self.numclasses = 2
         self.interpreter = None
+        if dataset is not None:
+            class_names = self.dataset.get_class_names()
+            assert len(class_names) == 2
+            self.class_names = class_names
+            self.save_io_specification(self.modelpath)
 
     @classmethod
     def from_argparse(cls, dataset, args, from_file=False):
@@ -62,7 +64,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def _get_io_specification(
-            cls, numclasses=-1, class_names=None):
+            cls, class_names=None):
         io_spec = {
             'input': [{
                 'name': 'input_1',
@@ -74,7 +76,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
             }],
             'output': [{
                 'name': 'out_layer',
-                'shape': (1, numclasses),
+                'shape': (1, 2),
                 'dtype': 'int8',
                 'prequantized_dtype': 'float32',
                 'zero_point': -128,
@@ -87,10 +89,10 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
-        return cls._get_io_specification(json_dict['window_size'])
+        return cls._get_io_specification()
 
     def get_io_specification_from_model(self):
-        return self._get_io_specification(self.numclasses, self.class_names)
+        return self._get_io_specification(self.class_names)
 
     def prepare_model(self):
         if self.model_prepared:

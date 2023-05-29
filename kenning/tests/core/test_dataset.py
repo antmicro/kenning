@@ -147,21 +147,26 @@ class TestDataset:
         sample_shape = dataset.prepare_input_samples([X_sample])[0].shape
         random_images = np.random.randint(
             0, 255,
-            size=(N, 8, 8, 3),
+            size=(N, 8, 8, sample_shape[2]),
             dtype=np.uint8
         )
         # assert that full range is used
         random_images[0, 0, 0, 0] = 0
-        random_images[0, 0, 0, 1] = 255
+        random_images[0, 0, 1, 0] = 255
 
         # write random images to dataset files
         random_images_resized = np.zeros((N, *sample_shape), dtype=np.uint8)
+
         for i in range(N):
-            random_images_resized[i] = cv2.resize(
+            resized_img = cv2.resize(
                 random_images[i],
                 sample_shape[:2],
                 interpolation=cv2.INTER_NEAREST
             )
+            if resized_img.ndim == 2:
+                resized_img = np.expand_dims(resized_img, -1)
+
+            random_images_resized[i] = resized_img
             img_path = dataset.dataX[i]
             if hasattr(dataset, 'get_sample_image_path'):
                 img_path = dataset.get_sample_image_path(img_path)

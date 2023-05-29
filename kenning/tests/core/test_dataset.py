@@ -160,7 +160,7 @@ class TestDataset:
         for i in range(N):
             resized_img = cv2.resize(
                 random_images[i],
-                sample_shape[:2],
+                (sample_shape[1], sample_shape[0]),
                 interpolation=cv2.INTER_NEAREST
             )
             if resized_img.ndim == 2:

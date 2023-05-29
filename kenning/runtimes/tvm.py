@@ -60,7 +60,7 @@ class TVMRuntime(Runtime):
             contextname: str = 'cpu',
             contextid: int = 0,
             use_tvm_vm: bool = False,
-            collect_performance_data: bool = True):
+            disable_performance_measurements: bool = False):
         """
         Constructs TVM runtime.
 
@@ -76,7 +76,7 @@ class TVMRuntime(Runtime):
             ID of the runtime context device
         use_tvm_vm : bool
             Use the TVM Relay VirtualMachine
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
@@ -89,7 +89,7 @@ class TVMRuntime(Runtime):
         self.use_tvm_vm = use_tvm_vm
         super().__init__(
             protocol,
-            collect_performance_data
+            disable_performance_measurements
         )
 
     @classmethod

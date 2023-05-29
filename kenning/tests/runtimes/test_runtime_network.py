@@ -21,6 +21,7 @@ runtimes = [(TFLiteRuntime, TFLiteCompiler), (TVMRuntime, TVMCompiler)]
 @pytest.mark.parametrize('runtimecls,runtimemodel', runtimes,
                          indirect=['runtimemodel'])
 @pytest.mark.fast
+@pytest.mark.xdist_group(name='use_socket')
 class TestRuntimeNetwork:
     runtimeprotocolcls = NetworkProtocol
     host = ''

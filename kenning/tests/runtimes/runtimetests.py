@@ -30,12 +30,12 @@ class RuntimeTests:
         """
         Tests the `Runtime.inference_session_start()` method.
         """
-        runtime = self.initruntime(collect_performance_data=False)
+        runtime = self.initruntime(disable_performance_measurements=True)
         runtime.inference_session_start()
         assert runtime.statsmeasurements is None
         MeasurementsCollector.clear()
 
-        runtime = self.initruntime(collect_performance_data=True)
+        runtime = self.initruntime(disable_performance_measurements=False)
         runtime.inference_session_start()
         runtime.inference_session_end()
         assert runtime.statsmeasurements is None

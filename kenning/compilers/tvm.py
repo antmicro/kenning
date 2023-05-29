@@ -46,7 +46,7 @@ def kerasconversion(
         dtypes):
     import tensorflow as tf
     tf.keras.backend.clear_session()
-    model = tf.keras.models.load_model(str(modelpath))
+    model = tf.keras.models.load_model(str(modelpath), compile=False)
     print(model.summary())
     return relay.frontend.from_keras(
         model,

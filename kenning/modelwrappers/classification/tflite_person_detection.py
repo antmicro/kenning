@@ -2,6 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Contains Tensorflow Lite model for the person detection
+
+Trained on VisualWakeWords dataset
+"""
+
 from typing import List, Tuple
 from pathlib import Path
 import sys

@@ -44,7 +44,7 @@ class ONNXRuntime(Runtime):
             protocol: RuntimeProtocol,
             modelpath: Path,
             execution_providers: List[str] = ['CPUExecutionProvider'],
-            collect_performance_data: bool = True):
+            disable_performance_measurements: bool = False):
         """
         Constructs ONNX runtime
 
@@ -58,7 +58,7 @@ class ONNXRuntime(Runtime):
             List of execution providers ordered by priority
         modelpath : Path
             Path for the model file.
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
@@ -67,7 +67,7 @@ class ONNXRuntime(Runtime):
         self.execution_providers = execution_providers
         super().__init__(
             protocol,
-            collect_performance_data
+            disable_performance_measurements
         )
 
     @classmethod

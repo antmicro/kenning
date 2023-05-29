@@ -61,7 +61,7 @@ class RenodeRuntime(Runtime):
             platform_resc_path: Path,
             profiler_dump_path: Optional[Path] = None,
             profiler_interval_step: float = 10.,
-            collect_performance_data: bool = True):
+            disable_performance_measurements: bool = False):
         """
         Constructs Renode runtime.
 
@@ -74,7 +74,7 @@ class RenodeRuntime(Runtime):
             Path to the runtime binary
         platform_resc_path : Path
             Path to the Renode script
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.runtime_binary_path = runtime_binary_path.resolve()
@@ -90,7 +90,7 @@ class RenodeRuntime(Runtime):
         self.log = get_logger()
         super().__init__(
             protocol,
-            collect_performance_data
+            disable_performance_measurements
         )
 
     @classmethod
@@ -99,7 +99,7 @@ class RenodeRuntime(Runtime):
             protocol=protocol,
             runtime_binary_path=args.runtime_binary_path,
             platform_resc_path=args.platform_resc_path,
-            collect_performance_data=args.disable_performance_measurements
+            disable_performance_measurements=args.disable_performance_measurements  # noqa: E501
         )
 
     def run_client(
@@ -111,12 +111,12 @@ class RenodeRuntime(Runtime):
             self.renode_handler = renode_handler
             self.init_renode()
 
-            if self.collect_performance_data:
+            if not self.disable_performance_measurements:
                 pre_opcode_stats = self.get_opcode_stats()
 
             ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
 
-            if self.collect_performance_data:
+            if not self.disable_performance_measurements:
                 post_opcode_stats = self.get_opcode_stats()
 
                 MeasurementsCollector.measurements += {
@@ -127,7 +127,7 @@ class RenodeRuntime(Runtime):
 
             self.renode_handler = None
 
-        if self.collect_performance_data:
+        if not self.disable_performance_measurements:
             MeasurementsCollector.measurements += self.get_profiler_stats()
 
         return ret
@@ -155,7 +155,8 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
-        if self.collect_performance_data and self.profiler_dump_path is None:
+        if (not self.disable_performance_measurements and
+                self.profiler_dump_path is None):
             self.profiler_dump_path = Path(tempfile.mktemp(
                 prefix='renode_profiler_', suffix='.dump'
             ))
@@ -172,7 +173,7 @@ class RenodeRuntime(Runtime):
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'start'
         )
-        if self.collect_performance_data:
+        if not self.disable_performance_measurements:
             self.renode_handler.run_robot_keyword(
                 'ExecuteCommand',
                 f'machine EnableProfiler @{self.profiler_dump_path}'

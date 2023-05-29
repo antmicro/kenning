@@ -42,8 +42,8 @@ class IREERuntime(Runtime):
             self,
             protocol: RuntimeProtocol,
             modelpath: Path,
-            driver: str,
-            collect_performance_data: bool = True):
+            driver: str = 'local-sync',
+            disable_performance_measurements: bool = False):
         """
         Constructs IREE runtime
 
@@ -55,7 +55,7 @@ class IREERuntime(Runtime):
             Path for the model file.
         driver : str
             Name of the deployment target on the device
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
@@ -64,7 +64,7 @@ class IREERuntime(Runtime):
         self.driver = driver
         super().__init__(
             protocol,
-            collect_performance_data
+            disable_performance_measurements
         )
 
     @classmethod

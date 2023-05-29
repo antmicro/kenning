@@ -50,7 +50,7 @@ class TFLiteRuntime(Runtime):
             modelpath: Path,
             delegates: Optional[List] = None,
             num_threads: int = 4,
-            collect_performance_data: bool = True):
+            disable_performance_measurements: bool = False):
         """
         Constructs TFLite Runtime pipeline.
 
@@ -64,7 +64,7 @@ class TFLiteRuntime(Runtime):
             List of TFLite acceleration delegate libraries
         num_threads : int
             Number of threads to use for inference
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.modelpath = modelpath
@@ -74,7 +74,7 @@ class TFLiteRuntime(Runtime):
         self.delegates = delegates
         super().__init__(
             protocol,
-            collect_performance_data
+            disable_performance_measurements
         )
 
     @classmethod

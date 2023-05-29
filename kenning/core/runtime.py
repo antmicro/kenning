@@ -67,18 +67,18 @@ class Runtime(ArgumentsHandler):
     inputtypes = []
 
     arguments_structure = {
-        'collect_performance_data': {
+        'disable_performance_measurements': {
             'argparse_name': '--disable-performance-measurements',
             'description': 'Disable collection and processing of performance metrics',  # noqa: E501
             'type': bool,
-            'default': True
+            'default': False
         }
     }
 
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            collect_performance_data: bool = True):
+            disable_performance_measurements: bool = False):
         """
         Creates Runtime object.
 
@@ -86,7 +86,7 @@ class Runtime(ArgumentsHandler):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication  protocol
-        collect_performance_data : bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         self.protocol = protocol
@@ -101,7 +101,8 @@ class Runtime(ArgumentsHandler):
         }
         self.statsmeasurements = None
         self.log = get_logger()
-        self.collect_performance_data = collect_performance_data
+        self.disable_performance_measurements = \
+            disable_performance_measurements
 
         self.input_spec = None
         self.output_spec = None
@@ -177,7 +178,7 @@ class Runtime(ArgumentsHandler):
 
         This will enable performance tracking.
         """
-        if self.collect_performance_data:
+        if not self.disable_performance_measurements:
             if self.statsmeasurements is None:
                 self.statsmeasurements = SystemStatsCollector(
                     'session_utilization'

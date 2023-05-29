@@ -7,6 +7,7 @@ from pathlib import Path
 import sys
 import numpy as np
 import tensorflow as tf
+import cv2
 
 if sys.version_info.minor < 9:
     from importlib_resources import files
@@ -24,11 +25,33 @@ class PersonDetectionModelWrapper(ModelWrapper):
     default_dataset = VisualWakeWordsDataset
     pretrained_modelpath = files(classification) / 'person_detect.tflite'
 
+    arguments_structure = {
+        'central_fraction': {
+            'argparse_name': '--central-fraction',
+            'description': 'Fraction used to crop images during preprocessing',
+            'default': .875,
+            'type': float
+        },
+        'image_width': {
+            'description': 'Width of the input images',
+            'type': int,
+            'default': 96
+        },
+        'image_height': {
+            'description': 'Height of the input images',
+            'type': int,
+            'default': 96
+        }
+    }
+
     def __init__(
             self,
             modelpath: Path,
             dataset: Dataset,
-            from_file: bool = True):
+            from_file: bool = True,
+            central_fraction: float = .875,
+            image_width: int = 96,
+            image_height: int = 96):
         """
         Creates the Person Detection model wrapper.
 
@@ -40,12 +63,21 @@ class PersonDetectionModelWrapper(ModelWrapper):
             The dataset to verify the inference
         from_file : bool
             True if the model should be loaded from file
+        central_fraction: float
+            Fraction used to crop images during preprocessing
+        image_width: int
+            Width of the input images
+        image_height: int
+            Height of the input images
         """
         super().__init__(
             modelpath,
             dataset,
             from_file
         )
+        self.central_fraction = central_fraction
+        self.image_width = image_width
+        self.image_height = image_height
         self.numclasses = 2
         self.interpreter = None
         if dataset is not None:
@@ -64,11 +96,11 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def _get_io_specification(
-            cls, class_names=None):
+            cls, img_width=96, img_height=96, class_names=None):
         io_spec = {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, 96, 96, 1),
+                'shape': (1, img_width, img_height, 1),
                 'dtype': 'int8',
                 'prequantized_dtype': 'float32',
                 'zero_point': -1,
@@ -92,7 +124,9 @@ class PersonDetectionModelWrapper(ModelWrapper):
         return cls._get_io_specification()
 
     def get_io_specification_from_model(self):
-        return self._get_io_specification(self.class_names)
+        return self._get_io_specification(
+            self.image_width, self.image_height, self.class_names
+        )
 
     def prepare_model(self):
         if self.model_prepared:
@@ -128,3 +162,19 @@ class PersonDetectionModelWrapper(ModelWrapper):
         outputdata -= io_spec['output'][0]['zero_point']
         outputdata *= io_spec['output'][0]['scale']
         return [outputdata]
+
+    def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
+        result = []
+        for img in X:
+            w, h = img.shape[:2]
+            img = img[int((w/2)*(1 - self.central_fraction)):
+                      int((w/2)*(1 + self.central_fraction)),
+                      int((h/2)*(1 - self.central_fraction)):
+                      int((h/2)*(1 + self.central_fraction))]
+            img = cv2.resize(img, (self.image_width, self.image_height))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32)
+            img = img*2. - 1
+            img = np.expand_dims(img, -1)
+            result.append(img)
+
+        return result

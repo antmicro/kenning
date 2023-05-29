@@ -72,6 +72,16 @@ class VisualWakeWordsDataset(Dataset):
                            'or NCHW format',
             'default': 'NHWC',
             'enum': ['NHWC', 'NCHW']
+        },
+        'image_width': {
+            'description': 'Width of the input images',
+            'type': int,
+            'default': 416
+        },
+        'image_height': {
+            'description': 'Height of the input images',
+            'type': int,
+            'default': 416
         }
     }
 
@@ -84,12 +94,16 @@ class VisualWakeWordsDataset(Dataset):
             dataset_type: str = 'val2017',
             objects_class: str = 'person',
             area_threshold: float = .005,
-            image_memory_layout: str = 'NHWC'):
+            image_memory_layout: str = 'NHWC',
+            image_width: int = 416,
+            image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.dataset_type = dataset_type
         self.objects_class = objects_class
         self.area_threshold = area_threshold
         self.image_memory_layout = image_memory_layout
+        self.image_width = image_width
+        self.image_height = image_height
         self.numclasses = 2
         self.classnames = ['not-person', 'person']
         self.log = get_logger()
@@ -165,6 +179,8 @@ class VisualWakeWordsDataset(Dataset):
         result = []
         for imgpath in samples:
             img = cv2.imread(str(imgpath))
+            img = cv2.resize(img, (self.image_width, self.image_height))
+            img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             img = img.astype(np.float32)/255.
             if self.image_memory_layout == 'NCHW':
                 img = np.transpose(img, (2, 0, 1))

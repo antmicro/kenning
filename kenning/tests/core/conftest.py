@@ -24,22 +24,33 @@ from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetD
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2    # noqa: 501
 from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
 from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
+from kenning.compilers.iree import IREECompiler
+from kenning.compilers.tvm import TVMCompiler
 
 
 KENNING_MODELS_PATH = Path(r'kenning/resources/models/')
 
 
-def get_tmp_path() -> Path:
+def get_tmp_path(suffix: str = '') -> Path:
     """
     Generates temporary path
+
+    Parameters
+    ----------
+    suffix : str
+        Suffix of the file
 
     Returns
     -------
     Path :
         Temporary path
     """
-    return (pytest.test_directory / 'tmp' /
-            next(tempfile._get_candidate_names()))
+    candidate = None
+    while candidate is None or candidate.exists():
+        candidate = (pytest.test_directory / 'tmp' /
+                     next(tempfile._get_candidate_names())).with_suffix(suffix)
+
+    return candidate
 
 
 def copy_model_to_tmp(modelpath: Path) -> Path:
@@ -149,6 +160,20 @@ def get_default_dataset_model(
         )
         model = TVMDarknetCOCOYOLOV3(modelpath, dataset)
 
+    elif framework == 'iree':
+        dataset = get_dataset_random_mock(MagicWandDataset)
+        modelpath = get_tmp_path(suffix='.vmfb')
+        iree_compiler = IREECompiler(dataset, modelpath)
+        iree_compiler.compile(MagicWandModelWrapper.pretrained_modelpath)
+        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+
+    elif framework == 'tvm':
+        dataset = get_dataset_random_mock(MagicWandDataset)
+        modelpath = get_tmp_path(suffix='.tar')
+        tvm_compiler = TVMCompiler(dataset, modelpath, modelframework='keras')
+        tvm_compiler.compile(MagicWandModelWrapper.pretrained_modelpath)
+        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+
     else:
         raise UnknownFramework(f'Unknown framework: {framework}')
 
@@ -254,7 +279,7 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
             get_tmp_path(),
             samplescount=10,
             numclasses=2,
-            inputdims=(96, 96, 1)
+            inputdims=(480, 320, 3)
         )
     raise NotImplementedError
 

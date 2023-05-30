@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import setuptools
+import numpy
+from Cython.Build import cythonize
 
 with open('README.md', 'r') as fh:
     long_description = fh.read()
@@ -32,6 +34,11 @@ setuptools.setup(
         'jsonschema>=4.16.0',
         'scipy~=1.10.1',
     ],
+    ext_modules=cythonize(setuptools.Extension("kenning.modelwrappers.instance_segmentation.cython_nms",  # noqa: E501
+                                               sources=["kenning/modelwrappers/instance_segmentation/cython_nms.pyx"],  # noqa: E501
+                                               include_dirs=[
+                                                   numpy.get_include()
+                                                ])),
     extras_require={
         'docs': [
             'antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git',  # noqa: E501

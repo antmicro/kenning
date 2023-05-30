@@ -161,9 +161,8 @@ MEANS = np.array([103.94, 116.78, 123.68]).reshape(-1, 1, 1)
 STD = np.array([57.38, 57.12, 58.40]).reshape(-1, 1, 1)
 
 
-class YOLACT(ModelWrapper):
+class YOLACTWrapper(ModelWrapper):
 
-    pretrained_modelpath = files(instance_segmentation) / 'yolact.onnx'
     default_dataset = COCODataset2017
     arguments_structure = {
         'top_k': {
@@ -223,6 +222,32 @@ class YOLACT(ModelWrapper):
 
     def save_model(self, modelpath):
         shutil.copy(self.original_model_path, modelpath)
+
+    def get_framework_and_version(self):
+        return ('onnx', onnx.__version__)
+
+    def get_output_formats(self):
+        return ["onnx"]
+
+    def save_to_onnx(self, modelpath):
+        self.save_model(modelpath)
+
+    def convert_input_to_bytes(self, inputdata):
+        return inputdata.tobytes()
+
+    @classmethod
+    def derive_io_spec_from_json_params(cls, json_dict):
+        return cls._get_io_specification()
+
+    def get_io_specification_from_model(self):
+        io_spec = self._get_io_specification()
+        io_spec['processed_output'][0]['class_names'] = self.class_names
+        return io_spec
+
+
+class YOLACT(YOLACTWrapper):
+
+    pretrained_modelpath = files(instance_segmentation) / 'yolact.onnx'
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -293,18 +318,6 @@ class YOLACT(ModelWrapper):
             ))
         return [Y]
 
-    def get_framework_and_version(self):
-        return ('onnx', onnx.__version__)
-
-    def get_output_formats(self):
-        return ["onnx"]
-
-    def save_to_onnx(self, modelpath):
-        self.save_model(modelpath)
-
-    def convert_input_to_bytes(self, inputdata):
-        return inputdata.tobytes()
-
     def convert_output_from_bytes(self, outputdata):
         # Signatures of outputs of the model:
         # BOX:   size=(num_dets, 4)  dtype=float32
@@ -360,17 +373,8 @@ class YOLACT(ModelWrapper):
             }]
         }
 
-    @classmethod
-    def derive_io_spec_from_json_params(cls, json_dict):
-        return cls._get_io_specification()
 
-    def get_io_specification_from_model(self):
-        io_spec = self._get_io_specification()
-        io_spec['processed_output'][0]['class_names'] = self.class_names
-        return io_spec
-
-
-class YOLACTCore(YOLACT):
+class YOLACTCore(YOLACTWrapper):
 
     pretrained_modelpath = (files(instance_segmentation) /
                             'yolact_core.onnx')
@@ -380,9 +384,8 @@ class YOLACTCore(YOLACT):
             raise RuntimeError(
                 "YOLACT model expects only single image in a batch."
             )
-        _, self.w, self.h = X[0].shape
-
         X = X[0]
+        _, self.h, self.w = X.shape
         X = np.transpose(X, (1, 2, 0))
         X = cv2.resize(X, (550, 550))
         X = np.expand_dims(X, axis=0)
@@ -392,6 +395,8 @@ class YOLACTCore(YOLACT):
         return X.astype(np.float32)
 
     def postprocess_outputs(self, y):
+        if not y:
+            return []
         y = self._detect(y)
         if y is None:
             return []
@@ -636,9 +641,9 @@ class YOLACTCore(YOLACT):
         return {
             'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],    # noqa: E501
             'output': [
-                {'name': 'output_0', 'shape': (1, -1, 4), 'dtype': 'float32'},   # noqa: E501
-                {'name': 'output_1', 'shape': (1, -1, 81), 'dtype': 'float32'},  # noqa: E501
-                {'name': 'output_2', 'shape': (1, -1, 32), 'dtype': 'float32'},  # noqa: E501
+                {'name': 'output_0', 'shape': (1, -1, 4), 'dtype': 'float32'},
+                {'name': 'output_1', 'shape': (1, -1, 81), 'dtype': 'float32'},
+                {'name': 'output_2', 'shape': (1, -1, 32), 'dtype': 'float32'},
                 {'name': 'output_3', 'shape': (-1, 4), 'dtype': 'float32'},
                 {'name': 'output_4', 'shape': (1, 138, 138, 32), 'dtype': 'float32'}    # noqa: E501
             ],

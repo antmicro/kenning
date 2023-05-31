@@ -148,28 +148,35 @@ class PersonDetectionModelWrapper(ModelWrapper):
         return ('tensorflow', tf.__version__)
 
     def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
-        io_spec = self.get_io_specification_from_model()
-        inputdata = inputdata[0]
-        inputdata /= io_spec['input'][0]['scale']
-        inputdata += io_spec['input'][0]['zero_point']
-        inputdata = np.around(inputdata)
-        inputdata = inputdata.astype(io_spec['input'][0]['dtype'])
-        return inputdata.tobytes()
+        data = bytes()
+        for x in inputdata:
+            data += x.tobytes()
+        return data
 
     def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()
-        outputdata = np.frombuffer(
-            outputdata,
-            dtype=io_spec['output'][0]['dtype']
-        )
-        outputdata = outputdata.astype(
-            io_spec['output'][0]['prequantized_dtype']
-        )
-        outputdata -= io_spec['output'][0]['zero_point']
-        outputdata *= io_spec['output'][0]['scale']
-        return [outputdata]
+        dtype = np.dtype(io_spec['output'][0]['dtype'])
+        shape = io_spec['output'][0]['shape']
+
+        tensor_size = dtype.itemsize*np.prod(shape)
+
+        assert len(outputdata) % tensor_size == 0
+
+        y = []
+        for i in range(len(outputdata)//tensor_size):
+            y.append(np.frombuffer(
+                outputdata[tensor_size*i: tensor_size*(i + 1)],
+                dtype=dtype
+            ))
+
+        return y
 
     def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
+        io_spec = self.get_io_specification_from_model()
+        zero_point = io_spec['input'][0]['zero_point']
+        scale = io_spec['input'][0]['scale']
+        dtype = np.dtype(io_spec['input'][0]['dtype'])
+
         result = []
         for img in X:
             w, h = img.shape[:2]
@@ -181,6 +188,18 @@ class PersonDetectionModelWrapper(ModelWrapper):
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32)
             img = img*2. - 1
             img = np.expand_dims(img, -1)
+
+            # quantization
+            img = np.around(img/scale + zero_point).astype(dtype)
+
             result.append(img)
 
         return result
+
+    def postprocess_outputs(self, y: List[np.ndarray]) -> List[np.ndarray]:
+        io_spec = self.get_io_specification_from_model()
+        zero_point = io_spec['output'][0]['zero_point']
+        scale = io_spec['output'][0]['scale']
+        dtype = np.dtype(io_spec['output'][0]['prequantized_dtype'])
+
+        return [(output.astype(dtype) - zero_point)*scale for output in y]

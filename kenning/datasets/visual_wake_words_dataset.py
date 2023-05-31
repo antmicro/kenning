@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+The Visual Wake Words dataset
+"""
+
 from typing import Optional
 from pathlib import Path
 from collections import defaultdict

@@ -328,9 +328,9 @@ class _ProfilerDumpParser(object):
                     total=self.dump_path.stat().st_size,
                     unit='B', unit_scale=True, unit_divisor=1024
                 ) as progress_bar,
-                open(self.dump_path, 'rb') as f):
+                open(self.dump_path, 'rb') as dump_file):
             # parse header
-            cpus, peripherals = self._parse_header(f)
+            cpus, peripherals = self._parse_header(dump_file)
 
             for cpu in cpus.values():
                 stats['executed_instructions'][cpu] = []
@@ -348,7 +348,7 @@ class _ProfilerDumpParser(object):
             invalid_entries = 0
 
             while True:
-                entry_header = f.read(entry.size)
+                entry_header = dump_file.read(entry.size)
                 if not entry_header:
                     break
 
@@ -360,16 +360,16 @@ class _ProfilerDumpParser(object):
                     if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
                         cpu_id, instr_counter = self._read(
                             self.ENTRY_FORMAT_INSTRUCTIONS,
-                            f
+                            dump_file
                         )
                         if cpu_id[0] in cpus:
                             prev_instr_counter[cpus[cpu_id[0]]] = instr_counter
                     elif entry_type == self.ENTRY_TYPE_MEM0RY:
-                        self._read(self.ENTRY_FORMAT_MEM0RY, f)
+                        self._read(self.ENTRY_FORMAT_MEM0RY, dump_file)
                     elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
-                        self._read(self.ENTRY_FORMAT_PERIPHERALS, f)
+                        self._read(self.ENTRY_FORMAT_PERIPHERALS, dump_file)
                     elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
-                        self._read(self.ENTRY_FORMAT_EXCEPTIONS, f)
+                        self._read(self.ENTRY_FORMAT_EXCEPTIONS, dump_file)
                     else:
                         raise Exception(
                             'Invalid entry in profiler dump: '
@@ -396,7 +396,7 @@ class _ProfilerDumpParser(object):
                     output_list = stats['executed_instructions']
                     cpu_id, instr_counter = self._read(
                         self.ENTRY_FORMAT_INSTRUCTIONS,
-                        f
+                        dump_file
                     )
                     if cpu_id[0] in cpus:
                         cpu = cpus[cpu_id[0]]
@@ -413,7 +413,10 @@ class _ProfilerDumpParser(object):
                 elif entry_type == self.ENTRY_TYPE_MEM0RY:
                     # parse memory access entry
                     output_list = stats['memory_accesses']
-                    operation = self._read(self.ENTRY_FORMAT_MEM0RY, f)[0]
+                    operation = self._read(
+                        self.ENTRY_FORMAT_MEM0RY,
+                        dump_file
+                    )[0]
 
                     if operation == self.MEMORY_OPERATION_READ:
                         output_list = output_list['read']
@@ -431,7 +434,7 @@ class _ProfilerDumpParser(object):
                     output_list = stats['peripheral_accesses']
                     operation, address = self._read(
                         self.ENTRY_FORMAT_PERIPHERALS,
-                        f
+                        dump_file
                     )
 
                     peripheral_found = False
@@ -460,7 +463,7 @@ class _ProfilerDumpParser(object):
                 elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
                     # parse exception entry
                     output_list = stats['exceptions']
-                    _ = self._read(self.ENTRY_FORMAT_EXCEPTIONS, f)
+                    _ = self._read(self.ENTRY_FORMAT_EXCEPTIONS, dump_file)
 
                     output_list[-1] += 1
 
@@ -471,10 +474,10 @@ class _ProfilerDumpParser(object):
 
                 entries_counter += 1
                 if entries_counter >= 1000:
-                    progress_bar.update(f.tell() - progress_bar.n)
+                    progress_bar.update(dump_file.tell() - progress_bar.n)
                     entries_counter = 0
 
-            progress_bar.update(f.tell() - progress_bar.n)
+            progress_bar.update(dump_file.tell() - progress_bar.n)
 
             if invalid_entries > 0:
                 self.log.warning(

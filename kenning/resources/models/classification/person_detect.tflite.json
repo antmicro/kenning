@@ -1,0 +1,1 @@
+{"input": [{"name": "input_1", "shape": [1, 96, 96, 1], "dtype": "int8", "prequantized_dtype": "float32", "zero_point": -1, "scale": 0.007843137718737125}], "output": [{"name": "out_layer", "shape": [1, 2], "dtype": "int8", "prequantized_dtype": "float32", "zero_point": -128, "scale": 0.00390625, "class_names": ["not-person", "person"]}]}

@@ -707,10 +707,13 @@ def draw_confusion_matrix_matplotlib(
     """
 
     if figsize is None:
-        figsize = [35, 35]
+        figsize = [15, 15]
 
     if dpi is None:
         dpi = 216
+
+    base_font_size = 18
+    percent_font_size = min(12, 12*20/confusion_matrix.shape[0])
 
     # create axes
     fig = plt.figure(figsize=figsize, dpi=dpi)
@@ -745,11 +748,14 @@ def draw_confusion_matrix_matplotlib(
         axConfMatrix.set_xticks(ticks)
         axConfMatrix.set_xticklabels(
             class_names,
-            fontsize='large',
-            rotation=90
+            fontsize=base_font_size,
+            rotation=90,
+            fontweight='bold'
         )
         axConfMatrix.set_yticks(ticks)
-        axConfMatrix.set_yticklabels(class_names, fontsize='large')
+        axConfMatrix.set_yticklabels(
+            class_names, fontsize=base_font_size, fontweight='bold'
+        )
         axConfMatrix.xaxis.set_ticks_position('top')
     else:
         # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
@@ -764,9 +770,9 @@ def draw_confusion_matrix_matplotlib(
         )
     axConfMatrix.xaxis.set_label_position('top')
     axConfMatrix.set_xlabel(
-        'Actual class', fontsize='x-large', fontweight='bold')
+        'Actual class', fontsize=base_font_size*1.2, fontweight='bold')
     axConfMatrix.set_ylabel(
-        'Predicted class', fontsize='x-large', fontweight='bold')
+        'Predicted class', fontsize=base_font_size*1.2, fontweight='bold')
     img = axConfMatrix.imshow(
         confusion_matrix_colors,
         # norm=colors.PowerNorm(0.5),
@@ -789,7 +795,7 @@ def draw_confusion_matrix_matplotlib(
                 ha='center',
                 va='center',
                 color='black',
-                fontsize='medium')
+                fontsize=percent_font_size)
             txt.set_path_effects([
                 patheffects.withStroke(linewidth=5, foreground='w')
             ])
@@ -798,7 +804,7 @@ def draw_confusion_matrix_matplotlib(
         axPredicted.set_xticks(ticks)
         axPredicted.set_yticks([0])
         axPredicted.set_xlabel(
-            'Sensitivity', fontsize='large', fontweight='bold')
+            'Sensitivity', fontsize=base_font_size, fontweight='bold')
         axPredicted.imshow(
             sensitivity,
             interpolation='nearest',
@@ -815,7 +821,7 @@ def draw_confusion_matrix_matplotlib(
                 ha='center',
                 va='center',
                 color='black',
-                fontsize='medium')
+                fontsize=percent_font_size)
             txt.set_path_effects([
                 patheffects.withStroke(linewidth=5, foreground='w')
             ])
@@ -824,7 +830,7 @@ def draw_confusion_matrix_matplotlib(
         axActual.set_xticks([0])
         axActual.set_yticks(ticks)
         axActual.set_ylabel(
-            'Precision', fontsize='large', fontweight='bold')
+            'Precision', fontsize=base_font_size, fontweight='bold')
         axActual.yaxis.set_label_position('right')
         axActual.imshow(
             precision,
@@ -842,7 +848,7 @@ def draw_confusion_matrix_matplotlib(
                 ha='center',
                 va='center',
                 color='black',
-                fontsize='medium')
+                fontsize=percent_font_size)
             txt.set_path_effects([
                 patheffects.withStroke(linewidth=5, foreground='w')
             ])
@@ -851,7 +857,7 @@ def draw_confusion_matrix_matplotlib(
         axTotal.set_xticks([0])
         axTotal.set_yticks([0])
         axTotal.set_xlabel(
-            'Accuracy', fontsize='large', fontweight='bold')
+            'Accuracy', fontsize=base_font_size, fontweight='bold')
         axTotal.imshow(
             np.array([[accuracy]]),
             interpolation='nearest',
@@ -866,7 +872,7 @@ def draw_confusion_matrix_matplotlib(
             ha='center',
             va='center',
             color='black',
-            fontsize='medium'
+            fontsize=percent_font_size
         )
         txt.set_path_effects([
             patheffects.withStroke(linewidth=5, foreground='w')
@@ -893,7 +899,7 @@ def draw_confusion_matrix_matplotlib(
     if title:
         suptitlehandle = fig.suptitle(
             f'{title} (ACC={accuracy:.5f})',
-            fontsize='xx-large'
+            fontsize=base_font_size*1.4
         )
     if output_path is None:
         plt.show()

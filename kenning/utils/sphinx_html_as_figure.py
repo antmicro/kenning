@@ -1,6 +1,10 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
-Module with sphinx extension, which swap format of image in figure node
-if path extensions equals .*
+Sphinx extension for allowing HTML files to be loadable
+in figures.
 """
 import copy
 import logging

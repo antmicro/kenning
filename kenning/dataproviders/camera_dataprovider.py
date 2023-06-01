@@ -131,7 +131,8 @@ class CameraDataProvider(DataProvider):
             cls,
             input_memory_layout,
             input_width,
-            input_height
+            input_height,
+            outputs={}
     ):
         """
         Creates runner IO specification from chosen parameters.
@@ -144,6 +145,9 @@ class CameraDataProvider(DataProvider):
             Width of the frame.
         input_height : int
             Height of the frame.
+        outputs : Dict[str, str]
+            Outputs of this Runner. If empty, the output name
+            is set to 'frame'.
 
         Returns
         -------
@@ -154,10 +158,13 @@ class CameraDataProvider(DataProvider):
             frame_shape = (1, 3, input_height, input_width)
         else:
             frame_shape = (1, input_height, input_width, 3)
+        output_name = 'frame'
+        if outputs:
+            output_name = list(outputs.keys())[0]
         return {
             'input': [],
             'output': [{
-                'name': 'frame',
+                'name': output_name,
                 'shape': frame_shape,
                 'dtype': 'float32'
             }]
@@ -167,7 +174,8 @@ class CameraDataProvider(DataProvider):
         return self._get_io_specification(
             self.input_memory_layout,
             self.input_height,
-            self.input_width
+            self.input_width,
+            self.outputs
         )
 
     @classmethod
@@ -185,7 +193,10 @@ class CameraDataProvider(DataProvider):
             inputs: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
         frame = self.fetch_input()
         frame = self.preprocess_input(frame)
-        return {'frame': np.expand_dims(frame, 0)}
+        output_name = 'frame'
+        if self.outputs:
+            output_name = list(self.outputs.keys())[0]
+        return {output_name: np.expand_dims(frame, 0)}
 
 
 class VideoCaptureDeviceException(Exception):

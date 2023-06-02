@@ -49,6 +49,9 @@ class MagicWandDataset(Dataset):
             batch_size: int = 1,
             download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
+            split_fraction_test: float = 0.2,
+            split_fraction_val: Optional[float] = None,
+            split_seed: int = 1234,
             window_size: int = 128,
             window_shift: int = 128,
             noise_level: int = 20):
@@ -67,6 +70,12 @@ class MagicWandDataset(Dataset):
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
+        split_fraction_test : float
+            Default fraction of data to leave for model testing
+        split_fraction_val : Optional[float]
+            Default fraction of data to leave for model validation
+        split_seed : int
+            Default seed used for dataset split
         windows_size : int
             Size of single sample window
         window_shift : int
@@ -81,7 +90,10 @@ class MagicWandDataset(Dataset):
             root,
             batch_size,
             download_dataset,
-            external_calibration_dataset
+            external_calibration_dataset,
+            split_fraction_test,
+            split_fraction_val,
+            split_seed
         )
 
     @classmethod

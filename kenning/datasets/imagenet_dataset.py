@@ -59,6 +59,9 @@ class ImageNetDataset(Dataset):
             batch_size: int = 1,
             download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
+            split_fraction_test: float = 0.2,
+            split_fraction_val: Optional[float] = None,
+            split_seed: int = 1234,
             image_memory_layout: str = 'NHWC',
             preprocess_type: str = 'caffe'):
         """
@@ -79,6 +82,12 @@ class ImageNetDataset(Dataset):
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
+        split_fraction_test : float
+            Default fraction of data to leave for model testing
+        split_fraction_val : Optional[float]
+            Default fraction of data to leave for model validation
+        split_seed : int
+            Default seed used for dataset split
         image_memory_layout : str
             Tells if the images should be delivered in NCHW or NHWC format.
             The default format is NHWC.
@@ -101,7 +110,10 @@ class ImageNetDataset(Dataset):
             root,
             batch_size,
             download_dataset,
-            external_calibration_dataset
+            external_calibration_dataset,
+            split_fraction_test,
+            split_fraction_val,
+            split_seed
         )
 
     @classmethod

@@ -154,7 +154,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         train_data, test_data,\
             train_labels, test_labels,\
             val_data, val_labels = \
-            self.dataset.train_test_split_representations(validation=True)
+            self.dataset.train_test_split_representations(
+                test_fraction=.2,
+                val_fraction=.1
+            )
 
         train_dataset = convert_to_tf_dataset(
             train_data, train_labels

@@ -248,7 +248,7 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     if dataset_cls is PetDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=37*4,
+            samplescount=37*5,
             numclasses=37,
             inputdims=(224, 224, 3)
         )
@@ -262,7 +262,7 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     if dataset_cls is MagicWandDataset:
         dataset = RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=4*8,
+            samplescount=4*10,
             numclasses=4,
             inputdims=(128, 3, 1)
         )

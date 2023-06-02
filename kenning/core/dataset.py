@@ -8,6 +8,7 @@ Provides an API for dataset loading, creation and configuration.
 
 from typing import Tuple, List, Any, Dict, Optional, Generator
 import random
+from copy import deepcopy
 from pathlib import Path
 from tqdm import tqdm
 
@@ -64,11 +65,33 @@ class Dataset(ArgumentsHandler):
         },
         'external_calibration_dataset': {
             'argparse_name': '--external-calibration-dataset',
-            'description': 'Path to the directory with the external calibration dataset',  # noqa: E501
+            'description': 'Path to the directory with the external '
+                           'calibration dataset',
             'type': Path,
             'nullable': True,
             'default': None
-        }
+        },
+        "split_fraction_test": {
+            'argparse_name': '--split-fraction-test',
+            'description': 'Default fraction of data to leave for model '
+                           'testing',
+            'type': float,
+            'default': 0.2
+        },
+        "split_fraction_val": {
+            'argparse_name': '--split-fraction-val',
+            'description': 'Default fraction of data to leave for model '
+                           'valdiation',
+            'type': float,
+            'nullable': True,
+            'default': None
+        },
+        "split_seed": {
+            'argparse_name': '--split-seed',
+            'description': 'Default seed used for dataset split',
+            'type': int,
+            'default': 1234
+        },
     }
 
     def __init__(
@@ -76,7 +99,10 @@ class Dataset(ArgumentsHandler):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None):
+            external_calibration_dataset: Optional[Path] = None,
+            split_fraction_test: float = 0.2,
+            split_fraction_val: Optional[float] = None,
+            split_seed: int = 1234):
         """
         Initializes dataset object.
 
@@ -97,6 +123,12 @@ class Dataset(ArgumentsHandler):
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
+        split_fraction_test : float
+            Default fraction of data to leave for model testing
+        split_fraction_val : Optional[float]
+            Default fraction of data to leave for model validation
+        split_seed : int
+            Default seed used for dataset split
         """
         assert batch_size > 0
         self.root = Path(root)
@@ -106,6 +138,9 @@ class Dataset(ArgumentsHandler):
         self.batch_size = batch_size
         self.download_dataset = download_dataset
         self.external_calibration_dataset = None if external_calibration_dataset is None else Path(external_calibration_dataset)  # noqa: E501
+        self.split_fraction_test = split_fraction_test
+        self.split_fraction_val = split_fraction_val
+        self.split_seed = split_seed
         if download_dataset:
             self.download_dataset_fun()
         self.prepare()
@@ -129,9 +164,12 @@ class Dataset(ArgumentsHandler):
             object of class Dataset
         """
         return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            args.download_dataset
+            root=args.dataset_root,
+            batch_size=args.inference_batch_size,
+            download_dataset=args.download_dataset,
+            split_fraction_test=args.split_fraction_test,
+            split_fraction_val=args.split_fraction_val,
+            split_seed=args.split_seed
         )
 
     @classmethod
@@ -208,6 +246,50 @@ class Dataset(ArgumentsHandler):
             Number of input samples
         """
         return len(self.dataX)
+
+    def _iter_subset(self, dataXsubset: List[any], dataYsubset: List[Any]):
+        """
+        dataX : List[Any]
+            Subset of the dataX
+        dataY : List[Any]
+            Subset of the dataY
+
+        Iterates over subset of the dataset
+        """
+        assert len(dataXsubset) == len(dataYsubset)
+
+        subset = deepcopy(self)
+        subset.dataX = dataXsubset
+        subset.dataY = dataYsubset
+        return iter(subset)
+
+    def iter_train(self):
+        """
+        Iterates over train data obtained from split
+        """
+        split = self.train_test_split_representations()
+        dataXtrain = split[0]
+        dataYtrain = split[2]
+        return self._iter_subset(dataXtrain, dataYtrain)
+
+    def iter_test(self):
+        """
+        Iterates over test data obtained from split
+        """
+        split = self.train_test_split_representations()
+        dataXtest = split[1]
+        dataYtest = split[3]
+        return self._iter_subset(dataXtest, dataYtest)
+
+    def iter_val(self):
+        """
+        Iterates over validation data obtained from split
+        """
+        split = self.train_test_split_representations()
+        assert len(split) == 6, 'No validation data in split'
+        dataXval = split[4]
+        dataYval = split[5]
+        return self._iter_subset(dataXval, dataYval)
 
     def prepare_input_samples(self, samples: List) -> List:
         """
@@ -297,48 +379,68 @@ class Dataset(ArgumentsHandler):
 
     def train_test_split_representations(
             self,
-            test_fraction: float = 0.25,
-            seed: int = 1234,
-            validation: bool = False,
-            validation_fraction: float = 0.1) -> Tuple[List, ...]:
+            test_fraction: Optional[float] = None,
+            val_fraction: Optional[float] = None,
+            seed: Optional[int] = None,
+            stratify: bool = True) -> Tuple[List, ...]:
         """
         Splits the data representations into train dataset and test dataset.
 
         Parameters
         ----------
         test_fraction : float
+            The fraction of data to leave for model testing
+        val_fraction : float
             The fraction of data to leave for model validation
         seed : int
             The seed for random state
-        validation: bool
-            Whether to return a third, validation dataset
-        validation_fraction: float
-            The fraction (of the total size) that should be split out of
-            the training set
+        stratify : bool
+            Whether to stratify the split
 
         Returns
         -------
         Tuple[List, ...] :
             Data splitted into train, test and optionally validation subsets
         """
-        assert test_fraction + validation_fraction < 1.0
         from sklearn.model_selection import train_test_split
+
+        if test_fraction is None:
+            test_fraction = self.split_fraction_test
+        if val_fraction is None:
+            val_fraction = self.split_fraction_val
+        if seed is None:
+            seed = self.split_seed
+
+        if val_fraction is not None:
+            assert test_fraction + val_fraction < 1.0
+        else:
+            assert test_fraction < 1.0
+
+        if stratify:
+            stratify_arg = self.dataY
+        else:
+            stratify_arg = None
+
         dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
             self.dataX,
             self.dataY,
             test_size=test_fraction,
             random_state=seed,
             shuffle=True,
-            stratify=self.dataY
+            stratify=stratify_arg
         )
-        if validation:
+        if val_fraction is not None:
+            if stratify:
+                stratify_arg = dataYtrain
+            else:
+                stratify_arg = None
             dataXtrain, dataXval, dataYtrain, dataYval = train_test_split(
                 dataXtrain,
                 dataYtrain,
-                test_size=validation_fraction/(1 - test_fraction),
+                test_size=val_fraction/(1 - test_fraction),
                 random_state=seed,
                 shuffle=True,
-                stratify=dataYtrain
+                stratify=stratify_arg
             )
             return (
                 dataXtrain,

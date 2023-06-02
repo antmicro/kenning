@@ -95,6 +95,9 @@ class VisualWakeWordsDataset(Dataset):
             batch_size: int = 1,
             download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
+            split_fraction_test: float = 0.2,
+            split_fraction_val: Optional[float] = None,
+            split_seed: int = 1234,
             dataset_type: str = 'val2017',
             objects_class: str = 'person',
             area_threshold: float = .005,
@@ -115,7 +118,10 @@ class VisualWakeWordsDataset(Dataset):
             root,
             batch_size,
             download_dataset,
-            external_calibration_dataset
+            external_calibration_dataset,
+            split_fraction_test,
+            split_fraction_val,
+            split_seed
         )
 
     @classmethod

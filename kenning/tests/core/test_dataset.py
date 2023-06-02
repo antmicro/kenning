@@ -260,7 +260,6 @@ class TestDataset:
         dataXtrain, dataXtest, dataYtrain, dataYtest, dataXval, dataYval = \
             dataset.train_test_split_representations(
                 test_fraction,
-                validation=True,
                 validation_fraction=val_fraction
             )
 

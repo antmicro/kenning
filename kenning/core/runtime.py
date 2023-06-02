@@ -728,7 +728,7 @@ class Runtime(ArgumentsHandler):
         try:
             self.inference_session_start()
             self.prepare_local()
-            for X, y in TqdmCallback('runtime', iter(dataset)):
+            for X, y in TqdmCallback('runtime', dataset.iter_test()):
                 prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 succeed = self.prepare_input(prepX)
@@ -827,7 +827,7 @@ class Runtime(ArgumentsHandler):
                     'upload essentials'
             )
             measurements = Measurements()
-            for X, y in tqdm(iter(dataset)):
+            for X, y in tqdm(dataset.iter_test()):
                 prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')

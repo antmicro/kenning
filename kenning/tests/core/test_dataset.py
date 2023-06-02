@@ -6,7 +6,6 @@ import pytest
 from typing import Type
 from pathlib import Path
 import shutil
-import inspect
 import numpy as np
 import cv2
 
@@ -251,16 +250,12 @@ class TestDataset:
         """
         Tests the `train_test_split_representations` method.
         """
-        signature = inspect.signature(dataset.train_test_split_representations)
-        if 'validation' not in signature.parameters:
-            pytest.xfail('validation split not implemented for this dataset')
-
         test_fraction = 0.2
         val_fraction = 0.2
         dataXtrain, dataXtest, dataYtrain, dataYtest, dataXval, dataYval = \
             dataset.train_test_split_representations(
                 test_fraction,
-                validation_fraction=val_fraction
+                val_fraction=val_fraction
             )
 
         assert len(dataXtrain) > 0

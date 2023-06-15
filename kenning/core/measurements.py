@@ -217,8 +217,9 @@ class MeasurementsCollector(object):
         resultpath : Path
             Path to the saved JSON file.
         """
-        if 'eval_confusion_matrix' in cls.measurements.data:
-            cls.measurements.data['eval_confusion_matrix'] = cls.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
+        for key, measurement in cls.measurements.data.items():
+            if isinstance(measurement, np.ndarray):
+                cls.measurements.data[key] = measurement.tolist()
         with open(resultpath, 'w') as measurementsfile:
             json.dump(
                 cls.measurements.data,

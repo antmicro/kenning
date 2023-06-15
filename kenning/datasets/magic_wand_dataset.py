@@ -242,16 +242,26 @@ class MagicWandDataset(Dataset):
     def get_class_names(self) -> List[str]:
         return list(self.classnames.values())
 
-    def evaluate(self, predictions, truth):
-        confusion_matrix = np.zeros((self.numclasses, self.numclasses))
-        for prediction, label in zip(predictions, truth):
-            confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
+    def evaluate(self, predictions: List, truth: Optional[List] = None):
         measurements = Measurements()
-        measurements.accumulate(
-            'eval_confusion_matrix',
-            confusion_matrix,
-            lambda: np.zeros((self.numclasses, self.numclasses))
-        )
+        if truth is not None:
+            confusion_matrix = np.zeros((self.numclasses, self.numclasses))
+            for prediction, label in zip(predictions, truth):
+                confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
+            measurements.accumulate(
+                'eval_confusion_matrix',
+                confusion_matrix,
+                lambda: np.zeros((self.numclasses, self.numclasses))
+            )
+        else:
+            predictions_vector = np.zeros(self.numclasses)
+            for prediction in predictions:
+                predictions_vector[np.argmax(prediction)] += 1
+            measurements.accumulate(
+                'predictions',
+                predictions_vector,
+                lambda: np.zeros(self.numclasses)
+            )
         measurements.accumulate('total', len(predictions), lambda: 0)
         return measurements
 

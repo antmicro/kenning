@@ -15,11 +15,15 @@ import re
 import tqdm
 from pyrenode import Pyrenode
 
-from kenning.core.runtime import Runtime
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.runtime import Runtime
+from kenning.core.runtime import RequestFailure
+from kenning.core.runtime import check_request
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
+from kenning.core.measurements import tagmeasurements
 from kenning.utils.logger import get_logger
 
 
@@ -28,6 +32,8 @@ class RenodeRuntime(Runtime):
     Runtime subclass that provides and API for testing inference on bare-metal
     runtimes executed on Renode simulated platform.
     """
+
+    inputtypes = ['iree']
 
     arguments_structure = {
         'runtime_binary_path': {
@@ -40,10 +46,17 @@ class RenodeRuntime(Runtime):
             'description': 'Path to platform script',
             'type': Path
         },
+        'disable_profiler': {
+            'argparse_name': '--disable-profiler',
+            'description': 'Disables Renode profiler',
+            'type': bool,
+            'default': False
+        },
         'profiler_dump_path': {
             'argparse_name': '--profiler-dump-path',
             'description': 'Path to Renode profiler dump',
             'type': Path,
+            'nullable': True,
             'default': None
         },
         'profiler_interval_step': {
@@ -51,6 +64,20 @@ class RenodeRuntime(Runtime):
             'description': 'Interval step in ms used to parse profiler data',
             'type': float,
             'default': 10.
+        },
+        'sensor': {
+            'argparse_name': '--sensor',
+            'description': 'Name of the sensor to be used as input. If none '
+                           'then no sensor is used',
+            'type': str,
+            'nullable': True,
+            'default': None
+        },
+        'batches_count': {
+            'argparse_name': '--batches-count',
+            'description': 'Number of batches to read',
+            'type': int,
+            'default': 10
         }
     }
 
@@ -59,8 +86,11 @@ class RenodeRuntime(Runtime):
             protocol: RuntimeProtocol,
             runtime_binary_path: Path,
             platform_resc_path: Path,
+            disable_profiler: bool = False,
             profiler_dump_path: Optional[Path] = None,
             profiler_interval_step: float = 10.,
+            sensor: Optional[str] = None,
+            batches_count: int = 100,
             disable_performance_measurements: bool = False):
         """
         Constructs Renode runtime.
@@ -74,19 +104,29 @@ class RenodeRuntime(Runtime):
             Path to the runtime binary.
         platform_resc_path : Path
             Path to the Renode script.
+        disable_profiler : bool
+            Disables Renode profiler.
         profiler_dump_path : Optional[Path]
             Path to the Renode profiler dump.
         profiler_interval_step : float
             Interval step in ms used to parse profiler data.
+        sensor : Optional[str]
+            Name of the sensor to be used as input. If none then no sensor is
+            used.
+        batches_count : int
+            Number of batches to read.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
         self.runtime_binary_path = runtime_binary_path.resolve()
         self.platform_resc_path = platform_resc_path.resolve()
+        self.disable_profiler = disable_profiler
         if profiler_dump_path is not None:
             profiler_dump_path = profiler_dump_path.resolve()
         self.profiler_dump_path = profiler_dump_path
         self.profiler_interval_step = profiler_interval_step
+        self.sensor = sensor
+        self.batches_count = batches_count
         self.renode_handler = None
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
@@ -94,7 +134,7 @@ class RenodeRuntime(Runtime):
         self.log = get_logger()
         super().__init__(
             protocol,
-            disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements
         )
 
     def run_client(
@@ -102,30 +142,87 @@ class RenodeRuntime(Runtime):
             dataset: Dataset,
             modelwrapper: ModelWrapper,
             compiledmodelpath: Path):
+        if self.protocol is None:
+            raise RequestFailure('Protocol is not provided')
         with Pyrenode() as renode_handler:
             self.renode_handler = renode_handler
             self.init_renode()
 
-            if not self.disable_performance_measurements:
-                pre_opcode_stats = self.get_opcode_stats()
+            try:
+                check_request(self.prepare_client(), 'prepare client')
+                check_request(
+                        self.upload_essentials(compiledmodelpath),
+                        'upload essentials'
+                )
+                measurements = Measurements()
 
-            ret = super().run_client(dataset, modelwrapper, compiledmodelpath)
+                # get opcode stats before inference
+                if not self.disable_performance_measurements:
+                    pre_opcode_stats = self.get_opcode_stats()
 
-            if not self.disable_performance_measurements:
-                post_opcode_stats = self.get_opcode_stats()
+                # prepare iterator for inference
+                if self.sensor is not None:
+                    data = tqdm.tqdm(range(self.batches_count))
+                else:
+                    data = tqdm.tqdm(dataset.iter_test())
 
-                MeasurementsCollector.measurements += {
-                    'opcode_counters': self._opcode_stats_diff(
-                        pre_opcode_stats, post_opcode_stats
+                # inference loop
+                for sample in data:
+                    if self.sensor is None:
+                        # provide data to runtime
+                        X, _ = sample
+                        prepX = tagmeasurements("preprocessing")(
+                            modelwrapper._preprocess_input
+                        )(X)
+                        prepX = modelwrapper.convert_input_to_bytes(prepX)
+                        check_request(
+                            self.protocol.upload_input(prepX),
+                            'send input'
+                        )
+                        check_request(
+                            self.protocol.request_processing(self.get_time),
+                            'inference'
+                        )
+
+                    # get inference output
+                    _, preds = check_request(
+                        self.protocol.download_output(),
+                        'receive output'
                     )
-                }
 
-            self.renode_handler = None
+                    preds = modelwrapper.convert_output_from_bytes(preds)
+                    posty = tagmeasurements("postprocessing")(
+                        modelwrapper._postprocess_outputs
+                    )(preds)
 
-        if not self.disable_performance_measurements:
+                    if self.sensor is not None:
+                        measurements += dataset.evaluate(posty, None)
+                    else:
+                        _, y = sample
+                        measurements += dataset.evaluate(posty, y)
+
+                # get opcode stats after inference
+                if not self.disable_performance_measurements:
+                    post_opcode_stats = self.get_opcode_stats()
+
+                    MeasurementsCollector.measurements += {
+                        'opcode_counters': self._opcode_stats_diff(
+                            pre_opcode_stats, post_opcode_stats
+                        )
+                    }
+            except RequestFailure as ex:
+                self.log.fatal(ex)
+                return False
+            else:
+                MeasurementsCollector.measurements += measurements
+            finally:
+                self.renode_handler = None
+
+        if (not self.disable_performance_measurements
+                and not self.disable_profiler):
             MeasurementsCollector.measurements += self.get_profiler_stats()
 
-        return ret
+        return True
 
     def get_time(self):
         if self.renode_handler is None:
@@ -155,7 +252,7 @@ class RenodeRuntime(Runtime):
             self.profiler_dump_path = Path(tempfile.mktemp(
                 prefix='renode_profiler_', suffix='.dump'
             ))
-        self.renode_handler.initialize()
+        self.renode_handler.initialize(read_renode_stdout=True)
         self.renode_handler.run_robot_keyword(
             'CreateLogTester', timeout=5.0
         )
@@ -168,7 +265,8 @@ class RenodeRuntime(Runtime):
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'start'
         )
-        if not self.disable_performance_measurements:
+        if (not self.disable_performance_measurements
+                and not self.disable_profiler):
             self.renode_handler.run_robot_keyword(
                 'ExecuteCommand',
                 f'machine EnableProfiler @{self.profiler_dump_path}'
@@ -226,15 +324,20 @@ class RenodeRuntime(Runtime):
             self.log.error('Missing profiler dump file')
             raise FileNotFoundError
 
-        inference_timestamps = MeasurementsCollector.measurements.get_values(
-            'protocol_inference_step_timestamp'
-        )
-        inference_durations = MeasurementsCollector.measurements.get_values(
-            'protocol_inference_step_timestamp'
-        )
+        try:
+            timestamps = MeasurementsCollector.measurements.get_values(
+                'protocol_inference_step_timestamp'
+            )
 
-        start_timestamp = inference_timestamps[0]
-        end_timestamp = inference_timestamps[-1] + inference_durations[-1]
+            durations = MeasurementsCollector.measurements.get_values(
+                'protocol_inference_step_timestamp'
+            )
+
+            start_timestamp = timestamps[0]
+            end_timestamp = timestamps[-1] + durations[-1]
+        except KeyError:
+            start_timestamp = None
+            end_timestamp = None
 
         parser = _ProfilerDumpParser(
             self.profiler_dump_path,
@@ -294,8 +397,8 @@ class _ProfilerDumpParser(object):
             self,
             dump_path: Path,
             interval_step: float,
-            start_timestamp: float,
-            end_timestamp: float):
+            start_timestamp: Optional[float] = None,
+            end_timestamp: Optional[float] = None):
         self.dump_path = dump_path
         self.interval_step = interval_step
         self.start_timestamp = start_timestamp
@@ -351,7 +454,10 @@ class _ProfilerDumpParser(object):
                 virt_time /= 1000
 
                 # ignore entry
-                if not (self.start_timestamp < virt_time < self.end_timestamp):
+                if (self.start_timestamp is not None and
+                        self.end_timestamp is not None and
+                        not (self.start_timestamp < virt_time and
+                             virt_time < self.end_timestamp)):
                     if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
                         cpu_id, instr_counter = self._read(
                             self.ENTRY_FORMAT_INSTRUCTIONS,

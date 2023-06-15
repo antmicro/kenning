@@ -1,0 +1,54 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
+        "parameters": {
+            "dataset_root": "./build/MagicWandDataset",
+            "download_dataset": true
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
+        "parameters": {
+            "model_path": "./kenning/resources/models/classification/magic_wand.h5"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.compilers.iree.IREECompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/tflite-magic-wand.vmfb",
+                "backend": "llvm-cpu",
+                "model_framework": "keras",
+                "compiler_args": [
+                    "iree-llvm-debug-symbols=false",
+                    "iree-vm-bytecode-module-strip-source-map=true",
+                    "iree-vm-emit-polyglot-zip=false",
+                    "iree-llvm-target-triple=riscv32-pc-linux-elf",
+                    "iree-llvm-target-cpu=generic-rv32",
+                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f",
+                    "iree-llvm-target-abi=ilp32"
+                ]
+            }
+        }
+    ],
+    "runtime": {
+        "type": "kenning.runtimes.renode.RenodeRuntime",
+        "parameters": {
+            "runtime_binary_path": "build/renode-resources/springbok/iree_runtime_i2c_accelerometer",
+            "platform_resc_path": "build/renode-resources/springbok/springbok_accelerometer.resc",
+            "profiler_dump_path": "build/profiler.dump",
+            "sensor": "adxl345",
+            "batches_count": 100
+        }
+    },
+    "runtime_protocol": {
+        "type": "kenning.runtimeprotocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/tmp/uart",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

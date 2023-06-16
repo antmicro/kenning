@@ -16,7 +16,7 @@ from kenning.utils.logger import download_url, get_logger
 from pycocotools.coco import COCO
 
 from kenning.datasets.helpers.detection_and_segmentation import \
-        DectObject, \
+        DetectObject, \
         ObjectDetectionSegmentationDataset
 
 
@@ -171,7 +171,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             width = self.coco.imgs[anndata['image_id']]['width']
             height = self.coco.imgs[anndata['image_id']]['height']
             annotations[
-                self.keystoimgs[anndata['image_id']]].append(DectObject(
+                self.keystoimgs[anndata['image_id']]].append(DetectObject(
                     clsname=self.classmap[anndata['category_id']],
                     xmin=bbox[0] / width,
                     ymin=bbox[1] / height,

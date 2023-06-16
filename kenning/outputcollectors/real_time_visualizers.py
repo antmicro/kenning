@@ -15,7 +15,7 @@ from scipy.special import softmax
 
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.helpers.detection_and_segmentation import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 
 _FONT_SCALE = 1.5
@@ -382,17 +382,17 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         return {
             'input': [
                 {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'detection_data', 'type': 'List[DectObject]'}],
+                {'name': 'detection_data', 'type': 'List[DetectObject]'}],
             'output': []
         }
 
-    def get_output_data(self, inputs: Dict[str, Any]) -> List[DectObject]:
+    def get_output_data(self, inputs: Dict[str, Any]) -> List[DetectObject]:
         return inputs['detection_data']
 
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: List[DectObject]):
+            output_data: List[DetectObject]):
         """
         Method used to visualize object detection data
 
@@ -400,7 +400,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         ----------
         img : np.ndarray
             Input image
-        output_data : List[DectObject]
+        output_data : List[DetectObject]
             List of detection data
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'

@@ -150,7 +150,7 @@ class ONNXYOLOV4(YOLOWrapper):
                 {'name': 'output.7', 'shape': (1, 255, keyparams['width'] // (8 * 2 ** 2), keyparams['height'] // (8 * 2 ** 2)), 'dtype': 'float32'}  # noqa: E501
             ],
             'processed_output': [
-                {'name': 'detection_output', 'type': 'List[DectObject]'}
+                {'name': 'detection_output', 'type': 'List[DetectObject]'}
             ]
         }
 

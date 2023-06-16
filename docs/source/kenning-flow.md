@@ -58,9 +58,9 @@ The [](runner-api) input is considered to be compatible with associated outputs 
 ### IO non-standard types
 
 If the input or output is not a `numpy.ndarray`, then its type is described by the `type` field, which is a string.
-In the case of a detection output from an IO specification (described above) it is a `List[DectObject]`.
-This is interpreted as a list of `DectObject`s.
-The `DectObject` is a named tuple describing detection output (class names, rectangle positions, score).
+In the case of a detection output from an IO specification (described above) it is a `List[DetectObject]`.
+This is interpreted as a list of `DetectObject`s.
+The `DetectObject` is a named tuple describing detection output (class names, rectangle positions, score).
 
 ### IO names and mapping
 

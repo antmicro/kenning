@@ -15,8 +15,8 @@ from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 
 
-DectObject = namedtuple(
-    'DectObject',
+DetectObject = namedtuple(
+    'DetectObject',
     [
         'clsname',
         'xmin',
@@ -27,7 +27,7 @@ DectObject = namedtuple(
         'iscrowd'
     ]
 )
-DectObject.__doc__ = """
+DetectObject.__doc__ = """
 Represents single detectable object in an image.
 
 Attributes
@@ -188,7 +188,7 @@ def compute_map_per_threshold(
     return np.array(maps, dtype=np.float32)
 
 
-def compute_dect_iou(b1: DectObject, b2: DectObject) -> float:
+def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
     """
     Computes the IoU between two bounding boxes.
 
@@ -202,9 +202,9 @@ def compute_dect_iou(b1: DectObject, b2: DectObject) -> float:
 
     Parameters
     ----------
-    b1 : DectObject
+    b1 : DetectObject
         First bounding box
-    b2 : DectObject
+    b2 : DetectObject
         Second bounding box
 
     Returns
@@ -338,20 +338,20 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
     def get_hashable(
             self,
-            unhashable: Union['DectObject', 'SegmObject']
-            ) -> Union['DectObject', 'SegmObject']:
+            unhashable: Union['DetectObject', 'SegmObject']
+            ) -> Union['DetectObject', 'SegmObject']:
 
         """
         Returns hashable versions of objects depending on self.task
 
         Parameters
         ----------
-        unhashable : Union['DectObject', 'SegmObject']
+        unhashable : Union['DetectObject', 'SegmObject']
             Object to be made hashable
 
         Returns
         -------
-        Union['DectObject', 'SegmObject'] : the hashable object
+        Union['DetectObject', 'SegmObject'] : the hashable object
         """
 
         if self.task == 'object_detection':
@@ -372,16 +372,16 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
     def compute_iou(
             self,
-            b1: Union[DectObject, SegmObject],
-            b2: Union[DectObject, SegmObject]) -> float:
+            b1: Union[DetectObject, SegmObject],
+            b2: Union[DetectObject, SegmObject]) -> float:
         """
         Computes the IoU between two bounding boxes.
 
         Parameters
         ----------
-        b1 : DectObject
+        b1 : DetectObject
             First bounding box
-        b2 : DectObject
+        b2 : DetectObject
             Second bounding box
 
         Returns

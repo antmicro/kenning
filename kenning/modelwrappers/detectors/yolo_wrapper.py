@@ -14,7 +14,7 @@ from collections import defaultdict
 from kenning.resources import coco_detection
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import DectObject, compute_dect_iou  # noqa: E501
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject, compute_dect_iou  # noqa: E501
 
 from pathlib import Path
 if sys.version_info.minor < 9:
@@ -117,7 +117,7 @@ class YOLOWrapper(ModelWrapper):
         x2 = entry[0] + entry[2] / 2
         y1 = entry[1] - entry[3] / 2
         y2 = entry[1] + entry[3] / 2
-        return DectObject(
+        return DetectObject(
             self.classnames[entry[4]],
             x1, y1, x2, y2,
             entry[5] / self.maxscore,

@@ -69,7 +69,7 @@ A sample metadata JSON file may look as follows (for the YOLOv4 detection model)
     "processed_output": [
         {
             "name": "detection_output",
-            "type": "List[DectObject]"
+            "type": "List[DetectObject]"
         }
     ]
 }

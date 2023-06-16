@@ -40,7 +40,7 @@ from kenning.utils.logger import download_url
 import zipfile
 
 from kenning.datasets.helpers.detection_and_segmentation import \
-        DectObject, \
+        DetectObject, \
         SegmObject, \
         ObjectDetectionSegmentationDataset
 
@@ -487,7 +487,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         annotations = defaultdict(list)
         annotationsfile = pd.read_csv(self.root / 'annotations.csv')
         for index, row in annotationsfile.iterrows():
-            annotations[row['ImageID']].append(DectObject(
+            annotations[row['ImageID']].append(DetectObject(
                 clsname=self.classmap[row['LabelName']],
                 xmin=row['XMin'],
                 ymin=row['YMin'],

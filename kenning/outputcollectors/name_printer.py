@@ -7,7 +7,7 @@ A small, very basic OutputCollector-derived class used to test
 handling of multiple OutputCollectors in inference_runner scenario
 """
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.helpers.detection_and_segmentation import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 from typing import Any, Union
 import numpy as np
 from pathlib import Path
@@ -51,7 +51,7 @@ class NamePrinter(OutputCollector):
     def should_close(self):
         return False
 
-    def process_output(self, i: Any, o: Union[DectObject, np.array]):
+    def process_output(self, i: Any, o: Union[DetectObject, np.array]):
         print("Frame", self.frame_counter, end=": ")
         o = o[0]
         if self.print_type == 'detector':

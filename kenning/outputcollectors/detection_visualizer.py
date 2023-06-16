@@ -15,7 +15,7 @@ from pathlib import Path
 from collections import defaultdict
 
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.helpers.detection_and_segmentation import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
 def generate_color() -> Tuple[float, float, float]:
@@ -156,7 +156,7 @@ class DetectionVisualizer(OutputCollector):
     def visualize_data(
             self,
             input_data: np.ndarray,
-            output_data: List[DectObject]) -> np.ndarray:
+            output_data: List[DetectObject]) -> np.ndarray:
         """
         Method used to add visualizations of the models output
         It draws bounding boxes, class names and score onto
@@ -166,8 +166,8 @@ class DetectionVisualizer(OutputCollector):
         ----------
         input_data : np.ndarray
             the original image
-        output_data : List[DectObject]
-            list of found objects represented as DectObjects
+        output_data : List[DetectObject]
+            list of found objects represented as DetectObjects
 
         Returns
         -------
@@ -208,7 +208,7 @@ class DetectionVisualizer(OutputCollector):
     def process_output(
             self,
             input_data: np.ndarray,  # since the original frames are passed in, this should always be HWC, uint8  # noqa: E501
-            output_data: List[List[DectObject]]):
+            output_data: List[List[DetectObject]]):
         """
         Method used to visualize predicted classes on input images.
 
@@ -216,8 +216,8 @@ class DetectionVisualizer(OutputCollector):
         ----------
         input_data : np.ndarray
             the original image
-        output_data : List[DectObject]
-            list of found objects represented as DectObjects
+        output_data : List[DetectObject]
+            list of found objects represented as DetectObjects
         """
         # TODO: consider adding support for variable batch sizes
         output_data = output_data[0]
@@ -261,7 +261,7 @@ class DetectionVisualizer(OutputCollector):
                  'shape': [(1, -1, -1, 3), (1, 3, -1, -1)],
                  'dtype': 'float32'},
                 {'name': 'detection_data',
-                 'type': 'List[DectObject]'}],
+                 'type': 'List[DetectObject]'}],
             'output': []
         }
 

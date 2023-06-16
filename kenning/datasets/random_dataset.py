@@ -11,7 +11,7 @@ import cv2
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import ObjectDetectionSegmentationDataset  # noqa: 501
-from kenning.datasets.helpers.detection_and_segmentation import DectObject
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
 class RandomizedClassificationDataset(Dataset):
@@ -231,7 +231,7 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
         for i in range(self.samplescount):
             x_rand = np.random.random((2,))
             y_rand = np.random.random((2,))
-            self.dataY.append([DectObject(
+            self.dataY.append([DetectObject(
                 clsname=str(classes[i]),
                 xmin=x_rand.min(),
                 ymin=y_rand.min(),

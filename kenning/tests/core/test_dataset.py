@@ -9,7 +9,8 @@ import shutil
 import numpy as np
 import cv2
 
-from kenning.core.dataset import Dataset, CannotDownloadDatasetError
+from kenning.core.dataset import Dataset
+from kenning.core.dataset import CannotDownloadDatasetError
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.tests.core.conftest import get_dataset_download_path
@@ -284,3 +285,159 @@ class TestDataset:
                 == pytest.approx(val_fraction, abs=tolerance))
         assert (len(dataYval)/len(dataset.dataY)
                 == pytest.approx(val_fraction, abs=tolerance))
+
+    @pytest.mark.parametrize('dataset_cls', [
+        pytest.param(dataset_cls, marks=[
+            pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
+        ])
+        for dataset_cls in DATASET_SUBCLASSES
+    ])
+    def test_dataset_checksum_verification(self, dataset_cls: Type[Dataset]):
+        """
+        Tests if dataset checksum is properly calculated
+        """
+        if 'Random' in dataset_cls.__name__:
+            pytest.skip('random dataset does not have files')
+
+        dataset_cls.download_dataset_fun = lambda self: None
+        dataset = dataset_cls(
+            root=get_reduced_dataset_path(dataset_cls),
+            download_dataset=True,
+            force_download_dataset=False
+        )
+
+        new_file = Path(dataset.root / 'some_new_file.txt')
+        if new_file.is_file():
+            new_file.unlink()
+
+        checksum_file = Path(dataset.root / 'DATASET_CHECKSUM')
+        if checksum_file.is_file():
+            checksum_file.unlink()
+
+        # check if checksum is properly verified
+        dataset.save_dataset_checksum()
+
+        assert checksum_file.is_file()
+        assert dataset.verify_dataset_checksum()
+
+        # check if verify method returns false when there are some changes in
+        # dataset directory
+        new_file.write_text('some_data')
+
+        assert checksum_file.is_file()
+        assert not dataset.verify_dataset_checksum()
+
+        # check if checksum is properly updated after changes
+        dataset.save_dataset_checksum()
+
+        assert checksum_file.is_file()
+        assert dataset.verify_dataset_checksum()
+
+        # check if verify return false when there is no checksum file
+        checksum_file.unlink()
+
+        assert not checksum_file.exists()
+        assert not dataset.verify_dataset_checksum()
+
+        new_file.unlink()
+
+    @pytest.mark.parametrize('dataset_cls', [
+        pytest.param(dataset_cls, marks=[
+            pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
+        ])
+        for dataset_cls in DATASET_SUBCLASSES
+    ])
+    def test_if_dataset_is_not_downloaded_when_checksum_is_valid(
+            self,
+            dataset_cls: Type[Dataset]):
+        """
+        Tests if download is skipped when dataset files are already downloaded
+        """
+        if 'Random' in dataset_cls.__name__:
+            pytest.skip('random dataset does not have files')
+
+        def mock_download_dataset_fun(self):
+            mock_download_dataset_fun.num_calls += 1
+
+        mock_download_dataset_fun.num_calls = 0
+        dataset_cls.download_dataset_fun = mock_download_dataset_fun
+        dataset_cls.verify_dataset_checksum = lambda self: True
+
+        dataset_cls(
+            get_reduced_dataset_path(dataset_cls),
+            download_dataset=True,
+            force_download_dataset=False
+        )
+
+        assert mock_download_dataset_fun.num_calls == 0
+
+    @pytest.mark.parametrize('dataset_cls', [
+        pytest.param(dataset_cls, marks=[
+            pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
+        ])
+        for dataset_cls in DATASET_SUBCLASSES
+    ])
+    def test_if_dataset_is_downloaded_when_checksum_is_invalid(
+            self,
+            dataset_cls: Type[Dataset]):
+        """
+        Tests if dataset is downloaded when dataset checksum is invalid
+        """
+        if 'Random' in dataset_cls.__name__:
+            pytest.skip('random dataset does not have files')
+
+        def mock_download_dataset_fun(self):
+            mock_download_dataset_fun.num_calls += 1
+
+        mock_download_dataset_fun.num_calls = 0
+        dataset_cls.download_dataset_fun = mock_download_dataset_fun
+        dataset_cls.verify_dataset_checksum = lambda self: False
+
+        dataset_cls(
+            get_reduced_dataset_path(dataset_cls),
+            download_dataset=True,
+            force_download_dataset=False
+        )
+
+        assert mock_download_dataset_fun.num_calls == 1
+
+    @pytest.mark.parametrize('dataset_cls', [
+        pytest.param(dataset_cls, marks=[
+            pytest.mark.xdist_group(name=f'TestDataset_{dataset_cls.__name__}')
+        ])
+        for dataset_cls in DATASET_SUBCLASSES
+    ])
+    def test_if_dataset_is_downloaded_when_force_download_is_true(
+            self,
+            dataset_cls: Type[Dataset]):
+        """
+        Tests if dataset is downloaded when dataset checksum is invalid
+        """
+        if 'Random' in dataset_cls.__name__:
+            pytest.skip('random dataset does not have files')
+
+        def mock_download_dataset_fun(self):
+            mock_download_dataset_fun.num_calls += 1
+
+        mock_download_dataset_fun.num_calls = 0
+        dataset_cls.download_dataset_fun = mock_download_dataset_fun
+        dataset_cls.verify_dataset_checksum = lambda self: False
+
+        dataset_cls(
+            root=get_reduced_dataset_path(dataset_cls),
+            download_dataset=True,
+            force_download_dataset=True
+        )
+
+        assert mock_download_dataset_fun.num_calls == 1
+
+        mock_download_dataset_fun.num_calls = 0
+        dataset_cls.verify_dataset_checksum = lambda self: True
+
+        dataset_cls(
+            get_reduced_dataset_path(dataset_cls),
+            download_dataset=True,
+            force_download_dataset=True
+        )
+
+        assert mock_download_dataset_fun.num_calls == 1

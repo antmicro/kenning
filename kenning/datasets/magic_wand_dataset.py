@@ -48,6 +48,7 @@ class MagicWandDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            force_download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
             split_fraction_test: float = 0.2,
             split_fraction_val: Optional[float] = None,
@@ -65,7 +66,10 @@ class MagicWandDataset(Dataset):
         batch_size : int
             The batch size
         download_dataset : bool
-            True if dataset should be downloaded first
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again
+        force_download_dataset : bool
+            Forces dataset download
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
@@ -90,6 +94,7 @@ class MagicWandDataset(Dataset):
             root,
             batch_size,
             download_dataset,
+            force_download_dataset,
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
@@ -102,6 +107,7 @@ class MagicWandDataset(Dataset):
             args.dataset_root,
             args.inference_batch_size,
             args.download_dataset,
+            args.force_download_dataset,
             args.external_calibration_dataset,
             args.window_size,
             args.window_shift,

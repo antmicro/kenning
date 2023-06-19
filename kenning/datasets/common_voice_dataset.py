@@ -204,6 +204,7 @@ class CommonVoiceDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            force_download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
             split_fraction_test: float = 0.2,
             split_fraction_val: Optional[float] = None,
@@ -224,7 +225,10 @@ class CommonVoiceDataset(Dataset):
         batch_size : int
             The batch size
         download_dataset : bool
-            True if dataset should be downloaded first
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again
+        force_download_dataset : bool
+            Forces dataset download
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
@@ -263,6 +267,7 @@ class CommonVoiceDataset(Dataset):
             root,
             batch_size,
             download_dataset,
+            force_download_dataset,
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
@@ -275,6 +280,7 @@ class CommonVoiceDataset(Dataset):
             root=args.dataset_root,
             batch_size=args.batch_size,
             download_dataset=args.download_dataset,
+            force_download_dataset=args.force_download_dataset,
             language=args.language,
             annotations_type=args.annotations_type,
             sample_size=args.sample_size,

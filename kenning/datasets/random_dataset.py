@@ -50,6 +50,7 @@ class RandomizedClassificationDataset(Dataset):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            force_download_dataset: bool = False,
             samplescount: int = 100,
             numclasses: int = 3,
             integer_classes: bool = False,
@@ -65,7 +66,10 @@ class RandomizedClassificationDataset(Dataset):
         batch_size : int
             The size of batches of data delivered during inference
         download_dataset : bool
-            True if dataset should be downloaded first
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again
+        force_download_dataset : bool
+            Forces dataset download
         samplescount : int
             The number of samples in the dataset
         numclasses : int
@@ -85,7 +89,12 @@ class RandomizedClassificationDataset(Dataset):
         self.dtype = dtype
         self.classnames = self.get_class_names()
 
-        super().__init__(root, batch_size, download_dataset)
+        super().__init__(
+            root,
+            batch_size,
+            force_download_dataset,
+            download_dataset
+        )
 
     @classmethod
     def from_argparse(cls, args):

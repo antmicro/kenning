@@ -8,6 +8,10 @@ Provides an API for dataset loading, creation and configuration.
 
 from typing import Tuple, List, Any, Dict, Optional, Generator
 import random
+import hashlib
+import datetime
+import struct
+from binascii import hexlify
 from copy import deepcopy
 from pathlib import Path
 from tqdm import tqdm
@@ -59,7 +63,14 @@ class Dataset(ArgumentsHandler):
             'default': 1
         },
         'download_dataset': {
-            'description': 'Downloads the dataset before taking any action',
+            'description': 'Downloads the dataset before taking any action. '
+                           'If the dataset files are already downloaded then '
+                           'they are not downloaded again',
+            'type': bool,
+            'default': False
+        },
+        'force_download_dataset': {
+            'description': 'Forces dataset download',
             'type': bool,
             'default': False
         },
@@ -99,6 +110,7 @@ class Dataset(ArgumentsHandler):
             root: Path,
             batch_size: int = 1,
             download_dataset: bool = False,
+            force_download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
             split_fraction_test: float = 0.2,
             split_fraction_val: Optional[float] = None,
@@ -118,7 +130,10 @@ class Dataset(ArgumentsHandler):
         batch_size : int
             The batch size
         download_dataset : bool
-            True if dataset should be downloaded first
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again
+        force_download_dataset : bool
+            Forces dataset download
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
@@ -137,12 +152,15 @@ class Dataset(ArgumentsHandler):
         self.dataY = []
         self.batch_size = batch_size
         self.download_dataset = download_dataset
+        self.force_download_dataset = force_download_dataset
         self.external_calibration_dataset = None if external_calibration_dataset is None else Path(external_calibration_dataset)  # noqa: E501
         self.split_fraction_test = split_fraction_test
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
-        if download_dataset:
+        if (force_download_dataset or
+                (download_dataset and not self.verify_dataset_checksum())):
             self.download_dataset_fun()
+            self.save_dataset_checksum()
         self.prepare()
 
     @classmethod
@@ -167,6 +185,7 @@ class Dataset(ArgumentsHandler):
             root=args.dataset_root,
             batch_size=args.inference_batch_size,
             download_dataset=args.download_dataset,
+            force_download_dataset=args.force_download_dataset,
             split_fraction_test=args.split_fraction_test,
             split_fraction_val=args.split_fraction_val,
             split_seed=args.split_seed
@@ -512,6 +531,41 @@ class Dataset(ArgumentsHandler):
         """
         raise NotImplementedError
 
+    def save_dataset_checksum(self):
+        """
+        Writes dataset checksum to file
+        """
+        checksum_file = self.root / 'DATASET_CHECKSUM'
+
+        checksum = hexlify(self._compute_dataset_checksum()).decode()
+        timestamp = str(datetime.datetime.now())
+
+        with open(checksum_file, 'w') as file:
+            file.write(f'{checksum} {timestamp}')
+
+    def verify_dataset_checksum(self) -> bool:
+        """
+        Checks whether dataset is already downloaded in its directory
+
+        Returns
+        -------
+        bool :
+            True if dataset is downloaded
+        """
+        checksum_file = self.root / 'DATASET_CHECKSUM'
+        if not checksum_file.exists():
+            return False
+
+        checksum = hexlify(self._compute_dataset_checksum()).decode()
+
+        with open(checksum_file, 'r') as file:
+            try:
+                valid_checksum = file.read().split()[0]
+            except IndexError:
+                return False
+
+        return checksum == valid_checksum
+
     def prepare(self):
         """
         Prepares dataX and dataY attributes based on the dataset contents.
@@ -572,6 +626,30 @@ class Dataset(ArgumentsHandler):
             List of class names
         """
         raise NotImplementedError
+
+    def _compute_dataset_checksum(self) -> bytes:
+        """
+        Computes checksum of dataset files
+
+        Returns
+        -------
+        bytes :
+            Dataset checksum
+        """
+        checksum_file = self.root / 'DATASET_CHECKSUM'
+
+        dataset_files = list(self.root.rglob('*'))
+        if checksum_file in dataset_files:
+            dataset_files.remove(checksum_file)
+        dataset_files.sort()
+
+        sha = hashlib.sha256()
+
+        for file in dataset_files:
+            sha.update(file.name.encode())
+            sha.update(struct.pack('f', file.stat().st_mtime))
+
+        return sha.digest()
 
 
 class CannotDownloadDatasetError(Exception):

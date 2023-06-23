@@ -163,7 +163,7 @@ class YOLOWrapper(ModelWrapper):
             # get objectness score
             objectness = data[box[0]][box[1], 4, box[2], box[3]]
 
-            # get class with highest probability
+            # get class with the highest probability
             classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
 
             # compute final class score (objectness * class probability)
@@ -253,7 +253,7 @@ class YOLOWrapper(ModelWrapper):
                 + 6  # layer parameters
             )
 
-        # change the dimensions so the output format is
+        # change the dimensionsso the output format is
         # batches layerouts dets params width height
         perbatchoutputs = []
         for i in range(outputs[0].shape[0]):

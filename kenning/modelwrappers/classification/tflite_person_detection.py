@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Contains Tensorflow Lite model for the person detection
+Contains Tensorflow Lite model for the person detection.
 
-Trained on VisualWakeWords dataset
+Trained on VisualWakeWords dataset.
 """
 
 from typing import List, Tuple
@@ -64,17 +64,17 @@ class PersonDetectionModelWrapper(ModelWrapper):
         Parameters
         ----------
         modelpath : Path
-            The path to the model
+            The path to the model.
         dataset : Dataset
-            The dataset to verify the inference
+            The dataset to verify the inference.
         from_file : bool
-            True if the model should be loaded from file
+            True if the model should be loaded from file.
         central_fraction: float
-            Fraction used to crop images during preprocessing
+            Fraction used to crop images during preprocessing.
         image_width: int
-            Width of the input images
+            Width of the input images.
         image_height: int
-            Height of the input images
+            Height of the input images.
         """
         super().__init__(
             modelpath,

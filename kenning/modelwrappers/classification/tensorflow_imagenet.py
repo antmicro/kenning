@@ -85,24 +85,24 @@ class TensorFlowImageNet(TensorFlowWrapper):
         Parameters
         ----------
         modelpath : Path
-            The path to the model
+            The path to the model.
         dataset : Dataset
-            The dataset to verify the inference
+            The dataset to verify the inference.
         from_file: bool
-            True if model should be loaded from file
+            True if model should be loaded from file.
         modelcls : str
-            The model class import path
-            Used for loading keras.applications pretrained models
+            The model class import path.
+            Used for loading keras.applications pretrained models.
         modelinputname : str
-            The name of the model input
+            The name of the model input.
         modeloutputname : str
-            The name of the model output
+            The name of the model output.
         inputshape : List[int]
-            The shape of the input
+            The shape of the input.
         numclasses : int
-            Number of classes in the model
+            Number of classes in the model.
         disablebuiltinpreprocessing : bool
-            Tells if the input preprocessing should be removed from the model
+            Tells if the input preprocessing should be removed from the model.
         """
         import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')

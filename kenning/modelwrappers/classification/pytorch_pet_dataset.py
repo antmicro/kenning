@@ -5,7 +5,7 @@
 """
 Contains PyTorch model for the pet classification.
 
-Pretrained on ImageNet dataset, trained on Pet Dataset
+Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
@@ -26,7 +26,7 @@ from kenning.resources.models import classification
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
     default_dataset = PetDataset
-    pretrained_modelpath = files(classification) / 'pytorch_pet_dataset_mobilenetv2.pth' # noqa: 501
+    pretrained_modelpath = files(classification) / 'pytorch_pet_dataset_mobilenetv2.pth'  # noqa: 501
 
     arguments_structure = {
         'class_count': {

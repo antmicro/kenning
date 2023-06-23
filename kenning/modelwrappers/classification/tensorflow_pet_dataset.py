@@ -5,7 +5,7 @@
 """
 Contains Tensorflow models for the pet classification.
 
-Pretrained on ImageNet dataset, trained on Pet Dataset
+Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path

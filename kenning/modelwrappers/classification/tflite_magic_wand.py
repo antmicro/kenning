@@ -1,3 +1,11 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+Contains TFLite model for MagicWand dataset.
+"""
+
 from typing import List
 import tensorflow as tf
 import numpy as np
@@ -41,13 +49,13 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         Parameters
         ----------
         modelpath : Path
-            The path to the model
-        dataset : Dataset
-            The dataset to verify the inference
+            The path to the model.
+        dataset : Datasetgg
+            The dataset to verify the inference.
         from_file : bool
-            True if the model should be loaded from file
+            True if the model should be loaded from file.
         windows_size : int
-            Size of single sample window
+            Size of single sample window.
         """
         super().__init__(
             modelpath,

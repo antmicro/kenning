@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Contains models for instance segmentation tasks
+Contains models for instance segmentation tasks.
 """

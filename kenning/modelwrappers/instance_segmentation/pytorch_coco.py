@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Load a pre-trained PyTorch Mask R-CNN model
+Load a pre-trained PyTorch Mask R-CNN model.
 
-Prerained on COCO dataset
+Pretrained on COCO dataset.
 """
 
 import numpy as np

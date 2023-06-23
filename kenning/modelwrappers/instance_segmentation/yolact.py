@@ -3,9 +3,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Wrapper for YOLACT model for instance segmentation
+Wrapper for YOLACT model for instance segmentation.
 
-Pretrained on COCO dataset
+Pretrained on COCO dataset.
 """
 
 from pathlib import Path
@@ -54,13 +54,13 @@ def crop(
         given in a relative form, i.e. each number is from [0, 1] interval,
         0 and 1 means point is on the margin of an image.
     padding : int
-        Padding used for sanitize_coordinates function
+        Padding used for sanitize_coordinates function.
 
     Returns
     -------
     numpy.ndarray :
         Masks for detected objects, each mask is cropped to the bounding box
-        (there are no non-zero pixels outside the bbox)
+        (there are no non-zero pixels outside the bbox).
     """
     h, w, n = masks.shape
     x1, x2 = sanitize_coordinates(
@@ -103,23 +103,23 @@ def sanitize_coordinates(
 
     Parameters
     ----------
-        _x1 : numpy.ndarray
-            Array of (N,) elements
-        _x2 : numpy.ndarray
-            Array of (N,) elements
-        img_size : int
-            Upper bound for elements in the resulting array. Conversion from
-            relative to absolute coordinates is done according to this number
-        padding : int
-            Margin how close the number can be to the margin before it is
-            cropped. Smaller number is cropped to the max(x - padding, 0),
-            higher number is min(x + padding, img_size).
+    _x1 : numpy.ndarray
+        Array of (N,) elements.
+    _x2 : numpy.ndarray
+        Array of (N,) elements.
+    img_size : int
+        Upper bound for elements in the resulting array. Conversion from
+        relative to absolute coordinates is done according to this number.
+    padding : int
+        Margin how close the number can be to the margin before it is
+        cropped. Smaller number is cropped to the max(x - padding, 0),
+        higher number is min(x + padding, img_size).
 
     Returns
     -------
     Tuple[numpy.ndarray, numpy.ndarray] :
         Result is (x1, x2), each array has a (N,) shape, elementwise
-        each element from both arrays satisfy: 0 <= x1 <= x2 <= img_size
+        each element from both arrays satisfy: 0 <= x1 <= x2 <= img_size.
     """
     _x1 = _x1 * img_size
     _x2 = _x2 * img_size
@@ -138,12 +138,12 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     Parameters
     ----------
     x : numpy.ndarray
-        Input array
+        Input array.
 
     Returns
     -------
     numpy.ndarray :
-        Result of elementwise sigmoid function
+        Result of element wise sigmoid function.
     """
     return np.where(
         x >= 0,
@@ -314,8 +314,8 @@ class YOLACT(ModelWrapper):
         # Signatures of outputs of the model:
         # BOX:   size=(num_dets, 4)  dtype=float32
         # MASK:  size=(num_dets, 32) dtype=float32
-        # CLASS: size=(num_dets,)    dtype=int64
-        # SCORE: size=(num_dets,)    dtype=float32
+        # CLASS: size=(num_dets, )   dtype=int64
+        # SCORE: size=(num_dets, )   dtype=float32
         # PROTO: size=(138, 138, 32) dtype=float32
         # Where num_dets is a number of detected objects.
         # Because it is a variable dependent on model input,

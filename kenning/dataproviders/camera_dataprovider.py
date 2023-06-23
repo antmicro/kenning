@@ -5,7 +5,7 @@
 """
 A DataProvider-derived class used to interface with a
 camera, video file or a dummy video device
-(consult ffmpeg and v4l2loopback for configuration for dummy video devices)
+(consult ffmpeg and v4l2loopback for configuration for dummy video devices).
 """
 from typing import Dict, Tuple, List
 import cv2
@@ -69,21 +69,21 @@ class CameraDataProvider(DataProvider):
         Parameters
         ----------
         video_file_path: Path
-            Path to the video file
+            Path to the video file.
         input_memory_layout: str
-            Layout of the frame memory: NCHW or NHWC
+            Layout of the frame memory: NCHW or NHWC.
         input_color_format: str
-            Color format of captured frames: RGB or BGR
+            Color format of captured frames: RGB or BGR.
         input_width: int
-            Width of the frame
+            Width of the frame.
         input_height: int
-            Height of the frame
+            Height of the frame.
         inputs_sources: Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs: Dict[str, str]
-            Outputs of this Runner
+            Outputs of this Runner.
         """
 
         self.device_id = str(video_file_path)
@@ -161,17 +161,17 @@ class CameraDataProvider(DataProvider):
             input_width
     ):
         """
-        Creates runner IO specification from chosen parameters
+        Creates runner IO specification from chosen parameters.
 
         Parameters
         ----------
         input_memory_layout, input_height, input_width :
-            Arguments for `CameraDataProvider` constructor
+            Arguments for `CameraDataProvider` constructor.
 
         Returns
         -------
         Dict[str, List[Dict]] :
-            Dictionary that conveys input and output layers specification
+            Dictionary that conveys input and output layers specification.
         """
         if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, input_height, input_width)
@@ -214,7 +214,8 @@ class CameraDataProvider(DataProvider):
 class VideoCaptureDeviceException(Exception):
     """
     Exception to be raised when VideoCaptureDevice malfunctions
-    during frame capture
+    during frame capture.
     """
+
     def __init__(self, device_id, message="Video device {} read error"):
         super().__init__(message.format(device_id))

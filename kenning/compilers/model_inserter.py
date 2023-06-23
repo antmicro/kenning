@@ -50,13 +50,13 @@ class ModelInserter(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset object
+            Dataset object.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         modelframework : str
-            Framework of the input model to be inserted
+            Framework of the input model to be inserted.
         inputmodelpath : Path
-            Path to the input model to be inserted
+            Path to the input model to be inserted.
         """
         self.modelframework = modelframework
         self.inputmodelpath = Path(inputmodelpath)

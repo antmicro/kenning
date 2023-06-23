@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Wrapper for IREE compiler
+Wrapper for IREE compiler.
 """
 from pathlib import Path
 from typing import List, Optional, Dict
@@ -27,12 +27,12 @@ def input_shapes_dict_to_list(inputshapes):
     Parameters
     ----------
     inputshapes : Dict[str, Tuple[int, ...]]
-        inputshapes argument of IREECompiler.compile method
+        The inputshapes argument of IREECompiler.compile method.
 
     Returns
     -------
     List[Tuple[int, ...]] :
-        Shapes of each input layer in order
+        Shapes of each input layer in order.
     """
 
     layer_order = {}
@@ -108,7 +108,7 @@ backend_convert = {
 
 class IREECompiler(Optimizer):
     """
-    IREE compiler
+    IREE compiler.
     """
 
     inputtypes = {
@@ -149,19 +149,19 @@ class IREECompiler(Optimizer):
             modelframework: str = 'keras',
             compiler_args: Optional[List[str]] = None):
         """
-        Wrapper for IREE compiler
+        Wrapper for IREE compiler.
 
         Parameters
         ----------
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
-            during compilation stage
+            during compilation stage.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         backend : str
-            Backend on which the model will be executed
+            Backend on which the model will be executed.
         modelframework : str
-            Framework of the input model
+            Framework of the input model.
         compiler_args : List[str]
             Additional arguments for the compiler. Every options should be in a
             separate string, which should be formatted like this:

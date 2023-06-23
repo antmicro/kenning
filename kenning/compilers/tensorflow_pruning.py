@@ -69,23 +69,23 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model - will be used for fine-tuning
+            Dataset used to train the model - will be used for fine-tuning.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         epochs : int
-            Number of epochs used for fine-tuning
+            Number of epochs used for fine-tuning.
         batch_size : int
-            The size of a batch used for fine-tuning
+            The size of a batch used for fine-tuning.
         optimizer : str
             Optimizer used during the training
-        disable_from_logits
-            Determines whether output of the model is normalized
+        disable_from_logits : bool
+            Determines whether output of the model is normalized.
         modelframework : str
-            Framework of the input model, used to select a proper backend
+            Framework of the input model, used to select a proper backend.
         prune_dense : bool
-            Determines if only dense layers should be pruned
+            Determines if only dense layers should be pruned.
         target_sparsity : float
-            Target weights sparsity of the model after pruning
+            Target weights sparsity of the model after pruning.
         """
         self.modelframework = modelframework
         self.prune_dense = prune_dense

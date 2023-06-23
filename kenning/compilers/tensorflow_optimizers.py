@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Wrapper for TensorFlow optimizers
+Wrapper for TensorFlow optimizers.
 """
 
 from pathlib import Path
@@ -60,17 +60,17 @@ class TensorFlowOptimizer(Optimizer):
         ----------
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
-            or fine-tuning
+            or fine-tuning.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         epochs : int
-            Number of epochs used to fine-tune the model
+            Number of epochs used to fine-tune the model.
         batch_size : int
-            The size of a batch used for the fine-tuning
+            The size of a batch used for the fine-tuning.
         optimizer : str
-            Optimizer used during the training
-        disable_from_logits
-            Determines whether output of the model is normalized
+            Optimizer used during the training.
+        disable_from_logits : bool
+            Determines whether output of the model is normalized.
         """
         self.epochs = epochs
         self.batch_size = batch_size
@@ -85,7 +85,7 @@ class TensorFlowOptimizer(Optimizer):
 
         Returns
         -------
-        Tuple : Batched train and validation datasets
+        Tuple : Batched train and validation datasets.
         """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
@@ -115,14 +115,14 @@ class TensorFlowOptimizer(Optimizer):
 
         Parameters
         ----------
-        model
-            The keras model to retrain
+        model : tf.keras.Model
+            The keras model to retrain.
         callbacks : Optional[List]
             List of callback function to use during the training.
 
         Returns
         -------
-        Trained keras model
+        tf.keras.Model : Trained keras model.
         """
         traindataset, validdataset = self.prepare_train_validation()
 

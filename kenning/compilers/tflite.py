@@ -132,35 +132,35 @@ class TFLiteCompiler(TensorFlowOptimizer):
         ----------
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
-            during compilation stage
+            during compilation stage.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         target : str
-            Target accelerator on which the model will be executed
+            Target accelerator on which the model will be executed.
         epochs : int
-            Number of epochs used for quantization aware training
+            Number of epochs used for quantization aware training.
         batch_size : int
-            The size of a batch used for quantization aware training
+            The size of a batch used for quantization aware training.
         optimizer : str
-            Optimizer used during the training
-        disable_from_logits
-            Determines whether output of the model is normalized
+            Optimizer used during the training.
+        disable_from_logits : bool
+            Determines whether output of the model is normalized.
         modelframework : str
-            Framework of the input model, used to select a proper backend
+            Framework of the input model, used to select a proper backend.
         inferenceinputtype : str
-            Data type of the input layer
+            Data type of the input layer.
         inferenceoutputtype : str
-            Data type of the output layer
+            Data type of the output layer.
         dataset_percentage : float
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
-            to be used
+            to be used.
         quantization_aware_training : bool
             Enables quantization aware training instead of a post-training
             quantization. If enabled the model has to be retrained.
         use_tf_select_ops : bool
             Enables adding SELECT_TF_OPS to the set of converter
-            supported ops
+            supported ops.
         """
         self.target = target
         self.modelframework = modelframework

@@ -110,11 +110,11 @@ class ONNXCompiler(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model
+            Dataset used to train the model.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         modelframework : str
-            Framework of the input model, used to select a proper backend
+            Framework of the input model, used to select a proper backend.
         """
         self.modelframework = modelframework
         self.set_input_type(modelframework)

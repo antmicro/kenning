@@ -73,23 +73,23 @@ def torchconversion(
     if compiler.conversion_func == 'dict_to_tuple':  # For PyTorch Mask R-CNN Model  # noqa: E501
         from kenning.modelwrappers.instance_segmentation.pytorch_coco import dict_to_tuple  # noqa: E501
         wrapper = dict_to_tuple
-    else:  # General case- no conversion is happening
+    else:  # General case - no conversion is happening
         wrapper = no_conversion
 
     def mul(x: tuple) -> int:
         """
         Method used to convert shape-representing tuple
-        to a 1-dimmensional size to allow the model to be inferred with
-        an 1-dimmensional byte array
+        to a 1-dimensional size to allow the model to be inferred with
+        an 1-dimensional byte array.
 
         Parameters
         ----------
         x : tuple
-            tuple describing the regular input shape
+            Tuple describing the regular input shape.
 
         Returns
         -------
-        int : the size of a 1-dimmensional input matching the original shape
+        int : The size of a 1-dimensional input matching the original shape.
         """
         ret = 1
         for i in list(x):
@@ -319,38 +319,38 @@ class TVMCompiler(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset object
+            Dataset object.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         modelframework : str
-            Framework of the input model, used to select a proper backend
+            Framework of the input model, used to select a proper backend.
         target : str
-            Target accelerator on which the model will be executed
+            Target accelerator on which the model will be executed.
         target_host : str
             CPU architecture of the target (used when target has a host).
         opt_level : int
-            optimization level of compilation
+            Optimization level of compilation.
         libdarknetpath : str
-            path to the libdarknet.so library, used only during conversion
-            of darknet model
+            Path to the libdarknet.so library, used only during conversion
+            of darknet model.
         conv2d_data_layout : str
             Data layout to convert the model to.
             Empty if no conversion is necessary.
-            This value must be set if conv2d_kernel_layout is set
+            This value must be set if conv2d_kernel_layout is set.
         conv2d_kernel_layout : str
             Kernel layout to convert the model to.
             Empty if no conversion is necessary.
         use_fp16_precision : bool
-            Applies conversion of FP32 weights to FP16
+            Applies conversion of FP32 weights to FP16.
         use_int8_precision : bool
-            Applies conversion of FP32 weights to INT8
+            Applies conversion of FP32 weights to INT8.
         use_tensorrt : bool
             Applies transformations moving supported operations to
             TensorRT kernels.
         dataset_percentage : float
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
-            used for calibrating the model
+            used for calibrating the model.
         """
         assert not (use_fp16_precision and use_int8_precision), 'Compilation cannot use both FP16 and INT8 conversion'  # noqa: E501
         assert not (use_tensorrt and (use_fp16_precision or use_int8_precision)), 'TensorRT usage with FP16 or INT8 passes is not supported'  # noqa: E501

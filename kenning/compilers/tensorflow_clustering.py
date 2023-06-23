@@ -81,27 +81,27 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model - may be used for fine-tuning
+            Dataset used to train the model - may be used for fine-tuning.
         compiled_model_path : Path
-            Path where compiled model will be saved
+            Path where compiled model will be saved.
         epochs : int
-            Number of epochs used for fine-tuning
+            Number of epochs used for fine-tuning.
         batch_size : int
-            The size of a batch used for fine-tuning
+            The size of a batch used for fine-tuning.
         optimizer : str
-            Optimizer used during the training
+            Optimizer used during the training.
         disable_from_logits
-            Determines whether output of the model is normalized
+            Determines whether output of the model is normalized.
         modelframework : str
-            Framework of the input model, used to select a proper backend
+            Framework of the input model, used to select a proper backend.
         cluster_dense : bool
-            Determines if only dense layers should be clusterized
+            Determines if only dense layers should be clusterized.
         clusters_number : int
-            Number of clusters for each weight array
+            Number of clusters for each weight array.
         disable_sparsity_preservation : bool
-            Determines whether to preserve sparsity of a given model
+            Determines whether to preserve sparsity of a given model.
         fine_tune : bool
-            Determines whether to fine-tune the model after clustering
+            Determines whether to fine-tune the model after clustering.
         """
         self.modelframework = modelframework
         self.cluster_dense = cluster_dense

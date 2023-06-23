@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Classes visualizing in real time outputs of classification, detection
 and instance segmentation models.
@@ -27,7 +31,7 @@ _SCORE_COLUMN_WIDTH = 80
 
 class BaseRealTimeVisualizer(OutputCollector):
     """
-    A base class for OpenGL-based real time visualizer
+    A base class for OpenGL-based real time visualizer.
     """
 
     setup_gui_lock = threading.Lock()
@@ -70,26 +74,26 @@ class BaseRealTimeVisualizer(OutputCollector):
             inputs_specs: Dict[str, Dict] = {},
             outputs: Dict[str, str] = {}):
         """
-        Base class for OpenGL-based real time visualizer
+        Base class for OpenGL-based real time visualizer.
 
         Parameters
         ----------
         title: str
-            Name of the window
+            Name of the window.
         width: int
-            Width of the window
+            Width of the window.
         height: int
-            Height of the window
+            Height of the window.
         input_color_format : str
-            Color format of provided frame (BGR or RGB)
+            Color format of provided frame (BGR or RGB).
         input_memory_layout : str
-            Memory layout of provided frame (NCHW or NHWC)
+            Memory layout of provided frame (NCHW or NHWC).
         input_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs : Dict[str, str]
-            Outputs of this Runner
+            Outputs of this Runner.
         """
         self.title = title
         self.width = viewer_width
@@ -127,12 +131,12 @@ class BaseRealTimeVisualizer(OutputCollector):
         Parameters
         ----------
         args : Dict
-            Arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
         BaseRealTimeVisualizer :
-            object of class BaseRealTimeVisualizer
+            Object of BaseRealTimeVisualizer class.
         """
         return cls(
             args.viewer_width,
@@ -142,17 +146,17 @@ class BaseRealTimeVisualizer(OutputCollector):
     @classmethod
     def _get_io_specification(cls, input_memory_layout):
         """
-        Creates runner IO specification from chosen parameters
+        Creates runner IO specification from chosen parameters.
 
         Parameters
         ---------
         input_memory_layout : str
-            Constructor argument
+            Constructor argument.
 
         Returns
         -------
         Dict[str, List[Dict]] :
-            Dictionary that conveys input and output layers specification
+            Dictionary that conveys input and output layers specification.
         """
         raise NotImplementedError
 
@@ -176,7 +180,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         """
         Method that sets up GUI of the visualizer.
         """
-        # if there are more than 1 visualizers we need to assure that there
+        # if there are more than 1 visualizer we need to assure that there
         # will not be tag conflicts
         BaseRealTimeVisualizer.setup_gui_lock.acquire()
         # look for valid tag
@@ -224,8 +228,8 @@ class BaseRealTimeVisualizer(OutputCollector):
 
     def _gui_thread(self):
         """
-        Method that performs data processing. Called in another process to
-        improve performance.
+        Method that performs data processing.
+        Called in another process to improve performance.
         """
         self.setup_gui()
 
@@ -267,7 +271,8 @@ class BaseRealTimeVisualizer(OutputCollector):
 
     def swap_layers(self):
         """
-        Method that swaps drawing layers. Called when all drawings are done.
+        Method that swaps drawing layers.
+        Called when all drawings are done.
         """
         dpg.show_item(f'draw_layer_{self.id}_{self.draw_layer_index^1}')
         dpg.delete_item(f'draw_layer_{self.id}_{self.draw_layer_index}')
@@ -279,14 +284,14 @@ class BaseRealTimeVisualizer(OutputCollector):
             output_data: List[Any]):
         """
         Method used to prepare data for visualization and call
-        visualization method
+        visualization method.
 
         Parameters
         ----------
         input_data : List[np.ndarray]
-            List of input images
+            List of input images.
         output_data : List[Any]
-            List of data used for visualization
+            List of data used for visualization.
         """
         assert len(input_data) == 1
         assert len(output_data) == 1
@@ -324,14 +329,14 @@ class BaseRealTimeVisualizer(OutputCollector):
             img: np.ndarray,
             output_data: Any):
         """
-        Method used to visualize data
+        Method used to visualize data.
 
         Parameters
         ----------
         img : np.ndarray
-            Input image
+            Input image.
         output_data : Any
-            Data used for visualization
+            Data used for visualization.
         """
         raise NotImplementedError
 
@@ -343,12 +348,11 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         Parameters
         ----------
-        inputs : Dict[str,Any]
-            Visualized inputs
+        inputs : Dict[str, Any]
+            Visualized inputs.
         Returns
         -------
-        Any :
-            Data specific to visualizer
+        Any : Data specific to visualizer.
         """
         return inputs
 
@@ -364,11 +368,12 @@ class BaseRealTimeVisualizer(OutputCollector):
 class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
     """
     Visualizes output of object detection showing bounding rectangles,
-    class names and scores
+    class names and scores.
     """
+
     def __init__(self, *args, **kwargs):
         """
-        Creates the detection visualizer
+        Creates the detection visualizer.
         """
         self.layer = None
         super().__init__('Real time detection visualizer', *args, **kwargs)
@@ -394,14 +399,14 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
             img: np.ndarray,
             output_data: List[DetectObject]):
         """
-        Method used to visualize object detection data
+        Method used to visualize object detection data.
 
         Parameters
         ----------
         img : np.ndarray
-            Input image
+            Input image.
         output_data : List[DetectObject]
-            List of detection data
+            List of detection data.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 
@@ -438,7 +443,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
 
 class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
     """
-    Visualizes output of segmentation showing masks, class names and scores
+    Visualizes output of segmentation showing masks, class names and scores.
     """
 
     arguments_structure = {
@@ -452,12 +457,12 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
 
     def __init__(self, score_threshold: float, *args, **kwargs):
         """
-        Creates the detection visualizer
+        Creates the detection visualizer.
 
         Parameters
         ----------
         score_threshold : float
-            Score thresholf for presenting class
+            Score threshold for presenting class.
         """
         self.layer = None
         self.score_threshold = score_threshold
@@ -467,17 +472,17 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
     @classmethod
     def from_argparse(cls, args):
         """
-        Constructor wrapper that takes the parameters from argparse args.
+        Constructor wrapper that takes the parameters from argparse arguments.
 
         Parameters
         ----------
         args : Dict
-            Arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
         RealTimeSegmentationVisualization :
-            object of class RealTimeSegmentationVisualization
+            Object of RealTimeSegmentationVisualization class.
         """
         return cls(
             args.score_threshold,
@@ -506,14 +511,14 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
             img: np.ndarray,
             output_data: List[SegmObject]):
         """
-        Method used to visualize object detection data
+        Method used to visualize object detection data.
 
         Parameters
         ----------
         img : np.ndarray
-            Input image
+            Input image.
         output_data : List[SegmObject]
-            List of segmentation data
+            List of segmentation data.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
         mix_factor = .3
@@ -568,7 +573,7 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
 
 class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
     """
-    Visualizes output of classification showing list of classes and scores
+    Visualizes output of classification showing list of classes and scores.
     """
 
     arguments_structure = {
@@ -582,12 +587,12 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
 
     def __init__(self, top_n: int = 5, *args, **kwargs):
         """
-        Creates the classification visualizer
+        Creates the classification visualizer.
 
         Parameters
         ----------
         top_n : int
-            Number of classses to be listed
+            Number of classes to be listed.
         """
         super().__init__('Real time classification visualizer',
                          *args, **kwargs)
@@ -598,17 +603,17 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
     @classmethod
     def from_argparse(cls, args):
         """
-        Constructor wrapper that takes the parameters from argparse args.
+        Constructor wrapper that takes the parameters from argparse arguments.
 
         Parameters
         ----------
         args : Dict
-            Arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
         RealTimeClassificationVisualization :
-            object of class RealTimeClassificationVisualization
+            Object of RealTimeClassificationVisualization class.
         """
         return cls(
             args.show_top_n,
@@ -661,7 +666,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         return {
             'input': [
                 {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}], # noqa: 501
+                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}],  # noqa: 501
             'output': []
         }
 
@@ -673,14 +678,14 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
             img: np.ndarray,
             output_data: np.ndarray):
         """
-        Method used to visualize object detection data
+        Method used to visualize object detection data.
 
         Parameters
         ----------
         img : np.ndarray
-            Input image
+            Input image.
         output_data : np.ndarray
-            Classification data
+            Classification data.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 

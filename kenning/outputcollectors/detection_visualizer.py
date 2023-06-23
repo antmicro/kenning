@@ -20,11 +20,11 @@ from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 def generate_color() -> Tuple[float, float, float]:
     """
-    Generates a random RGB color
+    Generates a random RGB color.
 
     Returns
     -------
-    Tuple[float, float, float] : color in (r,g,b) format
+    Tuple[float, float, float] : color in (r,g,b) format.
     """
     return colorsys.hsv_to_rgb(np.random.rand(), 1, 1)
 
@@ -77,24 +77,24 @@ class DetectionVisualizer(OutputCollector):
         Parameters
         ----------
         output_width : int
-            Width of the output
+            Width of the output.
         output_height : int
-            Height of the output
+            Height of the output.
         save_to_file : bool
             True if frames should be saved to file. In other case
-            they are presented using opencv
+            they are presented using opencv.
         save_path : Path
-            Path where frames should be saved
+            Path where frames should be saved.
         save_fps : int
-            Frames pre second of the saved video
+            Frames pre second of the saved video.
         window_name : str
-            Name of opencv window
+            Name of opencv window.
         inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs : Dict[str, str]
-            Outputs of this Runner
+            Outputs of this Runner.
         """
         self.window_name = window_name
         self.output_width = output_width
@@ -137,16 +137,16 @@ class DetectionVisualizer(OutputCollector):
             self,
             coord: Tuple[float, float]) -> Tuple[int, int]:
         """
-        Computes coordinates in pixel-position form from 0-1 floats
+        Computes coordinates in pixel-position form from 0-1 floats.
 
         Parameters
         ----------
         coord : Tuple[float, float]
-            0-1 ranged coordinates
+            The 0-1 ranged coordinates.
 
         Returns
         -------
-        Tuple[int, int] : size-based coordinates
+        Tuple[int, int] : Size-based coordinates.
         """
         return (
             int(coord[0]*self.output_width),
@@ -158,20 +158,20 @@ class DetectionVisualizer(OutputCollector):
             input_data: np.ndarray,
             output_data: List[DetectObject]) -> np.ndarray:
         """
-        Method used to add visualizations of the models output
+        Method used to add visualizations of the models output.
         It draws bounding boxes, class names and score onto
-        the original image
+        the original image.
 
         Parameters
         ----------
         input_data : np.ndarray
-            the original image
+            The original image.
         output_data : List[DetectObject]
-            list of found objects represented as DetectObjects
+            List of found objects represented as DetectObjects.
 
         Returns
         -------
-        np.ndarray : the modified image with visualizations drawn
+        np.ndarray : The modified image with visualizations drawn.
         """
 
         out_img = input_data
@@ -215,9 +215,9 @@ class DetectionVisualizer(OutputCollector):
         Parameters
         ----------
         input_data : np.ndarray
-            the original image
+            The original image.
         output_data : List[DetectObject]
-            list of found objects represented as DetectObjects
+            List of found objects represented as DetectObjects.
         """
         # TODO: consider adding support for variable batch sizes
         output_data = output_data[0]

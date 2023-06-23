@@ -24,11 +24,11 @@ class TensorFlowWrapper(ModelWrapper):
         Parameters
         ----------
         modelpath : Path
-            The path to the model
+            The path to the model.
         dataset : Dataset
-            The dataset to verify the inference
+            The dataset to verify the inference.
         from_file : bool
-            True if the model should be loaded from file
+            True if the model should be loaded from file.
         """
         super().__init__(modelpath, dataset, from_file)
 

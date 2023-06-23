@@ -23,7 +23,7 @@ class PyTorchWrapper(ModelWrapper):
         Parameters
         ----------
         weights : OrderedDict
-            Dictionary used to load model weights
+            Dictionary used to load model weights.
         """
         self.model.load_state_dict(
             copy.deepcopy(weights)
@@ -44,7 +44,7 @@ class PyTorchWrapper(ModelWrapper):
             map_location=self.device
         )
 
-        # If the file constains only the weights
+        # If the file contains only the weights
         # we have to recreate the model's structure
         # Otherwise we just load the model
         if isinstance(input_data, OrderedDict):

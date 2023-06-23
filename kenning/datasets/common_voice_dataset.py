@@ -334,7 +334,14 @@ class CommonVoiceDataset(Dataset):
         if self.selection_method == 'length':
             metric_values = [len(i.strip().split()) for i in self.dataY]
         elif self.selection_method == 'accent':
-            metric_values = [str(i) for i in metadata['accent']]
+            if 'accent' in metadata.columns:
+                metadata_accent = metadata['accent']
+            elif 'accents' in metadata.columns:
+                metadata_accent = metadata['accents']
+            else:
+                raise ValueError('Missing column with accents')
+
+            metric_values = [str(i) for i in metadata_accent]
             # filter empty values
             new_dataX, new_dataY, new_metric_values = [], [], []
             assert len(metric_values) == len(self.dataX)

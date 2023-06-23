@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Provides a runner that performs inference.
 """
@@ -30,15 +34,15 @@ class ModelRuntimeRunner(Runner):
         Parameters
         ----------
         model : ModelWrapper
-            Selected model
+            Selected model.
         runtime : Runtime
-            Runtime used to run selected model
+            Runtime used to run selected model.
         inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs : Dict[str, str]
-            Outputs of this Runner
+            Outputs of this Runner.
         """
         self.model = model
         self.runtime = runtime
@@ -64,7 +68,7 @@ class ModelRuntimeRunner(Runner):
         Returns
         -------
         Dict :
-            schema for the class
+            Schema for the class.
         """
         parameterschema = {
             "type": "object",
@@ -96,7 +100,7 @@ class ModelRuntimeRunner(Runner):
         Returns
         -------
         Dict :
-            schema for the class
+            Schema for the class.
         """
         parameterschema = cls._form_parameterschema()
 
@@ -119,18 +123,18 @@ class ModelRuntimeRunner(Runner):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
         inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs : Dict[str, str]
-            Outputs of this Runner
+            Outputs of this Runner.
 
         Returns
         -------
         ModelRuntimeRunner :
-            object of class ModelRuntimeRunner
+            object of class ModelRuntimeRunner.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -164,11 +168,11 @@ class ModelRuntimeRunner(Runner):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         -------
         Dataset :
-            Created dataset
+            Created dataset.
         """
         cls = load_class(json_dict['type'])
         return cls.from_json(
@@ -183,13 +187,13 @@ class ModelRuntimeRunner(Runner):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to initialize model params (class names etc.)
+            Dataset used to initialize model parameters (class names etc.).
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         -------
         ModelWrapper :
-            Created model
+            Created model.
         """
         cls = load_class(json_dict['type'])
         return cls.from_json(
@@ -204,11 +208,12 @@ class ModelRuntimeRunner(Runner):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
+        Returns
         -------
         Runtime :
-            Created runtime
+            Created runtime.
         """
         cls = load_class(json_dict['type'])
         return cls.from_json(
@@ -218,17 +223,17 @@ class ModelRuntimeRunner(Runner):
     @classmethod
     def _get_io_specification(cls, model_io_spec: Dict[str, List[Dict]]):
         """
-        Creates runner IO specification from chosen parameters
+        Creates runner IO specification from chosen parameters.
 
         Parameters
         ----------
         model : Dict[str, List[Dict]]
-            Argument for `ModelRuntimeRunner` constructor
+            Argument for `ModelRuntimeRunner` constructor.
 
         Returns
         -------
         Dict[str, List[Dict]] :
-            Dictionary that conveys input and output layers specification
+            Dictionary that conveys input and output layers specification.
         """
         for io in ('input', 'output'):
             if f'processed_{io}' not in model_io_spec.keys():

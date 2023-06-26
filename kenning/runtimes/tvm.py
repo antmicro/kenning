@@ -67,17 +67,17 @@ class TVMRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol
+            The implementation of the host-target communication  protocol.
         modelpath : Path
             Path for the model file.
         contextname : str
-            Name of the runtime context on the target device
+            Name of the runtime context on the target device.
         contextid : int
-            ID of the runtime context device
+            ID of the runtime context device.
         use_tvm_vm : bool
-            Use the TVM Relay VirtualMachine
+            Use the TVM Relay VirtualMachine.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.modelpath = modelpath
         self.contextname = contextname

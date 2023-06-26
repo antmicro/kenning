@@ -51,15 +51,13 @@ class ONNXRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol
+            The implementation of the host-target communication protocol.
         modelpath : Path
             Path for the model file.
         execution_providers : List[str]
-            List of execution providers ordered by priority
-        modelpath : Path
-            Path for the model file.
+            List of execution providers ordered by priority.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.modelpath = modelpath
         self.session = None

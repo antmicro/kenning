@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Runtime implementation for Renode
+Runtime implementation for Renode.
 """
 
 from typing import Dict, Any, Tuple, BinaryIO, Optional
@@ -71,11 +71,15 @@ class RenodeRuntime(Runtime):
             The implementation of the host-target communication protocol used
             to communicate with simulated platform.
         runtime_binary_path : Path
-            Path to the runtime binary
+            Path to the runtime binary.
         platform_resc_path : Path
-            Path to the Renode script
+            Path to the Renode script.
+        profiler_dump_path : Optional[Path]
+            Path to the Renode profiler dump.
+        profiler_interval_step : float
+            Interval step in ms used to parse profiler data.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.runtime_binary_path = runtime_binary_path.resolve()
         self.platform_resc_path = platform_resc_path.resolve()
@@ -193,7 +197,7 @@ class RenodeRuntime(Runtime):
         Returns
         -------
         Dict[str, int] :
-            Dict where the keys are opcodes and the values are counters
+            Dict where the keys are opcodes and the values are counters.
         """
         self.log.info('Retrieving opcode counters')
 
@@ -223,7 +227,7 @@ class RenodeRuntime(Runtime):
         Returns
         -------
         Dict[str, List[float]] :
-            Stats retrieved from Renode profiler dump
+            Stats retrieved from Renode profiler dump.
         """
         self.log.info('Parsing Renode profiler dump')
         if (self.profiler_dump_path is None or
@@ -261,14 +265,14 @@ class RenodeRuntime(Runtime):
         Parameters
         ----------
         opcode_stats_a : Dict[str, int]
-            First opcode stats
+            First opcode stats.
         opcode_stats_b : Dict[str, int]
-            Seconds opcode stats
+            Seconds opcode stats.
 
         Returns
         -------
         Dict[str, int] :
-            Difference between two opcode stats
+            Difference between two opcode stats.
         """
         ret = {}
         for opcode in opcode_stats_b.keys():
@@ -309,12 +313,12 @@ class _ProfilerDumpParser(object):
 
     def parse(self) -> Dict[str, Any]:
         """
-        Parses Renode profiler dump
+        Parses Renode profiler dump.
 
         Returns
         -------
         Dict[str, Any] :
-            Dict containing statistics retrieved from the dump file
+            Dict containing statistics retrieved from the dump file.
         """
         profiler_timestamps = []
         stats = {
@@ -502,17 +506,17 @@ class _ProfilerDumpParser(object):
             file: BinaryIO
             ) -> Tuple[Dict[int, str], Dict[str, Tuple[int, int]]]:
         """
-        Parses header of Renode profiler dump
+        Parses header of Renode profiler dump.
 
         Parameters
         ----------
         file : BinaryIO
-            File-like object
+            File-like object to parse header from.
 
         Returns
         -------
         Tuple[Dict[int, str], Dict[str, List[int]]] :
-            Tuples of dicts containing cpus and peripherals data
+            Tuples of dicts containing cpus and peripherals data.
         """
         cpus = {}
         peripherals = {}
@@ -541,19 +545,19 @@ class _ProfilerDumpParser(object):
     @staticmethod
     def _read(format_str: str, file: BinaryIO) -> Tuple[Any, ...]:
         """
-        Reads struct of given format from file
+        Reads struct of given format from file.
 
         Parameters
         ----------
         format_str : str
-            Format of the struct
+            Format of the struct.
         file : BinaryIO
-            File-like object
+            File-like object to read struct from.
 
         Returns
         -------
         Tuple[Any, ...] :
-            Struct read from file
+            Struct read from file.
         """
         return struct.unpack(
             format_str,

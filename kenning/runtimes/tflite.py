@@ -57,15 +57,15 @@ class TFLiteRuntime(Runtime):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol
+            The implementation of the host-target communication  protocol.
         modelpath : Path
             Path for the model file.
         delegates : Optional[List]
-            List of TFLite acceleration delegate libraries
+            List of TFLite acceleration delegate libraries.
         num_threads : int
-            Number of threads to use for inference
+            Number of threads to use for inference.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.modelpath = modelpath
         self.interpreter = None

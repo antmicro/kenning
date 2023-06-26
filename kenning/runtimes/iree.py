@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Runtime implementation for IREE models
+Runtime implementation for IREE models.
 """
 
 from pathlib import Path
@@ -45,18 +45,18 @@ class IREERuntime(Runtime):
             driver: str = 'local-sync',
             disable_performance_measurements: bool = False):
         """
-        Constructs IREE runtime
+        Constructs IREE runtime.
 
         Parameters
         ----------
         protocol : RuntimeProtocol
-            The implementation of the host-target communication protocol
+            The implementation of the host-target communication protocol.
         modelpath : Path
             Path for the model file.
         driver : str
-            Name of the deployment target on the device
+            Name of the deployment target on the device.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.modelpath = modelpath
         self.model = None

@@ -49,7 +49,7 @@ class KenningFlow:
         Parameters
         ----------
         runners_specifications : List[Runner]
-            List of specifications of runners in the flow
+            List of specifications of runners in the flow.
         """
 
         self.log = logger.get_logger()
@@ -61,12 +61,12 @@ class KenningFlow:
     @classmethod
     def form_parameterschema(cls):
         """
-        Creates schema for the KenningFlow class
+        Creates schema for the KenningFlow class.
 
         Returns
         -------
         Dict :
-            Schema for the class
+            Schema for the class.
         """
         return {
             'type': 'array',
@@ -114,7 +114,7 @@ class KenningFlow:
         Returns
         -------
         KenningFlow :
-            object of class KenningFlow
+            Object of class KenningFlow.
         """
         log = logger.get_logger()
 

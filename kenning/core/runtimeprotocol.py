@@ -41,19 +41,19 @@ def check_request(
     Parameters
     ----------
     request : Union[bool, Tuple[bool, Optional[bytes]]]
-        Request result
+        Request result.
     msg : str
         Message that should be provided with the RequestFailure exception
         when request failed.
 
-    Raises
-    ------
-    RequestFailure : raised when the request did not finish successfully
-
     Returns
     -------
     Union[bool, Tuple[bool, Optional[bytes]]] :
-        The request given in the input
+        The request given in the input.
+
+    Raises
+    ------
+    RequestFailure : Raised when the request did not finish successfully.
     """
     if isinstance(request, bool):
         if not request:
@@ -72,14 +72,14 @@ class MessageType(Enum):
     target can start with 2 bytes unsigned integer representing the message
     type.
 
-    OK - message indicating success of previous command
-    ERROR - message indicating failure of previous command
-    DATA - message contains inference input/output/statistics
-    MODEL - message contains model to load
-    PROCESS - message means the data is being processed
-    OUTPUT - host requests the output from the target
-    STATS - host requests the inference statistics from the target
-    IOSPEC - message contains io specification to load
+    OK - message indicating success of previous command.
+    ERROR - message indicating failure of previous command.
+    DATA - message contains inference input/output/statistics.
+    MODEL - message contains model to load.
+    PROCESS - message means the data is being processed.
+    OUTPUT - host requests the output from the target.
+    STATS - host requests the inference statistics from the target.
+    IOSPEC - message contains io specification to load.
     """
 
     OK = 0
@@ -98,12 +98,11 @@ class MessageType(Enum):
         Parameters
         ----------
         endianness : str
-            Can be 'little' or 'big'
+            Possible values are 'little' or 'big'.
 
         Returns
         -------
-        bytes :
-            Converted message type
+        bytes : Converted message type.
         """
         return int(self.value).to_bytes(MSG_TYPE_LEN, endianness, signed=False)
 
@@ -118,14 +117,14 @@ class MessageType(Enum):
         Parameters
         ----------
         value : bytes
-            Enum in bytes
+            Enum in bytes.
         endiannes : str
-            Endianness in bytes
+            Endianness in bytes.
 
         Returns
         -------
         MessageType :
-            Enum value
+            Enum value.
         """
         return MessageType(int.from_bytes(value, endianness, signed=False))
 
@@ -144,10 +143,10 @@ class Message(object):
     Where:
 
     * num-bytes - tells the size of <msg-type>[<data>] part of the message,
-      in bytes
+      in bytes.
     * msg-type - the type of the message. For message types check the
-      MessageType enum from kenning.core.runtimeprotocol
-    * data - optional data that comes with the message of MessageType
+      MessageType enum from kenning.core.runtimeprotocol.
+    * data - optional data that comes with the message of MessageType.
 
     """
 
@@ -170,15 +169,15 @@ class Message(object):
         Parameters
         ----------
         data : bytes
-            Data to be converted to Message
+            Data to be converted to Message.
         endianness : str
-            Endianness of the bytes
+            Endianness of the bytes.
 
         Returns
         -------
         Tuple[Optional['Message'], int] :
             Message obtained from given bytes and number of bytes used to parse
-            the message
+            the message.
         """
         if len(data) < MSG_SIZE_LEN + MSG_TYPE_LEN:
             return None, 0
@@ -205,12 +204,12 @@ class Message(object):
         Parameters
         ----------
         endianness : str
-            Endiannes of the bytes
+            Endiannes of the bytes.
 
         Returns
         -------
         bytes :
-            Message converted to bytes
+            Message converted to bytes.
         """
         message_size = self.message_size
         data = message_size.to_bytes(MSG_SIZE_LEN, byteorder=endianness)
@@ -236,13 +235,13 @@ class ServerStatus(Enum):
     This enum describes what happened in the last iteration of the server
     application.
 
-    NOTHING - server reached timeout
-    CLIENT_CONNECTED - new client is connected
-    CLIENT_DISCONNECTED - current client is disconnected
+    NOTHING - server reached timeout.
+    CLIENT_CONNECTED - new client is connected.
+    CLIENT_DISCONNECTED - current client is disconnected.
     CLIENT_IGNORED - new client is ignored since there is already someone
-        connected
-    DATA_READY - data ready to process
-    DATA_INVALID - data is invalid (too few bytes for the message)
+        connected.
+    DATA_READY - data ready to process.
+    DATA_INVALID - data is invalid (too few bytes for the message).
     """
 
     NOTHING = 0
@@ -279,12 +278,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         args : Dict
-            Arguments from RuntimeProtocol object
+            Arguments from RuntimeProtocol object.
 
         Returns
         -------
-        RuntimeProtocol :
-            Object of class RuntimeProtocol
+        RuntimeProtocol : Object of class RuntimeProtocol.
         """
         return cls()
 
@@ -300,12 +298,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         Returns
         -------
-        RuntimeProtocol :
-            Object of class RuntimeProtocol
+        RuntimeProtocol : Object of class RuntimeProtocol.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -325,8 +322,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         raise NotImplementedError
 
@@ -340,8 +336,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         raise NotImplementedError
 
@@ -352,12 +347,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         message : Message
-            Message to be sent
+            Message to be sent.
 
         Returns
         -------
-        bool :
-            True if succeeded
+        bool : True if succeeded.
         """
         raise NotImplementedError
 
@@ -383,7 +377,7 @@ class RuntimeProtocol(ArgumentsHandler):
         -------
         Tuple(ServerStatus, Message) :
             Tuple containing server status and received message. The status is
-            NOTHING if message is incomplete and DATA_READY if it is complete
+            NOTHING if message is incomplete and DATA_READY if it is complete.
         """
         raise NotImplementedError
 
@@ -400,8 +394,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if successful
+        bool : True if successful.
         """
         raise NotImplementedError
 
@@ -415,14 +408,14 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         connection : Any
-            Connection used to read data
+            Connection used to read data.
         mask : int
-            Selector mask from the event
+            Selector mask from the event.
 
         Returns
         -------
         Tuple[ServerStatus, Optional[Any]] :
-            Status of receive and optionally data that was received
+            Status of receive and optionally data that was received.
         """
         raise NotImplementedError
 
@@ -448,7 +441,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Tuple[ServerStatus, Optional[Any]] :
-            Receive status along with received data
+            Receive status along with received data.
         """
         raise NotImplementedError
 
@@ -461,7 +454,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Tuple[bool, Optional[bytes]] :
-            True if OK received and attached message data, False otherwise
+            True if OK received and attached message data, False otherwise.
         """
         while True:
             status, message = self.receive_message()
@@ -494,12 +487,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         data : bytes
-            Input data for inference
+            Input data for inference.
 
         Returns
         -------
-        bool :
-            True if ready for inference
+        bool : True if ready for inference.
         """
         self.log.debug('Uploading input')
 
@@ -521,12 +513,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         path : Path
-            Path to the model
+            Path to the model.
 
         Returns
         -------
-        bool :
-            True if model upload finished successfully
+        bool : True if model upload finished successfully.
         """
         self.log.debug('Uploading model')
         with open(path, 'rb') as modfile:
@@ -550,12 +541,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         path : Path
-            Path to the json file
+            Path to the json file.
 
         Returns
         -------
-        bool :
-            True if data upload finished successfully
+        bool : True if data upload finished successfully.
         """
         self.log.debug('Uploading io specification')
         with open(path, 'rb') as detfile:
@@ -583,12 +573,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ---------
         get_time_func : Callable[[], float]
-            Function that returns current timestamp
+            Function that returns current timestamp.
 
         Returns
         -------
-        bool :
-            True if inference finished successfully
+        bool : True if inference finished successfully.
         """
         self.log.debug('Requesting processing')
         self.send_message(Message(MessageType.PROCESS))
@@ -615,7 +604,8 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Tuple[bool, Optional[bytes]] :
-            Tuple with download status (True if successful) and downloaded data
+            Tuple with download status (True if successful)
+            and downloaded data.
         """
         self.log.debug('Downloading output')
         self.send_message(Message(MessageType.OUTPUT))
@@ -649,12 +639,11 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         data : Optional[bytes]
-            Optional data upon success, if any
+            Optional data upon success, if any.
 
         Returns
         -------
-        bool :
-            True if sent successfully
+        bool : True if sent successfully.
         """
         self.log.debug('Sending OK')
 
@@ -668,8 +657,7 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if sent successfully
+        bool : True if sent successfully.
         """
         self.log.debug('Sending ERROR')
 

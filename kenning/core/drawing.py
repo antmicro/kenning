@@ -73,7 +73,8 @@ def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
 
     Returns
     -------
-    List of colors to use for plotting
+    List[Tuple] :
+        List of colors to use for plotting
     """
     CMAP_NAME = "nipy_spectral"
     cmap = plt.get_cmap(CMAP_NAME)
@@ -106,28 +107,28 @@ def time_series_plot(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xtitle : str
-        Name of the X axis
+        Name of the X axis.
     xunit : str
-        Unit for the X axis
+        Unit for the X axis.
     ytitle : str
-        Name of the Y axis
+        Name of the Y axis.
     yunit : str
-        Unit for the Y axis
+        Unit for the Y axis.
     xdata : List
-        The values for X dimension
+        The values for X dimension.
     ydata : List
-        The values for Y dimension
+        The values for Y dimension.
     trimxvalues : bool
         True if all values for the X dimension should be subtracted by
-        the minimal value on this dimension
+        the minimal value on this dimension.
     skipfirst : bool
         True if the first entry should be removed from plotting.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     bins : int
-        Number of bins for value histograms
+        Number of bins for value histograms.
     """
     start = 1 if skipfirst else 0
     xdata = np.array(xdata[start:], copy=True)
@@ -189,15 +190,15 @@ def draw_multiple_time_series(
     outpath : Optional[Path]
         Path where the plot will be saved. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xdata : Dict[str, List]
         Mapping between name of the model and x coordinates of samples.
     xtitle : str
-        Name of the X axis
+        Name of the X axis.
     ydata : Dict[str, List]
         Mapping between name of the model and y coordinates of samples.
     ytitle : str
-        Name of the Y axis
+        Name of the Y axis.
     skipfirst : bool
         True if the first entry should be removed from plotting.
     smooth : Optional[int]
@@ -206,11 +207,11 @@ def draw_multiple_time_series(
         and smoothing is performed with Savitzky–Golay filter to the line,
         where `smooth` is the window size parameter.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     start = 1 if skipfirst else 0
     fig, ax = plt.subplots(1, 1, figsize=figsize)
@@ -262,15 +263,15 @@ def draw_violin_comparison_plot(
         Path where the plot will be saved without extension. If None,
         the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xnames : List[str]
-        Names of the metrics in order
+        Names of the metrics in order.
     data : Dict[str, List]
-        Map between name of the model and list of metrics to visualize
+        Map between name of the model and list of metrics to visualize.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
 
     num_plots = len(xnames)
@@ -343,17 +344,17 @@ def draw_radar_chart(
     outpath : Optional[Path]
         Path where the plot will be saved. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     data : Dict[str, List]
-        Map between name of the model and list of metrics to visualize
+        Map between name of the model and list of metrics to visualize.
     labelnames : List[str]
-        Names of the labels in order
+        Names of the labels in order.
     figsize : Optional[Tuple]
-        The size of the plot
+        The size of the plot.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     n_categories = len(labelnames)
 
@@ -437,32 +438,32 @@ def draw_bubble_plot(
         outext: Iterable[str] = ['png'],
 ):
     """
-    Draws bubble plot
+    Draws bubble plot.
 
     Parameters
     ----------
     outpath : Optional[Path]
         Path where the plot will be saved. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xdata : List[float]
-        The values for X dimension
+        The values for X dimension.
     xlabel : str
-        Name of the X axis
+        Name of the X axis.
     ydata : List[float]
-        The values for Y dimension
+        The values for Y dimension.
     ylabel : str
-        Name of the Y axis
+        Name of the Y axis.
     bubblesize : List[float]
-        Sizes of subsequent bubbles
+        Sizes of subsequent bubbles.
     bubblename : List[str]
-        Labels for consecutive bubbles
+        Labels for consecutive bubbles.
     figsize : Tuple
-        The size of the plot
+        The size of the plot.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     fig, ax = plt.subplots(1, 1, figsize=figsize)
     if colors is None:
@@ -531,21 +532,21 @@ def draw_bubble_plot(
 
 
 def _value_to_nondiagonal_color(
-        value: Union[float, np.ndarray], cmap) -> np.ndarray:
+        value: Union[float, np.ndarray], cmap: Optional[Any]) -> np.ndarray:
     """
     Calculates colors of non-diagonal cells in confusion matrix.
 
     Parameters
     ----------
     value : float | np.ndarray
-        Values from confusion matrix
-    cmap :
-        Color map assosiating values with colors
+        Values from confusion matrix.
+    cmap : Optional[Any]
+        Color map associating values with colors.
 
     Returns
     -------
     np.ndarray :
-        Calcualted colors
+        Calculated colors.
     """
     color = np.asarray(cmap(1 - np.log2(99*value + 1) / np.log2(100)))
     color[..., 3] = np.log2(99*value + 1) / np.log2(100)
@@ -557,7 +558,7 @@ def draw_confusion_matrix(
         outpath: Optional[Path],
         title: str,
         class_names: List[str],
-        cmap=None,
+        cmap: Optional[Any] = None,
         figsize: Optional[Tuple] = None,
         dpi: Optional[int] = None,
         backend: str = 'matplotlib',
@@ -570,23 +571,23 @@ def draw_confusion_matrix(
     ----------
     confusion_matrix : ArrayLike
         Square numpy matrix containing the confusion matrix.
-        0-th axis stands for ground truth, 1-st axis stands for predictions
+        0-th axis stands for ground truth, 1-st axis stands for predictions.
     outpath : Optional[Path]
         Path where the plot will be saved. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     class_names : List[str]
-        List of the class names
-    cmap : Any
-        Color map for the plot
+        List of the class names.
+    cmap : Optional[Any]
+        Color map for the plot.
     figsize : Optional[Tuple]
-        The size of the plot
+        The size of the plot.
     dpi : Optional[int]
-        The dpi of the plot
+        The dpi of the plot.
     backend : str
-        Which library should be used to generate plot - bokeh or matplotlib
+        Which library should be used to generate plot - bokeh or matplotlib.
     outext : Iterable[str]
-        List with files extensions, should be supported by chosen backend
+        List with files extensions, should be supported by chosen backend.
     """
     available_backends = ('matplotlib', 'bokeh')
     assert backend in available_backends, (
@@ -672,7 +673,7 @@ def draw_confusion_matrix_matplotlib(
     dpi: Optional[int] = None,
     output_path: Optional[str] = None,
     title: Optional[str] = None,
-    cmap=None,
+    cmap: Optional[Any] = None,
     outext: Iterable[str] = ['png'],
 ):
     """
@@ -681,29 +682,29 @@ def draw_confusion_matrix_matplotlib(
     Parameters
     ----------
     confusion_matrix : np.ndarray
-        Values of confusion matrix, from 0 to 1
+        Values of confusion matrix, from 0 to 1.
     confusion_matrix_colors : np.ndarray
-        Colors for calculated based on confusion matrix
+        Colors for calculated based on confusion matrix.
     sensitivity : np.ndarray
-        Ordered values with sensitivity
+        Ordered values with sensitivity.
     precision : np.ndarray
-        Ordered values with precision
+        Ordered values with precision.
     accuracy : np.ndarray | float
-        Overall accuracy
+        Overall accuracy.
     class_names : List[str]
-        List with names of classes
+        List with names of classes.
     figsize : Optional[Tuple[int]]
-        Tuple with width and height of figure
+        Tuple with width and height of figure.
     output_path : str | None
         Path to the file, where plot will be saved to. If not specified,
-        result won't be saved
+        result won't be saved.
     title : str | None
-        Title of the plot
-    cmap :
+        Title of the plot.
+    cmap : Optional[Any]
         Color map which will be used for drawing plot. If not specified,
-        'RdYlGn' color map from matplotlib will be chosen
+        'RdYlGn' color map from matplotlib will be chosen.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
 
     if figsize is None:
@@ -923,21 +924,21 @@ def _create_custom_hover_template(
 ) -> str:
     """
     Function creating custom template for tooltip displaying when hover
-    event occurs. This tooltip is part of bokeh features
+    event occurs. This tooltip is part of bokeh features.
 
     Parameters
     ----------
     names : List[str]
-        List with names, displayed before values
+        List with names, displayed before values.
     values : List[str]
-        List with names of fields (in source object) containing values
+        List with names of fields (in source object) containing values.
     units : List[str]
-        List with units, displayed afrer values
+        List with units, displayed after values.
 
     Returns
     -------
     str :
-        HTML template for tooltip
+        HTML template for tooltip.
     """
     if values is None:
         values = names
@@ -969,7 +970,7 @@ def draw_confusion_matrix_bokeh(
     height: Optional[int] = None,
     output_path: Optional[str] = None,
     title: Optional[str] = None,
-    cmap=None,
+    cmap: Optional[Any] = None,
     formats: Tuple[str] = ('html',),
 ):
     """
@@ -978,31 +979,31 @@ def draw_confusion_matrix_bokeh(
     Parameters
     ----------
     confusion_matrix : np.ndarray
-        Values of confusion matrix, from 0 to 1
+        Values of confusion matrix, from 0 to 1.
     confusion_matrix_colors : np.ndarray
-        Colors for calculated based on confusion matrix
+        Colors for calculated based on confusion matrix.
     sensitivity : np.ndarray
-        Ordered values with sensitivity
+        Ordered values with sensitivity.
     precision : np.ndarray
-        Ordered values with precision
+        Ordered values with precision.
     accuracy : np.ndarray | float
-        Overall accuracy
+        Overall accuracy.
     class_names : List[str]
-        List with names of classes
+        List with names of classes.
     width : int
-        Width of the generated plot
+        Width of the generated plot.
     height : int
-        Height of the generated plot
+        Height of the generated plot.
     output_path : str | None
         Path to the file, where plot will be saved to. If not specified,
-        result won't be saved
+        result won't be saved.
     title : str | None
-        Title of the plot
-    cmap :
+        Title of the plot.
+    cmap : Optional[Any]
         Color map which will be used for drawing plot. If not specified,
-        'RdYlGn' color map from matplotlib will be chosen
+        'RdYlGn' color map from matplotlib will be chosen.
     formats : Tuple[str]
-        Tuple with formats names
+        Tuple with formats names.
     """
     from bokeh.plotting import figure, output_file, save, row, show
     from bokeh.models import ColumnDataSource, HoverTool, FactorRange, Range1d
@@ -1313,13 +1314,13 @@ def recall_precision_curves(
         Title of the plot
     lines : List[List[List]]
         Per-class list of tuples with list of recall values and precision
-        values
+        values.
     class_names : List[str]
-        List of the class names
+        List of the class names.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     fig = plt.figure(figsize=figsize)
     ax = fig.add_subplot(111)
@@ -1370,26 +1371,26 @@ def true_positive_iou_histogram(
         outext: Iterable[str] = ['png'],
 ):
     """
-    Draws per-class True Positive IoU precision plot
+    Draws per-class True Positive IoU precision plot.
 
     Parameters
     ----------
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     lines : List[float]
-        Per-class list of floats with IoU values
+        Per-class list of floats with IoU values.
     class_names : List[str]
-        List of the class names
+        List of the class names.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     if colors is None:
         color = 'purple'
@@ -1430,26 +1431,26 @@ def true_positives_per_iou_range_histogram(
         outext: Iterable[str] = ['png'],
 ):
     """
-    Draws histogram of True Positive IoU values
+    Draws histogram of True Positive IoU values.
 
     Parameters
     ----------
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     lines : List[float]
-        All True Positive IoU values
+        All True Positive IoU values.
     range_fraction : float
-        Fraction by which the range should be divided (1/number_of_segments)
+        Fraction by which the range should be divided (1/number_of_segments).
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     if colors is None:
         color = 'purple'
@@ -1486,7 +1487,7 @@ def recall_precision_gradients(
         aps: List[float],
         map: float,
         figsize: Tuple = (10, 25),
-        cmap=None,
+        cmap: Optional[Any] = None,
         outext: Iterable[str] = ['png'],
 ):
     """
@@ -1499,20 +1500,20 @@ def recall_precision_gradients(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     lines : List[Tuple[List, List]]
         Per-class list of tuples with list of recall values and precision
-        values
+        values.
     class_names : List[str]
-        List of the class names
+        List of the class names.
     aps : List[float]
-        Per-class AP values
+        Per-class AP values.
     figsize : Tuple
-        The size of the figure
-    cmap : Any
-        Color map for the plot
+        The size of the figure.
+    cmap : Optional[Any]
+        Color map for the plot.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     if cmap is None:
         cmap = plt.get_cmap('RdYlGn')
@@ -1578,28 +1579,28 @@ def draw_plot(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xtitle : str
-        Name of the X axis
+        Name of the X axis.
     xunit : str
-        Unit for the X axis
+        Unit for the X axis.
     ytitle : str
-        Name of the Y axis
+        Name of the Y axis.
     yunit : str
-        Unit for the Y axis
+        Unit for the Y axis.
     lines : List[Tuple[List, List]]
         Per-class list of tuples with list of recall values and precision
-        values
+        values.
     linelabels : Optional[List[str]]
-        Optional list of labels naming each line
+        Optional list of labels naming each line.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     """
     plt.figure(figsize=figsize)
 
@@ -1664,29 +1665,29 @@ def draw_barplot(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xtitle : str
-        Name of the X axis
+        Name of the X axis.
     xunit : str
-        Unit for the X axis
+        Unit for the X axis.
     ytitle : str
-        Name of the Y axis
+        Name of the Y axis.
     yunit : str
-        Unit for the Y axis
+        Unit for the Y axis.
     xdata : List[Any]
-        List of x labels for bars
+        List of x labels for bars.
     ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values
+        Dictionary of values.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     backend : str
-        Which library should be used to generate plot - bokeh or matplotlib
+        Which library should be used to generate plot - bokeh or matplotlib.
     outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib
+        List with files extensions, should be supported by matplotlib.
     max_bars_matplotlib : Optional[int]
-        Max number of bars for matplotlib backend
+        Max number of bars for matplotlib backend.
     """
     xlabel = xtitle
     if xunit is not None:
@@ -1770,27 +1771,27 @@ def draw_barplot_bokeh(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xlabel : str
-        Label of the X axis
+        Label of the X axis.
     ylabel : str
-        Label of the Y axis
+        Label of the Y axis.
     xdata : List[Any]
-        List of x labels for bars
+        List of x labels for bars.
     ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values
+        Dictionary of values.
     width : Optional[int]
-        Width of the plot
+        Width of the plot.
     height : Optional[int]
-        Height of the plot
+        Height of the plot.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     bar_width : float
-        Width of the single bar
+        Width of the single bar.
     bar_offset : List[float]
-        Offsets of the bars from different groups
+        Offsets of the bars from different groups.
     formats : Tuple[str]
-        Tuple with formats names
+        Tuple with formats names.
     """
     from bokeh.plotting import figure, output_file, save, show
     from bokeh.models import Range1d, HoverTool
@@ -1870,25 +1871,25 @@ def draw_barplot_matplotlib(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     xlabel : str
-        Label of the X axis
+        Label of the X axis.
     ylabel : str
-        Label of the Y axis
+        Label of the Y axis.
     xdata : List[Any]
-        List of x labels for bars
+        List of x labels for bars.
     ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values
+        Dictionary of values.
     figsize : Tuple
-        The size of the figure
+        The size of the figure.
     colors : Optional[List]
-        List with colors which should be used to draw plots
+        List with colors which should be used to draw plots.
     bar_width : float
-        Width of the single bar
+        Width of the single bar.
     bar_offset : List[float]
-        Offsets of the bars from different groups
+        Offsets of the bars from different groups.
     outext : Iterable[str]
-        List with files extensions
+        List with files extensions.
     """
     plt.figure(figsize=figsize)
 
@@ -1931,16 +1932,16 @@ def choose_theme(
         custom_matplotlib_theme: Union[bool, str, Path] = False,
 ):
     """
-    Context manager, allowing to temporaly set theme
+    Context manager, allowing to temporally set theme.
 
     Parameter
     ---------
     custom_bokeh_theme : bool | str | Path
         If True uses BOKEH_THEME_FILE, if str or Path uses file specified
-        by this path
+        by this path.
     custom_matplotlib_theme : bool | str | Path
         If True uses MATPLOTLIB_THEME_FILE, if str or Path uses file specified
-        by this path
+        by this path.
     """
     # Backup current setups
     if custom_bokeh_theme:

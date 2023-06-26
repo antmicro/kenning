@@ -39,7 +39,7 @@ class Measurements(object):
     Stores benchmark measurements for later processing.
 
     This is a dict-like object that wraps all processing results for later
-    raport generation.
+    report generation.
 
     The dictionary in Measurements has measurement type as a key, and list of
     values for given measurement type.
@@ -50,8 +50,9 @@ class Measurements(object):
     Attributes
     ----------
     data : dict
-        Dictionary storing lists of values
+        Dictionary storing lists of values.
     """
+
     def __init__(self):
         self.data = dict()
 
@@ -73,9 +74,9 @@ class Measurements(object):
         Parameters
         ----------
         measurement_type : str
-            The type (name) of the measurement
+            The type (name) of the measurement.
         value : Any
-            The initial value for the measurement type
+            The initial value for the measurement type.
         """
         self.data[measurement_type] = value
 
@@ -117,9 +118,9 @@ class Measurements(object):
         Parameters
         ----------
         measurementtype : str
-            the measurement type to be updated
+            The measurement type to be updated.
         valueslist : List
-            the list of values to add
+            The list of values to add.
         """
         assert isinstance(valueslist, list)
         assert isinstance(measurementtype, str)
@@ -138,11 +139,11 @@ class Measurements(object):
         Parameters
         ----------
         measurementtype : str
-            the measurement type to be updated
+            The measurement type to be updated.
         value : Any
-            the value to add
+            The value to add.
         initialvaluefunc : Callable
-            the initial value for the measurement
+            The initial value for the measurement.
         """
         assert isinstance(measurementtype, str)
         if measurementtype not in self.data:
@@ -156,11 +157,11 @@ class Measurements(object):
         Parameters
         ----------
         measurementtype : str
-            The name of the measurement type
+            The name of the measurement type.
 
         Returns
         -------
-        List : list of values for a given measurement type
+        List : List of values for a given measurement type.
         """
         return self.data[measurementtype]
 
@@ -182,11 +183,11 @@ class Measurements(object):
         Parameters
         ----------
         measurementtype : str
-            the name of the measurement
+            The name of the measurement.
         valuetoadd : Any
-            New value to add to the measurement
+            New value to add to the measurement.
         initvaluefunc : Callable[[], Any]
-            The initial value of the measurement, default 0
+            The initial value of the measurement, default 0.
         """
         if measurementtype not in self.data:
             self.data[measurementtype] = initvaluefunc()
@@ -213,7 +214,7 @@ class MeasurementsCollector(object):
         Parameters
         ----------
         resultpath : Path
-            Path to the saved JSON file
+            Path to the saved JSON file.
         """
         if 'eval_confusion_matrix' in cls.measurements.data:
             cls.measurements.data['eval_confusion_matrix'] = cls.measurements.data['eval_confusion_matrix'].tolist()  # noqa: E501
@@ -310,9 +311,9 @@ class SystemStatsCollector(Thread):
         Parameters
         ----------
         prefix : str
-            The prefix used in measurements
+            The prefix used in measurements.
         step : float
-            The step for the measurements, in seconds
+            The step for the measurements, in seconds.
         """
         global is_nvidia_smi_loadable
         Thread.__init__(self)
@@ -512,7 +513,7 @@ def systemstatsmeasurements(measurementname: str, step: float = 0.5):
     measurementname : str
         The name of the measurement type.
     step : float
-        The step for the measurements, in seconds
+        The step for the measurements, in seconds.
     """
 
     def statistics_decorator(function):

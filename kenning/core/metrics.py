@@ -19,7 +19,7 @@ def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]):
     Parameters
     ----------
     confusion_matrix: ArrayLike
-        The Numpy nxn array or nxn list representing confusion matrix
+        The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.trace(confusion_matrix) / np.sum(confusion_matrix)
 
@@ -31,7 +31,7 @@ def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
     Parameters
     ----------
     confusion_matrix: ArrayLike
-        The Numpy nxn array or nxn list representing confusion matrix
+        The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
         np.array(confusion_matrix).diagonal() /
@@ -46,7 +46,7 @@ def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
     Parameters
     ----------
     confusion_matrix: ArrayLike
-        The Numpy nxn array or nxn list representing confusion matrix
+        The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
         np.array(confusion_matrix).diagonal() /
@@ -61,7 +61,7 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
     Parameters
     ----------
     confusion_matrix: ArrayLike
-        The Numpy nxn array or nxn list representing confusion matrix
+        The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.float_power(np.prod(
         np.array(confusion_matrix).diagonal() /
@@ -91,12 +91,12 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
 
     Returns
     -------
     Dict :
-        Gathered computed metrics
+        Gathered computed metrics.
     """
     computed_metrics = {}
 
@@ -107,7 +107,7 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
         Parameters
         ----------
         metric_name : str
-            Name that is used to save matric evaluation
+            Name that is used to save metric evaluation.
         metric_value : Optional[Dict]
             Values that are used to evaluate the metric
             If it is none then `measurementsdata[metric_name]` is used.
@@ -170,12 +170,12 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
 
     Returns
     -------
     Dict :
-        Gathered computed metrics
+        Gathered computed metrics.
     """
 
     # If confusion matrix is not present in the measurementsdata, then
@@ -207,12 +207,12 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
 
     Returns
     -------
     Dict :
-        Gathered computed metrics
+        Gathered computed metrics.
     """
     from kenning.datasets.helpers.detection_and_segmentation import \
         compute_map_per_threshold
@@ -238,17 +238,17 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
 
     Returns
     -------
     Dict :
-        Gathered computed metrics
+        Gathered computed metrics.
     """
     if not any(('opcode_counters' in data for data in measurementsdata)):
         return {}
 
-    # retrieve all opcodes with non zero counters
+    # retrieve all opcodes with nonzero counters
     all_opcodes = set()
     for data in measurementsdata:
         for opcode, counter in data['opcode_counters'].items():

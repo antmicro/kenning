@@ -46,11 +46,11 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            The path to the model
+            The path to the model.
         dataset : Dataset
-            The dataset to verify the inference
+            The dataset to verify the inference.
         from_file : bool
-            True if the model should be loaded from file
+            True if the model should be loaded from file.
         """
         self.modelpath = Path(modelpath)
         self.dataset = dataset
@@ -65,7 +65,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Returns
         -------
         Path :
-            The path to the model
+            The path to the model.
         """
         return self.modelpath
 
@@ -81,16 +81,16 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            The dataset object to feed to the model
+            The dataset object to feed to the model.
         args : Dict
-            Arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
         from_file : bool
-            Determines if the model should be loaded from modelspath
+            Determines if the model should be loaded from modelpath.
 
         Returns
         -------
         ModelWrapper :
-            object of class ModelWrapper
+            Object of class ModelWrapper.
         """
         return cls(args.model_path, dataset, from_file)
 
@@ -110,16 +110,16 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            The dataset object to feed to the model
+            The dataset object to feed to the model.
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
         from_file : bool
-            Determines if the model should be loaded from modelspath
+            Determines if the model should be loaded from modelpath.
 
         Returns
         -------
         ModelWrapper :
-            object of class ModelWrapper
+            Object of class ModelWrapper.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -152,7 +152,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            Path to the model file
+            Path to the model file.
         """
         raise NotImplementedError
 
@@ -163,7 +163,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            Path to the model file
+            Path to the model file.
         """
         raise NotImplementedError
 
@@ -174,7 +174,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            Path to the ONNX file
+            Path to the ONNX file.
         """
         raise NotImplementedError
 
@@ -187,12 +187,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         X : List
-            The input data from the Dataset object
+            The input data from the Dataset object.
 
         Returns
         -------
         Any:
-            The preprocessed inputs that are ready to be fed to the model
+            The preprocessed inputs that are ready to be fed to the model.
         """
         return X
 
@@ -208,12 +208,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         y : Any
-            The output from the model
+            The output from the model.
 
         Returns
         -------
         List :
-            The postprocessed outputs from the model that need to be in
+            The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
         return y
@@ -228,7 +228,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         X : List
-            The preprocessed inputs for the model
+            The preprocessed inputs for the model.
 
         Returns
         -------
@@ -255,7 +255,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Returns
         -------
         List[str] :
-            List of possible output format names
+            List of possible output format names.
         """
         raise NotImplementedError
 
@@ -272,7 +272,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Returns
         -------
         Measurements :
-            The inference results
+            The inference results.
         """
         from tqdm import tqdm
 
@@ -308,13 +308,13 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         batch_size : int
-            The batch size for the training
+            The batch size for the training.
         learning_rate : float
-            The learning rate for the training
+            The learning rate for the training.
         epochs : int
-            The number of epochs for training
+            The number of epochs for training.
         logdir : Path
-            Path to the logging directory
+            Path to the logging directory.
         """
         raise NotImplementedError
 
@@ -325,7 +325,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
 
         A single specification is a list of dictionaries with
         names, shapes and dtypes for each layer. The order of the
-        dictionaries is assumed to be expected by the `ModelWrapper`
+        dictionaries is assumed to be expected by the `ModelWrapper`.
 
         It is later used in optimization and compilation steps.
 
@@ -336,7 +336,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         -------
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output
-            layers specification
+            layers specification.
         """
 
         raise NotImplementedError
@@ -348,15 +348,15 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
 
         A single specification is a list of dictionaries with
         names, shapes and dtypes for each layer. The order of the
-        dictionaries is assumed to be expected by the `ModelWrapper`
+        dictionaries is assumed to be expected by the `ModelWrapper`.
 
-        It is later used in optimization and compilation steps
+        It is later used in optimization and compilation steps.
 
         Returns
         -------
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output
-            layers specification
+            layers specification.
         """
         if not hasattr(self, 'io_specification'):
             self.io_specification = self.get_io_specification_from_model()
@@ -383,35 +383,36 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         dictionary. The resulting IO specification may differ from the results
         of `get_io_specification`, information that couldn't be retrieved from
         JSON parameters are absent from final IO spec or are filled with
-        general value (example: '-1' for unknown dimension shape)
+        general value (example: '-1' for unknown dimension shape).
 
         Parameters
         ----------
         json_dict : Dict
             JSON dictionary formed by parsing the input JSON with
-            ModelWrapper's parameterschema
+            ModelWrapper's parameterschema.
 
         Returns
         -------
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output
-            layers specification
+            layers specification.
         """
         raise NotImplementedError
 
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
         """
-        Converts the input returned by the preprocess_input method to bytes.
+        Converts the input returned by the ``preprocess_input`` method
+        to bytes.
 
         Parameters
         ----------
         inputdata : Any
-            The preprocessed inputs
+            The preprocessed inputs.
 
         Returns
         -------
         bytes :
-            Input data as byte stream
+            Input data as byte stream.
         """
         raise NotImplementedError
 
@@ -419,16 +420,16 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         Converts bytes array to the model output format.
 
-        The converted bytes are later passed to postprocess_outputs method.
+        The converted bytes are later passed to ``postprocess_outputs`` method.
 
         Parameters
         ----------
         outputdata : bytes
-            Output data in raw bytes
+            Output data in raw bytes.
 
         Returns
         -------
         Any :
-            Output data to feed to postprocess_outputs
+            Output data to feed to ``postprocess_outputs`` method.
         """
         raise NotImplementedError

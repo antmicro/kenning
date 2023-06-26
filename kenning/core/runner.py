@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Provides a base class for Kenning Flow elements.
 """
@@ -25,11 +29,11 @@ class Runner(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         inputs_sources: Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs: Dict[str, str])
-            Outputs of this Runner
+            Outputs of this Runner.
         """
         self.inputs_sources = inputs_sources
         self.inputs_specs = inputs_specs
@@ -58,7 +62,7 @@ class Runner(IOInterface, ArgumentsHandler):
 
     def cleanup(self):
         """
-        Method that cleans resources after Runner is no longer needed
+        Method that cleans resources after Runner is no longer needed.
         """
         pass
 
@@ -69,8 +73,7 @@ class Runner(IOInterface, ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if there was some exit indication
+        bool : True if there was some exit indication.
         """
         return False
 
@@ -91,18 +94,17 @@ class Runner(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
         inputs_sources: Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs: Dict[str, str])
-            Outputs of this Runner
+            Outputs of this Runner.
 
         Returns
         -------
-        Runner :
-            object of class Runner
+        Runner : Object of class Runner.
         """
         raise NotImplementedError
 
@@ -115,7 +117,7 @@ class Runner(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         flow_state : List[Dict[str, np.ndarray]])
-            Current flow state containing all variables used in flow
+            Current flow state containing all variables used in flow.
         """
         # retrieves input values from current flow state based on data
         # saved in input sources (block index and block output name)
@@ -138,11 +140,10 @@ class Runner(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         inputs : Dict[str, Any]
-            Inputs provided to this block
+            Inputs provided to this block.
 
         Returns
         -------
-        Dict[str, Any] :
-            Output of this block
+        Dict[str, Any] : Output of this block.
         """
         raise NotImplementedError

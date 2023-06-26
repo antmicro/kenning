@@ -6,7 +6,7 @@
 Provides an API for dataset loading, creation and configuration.
 """
 
-from typing import Tuple, List, Any, Dict, Optional, Generator
+from typing import Tuple, List, Any, Dict, Optional, Generator, Iterable
 import random
 import hashlib
 import datetime
@@ -41,13 +41,13 @@ class Dataset(ArgumentsHandler):
     Attributes
     ----------
     dataX : List[Any]
-        List of input data (or data representing input data, i.e. file paths)
+        List of input data (or data representing input data, i.e. file paths).
     dataY : List[Any]
-        List of output data (or data representing output data)
+        List of output data (or data representing output data).
     batch_size : int
-        The batch size for the dataset
+        The batch size for the dataset.
     _dataindex : int
-        ID of the next data to be delivered for inference
+        ID of the next data to be delivered for inference.
     """
 
     arguments_structure = {
@@ -127,24 +127,24 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         root : Path
-            The path to the dataset data
+            The path to the dataset data.
         batch_size : int
-            The batch size
+            The batch size.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
         split_fraction_test : float
-            Default fraction of data to leave for model testing
+            Default fraction of data to leave for model testing.
         split_fraction_val : Optional[float]
-            Default fraction of data to leave for model validation
+            Default fraction of data to leave for model validation.
         split_seed : int
-            Default seed used for dataset split
+            Default seed used for dataset split.
         """
         assert batch_size > 0
         self.root = Path(root)
@@ -170,18 +170,18 @@ class Dataset(ArgumentsHandler):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
-        This method takes the arguments created in form_argparse and uses them
-        to create the object.
+        This method takes the arguments created in ``form_argparse``
+        and uses them to create the object.
 
         Parameters
         ----------
         args : Dict
-            arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
         Dataset :
-            object of class Dataset
+            Object of class Dataset.
         """
         return cls(
             root=args.dataset_root,
@@ -205,12 +205,12 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         Returns
         -------
         Dataset :
-            object of class Dataset
+            Object of class Dataset.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -230,7 +230,7 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         Dataset :
-            this object
+            This object.
         """
         self._dataindex = 0
         return self
@@ -240,7 +240,7 @@ class Dataset(ArgumentsHandler):
         Returns next data sample in a form of a (X, y) tuple.
 
         X contains the list of inputs for the model.
-        y contains the list of outputs for the model.
+        Y contains the list of outputs for the model.
 
         Returns
         -------
@@ -264,18 +264,26 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         int :
-            Number of input samples
+            Number of input samples.
         """
         return len(self.dataX)
 
-    def _iter_subset(self, dataXsubset: List[any], dataYsubset: List[Any]):
+    def _iter_subset(self, dataXsubset: List[any], dataYsubset: List[Any]
+                     ) -> Iterable['Dataset']:
         """
-        dataX : List[Any]
-            Subset of the dataX
-        dataY : List[Any]
-            Subset of the dataY
-
         Iterates over subset of the dataset
+
+        Parameters
+        ----------
+        dataX : List[Any]
+            Subset of the dataX.
+        dataY : List[Any]
+            Subset of the dataY.
+
+        Returns
+        -------
+        Iterable[Dataset] :
+            Iterator over the subset of the dataset.
         """
         assert len(dataXsubset) == len(dataYsubset)
 
@@ -284,27 +292,42 @@ class Dataset(ArgumentsHandler):
         subset.dataY = dataYsubset
         return iter(subset)
 
-    def iter_train(self):
+    def iter_train(self) -> Iterable['Dataset']:
         """
-        Iterates over train data obtained from split
+        Iterates over train data obtained from split.
+
+        Returns
+        -------
+        Iterable[Dataset] :
+            Iterator over the train data obtained from split.
         """
         split = self.train_test_split_representations()
         dataXtrain = split[0]
         dataYtrain = split[2]
         return self._iter_subset(dataXtrain, dataYtrain)
 
-    def iter_test(self):
+    def iter_test(self) -> Iterable['Dataset']:
         """
-        Iterates over test data obtained from split
+        Iterates over test data obtained from split.
+
+        Returns
+        -------
+        Iterable[Dataset] :
+            Iterator over the test data obtained from split.
         """
         split = self.train_test_split_representations()
         dataXtest = split[1]
         dataYtest = split[3]
         return self._iter_subset(dataXtest, dataYtest)
 
-    def iter_val(self):
+    def iter_val(self) -> Iterable['Dataset']:
         """
-        Iterates over validation data obtained from split
+        Iterates over validation data obtained from split.
+
+        Returns
+        -------
+        Iterable[Dataset] :
+            Iterator over the validation data obtained from split.
         """
         split = self.train_test_split_representations()
         assert len(split) == 6, 'No validation data in split'
@@ -314,7 +337,7 @@ class Dataset(ArgumentsHandler):
 
     def prepare_input_samples(self, samples: List) -> List:
         """
-        Preprocesses input samples, i.e. load images from files, converts them.
+        Prepares input samples, i.e. load images from files, converts them.
 
         By default the method returns data as is - without any conversions.
         Since the input samples can be large, it does not make sense to load
@@ -324,18 +347,18 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         samples : List
-            List of input samples to be processed
+            List of input samples to be processed.
 
         Returns
         -------
         List :
-            preprocessed input samples
+            Preprocessed input samples.
         """
         return samples
 
     def prepare_output_samples(self, samples: List) -> List:
         """
-        Preprocesses output samples.
+        Prepares output samples.
 
         By default the method returns data as is.
         It can be used i.e. to create the one-hot output vector with class
@@ -344,12 +367,12 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         samples : List
-            List of output samples to be processed
+            List of output samples to be processed.
 
         Returns
         -------
         List :
-            preprocessed output samples
+            Preprocessed output samples.
         """
         return samples
 
@@ -360,7 +383,7 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         batch_size : int
-            Number of input samples per batch
+            Number of input samples per batch.
         """
         assert batch_size > 0
         self.batch_size = batch_size
@@ -377,7 +400,7 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         Tuple[List, List] :
-            the list of data samples
+            The list of data samples.
         """
         return (
             self.prepare_input_samples(self.dataX),
@@ -394,7 +417,7 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         Tuple[List, List] :
-            the list of data samples representations
+            The list of data samples representations.
         """
         return (self.dataX, self.dataY)
 
@@ -410,18 +433,18 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         test_fraction : float
-            The fraction of data to leave for model testing
+            The fraction of data to leave for model testing.
         val_fraction : float
-            The fraction of data to leave for model validation
+            The fraction of data to leave for model validation.
         seed : int
-            The seed for random state
+            The seed for random state.
         stratify : bool
-            Whether to stratify the split
+            Whether to stratify the split.
 
         Returns
         -------
         Tuple[List, ...] :
-            Data splitted into train, test and optionally validation subsets
+            Split data into train, test and optionally validation subsets.
         """
         from sklearn.model_selection import train_test_split
 
@@ -483,9 +506,9 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         percentage : float
-            The fraction of data to use for calibration
+            The fraction of data to use for calibration.
         seed : int
-            The seed for random state
+            The seed for random state.
         """
         if self.external_calibration_dataset is None:
             _, X, _, _ = self.train_test_split_representations(
@@ -509,8 +532,8 @@ class Dataset(ArgumentsHandler):
         and prepares the list of entries that are suitable for the
         prepare_input_samples method.
 
-        This method is called by the calibration_dataset_genereator method to
-        get the data for calibration when external_calibration_dataset is
+        This method is called by the ``calibration_dataset_generator`` method
+        to get the data for calibration when external_calibration_dataset is
         provided.
 
         By default, this method scans for all files in the directory and
@@ -519,7 +542,8 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         List[Any] :
-            List of objects that are usable by the prepare_input_samples method
+            List of objects that are usable by the ``prepare_input_samples``
+            method.
         """
         data = [
             x for x in self.external_calibration_dataset.rglob('*') if x.is_file()  # noqa: E501
@@ -592,14 +616,14 @@ class Dataset(ArgumentsHandler):
         Parameters
         ----------
         predictions : List
-            The list of predictions from the model
+            The list of predictions from the model.
         truth: List
-            The ground truth for given batch
+            The ground truth for given batch.
 
         Returns
         -------
         Measurements :
-            The dictionary containing the evaluation results
+            The dictionary containing the evaluation results.
         """
         raise NotImplementedError
 
@@ -613,8 +637,9 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         Tuple[Any, Any] :
-            the standardization values for a given train dataset.
-            Tuple of two variables describing mean and std values
+            Tuple of two variables describing mean and
+            standardization values for a given train dataset.
+
         """
         raise NotImplementedError
 
@@ -625,7 +650,7 @@ class Dataset(ArgumentsHandler):
         Returns
         -------
         List[str] :
-            List of class names
+            List of class names.
         """
         raise NotImplementedError
 

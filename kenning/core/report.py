@@ -13,7 +13,7 @@ from typing import Dict, List
 
 def create_report_from_measurements(
         template: Path,
-        measurementsdata: Dict[str, List]):
+        measurementsdata: Dict[str, List]) -> str:
     """
     Creates a report from template and measurements data.
 
@@ -22,9 +22,13 @@ def create_report_from_measurements(
     Parameters
     ----------
     template : Path
-        Path to the Jinja template
+        Path to the Jinja template.
     measurementsdata : Dict[str, List]
-        dictionary describing measurements taken during benchmark
+        Dictionary describing measurements taken during benchmark.
+
+    Returns
+    -------
+    str : Content of the report.
     """
     with open(template, 'r') as resourcetemplatefile:
         resourcetemplate = resourcetemplatefile.read()

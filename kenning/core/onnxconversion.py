@@ -24,12 +24,12 @@ Represents single model entry for a given framework.
 Attributes
 ----------
 name : str
-    Name of the model
+    Name of the model.
 modelgenerator : FuncVar
-    function variable that can be called without any parameters to create
-    the model
+    Function variable that can be called without any parameters to create
+    the model.
 parameters : Dict[str, Any]
-    the dictionary with additional model conversion/initialization parameters
+    The dictionary with additional model conversion/initialization parameters.
 """
 
 Support = namedtuple(
@@ -42,15 +42,15 @@ Shows the framework's ONNX conversion support status for a given model.
 Attributes
 ----------
 framework : str
-    Name of the framework
+    Name of the framework.
 version : str
-    Version of the framework
+    Version of the framework.
 model : str
-    Name of the model
+    Name of the model.
 exported : SupportStatus
-    The status of exporting the model to the ONNX
+    The status of exporting the model to the ONNX.
 imported : SupportStatus
-    The status of importing the model from the ONNX
+    The status of importing the model from the ONNX.
 """
 
 
@@ -58,12 +58,12 @@ class SupportStatus(Enum):
     """
     Enum representing the support status for ONNX conversion.
 
-    NOTIMPLEMENTED - import/export is not implemented
-    SUPPORTED - import/export is supported
-    UNSUPPORTED - import/export is not supported
-    UNVERIFIED - import/export is unverified (due to lack of model to process)
-    ERROR - import/export resulted in an error
-    ONNXMODELINVALID - exported ONNX model is invalid
+    NOTIMPLEMENTED - import/export is not implemented.
+    SUPPORTED - import/export is supported.
+    UNSUPPORTED - import/export is not supported.
+    UNVERIFIED - import/export is unverified (due to lack of model to process).
+    ERROR - import/export resulted in an error.
+    ONNXMODELINVALID - exported ONNX model is invalid.
     """
     NOTIMPLEMENTED = 0
     SUPPORTED = 1
@@ -99,9 +99,9 @@ class ONNXConversion(object):
         Parameters
         ----------
         framework : str
-            Name of the framework
+            Name of the framework.
         version : str
-            Version of the framework (should be derived from __version__)
+            Version of the framework (should be derived from __version__).
         """
         self.modelslist = []
         self.framework = framework
@@ -117,13 +117,13 @@ class ONNXConversion(object):
         ----------
         name : str
             Full name of the model, should match the name of the same models
-            in other framework's implementations
+            in other framework's implementations.
         modelgenerator : Callable
             Function that generates the model for ONNX conversion in a given
-            framework. The callable should accept no arguments
+            framework. The callable should accept no arguments.
         kwargs : Dict[str, Any]
             Additional arguments that are passed to ModelEntry object as
-            parameters
+            parameters.
         """
         self.modelslist.append(ModelEntry(name, modelgenerator, kwargs))
 
@@ -143,7 +143,7 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus : the support status of exporting given model to ONNX
+        SupportStatus : The support status of exporting given model to ONNX.
         """
         raise NotImplementedError
 
@@ -163,7 +163,7 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus : the support status of importing given model from ONNX
+        SupportStatus : The support status of importing given model from ONNX.
         """
         raise NotImplementedError
 

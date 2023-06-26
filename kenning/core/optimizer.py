@@ -65,13 +65,13 @@ class Optimizer(ArgumentsHandler):
         ----------
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
-            during compilation stage
+            during compilation stage.
         compiled_model_path : Path
-            Path to file where the compiled model should be saved
+            Path to file where the compiled model should be saved.
         dataset_percentage : float
             If the dataset is used for optimization (quantization), the
             dataset_percentage determines how much of data samples is going
-            to be used
+            to be used.
         """
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
@@ -85,14 +85,14 @@ class Optimizer(ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            The dataset object that is optionally used for optimization
+            The dataset object that is optionally used for optimization.
         args : Dict
-            arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
         Optimizer :
-            object of class Optimizer
+            Object of class Optimizer.
         """
         return cls(
             dataset,
@@ -111,14 +111,14 @@ class Optimizer(ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            The dataset object that is optionally used for optimization
+            The dataset object that is optionally used for optimization.
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         Returns
         -------
         Optimizer :
-            object of class Optimizer
+            Object of class Optimizer.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -166,11 +166,11 @@ class Optimizer(ArgumentsHandler):
         Parameters
         ----------
         inputmodelpath : Path
-            Path to the input model
+            Path to the input model.
         io_spec : Optional[Dict[str, List[Dict]]]
             Dictionary that has `input` and `output` keys that contain list
             of dictionaries mapping (property name) -> (property value)
-            for the layers
+            for the layers.
         """
         raise NotImplementedError
 
@@ -180,8 +180,7 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[str, str] :
-            Framework name and version
+        Tuple[str, str] : Framework name and version.
         """
         raise NotImplementedError
 
@@ -191,8 +190,7 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        List[str] :
-            Names of possible input formats
+        List[str] : Names of possible input formats.
         """
         return list(self.inputtypes.keys())
 
@@ -202,8 +200,7 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        List[str] :
-            List of possible output formats
+        List[str] : List of possible output formats.
         """
         return self.outputtypes
 
@@ -220,15 +217,15 @@ class Optimizer(ArgumentsHandler):
         previous_block : Union[ModelWrapper, Optimizer]
             Previous block in the optimization chain.
 
+        Returns
+        -------
+        str : Matching format.
+
         Raises
         ------
         ValueError :
             Raised if there is no matching format.
 
-        Returns
-        -------
-        str :
-            Matching format
         """
 
         possible_outputs = previous_block.get_output_formats()
@@ -264,7 +261,7 @@ class Optimizer(ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            Path where the model is saved
+            Path where the model is saved.
 
         Returns
         -------
@@ -295,16 +292,16 @@ class Optimizer(ArgumentsHandler):
         Parameters
         ----------
         inputmodelpath : Path
-            Path to the input model
+            Path to the input model.
         io_spec : Optional[Dict[str, List[Dict]]]
-            Specification of the input/ouput layers
+            Specification of the input/ouput layers.
         """
         inputmodelpath = Path(inputmodelpath)
         if not io_spec:
             io_spec = self.load_io_specification(inputmodelpath)
 
         if io_spec:
-            with open(self.get_spec_path(self.compiled_model_path), 'w') as f:  # noqa: E501
+            with open(self.get_spec_path(self.compiled_model_path), 'w') as f:
                 json.dump(
                     io_spec,
                     f
@@ -319,18 +316,18 @@ class Optimizer(ArgumentsHandler):
             modelpath: Path) -> Optional[Dict[str, List[Dict]]]:
         """
         Returns saved input and output specification of a model
-        saved in `modelpath` if there is one. Otherwise returns None
+        saved in `modelpath` if there is one. Otherwise returns None.
 
         Parameters
         ----------
         modelpath : Path
-            Path to the model which specification the function should read
+            Path to the model which specification the function should read.
 
         Returns
         -------
         Optional[Dict[str, List[Dict]]] :
             Specification of a model saved
-            in `modelpath` if there is one. None otherwise
+            in `modelpath` if there is one. None otherwise.
         """
         modelpath = Path(modelpath)
         spec_path = self.get_spec_path(modelpath)

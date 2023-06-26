@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Provides an API for processing and returning data from models and dataprovider
+Provides an API for processing and returning data from models and dataprovider.
 """
 
 from typing import Any, Dict, Tuple
@@ -27,11 +27,11 @@ class OutputCollector(Runner):
         Parameters
         ----------
         inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
+            Specifications of runner's inputs.
         outputs : Dict[str, str]
-            Outputs of this runner
+            Outputs of this runner.
         """
         super().__init__(
             inputs_sources=inputs_sources,
@@ -50,11 +50,11 @@ class OutputCollector(Runner):
         Parameters
         ----------
         args : Dict
-            arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
-        OutputCollector : object of class OutputCollector
+        OutputCollector : Object of class OutputCollector.
         """
         return cls()
 
@@ -76,35 +76,35 @@ class OutputCollector(Runner):
 
     def process_output(self, input_data: Any, output_data: Any):
         """
-        Returns the infered data back to the specific place/device/connection
+        Returns the inferred data back to the specific place/device/connection.
 
         Eg. it can save a video file with bounding boxes on objects or stream
-        it via a TCP connection, or just show it on screen
+        it via a TCP connection, or just show it on screen.
 
         Parameters
         ----------
         input_data : Any
-            Data collected from Datacollector that was processed by the model
+            Data collected from Datacollector that was processed by the model.
         output_data : Any
-            Data returned from the model
+            Data returned from the model.
         """
         raise NotImplementedError
 
     def detach_from_output(self):
         """
-        Detaches from the output during shutdown
+        Detaches from the output during shutdown.
         """
         raise NotImplementedError
 
     def should_close(self) -> bool:
         """
-        Checks if a specific exit condition was reached
+        Checks if a specific exit condition was reached.
 
         This allows the OutputCollector to close gracefully if an exit
         condition was reached, eg. when a key was pressed.
 
         Returns
         -------
-        bool : True if exit condition was reached to break the loop
+        bool : True if exit condition was reached to break the loop.
         """
         raise NotImplementedError

@@ -35,9 +35,10 @@ class ModelNotPreparedError(Exception):
     """
     Exception raised when trying to run the model without loading it first.
     """
+
     def __init__(
             self,
-            msg="Make sure to run `prepare_model` method before runnning it.",
+            msg="Make sure to run `prepare_model` method before running it.",
             *args, **kwargs
     ):
         super().__init__(msg, *args, **kwargs)
@@ -48,6 +49,7 @@ class InputNotPreparedError(Exception):
     Exception raised when trying to run the model without
     loading the inputs first.
     """
+
     def __init__(
             self,
             msg="Make sure to run `prepare_input` method before running the model.",  # noqa: E501
@@ -85,9 +87,9 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol
+            The implementation of the host-target communication  protocol.
         disable_performance_measurements : bool
-            Disable collection and processing of performance metrics
+            Disable collection and processing of performance metrics.
         """
         self.protocol = protocol
         self.shouldwork = True
@@ -115,14 +117,13 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            RuntimeProtocol object
+            RuntimeProtocol object.
         args : Dict
-            arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------
-        RuntimeProtocol :
-            object of class RuntimeProtocol
+        RuntimeProtocol : Object of class RuntimeProtocol.
         """
         return cls(
             protocol,
@@ -141,14 +142,13 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         protocol : RuntimeProtocol
-            RuntimeProtocol object
+            RuntimeProtocol object.
         json_dict : Dict
-            Arguments for the constructor
+            Arguments for the constructor.
 
         Returns
         -------
-        Runtime :
-            object of class Runtime
+        Runtime : Object of class Runtime.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -165,8 +165,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        List[str] :
-            List of possible input format names
+        List[str] : List of possible input format names.
         """
         return self.inputtypes
 
@@ -215,8 +214,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         return self.protocol.initialize_server()
 
@@ -226,8 +224,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         return self.protocol.initialize_client()
 
@@ -241,15 +238,15 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Input data in bytes delivered by the client, preprocessed
+            Input data in bytes delivered by the client, preprocessed.
 
         Returns
         -------
-        bool : True if succeded
+        bool : True if succeeded.
 
         Raises
         ------
-        ModelNotLoadedError : Raised if model is not loaded
+        ModelNotLoadedError : Raised if model is not loaded.
         """
         raise NotImplementedError
 
@@ -271,7 +268,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if succeded
+        bool : True if succeeded.
         """
         self.inference_session_start()
         ret = self.prepare_model(input_data)
@@ -300,7 +297,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if succeded
+        bool : True if succeeded.
         """
         raise NotImplementedError
 
@@ -318,7 +315,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if there is no data to send or if succeded
+        bool : True if there is no data to send or if succeeded.
         """
         ret = self.prepare_io_specification(input_data)
         if ret:
@@ -352,7 +349,7 @@ class Runtime(ArgumentsHandler):
         Raises
         ------
         AttributeError : Raised if output specification is not loaded.
-        ValueError : Raised if size of input doesn't match the input specification  # noqa: E501
+        ValueError : Raised if size of input doesn't match the input specification.  # noqa: E501
         """
         if self.input_spec is None:
             raise AttributeError("You must load the input specification first.")  # noqa: E501
@@ -419,12 +416,11 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         results : list[np.ndarray]
-            List of outputs of the model
+            List of outputs of the model.
 
         Returns
         -------
-        bytes :
-            Postprocessed output converted to bytes
+        bytes : Postprocessed output converted to bytes.
 
         Raises
         ------
@@ -479,7 +475,7 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         io_spec : Dict
-            Specification of the input/output layers
+            Specification of the input/output layers.
         """
 
         self.input_spec = io_spec['input']
@@ -501,13 +497,12 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : Optional[bytes]
-            io_specification or None, if it should be loaded
+            The io_specification` or None, if it should be loaded
             from another source.
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         if input_data is None:
             path = self.get_io_spec_path(self.modelpath)
@@ -540,12 +535,11 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         modelpath : Path
-            Path to the compiled model
+            Path to the compiled model.
 
         Returns
         -------
-        Path :
-            Returns path to the specification
+        Path : Returns path to the specification.
         """
         modelpath = Path(modelpath)
         spec_path = modelpath.parent / (modelpath.name + '.json')
@@ -558,7 +552,7 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Not used here
+            Not used here.
         """
         self.log.debug('Processing input')
         self._run()
@@ -583,8 +577,7 @@ class Runtime(ArgumentsHandler):
 
         Raises
         ------
-        ModelNotLoadedError :
-            Raised if model is not loaded
+        ModelNotLoadedError : Raised if model is not loaded.
         """
         raise NotImplementedError
 
@@ -600,17 +593,15 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Not used here
+            Not used here.
 
         Returns
         -------
-        bytes :
-            data to send to the client
+        bytes : Data to send to the client.
 
         Raises
         ------
-        ModelNotLoadedError :
-            Raised if model is not loaded
+        ModelNotLoadedError : Raised if model is not loaded.
         """
         raise NotImplementedError
 
@@ -621,7 +612,7 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Not used here
+            Not used here.
         """
         out = self.upload_output(input_data)
         if out:
@@ -638,7 +629,7 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Not used here
+            Not used here.
         """
         self.inference_session_end()
         out = self.upload_stats(input_data)
@@ -654,12 +645,11 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         input_data : bytes
-            Not used here
+            Not used here.
 
         Returns
         -------
-        bytes :
-            statistics to be sent to the client
+        bytes : Statistics to be sent to the client.
         """
         self.log.debug('Uploading stats')
         stats = json.dumps(MeasurementsCollector.measurements.data)
@@ -673,12 +663,11 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         compiledmodelpath : Path
-            Path to the file with a compiled model
+            Path to the file with a compiled model.
 
         Returns
         -------
-        bool :
-            True if succeded
+        bool : True if succeeded.
         """
         spec_path = self.get_io_spec_path(compiledmodelpath)
         if spec_path.exists():
@@ -693,8 +682,7 @@ class Runtime(ArgumentsHandler):
 
         Returns
         -------
-        bool:
-            True if initialized successfully
+        bool: True if initialized successfully.
         """
         return (self.prepare_model(None) and
                 self.prepare_io_specification(None))
@@ -711,16 +699,15 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            Dataset to verify the inference on
+            Dataset to verify the inference on.
         modelwrapper : ModelWrapper
-            Model that is executed on target hardware
+            Model that is executed on target hardware.
         compiledmodelpath : Path
-            Path to the file with a compiled model
+            Path to the file with a compiled model.
 
         Returns
         -------
-        bool :
-            True if executed successfully
+        bool : True if executed successfully.
         """
         compiledmodelpath = Path(compiledmodelpath)
         from kenning.utils.logger import TqdmCallback
@@ -758,16 +745,15 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         X : np.ndarray
-            Batch of data provided for inference
+            Batch of data provided for inference.
         modelwrapper : ModelWrapper
-            Model that is executed on target hardware
+            Model that is executed on target hardware.
         postprocess : bool
-            Indicates if model output should be postprocessed
+            Indicates if model output should be postprocessed.
 
         Returns
         -------
-        Any :
-            obtained values
+        Any : Obtained values.
         """
         prepX = modelwrapper._preprocess_input(X)
         prepX = modelwrapper.convert_input_to_bytes(prepX)
@@ -806,16 +792,15 @@ class Runtime(ArgumentsHandler):
         Parameters
         ----------
         dataset : Dataset
-            Dataset to verify the inference on
+            Dataset to verify the inference on.
         modelwrapper : ModelWrapper
-            Model that is executed on target hardware
+            Model that is executed on target hardware.
         compiledmodelpath : Path
-            Path to the file with a compiled model
+            Path to the file with a compiled model.
 
         Returns
         -------
-        bool :
-            True if executed successfully
+        bool : True if executed successfully.
         """
         from tqdm import tqdm
         if self.protocol is None:
@@ -857,12 +842,11 @@ class Runtime(ArgumentsHandler):
 
     def get_time(self) -> float:
         """
-        Returns current timestamp
+        Gets the current timestamp.
 
         Returns
         -------
-        float :
-            Current timestamp
+        float : Current timestamp.
         """
         return time.perf_counter()
 

@@ -19,8 +19,9 @@ from kenning.pipeline_manager.node_utils import add_node, get_category_name
 
 class KenningFlowHandler(BaseDataflowHandler):
     """
-    Defines the Kenningflow specification to use with Pipeline Manager
+    Defines the Kenningflow specification to use with Pipeline Manager.
     """
+
     def __init__(self):
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()
 
@@ -205,17 +206,18 @@ class KenningFlowHandler(BaseDataflowHandler):
 
 class FlowGraphCreator(GraphCreator):
     """
-    Abstraction of graph generation representing Kenningflow
+    Abstraction of graph generation representing Kenningflow.
     """
+
     def __init__(self, primitive_modules: Iterable[str]):
         """
-        Creates graph in the KenningFlow format
+        Creates graph in the KenningFlow format.
 
         Parameters
         ----------
         primitive_modules : Iterable[str]
             Names of kenning types that can be used as runner
-            parameter
+            parameter.
         """
         self.primitive_modules = primitive_modules
         super().__init__()
@@ -243,17 +245,17 @@ class FlowGraphCreator(GraphCreator):
 
     def _get_runner_io(self, node_id: str) -> Dict[str, List[Dict]]:
         """
-        Parses runner name and returns its IO specification
+        Parses runner name and returns its IO specification.
 
         Parameters
         ----------
         node_id : str
-            ID of input node
+            ID of input node.
 
         Returns
         -------
-        Dict[str, List[Dict]]
-            IO specification defined by the runner
+        Dict[str, List[Dict]] :
+            IO specification defined by the runner.
         """
         runner_node = self.nodes[node_id]
         runner_obj = load_class(runner_node['type'])
@@ -269,12 +271,12 @@ class FlowGraphCreator(GraphCreator):
         Parameters
         ----------
         arg1, arg2 : Dict[str, Any]
-            Elements of list returned by runners IO specification
+            Elements of list returned by runners IO specification.
 
         Returns
         -------
-        bool
-            Whether IO specification items are compatible with each other
+        bool :
+            Whether IO specification items are compatible with each other.
         """
         if 'type' in arg1 and 'type' in arg2:
             return arg1['type'] == arg2['type']

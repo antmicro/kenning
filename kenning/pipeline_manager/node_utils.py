@@ -20,13 +20,13 @@ def add_node(
     Parameters
     ----------
     node_list: Dict[str, Node]
-        List of nodes to add to the specification
+        List of nodes to add to the specification.
     nodemodule : str
-        Python-like path to the class holding a block to add to specification
+        Python-like path to the class holding a block to add to specification.
     category : str
-        Category of the block
+        Category of the block.
     type : str
-        Type of the block added to the specification
+        Type of the block added to the specification.
     """
     nodeclass = nodemodule.split(".")[-1]
     node_list[nodeclass] = (
@@ -37,7 +37,7 @@ def add_node(
 def get_category_name(kenning_class):
     """
     Turns 'kenning.module.submodule1.submodule2. ... .specific_module'
-    into 'module/submodule1/submodule2/...'
+    into 'module/submodule1/submodule2/...'.
     """
     names = kenning_class.__module__
     # Optionally remove kenning.

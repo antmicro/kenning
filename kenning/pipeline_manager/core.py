@@ -19,13 +19,13 @@ class Node(NamedTuple):
     Attributes
     ----------
     name : str
-        Name of the block
+        Name of the block.
     category : str
-        Category of the node (where it appears in the available blocks menu)
+        Category of the node (where it appears in the available blocks menu).
     type : str
-        Type of the block (for internal usage in pipeline manager)
+        Type of the block (for internal usage in pipeline manager).
     cls_name : str
-        Full name of class (including module names) that the node represents
+        Full name of class (including module names) that the node represents.
     """
     name: str
     category: str
@@ -37,27 +37,28 @@ class GraphCreator:
     """
     Base class for generating graphs in a particular JSON format.
     """
+
     def __init__(self):
         self.start_new_graph()
         self._id = -1
 
     def start_new_graph(self):
         """
-        Starts creating new graph
+        Starts creating new graph.
         """
         self.nodes = {}
         self.reset_graph()
 
     def gen_id(self) -> str:
         """
-        Utility function for unique ID generation
+        Utility function for unique ID generation.
         """
         self._id += 1
         return str(self._id)
 
     def reset_graph(self):
         """
-        Resets the internal state of graph creator
+        Resets the internal state of graph creator.
         """
         raise NotImplementedError
 
@@ -76,14 +77,13 @@ class GraphCreator:
         Parameters
         ----------
         node : Node
-            Kenning Node that should be represented in a graph
+            Kenning Node that should be represented in a graph.
         parameters : Any
-            Format specific parameters of the graph node
+            Format specific parameters of the graph node.
 
         Returns
         -------
-        str :
-            ID of newly created graph node
+        str : ID of newly created graph node.
         """
         raise NotImplementedError
 
@@ -101,8 +101,10 @@ class GraphCreator:
 
         Parameters
         ----------
-        from_id, to_id :
-            IDs of connected graph nodes
+        from_id : str
+            ID of starting graph node.
+        to_id : str
+            ID of ending graph node.
 
         Returns
         -------
@@ -120,35 +122,37 @@ class GraphCreator:
             to_id: str
     ):
         """
-        Creates connection between two nodes
+        Creates connection between two nodes.
 
         Parameters
         ----------
-        from_id, to_id :
-            IDs of graph nodes to be connected
+        from_id : str
+            ID of starting graph node.
+        to_id : str
+            ID of ending graph node.
         """
         raise NotImplementedError
 
     def flush_graph(self) -> Any:
         """
-        Ends and resets graph creation process
+        Ends and resets graph creation process.
 
         Returns
         -------
-        Any :
-            Finalized graph
+        Any : Finalized graph.
         """
         raise NotImplementedError
 
 
 class BaseDataflowHandler:
     """
-    Base class used for interpretation of graphs comming from Pipeline
+    Base class used for interpretation of graphs coming from Pipeline
     manager. Subclasses are used to define specifics of one of the Kenning
     graph formats (such as Kenningflow or Kenning optimization pipeline).
     Defines conversion to and from Pipeline Manager format, parsing and
     running incoming dataflows with Kenning.
     """
+
     def __init__(
             self,
             nodes: Dict[str, Node],
@@ -163,13 +167,13 @@ class BaseDataflowHandler:
         Parameters
         ----------
         nodes : Dict[str, Node]
-            List of available nodes for this dataflow type
+            List of available nodes for this dataflow type.
         io_mapping : Dict[str, Dict]
             Mapping used by Pipeline Manager for defining the shape
-            of each node type
+            of each node type.
         graph_creator : GraphCreator
             Creator used for parsing Pipeline manager dataflows into specific
-            JSON format
+            JSON format.
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
@@ -185,8 +189,7 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Dict:
-            Specification ready to be send to Pipeline Manager
+        Dict: Specification ready to be send to Pipeline Manager.
         """
         specification = {
             'metadata': {},
@@ -292,7 +295,7 @@ class BaseDataflowHandler:
             If parsing is successful then (True, pipeline) is returned where
             pipeline is a valid JSON that can be used to run an inference.
             Otherwise (False, error_message) is returned where error_message
-            is an error that occured during parsing process.
+            is an error that occurred during parsing process.
         """
 
         try:
@@ -337,12 +340,12 @@ class BaseDataflowHandler:
         Parameters
         ----------
         json_cfg : Dict
-            Kenning JSON dictionary created with `parse_dataflow` method
+            Kenning JSON dictionary created with `parse_dataflow` method.
 
         Returns
         -------
         Any :
-            Kenning objects that can be later run with `run_dataflow`
+            Kenning objects that can be later run with `run_dataflow`.
         """
         raise NotImplementedError
 
@@ -371,7 +374,7 @@ class BaseDataflowHandler:
 
         For the details of the shape of resulting dictionary, check the
         Pipeline Manager graph representation detailed in
-        `PipelineManagerGraphCreator` documentation
+        `PipelineManagerGraphCreator` documentation.
 
         Parameters
         ----------
@@ -474,6 +477,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         'to' - ID of a interface that is an ending point of a connection
     }
     """
+
     def __init__(
             self,
             io_mapping: Dict,
@@ -488,13 +492,13 @@ class PipelineManagerGraphCreator(GraphCreator):
         Parameters
         ----------
         io_mapping : Dict[str, Dict]
-            IO mapping based on the input nodes specification
+            IO mapping based on the input nodes specification.
         start_x_pos, start_y_pos : int
-            Position of the first graph node
+            Position of the first graph node.
         node_width : int
-            Width of nodes
+            Width of nodes.
         node_x_offset : int
-            Spacing between two nodes
+            Spacing between two nodes.
         """
         self.start_x_pos = start_x_pos
         self.x_pos = start_x_pos
@@ -511,13 +515,13 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def update_position(self):
         """
-        Calculates position for a new node based on previous (x,y)
+        Calculates position for a new node based on previous (x,y).
         """
         self.x_pos += self.node_width + self.node_x_offset
 
     def reset_position(self):
         """
-        Returns the position to it's original value
+        Returns the position to it's original value.
         """
         self.x_pos = self.start_x_pos
 
@@ -526,17 +530,17 @@ class PipelineManagerGraphCreator(GraphCreator):
             io_spec: Dict[str, List],
     ) -> Tuple[str, List]:
         """
-        Creates a node interface based on it's IO specification
+        Creates a node interface based on it's IO specification.
 
         Parameters
         ----------
         io_spec: Dict[str, List]
-            IO specification of an input
+            IO specification of an input.
 
         Returns
         -------
         Tuple[str, List]
-            Created interface together with its ID
+            Created interface together with its ID.
         """
         interface_id = self.gen_id()
         interface = {

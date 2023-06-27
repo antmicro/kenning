@@ -20,6 +20,7 @@ class PipelineHandler(BaseDataflowHandler):
     Defines interpretation of graphs coming from Pipeline manager as Kenning
     optimization pipelines.
     """
+
     def __init__(self):
         nodes, io_mapping = PipelineHandler.get_nodes()
         super().__init__(nodes, io_mapping, PipelineGraphCreator())
@@ -204,11 +205,12 @@ class PipelineHandler(BaseDataflowHandler):
 
 class PipelineGraphCreator(GraphCreator):
     """
-    Creates JSON defining Kenning optimization pipeline
+    Creates JSON defining Kenning optimization pipeline.
     """
+
     def reset_graph(self):
         """
-        Creates graph in a standard Kenning pipeline format
+        Creates graph in a standard Kenning pipeline format.
         """
         self.type_to_id = {}
         self.id_to_type = {}
@@ -266,7 +268,7 @@ class PipelineGraphCreator(GraphCreator):
     def flush_graph(self):
         for (from_name, to_name), exists in self.necessary_conn.items():
             if not exists:
-                raise RuntimeError(f"No estabilished connection between "
+                raise RuntimeError(f"No established connection between "
                                    f"{from_name} and {to_name}")
 
         pipeline = {}

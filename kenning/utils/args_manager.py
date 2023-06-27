@@ -17,13 +17,13 @@ arguments_structure is a mapping (argument_name -> keywords)
 
 Supported keywords:
 argparse_name: Name that is prompted as an argparse argument.
-    If argparse_name is not specifed then JSON uses argument_name
+    If argparse_name is not specified then JSON uses argument_name
     and argparse adds -- prefix and change all underscores to hyphens.
-    E.g. model_path -> --model-path
+    E.g. model_path -> --model-path.
 
     If it is specified then argparse uses it and JSON uses argument with
     hyphens stripped from the prefix and changed to underscores.
-    E.g. --some-name -> some_name
+    E.g. --some-name -> some_name.
 description: Description of the argument.
 type: Same as 'type' in argparse. The argument is converted to this value.
     Possible values for type: [int, float, str, bool, Path].
@@ -113,13 +113,13 @@ def serialize(obj: object, normalize: bool = True) -> Dict:
     Parameters
     ----------
     obj : object
-        Object to serialize
+        Object to serialize.
     normalize : bool
-        Determines whether to convert value to JSON type
+        Determines whether to convert value to JSON type.
 
     Returns
     -------
-    str: Serialized object
+    str: Serialized object.
     """
     if hasattr(obj, 'form_parameterschema'):
         properties = obj.form_parameterschema()['properties']
@@ -154,19 +154,19 @@ def serialize_inference(
     Parameters
     ----------
     dataset : Dataset
-        Dataset to serialize
+        Dataset to serialize.
     model : ModelWrapper
-        ModelWrapper to serialize
+        ModelWrapper to serialize.
     optimizers : Union[List[Optimizer], Optimizer]
-        Optimizers to serialize
+        Optimizers to serialize.
     runtimeprotocol : RuntimeProtocol
-        RuntimeProtocol to serialize
+        RuntimeProtocol to serialize.
     runtime : Runtime
-        Runtime to serialize
+        Runtime to serialize.
 
     Returns
     -------
-    Dict: Serialized inference
+    Dict: Serialized inference.
     """
     def object_to_module(obj):
         return type(obj).__module__ + '.' + type(obj).__name__
@@ -212,9 +212,13 @@ def get_parsed_json_dict(schema, json_dict):
     Parameters
     ----------
     schema : Dict
-        Schema to validate with
+        Schema to validate with.
     json_dict : Dict
-        Dictionary to validate
+        Dictionary to validate.
+
+    Returns
+    -------
+    Dict: Validated dictionary.
     """
     jsonschema.validate(
         instance=json_dict,
@@ -443,8 +447,7 @@ class ArgumentsHandler(object):
 
         Returns
         -------
-        Dict:
-            Parameter schema for the class
+        Dict: Parameter schema for the class.
         """
         classes = [cls]
         parameterschema = {
@@ -476,7 +479,7 @@ class ArgumentsHandler(object):
         Tuple[argparse.ArgumentParser, argparse._ArgumentGroup] :
             Tuple with the argument parser object that can act as parent for
             program's argument parser, and the corresponding arguments' group
-            pointer
+            pointer.
         """
         classes = [cls]
         parser = argparse.ArgumentParser(

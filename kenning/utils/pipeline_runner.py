@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module with pipelines running helper functions
+Module with pipelines running helper functions.
 """
 
 import tempfile
@@ -24,16 +24,16 @@ def assert_io_formats(model, optimizers, runtime) -> None:
     Parameters
     ----------
     model : Optional[ModelWrapper]
-        ModelWrapper of the pipeline
+        ModelWrapper of the pipeline.
     optimizers : Union[List[Optimizer], Optimizer]
-        Optimizers of the pipeline
+        Optimizers of the pipeline.
     runtime : Optional[Runtime]
-        Runtime of the pipeline
+        Runtime of the pipeline.
 
     Raises
     ------
     ValueError :
-        raised if blocks are incompatible.
+        Raised if blocks are incompatible.
     """
     chain = [model] + optimizers + [runtime]
     chain = [block for block in chain if block is not None]
@@ -78,22 +78,22 @@ def parse_json_pipeline(
     Parameters
     ----------
     json_cfg: Dict
-        Configuration of the inference pipeline
+        Configuration of the inference pipeline.
     assert_integrity: bool
         States whether integrity of connected blocks should be checked.
-
-    Raises
-    ------
-    ValueError :
-        raised if blocks are connected incorrectly
-    jsonschema.exceptions.ValidationError :
-        raised if parameters are incorrect
 
     Returns
     -------
     Tuple :
         Tuple that consists of (Dataset, Model, List[Optimizer], Optional[Runtime], Optional[RuntimeProtocol])  # noqa: E501
         It can be used to run a pipeline using `run_pipeline` function.
+
+    Raises
+    ------
+    ValueError :
+        Raised if blocks are connected incorrectly.
+    jsonschema.exceptions.ValidationError :
+        Raised if parameters are incorrect.
     """
     modelwrappercfg = json_cfg['model_wrapper']
     datasetcfg = json_cfg['dataset']
@@ -155,31 +155,31 @@ def run_pipeline_json(
     Parameters
     ----------
     json_cfg : dict
-        Configuration of the inference pipeline
+        Configuration of the inference pipeline.
     output : Path
-        Path to the output JSON file with measurements
+        Path to the output JSON file with measurements.
     verbosity : Optional[str]
-        Verbosity level
+        Verbosity level.
     convert_to_onnx : Optional[Path]
-        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
+        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here).  # noqa: E501
     command : Optional[List]
         Command used to run this inference pipeline. It is put in
-        the output JSON file
+        the output JSON file.
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
-        only testing of the model is executed
-
-    Raises
-    ------
-    ValueError :
-        raised if blocks are connected incorrectly
-    jsonschema.exceptions.ValidationError :
-        raised if parameters are incorrect
+        only testing of the model is executed.
 
     Returns
     -------
     int :
-        0 if the inference was successful, 1 otherwise
+        The 0 value if the inference was successful, 1 otherwise.
+
+    Raises
+    ------
+    ValueError :
+        Raised if blocks are connected incorrectly.
+    jsonschema.exceptions.ValidationError :
+        Raised if parameters are incorrect.
     """
     return run_pipeline(
         *parse_json_pipeline(json_cfg),
@@ -203,44 +203,45 @@ def run_pipeline(
         command: List = ['Run in a different environment'],
         run_benchmarks_only: bool = False):
     """
-    Wrapper function that runs a pipeline using given parameters
+    Wrapper function that runs a pipeline using given parameters.
 
     Parameters
     ----------
     dataset : Dataset
-        Dataset to use in inference
+        Dataset to use in inference.
     model : ModelWrapper
-        ModelWrapper to use in inference
+        ModelWrapper to use in inference.
     optimizers : List[Optimizer]
-        Optimizers to use in inference
+        Optimizers to use in inference.
     runtime : Runtime
-        Runtime to use in inference
+        Runtime to use in inference.
     runtimeprotocol : RuntimeProtocol
-        RuntimeProtocol to use in inference
+        RuntimeProtocol to use in inference.
     output : Path
-        Path to the output JSON file with measurements
+        Path to the output JSON file with measurements.
     verbosity : Optional[str]
-        Verbosity level
+        Verbosity level.
     convert_to_onnx : Optional[Path]
-        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here)  # noqa: E501
+        Before compiling the model, convert it to ONNX and use
+        in the inference (provide a path to save here).
     command : Optional[List]
         Command used to run this inference pipelin. It is put in
-        the output JSON file
+        the output JSON file.
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
-        only testing of the model is executed
-
-    Raises
-    ------
-    ValueError :
-        raised if blocks are connected incorrectly
-    jsonschema.exceptions.ValidationError :
-        raised if parameters are incorrect
+        only testing of the model is executed.
 
     Returns
     -------
     int :
-        0 if the inference was successful, 1 otherwise
+        The 0 value if the inference was successful, 1 otherwise.
+
+    Raises
+    ------
+    ValueError :
+        Raised if blocks are connected incorrectly.
+    jsonschema.exceptions.ValidationError :
+        Raised if parameters are incorrect.
     """
     logger.set_verbosity(verbosity)
     log = logger.get_logger()

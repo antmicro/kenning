@@ -206,7 +206,7 @@ class TqdmCallback(tqdm):
         Parameters
         ----------
         n : Optional[Union[int, float]]
-            Increment that is added to the internal counter
+            Increment that is added to the internal counter.
 
         Returns
         -------

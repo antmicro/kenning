@@ -26,17 +26,17 @@ def get_all_subclasses(
     Parameters
     ----------
     modulepath : str
-        Module-like path to where search should be done
+        Module-like path to where search should be done.
     cls : Type
-        Given base class
+        Given base class.
     raise_exception : bool
         Indicate if exception should be raised in case subclass cannot be
-        imported
+        imported.
 
     Returns
     -------
     List[Type] :
-        List of all final subclasses of given class
+        List of all final subclasses of given class.
     """
     logger = get_logger()
 
@@ -93,11 +93,11 @@ def get_all_subclasses(
         Parameters
         ----------
         class_def : ast.ClassDef
-            Class to collect subclasses for
+            Class to collect subclasses for.
 
         Returns
         -------
-        bool : True if class_def is subclass of cls
+        bool : True if class_def is subclass of cls.
         """
         found_subclass = False
         checked_classes.add(class_def.name)
@@ -120,7 +120,7 @@ def get_all_subclasses(
     # try importing subclasses
     result = []
     for subclass_name in subclasses:
-        # filter non final subclasses
+        # filter non-final subclasses
         if subclass_name in non_final_subclasses:
             continue
         subclass_module = classes_modules[subclass_name]
@@ -151,7 +151,7 @@ def load_class(modulepath: str) -> ClassVar:
     Parameters
     ----------
     modulepath : str
-        Module-like path to the class
+        Module-like path to the class.
     """
     module_name, cls_name = modulepath.rsplit('.', 1)
     module = importlib.import_module(module_name)
@@ -166,11 +166,11 @@ def get_kenning_submodule_from_path(modulepath: str):
     Parameters
     ----------
     modulepath: str
-        Path to the module script, usually stored in sys.argv[0]
+        Path to the module script, usually stored in sys.argv[0].
 
     Returns
     -------
-    str: Normalized module path
+    str: Normalized module path.
     """
     parts = Path(modulepath).parts
     item_index = len(parts) - 1 - parts[::-1].index("kenning")
@@ -185,11 +185,11 @@ def get_command(argv: List[str]):
     Parameters
     ----------
     argv: List[str]
-        List or arguments from sys.argv
+        List or arguments from sys.argv.
 
     Returns
     -------
-    str: Full string with command
+    str: Full string with command.
     """
     command = [ar.strip() for ar in argv if ar.strip() != '']
     modulename = get_kenning_submodule_from_path(command[0])

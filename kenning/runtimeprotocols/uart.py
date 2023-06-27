@@ -38,23 +38,22 @@ def _io_spec_to_struct(
         byteorder: str = 'little') -> bytes:
     """
     Method used to convert IO spec in JSON form into struct that can be easily
-    parsed by runtime
+    parsed by runtime.
 
     Parameters
     ----------
     io_spec : Dict[str, Any]
-        Input IO spec
+        Input IO specification.
     entry_func : str
-        Name of the entry function of the module
+        Name of the entry function of the module.
     model_name : str
-        Name of the model
+        Name of the model.
     byteorder : str
-        Byteorder of the struct (either 'little' or 'big')
+        Byteorder of the struct (either 'little' or 'big').
 
     Returns
     -------
-    bytes :
-        IO spec struct
+    bytes : IO specification structure.
     """
     input_shape = [inp['shape'] for inp in io_spec['input']]
     output_length = [
@@ -117,17 +116,16 @@ def _io_spec_to_struct(
 
 def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     """
-    Method used to parse allocation stats sent by runtime
+    Method used to parse allocation stats sent by runtime.
 
     Parameters
     ----------
     data : bytes
-        Byte array with stats sent by runtime
+        Byte array with stats sent by runtime.
 
     Returns
     -------
-    Dict[str, int] :
-        Parsed stats
+    Dict[str, int] : Parsed stats.
     """
     stats = np.frombuffer(data, dtype=np.uint32, count=6)
     stats_json = {
@@ -174,11 +172,11 @@ class UARTProtocol(BytesBasedProtocol):
         Parameters
         ----------
         port : str
-            UART port
+            UART port.
         baudrate : int
-            UART baudrate
+            UART baudrate.
         endiannes : str
-            endianness of the communication
+            Endianness of the communication.
         """
         self.port = port
         self.baudrate = baudrate

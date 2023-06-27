@@ -92,11 +92,10 @@ class BytesBasedProtocol(RuntimeProtocol):
         Parameters
         ----------
         message : bytes
-            Received message
+            Received message.
 
         Returns
         -------
-        Message :
-            Parsed message
+        Message : Parsed message.
         """
         return Message.from_bytes(message)[0]

@@ -47,13 +47,13 @@ class NetworkProtocol(BytesBasedProtocol):
         Parameters
         ----------
         host : str
-            host for the TCP connection
+            Host for the TCP connection.
         port : int
-            port for the TCP connection
+            Port for the TCP connection.
         packet_size : int
-            receive packet sizes
+            Receive packet sizes.
         endiannes : str
-            endianness of the communication
+            Endianness of the communication.
         """
         self.host = host
         self.port = port
@@ -62,19 +62,22 @@ class NetworkProtocol(BytesBasedProtocol):
         self.socket = None
         super().__init__(packet_size=packet_size, endianness=endianness)
 
-    def accept_client(self, socket, mask) -> Tuple['ServerStatus', Optional[bytes]]:  # noqa: E501
+    def accept_client(self, socket: socket.socket,
+                      mask: int) -> Tuple['ServerStatus', Optional[bytes]]:
         """
         Accepts the new client.
 
         Parameters
         ----------
-        socket : new client's socket
-        mask : selector mask
+        socket : socket.socket
+            New client's socket.
+        mask : int
+            Selector mask. Not used.
 
         Returns
         -------
         Tuple['ServerStatus', bytes] :
-            client addition status
+            Client accepted status and None.
         """
         sock, addr = socket.accept()
         if self.socket is not None:
@@ -142,7 +145,7 @@ class NetworkProtocol(BytesBasedProtocol):
         else:
             return ServerStatus.DATA_READY, data
 
-    def wait_send(self, data: bytes):
+    def wait_send(self, data: bytes) -> int:
         """
         Wrapper for sending method that waits until write buffer is ready for
         new data.
@@ -150,12 +153,12 @@ class NetworkProtocol(BytesBasedProtocol):
         Parameters
         ----------
         data : bytes
-            Data to send
+            Data to send.
 
         Returns
         -------
         int :
-            The number of bytes sent
+            The number of bytes sent.
         """
         if self.socket is None:
             return -1

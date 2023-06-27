@@ -4,5 +4,5 @@
 
 """
 Provides implementation of interface used by other Kenning components to manage
-their input and output types
+their input and output types.
 """

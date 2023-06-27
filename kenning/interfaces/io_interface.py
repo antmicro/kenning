@@ -1,6 +1,10 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Provides implementation of interface used by other Kenning components to manage
-their input and output types
+their input and output types.
 """
 
 from typing import Dict, List, Tuple, Any
@@ -13,6 +17,7 @@ class IOInterface(object):
     Interface that provides methods for accessing input/output specifications
     and validating them.
     """
+
     @staticmethod
     def validate(
             output_spec: Dict[str, List[Dict]],
@@ -25,14 +30,13 @@ class IOInterface(object):
         Parameters
         ----------
         output : Dict[str, List[Dict]])
-            Specification of some object's output
+            Specification of some object's output.
         input : Dict[str, List[Dict]])
-            Specification of some object's input
+            Specification of some object's input.
 
         Returns
         -------
-        bool :
-            True if there is no conflict.
+        bool : True if there is no conflict.
         """
 
         if len(input_spec) > len(output_spec):
@@ -98,7 +102,7 @@ class IOInterface(object):
         -------
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output
-            layers specification
+            layers specification.
         """
         return NotImplementedError
 
@@ -108,14 +112,14 @@ class IOInterface(object):
         """
         Return dictionary with 'input' and 'output' keys that will map to input
         and output specification of an object created by the argument json
-        schema
+        schema.
 
         A single specification is a list of dictionaries with names, shapes and
         dtypes for each layer.
 
         Since no object initialization is done for this method, some IO
         specification may be incomplete, this method fils in -1 in case
-        the information is missing from the JSON dictionary
+        the information is missing from the JSON dictionary.
 
         Parameters
         ----------
@@ -125,7 +129,7 @@ class IOInterface(object):
         Returns
         -------
         Dict[str, List[Dict]] :
-            Dictionary that conveys input and output layers specification
+            Dictionary that conveys input and output layers specification.
         """
         return NotImplementedError
 
@@ -137,7 +141,7 @@ class IOInterface(object):
         Parameters
         ----------
         path : Path
-            Path that is used to store the input/output specification
+            Path that is used to store the input/output specification.
         """
         spec_path = path.parent / (path.name + '.json')
         spec_path = Path(spec_path)
@@ -152,12 +156,11 @@ class IOInterface(object):
         Parameters
         ----------
         path : Path
-            Path that is used to store the input/output specification
+            Path that is used to store the input/output specification.
 
         Returns
         -------
-        Dict[str, List[Dict]] :
-            Loaded IO specification
+        Dict[str, List[Dict]] : Loaded IO specification.
         """
         spec_path = path.parent / (path.name + '.json')
         spec_path = Path(spec_path)
@@ -171,21 +174,20 @@ class IOInterface(object):
             io_type: str,
             io_name: str) -> Dict[str, Any]:
         """
-        Find single io spec based on type (input, output) and name
+        Find single IO specification based on type (input, output) and name.
 
         Parameters
         ----------
         io_spec : Dict[str, List[Dict]]
-            IO specification to be searched in
+            IO specification to be searched in.
         io_type : str
-            Type of io (input, output, processed_input or processed_output)
+            Type of IO (input, output, processed_input or processed_output).
         io_name : str
-            Name of the io
+            Name of the IO.
 
         Returns
         -------
-        Dict[str, Any] :
-            Specification of single io
+        Dict[str, Any] : Specification of single IO.
         """
         for spec in io_spec[io_type]:
             if spec['name'] == io_name:
@@ -207,14 +209,13 @@ class IOInterface(object):
         Parameters
         ----------
         output_shape: Tuple[int, ...]
-            First shape
+            First shape.
         input_shape: Tuple[int, ...]
-            Second shape
+            Second shape.
 
         Returns
         -------
-        bool :
-            True if there is no conflict.
+        bool : True if there is no conflict.
         """
         if len(output_shape) != len(input_shape):
             return False
@@ -228,13 +229,15 @@ class IOCompatibilityError(Exception):
     """
     Exception is raised when input and output are not compatible.
     """
+
     def __init__(self, *args) -> bool:
         super().__init__(*args)
 
 
 class IOSpecNotFound(Exception):
     """
-    Exception is raised when IO spec is not found
+    Exception is raised when IO specification is not found.
     """
+
     def __init__(self, *args) -> bool:
         super().__init__(*args)

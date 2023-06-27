@@ -201,7 +201,7 @@ def serialize_inference(
     return serialized_dict
 
 
-def get_parsed_json_dict(schema, json_dict):
+def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
     """
     Validates the given dictionary with the schema.
     Then it adds default values for missing
@@ -218,7 +218,8 @@ def get_parsed_json_dict(schema, json_dict):
 
     Returns
     -------
-    Dict: Validated dictionary.
+    Dict :
+        Validated dictionary with arguments.
     """
     jsonschema.validate(
         instance=json_dict,
@@ -259,6 +260,61 @@ def get_parsed_json_dict(schema, json_dict):
     }
 
     return converted_json_dict
+
+
+def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
+    """"
+    Converts namespace provided by arguments parser into dictionary
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Namespace provided by arguments parser
+
+    Returns
+    -------
+    Dict :
+        Dictionary with arguments
+    """
+    # retrieve all arguments from arguments_structure of this class and all of
+    # its parent classes
+    classes = [cls]
+    args_structure = {}
+    while len(classes):
+        curr_cls = classes.pop(0)
+        classes.extend(curr_cls.__bases__)
+        if not hasattr(curr_cls, 'arguments_structure'):
+            continue
+        args_structure = dict(
+            args_structure,
+            **curr_cls.arguments_structure
+        )
+
+    # parse arguments
+    parsed_args = {}
+    for arg_name, arg_properties in args_structure.items():
+        if 'argparse_name' in arg_properties:
+            argparse_name = from_argparse_name(arg_properties['argparse_name'])
+        else:
+            argparse_name = arg_name
+
+        if hasattr(args, argparse_name):
+            value = getattr(args, argparse_name)
+        else:
+            try:
+                value = arg_properties['default']
+            except KeyError:
+                raise Exception(
+                    f'No default value provided for {argparse_name}'
+                )
+
+        # convert type
+        if 'type' in arg_properties and value is not None:
+            value = arg_properties['type'](value)
+
+        parsed_args[arg_name] = value
+
+    return parsed_args
 
 
 def add_argparse_argument(

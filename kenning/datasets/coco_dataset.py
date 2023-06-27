@@ -27,11 +27,11 @@ def download_and_extract(url: str, targetdir: Path, downloadpath: Path):
     Parameters
     ----------
     url : str
-        URL to the ZIP file to download
+        URL to the ZIP file to download.
     targetdir : Path
-        Path to the target directory where extracted files will be saved
+        Path to the target directory where extracted files will be saved.
     downloadpath: Path
-        Path where the ZIP file will be downloaded to
+        Path where the ZIP file will be downloaded to.
     """
     download_url(url, downloadpath)
     with ZipFile(downloadpath, 'r') as zip:
@@ -41,7 +41,7 @@ def download_and_extract(url: str, targetdir: Path, downloadpath: Path):
 
 class COCODataset2017(ObjectDetectionSegmentationDataset):
     """
-    The COCO Dataset 2017
+    The COCO Dataset 2017.
 
     https://cocodataset.org
 

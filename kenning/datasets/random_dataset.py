@@ -62,25 +62,25 @@ class RandomizedClassificationDataset(Dataset):
         Parameters
         ----------
         root : Path
-            Deprecated argument, not used in this dataset
+            Deprecated argument, not used in this dataset.
         batch_size : int
-            The size of batches of data delivered during inference
+            The size of batches of data delivered during inference.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         samplescount : int
-            The number of samples in the dataset
+            The number of samples in the dataset.
         numclasses : int
-            The number of classes in the dataset
+            The number of classes in the dataset.
         integer_classes : bool
             Indicates if classes should be represented by single integer
-            instead of one-hot encoding
+            instead of one-hot encoding.
         inputdims : List
-            The dimensionality of the inputs
+            The dimensionality of the inputs.
         dtype : Type
-            Type of the data
+            Type of the data.
         """
         self.samplescount = samplescount
         self.inputdims = inputdims
@@ -196,19 +196,19 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
         Parameters
         ----------
         root : Path
-            Deprecated argument, not used in this dataset
+            Deprecated argument, not used in this dataset.
         batch_size : int
-            The size of batches of data delivered during inference
+            The size of batches of data delivered during inference.
         download_dataset : bool
-            True if dataset should be downloaded first
+            True if dataset should be downloaded first.
         samplescount : int
-            The number of samples in the dataset
+            The number of samples in the dataset.
         numclasses : int
-            The number of classes in the dataset
+            The number of classes in the dataset.
         inputdims : List
-            The dimensionality of the inputs
+            The dimensionality of the inputs.
         dtype : Type
-            Type of the data
+            Type of the data.
         """
         self.samplescount = samplescount
         self.inputdims = inputdims

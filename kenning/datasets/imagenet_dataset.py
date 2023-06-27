@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-The ImageNet 2012 wrapper
+The ImageNet 2012 wrapper.
 """
 
 import json
@@ -28,7 +28,7 @@ class ImageNetDataset(Dataset):
     It has 1000 classes, representing various real-life objects (animals,
     electronics, vehicles, plants, ...).
 
-    The training dataset consists of 1.2 milion images, the validation dataset
+    The training dataset consists of 1.2 million images, the validation dataset
     consists of 50000 images, and the test dataset consists of 100000 images.
 
     *License*:
@@ -74,24 +74,24 @@ class ImageNetDataset(Dataset):
         Parameters
         ----------
         root : Path
-            The path to the dataset data
+            The path to the dataset data.
         batch_size : int
-            The batch size
+            The batch size.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
         split_fraction_test : float
-            Default fraction of data to leave for model testing
+            Default fraction of data to leave for model testing.
         split_fraction_val : Optional[float]
-            Default fraction of data to leave for model validation
+            Default fraction of data to leave for model validation.
         split_seed : int
-            Default seed used for dataset split
+            Default seed used for dataset split.
         image_memory_layout : str
             Tells if the images should be delivered in NCHW or NHWC format.
             The default format is NHWC.

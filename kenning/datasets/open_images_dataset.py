@@ -55,12 +55,12 @@ def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
     Parameters
     ----------
     image : str
-        image entry in format split/id.
+        Image entry in format split/id.
 
     Returns
     -------
     Tuple[str, str]:
-        tuple containing split and image ID
+        Tuple containing split and image ID.
     """
     split, image_id = re.match(REGEX, image).groups()
     yield split, image_id
@@ -73,12 +73,12 @@ def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
     Parameters
     ----------
     image_list : list[str]
-        List of download entries
+        List of download entries.
 
     Yields
     ------
     Tuple[str, str] :
-        download entries
+        Download entries.
     """
     for line_number, image in enumerate(image_list):
         try:
@@ -101,12 +101,13 @@ def download_one_image(
     Parameters
     ----------
     bucket : boto3 bucket
+        Bucket to download from.
     split : str
-        dataset split
+        Dataset split.
     image_id : str
-        image id
+        Image id.
     download_folder : Path
-        target directory
+        Target directory.
     """
     try:
         bucket.download_file(
@@ -130,11 +131,11 @@ def download_all_images(
     Parameters
     ----------
     download_folder : Path
-        Path to the target directory
+        Path to the target directory.
     image_list : list[str]
-        List of images
+        List of images.
     num_processes : int
-        Number of threads to use for image download
+        Number of threads to use for image download.
     """
     bucket = boto3.resource(
         's3', config=botocore.config.Config(
@@ -172,14 +173,14 @@ def download_instance_segmentation_zip_file(
         url: str):
     """
     Downloads OpenImagesDatasetV6 segmentation mask zip files
-    and extracts the contents
+    and extracts the contents.
 
     Parameters
     ----------
     zipdir: Path
-        Directory to download and extract the zip file into
+        Directory to download and extract the zip file into.
     url: str
-        Download URL
+        Download URL.
     """
     download_url(url, zipdir)
     with zipfile.ZipFile(zipdir, 'r') as zip_ref:
@@ -421,7 +422,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                         ].format(i)
                 )
                 # for each file matching the current zip file's prefix
-                # copy this file  into mask directory
+                # copy this file into mask directory
                 for j in final_annotations.MaskPath:
                     if re.match(pattern, j):
                         shutil.copy(zipdir.parent / j, maskdir)
@@ -525,12 +526,11 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         Parameters
         ----------
         image_id : str
-            Id of image
+            Id of image.
 
         Returns
         -------
-        str :
-            Path to the image
+        str : Path to the image.
         """
         return str(self.root / 'img' / f'{image_id}.jpg')
 
@@ -562,11 +562,11 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         ----------
         samples : list[list[SegmObject]]
             List of SegmObjects containing data about masks
-            and their path
+            and their path.
 
         Returns
         -------
-        list[list[SegmObject]] : prepared sample data
+        list[list[SegmObject]] : Prepared sample data.
         """
         result = []
         for sample in samples:

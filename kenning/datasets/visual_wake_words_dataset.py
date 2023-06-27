@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-The Visual Wake Words dataset
+The Visual Wake Words dataset.
 """
 
 from typing import Optional

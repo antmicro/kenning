@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Mozilla Common Voice Dataset wrapper
+Mozilla Common Voice Dataset wrapper.
 """
 
 from typing import Any, List, Tuple, Union, Optional
@@ -28,14 +28,14 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
     Parameters
     ----------
     a : str
-        First string
+        First string.
     b : str
-        Second string
+        Second string.
 
     Returns
     -------
     int :
-        Levenshtein Distance
+        Levenshtein Distance.
     """
     la, lb = len(a), len(b)
     dynamic_array = np.zeros((lb + 1, la + 1), dtype=int)
@@ -65,14 +65,14 @@ def char_eval(pred: str, gt: str) -> float:
     Parameters
     ----------
     pred : str
-        Prediction string
+        Prediction string.
     gt : str
-        Ground truth string
+        Ground truth string.
 
     Returns
     -------
     float :
-        the ratio of the Levenshtein Distance to the ground truth length
+        The ratio of the Levenshtein Distance to the ground truth length.
     """
     # sanitize the Ground Truth from punctuation and uppercase letters
     gt = gt.translate(
@@ -93,16 +93,15 @@ def resample_wave(
     Parameters
     ----------
     input_wave : np.ndarray
-        Wave to be resampled
+        Wave to be resampled.
     orig_sample_rate : int
-        Sample rate of provided wave
+        Sample rate of provided wave.
     target_sample_rate : int
-        Sample rate of the resampled wave
+        Sample rate of the resampled wave.
 
     Returns
     -------
-    np.ndarray :
-        Resampled wave
+    np.ndarray : Resampled wave.
     """
     return librosa.resample(
         input_wave.astype(np.float32),
@@ -113,19 +112,18 @@ def resample_wave(
 
 def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
     """
-    Convert mp3 file at abspath to wav placed in subdir directory
+    Convert mp3 file at abspath to wav placed in subdir directory.
 
     Parameters
     ----------
     abspath : Path
-        Absolute path to the .mp3 file
+        Absolute path to the .mp3 file.
     subfolder : str
-        a name of the subdirectory that will contain the converted file(s)
+        A name of the subdirectory that will contain the converted file(s).
 
     Returns
     -------
-    str :
-        The string-typed path to the converted file
+    str : The string-typed path to the converted file.
     """
     from pydub import AudioSegment
     sound = AudioSegment.from_mp3(str(abspath))
@@ -138,7 +136,7 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
 
 class CommonVoiceDataset(Dataset):
     """
-    The Mozilla Common Voice Dataset
+    The Mozilla Common Voice Dataset.
 
     https://commonvoice.mozilla.org/
 
@@ -221,24 +219,24 @@ class CommonVoiceDataset(Dataset):
         Parameters
         ----------
         root : Path
-            The path to the dataset data
+            The path to the dataset data.
         batch_size : int
-            The batch size
+            The batch size.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
         split_fraction_test : float
-            Default fraction of data to leave for model testing
+            Default fraction of data to leave for model testing.
         split_fraction_val : Optional[float]
-            Default fraction of data to leave for model validation
+            Default fraction of data to leave for model validation.
         split_seed : int
-            Default seed used for dataset split
+            Default seed used for dataset split.
         language : str
             Determines language of recordings.
         annotation_type : str
@@ -387,13 +385,13 @@ class CommonVoiceDataset(Dataset):
 
     def select_representative_sample(self, metric_values: List[Any]):
         """
-        Returns the representative sample from dataset based on provided metric
+        Selects the representative sample from dataset based on provided metric
         values.
 
         Parameters
         ----------
         metric_values : List[Any]
-            Metric value for each data sample
+            Metric value for each data sample.
         """
         # select the representative sample of the metric
         from random import sample

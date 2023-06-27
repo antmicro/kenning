@@ -33,13 +33,13 @@ Represents single detectable object in an image.
 Attributes
 ----------
 clsname : str
-    class of the object
+    Class of the object.
 xmin, ymin, xmax, ymax : float
-    coordinates of the bounding box
+    Coordinates of the bounding box.
 score : float
-    the probability of correctness of the detected object
+    The probability of correctness of the detected object.
 iscrowd : Optional[bool]
-    tells if the bounding box is a crowd of objects.
+    Tells if the bounding box is a crowd of objects.
     None or False if not crowd, True if bounding box represents
     crowd.
 """
@@ -64,17 +64,17 @@ Represents single segmentable mask in an image.
 Attributes
 ----------
 clsname : str
-    class of the object
+    Class of the object.
 maskpath : Path
-    path to mask file
+    Path to mask file.
 xmin,ymin,xmax,ymax : float
-    coordinates of the bounding box
+    Coordinates of the bounding box.
 mask : np.array
-    loaded mask image
+    Loaded mask image.
 score : float
-    the probability of correctness of the detected object
+    The probability of correctness of the detected object.
 iscrowd : Optional[bool]
-    tells if the bounding box is a crowd of objects.
+    Tells if the bounding box is a crowd of objects.
     None or False if not crowd, True if bounding box represents
     crowd.
 """
@@ -90,15 +90,15 @@ def compute_ap(
     Parameters
     ----------
     recall : List[float]
-        List of recall values
+        List of recall values.
     precision : List[float]
-        List of precision values
+        List of precision values.
     points : int
-        Number of points for Average Precision estimation
+        Number of points for Average Precision estimation.
 
     Returns
     -------
-    float: N-point interpolated average precision value
+    float: N-point interpolated average precision value.
     """
     return np.mean(
         np.interp(np.linspace(0, 1.0, num=points), recall, precision)
@@ -116,17 +116,17 @@ def get_recall_precision(
     ----------
     measurementsdata : Dict
         Data from Measurements object with eval_gcount/{cls} and eval_det/{cls}
-        fields containing number of ground truths and per-class detections
+        fields containing number of ground truths and per-class detections.
     scorethresh : float
-        Minimal objectness score threshold for detections
+        Minimal objectness score threshold for detections.
     recallpoints : int
         Number of points to use for recall-precision curves, default 101
-        (as in COCO dataset evaluation)
+        (as in COCO dataset evaluation).
 
     Returns
     -------
-    List[Tuple[List[float], List[float]]] : List with per-class lists of recall
-    and precision values
+    List[Tuple[List[float], List[float]]] :
+        List with per-class lists of recall and precision values.
     """
     lines = -np.ones(
         [len(measurementsdata['class_names']), 2, recallpoints],
@@ -175,9 +175,9 @@ def compute_map_per_threshold(
     ----------
     measurementsdata : Dict
         Data from Measurements object with eval_gcount/{cls} and eval_det/{cls}
-        fields containing number of ground truths and per-class detections
+        fields containing number of ground truths and per-class detections.
     scorethresholds : List[float]
-        List of threshold values to verify the mAP for
+        List of threshold values to verify the mAP for.
     """
     maps = []
     for thresh in scorethresholds:
@@ -198,19 +198,18 @@ def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
     If the ground truth has iscrowd parameter set to true,
     then the intersect area is divided by the area of the
     prediction bounding box instead of full area of the
-    prediction and the ground truth
+    prediction and the ground truth.
 
     Parameters
     ----------
     b1 : DetectObject
-        First bounding box
+        First bounding box.
     b2 : DetectObject
-        Second bounding box
+        Second bounding box.
 
     Returns
     -------
-    float :
-        IoU value
+    float : IoU value.
     """
     xmn = max(b1.xmin, b2.xmin)
     ymn = max(b1.ymin, b2.ymin)
@@ -232,19 +231,18 @@ def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
 
 def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     """
-    Computes IoU between two segmentation objects
+    Computes IoU between two segmentation objects.
 
     Parameters
     ----------
     segm_pred : SegmObject
-        Predicted segmentation
+        Predicted segmentation.
     segm_true : SegmObject
-        True segmentation
+        True segmentation.
 
     Returns
     -------
-    float :
-        IoU value
+    float : IoU value.
     """
 
     mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
@@ -342,18 +340,17 @@ class ObjectDetectionSegmentationDataset(Dataset):
             self,
             unhashable: Union['DetectObject', 'SegmObject']
             ) -> Union['DetectObject', 'SegmObject']:
-
         """
-        Returns hashable versions of objects depending on self.task
+        Returns hashable versions of objects depending on `self.task`.
 
         Parameters
         ----------
         unhashable : Union['DetectObject', 'SegmObject']
-            Object to be made hashable
+            Object to be made hashable.
 
         Returns
         -------
-        Union['DetectObject', 'SegmObject'] : the hashable object
+        Union['DetectObject', 'SegmObject'] : The hashable object.
         """
 
         if self.task == 'object_detection':
@@ -382,13 +379,13 @@ class ObjectDetectionSegmentationDataset(Dataset):
         Parameters
         ----------
         b1 : DetectObject
-            First bounding box
+            First bounding box.
         b2 : DetectObject
-            Second bounding box
+            Second bounding box.
 
         Returns
         -------
-        float : IoU value
+        float : IoU value.
         """
         if self.task == 'object_detection':
             return compute_dect_iou(b1, b2)
@@ -407,9 +404,9 @@ class ObjectDetectionSegmentationDataset(Dataset):
         Parameters
         ----------
         predictions : List
-            The list of predictions from the model
+            The list of predictions from the model.
         truth: List
-            The ground truth for given batch
+            The ground truth for given batch.
         """
         log = get_logger()
         log.info(f'\ntruth\n{truth}')
@@ -452,9 +449,9 @@ class ObjectDetectionSegmentationDataset(Dataset):
         Parameters
         ----------
         predictions : List
-            The list of predictions from the model
+            The list of predictions from the model.
         truth: List
-            The ground truth for given batch
+            The ground truth for given batch.
         """
         log = get_logger()
         log.info(f'\ntruth\n{truth}')
@@ -497,9 +494,9 @@ class ObjectDetectionSegmentationDataset(Dataset):
         Parameters
         ----------
         predictions : List
-            The list of predictions from the model
+            The list of predictions from the model.
         truth: List
-            The ground truth for given batch
+            The ground truth for given batch.
         """
         if self.task == 'object_detection':
             self.show_dect_eval_images(predictions, truth)

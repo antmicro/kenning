@@ -1,5 +1,9 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
-The Tensorflow Magic Wand dataset
+The Tensorflow Magic Wand dataset.
 """
 from typing import Tuple, Any, List, Optional
 from pathlib import Path
@@ -16,7 +20,7 @@ from kenning.core.measurements import Measurements
 
 class MagicWandDataset(Dataset):
     """
-    The Tensorflow Magic Wand dataset
+    The Tensorflow Magic Wand dataset.
 
     It is a classification dataset with 4 classes representing different
     gestures captured by accelerometer and gyroscope.
@@ -62,30 +66,30 @@ class MagicWandDataset(Dataset):
         Parameters
         ----------
         root : Path
-            The path to the dataset data
+            The path to the dataset data.
         batch_size : int
-            The batch size
+            The batch size.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
         split_fraction_test : float
-            Default fraction of data to leave for model testing
+            Default fraction of data to leave for model testing.
         split_fraction_val : Optional[float]
-            Default fraction of data to leave for model validation
+            Default fraction of data to leave for model validation.
         split_seed : int
-            Default seed used for dataset split
+            Default seed used for dataset split.
         windows_size : int
-            Size of single sample window
+            Size of single sample window.
         window_shift : int
-            Shift of single sample window
+            Shift of single sample window.
         noise_level : int
-            Noise level of padding added to sample
+            Noise level of padding added to sample.
         """
         self.window_size = window_size
         self.window_shift = window_shift
@@ -116,19 +120,18 @@ class MagicWandDataset(Dataset):
 
     def rev_class_id(self, classname: str) -> int:
         """
-        Returns an integer representing a class based on a class name
+        Returns an integer representing a class based on a class name.
 
-        It generates a reversed dictionary from the self.classnames and
-        it gets the ID that is assigned to that name.
+        It generates a reversed dictionary from the `self.classnames` and
+        gets the ID that is assigned to that name.
 
         Parameters
         ----------
         classname : str
-            The name of the class for which the ID will be returned
+            The name of the class for which the ID will be returned.
         Returns
         -------
-        Int :
-            the class id
+        Int : The class id.
         """
         return {v: k for k, v in self.classnames.items()}[classname]
 
@@ -201,16 +204,15 @@ class MagicWandDataset(Dataset):
         Parameters
         ----------
         noise_level : int
-            Level of generated noise
+            Level of generated noise.
         amount : int
-            Length of generated noise
+            Length of generated noise.
         neighbor : List
-            Neighbor data
+            Neighbor data.
 
         Returns
         -------
-        List :
-            Neighbor data with noise padding
+        List : Neighbor data with noise padding.
         """
         padding = (np.round((np.random.rand(amount, 3) - 0.5)*noise_level, 1)
                    + neighbor)
@@ -220,17 +222,16 @@ class MagicWandDataset(Dataset):
             self,
             data_frame: List) -> List:
         """
-        Generates neighbor-based padding around a given data frame
+        Generates neighbor-based padding around a given data frame.
 
         Parameters
         ----------
         data_frame : List
-            A frame of data to be padded
+            A frame of data to be padded.
 
         Returns
         -------
-        List :
-            The padded data frame
+        List : The padded data frame.
         """
         pre_padding = self._generate_padding(
             self.noise_level,
@@ -278,12 +279,11 @@ class MagicWandDataset(Dataset):
         Parameters
         ----------
         data_frame : List
-            Data sample to be split
+            Data sample to be split.
 
         Returns
         -------
-        np.ndarray :
-            Data sample split into windows
+        np.ndarray : Data sample split into windows.
         """
         return np.array(np.array_split(
             data_frame, len(data_frame) // self.window_size, axis=0

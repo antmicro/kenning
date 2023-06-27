@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-The Oxford-IIIT Pet Dataset wrapper
+The Oxford-IIIT Pet Dataset wrapper.
 """
 
 import tempfile
@@ -20,7 +20,7 @@ from kenning.core.measurements import Measurements
 
 class PetDataset(Dataset):
     """
-    The Oxford-IIIT Pet Dataset
+    The Oxford-IIIT Pet Dataset.
 
     Omkar M Parkhi and Andrea Vedaldi and Andrew Zisserman and C. V. Jawahar
 
@@ -84,24 +84,24 @@ class PetDataset(Dataset):
         Parameters
         ----------
         root : Path
-            The path to the dataset data
+            The path to the dataset data.
         batch_size : int
-            The batch size
+            The batch size.
         download_dataset : bool
             Downloads the dataset before taking any action. If the dataset
-            files are already downloaded then they are not downloaded again
+            files are already downloaded then they are not downloaded again.
         force_download_dataset : bool
-            Forces dataset download
+            Forces dataset download.
         external_calibration_dataset : Optional[Path]
             Path to the external calibration dataset that can be used for
             quantizing the model. If it is not provided, the calibration
             dataset is generated from the actual dataset.
         split_fraction_test : float
-            Default fraction of data to leave for model testing
+            Default fraction of data to leave for model testing.
         split_fraction_val : Optional[float]
-            Default fraction of data to leave for model validation
+            Default fraction of data to leave for model validation.
         split_seed : int
-            Default seed used for dataset split
+            Default seed used for dataset split.
         classify_by : str
             Determines what should be the object of classification.
             The valid values are "species" and "breeds".
@@ -110,7 +110,7 @@ class PetDataset(Dataset):
             The default format is NHWC.
         standardize : bool
             Standardize the given input samples.
-            Should be set to False when using compute_input_mean_std
+            Should be set to False when using `compute_input_mean_std`.
         """
         assert classify_by in self.classification_types, \
             f'Invalid {classify_by}, should be {self.classification_types}'
@@ -232,7 +232,7 @@ class PetDataset(Dataset):
         -------
         Tuple[Any, Any] :
             the standardization values for a given train dataset.
-            Tuple of two variables describing mean and std values
+            Tuple of two variables describing mean and std values.
         """
         count = 0
         mean = np.zeros((3))

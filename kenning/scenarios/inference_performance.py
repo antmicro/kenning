@@ -33,11 +33,11 @@ def test_inference(modelwrapper: ModelWrapper):
     Parameters
     ----------
     modelwrapper : ModelWrapper
-        Model wrapper object with given dataset and configuration
+        Model wrapper object with given dataset and configuration.
 
     Returns
     -------
-    Measurements : the benchmark results
+    Measurements : The benchmark results.
     """
 
     return modelwrapper.test_inference()

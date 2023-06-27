@@ -34,7 +34,7 @@ log = logger.get_logger()
 
 def get_block_product(block: Dict[str, List]) -> List:
     """
-    Gets a cartesian product of the parameter values
+    Gets a cartesian product of the parameter values.
 
     Example:
     ```python
@@ -82,15 +82,15 @@ def get_block_product(block: Dict[str, List]) -> List:
 
     Parameters
     ----------
-    block : dict
+    block : Dict[str, List]
         Dictionary with parameters and type keys.
         For parameters, key is the name
         of a parameter and value defines range of values.
 
     Returns
     -------
-    list :
-        Cartesian product of input `block`
+    List :
+        Cartesian product of input `block`.
     """
     return [
         {
@@ -118,14 +118,14 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     Parameters
     ----------
     iterable : List
-        List of arguments
+        List of arguments.
     min_elements : int
-        Minimal number of elements in the powerset
+        Minimal number of elements in the powerset.
 
     Returns
     -------
     List[List] :
-        Powerset of ordered values
+        Powerset of ordered values.
     """
     res = []
     for i in range(min_elements, len(iterable) + 1):
@@ -200,7 +200,7 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     Parameters
     ----------
     json_cfg : Dict
-        Configuaration for the grid search optimization
+        Configuration for the grid search optimization.
 
     Returns
     -------
@@ -262,7 +262,7 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     return pipelines
 
 
-def replace_paths(pipeline: dict, id: int) -> dict:
+def replace_paths(pipeline: Dict, id: int) -> Dict:
     """
     Copies given `pipeline` and puts `id`_ in front of `compiled_model_path`
     parameter in every optimizer and in front of `save_model_path` parameter
@@ -273,16 +273,16 @@ def replace_paths(pipeline: dict, id: int) -> dict:
 
     Parameters
     ----------
-    pipeline : dict
+    pipeline : Dict
         Pipeline that gets copied and its parameters are replaced.
     id : int
-        Value that is used to create a prefix for the path
+        Value that is used to create a prefix for the path.
 
     Returns
     -------
-    dict :
+    Dict :
         Pipeline with `compiled_model_path` and `save_model_path` parameters
-        changed
+        changed.
     """
     pipeline = copy.deepcopy(pipeline)
     for optimizer in pipeline['optimizers']:

@@ -35,15 +35,15 @@ def generate_onnx_support_grid(
     ----------
     converterslist : List[ONNXConversion]
         List of specialized ONNXConversion objects for various frameworks to
-        check
+        check.
     modelsdir : Path
-        Path to the temporarily created ONNX models
+        Path to the temporarily created ONNX models.
 
     Returns
     -------
-    Tuple[List[str], Dict[str, Dict[str, str]] : tuple with list of frameworks
-        and their versions, and the dictionary with models, frameworks and
-        their export/import support
+    Tuple[List[str], Dict[str, Dict[str, str]] :
+        Tuple of list of frameworks and their versions,
+        dictionary with models, frameworks and their export/import support.
     """
     supportlist = []
     for converter in converterslist:

@@ -66,11 +66,11 @@ def get_model_name(filepath: Path) -> str:
     Parameters
     ----------
     filepath : Path
-        Path to the measurements file
+        Path to the measurements file.
 
     Returns
     -------
-    str : name of the model used when generating the report
+    str : Name of the model used when generating the report.
     """
     return str(filepath).replace("/", ".")
 
@@ -90,24 +90,24 @@ def performance_report(
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     imgprefix : str
-        Prefix to the image file name
+        Prefix to the image file name.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
     str :
-        content of the report in MyST format
+        Content of the report in MyST format.
     """
     log.info(f'Running performance_report for {measurementsdata["modelname"]}')
     metrics = compute_performance_metrics(measurementsdata)
@@ -279,19 +279,19 @@ def comparison_performance_report(
     Parameters
     ----------
     measurementsdata : List[Dict]
-        Statistics of every model from the Measurements class
+        Statistics of every model from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
-    str : content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     log.info('Running comparison_performance_report')
     # HTML plots format unsupported, removing html
@@ -447,21 +447,21 @@ def classification_report(
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     imgprefix : str
-        Prefix to the image file name
+        Prefix to the image file name.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
-    str : content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
     metrics = compute_classification_metrics(measurementsdata)
@@ -503,19 +503,19 @@ def comparison_classification_report(
     Parameters
     ----------
     measurementsdata : List[Dict]
-        Statistics of every model from the Measurements class
+        Statistics of every model from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
-    str : content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     log.info('Running comparison_classification_report')
     # HTML plots format unsupported, removing html
@@ -616,23 +616,23 @@ def detection_report(
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     imgprefix : str
-        Prefix to the image file name
+        Prefix to the image file name.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
-    str : content of the report in MyST format
+    str : Content of the report in MyST format.
     """
 
     from kenning.datasets.helpers.detection_and_segmentation import \
@@ -757,19 +757,19 @@ def comparison_detection_report(
     Parameters
     ----------
     measurementsdata : List[Dict]
-        Statistics of every model from the Measurements class
+        Statistics of every model from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
 
     Returns
     -------
-    str : content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     log.info('Running comparison_detection_report')
 
@@ -830,26 +830,25 @@ def renode_stats_report(
     Parameters
     ----------
     measurementsdata : Dict
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     imgprefix : str
-        Prefix to the image file name
+        Prefix to the image file name.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
     colors : Optional[List]
-        Colors used for plots
+        Colors used for plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
 
     Returns
     -------
-    str :
-        content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     log.info(
         f'Running renode_stats_report for {measurementsdata["modelname"]}'
@@ -1138,26 +1137,25 @@ def comparison_renode_stats_report(
     Parameters
     ----------
     measurementsdata : Dict[str, List]
-        Statistics from the Measurements class
+        Statistics from the Measurements class.
     imgdir : Path
-        Path to the directory for images
+        Path to the directory for images.
     imgprefix : str
-        Prefix to the image file name
+        Prefix to the image file name.
     rootdir : Path
-        Path to the root of the documentation project involving this report
+        Path to the root of the documentation project involving this report.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     color_offset : int
-        How many colors from default color list should be skipped
+        How many colors from default color list should be skipped.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
     colors : Optional[List]
-        Colors used for plots
+        Colors used for plots.
 
     Returns
     -------
-    str :
-        content of the report in MyST format
+    str : Content of the report in MyST format.
     """
     def retrieve_non_zero_profiler_data(
             measurementsdata: List[Dict],
@@ -1496,7 +1494,7 @@ def generate_report(
         command: List[str] = [],
         cmap=None,
         colors=None,
-        draw_titles: bool = True) -> str:
+        draw_titles: bool = True):
     """
     Generates an MyST report based on Measurements data.
 
@@ -1505,29 +1503,29 @@ def generate_report(
     Parameters
     ----------
     reportname : str
-        Name for the report
+        Name for the report.
     data : List[Dict]
         Data for each model coming from the Measurements object,
-        loaded i.e. from JSON files
+        loaded i.e. from JSON files.
     outputpath : Path
-        Path to the MyST file where the report will be saved
+        Path to the MyST file where the report will be saved.
     imgdir : Path
-        Path to the directory where the report plots should be stored
+        Path to the directory where the report plots should be stored.
     report_types : List[str]
         List of report types that define the project, i.e.
-        performance, classification
+        performance, classification.
     rootdir : Path
         When the report is a part of a larger MyST document (i.e. Sphinx docs),
-        the rootdir parameter defines thte root directory of the document.
+        the `rootdir` parameter defines root directory of the document.
         It is used to compute relative paths in the document's references.
     image_formats : Set[str]
         Iterable object with extensions, in which images should be generated.
     image_formats : Set[str]
-        Collection with formats which should be used to generate plots
+        Collection with formats which should be used to generate plots.
     command : List[str]
         Full command used to render this report, split into separate lines.
     draw_titles : bool
-        Should titles be drawn on the plot
+        Should titles be drawn on the plot.
     """
 
     reptypes = {

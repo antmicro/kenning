@@ -31,7 +31,7 @@ using provided Runtime or in its native framework. Otherwise the Optimizer
 compiles the model before passing it to the Runtime.
 
 Each of those classes require specific set or arguments to configure the
-compilation and benchmark process
+compilation and benchmark process.
 """
 
 import argparse

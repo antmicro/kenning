@@ -15,7 +15,7 @@ It requires implementations of several classes as input:
 * Runtime : runs the model with provided data and returns the output
 * ModelWrapper : provides methods to convert and interpret input/output data
 
-Each class requires arguments to configure them and provide user settings
+Each class requires arguments to configure them and provide user settings.
 """
 import sys
 import argparse
@@ -29,16 +29,16 @@ from kenning.core.outputcollector import OutputCollector
 
 def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:
     """
-    Checks closing conditions of outputcollectors
+    Checks closing conditions of outputcollectors.
 
     Parameters
     ----------
     outputcollectors : List[OutputCollector]
-        list of outputcollectors to check
+        List of outputcollectors to check.
 
     Returns
     -------
-    bool : True any OutputCollector.should_close() method returned True
+    bool : True any OutputCollector.should_close() method returned True.
     """
     if any(i.should_close() for i in outputcollectors):
         return True

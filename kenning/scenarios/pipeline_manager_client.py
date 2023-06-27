@@ -39,11 +39,11 @@ def parse_message(
         Used to convert to and from Pipeline Manager JSON formats,
         create and run dataflows defined in manager.
     message_type : MessageType
-        Action requested by the Pipeline Manager to perform
+        Action requested by the Pipeline Manager to perform.
     data : bytes
-        Data send by Manager
+        Data send by Manager.
     output_file_path : Path
-        Path where the optional output will be saved
+        Path where the optional output will be saved.
 
     Returns
     -------
@@ -98,15 +98,15 @@ def parse_message(
     return MessageType.OK, feedback_msg.encode(encoding='UTF-8')
 
 
-def send_progress(state: Dict, client: CommunicationBackend) -> None:
+def send_progress(state: Dict, client: CommunicationBackend):
     """
-    Sends progress message to Pipeline Manager
+    Sends progress message to Pipeline Manager.
 
     Parameters
     ----------
     state : Dict
-        format_dict that comes from tqdm. It is used to determine the progress
-        of the inference.
+        The `format_dict` that comes from tqdm. It is used to determine
+        the progress of the inference.
     client : CommunicationBackend
         Client used to send the message.
     """

@@ -63,15 +63,6 @@ class ModelInserter(Optimizer):
         self.outputtypes = [self.modelframework]
         super().__init__(dataset, compiled_model_path)
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.model_framework,
-            args.input_model_path
-        )
-
     def compile(
             self,
             inputmodelpath: Path,

@@ -10,6 +10,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 from pathlib import Path
 from typing import Optional, Dict, List, Any
+from argparse import Namespace
 import time
 import json
 import numpy as np
@@ -28,7 +29,9 @@ from kenning.core.measurements import tagmeasurements
 from kenning.core.measurements import SystemStatsCollector
 from kenning.utils.logger import get_logger
 from kenning.core.measurements import systemstatsmeasurements
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 
 
 class ModelNotPreparedError(Exception):
@@ -110,7 +113,7 @@ class Runtime(ArgumentsHandler):
         self.output_spec = None
 
     @classmethod
-    def from_argparse(cls, protocol, args):
+    def from_argparse(cls, protocol: RuntimeProtocol, args: Namespace):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -118,16 +121,19 @@ class Runtime(ArgumentsHandler):
         ----------
         protocol : RuntimeProtocol
             RuntimeProtocol object.
-        args : Dict
+        args : Namespace
             Arguments from ArgumentParser object.
 
         Returns
         -------
         RuntimeProtocol : Object of class RuntimeProtocol.
         """
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
         return cls(
             protocol,
-            args.disable_performance_measurements
+            **parsed_args_dict
         )
 
     @classmethod

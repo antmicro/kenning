@@ -172,24 +172,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
         self.use_tf_select_ops = use_tf_select_ops
         super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.target,
-            args.epochs,
-            args.batch_size,
-            args.optimizer,
-            args.disable_from_logits,
-            args.model_framework,
-            args.inference_input_type,
-            args.inference_output_type,
-            args.dataset_percentage,
-            args.quantization_aware_training,
-            args.use_tf_select_ops
-        )
-
     def compile(
             self,
             inputmodelpath: Path,

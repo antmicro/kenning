@@ -122,22 +122,6 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             image_height
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            args.download_dataset,
-            args.force_download_dataset,
-            args.external_calibration_dataset,
-            args.task,
-            args.dataset_type,
-            args.image_memory_layout,
-            args.show_predictions_on_eval,
-            args.image_width,
-            args.image_height
-        )
-
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
         with tempfile.TemporaryDirectory() as tmpdir:

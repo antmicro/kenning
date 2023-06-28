@@ -61,18 +61,6 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         )
 
     @classmethod
-    def from_argparse(
-            cls,
-            dataset: Dataset,
-            args,
-            from_file: bool = True):
-        return cls(
-            args.model_path,
-            dataset,
-            from_file
-        )
-
-    @classmethod
     def _get_io_specification(cls, numclasses, class_names=None,
                               mean=None, std=None):
         io_spec = {

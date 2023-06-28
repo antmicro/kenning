@@ -93,14 +93,6 @@ class PersonDetectionModelWrapper(ModelWrapper):
             self.save_io_specification(self.modelpath)
 
     @classmethod
-    def from_argparse(cls, dataset, args, from_file=False):
-        return cls(
-            args.modelpath,
-            dataset,
-            from_file
-        )
-
-    @classmethod
     def _get_io_specification(
             cls, img_width=96, img_height=96, class_names=None):
         io_spec = {

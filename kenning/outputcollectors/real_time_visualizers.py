@@ -124,26 +124,6 @@ class BaseRealTimeVisualizer(OutputCollector):
         )
 
     @classmethod
-    def from_argparse(cls, args):
-        """
-        Constructor wrapper that takes the parameters from argparse args.
-
-        Parameters
-        ----------
-        args : Dict
-            Arguments from ArgumentParser object.
-
-        Returns
-        -------
-        BaseRealTimeVisualizer :
-            Object of BaseRealTimeVisualizer class.
-        """
-        return cls(
-            args.viewer_width,
-            args.viewer_height
-        )
-
-    @classmethod
     def _get_io_specification(cls, input_memory_layout):
         """
         Creates runner IO specification from chosen parameters.
@@ -470,27 +450,6 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
                          *args, **kwargs)
 
     @classmethod
-    def from_argparse(cls, args):
-        """
-        Constructor wrapper that takes the parameters from argparse arguments.
-
-        Parameters
-        ----------
-        args : Dict
-            Arguments from ArgumentParser object.
-
-        Returns
-        -------
-        RealTimeSegmentationVisualization :
-            Object of RealTimeSegmentationVisualization class.
-        """
-        return cls(
-            args.score_threshold,
-            args.viewer_width,
-            args.viewer_height
-        )
-
-    @classmethod
     def _get_io_specification(cls, input_memory_layout):
         if input_memory_layout == 'NCHW':
             frame_shape = (1, 3, -1, -1)
@@ -599,27 +558,6 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         class_input_spec = self.inputs_specs['classification_data']
         self.class_names = class_input_spec['class_names']
         self.top_n = top_n
-
-    @classmethod
-    def from_argparse(cls, args):
-        """
-        Constructor wrapper that takes the parameters from argparse arguments.
-
-        Parameters
-        ----------
-        args : Dict
-            Arguments from ArgumentParser object.
-
-        Returns
-        -------
-        RealTimeClassificationVisualization :
-            Object of RealTimeClassificationVisualization class.
-        """
-        return cls(
-            args.show_top_n,
-            args.viewer_width,
-            args.viewer_height
-        )
 
     def setup_gui(self):
         super().setup_gui()

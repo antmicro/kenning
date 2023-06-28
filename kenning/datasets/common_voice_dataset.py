@@ -272,20 +272,6 @@ class CommonVoiceDataset(Dataset):
             split_seed
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            root=args.dataset_root,
-            batch_size=args.batch_size,
-            download_dataset=args.download_dataset,
-            force_download_dataset=args.force_download_dataset,
-            language=args.language,
-            annotations_type=args.annotations_type,
-            sample_size=args.sample_size,
-            selection_method=args.selection_method,
-            dataset_version=args.dataset_version
-        )
-
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
         url_per_version = {

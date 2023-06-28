@@ -299,9 +299,18 @@ class TestDataset:
         if 'Random' in dataset_cls.__name__:
             pytest.skip('random dataset does not have files')
 
-        dataset_cls.download_dataset_fun = lambda self: None
+        dataset_path = get_reduced_dataset_path(dataset_cls)
+        dataset_path = dataset_path.with_name(dataset_path.name + '_test')
+
+        def mock_download_dataset_fun(self):
+            shutil.copytree(
+                get_reduced_dataset_path(dataset_cls),
+                dataset_path
+            )
+
+        dataset_cls.download_dataset_fun = mock_download_dataset_fun
         dataset = dataset_cls(
-            root=get_reduced_dataset_path(dataset_cls),
+            root=dataset_path,
             download_dataset=True,
             force_download_dataset=False
         )
@@ -356,7 +365,14 @@ class TestDataset:
         if 'Random' in dataset_cls.__name__:
             pytest.skip('random dataset does not have files')
 
+        dataset_path = get_reduced_dataset_path(dataset_cls)
+        dataset_path = dataset_path.with_name(dataset_path.name + '_test')
+
         def mock_download_dataset_fun(self):
+            shutil.copytree(
+                get_reduced_dataset_path(dataset_cls),
+                dataset_path
+            )
             mock_download_dataset_fun.num_calls += 1
 
         mock_download_dataset_fun.num_calls = 0
@@ -364,7 +380,7 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: True
 
         dataset_cls(
-            get_reduced_dataset_path(dataset_cls),
+            dataset_path,
             download_dataset=True,
             force_download_dataset=False
         )
@@ -386,7 +402,14 @@ class TestDataset:
         if 'Random' in dataset_cls.__name__:
             pytest.skip('random dataset does not have files')
 
+        dataset_path = get_reduced_dataset_path(dataset_cls)
+        dataset_path = dataset_path.with_name(dataset_path.name + '_test')
+
         def mock_download_dataset_fun(self):
+            shutil.copytree(
+                get_reduced_dataset_path(dataset_cls),
+                dataset_path
+            )
             mock_download_dataset_fun.num_calls += 1
 
         mock_download_dataset_fun.num_calls = 0
@@ -394,7 +417,7 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: False
 
         dataset_cls(
-            get_reduced_dataset_path(dataset_cls),
+            dataset_path,
             download_dataset=True,
             force_download_dataset=False
         )
@@ -416,7 +439,14 @@ class TestDataset:
         if 'Random' in dataset_cls.__name__:
             pytest.skip('random dataset does not have files')
 
+        dataset_path = get_reduced_dataset_path(dataset_cls)
+        dataset_path = dataset_path.with_name(dataset_path.name + '_test')
+
         def mock_download_dataset_fun(self):
+            shutil.copytree(
+                get_reduced_dataset_path(dataset_cls),
+                dataset_path
+            )
             mock_download_dataset_fun.num_calls += 1
 
         mock_download_dataset_fun.num_calls = 0
@@ -424,7 +454,7 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: False
 
         dataset_cls(
-            root=get_reduced_dataset_path(dataset_cls),
+            dataset_path,
             download_dataset=True,
             force_download_dataset=True
         )
@@ -435,7 +465,7 @@ class TestDataset:
         dataset_cls.verify_dataset_checksum = lambda self: True
 
         dataset_cls(
-            get_reduced_dataset_path(dataset_cls),
+            dataset_path,
             download_dataset=True,
             force_download_dataset=True
         )

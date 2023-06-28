@@ -190,16 +190,6 @@ class IREECompiler(Optimizer):
 
         super().__init__(dataset, compiled_model_path)
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.backend,
-            args.model_framework,
-            args.compiler_args
-        )
-
     def compile(
             self,
             inputmodelpath: Path,

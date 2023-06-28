@@ -93,20 +93,6 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.epochs,
-            args.batch_size,
-            args.optimizer,
-            args.disable_from_logits,
-            args.model_framework,
-            args.prune_dense,
-            args.target_sparsity
-        )
-
     def compile(
             self,
             inputmodelpath: Path,

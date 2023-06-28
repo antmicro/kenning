@@ -192,11 +192,14 @@ class BaseDataflowHandler:
         Dict: Specification ready to be send to Pipeline Manager.
         """
         specification = {
-            'metadata': {},
+            'version': '20230619.3',
+            'metadata': {
+                'twoColumn': True,
+            },
             'nodes': []
         }
 
-        def strip_io(io_list: list) -> list:
+        def strip_io(io_list: list, direction) -> list:
             """
             Strips every input/output from metadata and leaves only
             `name` and `type` keys.
@@ -204,7 +207,8 @@ class BaseDataflowHandler:
             return [
                 {
                     'name': io['name'],
-                    'type': io['type']
+                    'type': io['type'],
+                    'direction': direction
                 }
                 for io in io_list
             ]
@@ -270,8 +274,13 @@ class BaseDataflowHandler:
                 'type': node.type,
                 'category': node.category,
                 'properties': properties,
-                'inputs': strip_io(self.io_mapping[node.type]['inputs']),
-                'outputs': strip_io(self.io_mapping[node.type]['outputs'])
+                'interfaces': strip_io(
+                    self.io_mapping[node.type]['inputs'],
+                    'input'
+                ) + strip_io(
+                    self.io_mapping[node.type]['outputs'],
+                    'output'
+                )
             })
 
         for key in toremove:

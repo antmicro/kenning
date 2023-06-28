@@ -8,6 +8,7 @@ Provides a wrapper for deep learning models.
 
 import json
 from typing import List, Any, Tuple, Dict, Type, Optional
+from argparse import Namespace
 from pathlib import Path
 from collections import defaultdict
 
@@ -17,7 +18,9 @@ from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import timemeasurements
 from kenning.core.measurements import systemstatsmeasurements
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 
 
 class ModelWrapper(IOInterface, ArgumentsHandler):
@@ -73,7 +76,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
     def from_argparse(
             cls,
             dataset: Dataset,
-            args,
+            args: Namespace,
             from_file: bool = True):
         """
         Constructor wrapper that takes the parameters from argparse args.
@@ -82,7 +85,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         ----------
         dataset : Dataset
             The dataset object to feed to the model.
-        args : Dict
+        args : Namespace
             Arguments from ArgumentParser object.
         from_file : bool
             Determines if the model should be loaded from modelpath.
@@ -92,7 +95,14 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         ModelWrapper :
             Object of class ModelWrapper.
         """
-        return cls(args.model_path, dataset, from_file)
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
+        return cls(
+            dataset=dataset,
+            **parsed_args_dict,
+            from_file=from_file
+        )
 
     @classmethod
     def from_json(

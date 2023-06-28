@@ -105,19 +105,6 @@ class MagicWandDataset(Dataset):
             split_seed
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            args.download_dataset,
-            args.force_download_dataset,
-            args.external_calibration_dataset,
-            args.window_size,
-            args.window_shift,
-            args.noise_level
-        )
-
     def rev_class_id(self, classname: str) -> int:
         """
         Returns an integer representing a class based on a class name.

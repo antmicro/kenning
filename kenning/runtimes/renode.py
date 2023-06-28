@@ -97,15 +97,6 @@ class RenodeRuntime(Runtime):
             disable_performance_measurements
         )
 
-    @classmethod
-    def from_argparse(cls, protocol, args):
-        return cls(
-            protocol=protocol,
-            runtime_binary_path=args.runtime_binary_path,
-            platform_resc_path=args.platform_resc_path,
-            disable_performance_measurements=args.disable_performance_measurements  # noqa: E501
-        )
-
     def run_client(
             self,
             dataset: Dataset,

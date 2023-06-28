@@ -201,16 +201,6 @@ class YOLACT(ModelWrapper):
         self.original_model_path = modelpath
         super().__init__(modelpath, dataset, from_file)
 
-    @classmethod
-    def from_argparse(cls, dataset, args, from_file=True):
-        return cls(
-            args.model_path,
-            dataset,
-            from_file,
-            args.top_k,
-            args.score_threshold
-        )
-
     def prepare_model(self):
         if self.model_prepared:
             return None

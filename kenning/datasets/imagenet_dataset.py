@@ -121,18 +121,6 @@ class ImageNetDataset(Dataset):
             split_seed
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            args.download_dataset,
-            args.force_download_dataset,
-            args.external_calibration_dataset,
-            args.image_memory_layout,
-            args.preprocess_type
-        )
-
     def download_dataset_fun(self):
         raise CannotDownloadDatasetError(
             'ImageNet dataset needs to be downloaded manually.\n'

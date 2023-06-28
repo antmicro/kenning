@@ -9,7 +9,6 @@ Provides an API for processing and returning data from models and dataprovider.
 from typing import Any, Dict, Tuple
 
 from kenning.core.runner import Runner
-from kenning.utils.args_manager import get_parsed_json_dict
 
 
 class OutputCollector(Runner):
@@ -38,41 +37,6 @@ class OutputCollector(Runner):
             inputs_specs=inputs_specs,
             outputs=outputs
         )
-
-    @classmethod
-    def from_argparse(cls, args):
-        """
-        Constructor wrapper that takes the parameters from argparse args.
-
-        This method takes the arguments created in form_argparse and uses them
-        to create the object.
-
-        Parameters
-        ----------
-        args : Dict
-            Arguments from ArgumentParser object.
-
-        Returns
-        -------
-        OutputCollector : Object of class OutputCollector.
-        """
-        return cls()
-
-    @classmethod
-    def from_json(
-            cls,
-            json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]] = {},
-            inputs_specs: Dict[str, Dict] = {},
-            outputs: Dict[str, str] = {}):
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **parsed_json_dict,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs)
 
     def process_output(self, input_data: Any, output_data: Any):
         """

@@ -68,14 +68,6 @@ class YOLOWrapper(ModelWrapper):
         self.model_prepared = True
 
     @classmethod
-    def from_argparse(
-            cls,
-            dataset: Dataset,
-            args,
-            from_file: bool = True):
-        return cls(args.model_path, dataset, from_file, args.classes)
-
-    @classmethod
     def load_config_file(cls, config_path):
         keyparamsrgx = re.compile(r'(width|height|classes)=(\d+)')
         perlayerrgx = re.compile(r'(mask|anchors|num)=((\d+,?)+)')

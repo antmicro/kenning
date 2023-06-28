@@ -237,10 +237,15 @@ class BaseDataflowHandler:
                 if 'description' in props:
                     new_property['description'] = props['description']
 
+                def add_default(default_val):
+                    if new_property.get('default') is None:
+                        new_property['default'] = default_val
+
                 # Case for an input with range defined
                 if 'enum' in props:
                     new_property['type'] = 'select'
                     new_property['values'] = list(map(str, props['enum']))
+                    add_default(new_property['values'][0])
                 # Case for a single value input
                 elif 'type' in props:
                     if 'array' in props['type']:
@@ -248,23 +253,30 @@ class BaseDataflowHandler:
                         if 'items' in props and 'type' in props['items']:
                             dtype = props['items']['type']
                             new_property['dtype'] = dtype
+                        add_default([])
                     elif 'boolean' in props['type']:
                         new_property['type'] = 'checkbox'
+                        add_default(False)
                     elif 'string' in props['type']:
                         new_property['type'] = 'text'
+                        add_default('')
                     elif 'integer' in props['type']:
                         new_property['type'] = 'integer'
+                        add_default(0)
                     elif 'number' in props['type']:
                         new_property['type'] = 'number'
+                        add_default(0)
                     elif 'object' in props['type']:
                         # Object arguments should be defined in specification
                         # as node inputs, rather than properties
                         new_property = None
                     else:
                         new_property['type'] = 'text'
+                        add_default('')
                 # If no type is specified then text is used
                 else:
                     new_property['type'] = 'text'
+                    add_default('')
 
                 if new_property is not None:
                     properties.append(new_property)

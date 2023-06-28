@@ -157,8 +157,10 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     )
 
 
-MEANS = np.array([103.94, 116.78, 123.68]).reshape(-1, 1, 1)
-STD = np.array([57.38, 57.12, 58.40]).reshape(-1, 1, 1)
+MEANS = np.array([103.94, 116.78, 123.68], dtype=np.float32).reshape(-1, 1, 1)
+STD = np.array([57.38, 57.12, 58.40], dtype=np.float32).reshape(-1, 1, 1)
+FACTOR = 255.0 / STD
+RATIO = MEANS / STD
 
 
 class YOLACTWrapper(ModelWrapper):
@@ -176,7 +178,7 @@ class YOLACTWrapper(ModelWrapper):
             'argparse_name': '--score-threshold',
             'description': 'Option to filter out detected objects with score lower than the threshold',  # noqa: E501
             'type': float,
-            'default': 0.
+            'default': 0.05
         }
     }
 
@@ -186,7 +188,7 @@ class YOLACTWrapper(ModelWrapper):
             dataset: Dataset,
             from_file=True,
             top_k: int = None,
-            score_threshold: float = 0.,
+            score_threshold: float = 0.05,
     ):
         self.model = None
         if dataset is not None:
@@ -384,56 +386,33 @@ class YOLACTCore(YOLACTWrapper):
             raise RuntimeError(
                 "YOLACT model expects only single image in a batch."
             )
-        X = X[0]
-        _, self.h, self.w = X.shape
-        X = np.transpose(X, (1, 2, 0))
-        X = cv2.resize(X, (550, 550))
-        X = np.expand_dims(X, axis=0)
-        X = np.transpose(X, (0, 3, 1, 2))
-        X = (X * 255. - MEANS) / STD
-        X = X[:, [2, 1, 0], :, :]
-        return X.astype(np.float32)
+        _, self.h, self.w = X[0].shape
+        X = np.resize(X[0].astype(np.float32), (1, 3, 550, 550))
+        return X * FACTOR - RATIO
 
     def postprocess_outputs(self, y):
         if not y:
             return []
+
         y = self._detect(y)
-        if y is None:
+
+        if not y:
             return []
 
-        masks = y['proto'] @ y['mask'].T
-        masks = sigmoid(masks)
+        if self.top_k is not None:
+            for k in y:
+                if k != 'proto':
+                    y[k] = y[k][:self.top_k]
+
+        masks = sigmoid(y['proto'] @ y['mask'].T)
         masks = crop(masks, y['box'])
-
-        # If masks too many, resize them in parts to avoid memory error
-        if masks.shape[2] > 500:
-            masks_tmp = np.zeros((self.h, self.w, masks.shape[2]))
-            part_size = 500
-            num_parts = masks.shape[2] // part_size
-            for i in range(num_parts):
-                masks_tmp[:, :, i * part_size:(i + 1) * part_size
-                          ] = cv2.resize(
-                    masks[:, :, i * part_size:(i + 1) * part_size],
-                    (self.w, self.h),
-                    interpolation=cv2.INTER_LINEAR
-                )
-
-            masks_tmp[:, :, num_parts * part_size:] = cv2.resize(
-                masks[:, :, num_parts * part_size:],
-                (self.w, self.h),
-                interpolation=cv2.INTER_LINEAR
-            )
-            masks = masks_tmp
-        else:
-            masks = cv2.resize(
-                masks, (self.w, self.h),
-                interpolation=cv2.INTER_LINEAR)
-
+        masks = cv2.resize(
+            masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
+        )
         if len(masks.shape) == 2:
             masks = masks[:, :, None]
-
-        masks = masks.transpose(2, 0, 1)
-        y['mask'] = (masks >= 0.5).astype(np.float32) * 255.
+        y['mask'] = ((masks >= 0.5).astype(np.uint8) * 255
+                     ).transpose(2, 0, 1)
 
         boxes = y['box']
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
@@ -446,18 +425,7 @@ class YOLACTCore(YOLACTWrapper):
             boxes[:, 3],
             550
         )
-        y['box'] = (boxes / 550)
-
-        if self.top_k is not None:
-            idx = np.argsort(y['score'], 0)[:-(self.top_k + 1):-1]
-            for k in y:
-                if k != 'proto':
-                    y[k] = y[k][idx]
-
-        keep = y['score'] >= self.score_threshold
-        for k in y:
-            if k != 'proto':
-                y[k] = y[k][keep]
+        y['box'] = boxes / 550
 
         Y = []
         for i in range(len(y['score'])):
@@ -481,7 +449,7 @@ class YOLACTCore(YOLACTWrapper):
         # CONF:   size=(1, num_dets, 81)    dtype=float32
         # MASK:   size=(1, num_dets, 32)    dtype=float32
         # PRIORS: size=(num_dets, 4)        dtype=float32
-        # PROTO:  size=(1, 138, 138, 32) dtype=float32
+        # PROTO:  size=(1, 138, 138, 32)    dtype=float32
         # Where num_dets is a number of detected objects.
         # Because it is a variable dependent on model input,
         # some maths is required to retrieve it.
@@ -541,7 +509,6 @@ class YOLACTCore(YOLACTWrapper):
                            conf_preds: np.ndarray,
                            decode_boxes: np.ndarray,
                            mask_data: np.ndarray,
-                           conf_thresh: Optional[float] = 0.05,
                            nms_thresh: Optional[float] = 0.5
                            ) -> Dict[str, np.ndarray]:
         """
@@ -555,8 +522,6 @@ class YOLACTCore(YOLACTWrapper):
             Array of decoded bounding boxes.
         mask_data : numpy.ndarray
             Array of mask data.
-        conf_thresh : Optional[float]
-            Confidence threshold.
         nms_thresh : Optional[float]
             NMS threshold.
 
@@ -570,7 +535,7 @@ class YOLACTCore(YOLACTWrapper):
         cur_scores = conf_preds[1:, :]
 
         conf_scores = np.max(cur_scores, axis=0)
-        keep = (conf_scores > conf_thresh)
+        keep = (conf_scores > self.score_threshold)
         scores = cur_scores[:, keep]
         boxes = decode_boxes[keep, :]
         masks = mask_data[keep, :]
@@ -583,12 +548,10 @@ class YOLACTCore(YOLACTWrapper):
 
         for _cls in range(scores.shape[0]):
             cls_scores = scores[_cls, :]
-            conf_mask = cls_scores > conf_thresh
+            conf_mask = cls_scores > self.score_threshold
             idx = np.arange(cls_scores.size)
 
             cls_scores = cls_scores[conf_mask]
-            if cls_scores.shape[0] == 0:
-                continue
             cls_boxes = boxes[conf_mask]
 
             keep = nms(cls_boxes, cls_scores, nms_thresh)
@@ -627,10 +590,9 @@ class YOLACTCore(YOLACTWrapper):
         Dict[str, np.ndarray] :
             Dictionary of model outputs with detected objects.
         """
-        conf_preds = y['output_1'].squeeze(0).T
-
         decode_boxes = self._decode(y['output_0'].squeeze(0), y['output_3'])
-        result = self._filter_detections(conf_preds, decode_boxes,
+        result = self._filter_detections(y['output_1'].squeeze(0).T,
+                                         decode_boxes,
                                          y['output_2'].squeeze(0))
         if result is not None:
             result['proto'] = y['output_4'].squeeze(0)

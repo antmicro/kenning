@@ -586,6 +586,7 @@ class PipelineManagerGraphCreator(GraphCreator):
                 )
                 continue
 
+            # TODO: Update the information regarding input/output direction
             if from_io_spec['type'] == to_io_spec['type']:
                 return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")

@@ -121,15 +121,6 @@ class DetectionVisualizer(OutputCollector):
             outputs=outputs
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.output_width,
-            args.output_height,
-            args.save_to_file,
-            args.save_path
-        )
-
     def cleanup(self):
         self.detach_from_output()
 

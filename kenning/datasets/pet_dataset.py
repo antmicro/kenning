@@ -134,18 +134,6 @@ class PetDataset(Dataset):
             split_seed
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.dataset_root,
-            args.inference_batch_size,
-            download_dataset=args.download_dataset,
-            force_download_dataset=args.force_download_dataset,
-            external_calibration_dataset=args.external_calibration_dataset,
-            classify_by=args.classify_by,
-            image_memory_layout=args.image_memory_layout
-        )
-
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
         imgs = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz'

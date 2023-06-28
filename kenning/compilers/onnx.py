@@ -120,14 +120,6 @@ class ONNXCompiler(Optimizer):
         self.set_input_type(modelframework)
         super().__init__(dataset, compiled_model_path)
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.model_framework
-        )
-
     def compile(
             self,
             inputmodelpath: Path,

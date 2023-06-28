@@ -41,10 +41,6 @@ class NamePrinter(OutputCollector):
                     self.classnames.append(line.strip())
         super().__init__()
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(args.print_type, args.classification_class_names)
-
     def detach_from_output(self):
         pass
 

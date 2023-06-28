@@ -72,7 +72,7 @@ class KenningFlowHandler(BaseDataflowHandler):
             inputs = kenning_node.get('inputs', {})
             outputs = kenning_node.get('outputs', {})
 
-            node_properties = {}
+            node_properties = []
             primitives = []
             for name, value in parameters.items():
                 if isinstance(value, dict):
@@ -80,17 +80,17 @@ class KenningFlowHandler(BaseDataflowHandler):
                     primitive_name = load_class(value['type']).__name__
                     spec_node = self.nodes[primitive_name]
                     prim_properties = value['parameters']
-                    prim_properties = {
-                        param_name: {"value": param_value}
+                    prim_properties = [
+                        {"value": param_value, 'name': param_name}
                         for param_name, param_value in prim_properties.items()
-                    }
+                    ]
                     prim_id = self.pm_graph.create_node(
                         spec_node,
                         prim_properties
                     )
                     primitives.append(prim_id)
                 else:
-                    node_properties[name] = {"value": value}
+                    node_properties.append({"value": value, 'name': name})
 
             kenning_name = load_class(kenning_node['type']).__name__
             spec_node = self.nodes[kenning_name]

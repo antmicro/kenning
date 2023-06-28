@@ -8,11 +8,14 @@ Provides an API for model compilers.
 
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Union
+from argparse import Namespace
 import json
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.logger import get_logger
 
 
@@ -78,7 +81,7 @@ class Optimizer(ArgumentsHandler):
         self.log = get_logger()
 
     @classmethod
-    def from_argparse(cls, dataset: Dataset, args):
+    def from_argparse(cls, dataset: Dataset, args: Namespace):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -86,7 +89,7 @@ class Optimizer(ArgumentsHandler):
         ----------
         dataset : Dataset
             The dataset object that is optionally used for optimization.
-        args : Dict
+        args : Namespace
             Arguments from ArgumentParser object.
 
         Returns
@@ -94,9 +97,12 @@ class Optimizer(ArgumentsHandler):
         Optimizer :
             Object of class Optimizer.
         """
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
         return cls(
             dataset,
-            args.compiled_model_path
+            **parsed_args_dict
         )
 
     @classmethod

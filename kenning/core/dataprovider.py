@@ -40,25 +40,6 @@ class DataProvider(Runner):
             outputs=outputs
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        """
-        Constructor wrapper that takes the parameters from argparse args.
-
-        This method takes the arguments created in ``form_argparse``
-        and uses them to create the object.
-
-        Parameters
-        ----------
-        args : Dict
-            Arguments from ArgumentParser object.
-
-        Returns
-        -------
-        DataProvider : Object of class DataProvider.
-        """
-        return cls()
-
     def prepare(self):
         """
         Prepares the source for data gathering depending on the

@@ -7,6 +7,7 @@ Provides an API for dataset loading, creation and configuration.
 """
 
 from typing import Tuple, List, Any, Dict, Optional, Generator, Iterable
+from argparse import Namespace
 import random
 import hashlib
 import datetime
@@ -18,7 +19,9 @@ from pathlib import Path
 from tqdm import tqdm
 
 from .measurements import Measurements
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 
 
 class Dataset(ArgumentsHandler):
@@ -166,7 +169,7 @@ class Dataset(ArgumentsHandler):
         self.prepare()
 
     @classmethod
-    def from_argparse(cls, args):
+    def from_argparse(cls, args: Namespace):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -175,7 +178,7 @@ class Dataset(ArgumentsHandler):
 
         Parameters
         ----------
-        args : Dict
+        args : Namespace
             Arguments from ArgumentParser object.
 
         Returns
@@ -183,14 +186,11 @@ class Dataset(ArgumentsHandler):
         Dataset :
             Object of class Dataset.
         """
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
         return cls(
-            root=args.dataset_root,
-            batch_size=args.inference_batch_size,
-            download_dataset=args.download_dataset,
-            force_download_dataset=args.force_download_dataset,
-            split_fraction_test=args.split_fraction_test,
-            split_fraction_val=args.split_fraction_val,
-            split_seed=args.split_seed
+            **parsed_args_dict
         )
 
     @classmethod

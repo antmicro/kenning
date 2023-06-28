@@ -11,6 +11,7 @@ import random
 import hashlib
 import datetime
 import struct
+import shutil
 from binascii import hexlify
 from copy import deepcopy
 from pathlib import Path
@@ -159,6 +160,7 @@ class Dataset(ArgumentsHandler):
         self.split_seed = split_seed
         if (force_download_dataset or
                 (download_dataset and not self.verify_dataset_checksum())):
+            shutil.rmtree(self.root, ignore_errors=True)
             self.download_dataset_fun()
             self.save_dataset_checksum()
         self.prepare()

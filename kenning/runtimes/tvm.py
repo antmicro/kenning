@@ -92,17 +92,6 @@ class TVMRuntime(Runtime):
             disable_performance_measurements
         )
 
-    @classmethod
-    def from_argparse(cls, protocol, args):
-        return cls(
-            protocol,
-            args.save_model_path,
-            args.target_device_context,
-            args.target_device_context_id,
-            args.runtime_use_vm,
-            args.disable_performance_measurements
-        )
-
     def prepare_input(self, input_data):
         self.log.debug(f'Preparing inputs of size {len(input_data)}')
         if self.model is None:

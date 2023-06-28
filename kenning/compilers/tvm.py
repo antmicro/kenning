@@ -378,26 +378,6 @@ class TVMCompiler(Optimizer):
         self.dataset_percentage = dataset_percentage
         super().__init__(dataset, compiled_model_path)
 
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.model_framework,
-            args.target,
-            args.target_host,
-            args.opt_level,
-            args.libdarknet_path,
-            args.compile_use_vm,
-            args.output_conversion_function,
-            args.conv2d_data_layout,
-            args.conv2d_kernel_layout,
-            args.use_fp16_precision,
-            args.use_int8_precision,
-            args.use_tensorrt,
-            args.dataset_percentage
-        )
-
     def compile_model(self, mod, params, outputpath, io_spec):
         # additional regular optimizations applied to models
         transforms = [

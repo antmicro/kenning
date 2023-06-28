@@ -6,6 +6,7 @@
 Provides a runner that performs inference.
 """
 from typing import Dict, List, Tuple, Any
+from argparse import Namespace
 from copy import deepcopy
 
 from kenning.core.dataset import Dataset
@@ -13,6 +14,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.runtime import Runtime
 from kenning.core.runner import Runner
 from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.class_loader import load_class
 
 
@@ -107,35 +109,42 @@ class ModelRuntimeRunner(Runner):
         return parameterschema
 
     @classmethod
+    def from_argparse(
+            cls,
+            args: Namespace,
+            inputs_sources: Dict[str, Tuple[int, str]],
+            inputs_specs: Dict[str, Dict],
+            outputs: Dict[str, str]):
+
+        parsed_json_dict = get_parsed_args_dict(cls, args)
+
+        model_json_dict = parsed_json_dict['model_wrapper']
+        runtime_json_dict = parsed_json_dict['runtime']
+
+        if 'dataset' in parsed_json_dict.keys():
+            dataset = cls._create_dataset(parsed_json_dict['dataset'])
+        else:
+            dataset = None
+
+        model: ModelWrapper = cls._create_model(dataset, model_json_dict)
+        model.prepare_model()
+        runtime: Runtime = cls._create_runtime(runtime_json_dict)
+
+        return cls(
+            model,
+            runtime,
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs
+        )
+
+    @classmethod
     def from_json(
             cls,
             json_dict: Dict,
             inputs_sources: Dict[str, Tuple[int, str]],
             inputs_specs: Dict[str, Dict],
             outputs: Dict[str, str]):
-        """
-        Constructor wrapper that takes the parameters from json dict.
-
-        This function checks if the given dictionary is valid according
-        to the json schema defined.
-        If it is then it invokes the constructor.
-
-        Parameters
-        ----------
-        json_dict : Dict
-            Arguments for the constructor.
-        inputs_sources : Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved.
-        inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs.
-        outputs : Dict[str, str]
-            Outputs of this Runner.
-
-        Returns
-        -------
-        ModelRuntimeRunner :
-            object of class ModelRuntimeRunner.
-        """
 
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)

@@ -52,16 +52,6 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         super().__init__(modelpath, dataset, from_file)
 
     @classmethod
-    def from_argparse(
-            cls,
-            dataset: Dataset,
-            args,
-            from_file: bool = True):
-        if dataset is None:
-            return cls(args.model_path, dataset, from_file, args.num_classes)
-        return cls(args.model_path, dataset, from_file, dataset.numclasses)
-
-    @classmethod
     def _get_io_specification(cls, numclasses):
         return {
             'input': [{'name': 'input.1', 'shape': (1, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501

@@ -452,51 +452,8 @@ class PipelineManagerGraphCreator(GraphCreator):
     """
     Abstraction for graph generation in Pipeline Manager format.
 
-    Graphs in Pipeline Manager are represented in a following JSON dictionary:
-    {
-        'graph': {
-            'nodes' - list of nodes
-            'connections' - list of connections
-            'inputs' - dictionary of inputs of the main graph
-            'outputs' - dictionary of outputs of the main graph
-        },
-        'graphTemplates: {}
-    }
-
-    Each node is represented by a dictionary:
-    {
-        'type' - type of a node as defined in 'get_nodes' method of
-        dataflow handler
-        'id' - node's unique ID string
-        'title' - title of a node
-        'properties' - dictionary of parameters parsed JSON file defining
-        specific Kenning module.
-        'inputs' - dictionary of input ports of a node,
-        'outputs' - dictionary of output ports of a node,
-        'position' - dictionary containing two values: 'x' and 'y' that
-        define the placement of a node
-        'width' - width of a node
-        'twoColumn' - boolean value that represents whether the node parameters
-        should be splitted into two columns
-    }
-
-    Each property defined as a dictionary:
-    'name': {
-        'value' - value of the property
-    }
-
-
-    Each input and output interface is defined as a dictionary:
-    'name': {
-        'id' - ID of an interface
-    }
-
-    Connection is defined as a dictionary:
-    {
-        'id' - connection's unique ID,
-        'from' - ID of a interface that is a starting point of a connection
-        'to' - ID of a interface that is an ending point of a connection
-    }
+    For the details regarding the dataflow format definition, follow
+    documentation of Pipeline Manager
     """
 
     def __init__(
@@ -531,7 +488,8 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def reset_graph(self):
         self.connections = []
-        self.interface_map = {}
+        self.inp_interface_map = {}
+        self.out_interface_map = {}
         self.reset_position()
 
     def update_position(self):
@@ -580,11 +538,11 @@ class PipelineManagerGraphCreator(GraphCreator):
         for io_spec in io_map['inputs']:
             interface_id, interface = self._create_interface(io_spec, 'input')
             interfaces.append(interface)
-            self.interface_map[interface_id] = io_spec
+            self.inp_interface_map[interface_id] = io_spec
         for io_spec in io_map['outputs']:
             interface_id, interface = self._create_interface(io_spec, 'output')
             interfaces.append(interface)
-            self.interface_map[interface_id] = io_spec
+            self.out_interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
             'type': node.name,
@@ -614,10 +572,12 @@ class PipelineManagerGraphCreator(GraphCreator):
 
             from_interface_id = from_interface['id']
             to_interface_id = to_interface['id']
-            from_io_spec = self.interface_map[from_interface_id]
-            to_io_spec = self.interface_map[to_interface_id]
+            try:
+                from_io_spec = self.out_interface_map[from_interface_id]
+                to_io_spec = self.inp_interface_map[to_interface_id]
+            except KeyError:
+                continue
 
-            # TODO: Update the information regarding input/output direction
             if from_io_spec['type'] == to_io_spec['type']:
                 return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")

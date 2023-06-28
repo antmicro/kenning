@@ -96,17 +96,6 @@ class RandomizedClassificationDataset(Dataset):
             download_dataset
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            root=args.dataset_root,
-            batch_size=args.inference_batch_size,
-            download_dataset=False,
-            samplescount=args.num_samples,
-            numclasses=args.num_classes,
-            inputdims=args.input_dims
-        )
-
     def get_class_names(self):
         return [str(i) for i in range(self.numclasses)]
 
@@ -216,17 +205,6 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
         self.dtype = dtype
         self.classnames = self.get_class_names()
         super().__init__(root, batch_size, download_dataset)
-
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            root=args.dataset_root,
-            batch_size=args.inference_batch_size,
-            download_dataset=False,
-            samplescount=args.num_samples,
-            numclasses=args.num_classes,
-            inputdims=args.input_dims
-        )
 
     def get_class_names(self):
         return [str(i) for i in range(self.numclasses)]

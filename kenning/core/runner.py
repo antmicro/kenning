@@ -7,10 +7,13 @@ Provides a base class for Kenning Flow elements.
 """
 
 from typing import Dict, List, Tuple, Any
+from argparse import Namespace
 
 from kenning.interfaces.io_interface import IOInterface
 from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 
 
 class Runner(IOInterface, ArgumentsHandler):
@@ -78,6 +81,43 @@ class Runner(IOInterface, ArgumentsHandler):
         return False
 
     @classmethod
+    def from_argparse(
+            cls,
+            args: Namespace,
+            inputs_sources: Dict[str, Tuple[int, str]],
+            inputs_specs: Dict[str, Dict],
+            outputs: Dict[str, str]):
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        This method takes the arguments created in form_argparse and uses them
+        to create the object.
+
+        Parameters
+        ----------
+        args : Namespace
+            Arguments from ArgumentParser object
+        inputs_sources: Dict[str, Tuple[int, str]]
+            Input from where data is being retrieved
+        inputs_specs : Dict[str, Dict]
+            Specifications of runner's inputs
+        outputs: Dict[str, str])
+            Outputs of this Runner
+
+        Returns
+        -------
+        OutputCollector : object of class OutputCollector
+        """
+
+        parsed_json_dict = get_parsed_args_dict(cls, args)
+
+        return cls(
+            **parsed_json_dict,
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs)
+
+    @classmethod
     def from_json(
             cls,
             json_dict: Dict,
@@ -106,7 +146,15 @@ class Runner(IOInterface, ArgumentsHandler):
         -------
         Runner : Object of class Runner.
         """
-        raise NotImplementedError
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            **parsed_json_dict,
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs)
 
     def _run(
             self,

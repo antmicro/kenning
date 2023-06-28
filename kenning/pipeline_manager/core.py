@@ -549,6 +549,7 @@ class PipelineManagerGraphCreator(GraphCreator):
     def _create_interface(
             self,
             io_spec: Dict[str, List],
+            direction: str
     ) -> Tuple[str, List]:
         """
         Creates a node interface based on it's IO specification.
@@ -565,7 +566,9 @@ class PipelineManagerGraphCreator(GraphCreator):
         """
         interface_id = self.gen_id()
         interface = {
-            io_spec['name']: {'id': interface_id}
+            'name': io_spec['name'],
+            'id': interface_id,
+            'direction': direction
         }
         return interface_id, interface
 
@@ -573,23 +576,23 @@ class PipelineManagerGraphCreator(GraphCreator):
         node_id = self.gen_id()
         io_map = self.io_mapping[node.type]
 
-        inputs = {}
-        outputs = {}
+        interfaces = []
         for io_spec in io_map['inputs']:
-            interface_id, interface = self._create_interface(io_spec)
-            inputs |= interface
+            interface_id, interface = self._create_interface(io_spec, 'input')
+            interfaces.append(interface)
             self.interface_map[interface_id] = io_spec
         for io_spec in io_map['outputs']:
-            interface_id, interface = self._create_interface(io_spec)
-            outputs |= interface
+            interface_id, interface = self._create_interface(io_spec, 'output')
+            interfaces.append(interface)
             self.interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
             'type': node.name,
             'id': node_id,
-            'properties': parameters,
-            'inputs': inputs,
-            'outputs': outputs,
+            'properties': [
+                {**param, 'id': self.gen_id()} for param in parameters
+            ],
+            'interfaces': interfaces,
             'position': {
                 'x': self.x_pos,
                 'y': self.y_pos,
@@ -603,17 +606,18 @@ class PipelineManagerGraphCreator(GraphCreator):
     def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
-        from_interface_dict = self.nodes[from_id]['outputs']
-        to_interface_dict = self.nodes[to_id]['inputs']
+        from_interface_arr = self.nodes[from_id]['interfaces']
+        to_interface_arr = self.nodes[to_id]['interfaces']
 
         for from_interface, to_interface in itertools.product(
-                from_interface_dict.values(), to_interface_dict.values()):
+                from_interface_arr, to_interface_arr):
 
             from_interface_id = from_interface['id']
             to_interface_id = to_interface['id']
             from_io_spec = self.interface_map[from_interface_id]
             to_io_spec = self.interface_map[to_interface_id]
 
+            # TODO: Update the information regarding input/output direction
             if from_io_spec['type'] == to_io_spec['type']:
                 return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")
@@ -630,14 +634,13 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def flush_graph(self):
         finished_graph = {
+            'version': '20230619.3',
             'graph': {
                 'id': self.gen_id(),
                 'nodes': list(self.nodes.values()),
-                'connections': self.connections,
-                'inputs': [],
-                'outputs': []
+                'connections': self.connections
             },
-            'graphTemplates': []
+            'graphTemplateInstances': []
         }
         self.start_new_graph()
         return finished_graph

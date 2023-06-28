@@ -12,10 +12,13 @@ from pathlib import Path
 import json
 import time
 from typing import Any, Tuple, Optional, Union, Dict, Callable
+from argparse import Namespace
 
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.args_manager import get_parsed_args_dict
 import kenning.utils.logger as logger
 
 
@@ -271,20 +274,26 @@ class RuntimeProtocol(ArgumentsHandler):
         self.log = logger.get_logger()
 
     @classmethod
-    def from_argparse(cls, args):
+    def from_argparse(cls, args: Namespace):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
         Parameters
         ----------
-        args : Dict
+        args : Namespace
             Arguments from RuntimeProtocol object.
 
         Returns
         -------
-        RuntimeProtocol : Object of class RuntimeProtocol.
+        RuntimeProtocol :
+            Object of class RuntimeProtocol.
         """
-        return cls()
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
+        return cls(
+            **parsed_args_dict
+        )
 
     @classmethod
     def from_json(cls, json_dict: Dict):
@@ -302,7 +311,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        RuntimeProtocol : Object of class RuntimeProtocol.
+        RuntimeProtocol :
+            Object of class RuntimeProtocol.
         """
 
         parameterschema = cls.form_parameterschema()

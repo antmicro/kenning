@@ -126,20 +126,6 @@ class VisualWakeWordsDataset(Dataset):
             split_seed
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            root=args.dataset_root,
-            batch_size=args.inference_batch_size,
-            download_dataset=args.download_dataset,
-            force_download_dataset=args.force_download_dataset,
-            external_calibration_dataset=args.external_calibration_dataset,
-            dataset_type=args.dataset_type,
-            image_memory_layout=args.image_memory_layout,
-            image_width=args.image_width,
-            image_height=args.image_height
-        )
-
     def get_class_names(self):
         return self.classnames
 

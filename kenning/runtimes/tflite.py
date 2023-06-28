@@ -77,16 +77,6 @@ class TFLiteRuntime(Runtime):
             disable_performance_measurements
         )
 
-    @classmethod
-    def from_argparse(cls, protocol, args):
-        return cls(
-            protocol,
-            args.save_model_path,
-            args.delegates_list,
-            args.num_threads,
-            args.disable_performance_measurements
-        )
-
     def prepare_model(self, input_data):
         try:
             import tflite_runtime.interpreter as tflite

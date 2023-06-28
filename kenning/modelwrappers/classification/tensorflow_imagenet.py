@@ -8,7 +8,7 @@ Contains Tensorflow models for the classification problem.
 Pretrained on ImageNet dataset.
 """
 
-from typing import List, Dict
+from typing import List
 from pathlib import Path
 import sys
 
@@ -168,30 +168,3 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self.model_prepared = True
             self.save_model(self.modelpath)
             self.model.summary()
-
-    @classmethod
-    def from_argparse(cls, dataset, args, from_file=False):
-        return cls(
-            args.model_path,
-            dataset,
-            from_file,
-            args.model_cls,
-            args.num_classes,
-            args.model_input_name,
-            args.model_output_name,
-            args.input_shape,
-            args.num_classes,
-            args.disable_builtin_preprocessing
-        )
-
-    @classmethod
-    def from_json(
-            cls,
-            dataset: Dataset,
-            json_dict: Dict,
-            from_file: bool = False):
-        return super(TensorFlowImageNet, cls).from_json(
-            dataset,
-            json_dict,
-            from_file
-        )

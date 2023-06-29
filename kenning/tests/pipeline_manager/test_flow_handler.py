@@ -12,85 +12,197 @@ from kenning.utils.class_loader import load_class
 CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
     "type": "CameraDataProvider",
     "id": "0",
-    "title": "CameraDataProvider",
-    "properties": {
-        "video_file_path": {"value": "/dev/video0"},
-        "input_memory_layout": {"value": "NCHW"},
-        "input_color_format": {"value": "BGR"},
-        "input_width": {"value": 608},
-        "input_height": {"value": 608},
-    },
-    "outputs": {"Data": {"id": "1"}},
-    "inputs": {},
     "position": {"x": 50, "y": 50},
     "width": 300,
     "twoColumn": False,
+    "interfaces": [
+        {
+            "name": "Data",
+            "id": "1",
+            "direction": "output",
+            "side": "right"
+        }
+    ],
+    "properties": [
+        {
+            "name": "video_file_path",
+            "id": "2",
+            "value": "/dev/video0"
+        },
+        {
+            "name": "input_memory_layout",
+            "id": "3",
+            "value": "NCHW"
+        },
+        {
+            "name": "input_color_format",
+            "id": "a9966a81-edbb-4b1c-b15a-a7f7c24823c9",
+            "value": "BGR"
+        },
+        {
+            "name": "input_width",
+            "id": "4",
+            "value": 608
+        },
+        {
+            "name": "input_height",
+            "id": "5",
+            "value": 608
+        }
+    ],
+    "name": ""
 }
 
 ONNXYOLO_DATAFLOW_NODE = {
     "type": "ONNXYOLOV4",
-    "id": "2",
-    "title": "ONNXYOLOV4",
-    "properties": {
-        "model_path": {"value": "./kenning/resources/models/detection/yolov4.onnx"}  # noqa: E501
-    },
-    "outputs": {"Model wrapper": {"id": "3"}},
-    "inputs": {},
+    "id": "6",
     "position": {"x": 400, "y": 50},
     "width": 300,
     "twoColumn": False,
+    "interfaces": [
+        {
+            "name": "Model wrapper",
+            "id": "7",
+            "direction": "output",
+            "side": "right"
+        }
+    ],
+    "properties": [
+        {
+            "name": "classes",
+            "id": "66c5b122-711e-4e87-afd5-7dfda9b633b6",
+            "value": "coco"
+        },
+        {
+            "name": "model_path",
+            "id": "8",
+            "value": "./kenning/resources/models/detection/yolov4.onnx"
+        }
+    ],
+    "name": ""
 }
 
 ONNXRUNTIME_DATAFLOW_NODE = {
     "type": "ONNXRuntime",
-    "id": "4",
-    "title": "ONNXRuntime",
-    "properties": {
-        "disable_performance_measurements": {"value": True},
-        "save_model_path": {
-            "value": "./kenning/resources/models/detection/yolov4.onnx"
-        },
-        "execution_providers": {"value": ["CUDAExecutionProvider"]},
-    },
-    "outputs": {"Runtime": {"id": "5"}},
-    "inputs": {},
+    "id": "9",
     "position": {"x": 750, "y": 50},
     "width": 300,
     "twoColumn": False,
+    "interfaces": [
+        {
+            "name": "Runtime",
+            "id": "10",
+            "direction": "output",
+            "side": "right"
+        }
+    ],
+    "properties": [
+        {
+            "name": "save_model_path",
+            "id": "11",
+            "value": "./kenning/resources/models/detection/yolov4.onnx"
+        },
+        {
+            "name": "execution_providers",
+            "id": "12",
+            "value": [
+                "CUDAExecutionProvider"
+            ]
+        },
+        {
+            "name": "disable_performance_measurements",
+            "id": "9fcaafdc-5f09-4204-a54e-fa0f66abd804",
+            "value": False
+        }
+    ],
+    "name": ""
 }
 
 MODELRUNTIMERUNNER_DATAFLOW_NODE = {
     "type": "ModelRuntimeRunner",
-    "id": "6",
-    "title": "ModelRuntimeRunner",
-    "properties": {},
-    "inputs": {
-        "Input data": {"id": "7"},
-        "Model Wrapper": {"id": "8"},
-        "Runtime": {"id": "9"},
-        "Calibration dataset": {"id": "10"},
-    },
-    "outputs": {"Model output": {"id": "11"}},
+    "id": "13",
     "position": {"x": 1100, "y": 50},
     "width": 300,
     "twoColumn": False,
+    "interfaces": [
+        {
+            "name": "Input data",
+            "id": "14",
+            "direction": "input",
+            "side": "left"
+        },
+        {
+            "name": "Model Wrapper",
+            "id": "15",
+            "direction": "input",
+            "side": "left"
+        },
+        {
+            "name": "Runtime",
+            "id": "16",
+            "direction": "input",
+            "side": "left"
+        },
+        {
+            "name": "Calibration dataset",
+            "id": "17",
+            "direction": "input",
+            "side": "left"
+        },
+        {
+            "name": "Model output",
+            "id": "18",
+            "direction": "output",
+            "side": "right"
+        }
+    ],
+    "properties": [],
+    "name": ""
 }
 
 DETECTIONVISUALIZER_DATAFLOW_NODE = {
     "type": "RealTimeDetectionVisualizer",
-    "id": "14",
-    "title": "RealTimeDetectionVisualizer",
-    "properties": {
-        "viewer_width": {"value": 512},
-        "viewer_height": {"value": 512},
-        "input_color_format": {"value": "BGR"},
-        "input_memory_layout": {"value": "NCHW"},
-    },
-    "inputs": {"Model output": {"id": "15"}, "Input framer": {"id": "16"}},
-    "outputs": {},
+    "id": "21",
     "position": {"x": 1450, "y": 50},
     "width": 300,
     "twoColumn": False,
+    "interfaces": [
+        {
+            "name": "Model output",
+            "id": "22",
+            "direction": "input",
+            "side": "left"
+        },
+        {
+            "name": "Input frames",
+            "id": "23",
+            "direction": "input",
+            "side": "left"
+        }
+    ],
+    "properties": [
+        {
+            "name": "viewer_width",
+            "id": "24",
+            "value": 512
+        },
+        {
+            "name": "viewer_height",
+            "id": "25",
+            "value": 512
+        },
+        {
+            "name": "input_color_format",
+            "id": "27",
+            "value": "BGR"
+        },
+        {
+            "name": "input_memory_layout",
+            "id": "26",
+            "value": "NCHW"
+        }
+    ],
+    "name": ""
 }
 
 
@@ -129,11 +241,11 @@ class TestFlowHandler(HandlerTests):
         DETECTIONVISUALIZER_DATAFLOW_NODE
     ]
     dataflow_connections = [
-        {"id": "12", "from": "3", "to": "8"},
-        {"id": "13", "from": "5", "to": "9"},
-        {"id": "17", "from": "11", "to": "15"},
-        {"id": "18", "from": "1", "to": "7"},
-        {"id": "19", "from": "1", "to": "16"},
+        {"id": "19", "from": "7", "to": "15"},
+        {"id": "20", "from": "10", "to": "16"},
+        {"id": "28", "from": "1", "to": "14"},
+        {"id": "29", "from": "1", "to": "23"},
+        {"id": "30", "from": "18", "to": "22"},
     ]
 
     @pytest.fixture(scope="class")

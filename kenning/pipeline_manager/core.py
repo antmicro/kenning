@@ -326,19 +326,16 @@ class BaseDataflowHandler:
                 kenning_node = self.nodes[dataflow_node['type']]
                 parameters = dataflow_node['properties']
                 parameters = {
-                    name: parameter['value']
-                    for name, parameter in parameters.items()
+                    parameter['name']: parameter['value']
+                    for parameter in parameters
                 }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node,
                     parameters
                 )
 
-                for _, input in dataflow_node['inputs'].items():
-                    interface_to_id[input['id']] = node_id
-
-                for _, output in dataflow_node['outputs'].items():
-                    interface_to_id[output['id']] = node_id
+                for interface in dataflow_node['interfaces']:
+                    interface_to_id[interface['id']] = node_id
 
             for conn in graph['connections']:
                 self.dataflow_graph.create_connection(

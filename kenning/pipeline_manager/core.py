@@ -461,10 +461,7 @@ class PipelineManagerGraphCreator(GraphCreator):
     def __init__(
             self,
             io_mapping: Dict,
-            start_x_pos: int = 50,
-            start_y_pos: int = 50,
-            node_width: int = 300,
-            node_x_offset: int = 50
+            node_width: int = 300
     ):
         """
         Prepares the Graph creator for Pipeline Manager.
@@ -472,39 +469,18 @@ class PipelineManagerGraphCreator(GraphCreator):
         Parameters
         ----------
         io_mapping : Dict[str, Dict]
-            IO mapping based on the input nodes specification.
-        start_x_pos, start_y_pos : int
-            Position of the first graph node.
+            IO mapping based on the input nodes specification
         node_width : int
-            Width of nodes.
-        node_x_offset : int
-            Spacing between two nodes.
+            Width of nodes
         """
-        self.start_x_pos = start_x_pos
-        self.x_pos = start_x_pos
-        self.y_pos = start_y_pos
-        self.node_width = node_width
-        self.node_x_offset = node_x_offset
         self.io_mapping = io_mapping
+        self.node_width = node_width
         super().__init__()
 
     def reset_graph(self):
         self.connections = []
         self.inp_interface_map = {}
         self.out_interface_map = {}
-        self.reset_position()
-
-    def update_position(self):
-        """
-        Calculates position for a new node based on previous (x,y).
-        """
-        self.x_pos += self.node_width + self.node_x_offset
-
-    def reset_position(self):
-        """
-        Returns the position to it's original value.
-        """
-        self.x_pos = self.start_x_pos
 
     def _create_interface(
             self,
@@ -555,14 +531,9 @@ class PipelineManagerGraphCreator(GraphCreator):
                 {**param, 'id': self.gen_id()} for param in parameters
             ],
             'interfaces': interfaces,
-            'position': {
-                'x': self.x_pos,
-                'y': self.y_pos,
-            },
             'width': self.node_width,
             'twoColumn': False
         }
-        self.update_position()
         return node_id
 
     def find_compatible_io(self, from_id, to_id):

@@ -7,8 +7,10 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.runtimes.iree import IREERuntime
 from runtimetests import RuntimeTests
 import pytest
+from unittest.mock import patch
 
 
+@patch.multiple(Runtime, __abstractmethods__=set())
 class TestCoreRuntime(RuntimeTests):
     runtimecls = Runtime
     runtimeprotocolcls = RuntimeProtocol

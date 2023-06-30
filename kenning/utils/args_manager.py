@@ -8,6 +8,7 @@ Module for preparing and serializing class arguments.
 
 import jsonschema
 import argparse
+from abc import ABC
 from typing import Dict, Tuple
 from pathlib import Path
 import numpy as np
@@ -489,7 +490,7 @@ def add_parameterschema_argument(
                 keywords['type'] += ['null']
 
 
-class ArgumentsHandler(object):
+class ArgumentsHandler(ABC):
     """
     Class responsible for creating parsers for arguments from command line or
     json configs.

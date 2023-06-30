@@ -636,7 +636,7 @@ class Runtime(ArgumentsHandler):
             Raised if model is not loaded.
         """
         self.log.debug('Uploading output')
-        results = self.extract_ouptput()
+        results = self.extract_output()
         output_bytes = bytes()
         for result in results:
             output_bytes += result.tobytes()
@@ -763,9 +763,9 @@ class Runtime(ArgumentsHandler):
                 if not succeed:
                     return False
                 self._run()
-                outbytes = self.upload_output(None)
-                preds = modelwrapper.convert_output_from_bytes(outbytes)
-                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: 501
+                preds = self.extract_output()
+                posty = tagmeasurements("postprocessing")(
+                        modelwrapper._postprocess_outputs)(preds)
                 measurements += dataset.evaluate(posty, y)
         except KeyboardInterrupt:
             self.log.info("Stopping benchmark...")
@@ -803,8 +803,7 @@ class Runtime(ArgumentsHandler):
         if not succeed:
             return False
         self._run()
-        outbytes = self.upload_output(None)
-        preds = modelwrapper.convert_output_from_bytes(outbytes)
+        preds = self.extract_output()
         if postprocess:
             return modelwrapper._postprocess_outputs(preds)
 

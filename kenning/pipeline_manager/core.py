@@ -531,8 +531,7 @@ class PipelineManagerGraphCreator(GraphCreator):
                 {**param, 'id': self.gen_id()} for param in parameters
             ],
             'interfaces': interfaces,
-            'width': self.node_width,
-            'twoColumn': False
+            'width': self.node_width
         }
         return node_id
 

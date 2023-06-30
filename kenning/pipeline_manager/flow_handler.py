@@ -19,8 +19,7 @@ class KenningFlowHandler(BaseDataflowHandler):
     """
     Defines the Kenningflow specification to use with Pipeline Manager.
     """
-
-    def __init__(self):
+    def __init__(self, **kwargs):
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()
 
         # Nodes from PipelineHandler are used only as arguments for
@@ -50,7 +49,8 @@ class KenningFlowHandler(BaseDataflowHandler):
         super().__init__(
             nodes,
             io_mapping,
-            FlowGraphCreator(primitive_modules)
+            FlowGraphCreator(primitive_modules),
+            **kwargs
         )
 
     def parse_json(self, json_cfg):

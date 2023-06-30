@@ -18,10 +18,9 @@ class PipelineHandler(BaseDataflowHandler):
     Defines interpretation of graphs coming from Pipeline manager as Kenning
     optimization pipelines.
     """
-
-    def __init__(self):
+    def __init__(self, **kwargs):
         nodes, io_mapping = PipelineHandler.get_nodes()
-        super().__init__(nodes, io_mapping, PipelineGraphCreator())
+        super().__init__(nodes, io_mapping, PipelineGraphCreator(), **kwargs)
 
     def parse_json(self, json_cfg):
         return parse_json_pipeline(json_cfg)

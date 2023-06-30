@@ -68,6 +68,12 @@ class PipelineManagerClient(CommandTemplate):
             choices=('pipeline', 'flow'),
             default='pipeline',
         )
+        ve_group.add_argument(
+            '--layout',
+            help='Autolayout algorithm to use in Pipeline Manager',
+            type=str,
+            default='CytoscapeEngine - breadthfirst'
+        )
 
         return parser, groups
 
@@ -175,9 +181,9 @@ class PipelineManagerClient(CommandTemplate):
 
         try:
             if args.spec_type == "pipeline":
-                dataflow_handler = PipelineHandler()
+                dataflow_handler = PipelineHandler(layout_algorithm=args.layout) # noqa E501
             elif args.spec_type == "flow":
-                dataflow_handler = KenningFlowHandler()
+                dataflow_handler = KenningFlowHandler(layout_algorithm=args.layout) # noqa E501
             else:
                 raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 

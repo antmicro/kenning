@@ -161,7 +161,8 @@ class BaseDataflowHandler:
             self,
             nodes: Dict[str, Node],
             io_mapping: Dict[str, Dict],
-            graph_creator: GraphCreator
+            graph_creator: GraphCreator,
+            layout_algorithm: str
     ):
         """
         Prepares the dataflow handler, creates graph creators - `pm_graph` for
@@ -177,12 +178,15 @@ class BaseDataflowHandler:
             of each node type.
         graph_creator : GraphCreator
             Creator used for parsing Pipeline manager dataflows into specific
-            JSON format.
+            JSON format
+        layout_algorithm : str
+            Chooses autolayout algorithm to send in metadata specification
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
         self.pm_graph = PipelineManagerGraphCreator(io_mapping)
         self.dataflow_graph = graph_creator
+        self.autolayout = layout_algorithm
 
     def get_specification(self) -> Dict:
         """
@@ -200,6 +204,7 @@ class BaseDataflowHandler:
             'version': VERSION,
             'metadata': {
                 'twoColumn': True,
+                'layout': self.autolayout
             },
             'nodes': []
         }

@@ -1,0 +1,57 @@
+[
+  {
+    "type": "kenning.dataproviders.ros2_camera_node_receiver.ROS2CameraNodeDataProvider",
+    "parameters": {
+      "node_name": "ros2_camera_node_dataloader",
+      "topic_name": "camera_frame",
+      "output_memory_layout": "NCHW",
+      "output_width": 550,
+      "output_height": 550
+    },
+    "outputs": {
+      "frame": "cam_frame",
+      "frame_original": "cam_frame_original"
+    }
+  },
+  {
+    "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
+    "parameters": {
+      "model_wrapper": {
+        "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
+        "parameters": {
+          "model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",
+          "top_k": 100,
+          "score_threshold": 0.2
+        }
+      },
+      "runtime": {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters":
+        {
+          "save_model_path": "./build/compiled-model.tar",
+          "target_device_context": "cuda",
+          "runtime_use_vm": false
+        }
+      }
+    },
+    "inputs": {
+      "input": "cam_frame"
+    },
+    "outputs": {
+      "segmentation_output": "predictions"
+    }
+  },
+  {
+    "type": "kenning.outputcollectors.ros2_yolact_outputcollector.ROS2YolactOutputCollector",
+    "parameters": {
+      "node_name": "ros2_yolact_outputcollector",
+      "topic_name": "camera_frame_kenning",
+      "input_color_format": "BGR",
+      "input_memory_layout": "NCHW"
+    },
+    "inputs": {
+      "frame": "cam_frame_original",
+      "output": "predictions"
+    }
+  }
+]

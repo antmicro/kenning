@@ -422,7 +422,8 @@ class Runtime(ArgumentsHandler):
 
         return reordered_inputs
 
-    def postprocess_output(self, results: List[np.ndarray]) -> bytes:
+    def postprocess_output(self, results: List[np.ndarray]
+                           ) -> List[np.ndarray]:
         """
         The method accepts output of the model and postprocesses it.
 
@@ -434,13 +435,13 @@ class Runtime(ArgumentsHandler):
 
         Parameters
         ----------
-        results : list[np.ndarray]
+        results : List[np.ndarray]
             List of outputs of the model.
 
         Returns
         -------
-        bytes :
-            Postprocessed output converted to bytes.
+        List[np.ndarray] :
+            Postprocessed and reordered outputs of the model.
 
         Raises
         ------
@@ -469,12 +470,7 @@ class Runtime(ArgumentsHandler):
         else:
             reordered_results = results
 
-        # converting the output to bytes
-        output_bytes = bytes()
-        for result in reordered_results:
-            output_bytes += result.tobytes()
-
-        return output_bytes
+        return reordered_results
 
     def read_io_specification(self, io_spec: Dict):
         """
@@ -604,6 +600,17 @@ class Runtime(ArgumentsHandler):
         """
         raise NotImplementedError
 
+    def extract_output(self) -> List[Any]:
+        """
+        Extracts and postprocesses the output of the model.
+
+        Returns
+        -------
+        List[Any] :
+            Postprocessed and reordered outputs of the model.
+        """
+        raise NotImplementedError
+
     def upload_output(self, input_data: bytes) -> bytes:
         """
         Returns the output to the client, in bytes.
@@ -628,7 +635,12 @@ class Runtime(ArgumentsHandler):
         ModelNotLoadedError :
             Raised if model is not loaded.
         """
-        raise NotImplementedError
+        self.log.debug('Uploading output')
+        results = self.extract_ouptput()
+        output_bytes = bytes()
+        for result in results:
+            output_bytes += result.tobytes()
+        return output_bytes
 
     def _upload_output(self, input_data: bytes):
         """

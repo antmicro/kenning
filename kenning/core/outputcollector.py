@@ -7,11 +7,12 @@ Provides an API for processing and returning data from models and dataprovider.
 """
 
 from typing import Any, Dict, Tuple
+from abc import ABC, abstractmethod
 
 from kenning.core.runner import Runner
 
 
-class OutputCollector(Runner):
+class OutputCollector(Runner, ABC):
 
     arguments_structure = {}
 
@@ -54,12 +55,14 @@ class OutputCollector(Runner):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def detach_from_output(self):
         """
         Detaches from the output during shutdown.
         """
         raise NotImplementedError
 
+    @abstractmethod
     def should_close(self) -> bool:
         """
         Checks if a specific exit condition was reached.

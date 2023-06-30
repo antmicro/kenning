@@ -8,6 +8,7 @@ Provides an API for model compilers.
 
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional, Union
+from abc import ABC, abstractmethod
 from argparse import Namespace
 import json
 
@@ -40,7 +41,7 @@ class IOSpecificationNotFoundError(Exception):
     pass
 
 
-class Optimizer(ArgumentsHandler):
+class Optimizer(ArgumentsHandler, ABC):
     """
     Compiles the given model to a different format or runtime.
     """
@@ -146,6 +147,7 @@ class Optimizer(ArgumentsHandler):
             f'{", ".join(self.inputtypes.keys())} are supported'
         self.inputtype = inputtype
 
+    @abstractmethod
     def compile(
             self,
             inputmodelpath: Path,
@@ -176,6 +178,7 @@ class Optimizer(ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_framework_and_version(self) -> Tuple[str, str]:
         """
         Returns name of the framework and its version in a form of a tuple.

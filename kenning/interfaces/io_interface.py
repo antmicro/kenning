@@ -8,11 +8,12 @@ their input and output types.
 """
 
 from typing import Dict, List, Tuple, Any
+from abc import ABC, abstractmethod
 from pathlib import Path
 import json
 
 
-class IOInterface(object):
+class IOInterface(ABC):
     """
     Interface that provides methods for accessing input/output specifications
     and validating them.
@@ -91,6 +92,7 @@ class IOInterface(object):
 
         return True
 
+    @abstractmethod
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         """
         Returns dictionary with `input` and `output` keys that map to input and

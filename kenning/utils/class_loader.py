@@ -7,10 +7,12 @@ Provides methods for importing classes and modules at runtime based on string.
 """
 
 from typing import Type, Union, Dict, Tuple
+import inspect
 import importlib
 from typing import List
 from pathlib import Path
 import ast
+import abc
 import sys
 
 from kenning.core.dataprovider import DataProvider
@@ -47,7 +49,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
 
 
 def get_all_subclasses(
-        modulepath: str,
+        module_path: str,
         cls: Type,
         raise_exception: bool = False,
         import_classes: bool = True) -> Union[List[Type], List[Tuple[str, str]]]:  # noqa: E501
@@ -57,7 +59,7 @@ def get_all_subclasses(
 
     Parameters
     ----------
-    modulepath : str
+    module_path : str
         Module-like path to where search should be done.
     cls : Type
         Given base class.
@@ -76,7 +78,7 @@ def get_all_subclasses(
     """
     logger = get_logger()
 
-    root_module = importlib.util.find_spec(modulepath)
+    root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]
     i = 0
     # get all submodules
@@ -116,8 +118,7 @@ def get_all_subclasses(
 
     # recursively filter subclasses
     subclasses = set()
-    checked_classes = {cls.__name__}
-    non_final_subclasses = set()
+    checked_classes = set()
 
     def collect_subclasses(class_def: ast.ClassDef) -> bool:
         """
@@ -141,15 +142,14 @@ def get_all_subclasses(
         for b in class_def.bases:
             if not hasattr(b, "id"):
                 continue
-            non_final_subclasses.add(b.id)
             if b.id == cls.__name__:
-                subclasses.add(class_def.name)
                 found_subclass = True
             elif b.id in subclasses or (
                     b.id in classes_defs and
                     collect_subclasses(classes_defs[b.id])):
-                subclasses.add(class_def.name)
                 found_subclass = True
+            if found_subclass:
+                subclasses.add(class_def.name)
         return found_subclass
 
     for class_name, class_def in classes_defs.items():
@@ -159,9 +159,6 @@ def get_all_subclasses(
     # try importing subclasses
     result = []
     for subclass_name in subclasses:
-        # filter non-final subclasses
-        if subclass_name in non_final_subclasses:
-            continue
         subclass_module = classes_modules[subclass_name]
         try:
             if not import_classes:
@@ -172,7 +169,10 @@ def get_all_subclasses(
                 importlib.import_module(subclass_module.name),
                 subclass_name
             )
-            result.append(subclass)
+            # filter abstract classes
+            if (not inspect.isabstract(subclass) and
+                    abc.ABC not in subclass.__bases__):
+                result.append(subclass)
         except (ModuleNotFoundError, ImportError, Exception) as e:
             msg = f'Could not add {subclass_name}. Reason:'
             logger.warn('-' * len(msg))
@@ -188,13 +188,13 @@ def get_all_subclasses(
     return result
 
 
-def load_class(modulepath: str) -> type:
+def load_class(module_path: str) -> Type:
     """
     Loads class given in the module path.
 
     Parameters
     ----------
-    modulepath : str
+    module_path : str
         Module-like path to the class.
 
     Returns
@@ -202,19 +202,19 @@ def load_class(modulepath: str) -> type:
     type :
         Loaded class.
     """
-    module_name, cls_name = modulepath.rsplit('.', 1)
+    module_name, cls_name = module_path.rsplit('.', 1)
     module = importlib.import_module(module_name)
     cls = getattr(module, cls_name)
     return cls
 
 
-def get_kenning_submodule_from_path(modulepath: str):
+def get_kenning_submodule_from_path(module_path: str):
     """
     Converts script path to kenning submodule name.
 
     Parameters
     ----------
-    modulepath : str
+    module_path : str
         Path to the module script, usually stored in sys.argv[0].
 
     Returns
@@ -222,7 +222,7 @@ def get_kenning_submodule_from_path(modulepath: str):
     str :
         Normalized module path.
     """
-    parts = Path(modulepath).parts
+    parts = Path(module_path).parts
     item_index = len(parts) - 1 - parts[::-1].index("kenning")
     modulename = '.'.join(parts[item_index:]).rstrip('.py')
     return modulename

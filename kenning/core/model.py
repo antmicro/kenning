@@ -8,6 +8,7 @@ Provides a wrapper for deep learning models.
 
 import json
 from typing import List, Any, Tuple, Dict, Type, Optional
+from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
 from collections import defaultdict
@@ -23,7 +24,7 @@ from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
 
 
-class ModelWrapper(IOInterface, ArgumentsHandler):
+class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     """
     Wraps the given model.
     """
@@ -141,6 +142,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
             from_file=from_file
         )
 
+    @abstractmethod
     def prepare_model(self):
         """
         Downloads the model (if required) and loads it to the device.
@@ -247,6 +249,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_framework_and_version(self) -> Tuple[str, str]:
         """
         Returns name of the framework and its version in a form of a tuple.
@@ -258,6 +261,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_output_formats(self) -> List[str]:
         """
         Returns list of names of possible output formats.
@@ -328,6 +332,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
         """
         Returns a new instance of dictionary with `input` and `output`
@@ -409,6 +414,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
         """
         Converts the input returned by the ``preprocess_input`` method
@@ -426,6 +432,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
         """
         Converts bytes array to the model output format.

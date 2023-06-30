@@ -7,11 +7,12 @@ Provides an API for gathering and preparing data from external sources.
 """
 
 from typing import Any, Dict, Tuple
+from abc import ABC, abstractmethod
 
 from kenning.core.runner import Runner
 
 
-class DataProvider(Runner):
+class DataProvider(Runner, ABC):
 
     arguments_structure = {}
 
@@ -49,6 +50,7 @@ class DataProvider(Runner):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def fetch_input(self) -> Any:
         """
         Gets the sample from device.
@@ -76,6 +78,7 @@ class DataProvider(Runner):
         """
         return self.data
 
+    @abstractmethod
     def detach_from_source(self):
         """
         Detaches from the source during shutdown.

@@ -147,8 +147,7 @@ class TVMRuntime(Runtime):
             raise InputNotPreparedError
         self.model.run()
 
-    def upload_output(self, input_data):
-        self.log.debug('Uploading output')
+    def extract_output(self):
         if self.model is None:
             raise ModelNotPreparedError
 
@@ -161,5 +160,4 @@ class TVMRuntime(Runtime):
                 results.append(
                     self.model.get_output(i).asnumpy()
                 )
-
         return self.postprocess_output(results)

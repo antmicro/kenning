@@ -102,8 +102,7 @@ class IREERuntime(Runtime):
             raise InputNotPreparedError
         self.output = self.model.main(*self.input)
 
-    def upload_output(self, input_data):
-        self.log.debug('Uploading output')
+    def extract_output(self):
         if self.model is None:
             raise ModelNotPreparedError
 
@@ -113,5 +112,4 @@ class IREERuntime(Runtime):
         except AttributeError:
             for out in self.output:
                 results.append(out.to_host())
-
         return self.postprocess_output(results)

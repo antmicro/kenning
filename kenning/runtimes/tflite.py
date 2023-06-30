@@ -120,14 +120,13 @@ class TFLiteRuntime(Runtime):
             raise InputNotPreparedError
         self.interpreter.invoke()
 
-    def upload_output(self, input_data):
-        self.log.debug('Uploading output')
+    def extract_output(self):
         if self.interpreter is None:
             raise ModelNotPreparedError
 
         results = []
         for det in self.interpreter.get_output_details():
             out = self.interpreter.tensor(det['index'])()
-            results.append(out)
+            results.append(out.copy())
 
         return self.postprocess_output(results)

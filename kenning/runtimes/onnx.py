@@ -147,8 +147,7 @@ class ONNXRuntime(Runtime):
             self.input
         )
 
-    def upload_output(self, input_data):
-        self.log.debug('Uploading output')
+    def extract_output(self):
         if self.session is None:
             raise ModelNotPreparedError
 

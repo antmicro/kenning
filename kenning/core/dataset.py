@@ -7,6 +7,7 @@ Provides an API for dataset loading, creation and configuration.
 """
 
 from typing import Tuple, List, Any, Dict, Optional, Generator, Iterable
+from abc import ABC, abstractmethod
 from argparse import Namespace
 import random
 import hashlib
@@ -24,7 +25,7 @@ from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
 
 
-class Dataset(ArgumentsHandler):
+class Dataset(ArgumentsHandler, ABC):
     """
     Wraps the datasets for training, evaluation and optimization.
 
@@ -558,6 +559,7 @@ class Dataset(ArgumentsHandler):
         random.Random(seed).shuffle(data)
         return data[:int(percentage * len(data) + 0.5)]
 
+    @abstractmethod
     def download_dataset_fun(self):
         """
         Downloads the dataset to the root directory defined in the constructor.
@@ -599,6 +601,7 @@ class Dataset(ArgumentsHandler):
 
         return checksum == valid_checksum
 
+    @abstractmethod
     def prepare(self):
         """
         Prepares dataX and dataY attributes based on the dataset contents.
@@ -609,6 +612,7 @@ class Dataset(ArgumentsHandler):
         """
         raise NotImplementedError
 
+    @abstractmethod
     def evaluate(self, predictions: list, truth: list) -> 'Measurements':
         """
         Evaluates the model based on the predictions.

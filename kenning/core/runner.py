@@ -7,6 +7,7 @@ Provides a base class for Kenning Flow elements.
 """
 
 from typing import Dict, List, Tuple, Any
+from abc import ABC, abstractmethod
 from argparse import Namespace
 
 from kenning.interfaces.io_interface import IOInterface
@@ -16,7 +17,7 @@ from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
 
 
-class Runner(IOInterface, ArgumentsHandler):
+class Runner(IOInterface, ArgumentsHandler, ABC):
     """
     Represents an operation block in Kenning Flow.
     """
@@ -182,6 +183,7 @@ class Runner(IOInterface, ArgumentsHandler):
 
         flow_state.append(outputs)
 
+    @abstractmethod
     def run(
             self,
             inputs: Dict[str, Any]) -> Dict[str, Any]:

@@ -260,7 +260,7 @@ class TestPipelineHandler(HandlerTests):
 
     @pytest.fixture(scope="class")
     def handler(self):
-        return PipelineHandler()
+        return PipelineHandler(layout_algorithm="NoLayout")
 
     def equivalence_check(self, dataflow1, dataflow2):
         return dataflow1 == dataflow2

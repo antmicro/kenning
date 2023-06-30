@@ -250,7 +250,7 @@ class TestFlowHandler(HandlerTests):
 
     @pytest.fixture(scope="class")
     def handler(self):
-        return KenningFlowHandler()
+        return KenningFlowHandler(layout_algorithm="NoLayout")
 
     def equivalence_check(self, dataflow1, dataflow2):
         # There is a degree of freedom when naming global connections when

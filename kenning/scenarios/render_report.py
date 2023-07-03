@@ -13,7 +13,7 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple
+from typing import Dict, List, Set, Optional, Tuple, Callable
 import json
 import numpy as np
 import re
@@ -49,6 +49,10 @@ from kenning.core.metrics import (
     compute_detection_metrics,
     compute_renode_metrics)
 
+# TODO: remove:
+import logging
+logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
+
 log = logger.get_logger()
 
 SERVIS_PLOT_OPTIONS = {
@@ -56,6 +60,13 @@ SERVIS_PLOT_OPTIONS = {
     'plottype': 'scatter',
     'backend': 'matplotlib',
 }
+
+# REPORT_TYPES:
+PERFORMANCE = "performance"
+CLASSIFICATION = "classification"
+DETECTION = "detection"
+RENODE = "renode_stats"
+REPORT_TYPES = [PERFORMANCE, CLASSIFICATION, DETECTION, RENODE]
 
 
 def get_model_name(filepath: Path) -> str:
@@ -1529,16 +1540,16 @@ def generate_report(
     """
 
     reptypes = {
-        'performance': performance_report,
-        'classification': classification_report,
-        'detection': detection_report,
-        'renode_stats': renode_stats_report
+        PERFORMANCE: performance_report,
+        CLASSIFICATION: classification_report,
+        DETECTION: detection_report,
+        RENODE: renode_stats_report
     }
     comparereptypes = {
-        'performance': comparison_performance_report,
-        'classification': comparison_classification_report,
-        'detection': comparison_detection_report,
-        'renode_stats': comparison_renode_stats_report
+        PERFORMANCE: comparison_performance_report,
+        CLASSIFICATION: comparison_classification_report,
+        DETECTION: comparison_detection_report,
+        RENODE: comparison_renode_stats_report
     }
 
     header_data = {
@@ -1582,6 +1593,82 @@ def generate_report(
         out.write(content)
 
 
+def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
+    """
+    Deduces what type of report should be generated based on measurements data.
+
+    Report type is choosen only when all mesurements data are compatible
+    with it.
+
+    Parameters
+    ----------
+    measurements_data : List[Dict]
+        List with mesurements data from which the report will be generated.
+
+    Returns
+    -------
+    List[str] : List with types of report
+    """
+    report_types = []
+
+    def _append_type_if(_type: str, func: Callable) -> int:
+        if all(map(func, measurements_data)):
+            report_types.append(_type)
+
+    _append_type_if(
+        PERFORMANCE,
+        lambda data: "target_inference_step" in data
+        or "protocol_inference_step" in data)
+    _append_type_if(
+        CLASSIFICATION, lambda data: "eval_confusion_matrix" in data)
+    _append_type_if(DETECTION, lambda data: "eval_gtcount" in data)
+    _append_type_if(RENODE, lambda data: "opcode_counters" in data)
+
+    if len(report_types) == 0:
+        log.error(
+            "There is no report type which is suitable for all measurements. ")
+        return
+
+    log.info(f"Following report types were deduced: {report_types}")
+    return report_types
+
+
+def deduce_report_name(
+    measurements_data: List[Dict],
+    report_types: List[str]
+) -> str:
+    """
+    Deduces simple report name based on measurements and its type.
+
+    Parameters
+    ----------
+    measurements_data : List[Dict]
+        List with mesurements data from which the report will be generated.
+    report_types : List[str]
+        List with types of report.
+
+    Returns
+    -------
+    str : Report name
+    """
+    if len(measurements_data) > 1:
+        report_name = "Comparison of " \
+            f"{', '.join([d['modelname'] for d in measurements_data[:-1]])}" \
+            f" and {measurements_data[-1]['modelname']}"
+    elif "reportname" in measurements_data[0]:
+        report_name = measurements_data[0]['reportname']
+    elif len(report_types) > 1:
+        report_name = f"{', '.join(report_types[:-1])} and " \
+            f"{report_types[-1]} of {measurements_data[0]['modelname']}"
+    else:
+        report_name = f"{report_types[0]} of " \
+            f"{measurements_data[0]['modelname']}"
+    report_name = report_name[0].upper() + report_name[1:]
+
+    log.info(f"Following report name was deduced: {report_name}")
+    return report_name
+
+
 def main(argv):
     command = get_command(argv)
     parser = argparse.ArgumentParser(argv[0])
@@ -1593,27 +1680,25 @@ def main(argv):
         required=True
     )
     parser.add_argument(
-        'reportname',
-        help='Name of the report',
-        type=str
-    )
-    parser.add_argument(
         'output',
         help='Path to the output MyST file',
         type=Path
     )
     parser.add_argument(
+        '--report-name',
+        help='Name of the report',
+        type=str
+    )
+    parser.add_argument(
         '--root-dir',
         help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
-        required=True,
         type=Path
     )
     parser.add_argument(
         '--report-types',
         help='List of types that implement this report',
-        nargs='+',
-        required=True,
-        type=str
+        nargs='*',
+        choices=REPORT_TYPES,
     )
     parser.add_argument(
         '--img-dir',
@@ -1645,8 +1730,14 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
+    logger.set_verbosity(args.verbosity)
+
+    root_dir = args.root_dir
+    if root_dir is None:
+        root_dir = args.output.parent.absolute()
+
     if not args.img_dir:
-        img_dir = args.root_dir / "img"
+        img_dir = root_dir / "img"
     else:
         img_dir = args.img_dir
     img_dir.mkdir(parents=True, exist_ok=True)
@@ -1665,24 +1756,37 @@ def main(argv):
         with open(measurementspath, 'r') as measurementsfile:
             measurements = json.load(measurementsfile)
         if args.model_names is not None:
-            modelname = args.model_names[i]
-        else:
-            modelname = get_model_name(measurementspath)
-        measurements['modelname'] = modelname
-        measurements['reportname'] = args.reportname
-        measurements['reportname_simple'] = re.sub(
-            r'[\W]',
-            '',
-            args.reportname.lower().replace(' ', '_')
-        )
+            measurements['modelname'] = args.model_names[i]
+        elif 'modelname' not in measurements:
+            measurements['modelname'] = get_model_name(measurementspath)
         measurementsdata.append(measurements)
 
+    report_types = args.report_types
+    if report_types is None or len(report_types) == 0:
+        report_types = deduce_report_types(measurementsdata)
+    if report_types is None:
+        parser.error(
+            "Report types cannot be deduced. Please specify --report-types "
+            "or make sure correct measurments were chosen.")
+        return
+
+    report_name = args.report_name
+    if report_name is None:
+        report_name = deduce_report_name(measurementsdata, report_types)
     for measurements in measurementsdata:
         if 'build_cfg' in measurements:
             measurements['build_cfg'] = json.dumps(
                 measurements['build_cfg'],
                 indent=4
             ).split('\n')
+
+        if 'reportname' not in measurements:
+            measurements['reportname'] = deduce_report_name(
+                [measurements], report_types)
+        measurements['reportname_simple'] = re.sub(
+            r'[\W]', '',
+            measurements['reportname'].lower().replace(' ', '_')
+        )
 
     cmap, colors = None, None
     if not args.use_default_theme:
@@ -1697,12 +1801,12 @@ def main(argv):
         custom_matplotlib_theme=not args.use_default_theme,
     ):
         generate_report(
-            args.reportname,
+            report_name,
             measurementsdata,
             args.output,
             img_dir,
-            args.report_types,
-            args.root_dir,
+            report_types,
+            root_dir,
             image_formats,
             command,
             cmap=cmap,

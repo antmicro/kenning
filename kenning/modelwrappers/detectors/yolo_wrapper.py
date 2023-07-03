@@ -206,24 +206,8 @@ class YOLOWrapper(ModelWrapper):
         #   number of channels, actual output height and width, number of
         #   classes and unused parameter
 
-        # iterate over each group
-        lastid = 0
         outputs = []
         for i in range(3):
-            # first extract the actual output
-            # each output layer shape follows formula:
-            # (BS, B * (4 + 1 + C), w / (8 * (i + 1)), h / (8 * (i + 1)))
-            # BS is the batch size
-            # w, h are width and height of the input image
-            # the resolution is reduced over the network, and is 8 times
-            # smaller in each dimension for each output
-            # the "pixels" in the outputs are responsible for the chunks of
-            # image - in the first output each pixel is responsible for 8x8
-            # squares of input image, the second output covers objects from
-            # 16x16 chunks etc.
-            # Each "pixel" can predict up to B bounding boxes.
-            # Each bounding box is described by its 4 coordinates,
-            # objectness prediction and per-class predictions
             outshape = (
                 self.batch_size,
                 len(self.perlayerparams['mask'][i]),
@@ -232,18 +216,7 @@ class YOLOWrapper(ModelWrapper):
                 self.keyparams['height'] // (8 * 2 ** i)
             )
 
-            outputs.append(
-                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
-            )
-
-            # drop additional info provided in the TVM output
-            # since it's all 4-bytes values, ignore the insides
-            lastid += (
-                np.prod(outshape)
-                + len(self.perlayerparams['mask'][i])
-                + len(self.perlayerparams['anchors'][i])
-                + 6  # layer parameters
-            )
+            outputs.append(y[i].reshape(outshape))
 
         # change the dimensionsso the output format is
         # batches layerouts dets params width height
@@ -265,7 +238,39 @@ class YOLOWrapper(ModelWrapper):
         return inputdata.tobytes()
 
     def convert_output_from_bytes(self, outputdata):
-        return np.frombuffer(outputdata, dtype='float32')
+        y = np.frombuffer(outputdata, dtype='float32')
+        # iterate over each group
+        lastid = 0
+        outputs = []
+        for i in range(3):
+            # first extract the actual output
+            # each output layer shape follows formula:
+            # (BS, B * (4 + 1 + C), w / (8 * (i + 1)), h / (8 * (i + 1)))
+            # BS is the batch size
+            # w, h are width and height of the input image
+            # the resolution is reduced over the network, and is 8 times
+            # smaller in each dimension for each output
+            # the "pixels" in the outputs are responsible for the chunks of
+            # image - in the first output each pixel is responsible for 8x8
+            # squares of input image, the second output covers objects from
+            # 16x16 chunks etc.
+            # Each "pixel" can predict up to B bounding boxes.
+            # Each bounding box is described by its 4 coordinates,
+            # objectness prediction and per-class predictions
+            outshape = (
+                self.batch_size,
+                len(self.perlayerparams['mask'][i]) *
+                (4 + 1 + self.numclasses),
+                self.keyparams['width'] // (8 * 2 ** i),
+                self.keyparams['height'] // (8 * 2 ** i)
+            )
+
+            outputs.append(
+                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
+            )
+
+            lastid += np.prod(outshape)
+        return outputs
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):

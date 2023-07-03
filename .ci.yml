@@ -31,17 +31,6 @@ pytest:
         when: always
     allow_failure: false
 
-onnx-conversions:
-    stage: tests
-    script:
-        - ./scripts/onnxconversions.sh
-        - mkdir -p docs/source/generated
-        - cp build/onnx-support.md docs/source/generated/onnx-support.md
-    artifacts:
-        paths:
-            - docs/source/generated
-    allow_failure: false
-
 sample-compilation:
     stage: tests
     script:
@@ -69,7 +58,6 @@ sample-pipeline-optimization:
 docs:
     stage: docs
     dependencies:
-        - onnx-conversions
         - sample-compilation
     variables:
         DOCS_DIR: './docs'
@@ -90,7 +78,6 @@ docs:
 linkcheck:
     stage: docs
     dependencies:
-        - onnx-conversions
         - sample-compilation
     variables:
         DOCS_DIR: './docs'

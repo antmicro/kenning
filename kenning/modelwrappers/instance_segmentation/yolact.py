@@ -267,21 +267,21 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
 
     def postprocess_outputs(self, y):
         # The signature of the y input
-        # output_0 - BOX
-        # output_1 - MASK
-        # output_2 - CLASS
-        # output_3 - SCORE
-        # output_4 - PROTO
+        # 0 - BOX
+        # 1 - MASK
+        # 2 - CLASS
+        # 3 - SCORE
+        # 4 - PROTO
 
-        masks = y['output_4'] @ y['output_1'].T
+        masks = y[4] @ y[1].T
         masks = sigmoid(masks)
-        masks = crop(masks, y['output_0'])
+        masks = crop(masks, y[0])
         masks = cv2.resize(
             masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
         ).transpose(2, 0, 1)
-        y['output_1'] = (masks >= 0.5).astype(np.float32) * 255.
+        y[1] = (masks >= 0.5).astype(np.float32) * 255.
 
-        boxes = y['output_0']
+        boxes = y[0]
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
             boxes[:, 0],
             boxes[:, 2],
@@ -292,31 +292,31 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
             boxes[:, 3],
             550
         )
-        y['output_0'] = (boxes / 550)
+        y[0] = (boxes / 550)
 
         if self.top_k is not None:
-            idx = np.argsort(y['output_3'], 0)[:-(self.top_k + 1):-1]
-            for k in y:
-                if k != 'output_4':
+            idx = np.argsort(y[3], 0)[:-(self.top_k + 1):-1]
+            for k in range(len(y)):
+                if k != 4:
                     y[k] = y[k][idx]
 
-        keep = y['output_3'] >= self.score_threshold
-        for k in y:
-            if k != 'output_4':
+        keep = y[3] >= self.score_threshold
+        for k in range(len(y)):
+            if k != 4:
                 y[k] = y[k][keep]
 
         Y = []
-        for i in range(len(y['output_3'])):
-            x1, y1, x2, y2 = y['output_0'][i, :]
+        for i in range(len(y[3])):
+            x1, y1, x2, y2 = y[0][i, :]
             Y.append(SegmObject(
-                clsname=self.class_names[y['output_2'][i]],
+                clsname=self.class_names[y[2][i]],
                 maskpath=None,
                 xmin=x1,
                 ymin=y1,
                 xmax=x2,
                 ymax=y2,
-                mask=y['output_1'][i],
-                score=y['output_3'][i],
+                mask=y[1][i],
+                score=y[3][i],
                 iscrowd=False
             ))
         return [Y]
@@ -339,9 +339,8 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
 
         output_specification = self.get_io_specification()['output']
 
-        result = {}
+        result = []
         for spec in output_specification:
-            name = spec['name']
             shape = list(
                 num_dets if val == -1 else val for val in spec['shape']
             )
@@ -354,7 +353,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                 outputdata[:tensorsize],
                 dtype=dtype
             )).reshape(shape)
-            result[name] = outputtensor
+            result.append(outputtensor)
             outputdata = outputdata[tensorsize:]
 
         return result

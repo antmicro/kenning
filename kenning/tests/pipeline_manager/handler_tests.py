@@ -32,9 +32,10 @@ def load_json_files(
     pipeline_jsons = []
     pipeline_jsons_names = []
     for json_file in Path(path_to_json_files).iterdir():
-        with open(json_file) as f:
-            pipeline_jsons.append(json.load(f))
-            pipeline_jsons_names.append(json_file.stem)
+        if json_file.suffix == '.json':
+            with open(json_file) as f:
+                pipeline_jsons.append(json.load(f))
+                pipeline_jsons_names.append(json_file.stem)
     return pipeline_jsons, pipeline_jsons_names
 
 

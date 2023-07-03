@@ -14,7 +14,7 @@ import onnx
 import cv2
 import numpy as np
 from functools import reduce
-from typing import Tuple, Dict, Optional
+from typing import Tuple, Dict, Optional, List
 import operator
 import pyximport
 import shutil
@@ -460,9 +460,8 @@ class YOLACTCore(YOLACTWrapper):
 
         output_specification = self.get_io_specification()['output']
 
-        result = {}
+        result = []
         for spec in output_specification:
-            name = spec['name']
             shape = list(
                 num_dets if val == -1 else val for val in spec['shape']
             )
@@ -475,7 +474,7 @@ class YOLACTCore(YOLACTWrapper):
                 outputdata[:tensorsize],
                 dtype=dtype
             )).reshape(shape)
-            result[name] = outputtensor
+            result.append(outputtensor)
             outputdata = outputdata[tensorsize:]
 
         return result
@@ -569,16 +568,16 @@ class YOLACTCore(YOLACTWrapper):
         return {'box': boxes[idx], 'mask': masks[idx], 'class': classes[idx2],
                 'score': scores}
 
-    def _detect(self, y: Dict[str, np.ndarray]) -> Dict[str, np.ndarray]:
+    def _detect(self, y: List[np.ndarray]) -> Dict[str, np.ndarray]:
         """
         Detects objects from the model outputs.
 
-        The signature of the y output:
-        * output_0 - LOC
-        * output_1 - CONF
-        * output_2 - MASK
-        * output_3 - PRIORS
-        * output_4 - PROTO
+        The signature of the y output by index:
+        * 0 - LOC
+        * 1 - CONF
+        * 2 - MASK
+        * 3 - PRIORS
+        * 4 - PROTO
 
         Parameters
         ----------
@@ -590,12 +589,12 @@ class YOLACTCore(YOLACTWrapper):
         Dict[str, np.ndarray] :
             Dictionary of model outputs with detected objects.
         """
-        decode_boxes = self._decode(y['output_0'].squeeze(0), y['output_3'])
-        result = self._filter_detections(y['output_1'].squeeze(0).T,
+        decode_boxes = self._decode(y[0].squeeze(0), y[3])
+        result = self._filter_detections(y[1].squeeze(0).T,
                                          decode_boxes,
-                                         y['output_2'].squeeze(0))
+                                         y[2].squeeze(0))
         if result is not None:
-            result['proto'] = y['output_4'].squeeze(0)
+            result['proto'] = y[4].squeeze(0)
         return result
 
     @classmethod

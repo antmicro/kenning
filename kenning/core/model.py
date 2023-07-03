@@ -209,7 +209,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
     def _preprocess_input(self, X):
         return self.preprocess_input(X)
 
-    def postprocess_outputs(self, y: Any) -> List:
+    def postprocess_outputs(self, y: List[Any]) -> Any:
         """
         Processes the outputs for a given model.
 
@@ -217,12 +217,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
 
         Parameters
         ----------
-        y : Any
-            The output from the model.
+        y : List[Any]
+            The list of output data from the model.
 
         Returns
         -------
-        List :
+        Any :
             The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
@@ -426,11 +426,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         """
         raise NotImplementedError
 
-    def convert_output_from_bytes(self, outputdata: bytes) -> Any:
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
         """
         Converts bytes array to the model output format.
 
-        The converted bytes are later passed to ``postprocess_outputs`` method.
+        The converted output should be compatible with ``postprocess_outputs``
+        method.
 
         Parameters
         ----------
@@ -439,7 +440,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
 
         Returns
         -------
-        Any :
-            Output data to feed to ``postprocess_outputs`` method.
+        List[Any] :
+            List of output data from a model. The converted data should be
+            compatible with the ``postprocess_outputs`` method.
         """
         raise NotImplementedError

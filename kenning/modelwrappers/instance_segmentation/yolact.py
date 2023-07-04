@@ -247,9 +247,10 @@ class YOLACTWrapper(ModelWrapper):
         return io_spec
 
 
-class YOLACT(YOLACTWrapper):
+class YOLACTWithPostprocessing(YOLACTWrapper):
 
-    pretrained_modelpath = files(instance_segmentation) / 'yolact.onnx'
+    pretrained_modelpath = (files(instance_segmentation) /
+                            'yolact_with_postprocessing.onnx')
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -376,10 +377,10 @@ class YOLACT(YOLACTWrapper):
         }
 
 
-class YOLACTCore(YOLACTWrapper):
+class YOLACT(YOLACTWrapper):
 
     pretrained_modelpath = (files(instance_segmentation) /
-                            'yolact_core.onnx')
+                            'yolact.onnx')
 
     def preprocess_input(self, X):
         if len(X) > 1:

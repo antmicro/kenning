@@ -23,8 +23,8 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    "Pet Dataset classification using TVM-compiled TensorFlow model" \
     docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
+    --report-name "Pet Dataset classification using TVM-compiled TensorFlow model" \
     --root-dir docs/source/ \
     --img-dir docs/source/generated/img \
     --report-types performance classification \

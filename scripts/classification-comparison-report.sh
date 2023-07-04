@@ -53,8 +53,8 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    "Classification comparison on Pet Dataset" \
     build/classification-report/report.md \
+    --report-name "Classification comparison on Pet Dataset" \
     --root-dir build/classification-report \
     --img-dir build/classification-report/imgs \
     --report-types performance classification \

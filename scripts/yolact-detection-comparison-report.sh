@@ -15,8 +15,8 @@ python -m kenning.scenarios.json_inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    "YOLACT detection report" \
     build/yolact-report/report.md \
+    --report-name "YOLACT detection report" \
     --root-dir build/yolact-report \
     --img-dir build/yolact-report/imgs \
     --report-types performance detection \

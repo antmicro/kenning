@@ -147,7 +147,8 @@ def run_pipeline_json(
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
         command: List = ['Run in a different environment'],
-        run_benchmarks_only: bool = False) -> int:
+        run_benchmarks_only: bool = False,
+        report_name: Optional[str] = None) -> int:
     """
     Simple wrapper for `run_pipeline` method that parses `json_cfg` argument,
     asserts its integrity and then runs the pipeline with given parameters.
@@ -168,6 +169,8 @@ def run_pipeline_json(
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
         only testing of the model is executed.
+    report_name : Optional[str]
+        Name of the report for which this pipeline is run.
 
     Returns
     -------
@@ -187,7 +190,10 @@ def run_pipeline_json(
         verbosity,
         convert_to_onnx,
         command,
-        run_benchmarks_only
+        run_benchmarks_only,
+        json_cfg.get("model_name", None),
+        json_cfg.get("report_name", None)
+        if report_name is None else report_name,
     )
 
 
@@ -201,7 +207,9 @@ def run_pipeline(
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
         command: List = ['Run in a different environment'],
-        run_benchmarks_only: bool = False):
+        run_benchmarks_only: bool = False,
+        model_name: Optional[str] = None,
+        report_name: Optional[str] = None):
     """
     Wrapper function that runs a pipeline using given parameters.
 
@@ -230,6 +238,10 @@ def run_pipeline(
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,
         only testing of the model is executed.
+    model_name : Optional[str]
+        Custom name of the model.
+    report_name : Optional[str]
+        Name of the report for which this pipeline is run.
 
     Returns
     -------
@@ -267,8 +279,12 @@ def run_pipeline(
             optimizers,
             protocol,
             runtime
-        )
+        ),
     }
+    if model_name is not None:
+        MeasurementsCollector.measurements += {"modelname": model_name}
+    if report_name is not None:
+        MeasurementsCollector.measurements += {"reportname": report_name}
 
     # TODO add method for providing metadata to dataset
     if hasattr(dataset, 'classnames'):

@@ -575,6 +575,10 @@ class PipelineManagerGraphCreator(GraphCreator):
                 from_io_spec = self.out_interface_map[from_interface_id]
                 to_io_spec = self.inp_interface_map[to_interface_id]
             except KeyError:
+                _LOGGER.warn(
+                    f'The connection from {from_interface_id} to '
+                    f'{to_interface_id} could not be established.'
+                )
                 continue
 
             if from_io_spec['type'] == to_io_spec['type']:

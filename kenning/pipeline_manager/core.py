@@ -11,6 +11,8 @@ from kenning.utils.logger import get_logger
 
 _LOGGER = get_logger()
 
+VERSION = '20230619.3'
+
 
 class Node(NamedTuple):
     """
@@ -192,7 +194,7 @@ class BaseDataflowHandler:
         Dict: Specification ready to be send to Pipeline Manager.
         """
         specification = {
-            'version': '20230619.3',
+            'version': VERSION,
             'metadata': {
                 'twoColumn': True,
             },
@@ -591,7 +593,7 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def flush_graph(self):
         finished_graph = {
-            'version': '20230619.3',
+            'version': VERSION,
             'graph': {
                 'id': self.gen_id(),
                 'nodes': list(self.nodes.values()),

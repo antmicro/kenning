@@ -30,7 +30,7 @@ def download_and_extract(url: str, targetdir: Path, downloadpath: Path):
         URL to the ZIP file to download.
     targetdir : Path
         Path to the target directory where extracted files will be saved.
-    downloadpath: Path
+    downloadpath : Path
         Path where the ZIP file will be downloaded to.
     """
     download_url(url, downloadpath)

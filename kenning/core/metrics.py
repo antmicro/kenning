@@ -18,7 +18,7 @@ def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]):
 
     Parameters
     ----------
-    confusion_matrix: ArrayLike
+    confusion_matrix : ArrayLike
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.trace(confusion_matrix) / np.sum(confusion_matrix)
@@ -30,7 +30,7 @@ def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
 
     Parameters
     ----------
-    confusion_matrix: ArrayLike
+    confusion_matrix : ArrayLike
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
@@ -45,7 +45,7 @@ def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
 
     Parameters
     ----------
-    confusion_matrix: ArrayLike
+    confusion_matrix : ArrayLike
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
@@ -60,7 +60,7 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
 
     Parameters
     ----------
-    confusion_matrix: ArrayLike
+    confusion_matrix : ArrayLike
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.float_power(np.prod(

@@ -98,7 +98,8 @@ def compute_ap(
 
     Returns
     -------
-    float: N-point interpolated average precision value.
+    float :
+        N-point interpolated average precision value.
     """
     return np.mean(
         np.interp(np.linspace(0, 1.0, num=points), recall, precision)
@@ -209,7 +210,8 @@ def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
 
     Returns
     -------
-    float : IoU value.
+    float :
+        IoU value.
     """
     xmn = max(b1.xmin, b2.xmin)
     ymn = max(b1.ymin, b2.ymin)
@@ -242,7 +244,8 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
 
     Returns
     -------
-    float : IoU value.
+    float :
+        IoU value.
     """
 
     mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
@@ -385,7 +388,8 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
         Returns
         -------
-        float : IoU value.
+        float :
+            IoU value.
         """
         if self.task == 'object_detection':
             return compute_dect_iou(b1, b2)
@@ -405,7 +409,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
         ----------
         predictions : List
             The list of predictions from the model.
-        truth: List
+        truth : List
             The ground truth for given batch.
         """
         log = get_logger()
@@ -450,7 +454,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
         ----------
         predictions : List
             The list of predictions from the model.
-        truth: List
+        truth : List
             The ground truth for given batch.
         """
         log = get_logger()
@@ -495,7 +499,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
         ----------
         predictions : List
             The list of predictions from the model.
-        truth: List
+        truth : List
             The ground truth for given batch.
         """
         if self.task == 'object_detection':

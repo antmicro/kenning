@@ -69,6 +69,7 @@ class OutputCollector(Runner):
 
         Returns
         -------
-        bool : True if exit condition was reached to break the loop.
+        bool :
+            True if exit condition was reached to break the loop.
         """
         raise NotImplementedError

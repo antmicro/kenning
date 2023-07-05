@@ -64,17 +64,17 @@ IMMATERIAL_COLORS = [
 def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
     """
     Creates default color schema to use for comparison plots (such as violin
-    plot, bubble chart etc.)
+    plot, bubble chart etc.).
 
     Parameters
     ----------
     n_colors : int
-        Number of colors to return
+        Number of colors to return.
 
     Returns
     -------
     List[Tuple] :
-        List of colors to use for plotting
+        List of colors to use for plotting.
     """
     CMAP_NAME = "nipy_spectral"
     cmap = plt.get_cmap(CMAP_NAME)
@@ -695,6 +695,8 @@ def draw_confusion_matrix_matplotlib(
         List with names of classes.
     figsize : Optional[Tuple[int]]
         Tuple with width and height of figure.
+    dpi : Optional[int]
+        DPI of the output plot.
     output_path : str | None
         Path to the file, where plot will be saved to. If not specified,
         result won't be saved.
@@ -1311,7 +1313,7 @@ def recall_precision_curves(
     outpath : Optional[Path]
         Output path for the plot image. If None, the plot will be displayed.
     title : str
-        Title of the plot
+        Title of the plot.
     lines : List[List[List]]
         Per-class list of tuples with list of recall values and precision
         values.
@@ -1508,6 +1510,8 @@ def recall_precision_gradients(
         List of the class names.
     aps : List[float]
         Per-class AP values.
+    map : float
+        The mAP value.
     figsize : Tuple
         The size of the figure.
     cmap : Optional[Any]
@@ -1934,8 +1938,8 @@ def choose_theme(
     """
     Context manager, allowing to temporally set theme.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     custom_bokeh_theme : bool | str | Path
         If True uses BOKEH_THEME_FILE, if str or Path uses file specified
         by this path.

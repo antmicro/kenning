@@ -33,17 +33,17 @@ KENNING_MODELS_PATH = Path(r'kenning/resources/models/')
 
 def get_tmp_path(suffix: str = '') -> Path:
     """
-    Generates temporary path
+    Generates temporary path.
 
     Parameters
     ----------
     suffix : str
-        Suffix of the file
+        Suffix of the file.
 
     Returns
     -------
     Path :
-        Temporary path
+        Temporary path.
     """
     candidate = None
     while candidate is None or candidate.exists():
@@ -60,12 +60,12 @@ def copy_model_to_tmp(modelpath: Path) -> Path:
     Parameters
     ----------
     modelpath : Path
-        Path to the model
+        Path to the model.
 
     Returns
     -------
     Path :
-        Path to the model copy
+        Path to the model copy.
     """
     tmp_path = get_tmp_path()
     if modelpath.is_file():
@@ -96,12 +96,12 @@ def get_default_dataset_model(
     Parameters
     ----------
     framework : str
-        Name of framework
+        Name of framework.
 
     Returns
     -------
     Tuple[Type[Dataset], Type[ModelWrapper]] :
-        Tuple with dataset and model for given framework
+        Tuple with dataset and model for given framework.
     """
     if framework == 'keras':
         dataset = get_dataset_random_mock(PetDataset)
@@ -183,12 +183,12 @@ def get_default_dataset_model(
 
 def remove_file_or_dir(path: str):
     """
-    Removes directory of given path
+    Removes directory of given path.
 
     Parameters
     ----------
     path : str
-        Path of given directory or file
+        Path of given directory or file.
     """
     if Path(path).is_file():
         os.remove(path)
@@ -203,12 +203,12 @@ def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
     Parameters
     ----------
     dataset_cls : Type[Dataset]
-        Given dataset class
+        Given dataset class.
 
     Returns
     -------
     Path :
-        Temporary path for dataset download
+        Temporary path for dataset download.
     """
     return pytest.test_directory / 'datasets' / dataset_cls.__name__
 
@@ -220,12 +220,12 @@ def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
     Parameters
     ----------
     dataset_cls : Type[Dataset]
-        Given dataset class
+        Given dataset class.
 
     Returns
     -------
     Path :
-        Path to reduced dataset
+        Path to reduced dataset.
     """
     return pytest.test_directory / dataset_cls.__name__
 
@@ -237,12 +237,12 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     Parameters
     ----------
     dataset_cls : Type[Dataset]
-        Dataset class to be mocked
+        Dataset class to be mocked.
 
     Returns
     -------
     Dataset :
-        Mock of given dataset class
+        Mock of given dataset class.
     """
 
     if dataset_cls is PetDataset:

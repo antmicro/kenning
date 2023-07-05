@@ -90,15 +90,15 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             The size of a batch used for fine-tuning.
         optimizer : str
             Optimizer used during the training.
-        disable_from_logits
+        disable_from_logits : bool
             Determines whether output of the model is normalized.
         modelframework : str
             Framework of the input model, used to select a proper backend.
         cluster_dense : bool
-            Determines if only dense layers should be clusterized.
+            Determines if only dense layers should be clustered.
         clusters_number : int
             Number of clusters for each weight array.
-        disable_sparsity_preservation : bool
+        preserve_sparsity : bool
             Determines whether to preserve sparsity of a given model.
         fine_tune : bool
             Determines whether to fine-tune the model after clustering.

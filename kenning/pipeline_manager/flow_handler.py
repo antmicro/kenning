@@ -264,14 +264,17 @@ class FlowGraphCreator(GraphCreator):
         )
 
     def _is_match(self, arg1: Dict[str, Any], arg2: Dict[str, Any]) -> bool:
-        """Checks two IO specification items whether they are
+        """
+        Checks two IO specification items whether they are
         compatible with each other (there is possible connection
         between them).
 
         Parameters
         ----------
-        arg1, arg2 : Dict[str, Any]
-            Elements of list returned by runners IO specification.
+        arg1 : Dict[str, Any]
+            First IO spec.
+        arg2 : Dict[str, Any]
+            Second IO spec.
 
         Returns
         -------

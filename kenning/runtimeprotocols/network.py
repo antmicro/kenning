@@ -52,7 +52,7 @@ class NetworkProtocol(BytesBasedProtocol):
             Port for the TCP connection.
         packet_size : int
             Receive packet sizes.
-        endiannes : str
+        endianness : str
             Endianness of the communication.
         """
         self.host = host

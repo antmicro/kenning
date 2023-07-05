@@ -53,10 +53,14 @@ def yolov4_remove_postprocessing(
 
     Parameters
     ----------
-    inputpath: Path
+    inputpath : Path
         Path to the ONNX file containing model with postprocessing.
-    outputpath: Path
+    outputpath : Path
         Path to the ONNX output file containing pure model.
+    input_names : List[str]
+        List of model inputs names.
+    output_names : List[str]
+        List of model outputs names.
     """
     onnx.utils.extract_model(
         str(inputpath),

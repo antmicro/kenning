@@ -31,11 +31,11 @@ class Runner(IOInterface, ArgumentsHandler):
 
         Parameters
         ----------
-        inputs_sources: Dict[str, Tuple[int, str]]
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs: Dict[str, str])
+        outputs : Dict[str, str])
             Outputs of this Runner.
         """
         self.inputs_sources = inputs_sources
@@ -76,7 +76,8 @@ class Runner(IOInterface, ArgumentsHandler):
 
         Returns
         -------
-        bool : True if there was some exit indication.
+        bool :
+            True if there was some exit indication.
         """
         return False
 
@@ -96,17 +97,18 @@ class Runner(IOInterface, ArgumentsHandler):
         Parameters
         ----------
         args : Namespace
-            Arguments from ArgumentParser object
-        inputs_sources: Dict[str, Tuple[int, str]]
-            Input from where data is being retrieved
+            Arguments from ArgumentParser object.
+        inputs_sources : Dict[str, Tuple[int, str]]
+            Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
-            Specifications of runner's inputs
-        outputs: Dict[str, str])
-            Outputs of this Runner
+            Specifications of runner's inputs.
+        outputs : Dict[str, str])
+            Outputs of this Runner.
 
         Returns
         -------
-        OutputCollector : object of class OutputCollector
+        OutputCollector :
+            Object of class Runner.
         """
 
         parsed_json_dict = get_parsed_args_dict(cls, args)
@@ -135,16 +137,17 @@ class Runner(IOInterface, ArgumentsHandler):
         ----------
         json_dict : Dict
             Arguments for the constructor.
-        inputs_sources: Dict[str, Tuple[int, str]]
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs: Dict[str, str])
+        outputs : Dict[str, str])
             Outputs of this Runner.
 
         Returns
         -------
-        Runner : Object of class Runner.
+        Runner :
+            Object of class Runner.
         """
 
         parameterschema = cls.form_parameterschema()
@@ -192,6 +195,7 @@ class Runner(IOInterface, ArgumentsHandler):
 
         Returns
         -------
-        Dict[str, Any] : Output of this block.
+        Dict[str, Any] :
+            Output of this block.
         """
         raise NotImplementedError

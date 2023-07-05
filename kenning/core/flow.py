@@ -48,7 +48,7 @@ class KenningFlow:
 
         Parameters
         ----------
-        runners_specifications : List[Runner]
+        runners : List[Runner]
             List of specifications of runners in the flow.
         """
 

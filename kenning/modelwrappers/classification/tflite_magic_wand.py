@@ -54,7 +54,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
-        windows_size : int
+        window_size : int
             Size of single sample window.
         """
         super().__init__(

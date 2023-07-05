@@ -84,7 +84,7 @@ class MagicWandDataset(Dataset):
             Default fraction of data to leave for model validation.
         split_seed : int
             Default seed used for dataset split.
-        windows_size : int
+        window_size : int
             Size of single sample window.
         window_shift : int
             Shift of single sample window.
@@ -116,9 +116,11 @@ class MagicWandDataset(Dataset):
         ----------
         classname : str
             The name of the class for which the ID will be returned.
+
         Returns
         -------
-        Int : The class id.
+        int :
+            The class id.
         """
         return {v: k for k, v in self.classnames.items()}[classname]
 
@@ -199,7 +201,8 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        List : Neighbor data with noise padding.
+        List :
+            Neighbor data with noise padding.
         """
         padding = (np.round((np.random.rand(amount, 3) - 0.5)*noise_level, 1)
                    + neighbor)
@@ -218,7 +221,8 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        List : The padded data frame.
+        List :
+            The padded data frame.
         """
         pre_padding = self._generate_padding(
             self.noise_level,
@@ -270,7 +274,8 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        np.ndarray : Data sample split into windows.
+        np.ndarray :
+            Data sample split into windows.
         """
         return np.array(np.array_split(
             data_frame, len(data_frame) // self.window_size, axis=0

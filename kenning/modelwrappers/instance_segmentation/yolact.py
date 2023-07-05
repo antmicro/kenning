@@ -518,7 +518,7 @@ class YOLACT(YOLACTWrapper):
         ----------
         conf_preds : numpy.ndarray
             Array of confidence predictions.
-        decode_boxes: numpy.ndarray
+        decode_boxes : numpy.ndarray
             Array of decoded bounding boxes.
         mask_data : numpy.ndarray
             Array of mask data.

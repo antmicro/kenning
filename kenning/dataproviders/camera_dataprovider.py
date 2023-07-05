@@ -68,21 +68,21 @@ class CameraDataProvider(DataProvider):
 
         Parameters
         ----------
-        video_file_path: Path
+        video_file_path : Path
             Path to the video file.
-        input_memory_layout: str
+        input_memory_layout : str
             Layout of the frame memory: NCHW or NHWC.
-        input_color_format: str
+        input_color_format : str
             Color format of captured frames: RGB or BGR.
-        input_width: int
+        input_width : int
             Width of the frame.
-        input_height: int
+        input_height : int
             Height of the frame.
-        inputs_sources: Dict[str, Tuple[int, str]]
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs: Dict[str, str]
+        outputs : Dict[str, str]
             Outputs of this Runner.
         """
 
@@ -130,16 +130,20 @@ class CameraDataProvider(DataProvider):
     def _get_io_specification(
             cls,
             input_memory_layout,
-            input_height,
-            input_width
+            input_width,
+            input_height
     ):
         """
         Creates runner IO specification from chosen parameters.
 
         Parameters
         ----------
-        input_memory_layout, input_height, input_width :
-            Arguments for `CameraDataProvider` constructor.
+        input_memory_layout : str
+            Layout of the frame memory: NCHW or NHWC.
+        input_width : int
+            Width of the frame.
+        input_height : int
+            Height of the frame.
 
         Returns
         -------

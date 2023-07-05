@@ -28,7 +28,8 @@ def create_report_from_measurements(
 
     Returns
     -------
-    str : Content of the report.
+    str :
+        Content of the report.
     """
     with open(template, 'r') as resourcetemplatefile:
         resourcetemplate = resourcetemplatefile.read()

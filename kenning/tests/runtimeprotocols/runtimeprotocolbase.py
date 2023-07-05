@@ -313,15 +313,12 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
 
         Parameters
         ----------
+        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
+            Fixture to get initialized server and client
         message : Tuple[MessageType, bytes]
             Message to be sent
         expected : Tuple[bool, Any]
             Expected output
-
-        Parameters
-        ----------
-        serverandclient : Tuple[RuntimeProtocol, RuntimeProtocol]
-            Fixture to get initialized server and client
         """
         server, client = serverandclient
         client.send_message(Message(*message))

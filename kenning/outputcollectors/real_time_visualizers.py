@@ -78,17 +78,17 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         Parameters
         ----------
-        title: str
+        title : str
             Name of the window.
-        width: int
+        viewer_width : int
             Width of the window.
-        height: int
+        viewer_height : int
             Height of the window.
         input_color_format : str
             Color format of provided frame (BGR or RGB).
         input_memory_layout : str
             Memory layout of provided frame (NCHW or NHWC).
-        input_sources : Dict[str, Tuple[int, str]]
+        inputs_sources : Dict[str, Tuple[int, str]]
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
@@ -129,7 +129,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         Creates runner IO specification from chosen parameters.
 
         Parameters
-        ---------
+        ----------
         input_memory_layout : str
             Constructor argument.
 
@@ -330,9 +330,11 @@ class BaseRealTimeVisualizer(OutputCollector):
         ----------
         inputs : Dict[str, Any]
             Visualized inputs.
+
         Returns
         -------
-        Any : Data specific to visualizer.
+        Any :
+            Data specific to visualizer.
         """
         return inputs
 
@@ -377,7 +379,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: List[DetectObject]):
+            output_data: List[DetectObject]) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -387,6 +389,11 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
             Input image.
         output_data : List[DetectObject]
             List of detection data.
+
+        Returns
+        -------
+        np.ndarray :
+            Image with visualization.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 
@@ -468,7 +475,7 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: List[SegmObject]):
+            output_data: List[SegmObject]) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -478,6 +485,11 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
             Input image.
         output_data : List[SegmObject]
             List of segmentation data.
+
+        Returns
+        -------
+        np.ndarray :
+            Image with visualization.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
         mix_factor = .3
@@ -614,7 +626,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
     def visualize_output(
             self,
             img: np.ndarray,
-            output_data: np.ndarray):
+            output_data: np.ndarray) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -624,6 +636,11 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
             Input image.
         output_data : np.ndarray
             Classification data.
+
+        Returns
+        -------
+        np.ndarray :
+            Image with visualization.
         """
         draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
 

@@ -22,7 +22,7 @@ from kenning.datasets.coco_dataset import download_and_extract
 
 class VisualWakeWordsDataset(Dataset):
     """
-    The Visual Wake Words Dataset
+    The Visual Wake Words Dataset.
 
     It is a classification dataset for predicting whether some object is
     present or not in the image. There are 2 classes - 0 for images without

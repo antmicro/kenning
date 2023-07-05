@@ -10,7 +10,6 @@ that are called in specified intervals.
 
 Callbacks are registered and unregistered globally for specific tags and only
 tqdm instances of the same tags are going to use those callbacks.
-
 """
 
 import io
@@ -182,7 +181,7 @@ class TqdmCallback(tqdm):
         Parameters
         ----------
         callback : Callback
-            callback to be registered.
+            Callback to be registered.
         """
         cls.callbacks.append(callback)
 
@@ -194,7 +193,7 @@ class TqdmCallback(tqdm):
         Parameters
         ----------
         callback : Callback
-            callback to be unregistered.
+            Callback to be unregistered.
         """
         cls.callbacks = [clb for clb in cls.callbacks if clb != callback]
 

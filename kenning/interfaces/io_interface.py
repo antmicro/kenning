@@ -29,14 +29,15 @@ class IOInterface(object):
 
         Parameters
         ----------
-        output : Dict[str, List[Dict]])
+        output_spec : Dict[str, List[Dict]])
             Specification of some object's output.
-        input : Dict[str, List[Dict]])
+        input_spec : Dict[str, List[Dict]])
             Specification of some object's input.
 
         Returns
         -------
-        bool : True if there is no conflict.
+        bool :
+            True if there is no conflict.
         """
 
         if len(input_spec) > len(output_spec):
@@ -160,7 +161,8 @@ class IOInterface(object):
 
         Returns
         -------
-        Dict[str, List[Dict]] : Loaded IO specification.
+        Dict[str, List[Dict]] :
+            Loaded IO specification.
         """
         spec_path = path.parent / (path.name + '.json')
         spec_path = Path(spec_path)
@@ -187,7 +189,8 @@ class IOInterface(object):
 
         Returns
         -------
-        Dict[str, Any] : Specification of single IO.
+        Dict[str, Any] :
+            Specification of single IO.
         """
         for spec in io_spec[io_type]:
             if spec['name'] == io_name:
@@ -208,14 +211,15 @@ class IOInterface(object):
 
         Parameters
         ----------
-        output_shape: Tuple[int, ...]
+        output_shape : Tuple[int, ...]
             First shape.
-        input_shape: Tuple[int, ...]
+        input_shape : Tuple[int, ...]
             Second shape.
 
         Returns
         -------
-        bool : True if there is no conflict.
+        bool :
+            True if there is no conflict.
         """
         if len(output_shape) != len(input_shape):
             return False

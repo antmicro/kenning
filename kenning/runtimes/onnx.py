@@ -19,8 +19,7 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 
 class ONNXRuntime(Runtime):
     """
-    Runtime subclass that provides an API
-    for testing inference on ONNX models.
+    Runtime subclass that provides an API for testing inference on ONNX models.
     """
 
     inputtypes = ['onnx']
@@ -46,7 +45,7 @@ class ONNXRuntime(Runtime):
             execution_providers: List[str] = ['CPUExecutionProvider'],
             disable_performance_measurements: bool = False):
         """
-        Constructs ONNX runtime
+        Constructs ONNX runtime.
 
         Parameters
         ----------

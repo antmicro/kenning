@@ -8,7 +8,7 @@ Provides methods for importing classes and modules at runtime based on string.
 
 from typing import Type
 import importlib
-from typing import ClassVar, List
+from typing import List
 from pathlib import Path
 import ast
 
@@ -97,7 +97,8 @@ def get_all_subclasses(
 
         Returns
         -------
-        bool : True if class_def is subclass of cls.
+        bool :
+            True if class_def is subclass of cls.
         """
         found_subclass = False
         checked_classes.add(class_def.name)
@@ -144,7 +145,7 @@ def get_all_subclasses(
     return result
 
 
-def load_class(modulepath: str) -> ClassVar:
+def load_class(modulepath: str) -> type:
     """
     Loads class given in the module path.
 
@@ -152,6 +153,11 @@ def load_class(modulepath: str) -> ClassVar:
     ----------
     modulepath : str
         Module-like path to the class.
+
+    Returns
+    -------
+    type :
+        Loaded class.
     """
     module_name, cls_name = modulepath.rsplit('.', 1)
     module = importlib.import_module(module_name)
@@ -165,12 +171,13 @@ def get_kenning_submodule_from_path(modulepath: str):
 
     Parameters
     ----------
-    modulepath: str
+    modulepath : str
         Path to the module script, usually stored in sys.argv[0].
 
     Returns
     -------
-    str: Normalized module path.
+    str :
+        Normalized module path.
     """
     parts = Path(modulepath).parts
     item_index = len(parts) - 1 - parts[::-1].index("kenning")
@@ -184,12 +191,13 @@ def get_command(argv: List[str]):
 
     Parameters
     ----------
-    argv: List[str]
+    argv : List[str]
         List or arguments from sys.argv.
 
     Returns
     -------
-    str: Full string with command.
+    str :
+        Full string with command.
     """
     command = [ar.strip() for ar in argv if ar.strip() != '']
     modulename = get_kenning_submodule_from_path(command[0])

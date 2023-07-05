@@ -13,7 +13,7 @@ It requires providing the report type and JSON file to extract data from.
 import sys
 import argparse
 from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple, Callable
+from typing import Dict, List, Set, Optional, Tuple, Callable, Any
 import json
 import numpy as np
 import re
@@ -77,7 +77,8 @@ def get_model_name(filepath: Path) -> str:
 
     Returns
     -------
-    str : Name of the model used when generating the report.
+    str :
+        Name of the model used when generating the report.
     """
     return str(filepath).replace("/", ".")
 
@@ -278,7 +279,7 @@ def comparison_performance_report(
         imgdir: Path,
         rootdir: Path,
         image_formats: Set[str],
-        colors=None,
+        colors: Optional[List] = None,
         draw_titles: bool = True,
         **kwargs) -> str:
     """
@@ -294,12 +295,15 @@ def comparison_performance_report(
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     log.info('Running comparison_performance_report')
     # HTML plots format unsupported, removing html
@@ -446,7 +450,7 @@ def classification_report(
         imgprefix: str,
         rootdir: Path,
         image_formats: Set[str],
-        cmap=None,
+        cmap: Optional[Any] = None,
         draw_titles: bool = True,
         **kwargs) -> str:
     """
@@ -464,12 +468,15 @@ def classification_report(
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
+    cmap : Optional[ListedColormap]
+        Color map
     draw_titles : bool
         Should titles be drawn on the plot.
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     log.info(f'Running classification report for {measurementsdata["model_name"]}')  # noqa: E501
     metrics = compute_classification_metrics(measurementsdata)
@@ -502,7 +509,7 @@ def comparison_classification_report(
         imgdir: Path,
         rootdir: Path,
         image_formats: Set[str],
-        colors=None,
+        colors: Optional[List] = None,
         draw_titles: bool = True,
         **kwargs) -> str:
     """
@@ -518,12 +525,15 @@ def comparison_classification_report(
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     log.info('Running comparison_classification_report')
     # HTML plots format unsupported, removing html
@@ -615,8 +625,8 @@ def detection_report(
         rootdir: Path,
         image_formats: Set[str],
         color_offset: int = 0,
-        cmap=None,
-        colors=None,
+        cmap: Optional[Any] = None,
+        colors: Optional[List] = None,
         draw_titles: bool = True) -> str:
     """
     Creates detection quality section of the report.
@@ -635,12 +645,17 @@ def detection_report(
         Collection with formats which should be used to generate plots.
     color_offset : int
         How many colors from default color list should be skipped.
+    cmap : Optional[Any]
+        Color map to be used in the plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
 
     from kenning.datasets.helpers.detection_and_segmentation import \
@@ -756,7 +771,7 @@ def comparison_detection_report(
         imgdir: Path,
         rootdir: Path,
         image_formats: Set[str],
-        colors=None,
+        colors: Optional[List] = None,
         draw_titles: bool = True,
         **kwargs) -> str:
     """
@@ -772,12 +787,15 @@ def comparison_detection_report(
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     log.info('Running comparison_detection_report')
 
@@ -856,7 +874,8 @@ def renode_stats_report(
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     log.info(
         f'Running renode_stats_report for {measurementsdata["model_name"]}'
@@ -1163,7 +1182,8 @@ def comparison_renode_stats_report(
 
     Returns
     -------
-    str : Content of the report in MyST format.
+    str :
+        Content of the report in MyST format.
     """
     def retrieve_non_zero_profiler_data(
             measurementsdata: List[Dict],
@@ -1500,8 +1520,8 @@ def generate_report(
         rootdir: Path,
         image_formats: Set[str],
         command: List[str] = [],
-        cmap=None,
-        colors=None,
+        cmap: Optional[Any] = None,
+        colors: Optional[List] = None,
         draw_titles: bool = True):
     """
     Generates an MyST report based on Measurements data.
@@ -1532,6 +1552,10 @@ def generate_report(
         Collection with formats which should be used to generate plots.
     command : List[str]
         Full command used to render this report, split into separate lines.
+    cmap : Optional[Any]
+        Color map to be used in the plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
     """

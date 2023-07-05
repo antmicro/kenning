@@ -121,7 +121,7 @@ class ONNXConversion(object):
         modelgenerator : Callable
             Function that generates the model for ONNX conversion in a given
             framework. The callable should accept no arguments.
-        kwargs : Dict[str, Any]
+        **kwargs : Dict[str, Any]
             Additional arguments that are passed to ModelEntry object as
             parameters.
         """
@@ -143,7 +143,8 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus : The support status of exporting given model to ONNX.
+        SupportStatus :
+            The support status of exporting given model to ONNX.
         """
         raise NotImplementedError
 
@@ -163,7 +164,8 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus : The support status of importing given model from ONNX.
+        SupportStatus :
+            The support status of importing given model from ONNX.
         """
         raise NotImplementedError
 

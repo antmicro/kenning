@@ -23,11 +23,11 @@ class DataFolder:
     A dataclass to store datasetimages fixture properties.
 
     Parameters
-    --------
-    path: Path
-        A path to data files
-    amount: int
-        Amount of generated images
+    ----------
+    path : Path
+        A path to data files.
+    amount : int
+        Amount of generated images.
     """
     path: Path
     amount: int
@@ -56,12 +56,12 @@ class Samples:
 
         Parameters
         ----------
-        data_name: str
+        data_name : str
             A key for the sample.
 
         Returns
         -------
-        Any:
+        Any :
             Object associated with provided sample.
         """
         args, kwargs = self._params[data_name]
@@ -73,7 +73,7 @@ class Samples:
 
         Returns
         -------
-        Samples:
+        Samples :
             This object.
         """
         self._data_index = 0
@@ -86,7 +86,7 @@ class Samples:
 
         Returns
         -------
-        Any:
+        Any :
             Object sample.
         """
         if self._data_index < len(self._samples):
@@ -98,7 +98,7 @@ class Samples:
 
 def pytest_addoption(parser: ArgumentParser):
     """
-    Adds argparse options to parser
+    Adds argparse options to parser.
     """
     parser.addoption(
         '--test-directory',
@@ -140,7 +140,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
 
 def pytest_generate_tests(metafunc: Metafunc):
     """
-    Creates parameterscheme structure for the pytest tests
+    Creates parameterscheme structure for the pytest tests.
     """
     test_directory = metafunc.config.option.test_directory
     if 'tmpfolder' in metafunc.fixturenames:
@@ -157,12 +157,13 @@ def tmpfolder(test_directory: Optional[Path]) -> Path:
 
     Parameters
     ----------
-    test_directory: Optional[Path]
+    test_directory : Optional[Path]
         Path where files produced by tests should be located at.
 
     Returns
     -------
-    Path: A Path object to temporary directory.
+    Path :
+        A Path object to temporary directory.
     """
     if test_directory is not None:
         test_directory = Path(test_directory)
@@ -196,15 +197,15 @@ def modelsamples():
         def add(self, model_path: str, modelframework: str, modelwrapper: str):
             """
             Adds path to model with associated framework
-            and associated modelwrapper name to samples
+            and associated modelwrapper name to samples.
 
             Parameters
             ----------
-            model_path: str
+            model_path : str
                 The path to the model (Relative to kenning's directory).
-            modelframework: str
+            modelframework : str
                 The framework model is compatible with.
-            modelwrapper: str
+            modelwrapper : str
                 The name of ModelWrapper that is compatible with model.
             """
             model_path = self.kenning_path + model_path
@@ -216,12 +217,12 @@ def modelsamples():
 
             Parameters
             ----------
-            model_name: str
+            model_name : str
                 A key for the sample.
 
             Returns
             -------
-            Tuple[str, str]:
+            Tuple[str, str] :
                 Tuple with path to model and ModelWrapper name
                 it is compatible with.
             """
@@ -266,18 +267,18 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
 
             Parameters
             ----------
-            import_path: str
+            import_path : str
                 The import path optimizer will be imported with.
-            target: str
+            target : str
                 Target accelerator on which the model will be executed.
-            modelframework: str
+            modelframework : str
                 Framework of the input model, used to select a proper backend.
-            filesuffix: str
+            filesuffix : str
                 The suffix compiled model should be saved with.
-            dataset:Dataset
+            dataset : Dataset
                 Dataset used to train the model - may be used for quantization
                 during compilation stage.
-            compiled_model_path: Path
+            compiled_model_path : Path
                 Path where compiled model will be saved.
             """
             optimizer = load_class(import_path)
@@ -327,13 +328,13 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
 
             Parameters
             ----------
-            import_path: str
+            import_path : str
                 The import path modelwrapper will be imported with.
-            model: str
+            model : str
                 The path to modelwrapper's model.
-            dataset: Dataset
+            dataset : Dataset
                 The dataset to verify inference.
-            from_file: bool
+            from_file : bool
                 True if model should be loaded from file.
             """
             wrapper = load_class(import_path)
@@ -362,18 +363,19 @@ def datasetsamples(datasetimages: DataFolder):
 
             Parameters
             ----------
-            import_path: str
+            import_path : str
                 The import path dataset will be imported with.
-            datapath: Path
+            datapath : Path
                 The path to dataset data.
-            batch_size: int
+            batch_size : int
                 The dataset batch size.
-            download_dataset: bool
+            download_dataset : bool
                 True if dataset should be downloaded first.
 
             Returns
             -------
-            Dataset: Class Dataset.
+            Dataset :
+                Class Dataset.
             """
             dataset = load_class(import_path)
             dataset_name = import_path.rsplit('.')[-1]
@@ -394,12 +396,13 @@ def datasetimages(tmpfolder: Path) -> DataFolder:
 
     Parameters
     ----------
-    tmpfolder: Path
-        A temporary folder
+    tmpfolder : Path
+        A temporary folder.
 
     Returns
     -------
-    DataFolder: A DataFolder object that stores path to data and images amount
+    DataFolder :
+        A DataFolder object that stores path to data and images amount.
     """
     images_amount = 148
     (tmpfolder / 'images').mkdir()
@@ -423,11 +426,11 @@ def write_to_dirs(path, amount):
     'annotations.csv' and 'classnames.csv' for OpenImagesDataset.
 
     Parameters
-    --------
-    path: Path
-        The Path to where data have to be located
-    amount: int
-        Amount of images are being written to data files
+    ----------
+    path : Path
+        The Path to where data have to be located.
+    amount : int
+        Amount of images are being written to data files.
     """
     def three_random_one_hot(i):
         return f'{i%37+1} {randint(0, 1)} {randint(0, 1)}'

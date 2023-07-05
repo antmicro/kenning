@@ -24,7 +24,8 @@ def generate_color() -> Tuple[float, float, float]:
 
     Returns
     -------
-    Tuple[float, float, float] : color in (r,g,b) format.
+    Tuple[float, float, float] :
+        Color in (r,g,b) format.
     """
     return colorsys.hsv_to_rgb(np.random.rand(), 1, 1)
 
@@ -137,7 +138,8 @@ class DetectionVisualizer(OutputCollector):
 
         Returns
         -------
-        Tuple[int, int] : Size-based coordinates.
+        Tuple[int, int] :
+            Size-based coordinates.
         """
         return (
             int(coord[0]*self.output_width),
@@ -162,7 +164,8 @@ class DetectionVisualizer(OutputCollector):
 
         Returns
         -------
-        np.ndarray : The modified image with visualizations drawn.
+        np.ndarray :
+            The modified image with visualizations drawn.
         """
 
         out_img = input_data

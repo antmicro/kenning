@@ -69,11 +69,11 @@ class PersonDetectionModelWrapper(ModelWrapper):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
-        central_fraction: float
+        central_fraction : float
             Fraction used to crop images during preprocessing.
-        image_width: int
+        image_width : int
             Width of the input images.
-        image_height: int
+        image_height : int
             Height of the input images.
         """
         super().__init__(

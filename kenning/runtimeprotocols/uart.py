@@ -53,7 +53,8 @@ def _io_spec_to_struct(
 
     Returns
     -------
-    bytes : IO specification structure.
+    bytes :
+        IO specification structure.
     """
     input_shape = [inp['shape'] for inp in io_spec['input']]
     output_length = [
@@ -125,7 +126,8 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
 
     Returns
     -------
-    Dict[str, int] : Parsed stats.
+    Dict[str, int] :
+        Parsed stats.
     """
     stats = np.frombuffer(data, dtype=np.uint32, count=6)
     stats_json = {
@@ -175,7 +177,9 @@ class UARTProtocol(BytesBasedProtocol):
             UART port.
         baudrate : int
             UART baudrate.
-        endiannes : str
+        packet_size : int
+            Size of the packet.
+        endianness : str
             Endianness of the communication.
         """
         self.port = port

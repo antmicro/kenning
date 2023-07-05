@@ -77,7 +77,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         batch_size : int
             The size of a batch used for fine-tuning.
         optimizer : str
-            Optimizer used during the training
+            Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
         modelframework : str

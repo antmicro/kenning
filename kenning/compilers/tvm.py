@@ -89,7 +89,8 @@ def torchconversion(
 
         Returns
         -------
-        int : The size of a 1-dimensional input matching the original shape.
+        int :
+            The size of a 1-dimensional input matching the original shape.
         """
         ret = 1
         for i in list(x):
@@ -333,6 +334,10 @@ class TVMCompiler(Optimizer):
         libdarknetpath : str
             Path to the libdarknet.so library, used only during conversion
             of darknet model.
+        use_tvm_vm : bool
+            At compilation stage use the TVM Relay VirtualMachine.
+        conversion_func : str
+            Output conversion function.
         conv2d_data_layout : str
             Data layout to convert the model to.
             Empty if no conversion is necessary.

@@ -53,8 +53,8 @@ def extend_default_translator(app: Sphinx):
             image : nodes.image
                 Processed node.
 
-            Note
-            ----
+            Notes
+            -----
             To preserve original state of nodes (e.g. for other builds), this
             method save state of image node to global variable BACKUP_IMAGE and
             the original state of node is restored during departure - method

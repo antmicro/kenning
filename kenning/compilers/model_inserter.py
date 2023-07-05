@@ -89,10 +89,13 @@ class ModelInserter(Optimizer):
         ----------
         previous_block : Union[ModelWrapper, Optimizer]
             Previous block in the optimization chain.
+        force_onnx : bool
+            Forces ONNX format.
 
         Returns
         -------
-        str : Matching format.
+        str :
+            Matching format.
         """
         possible_outputs = previous_block.get_output_formats()
 

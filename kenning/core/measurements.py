@@ -161,7 +161,8 @@ class Measurements(object):
 
         Returns
         -------
-        List : List of values for a given measurement type.
+        List :
+            List of values for a given measurement type.
         """
         return self.data[measurementtype]
 
@@ -239,7 +240,7 @@ def tagmeasurements(tagname: str):
 
     Parameters
     ----------
-    tagname: str
+    tagname : str
         The name of tag.
     """
     def statistics_decorator(function):
@@ -364,7 +365,8 @@ class SystemStatsCollector(Thread):
 
         Returns
         -------
-        Measurements : Measurements object.
+        Measurements :
+            Measurements object.
         """
         return self.measurements
 

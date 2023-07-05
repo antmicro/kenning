@@ -88,7 +88,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             The path to the model.
         dataset : Dataset
             The dataset to verify the inference.
-        from_file: bool
+        from_file : bool
             True if model should be loaded from file.
         modelcls : str
             The model class import path.

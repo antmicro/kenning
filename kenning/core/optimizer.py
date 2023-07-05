@@ -71,10 +71,6 @@ class Optimizer(ArgumentsHandler):
             during compilation stage.
         compiled_model_path : Path
             Path to file where the compiled model should be saved.
-        dataset_percentage : float
-            If the dataset is used for optimization (quantization), the
-            dataset_percentage determines how much of data samples is going
-            to be used.
         """
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
@@ -186,7 +182,8 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[str, str] : Framework name and version.
+        Tuple[str, str] :
+            Framework name and version.
         """
         raise NotImplementedError
 
@@ -196,7 +193,8 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        List[str] : Names of possible input formats.
+        List[str] :
+            Names of possible input formats.
         """
         return list(self.inputtypes.keys())
 
@@ -206,14 +204,15 @@ class Optimizer(ArgumentsHandler):
 
         Returns
         -------
-        List[str] : List of possible output formats.
+        List[str] :
+            List of possible output formats.
         """
         return self.outputtypes
 
     def consult_model_type(
             self,
             previous_block: Union['ModelWrapper', 'Optimizer'],
-            force_onnx=False) -> str:
+            force_onnx: bool = False) -> str:
         """
         Finds output format of the previous block in the chain
         matching with an input format of the current block.
@@ -222,16 +221,18 @@ class Optimizer(ArgumentsHandler):
         ----------
         previous_block : Union[ModelWrapper, Optimizer]
             Previous block in the optimization chain.
+        force_onnx : bool
+            Forces ONNX format.
 
         Returns
         -------
-        str : Matching format.
+        str :
+            Matching format.
 
         Raises
         ------
         ValueError :
             Raised if there is no matching format.
-
         """
 
         possible_outputs = previous_block.get_output_formats()

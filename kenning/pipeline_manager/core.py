@@ -85,7 +85,8 @@ class GraphCreator:
 
         Returns
         -------
-        str : ID of newly created graph node.
+        str :
+            ID of newly created graph node.
         """
         raise NotImplementedError
 
@@ -141,7 +142,8 @@ class GraphCreator:
 
         Returns
         -------
-        Any : Finalized graph.
+        Any :
+            Finalized graph.
         """
         raise NotImplementedError
 
@@ -191,7 +193,8 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Dict: Specification ready to be send to Pipeline Manager.
+        Dict :
+            Specification ready to be send to Pipeline Manager.
         """
         specification = {
             'version': VERSION,
@@ -513,8 +516,10 @@ class PipelineManagerGraphCreator(GraphCreator):
 
         Parameters
         ----------
-        io_spec: Dict[str, List]
+        io_spec : Dict[str, List]
             IO specification of an input.
+        direction : str
+            Direction of the IO.
 
         Returns
         -------

@@ -77,9 +77,9 @@ def parse_json_pipeline(
 
     Parameters
     ----------
-    json_cfg: Dict
+    json_cfg : Dict
         Configuration of the inference pipeline.
-    assert_integrity: bool
+    assert_integrity : bool
         States whether integrity of connected blocks should be checked.
 
     Returns
@@ -161,7 +161,8 @@ def run_pipeline_json(
     verbosity : Optional[str]
         Verbosity level.
     convert_to_onnx : Optional[Path]
-        Before compiling the model, convert it to ONNX and use in the inference (provide a path to save here).  # noqa: E501
+        Before compiling the model, convert it to ONNX and use in the inference
+        (provide a path to save here).
     command : Optional[List]
         Command used to run this inference pipeline. It is put in
         the output JSON file.
@@ -217,7 +218,7 @@ def run_pipeline(
         Optimizers to use in inference.
     runtime : Runtime
         Runtime to use in inference.
-    runtimeprotocol : RuntimeProtocol
+    protocol : RuntimeProtocol
         RuntimeProtocol to use in inference.
     output : Path
         Path to the output JSON file with measurements.
@@ -227,7 +228,7 @@ def run_pipeline(
         Before compiling the model, convert it to ONNX and use
         in the inference (provide a path to save here).
     command : Optional[List]
-        Command used to run this inference pipelin. It is put in
+        Command used to run this inference pipeline. It is put in
         the output JSON file.
     run_benchmarks_only : bool
         Instead of running the full compilation and testing flow,

@@ -67,7 +67,7 @@ class RenodeRuntime(Runtime):
 
         Parameters
         ----------
-        protocols : RuntimeProtocol
+        protocol : RuntimeProtocol
             The implementation of the host-target communication protocol used
             to communicate with simulated platform.
         runtime_binary_path : Path

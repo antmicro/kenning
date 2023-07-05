@@ -119,7 +119,8 @@ def serialize(obj: object, normalize: bool = True) -> Dict:
 
     Returns
     -------
-    str: Serialized object.
+    str :
+        Serialized object.
     """
     if hasattr(obj, 'form_parameterschema'):
         properties = obj.form_parameterschema()['properties']
@@ -166,7 +167,8 @@ def serialize_inference(
 
     Returns
     -------
-    Dict: Serialized inference.
+    Dict :
+        Serialized inference.
     """
     def object_to_module(obj):
         return type(obj).__module__ + '.' + type(obj).__name__
@@ -207,7 +209,7 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
     Then it adds default values for missing
     arguments and converts the arguments to the appropriate types
     as jsonschema can not do that. Finally it provides new names
-    that match the constructor arguments,
+    that match the constructor arguments.
 
     Parameters
     ----------
@@ -263,18 +265,20 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
 
 
 def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
-    """"
-    Converts namespace provided by arguments parser into dictionary
+    """
+    Converts namespace provided by arguments parser into dictionary.
 
     Parameters
     ----------
+    cls : type
+        Class of object being parsed.
     args : argparse.Namespace
-        Namespace provided by arguments parser
+        Namespace provided by arguments parser.
 
     Returns
     -------
     Dict :
-        Dictionary with arguments
+        Dictionary with arguments.
     """
     # retrieve all arguments from arguments_structure of this class and all of
     # its parent classes
@@ -343,7 +347,8 @@ def add_argparse_argument(
 
     Raises
     ------
-    KeyError : Raised if there is a keyword that is not recognized.
+    KeyError :
+        Raised if there is a keyword that is not recognized.
     """
     if not names:
         names = struct.keys()
@@ -411,9 +416,10 @@ def add_parameterschema_argument(
 
     Raises
     ------
-    KeyError : Raised if there is a keyword that is not recognized or
-        if there is already a property with a different `argparse_name`
-        and the same property name.
+    KeyError :
+        Raised if there is a keyword that is not recognized or if there is
+        already a property with a different `argparse_name` and the same
+        property name.
     """
     if 'properties' not in schema:
         schema['properties'] = {}
@@ -503,7 +509,8 @@ class ArgumentsHandler(object):
 
         Returns
         -------
-        Dict: Parameter schema for the class.
+        Dict :
+            Parameter schema for the class.
         """
         classes = [cls]
         parameterschema = {

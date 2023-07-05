@@ -201,7 +201,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
 
         Returns
         -------
-        Any:
+        Any :
             The preprocessed inputs that are ready to be fed to the model.
         """
         return X
@@ -254,7 +254,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler):
         Returns
         -------
         Tuple[str, str] :
-            Framework name and version
+            Framework name and version.
         """
         raise NotImplementedError
 

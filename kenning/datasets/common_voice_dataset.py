@@ -101,7 +101,8 @@ def resample_wave(
 
     Returns
     -------
-    np.ndarray : Resampled wave.
+    np.ndarray :
+        Resampled wave.
     """
     return librosa.resample(
         input_wave.astype(np.float32),
@@ -118,12 +119,13 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
     ----------
     abspath : Path
         Absolute path to the .mp3 file.
-    subfolder : str
+    subdir : str
         A name of the subdirectory that will contain the converted file(s).
 
     Returns
     -------
-    str : The string-typed path to the converted file.
+    str :
+        The string-typed path to the converted file.
     """
     from pydub import AudioSegment
     sound = AudioSegment.from_mp3(str(abspath))
@@ -239,12 +241,16 @@ class CommonVoiceDataset(Dataset):
             Default seed used for dataset split.
         language : str
             Determines language of recordings.
-        annotation_type : str
+        annotations_type : str
             Type of annotations to load.
         sample_size : int
             Size of sampled data.
+        sample_rate : int
+            Rate of recoding sample.
         selection_method : str
             Method to group the data.
+        dataset_version : str
+            Version of the dataset.
         """
         assert language in self.languages, (
             f'Unsupported language {language}, should be one'

@@ -219,8 +219,8 @@ class PetDataset(Dataset):
         Returns
         -------
         Tuple[Any, Any] :
-            the standardization values for a given train dataset.
-            Tuple of two variables describing mean and std values.
+            The standardization values for a given train dataset. Tuple of two
+            variables describing mean and std values.
         """
         count = 0
         mean = np.zeros((3))

@@ -59,8 +59,8 @@ class TensorFlowOptimizer(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to train the model - may be used for quantization
-            or fine-tuning.
+            Dataset used to train the model - may be used for quantization or
+            fine-tuning.
         compiled_model_path : Path
             Path where compiled model will be saved.
         epochs : int
@@ -85,7 +85,8 @@ class TensorFlowOptimizer(Optimizer):
 
         Returns
         -------
-        Tuple : Batched train and validation datasets.
+        Tuple :
+            Batched train and validation datasets.
         """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
@@ -122,7 +123,8 @@ class TensorFlowOptimizer(Optimizer):
 
         Returns
         -------
-        tf.keras.Model : Trained keras model.
+        tf.keras.Model :
+            Trained keras model.
         """
         traindataset, validdataset = self.prepare_train_validation()
 

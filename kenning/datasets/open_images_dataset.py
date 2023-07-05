@@ -57,8 +57,8 @@ def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
     image : str
         Image entry in format split/id.
 
-    Returns
-    -------
+    Yields
+    ------
     Tuple[str, str]:
         Tuple containing split and image ID.
     """
@@ -177,9 +177,9 @@ def download_instance_segmentation_zip_file(
 
     Parameters
     ----------
-    zipdir: Path
+    zipdir : Path
         Directory to download and extract the zip file into.
-    url: str
+    url : str
         Download URL.
     """
     download_url(url, zipdir)
@@ -189,7 +189,7 @@ def download_instance_segmentation_zip_file(
 
 class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
     """
-    The Open Images Dataset V6
+    The Open Images Dataset V6.
 
     https://storage.googleapis.com/openimages/web/index.html
 
@@ -509,7 +509,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
         Returns
         -------
-        str : Path to the image.
+        str :
+            Path to the image.
         """
         return str(self.root / 'img' / f'{image_id}.jpg')
 
@@ -545,7 +546,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
         Returns
         -------
-        list[list[SegmObject]] : Prepared sample data.
+        list[list[SegmObject]] :
+            Prepared sample data.
         """
         result = []
         for sample in samples:

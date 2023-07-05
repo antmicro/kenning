@@ -268,16 +268,16 @@ class Dataset(ArgumentsHandler):
         """
         return len(self.dataX)
 
-    def _iter_subset(self, dataXsubset: List[any], dataYsubset: List[Any]
+    def _iter_subset(self, dataXsubset: List[Any], dataYsubset: List[Any]
                      ) -> Iterable['Dataset']:
         """
-        Iterates over subset of the dataset
+        Iterates over subset of the dataset.
 
         Parameters
         ----------
-        dataX : List[Any]
+        dataXsubset : List[Any]
             Subset of the dataX.
-        dataY : List[Any]
+        dataYsubset : List[Any]
             Subset of the dataY.
 
         Returns
@@ -539,6 +539,13 @@ class Dataset(ArgumentsHandler):
         By default, this method scans for all files in the directory and
         returns the list of those files.
 
+        Parameters
+        ----------
+        percentage : float
+            Percentage of dataset to be used.
+        seed : int
+            Random state seed.
+
         Returns
         -------
         List[Any] :
@@ -559,7 +566,7 @@ class Dataset(ArgumentsHandler):
 
     def save_dataset_checksum(self):
         """
-        Writes dataset checksum to file
+        Writes dataset checksum to file.
         """
         checksum_file = self.root / 'DATASET_CHECKSUM'
 
@@ -571,12 +578,12 @@ class Dataset(ArgumentsHandler):
 
     def verify_dataset_checksum(self) -> bool:
         """
-        Checks whether dataset is already downloaded in its directory
+        Checks whether dataset is already downloaded in its directory.
 
         Returns
         -------
         bool :
-            True if dataset is downloaded
+            True if dataset is downloaded.
         """
         checksum_file = self.root / 'DATASET_CHECKSUM'
         if not checksum_file.exists():
@@ -617,7 +624,7 @@ class Dataset(ArgumentsHandler):
         ----------
         predictions : List
             The list of predictions from the model.
-        truth: List
+        truth : List
             The ground truth for given batch.
 
         Returns
@@ -639,7 +646,6 @@ class Dataset(ArgumentsHandler):
         Tuple[Any, Any] :
             Tuple of two variables describing mean and
             standardization values for a given train dataset.
-
         """
         raise NotImplementedError
 
@@ -656,12 +662,12 @@ class Dataset(ArgumentsHandler):
 
     def _compute_dataset_checksum(self) -> bytes:
         """
-        Computes checksum of dataset files
+        Computes checksum of dataset files.
 
         Returns
         -------
         bytes :
-            Dataset checksum
+            Dataset checksum.
         """
         checksum_file = self.root / 'DATASET_CHECKSUM'
 
@@ -680,4 +686,7 @@ class Dataset(ArgumentsHandler):
 
 
 class CannotDownloadDatasetError(Exception):
+    """
+    Exception raised when dataset cannot be downloaded automatically.
+    """
     pass

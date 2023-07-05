@@ -56,7 +56,8 @@ def check_request(
 
     Raises
     ------
-    RequestFailure : Raised when the request did not finish successfully.
+    RequestFailure :
+        Raised when the request did not finish successfully.
     """
     if isinstance(request, bool):
         if not request:
@@ -105,7 +106,8 @@ class MessageType(Enum):
 
         Returns
         -------
-        bytes : Converted message type.
+        bytes :
+            Converted message type.
         """
         return int(self.value).to_bytes(MSG_TYPE_LEN, endianness, signed=False)
 
@@ -121,7 +123,7 @@ class MessageType(Enum):
         ----------
         value : bytes
             Enum in bytes.
-        endiannes : str
+        endianness : str
             Endianness in bytes.
 
         Returns
@@ -150,7 +152,6 @@ class Message(object):
     * msg-type - the type of the message. For message types check the
       MessageType enum from kenning.core.runtimeprotocol.
     * data - optional data that comes with the message of MessageType.
-
     """
 
     def __init__(self, messsage_type: MessageType, payload: bytes = b''):
@@ -332,7 +333,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if succeeded.
+        bool :
+            True if succeeded.
         """
         raise NotImplementedError
 
@@ -346,7 +348,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if succeeded.
+        bool :
+            True if succeeded.
         """
         raise NotImplementedError
 
@@ -361,7 +364,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if succeeded.
+        bool :
+            True if succeeded.
         """
         raise NotImplementedError
 
@@ -400,11 +404,12 @@ class RuntimeProtocol(ArgumentsHandler):
         Parameters
         ----------
         data : Any
-            Data to send
+            Data to send.
 
         Returns
         -------
-        bool : True if successful.
+        bool :
+            True if successful.
         """
         raise NotImplementedError
 
@@ -501,7 +506,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if ready for inference.
+        bool :
+            True if ready for inference.
         """
         self.log.debug('Uploading input')
 
@@ -527,7 +533,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if model upload finished successfully.
+        bool :
+            True if model upload finished successfully.
         """
         self.log.debug('Uploading model')
         with open(path, 'rb') as modfile:
@@ -555,7 +562,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if data upload finished successfully.
+        bool :
+            True if data upload finished successfully.
         """
         self.log.debug('Uploading io specification')
         with open(path, 'rb') as detfile:
@@ -581,13 +589,14 @@ class RuntimeProtocol(ArgumentsHandler):
         Target may send its own measurements in the statistics.
 
         Parameters
-        ---------
+        ----------
         get_time_func : Callable[[], float]
             Function that returns current timestamp.
 
         Returns
         -------
-        bool : True if inference finished successfully.
+        bool :
+            True if inference finished successfully.
         """
         self.log.debug('Requesting processing')
         self.send_message(Message(MessageType.PROCESS))
@@ -630,7 +639,7 @@ class RuntimeProtocol(ArgumentsHandler):
         Returns
         -------
         Measurements :
-            Inference statistics on target device
+            Inference statistics on target device.
         """
         self.log.debug('Downloading statistics')
         self.send_message(Message(MessageType.STATS))
@@ -653,7 +662,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if sent successfully.
+        bool :
+            True if sent successfully.
         """
         self.log.debug('Sending OK')
 
@@ -667,7 +677,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         Returns
         -------
-        bool : True if sent successfully.
+        bool :
+            True if sent successfully.
         """
         self.log.debug('Sending ERROR')
 

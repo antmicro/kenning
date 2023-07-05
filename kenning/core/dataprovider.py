@@ -42,8 +42,7 @@ class DataProvider(Runner):
 
     def prepare(self):
         """
-        Prepares the source for data gathering depending on the
-        source type.
+        Prepares the source for data gathering depending on the source type.
 
         This will for example initialize the camera and
         set the self.device to it.
@@ -56,7 +55,8 @@ class DataProvider(Runner):
 
         Returns
         -------
-        Any : Data to be processed by the model.
+        Any :
+            Data to be processed by the model.
         """
         raise NotImplementedError
 
@@ -71,7 +71,8 @@ class DataProvider(Runner):
 
         Returns
         -------
-        Any : Preprocessed data.
+        Any :
+            Preprocessed data.
         """
         return self.data
 

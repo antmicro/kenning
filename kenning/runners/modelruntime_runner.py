@@ -179,6 +179,7 @@ class ModelRuntimeRunner(Runner):
         json_dict : Dict
             Arguments for the constructor.
 
+        Returns
         -------
         Dataset :
             Created dataset.
@@ -200,6 +201,7 @@ class ModelRuntimeRunner(Runner):
         json_dict : Dict
             Arguments for the constructor.
 
+        Returns
         -------
         ModelWrapper :
             Created model.
@@ -236,8 +238,8 @@ class ModelRuntimeRunner(Runner):
 
         Parameters
         ----------
-        model : Dict[str, List[Dict]]
-            Argument for `ModelRuntimeRunner` constructor.
+        model_io_spec : Dict[str, List[Dict]]
+            Model IO specification.
 
         Returns
         -------

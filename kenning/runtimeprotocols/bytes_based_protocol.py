@@ -96,6 +96,7 @@ class BytesBasedProtocol(RuntimeProtocol):
 
         Returns
         -------
-        Message : Parsed message.
+        Message :
+            Parsed message.
         """
         return Message.from_bytes(message)[0]

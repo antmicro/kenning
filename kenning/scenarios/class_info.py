@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 """
-A script that provides information about a given class provided in the argument.
+A script that provides information about a given kenning class.
 
 More precisely, it displays:
     - module and class docstring
@@ -26,7 +26,8 @@ import astunparse
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
 
-def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.Module]):
+def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
+                                  Module]):
     """
     Displays docstrings of provided class or module
 
@@ -80,12 +81,11 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
         if module_path == '' or dependency_path == '':
             return ''
 
-        if 'kenning' in dependency_path:
-            # TODO recursively check for dependencies in kenning modules
-            return ''
-
         try:
             importlib.import_module(module_path)
+
+            if 'kenning' in dependency_path:
+                return ''
 
             if place_module(module_path) == 'STDLIB':
                 return ''  # TODO print standard modules with a script argument

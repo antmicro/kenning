@@ -20,6 +20,7 @@ import os.path
 import sys
 from typing import Union, List
 
+from isort import place_module
 import astunparse
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
@@ -85,6 +86,10 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
 
         try:
             importlib.import_module(module_path)
+
+            if place_module(module_path) == 'STDLIB':
+                return ''  # TODO print standard modules with a script argument
+
             return '* ' + dependency_path
         except ImportError or ModuleNotFoundError as e:
             return f'* {dependency_path} - Not available (Reason: {e})'
@@ -271,12 +276,6 @@ def generate_class_info(target: str):
     print("Arguments specification:")
     if arguments_structure_node:
         print_arguments_structure(arguments_structure_node, target_path)
-
-    with open(target_path, 'r') as sourcecodefd:
-        sourcecode = sourcecodefd.read()
-    tree = ast.parse(sourcecode)
-    import astpretty
-    # astpretty.pprint(tree)
 
 
 def main(argv):

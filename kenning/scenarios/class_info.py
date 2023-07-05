@@ -23,6 +23,8 @@ from typing import Union, List
 import astunparse
 from isort import place_module
 
+from kenning.utils.class_loader import load_class
+
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
 

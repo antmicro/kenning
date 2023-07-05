@@ -20,10 +20,11 @@ import os.path
 import sys
 from typing import Union, List
 
+from isort import place_module
 import astunparse
 from isort import place_module
 
-from kenning.utils.class_loader import load_class
+import astunparse
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 

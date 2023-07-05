@@ -1,0 +1,25 @@
+[tool.pydocstyle]
+inherit = false
+select = [
+    "D201", # No blank lines allowed before function docstring
+    "D206", # Docstring should be indented with spaces, not tabs
+    "D207", # Docstring is under-indented
+    "D208", # Docstring is over-indented
+    "D209", # Multi-line docstring closing quotes should be on a separate line
+    "D210", # No whitespaces allowed surrounding docstring text
+    "D213", # Multi-line docstring summary should start at the second line
+    "D214", # Section is over-indented
+    "D215", # Section underline is over-indented
+    "D300", # Use """triple double quotes"""
+    "D405", # Section name should be properly capitalized
+    "D406", # Section name should end with a newline
+    "D407", # Missing dashed underline after section
+    "D408", # Section underline should be in the line following the section’s name
+    "D409", # Section underline should match the length of its name
+    "D410", # Missing blank line after section
+    "D411", # Missing blank line before section
+    "D412", # No blank lines allowed between a section header and its content
+    "D414", # Section has no content
+    "D417", # Missing argument descriptions in the docstring
+    "D419", # Docstring is empty
+]

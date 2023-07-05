@@ -16,6 +16,12 @@ flake8:
         - flake8 .
     allow_failure: false
 
+pydocstyle:
+    stage: lint
+    script:
+        - pydocstyle .
+    allow_failure: false
+
 pytest:
     stage: tests
     script:

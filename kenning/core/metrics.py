@@ -284,7 +284,7 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
             }
         else:
             ret['sorted_opcode_counters']['counters'] = {
-                measurementsdata[i]['modelname']: t_opcode_ctrs[i + 1]
+                measurementsdata[i]['model_name']: t_opcode_ctrs[i + 1]
                 for i in range(len(measurementsdata))
             }
 
@@ -297,18 +297,18 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
             }
         else:
             ret['sorted_vector_opcode_counters']['counters'] = {
-                data['modelname']: t_v_opcode_ctrs[i + 1]
+                data['model_name']: t_v_opcode_ctrs[i + 1]
                 for i, data in enumerate(measurementsdata)
             }
 
     ret['instructions_per_inference_pass'] = {
-        data['modelname']:
+        data['model_name']:
             int(sum(data['opcode_counters'].values()) / data['total'])
         for data in measurementsdata
     }
     if len(v_opcode_ctrs):
         ret['vector_opcodes_fraction'] = {
-            data['modelname']:
+            data['model_name']:
                 sum(t_v_opcode_ctrs[i + 1]) / sum(t_opcode_ctrs[i + 1])
             for i, data in enumerate(measurementsdata)
         }
@@ -320,7 +320,7 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
         for i in range(len(opcode_counters)):
             opcode_counters[i][1] //= data['total']
         top_10 = opcode_counters[:10]
-        ret['top_10_opcodes_per_inference_pass'][data['modelname']] = top_10
+        ret['top_10_opcodes_per_inference_pass'][data['model_name']] = top_10
 
     if len(measurementsdata) == 1:
         ret['instructions_per_inference_pass'] = next(iter(

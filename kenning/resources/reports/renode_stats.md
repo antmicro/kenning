@@ -1,6 +1,6 @@
-## Renode performance measurements {% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Renode performance measurements {% if data["model_name"] %} for {{data["model_name"]}}{% endif %}
 
-{% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
+{% set basename = data["report_name_simple"] if "model_name" not in data else data["report_name_simple"] + data["model_name"] %}
 
 {%- if 'instrbarpath' in data %}
 ### Count of instructions used during inference

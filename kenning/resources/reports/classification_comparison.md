@@ -2,7 +2,7 @@
 
 ```{figure} {{data["bubbleplotpath"]}}
 ---
-name: {{data["reportname_simple"]}}_classification_size_inference
+name: {{data["report_name_simple"]}}_classification_size_inference
 alt: Accuracy vs Inference time vs RAM usage
 align: center
 ---
@@ -17,7 +17,7 @@ The size of the model is represented by the size of its point.
 
 ```{figure} {{data['radarchartpath']}}
 ---
-name: {{data['reportname_simple']}}_classification_metrics_radar
+name: {{data['report_name_simple']}}_classification_metrics_radar
 alt: Metric comparison
 align: center
 ---
@@ -35,11 +35,11 @@ align: center
   - Accuracy
   - Mean precison
   - Mean recall
-{% for modelname in data["modelnames"] %}
-* - {{modelname}}
-  - {{'%.6f' % data[modelname][0]}}
-  - {{'%.6f' % data[modelname][1]}}
-  - {{'%.6f' % data[modelname][2]}}
+{% for model_name in data["model_names"] %}
+* - {{model_name}}
+  - {{'%.6f' % data[model_name][0]}}
+  - {{'%.6f' % data[model_name][1]}}
+  - {{'%.6f' % data[model_name][2]}}
 {% endfor %}
 ```
 

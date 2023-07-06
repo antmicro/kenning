@@ -1,4 +1,4 @@
-## Renode performance measurements {% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Renode performance measurements {% if data["model_name"] %} for {{data["model_name"]}}{% endif %}
 
 {%- if 'instrbarpath' in data %}
 ### Count of instructions used during inference

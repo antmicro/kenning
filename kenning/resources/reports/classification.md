@@ -1,6 +1,6 @@
-## Inference quality metrics{% if data["modelname"] %} for {{data["modelname"]}}{% endif %}
+## Inference quality metrics{% if data["model_name"] %} for {{data["model_name"]}}{% endif %}
 
-{% set basename = data["reportname_simple"] if "modelname" not in data else data["reportname_simple"] + data["modelname"] %}
+{% set basename = data["report_name_simple"] if "model_name" not in data else data["report_name_simple"] + data["model_name"] %}
 ```{figure} {{data["confusionpath"]}}
 ---
 name: {{basename}}_confusionmatrix

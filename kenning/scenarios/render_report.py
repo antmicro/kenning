@@ -49,10 +49,6 @@ from kenning.core.metrics import (
     compute_detection_metrics,
     compute_renode_metrics)
 
-# TODO: remove:
-import logging
-logging.getLogger("matplotlib.font_manager").setLevel(logging.ERROR)
-
 log = logger.get_logger()
 
 SERVIS_PLOT_OPTIONS = {
@@ -120,7 +116,8 @@ def performance_report(
     str :
         Content of the report in MyST format.
     """
-    log.info(f'Running performance_report for {measurementsdata["modelname"]}')
+    log.info(
+        f'Running performance_report for {measurementsdata["model_name"]}')
     metrics = compute_performance_metrics(measurementsdata)
     measurementsdata |= metrics
 
@@ -318,8 +315,8 @@ def comparison_performance_report(
     common_metrics = set(metric_names.keys())
     hardware_usage_metrics = common_metrics - {'inference_step'}
     report_variables = {
-        'reportname': measurementsdata[0]['reportname'],
-        'reportname_simple': measurementsdata[0]['reportname_simple']
+        'report_name': measurementsdata[0]['report_name'],
+        'report_name_simple': measurementsdata[0]['report_name_simple']
     }
 
     for data in measurementsdata:
@@ -363,13 +360,13 @@ def comparison_performance_report(
             )
             continue
         timestamps = {
-            data['modelname']: data[timestamp_key]
+            data['model_name']: data[timestamp_key]
             for data in measurementsdata
         }
 
         for data in measurementsdata:
             if metric in data:
-                metric_data[data['modelname']] = data[metric]
+                metric_data[data['model_name']] = data[metric]
         if len(metric_data) > 1:
             usepath = imgdir / f"{metric}_comparison"
             render_multiple_time_series_plot(
@@ -394,7 +391,7 @@ def comparison_performance_report(
     common_metrics = sorted(list(common_metrics))
     visualizationdata = {}
     for data in measurementsdata:
-        visualizationdata[data['modelname']] = [
+        visualizationdata[data['model_name']] = [
             data[metric] for metric in common_metrics
         ]
 
@@ -419,7 +416,7 @@ def comparison_performance_report(
     if set(hardware_usage_metrics).intersection(measurements_metrics):
         usage_visualization = {}
         for data in measurementsdata:
-            usage_visualization[data['modelname']] = [
+            usage_visualization[data['model_name']] = [
                 np.mean(data.get(metric, 0))/100
                 for metric in hardware_usage_metrics
             ]
@@ -474,7 +471,7 @@ def classification_report(
     -------
     str : Content of the report in MyST format.
     """
-    log.info(f'Running classification report for {measurementsdata["modelname"]}')  # noqa: E501
+    log.info(f'Running classification report for {measurementsdata["model_name"]}')  # noqa: E501
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
 
@@ -533,8 +530,8 @@ def comparison_classification_report(
     _image_formats = image_formats - {'html'}
 
     report_variables = {
-        'reportname': measurementsdata[0]['reportname'],
-        'reportname_simple': measurementsdata[0]['reportname_simple']
+        'report_name': measurementsdata[0]['report_name'],
+        'report_name_simple': measurementsdata[0]['report_name_simple']
     }
     metric_visualization = {}
     accuracy, mean_inference_time, model_sizes, names = [], [], [], []
@@ -563,10 +560,10 @@ def comparison_classification_report(
             model_sizes.append(
                 performance_metrics['session_utilization_mem_percent_mean']
             )
-        names.append(data['modelname'])
+        names.append(data['model_name'])
 
         # Accuracy, precision, sensitivity
-        metric_visualization[data['modelname']] = [
+        metric_visualization[data['model_name']] = [
             model_accuracy,
             model_precision,
             model_sensitivity
@@ -598,7 +595,7 @@ def comparison_classification_report(
         outext=_image_formats,
     )
     report_variables['radarchartpath'] = f'{usepath.relative_to(rootdir)}.*'
-    report_variables['modelnames'] = names
+    report_variables['model_names'] = names
     report_variables = {
         **report_variables,
         **metric_visualization,
@@ -651,7 +648,7 @@ def detection_report(
         compute_ap, \
         compute_map_per_threshold
 
-    log.info(f'Running detection report for {measurementsdata["modelname"]}')
+    log.info(f'Running detection report for {measurementsdata["model_name"]}')
     metrics = compute_detection_metrics(measurementsdata)
     measurementsdata |= metrics
 
@@ -788,9 +785,9 @@ def comparison_detection_report(
         compute_map_per_threshold
 
     report_variables = {
-        'reportname': measurementsdata[0]['reportname'],
-        'reportname_simple': measurementsdata[0]['reportname_simple'],
-        'modelnames': []
+        'report_name': measurementsdata[0]['report_name'],
+        'report_name_simple': measurementsdata[0]['report_name_simple'],
+        'model_names': []
     }
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
@@ -800,7 +797,7 @@ def comparison_detection_report(
         thresholds = np.arange(0.2, 1.05, 0.05)
         mapvalues = compute_map_per_threshold(data, thresholds)
         visualization_data.append((thresholds, mapvalues))
-        report_variables['modelnames'].append(data['modelname'])
+        report_variables['model_names'].append(data['model_name'])
 
     usepath = imgdir / "detection_map_thresholds"
     draw_plot(
@@ -812,7 +809,7 @@ def comparison_detection_report(
         'mAP',
         None,
         visualization_data,
-        report_variables['modelnames'],
+        report_variables['model_names'],
         colors=colors,
         outext=_image_formats,
     )
@@ -862,7 +859,7 @@ def renode_stats_report(
     str : Content of the report in MyST format.
     """
     log.info(
-        f'Running renode_stats_report for {measurementsdata["modelname"]}'
+        f'Running renode_stats_report for {measurementsdata["model_name"]}'
     )
 
     # shift colors to match color_offset
@@ -1190,15 +1187,15 @@ def comparison_renode_stats_report(
 
             ydata.append(data)
             xdata.append(m['profiler_timestamps'])
-            labels.append(m['modelname'])
+            labels.append(m['model_name'])
 
         return xdata, ydata, labels
 
     log.info('Running comparison_renode_stats_report')
 
     report_variables = {
-        'reportname': measurementsdata[0]['reportname'],
-        'reportname_simple': measurementsdata[0]['reportname_simple']
+        'report_name': measurementsdata[0]['report_name'],
+        'report_name_simple': measurementsdata[0]['report_name_simple']
     }
 
     metrics = compute_renode_metrics(measurementsdata)
@@ -1329,7 +1326,7 @@ def comparison_renode_stats_report(
                 xunits=['s'],
                 ytitles=['Memory reads'],
                 yunits=['1/s'],
-                legend_labels=[m['modelname'] for m in measurementsdata],
+                legend_labels=[m['model_name'] for m in measurementsdata],
                 outpath=memory_access_plot_path,
                 outputext=image_formats,
                 **SERVIS_PLOT_OPTIONS
@@ -1351,7 +1348,7 @@ def comparison_renode_stats_report(
                 xunit='s',
                 ytitle=f'Total memory {access_type}s',
                 yunit=None,
-                linelabels=[m['modelname'] for m in measurementsdata],
+                linelabels=[m['model_name'] for m in measurementsdata],
                 outpath=str(cum_memory_access_plot_path),
                 outext=image_formats.difference({'html'}),
                 colors=SERVIS_PLOT_OPTIONS['colormap']
@@ -1495,7 +1492,7 @@ def comparison_renode_stats_report(
 
 
 def generate_report(
-        reportname: str,
+        report_name: str,
         data: List[Dict],
         outputpath: Path,
         imgdir: Path,
@@ -1513,7 +1510,7 @@ def generate_report(
 
     Parameters
     ----------
-    reportname : str
+    report_name : str
         Name for the report.
     data : List[Dict]
         Data for each model coming from the Measurements object,
@@ -1553,16 +1550,16 @@ def generate_report(
     }
 
     header_data = {
-        'reportname': reportname,
-        'modelnames': [],
+        'report_name': report_name,
+        'model_names': [],
         'command': []
     }
 
     for model_data in data:
-        header_data['modelnames'].append(model_data['modelname'])
+        header_data['model_names'].append(model_data['model_name'])
         if 'command' in model_data:
             header_data['command'] += model_data['command'] + ['']
-        header_data[model_data['modelname']] = model_data
+        header_data[model_data['model_name']] = model_data
 
     header_data['command'] += command
 
@@ -1575,7 +1572,7 @@ def generate_report(
     for typ in report_types:
         for i, model_data in enumerate(data):
             if len(data) > 1:
-                imgprefix = model_data["modelname"] + "_"
+                imgprefix = model_data["model_name"] + "_"
             else:
                 imgprefix = ""
             content += reptypes[typ](
@@ -1653,19 +1650,19 @@ def deduce_report_name(
     """
     if len(measurements_data) > 1:
         report_name = "Comparison of " \
-            f"{', '.join([d['modelname'] for d in measurements_data[:-1]])}" \
-            f" and {measurements_data[-1]['modelname']}"
-    elif "reportname" in measurements_data[0]:
-        report_name = measurements_data[0]['reportname']
+            f"{', '.join([d['model_name'] for d in measurements_data[:-1]])}" \
+            f" and {measurements_data[-1]['model_name']}"
+    elif "report_name" in measurements_data[0]:
+        report_name = measurements_data[0]['report_name']
     elif len(report_types) > 1:
         report_name = f"{', '.join(report_types[:-1])} and " \
-            f"{report_types[-1]} of {measurements_data[0]['modelname']}"
+            f"{report_types[-1]} of {measurements_data[0]['model_name']}"
     else:
         report_name = f"{report_types[0]} of " \
-            f"{measurements_data[0]['modelname']}"
+            f"{measurements_data[0]['model_name']}"
     report_name = report_name[0].upper() + report_name[1:]
 
-    log.info(f"Following report name was deduced: {report_name}")
+    log.info(f"Report name: {report_name}")
     return report_name
 
 
@@ -1756,13 +1753,15 @@ def main(argv):
         with open(measurementspath, 'r') as measurementsfile:
             measurements = json.load(measurementsfile)
         if args.model_names is not None:
-            measurements['modelname'] = args.model_names[i]
-        elif 'modelname' not in measurements:
-            measurements['modelname'] = get_model_name(measurementspath)
+            measurements['model_name'] = args.model_names[i]
+        elif 'model_name' not in measurements:
+            measurements['model_name'] = get_model_name(measurementspath)
+        measurements['model_name'] = measurements['model_name'].replace(
+            ' ', '_')
         measurementsdata.append(measurements)
 
     report_types = args.report_types
-    if report_types is None or len(report_types) == 0:
+    if not report_types:
         report_types = deduce_report_types(measurementsdata)
     if report_types is None:
         parser.error(
@@ -1780,12 +1779,12 @@ def main(argv):
                 indent=4
             ).split('\n')
 
-        if 'reportname' not in measurements:
-            measurements['reportname'] = deduce_report_name(
+        if 'report_name' not in measurements:
+            measurements['report_name'] = deduce_report_name(
                 [measurements], report_types)
-        measurements['reportname_simple'] = re.sub(
+        measurements['report_name_simple'] = re.sub(
             r'[\W]', '',
-            measurements['reportname'].lower().replace(' ', '_')
+            measurements['report_name'].lower().replace(' ', '_')
         )
 
     cmap, colors = None, None

@@ -1,4 +1,4 @@
-## {{data['reportname']}}
+## {{data['report_name']}}
 
 ### Commands used
 
@@ -16,27 +16,27 @@ This section was generated using:
 {% endif -%}
 
 
-{% for modelname in data['modelnames'] %}
-### General information for {{modelname}}
+{% for model_name in data['model_names'] %}
+### General information for {{model_name}}
 
 *Model framework*:
 
-* {{ data[modelname]['model_framework'] }} ver. {{ data[modelname]['model_version'] }}
-{% if data[modelname]['compilers']|length > 0 %}
-    {% if data[modelname]['compilers']|length == 1 %}
+* {{ data[model_name]['model_framework'] }} ver. {{ data[model_name]['model_version'] }}
+{% if data[model_name]['compilers']|length > 0 %}
+    {% if data[model_name]['compilers']|length == 1 %}
 *Compiler framework*:
     {% else %}
 *Compiler frameworks*:
     {%- endif %}
-    {% for line in data[modelname]['compilers'] %}
+    {% for line in data[model_name]['compilers'] %}
 * {{ line['compiler_framework'] }} ver. {{ line['compiler_version'] }}
     {%- endfor %}
 {% endif %}
-{% if 'build_cfg' in data[modelname] -%}
+{% if 'build_cfg' in data[model_name] -%}
 *Input JSON*:
 
 ```json
-{% for line in data[modelname]['build_cfg'] -%}
+{% for line in data[model_name]['build_cfg'] -%}
 {{ line }}
 {% endfor %}
 ```

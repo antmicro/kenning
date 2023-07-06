@@ -4,10 +4,13 @@
 
 import pytest
 from typing import Type, Tuple
+from pathlib import Path
 
 from kenning.core.runtime import Runtime
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.runtimes.renode import RenodeRuntime
+from kenning.runtimeprotocols.uart import UARTProtocol
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
@@ -32,7 +35,16 @@ def prepare_objects(
     except UnknownFramework:
         pytest.xfail(f'Unknown framework: {inputtype}')
 
-    runtime = runtime_cls(protocol=None, modelpath=model.modelpath)
+    if runtime_cls is RenodeRuntime:
+        resources_path = Path('build/renode-resources/springbok')
+        runtime = runtime_cls(
+            protocol=UARTProtocol('/tmp/uart', 115200),
+            runtime_binary_path=resources_path / 'iree_runtime',
+            platform_resc_path=resources_path / 'springbok.resc',
+            disable_profiler=True
+        )
+    else:
+        runtime = runtime_cls(protocol=None, modelpath=model.modelpath)
 
     return runtime, dataset, model
 
@@ -70,7 +82,10 @@ class TestRuntime:
         """
         runtime, _, _ = prepare_objects(runtime_cls, inputtype)
 
-        assert runtime.prepare_local()
+        try:
+            assert runtime.prepare_local()
+        except NotImplementedError:
+            pytest.xfail(f'{runtime_cls.__name__} does not support local run')
 
     @pytest.mark.parametrize('runtime_cls,inputtype', [
         pytest.param(runtime_cls, inputtype, marks=[

@@ -20,10 +20,49 @@ import os.path
 import sys
 from typing import Union, List
 
-from isort import place_module
 import astunparse
+from isort import place_module
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
+
+
+class _Argument:
+    """
+    Class representing an argument. Fields that are empty are not displayed.
+    """
+
+    def __init__(self):
+        self.name = ''
+        self.argparse_name = ''
+        self.description = ''
+        self.required = ''
+        self.default = ''
+        self.nullable = ''
+        self.type = ''
+        self.enum: List[str] = []
+
+    def __repr__(self):
+        lines = [f'* {self.name}']
+
+        if self.argparse_name:
+            lines.append(f'  * argparse name: {self.argparse_name}')
+        if self.type:
+            lines.append(f'  * type: {self.type}')
+        if self.description:
+            lines.append(f'  * description: {self.description}')
+        if self.required:
+            lines.append(f'  * required: {self.required}')
+        if self.default:
+            lines.append(f'  * default: {self.default}')
+        if self.nullable:
+            lines.append(f'  * nullable: {self.nullable}')
+
+        if len(self.enum) != 0:
+            lines.append('  * enum')
+        for element in self.enum:
+            lines.append(f'    * {element}')
+
+        return '\n'.join(lines)
 
 
 def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
@@ -107,12 +146,10 @@ def print_input_specification(syntax_node: ast.Assign):
 
     if isinstance(syntax_node.value, ast.List) \
             and len(syntax_node.value.elts) == 0:
-        print('')
         return
 
     for input_format in syntax_node.value.keys:
         print(f'* {input_format.value}')
-    print('')
 
 
 def print_output_specification(syntax_node: ast.Assign):
@@ -126,7 +163,6 @@ def print_output_specification(syntax_node: ast.Assign):
     """
     for output_format in syntax_node.value.elts:
         print(f'* {output_format.value}')
-    print('')
 
 
 def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
@@ -141,43 +177,68 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     """
     for argument, argument_specification_dict in zip(syntax_node.value.keys,
                                                      syntax_node.value.values):
-        print(f'* {argument.value}')
+        argument_object = _Argument()
+
+        argument_object.name = argument.value
 
         for key, value in zip(argument_specification_dict.keys,
                               argument_specification_dict.values):
 
             if isinstance(value, ast.Call) and value.func.id == 'list':
-                argument_list_variable = astunparse.unparse(value).strip(). \
-                    removeprefix("'").removesuffix("'").replace('list(',
-                                                                '').replace(
-                    '.keys())', '')
+                argument_list_variable = astunparse.unparse(value)\
+                    .strip()\
+                    .removeprefix("'")\
+                    .removesuffix("'")\
+                    .replace('list(', '')\
+                    .replace('.keys())', '')
 
-                argument_keys = evaluate_argument_list(argument_list_variable,
-                                                       source_path)
+                argument_keys, argument_type = evaluate_argument_list_of_keys(
+                    argument_list_variable,
+                    source_path)
 
-                key_str = astunparse.unparse(key).strip(). \
-                    removeprefix("'").removesuffix("'")
-                print(f'  * {key_str}')
-                for argument_key in argument_keys:
-                    print(f'    * {argument_key}')
+                argument_object.enum = argument_keys
+                argument_object.type = argument_type
+
+            elif key.value == "enum":
+                argument_list_variable = astunparse\
+                    .unparse(value)\
+                    .strip()\
+                    .removeprefix("'")\
+                    .removesuffix("'")
+
+                enum_list, argument_type = evaluate_argument_list(
+                    argument_list_variable,
+                    source_path)
+
+                argument_object.enum = enum_list
+                argument_object.type = argument_type
+
             else:
 
-                key_str = astunparse.unparse(key).strip(). \
-                    removeprefix("'").removesuffix("'")
-                value_str = astunparse.unparse(value).strip(). \
-                    removeprefix("'").removesuffix("'")
+                key_str = astunparse.unparse(key)\
+                    .strip()\
+                    .removeprefix("'")\
+                    .removesuffix("'")
 
-                print(f'  * {key_str}: {value_str}')
+                value_str = astunparse.unparse(value)\
+                    .strip()\
+                    .removeprefix("'")\
+                    .removesuffix("'")
+
+                argument_object.__setattr__(key_str, value_str)
+
+        print(argument_object)
 
 
-def evaluate_argument_list(argument_list_name: str, source_path: str) \
-        -> List[str]:
+def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
+        -> tuple[List[str], str]:
     with open(source_path) as file:
         parsed_file = ast.parse(file.read())
 
     syntax_nodes = ast.walk(parsed_file)
 
     argument_list_keys = []
+    argument_type = ''
 
     for node in syntax_nodes:
         if not isinstance(node, ast.Assign):
@@ -191,9 +252,41 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
 
         for key in node.value.keys:
             argument_list_keys.append(key.value)
+
+        argument_type = f'List[{type(node.value.keys[0].value).__name__}]'
+
         break
 
-    return argument_list_keys
+    return argument_list_keys, argument_type
+
+
+def evaluate_argument_list(argument_list_name: str, source_path: str) \
+        -> tuple[List[str], str]:
+    with open(source_path) as file:
+        parsed_file = ast.parse(file.read())
+
+    syntax_nodes = ast.walk(parsed_file)
+
+    enum_elements = []
+    argument_type = ''
+
+    for node in syntax_nodes:
+        if not isinstance(node, ast.Assign):
+            continue
+
+        if not isinstance(node.targets[0], ast.Name):
+            continue
+
+        if not node.targets[0].id == argument_list_name:
+            continue
+
+        for element in node.value.elts:
+            enum_elements.append(element.value)
+
+        argument_type = f'List[{type(node.value.elts[0].value).__name__}]'
+        break
+
+    return enum_elements, argument_type
 
 
 def generate_class_info(target: str):
@@ -268,10 +361,12 @@ def generate_class_info(target: str):
     print("Input formats:")
     if input_specification_node:
         print_input_specification(input_specification_node)
+    print('')
 
     print("Output formats:")
     if output_specification_node:
         print_output_specification(output_specification_node)
+    print('')
 
     print("Arguments specification:")
     if arguments_structure_node:

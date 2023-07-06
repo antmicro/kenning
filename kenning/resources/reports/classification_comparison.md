@@ -1,5 +1,17 @@
 ## Classification comparison
 
+{%- if 'predictionsbarpath' in data %}
+```{figure} {{data["predictionsbarpath"]}}
+---
+name: {{basename}}_predictionsbarplot
+alt: Predictions comparison
+align: center
+---
+
+Predictions comparison
+```
+{%- endif %}
+
 ```{figure} {{data["bubbleplotpath"]}}
 ---
 name: {{data["report_name_simple"]}}_classification_size_inference

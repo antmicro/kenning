@@ -451,6 +451,7 @@ def classification_report(
         rootdir: Path,
         image_formats: Set[str],
         cmap: Optional[Any] = None,
+        colors: Optional[List] = None,
         draw_titles: bool = True,
         **kwargs) -> str:
     """
@@ -469,7 +470,9 @@ def classification_report(
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
     cmap : Optional[ListedColormap]
-        Color map
+        Color map to be used in the plots.
+    colors : Optional[List]
+        Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
 
@@ -478,29 +481,63 @@ def classification_report(
     str :
         Content of the report in MyST format.
     """
-    log.info(f'Running classification report for {measurementsdata["model_name"]}')  # noqa: E501
+    log.info(
+        f'Running classification report for {measurementsdata["model_name"]}'
+    )
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
 
-    if 'eval_confusion_matrix' not in measurementsdata:
-        log.error('Confusion matrix not present for classification report')
+    if 'eval_confusion_matrix' in measurementsdata:
+        log.info('Using confusion matrix')
+        confusionpath = imgdir / f'{imgprefix}confusion_matrix'
+        draw_confusion_matrix(
+            measurementsdata['eval_confusion_matrix'],
+            str(confusionpath),
+            'Confusion matrix' if draw_titles else None,
+            measurementsdata['class_names'],
+            cmap=cmap,
+            outext=image_formats,
+        )
+        measurementsdata['confusionpath'] = (
+            str(confusionpath.relative_to(rootdir)) + '.*'
+        )
+    elif 'predictions' in measurementsdata:
+        log.info('Using predictons')
+
+        predictions = list(zip(
+            measurementsdata['predictions'],
+            measurementsdata['class_names']
+        ))
+        predictions.sort(key=lambda x: x[0], reverse=True)
+
+        predictions = list(zip(*predictions))
+
+        predictions_path = imgdir / f'{imgprefix}predictions'
+        draw_barplot(
+            outpath=predictions_path,
+            title='Predictions' if draw_titles else None,
+            xtitle='Class',
+            xunit=None,
+            ytitle='Percentage',
+            yunit='%',
+            xdata=list(predictions[1]),
+            ydata={'predictions': list(predictions[0])},
+            colors=colors,
+            outext=image_formats
+        )
+        measurementsdata['predictionspath'] = (
+            str(predictions_path.relative_to(rootdir)) + '.*'
+        )
+    else:
+        log.error(
+            'Confusion matrix and predictons not present for classification '
+            'report'
+        )
         return ''
-    log.info('Using confusion matrix')
-    confusionpath = imgdir / f'{imgprefix}confusion_matrix'
-    draw_confusion_matrix(
-        measurementsdata['eval_confusion_matrix'],
-        str(confusionpath),
-        'Confusion matrix' if draw_titles else None,
-        measurementsdata['class_names'],
-        cmap=cmap,
-        outext=image_formats,
-    )
-    measurementsdata['confusionpath'] = str(
-        confusionpath.relative_to(rootdir)) + '.*'
+
     with path(reports, 'classification.md') as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            measurementsdata
+            reporttemplate, measurementsdata
         )
 
 
@@ -539,17 +576,25 @@ def comparison_classification_report(
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
 
+    # check that each measurements have the same classes
+    for data in measurementsdata:
+        assert (
+            measurementsdata[0]['class_names'] == data['class_names']
+        ), 'Invalid class names in measurements'
+
     report_variables = {
         'report_name': measurementsdata[0]['report_name'],
         'report_name_simple': measurementsdata[0]['report_name_simple']
     }
+    names = [data['model_name'] for data in measurementsdata]
     metric_visualization = {}
-    accuracy, mean_inference_time, model_sizes, names = [], [], [], []
+    accuracy, mean_inference_time, model_sizes = [], [], []
+    skip_inference_metrics = False
     for data in measurementsdata:
         performance_metrics = compute_performance_metrics(data)
         if 'inferencetime_mean' not in performance_metrics:
-            log.warning("No inference measurements available, skipping report generation")  # noqa: E501
-            return ""
+            skip_inference_metrics = True
+            break
 
         classification_metrics = compute_classification_metrics(data)
         model_accuracy = classification_metrics['accuracy']
@@ -564,7 +609,7 @@ def comparison_classification_report(
             model_sizes.append(data['compiled_model_size'])
         else:
             log.warning(
-                'Missing information about model size in measurements' +
+                'Missing information about model size in measurements'
                 ' - computing size based on average RAM usage'
             )
             model_sizes.append(
@@ -576,45 +621,80 @@ def comparison_classification_report(
         metric_visualization[data['model_name']] = [
             model_accuracy,
             model_precision,
-            model_sensitivity
+            model_sensitivity,
         ]
 
-    usepath = imgdir / "accuracy_vs_inference_time"
-    draw_bubble_plot(
-        usepath,
-        "Accuracy vs Mean inference time" if draw_titles else None,
-        mean_inference_time,
-        "Mean inference time [s]",
-        accuracy,
-        "Accuracy",
-        model_sizes,
-        names,
-        colors=colors,
-        outext=_image_formats,
-    )
-    report_variables['bubbleplotpath'] = str(
-        usepath.relative_to(rootdir)) + '.*'
+    if not skip_inference_metrics:
+        usepath = imgdir / 'accuracy_vs_inference_time'
+        draw_bubble_plot(
+            usepath,
+            'Accuracy vs Mean inference time' if draw_titles else None,
+            mean_inference_time,
+            'Mean inference time [s]',
+            accuracy,
+            'Accuracy',
+            model_sizes,
+            names,
+            colors=colors,
+            outext=_image_formats,
+        )
+        report_variables['bubbleplotpath'] = \
+            str(usepath.relative_to(rootdir)) + '.*'
 
-    usepath = imgdir / "classification_metric_comparison"
-    draw_radar_chart(
-        usepath,
-        "Metric comparison" if draw_titles else None,
-        metric_visualization,
-        ["Accuracy", "Mean precision", "Mean recall"],
-        colors=colors,
-        outext=_image_formats,
-    )
-    report_variables['radarchartpath'] = f'{usepath.relative_to(rootdir)}.*'
-    report_variables['model_names'] = names
-    report_variables = {
-        **report_variables,
-        **metric_visualization,
-    }
+        usepath = imgdir / 'classification_metric_comparison'
+        draw_radar_chart(
+            usepath,
+            'Metric comparison' if draw_titles else None,
+            metric_visualization,
+            ['Accuracy', 'Mean precision', 'Mean recall'],
+            colors=colors,
+            outext=_image_formats,
+        )
+        report_variables['radarchartpath'] = \
+            f'{usepath.relative_to(rootdir)}.*'
+        report_variables['model_names'] = names
+        report_variables = {
+            **report_variables,
+            **metric_visualization,
+        }
+
+    if 'predictions' in measurementsdata[0]:
+        predictions = [measurementsdata[0]['class_names']] + [
+            data['predictions'] for data in measurementsdata
+        ]
+        predictions = list(zip(*predictions))
+        predictions.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
+        predictions = list(zip(*predictions))
+        predictions_data = {
+            name: data for name, data in zip(names, predictions[1:])
+        }
+        predictions_batplot_path = imgdir / 'predictions'
+        draw_barplot(
+            outpath=predictions_batplot_path,
+            title='Predictons barplot' if draw_titles else None,
+            xtitle='Class',
+            xunit=None,
+            ytitle='Percentage',
+            yunit='%',
+            xdata=predictions[0],
+            ydata=predictions_data,
+            colors=colors,
+            outext=image_formats,
+        )
+
+        report_variables[
+            'predictionsbarpath'
+        ] = f'{predictions_batplot_path.relative_to(rootdir)}.*'
+
+    elif skip_inference_metrics:
+        log.warning(
+            'No inference measurements available, skipping report generation'
+        )
+        return ''
 
     with path(reports, 'classification_comparison.md') as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            report_variables
+            reporttemplate, report_variables
         )
 
 

@@ -25,10 +25,12 @@
             "parameters":
             {
                 "model_framework": "onnx",
-                "target": "cuda",
-                "compiled_model_path": "./build/compiled-model.tar",
+                "target": "cuda -libs=cudnn,cublas",
                 "opt_level": 3,
-                "compile_use_vm": true
+                "compile_use_vm": false,
+                "output_conversion_function": "default",
+                "target_host": null,
+                "compiled_model_path": "./build/compiled-model.tar"
             }
         }
     ],
@@ -39,7 +41,7 @@
         {
             "save_model_path": "./build/compiled-model.tar",
             "target_device_context": "cuda",
-            "runtime_use_vm": true
+            "runtime_use_vm": false
         }
     }
 }

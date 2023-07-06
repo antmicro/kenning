@@ -20,7 +20,6 @@ import os.path
 import sys
 from typing import Union, List
 
-from isort import place_module
 import astunparse
 from isort import place_module
 

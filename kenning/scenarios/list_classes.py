@@ -7,6 +7,7 @@
 Script scrapping and listing available classes in kenning.
 """
 import argparse
+import os
 import sys
 from typing import List
 
@@ -39,27 +40,33 @@ def list_classes(base_classes: List[str]):
         'dataproviders': ('kenning.dataproviders', DataProvider),
         'datasets': ('kenning.datasets', Dataset),
         'modelwrappers': ('kenning.modelwrappers', ModelWrapper),
-        'onnxconversions': ('kenning.onnxconversions', ONNXConversion),
+        'onnxconversions': ('kenning.onnxconverters', ONNXConversion),
         'outputcollectors': ('kenning.outputcollectors', OutputCollector),
         'runtimes': ('kenning.runtimes', Runtime)}
 
     logger = get_logger()
     logger.setLevel('ERROR')
 
-    all_subclasses = []
+    subclasses_dict = {}
+
     for base_class in base_classes:
         subclasses = get_all_subclasses(
             modulepath=kenning_base_classes[base_class][0],
             cls=kenning_base_classes[base_class][1],
             raise_exception=False)
 
-        for cls in subclasses:
-            all_subclasses.append(f'{cls.__module__}.{cls.__qualname__}')
+        subclasses_dict[kenning_base_classes[base_class][1]] = \
+            [f'{cls.__module__}.{cls.__qualname__}' for cls in subclasses]
 
     logger.setLevel('INFO')
 
-    for subclass in all_subclasses:
-        print(subclass)
+    for base_class in base_classes:
+        if kenning_base_classes[base_class][1] in subclasses_dict.keys():
+            print(f'{base_class}')
+
+            subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
+            [print(f'\t{subcls}') for subcls in subclass_list]
+            print()
 
 
 def main(argv):
@@ -105,15 +112,28 @@ def main(argv):
         help='',
         action='store_true',
     )
+    parser.add_argument(
+        '--all', '-a',
+        help='',
+        action='store_true'
+    )
 
     args = parser.parse_args(argv[1:])
 
     if not any(args.__dict__.values()):
         print('No base classes given')
 
+    if args.all:
+        list_classes([base_class for base_class in args.__dict__.keys()
+                      if base_class != 'all'])
+        return
+
     list_classes([base_class for base_class in args.__dict__.keys()
                   if args.__dict__[base_class]])
 
 
 if __name__ == '__main__':
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     main(sys.argv)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+

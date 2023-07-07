@@ -19,6 +19,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
+from kenning.scenarios.class_info import generate_class_info
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.logger import get_logger
 
@@ -62,11 +63,18 @@ def list_classes(base_classes: List[str]):
 
     for base_class in base_classes:
         if kenning_base_classes[base_class][1] in subclasses_dict.keys():
-            print(f'{base_class}')
+            print(f'{base_class.title()} '
+                  f'(in {kenning_base_classes[base_class][0]}):\n')
 
             subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
-            [print(f'\t{subcls}') for subcls in subclass_list]
-            print()
+
+            for subclass in subclass_list:
+                module_path = '.'.join(subclass.split('.')[:-1])
+                class_name = subclass.split('.')[-1]
+                generate_class_info(target=module_path, class_name=class_name,
+                                    docstrings=True, dependencies=False,
+                                    input_formats=False, output_formats=False,
+                                    argument_formats=False)
 
 
 def main(argv):

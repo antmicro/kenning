@@ -65,6 +65,12 @@ class _Argument:
         return '\n'.join(lines)
 
 
+def print_class_module_name(syntax_node: Union[ast.ClassDef, ast.
+                            Module]):
+    if isinstance(syntax_node, ast.ClassDef):
+        print(f'Class: {syntax_node.name}\n')
+
+
 def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
                                   Module]):
     """
@@ -148,6 +154,11 @@ def print_input_specification(syntax_node: ast.Assign):
             and len(syntax_node.value.elts) == 0:
         return
 
+    if isinstance(syntax_node.value, ast.List):
+        for input_format in syntax_node.value.elts:
+            print(f'* {input_format.value}')
+        return
+
     for input_format in syntax_node.value.keys:
         print(f'* {input_format.value}')
 
@@ -184,12 +195,14 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
         for key, value in zip(argument_specification_dict.keys,
                               argument_specification_dict.values):
 
-            if isinstance(value, ast.Call) and value.func.id == 'list':
-                argument_list_variable = astunparse.unparse(value)\
-                    .strip()\
-                    .removeprefix("'")\
-                    .removesuffix("'")\
-                    .replace('list(', '')\
+            if isinstance(value, ast.Call) \
+                    and isinstance(value.func, ast.Name) \
+                    and value.func.id == 'list':
+                argument_list_variable = astunparse.unparse(value) \
+                    .strip() \
+                    .removeprefix("'") \
+                    .removesuffix("'") \
+                    .replace('list(', '') \
                     .replace('.keys())', '')
 
                 argument_keys, argument_type = evaluate_argument_list_of_keys(
@@ -198,12 +211,25 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
 
                 argument_object.enum = argument_keys
                 argument_object.type = argument_type
+            elif isinstance(value, ast.Call) \
+                    and isinstance(value.func, ast.Attribute):
+                key_str = astunparse.unparse(key) \
+                    .strip() \
+                    .removeprefix("'") \
+                    .removesuffix("'")
 
-            elif key.value == "enum":
-                argument_list_variable = astunparse\
-                    .unparse(value)\
-                    .strip()\
-                    .removeprefix("'")\
+                value_str = astunparse.unparse(value) \
+                    .strip() \
+                    .removeprefix("'") \
+                    .removesuffix("'")
+
+                argument_object.__setattr__(key_str, [value_str])
+
+            elif key.value == 'enum':
+                argument_list_variable = astunparse \
+                    .unparse(value) \
+                    .strip() \
+                    .removeprefix("'") \
                     .removesuffix("'")
 
                 enum_list, argument_type = evaluate_argument_list(
@@ -215,14 +241,14 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
 
             else:
 
-                key_str = astunparse.unparse(key)\
-                    .strip()\
-                    .removeprefix("'")\
+                key_str = astunparse.unparse(key) \
+                    .strip() \
+                    .removeprefix("'") \
                     .removesuffix("'")
 
-                value_str = astunparse.unparse(value)\
-                    .strip()\
-                    .removeprefix("'")\
+                value_str = astunparse.unparse(value) \
+                    .strip() \
+                    .removeprefix("'") \
                     .removesuffix("'")
 
                 argument_object.__setattr__(key_str, value_str)
@@ -289,7 +315,9 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     return enum_elements, argument_type
 
 
-def generate_class_info(target: str):
+def generate_class_info(target: str, docstrings=True, dependencies=True,
+                        input_formats=True, output_formats=True,
+                        argument_formats=True):
     """
     Wrapper function that handles displaying information about a class
 
@@ -298,6 +326,11 @@ def generate_class_info(target: str):
     target: str
         Target class path or module name e.g. either `kenning.core.flow` or
          `kenning/core/flow.py`
+    docstrings: bool
+    dependencies: bool
+    input_formats: bool
+    output_formats: bool
+    argument_formats: bool
     """
 
     target_path = target
@@ -341,50 +374,108 @@ def generate_class_info(target: str):
             if node.targets[0].id == KEYWORDS[2]:
                 arguments_structure_node = node
 
-    for node in class_nodes:
-        print_class_module_docstrings(node)
+    if docstrings:
+        for node in class_nodes:
+            print_class_module_docstrings(node)
+    else:
+        for node in class_nodes:
+            print_class_module_name(node)
 
-    print('Dependencies:')
-    dependencies: List[str] = []
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    for node in dependency_nodes:
-        dependency_str = get_dependency(node)
-        if dependency_str == '':
-            continue
-        dependencies.append(dependency_str)
+    if dependencies:
+        print('Dependencies:')
+        dependencies: List[str] = []
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        for node in dependency_nodes:
+            dependency_str = get_dependency(node)
+            if dependency_str == '':
+                continue
+            dependencies.append(dependency_str)
 
-    [print(dep_str) for dep_str in list(set(dependencies))]
+        [print(dep_str) for dep_str in list(set(dependencies))]
 
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-    print('')
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+        print('')
 
-    print("Input formats:")
-    if input_specification_node:
-        print_input_specification(input_specification_node)
-    print('')
+    if input_formats:
+        print("Input formats:")
+        if input_specification_node:
+            print_input_specification(input_specification_node)
+        print('')
 
-    print("Output formats:")
-    if output_specification_node:
-        print_output_specification(output_specification_node)
-    print('')
+    if output_formats:
+        print("Output formats:")
+        if output_specification_node:
+            print_output_specification(output_specification_node)
+        print('')
 
-    print("Arguments specification:")
-    if arguments_structure_node:
-        print_arguments_structure(arguments_structure_node, target_path)
+    if argument_formats:
+        print("Arguments specification:")
+        if arguments_structure_node:
+            print_arguments_structure(arguments_structure_node, target_path)
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(argv[0])
+    parser = argparse.ArgumentParser(argv[0],
+                                     description='Provides information about a'
+                                                 ' given kenning module or'
+                                                 ' class. If no flags are'
+                                                 ' given, displays'
+                                                 ' the full output')
 
     parser.add_argument(
         'target',
-        help='',
+        help='Module-like path of the module or class '
+             '(e.g. kenning.compilers.onnx)',
         type=str
+    )
+    parser.add_argument(
+        '--docstrings',
+        help='Display class docstrings',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--dependencies',
+        help='Display class dependencies',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--input-formats',
+        help='Display class input formats',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--output-formats',
+        help='Display output formats',
+        action='store_true'
+    )
+    parser.add_argument(
+        '--argument-formats',
+        help='Display the argument specification',
+        action='store_true'
     )
 
     args = parser.parse_args(argv[1:])
 
-    generate_class_info(target=args.target)
+    flags = {
+        'docstrings': args.docstrings,
+        'dependencies': args.dependencies,
+        'input_formats': args.input_formats,
+        'output_formats': args.output_formats,
+        'argument_formats': args.argument_formats
+    }
+
+    # if no flags are given, set all of them to True (display everything)
+    if not any(flags.values()):
+        flags = {key: True for key in flags}
+
+    generate_class_info(
+        target=args.target,
+        docstrings=flags['docstrings'],
+        dependencies=flags['dependencies'],
+        input_formats=flags['input_formats'],
+        output_formats=flags['output_formats'],
+        argument_formats=flags['argument_formats']
+    )
 
 
 if __name__ == '__main__':

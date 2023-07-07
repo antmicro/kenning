@@ -26,7 +26,7 @@ from isort import place_module
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
 
-class _Argument:
+class Argument:
     """
     Class representing an argument. Fields that are empty are not displayed.
     """
@@ -88,7 +88,7 @@ def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
         return
 
     docstring = '\n'.join(
-        ['\t' + docstr for docstr in docstring.strip('\n').split('\n')])
+        ['    ' + docstr for docstr in docstring.strip('\n').split('\n')])
 
     if isinstance(syntax_node, ast.ClassDef):
         print(f'Class: {syntax_node.name}\n')
@@ -105,7 +105,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
         -> str:
     """
     Extracts a dependency from an import syntax node and checks whether the
-     dependency is satisfied. It also skips internal kenning modules
+    dependency is satisfied. It also skips internal kenning modules
 
     Parameters
     ----------
@@ -133,7 +133,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
                 return ''
 
             if place_module(module_path) == 'STDLIB':
-                return ''  # TODO print standard modules with a script argument
+                return ''
 
             return '* ' + dependency_path
         except ImportError or ModuleNotFoundError as e:
@@ -179,7 +179,7 @@ def print_output_specification(syntax_node: ast.Assign):
 def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     """
     Displays information about the argument structure specification as
-     bullet points
+    bullet points
 
     Parameters
     ----------
@@ -188,7 +188,7 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     """
     for argument, argument_specification_dict in zip(syntax_node.value.keys,
                                                      syntax_node.value.values):
-        argument_object = _Argument()
+        argument_object = Argument()
 
         argument_object.name = argument.value
 
@@ -296,6 +296,15 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     enum_elements = []
     argument_type = ''
 
+    # argument list is an explicit python list (['int8', 'float16'])
+    if argument_list_name.endswith(']') and argument_list_name[0] == '[':
+        enum_elements = eval(argument_list_name)
+        if len(enum_elements) > 0:
+            argument_type = f'List[{type(enum_elements[0]).__name__}]'
+        else:
+            argument_type = 'List[]'
+        return enum_elements, argument_type
+
     for node in syntax_nodes:
         if not isinstance(node, ast.Assign):
             continue
@@ -315,9 +324,9 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     return enum_elements, argument_type
 
 
-def generate_class_info(target: str, docstrings=True, dependencies=True,
-                        input_formats=True, output_formats=True,
-                        argument_formats=True):
+def generate_class_info(target: str, class_name='', docstrings=True,
+                        dependencies=True, input_formats=True,
+                        output_formats=True, argument_formats=True):
     """
     Wrapper function that handles displaying information about a class
 
@@ -326,12 +335,15 @@ def generate_class_info(target: str, docstrings=True, dependencies=True,
     target: str
         Target class path or module name e.g. either `kenning.core.flow` or
          `kenning/core/flow.py`
+    class_name: str
     docstrings: bool
     dependencies: bool
     input_formats: bool
     output_formats: bool
     argument_formats: bool
     """
+    if class_name is None:
+        class_name = ''
 
     target_path = target
     if not target.endswith('.py'):
@@ -356,7 +368,13 @@ def generate_class_info(target: str, docstrings=True, dependencies=True,
 
     for node in syntax_nodes:
         if isinstance(node, (ast.ClassDef, ast.Module)):
-            class_nodes.append(node)
+            if isinstance(node, ast.ClassDef) \
+                    and class_name != '' \
+                    and node.name == class_name:
+                class_nodes.append(node)
+
+            if isinstance(node, ast.ClassDef) and class_name == '':
+                class_nodes.append(node)
 
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             dependency_nodes.append(node)
@@ -429,6 +447,12 @@ def main(argv):
         type=str
     )
     parser.add_argument(
+        '--class',
+        help='Specify a class in the provided target path',
+        type=str,
+        nargs='?'
+    )
+    parser.add_argument(
         '--docstrings',
         help='Display class docstrings',
         action='store_true'
@@ -470,6 +494,7 @@ def main(argv):
 
     generate_class_info(
         target=args.target,
+        class_name=getattr(args, 'class'),
         docstrings=flags['docstrings'],
         dependencies=flags['dependencies'],
         input_formats=flags['input_formats'],

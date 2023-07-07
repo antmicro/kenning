@@ -24,7 +24,7 @@ from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.logger import get_logger
 
 
-def list_classes(base_classes: List[str]):
+def list_classes(base_classes: List[str], verbosity='list'):
     """
     Lists classes of given module, displays their parameters and descriptions
 
@@ -32,6 +32,7 @@ def list_classes(base_classes: List[str]):
     ----------
     base_classes: str
         # TODO
+    verbosity: str
 
     """
 
@@ -54,94 +55,164 @@ def list_classes(base_classes: List[str]):
         subclasses = get_all_subclasses(
             modulepath=kenning_base_classes[base_class][0],
             cls=kenning_base_classes[base_class][1],
-            raise_exception=False)
+            raise_exception=False,
+            import_classes=False)
 
         subclasses_dict[kenning_base_classes[base_class][1]] = \
-            [f'{cls.__module__}.{cls.__qualname__}' for cls in subclasses]
+            [f'{module}.{class_name}' for class_name, module in
+             subclasses if class_name[0] != '_']
 
     logger.setLevel('INFO')
 
     for base_class in base_classes:
-        if kenning_base_classes[base_class][1] in subclasses_dict.keys():
-            print(f'{base_class.title()} '
-                  f'(in {kenning_base_classes[base_class][0]}):\n')
+        if not kenning_base_classes[base_class][1] in subclasses_dict.keys():
+            continue
 
-            subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
+        print(f'{base_class.title()} '
+              f'(in {kenning_base_classes[base_class][0]}):\n')
 
-            for subclass in subclass_list:
-                module_path = '.'.join(subclass.split('.')[:-1])
-                class_name = subclass.split('.')[-1]
+        subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
+
+        for subclass in subclass_list:
+            module_path = '.'.join(subclass.split('.')[:-1])
+            class_name = subclass.split('.')[-1]
+
+            if verbosity == 'list':
+                print(f'\t{subclass}')
+
+            if verbosity == 'docstrings':
                 generate_class_info(target=module_path, class_name=class_name,
                                     docstrings=True, dependencies=False,
                                     input_formats=False, output_formats=False,
                                     argument_formats=False)
 
+            if verbosity == 'everything':
+                generate_class_info(target=module_path, class_name=class_name,
+                                    docstrings=True, dependencies=True,
+                                    input_formats=True, output_formats=True,
+                                    argument_formats=True)
+                print()
+
+        if verbosity == 'list':
+            print()
+
 
 def main(argv):
-    parser = argparse.ArgumentParser(argv[0])
+    parser = argparse.ArgumentParser(argv[0],
+                                     formatter_class=argparse.
+                                     RawTextHelpFormatter)
+
+    base_class_arguments = [
+        'optimizers',
+        'runners',
+        'dataproviders',
+        'datasets',
+        'modelwrappers',
+        'onnxconversions',
+        'outputcollectors',
+        'runtimes',
+    ]
+
+    available_choices_string = '['
+    for base_class in base_class_arguments:
+        available_choices_string += f'{base_class}, '
+    available_choices_string = available_choices_string[:-2]
+    available_choices_string += ']'
 
     parser.add_argument(
-        '--optimizers',
-        help='',
-        action='store_true',
+        'base_classes',
+        help=f'Base classes of a certain group of modules. List of zero or '
+             f'more base classes. Providing zero base classes will print '
+             f'information about all of them. The default verbosity will only '
+             f'list found subclasses.\n\nAvailable choices: '
+             f'{available_choices_string}',
+        nargs='*',
+    )
+
+    # parser.add_argument(
+    #     '--optimizers',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--runners',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--dataproviders',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--datasets',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--modelwrappers',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--onnxconversions',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--outputcollectors',
+    #     help='',
+    #     action='store_true',
+    # )
+    # parser.add_argument(
+    #     '--runtimes',
+    #     help='',
+    #     action='store_true',
+    # )
+    parser.add_argument(
+        '-v',
+        help='Also display class docstrings',
+        action='store_true'
     )
     parser.add_argument(
-        '--runners',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--dataproviders',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--datasets',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--modelwrappers',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--onnxconversions',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--outputcollectors',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--runtimes',
-        help='',
-        action='store_true',
-    )
-    parser.add_argument(
-        '--all', '-a',
-        help='',
+        '-vv',
+        help='Display all available information. That includes: docstrings, '
+             'input and output formats and specification of the arguments',
         action='store_true'
     )
 
     args = parser.parse_args(argv[1:])
 
-    if not any(args.__dict__.values()):
-        print('No base classes given')
+    for base_class in args.base_classes:
+        if base_class not in base_class_arguments:
+            print(f'{base_class} is not a valid base class argument')
+            return
 
-    if args.all:
-        list_classes([base_class for base_class in args.__dict__.keys()
-                      if base_class != 'all'])
+    verbosity = 'list'
+    if args.v:
+        verbosity = 'docstrings'
+    if args.vv:
+        verbosity = 'everything'
+
+    if len(args.base_classes) == 0:
+        list_classes(base_class_arguments, verbosity=verbosity)
         return
 
-    list_classes([base_class for base_class in args.__dict__.keys()
-                  if args.__dict__[base_class]])
+    list_classes(args.base_classes, verbosity=verbosity)
+
+    # if not any(args.__dict__.values()):
+    #     list_classes([base_class for base_class in args.__dict__.keys()
+    #                   if base_class in base_class_arguments],
+    #                  verbosity=verbosity)
+    #     return
+    #
+    # list_classes([base_class for base_class in args.__dict__.keys()
+    #               if args.__dict__[base_class]
+    #               and base_class in base_class_arguments],
+    #              verbosity=verbosity)
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
     main(sys.argv)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-

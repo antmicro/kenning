@@ -6,7 +6,7 @@
 Provides methods for importing classes and modules at runtime based on string.
 """
 
-from typing import Type
+from typing import Type, Union
 import importlib
 from typing import List
 from pathlib import Path
@@ -19,7 +19,9 @@ from kenning.utils.logger import get_logger
 def get_all_subclasses(
         modulepath: str,
         cls: Type,
-        raise_exception: bool = False) -> List[Type]:
+        raise_exception: bool = False,
+        import_classes: bool = True) -> \
+        Union[List[Type], List[tuple[str, str]]]:
     """
     Retrieves all subclasses of given class. Filters classes that are not
     final.
@@ -33,11 +35,15 @@ def get_all_subclasses(
     raise_exception : bool
         Indicate if exception should be raised in case subclass cannot be
         imported.
+    import_classes: bool
+        Whether to import classes into memory or just return a list of modules
 
     Returns
     -------
-    List[Type] :
-        List of all final subclasses of given class.
+    Union[List[Type], dict[str, any]]:
+        When importing classes: List of all final subclasses of given class.
+        When not importing classes: list of tuples with name and module path
+        of the class
     """
     logger = get_logger()
 
@@ -129,6 +135,10 @@ def get_all_subclasses(
             continue
         subclass_module = classes_modules[subclass_name]
         try:
+            if not import_classes:
+                result.append((subclass_name, subclass_module.name))
+                continue
+
             subclass = getattr(
                 importlib.import_module(subclass_module.name),
                 subclass_name
@@ -143,7 +153,8 @@ def get_all_subclasses(
             if raise_exception:
                 raise
 
-    result.sort(key=lambda c: c.__name__)
+    if import_classes:
+        result.sort(key=lambda c: c.__name__)
 
     return result
 

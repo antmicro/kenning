@@ -101,7 +101,7 @@ def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
     docstring = ast.get_docstring(syntax_node, clean=True)
 
     if not docstring:
-        return ''
+        return f'Class: {syntax_node.name}\n'
 
     docstring = '\n'.join(
         ['    ' + docstr for docstr in docstring.strip('\n').split('\n')])

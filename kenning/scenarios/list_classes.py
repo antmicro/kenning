@@ -4,7 +4,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 """
-Script scrapping and listing available classes in kenning.
+Script scrapping and listing available subclasses in kenning, based on the
+provided base class.
 """
 import argparse
 import os
@@ -31,9 +32,13 @@ def list_classes(base_classes: List[str], verbosity='list'):
     Parameters
     ----------
     base_classes: str
-        # TODO
+        List of kenning base classes subclasses of which will be listed
     verbosity: str
-
+        Verbosity mode, available options:
+        'list' - just list subclasses,
+         'docstrings' - display class docstrings and their dependencies,
+         'everything' - list subclasses along with their docstring,
+        dependencies, input/output/argument formats
     """
 
     kenning_base_classes = {
@@ -82,7 +87,7 @@ def list_classes(base_classes: List[str], verbosity='list'):
 
             if verbosity == 'docstrings':
                 generate_class_info(target=module_path, class_name=class_name,
-                                    docstrings=True, dependencies=False,
+                                    docstrings=True, dependencies=True,
                                     input_formats=False, output_formats=False,
                                     argument_formats=False)
 
@@ -129,55 +134,17 @@ def main(argv):
         nargs='*',
     )
 
-    # parser.add_argument(
-    #     '--optimizers',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--runners',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--dataproviders',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--datasets',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--modelwrappers',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--onnxconversions',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--outputcollectors',
-    #     help='',
-    #     action='store_true',
-    # )
-    # parser.add_argument(
-    #     '--runtimes',
-    #     help='',
-    #     action='store_true',
-    # )
     parser.add_argument(
         '-v',
-        help='Also display class docstrings',
+        help='Also display class docstrings along with dependencies and their'
+             ' availability',
         action='store_true'
     )
     parser.add_argument(
         '-vv',
-        help='Display all available information. That includes: docstrings, '
-             'input and output formats and specification of the arguments',
+        help='Display all available information. That includes: docstrings,'
+             ' dependencies, input and output formats and specification of '
+             'the arguments',
         action='store_true'
     )
 
@@ -199,17 +166,6 @@ def main(argv):
         return
 
     list_classes(args.base_classes, verbosity=verbosity)
-
-    # if not any(args.__dict__.values()):
-    #     list_classes([base_class for base_class in args.__dict__.keys()
-    #                   if base_class in base_class_arguments],
-    #                  verbosity=verbosity)
-    #     return
-    #
-    # list_classes([base_class for base_class in args.__dict__.keys()
-    #               if args.__dict__[base_class]
-    #               and base_class in base_class_arguments],
-    #              verbosity=verbosity)
 
 
 if __name__ == '__main__':

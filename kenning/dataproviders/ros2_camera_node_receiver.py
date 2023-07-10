@@ -257,12 +257,12 @@ class ROS2CameraNodeDataProvider(DataProvider):
             return img
         elif dst_format == "GRAY":
             if src_format == "RGB":
-                return np.dot(img[..., :3], [0.299, 0.587, 0.114])
+                return cv2.cvtColor(img, cv2.COLOR_RGB2GRAY)
             else:
-                return np.dot(img[..., :3], [0.114, 0.587, 0.299])
+                return cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         else:
             if src_format == "GRAY":
-                return np.stack((img,)*3, axis=-1)
+                return cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
             else:
                 return np.flip(img, axis=2)
 

@@ -22,7 +22,6 @@ from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.scenarios.class_info import generate_class_info
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.utils.logger import get_logger
 
 
 def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
@@ -42,7 +41,7 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
 
     Returns
     -------
-    List of formatted strings
+    List of formatted strings to be printed out later
     """
 
     kenning_base_classes = {
@@ -56,6 +55,9 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
         'runtimes': ('kenning.runtimes', Runtime)}
 
     subclasses_dict = {}
+
+    # list of strings to be printed later
+    resulting_output = []
 
     for base_class in base_classes:
         subclasses = get_all_subclasses(
@@ -72,8 +74,9 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
         if not kenning_base_classes[base_class][1] in subclasses_dict.keys():
             continue
 
-        print(f'{base_class.title()} '
-              f'(in {kenning_base_classes[base_class][0]}):\n')
+        resulting_output.append(f'{base_class.title()} '
+                                f'(in {kenning_base_classes[base_class][0]}):'
+                                f'\n\n')
 
         subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
 
@@ -82,23 +85,33 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
             class_name = subclass.split('.')[-1]
 
             if verbosity == 'list':
-                print(f'\t{subclass}')
+                resulting_output.append(f'    {subclass}\n')
+                # print(f'\t{subclass}')
 
             if verbosity == 'docstrings':
-                generate_class_info(target=module_path, class_name=class_name,
-                                    docstrings=True, dependencies=True,
-                                    input_formats=False, output_formats=False,
-                                    argument_formats=False)
+                output = generate_class_info(target=module_path,
+                                             class_name=class_name,
+                                             docstrings=True,
+                                             dependencies=True,
+                                             input_formats=False,
+                                             output_formats=False,
+                                             argument_formats=False)
+                resulting_output += output
 
             if verbosity == 'all':
-                generate_class_info(target=module_path, class_name=class_name,
-                                    docstrings=True, dependencies=True,
-                                    input_formats=True, output_formats=True,
-                                    argument_formats=True)
-                print()
+                output = generate_class_info(target=module_path,
+                                             class_name=class_name,
+                                             docstrings=True,
+                                             dependencies=True,
+                                             input_formats=True,
+                                             output_formats=True,
+                                             argument_formats=True)
+                resulting_output += output
 
         if verbosity == 'list':
-            print()
+            resulting_output.append('\n')
+
+    return resulting_output
 
 
 def main(argv):
@@ -160,11 +173,16 @@ def main(argv):
     if args.vv:
         verbosity = 'all'
 
-    if len(args.base_classes) == 0:
-        list_classes(base_class_arguments, verbosity=verbosity)
-        return
+    resulting_output = []
 
-    list_classes(args.base_classes, verbosity=verbosity)
+    if len(args.base_classes) == 0:
+        resulting_output = list_classes(base_class_arguments,
+                                        verbosity=verbosity)
+
+    resulting_output = list_classes(args.base_classes, verbosity=verbosity)
+
+    for line in resulting_output:
+        print(line, end='')
 
 
 if __name__ == '__main__':

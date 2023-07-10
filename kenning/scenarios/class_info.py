@@ -65,14 +65,22 @@ class Argument:
         return '\n'.join(lines)
 
 
-def print_class_module_name(syntax_node: Union[ast.ClassDef, ast.
-                            Module]):
+def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
+                          Module]) -> str:
+    """
+    Displays class name from syntax node
+
+    Parameters
+    ----------
+    syntax_node: Union[ast.ClassDef, ast.Module]
+        Class syntax node
+    """
     if isinstance(syntax_node, ast.ClassDef):
-        print(f'Class: {syntax_node.name}\n')
+        return f'Class: {syntax_node.name}\n\n'
 
 
 def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
-                                  Module]):
+                                  Module]) -> str:
     """
     Displays docstrings of provided class or module
 
@@ -85,20 +93,16 @@ def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
     docstring = ast.get_docstring(syntax_node, clean=True)
 
     if not docstring:
-        return
+        return ''
 
     docstring = '\n'.join(
         ['    ' + docstr for docstr in docstring.strip('\n').split('\n')])
 
     if isinstance(syntax_node, ast.ClassDef):
-        print(f'Class: {syntax_node.name}\n')
-        print(f'{docstring}')
+        return f'Class: {syntax_node.name}\n\n{docstring}\n\n'
 
     if isinstance(syntax_node, ast.Module):
-        print('Module description:\n')
-        print(docstring)
-
-    print('')
+        return f'Module description:\n\n{docstring}\n\n'
 
 
 def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
@@ -141,12 +145,12 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
             if place_module(module_path) == 'STDLIB':
                 return ''
 
-            return '* ' + dependency_path
+            return '* ' + dependency_path + '\n'
         except ImportError or ModuleNotFoundError as e:
-            return f'* {dependency_path} - Not available (Reason: {e})'
+            return f'* {dependency_path} - Not available (Reason: {e})\n'
 
 
-def print_input_specification(syntax_node: ast.Assign):
+def get_input_specification(syntax_node: ast.Assign) -> str:
     """
     Displays information about the input specification as bullet points
 
@@ -156,20 +160,24 @@ def print_input_specification(syntax_node: ast.Assign):
         An assignment like `inputtypes = []`
     """
 
+    input_formats = ''
+
     if isinstance(syntax_node.value, ast.List) \
             and len(syntax_node.value.elts) == 0:
-        return
+        return ''
 
     if isinstance(syntax_node.value, ast.List):
         for input_format in syntax_node.value.elts:
-            print(f'* {input_format.value}')
-        return
+            input_formats += f'* {input_format.value}\n'
+        return input_formats
 
     for input_format in syntax_node.value.keys:
-        print(f'* {input_format.value}')
+        input_formats += f'* {input_format.value}\n'
+
+    return input_formats
 
 
-def print_output_specification(syntax_node: ast.Assign):
+def get_output_specification(syntax_node: ast.Assign):
     """
     Displays information about the output specification as bullet points
 
@@ -179,13 +187,13 @@ def print_output_specification(syntax_node: ast.Assign):
         An assignment like `outputtypes = ['iree']`
     """
     for output_format in syntax_node.value.elts:
-        print(f'* {output_format.value}')
+        return f'* {output_format.value}\n'
 
 
 def clean_variable_name(variable_name: str) -> str:
     """
-    Cleans a parsed variable name as string from single quotation marks and
-    trailing whitespaces
+    Unparses and cleans a parsed variable name as string from single quotation
+    marks and trailing whitespaces
 
     Parameters
     ----------
@@ -196,14 +204,15 @@ def clean_variable_name(variable_name: str) -> str:
     -------
     str: Cleaned up variable
     """
-    astunparse \
+    return astunparse\
         .unparse(variable_name) \
         .strip() \
         .removeprefix("'") \
         .removesuffix("'")
 
 
-def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
+def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
+        -> str:
     """
     Displays information about the argument structure specification as
     bullet points
@@ -215,6 +224,8 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     source_path: str
         Source path of the code to be parsed
     """
+    output_string = ''
+
     for argument, argument_specification_dict in zip(syntax_node.value.keys,
                                                      syntax_node.value.values):
         argument_object = Argument()
@@ -282,7 +293,9 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
 
                 argument_object.__setattr__(key_str, value_str)
 
-        print(argument_object)
+        output_string += argument_object.__repr__() + '\n'
+
+    return output_string
 
 
 def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
@@ -387,7 +400,8 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
 
 def generate_class_info(target: str, class_name='', docstrings=True,
                         dependencies=True, input_formats=True,
-                        output_formats=True, argument_formats=True):
+                        output_formats=True, argument_formats=True)\
+        -> List[str]:
     """
     Wrapper function that handles displaying information about a class
 
@@ -408,7 +422,13 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         Flag whether to display output formats
     argument_formats: bool
         Flag whether to display argument formats
+
+    Returns
+    -------
+    List[str]: List of lines to be printed
     """
+    resulting_lines = []
+
     if class_name is None:
         class_name = ''
 
@@ -418,8 +438,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         target_path += '.py'
 
     if not os.path.exists(target_path):
-        print('This class does not exist')
-        return
+        return ['This class does not exist\n']
 
     with open(target_path, 'r') as file:
         parsed_file = ast.parse(file.read())
@@ -461,13 +480,13 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
     if docstrings:
         for node in class_nodes:
-            print_class_module_docstrings(node)
+            resulting_lines.append(print_class_module_docstrings(node))
     else:
         for node in class_nodes:
-            print_class_module_name(node)
+            resulting_lines.append(get_class_module_name(node))
 
     if dependencies:
-        print('Dependencies:')
+        resulting_lines.append('Dependencies:\n')
         dependencies: List[str] = []
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
         for node in dependency_nodes:
@@ -476,27 +495,34 @@ def generate_class_info(target: str, class_name='', docstrings=True,
                 continue
             dependencies.append(dependency_str)
 
-        [print(dep_str) for dep_str in list(set(dependencies))]
+        [resulting_lines.append(dep_str)
+         for dep_str in list(set(dependencies))]
 
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-        print('')
+        resulting_lines.append('\n')
 
     if input_formats:
-        print("Input formats:")
+        resulting_lines.append('Input formats:\n')
         if input_specification_node:
-            print_input_specification(input_specification_node)
-        print('')
+            resulting_lines.append(get_input_specification(
+                input_specification_node))
+        # print('')
+        resulting_lines.append('\n')
 
     if output_formats:
-        print("Output formats:")
+        resulting_lines.append('Output formats:\n')
         if output_specification_node:
-            print_output_specification(output_specification_node)
-        print('')
+            resulting_lines.append(get_output_specification(
+                output_specification_node))
+        resulting_lines.append('\n')
 
     if argument_formats:
-        print("Arguments specification:")
+        resulting_lines.append('Arguments specification:\n')
         if arguments_structure_node:
-            print_arguments_structure(arguments_structure_node, target_path)
+            resulting_lines.append(print_arguments_structure(
+                arguments_structure_node, target_path))
+
+    return resulting_lines
 
 
 def main(argv):
@@ -554,7 +580,11 @@ def main(argv):
         for k, v in args.items():
             args[k] = True if type(v) is bool else v
 
-    generate_class_info(**args)
+    resulting_output = generate_class_info(**args)
+
+    for result_line in resulting_output:
+        print(result_line, end='')
+        pass
 
 
 if __name__ == '__main__':

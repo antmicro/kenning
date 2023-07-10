@@ -111,6 +111,12 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
     ----------
     syntax_node: Union[ast.Import, ast.ImportFrom]
         An assignment like `from iree.compiler import version``
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later. Empty strings
+    represent dependencies that were skipped - either they belong to kenning
+    or are provided by the default python distribution
     """
     for dependency in syntax_node.names:
         module_path = ''
@@ -176,6 +182,27 @@ def print_output_specification(syntax_node: ast.Assign):
         print(f'* {output_format.value}')
 
 
+def clean_variable_name(variable_name: str) -> str:
+    """
+    Cleans a parsed variable name as string from single quotation marks and
+    trailing whitespaces
+
+    Parameters
+    ----------
+    variable_name: str
+        Variable to be cleaned up, e.g. "'tflite' "
+
+    Returns
+    -------
+    str: Cleaned up variable
+    """
+    astunparse \
+        .unparse(variable_name) \
+        .strip() \
+        .removeprefix("'") \
+        .removesuffix("'")
+
+
 def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     """
     Displays information about the argument structure specification as
@@ -185,6 +212,8 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
     ----------
     syntax_node: ast.Assign
         An assignment like `arguments_structure = {'compiler_args': {}}`
+    source_path: str
+        Source path of the code to be parsed
     """
     for argument, argument_specification_dict in zip(syntax_node.value.keys,
                                                      syntax_node.value.values):
@@ -258,7 +287,23 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str):
 
 def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
         -> tuple[List[str], str]:
-    with open(source_path) as file:
+    """
+    Evaluate an expression like `list(some_dict.keys())` and return the list
+    of elements as strings.
+
+    Parameters
+    ----------
+    argument_list_name: str
+        Variable name that the list of keys is assigned to
+    source_path:
+        Path of the code to be parsed
+
+    Returns
+    -------
+    tuple[List[str], str]: tuple with the first argument being the list of
+    evaluated elements and the second being the type as a string
+    """
+    with open(source_path, 'r') as file:
         parsed_file = ast.parse(file.read())
 
     syntax_nodes = ast.walk(parsed_file)
@@ -288,6 +333,22 @@ def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
 
 def evaluate_argument_list(argument_list_name: str, source_path: str) \
         -> tuple[List[str], str]:
+    """
+    Evaluate an expression like `list('tflite', 'tvm')` and return the list
+    of elements as strings.
+
+    Parameters
+    ----------
+    argument_list_name: str
+        Variable name that the list of elements is assigned to.
+    source_path:
+        Path of the code to be parsed
+
+    Returns
+    -------
+    tuple[List[str], str]: tuple with the first argument being the list of
+    evaluated elements and the second being the type as a string
+    """
     with open(source_path) as file:
         parsed_file = ast.parse(file.read())
 
@@ -336,11 +397,17 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         Target class path or module name e.g. either `kenning.core.flow` or
          `kenning/core/flow.py`
     class_name: str
+        Name of a specific class to display information about
     docstrings: bool
+        Flag whether to display docstrings or not
     dependencies: bool
+        Flag whether to display dependencies and their availability
     input_formats: bool
+        Flag whether to display input formats
     output_formats: bool
+        Flag whether to display output formats
     argument_formats: bool
+        Flag whether to display argument formats
     """
     if class_name is None:
         class_name = ''
@@ -354,7 +421,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         print('This class does not exist')
         return
 
-    with open(target_path) as file:
+    with open(target_path, 'r') as file:
         parsed_file = ast.parse(file.read())
 
     syntax_nodes = ast.walk(parsed_file)
@@ -480,27 +547,14 @@ def main(argv):
 
     args = parser.parse_args(argv[1:])
 
-    flags = {
-        'docstrings': args.docstrings,
-        'dependencies': args.dependencies,
-        'input_formats': args.input_formats,
-        'output_formats': args.output_formats,
-        'argument_formats': args.argument_formats
-    }
+    args = {k: v for k, v in vars(args).items() if v is not None}
 
     # if no flags are given, set all of them to True (display everything)
-    if not any(flags.values()):
-        flags = {key: True for key in flags}
+    if not any([v for v in args.values() if type(v) is bool]):
+        for k, v in args.items():
+            args[k] = True if type(v) is bool else v
 
-    generate_class_info(
-        target=args.target,
-        class_name=getattr(args, 'class'),
-        docstrings=flags['docstrings'],
-        dependencies=flags['dependencies'],
-        input_formats=flags['input_formats'],
-        output_formats=flags['output_formats'],
-        argument_formats=flags['argument_formats']
-    )
+    generate_class_info(**args)
 
 
 if __name__ == '__main__':

@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 """
-Script scrapping and listing available subclasses in kenning, based on the
+Script collects and lists available subclasses in Kenning, based on the
 provided base class.
 """
 import argparse
@@ -25,20 +25,24 @@ from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.logger import get_logger
 
 
-def list_classes(base_classes: List[str], verbosity='list'):
+def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
     """
     Lists classes of given module, displays their parameters and descriptions
 
     Parameters
     ----------
     base_classes: str
-        List of kenning base classes subclasses of which will be listed
+        List of Kenning base classes subclasses of which will be listed
     verbosity: str
         Verbosity mode, available options:
         'list' - just list subclasses,
-         'docstrings' - display class docstrings and their dependencies,
-         'everything' - list subclasses along with their docstring,
+        'docstrings' - display class docstrings and their dependencies,
+        'all' - list subclasses along with their docstring,
         dependencies, input/output/argument formats
+
+    Returns
+    -------
+    List of formatted strings
     """
 
     kenning_base_classes = {
@@ -50,9 +54,6 @@ def list_classes(base_classes: List[str], verbosity='list'):
         'onnxconversions': ('kenning.onnxconverters', ONNXConversion),
         'outputcollectors': ('kenning.outputcollectors', OutputCollector),
         'runtimes': ('kenning.runtimes', Runtime)}
-
-    logger = get_logger()
-    logger.setLevel('ERROR')
 
     subclasses_dict = {}
 
@@ -66,8 +67,6 @@ def list_classes(base_classes: List[str], verbosity='list'):
         subclasses_dict[kenning_base_classes[base_class][1]] = \
             [f'{module}.{class_name}' for class_name, module in
              subclasses if class_name[0] != '_']
-
-    logger.setLevel('INFO')
 
     for base_class in base_classes:
         if not kenning_base_classes[base_class][1] in subclasses_dict.keys():
@@ -91,7 +90,7 @@ def list_classes(base_classes: List[str], verbosity='list'):
                                     input_formats=False, output_formats=False,
                                     argument_formats=False)
 
-            if verbosity == 'everything':
+            if verbosity == 'all':
                 generate_class_info(target=module_path, class_name=class_name,
                                     docstrings=True, dependencies=True,
                                     input_formats=True, output_formats=True,
@@ -159,7 +158,7 @@ def main(argv):
     if args.v:
         verbosity = 'docstrings'
     if args.vv:
-        verbosity = 'everything'
+        verbosity = 'all'
 
     if len(args.base_classes) == 0:
         list_classes(base_class_arguments, verbosity=verbosity)

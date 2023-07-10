@@ -74,6 +74,10 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
     ----------
     syntax_node: Union[ast.ClassDef, ast.Module]
         Class syntax node
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
         return f'Class: {syntax_node.name}\n\n'
@@ -88,6 +92,10 @@ def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
     ----------
     syntax_node: Union[ast.ClassDef, ast.Module]
         Syntax node representing a class or module
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later.
     """
 
     docstring = ast.get_docstring(syntax_node, clean=True)
@@ -158,6 +166,10 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     ----------
     syntax_node: ast.Assign
         An assignment like `inputtypes = []`
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later.
     """
 
     input_formats = ''
@@ -177,7 +189,7 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     return input_formats
 
 
-def get_output_specification(syntax_node: ast.Assign):
+def get_output_specification(syntax_node: ast.Assign) -> str:
     """
     Displays information about the output specification as bullet points
 
@@ -185,6 +197,10 @@ def get_output_specification(syntax_node: ast.Assign):
     ----------
     syntax_node: ast.Assign
         An assignment like `outputtypes = ['iree']`
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
         return f'* {output_format.value}\n'
@@ -223,6 +239,10 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
         An assignment like `arguments_structure = {'compiler_args': {}}`
     source_path: str
         Source path of the code to be parsed
+
+    Returns
+    -------
+    str: Formatted markdown-like string to be printed later.
     """
     output_string = ''
 
@@ -406,12 +426,20 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
     Returns
     -------
-    List[str]: List of lines to be printed
+    List[str]: List of formatted, markdown-like lines to be printed
     """
     resulting_lines = []
 
     if class_name is None:
         class_name = ''
+
+    # if target contains a class, split to path and class name
+    split_target = target.split('.')
+    if split_target[-1][0].isupper():
+        class_name = split_target[-1]
+        split_target = split_target[:-1]
+
+    target = '.'.join(split_target)
 
     target_path = target
     if not target.endswith('.py'):
@@ -419,7 +447,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         target_path += '.py'
 
     if not os.path.exists(target_path):
-        return ['This class does not exist\n']
+        return [f'File {target_path} does not exist\n']
 
     with open(target_path, 'r') as file:
         parsed_file = ast.parse(file.read())
@@ -460,6 +488,10 @@ def generate_class_info(target: str, class_name='', docstrings=True,
                 arguments_structure_node = node
 
     if docstrings:
+        if len(class_nodes) == 0:
+            resulting_lines.append(f'Class {class_name} has not been found')
+            return resulting_lines
+
         for node in class_nodes:
             resulting_lines.append(print_class_module_docstrings(node))
     else:
@@ -519,12 +551,6 @@ def main(argv):
         help='Module-like path of the module or class '
              '(e.g. kenning.compilers.onnx)',
         type=str
-    )
-    parser.add_argument(
-        '--class',
-        help='Specify a class in the provided target path',
-        type=str,
-        nargs='?'
     )
     parser.add_argument(
         '--docstrings',

@@ -104,7 +104,7 @@ class ROS2YolactOutputCollector(OutputCollector):
         self._topic_publisher = self._node.create_publisher(
                 SegmentationMsg,
                 self._topic_name,
-                10
+                2
         )
 
     def run(self, inputs: Dict[str, Tuple[int, str]]) -> Dict[str, str]:

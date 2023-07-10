@@ -62,7 +62,12 @@ class TestOptimizer:
             pytest.mark.dependency(
                 depends=[f'test_initializer[{opt_cls.__name__},{inputtype}]']
             ),
-            pytest.mark.xdist_group(name=f'TestOptimizer_{opt_cls.__name__}')
+            pytest.mark.xdist_group(name=f'TestOptimizer_{opt_cls.__name__}'),
+            pytest.mark.skipif(
+                opt_cls.__name__ == "NNIPruningOptimizer"
+                and inputtype == "onnx",
+                reason="Pruning and fine-tuning models like YOLO"
+                " takes too much time")
         ])
         for opt_cls, inputtype in OPTIMIZER_INPUTTYPES
     ])

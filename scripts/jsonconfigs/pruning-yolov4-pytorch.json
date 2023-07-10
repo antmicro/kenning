@@ -21,7 +21,7 @@
       "parameters": {
         "model_framework": "onnx",
         "pruner_type": "apoz",
-        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\", \"Linear\"]}, {\"exclude\": true, \"op_names\": [\"Conv_93\", \"Conv_101\", \"Conv_109\"]}]",
+        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\", \"Linear\"]}, {\"exclude\": true, \"op_names\": [\"Conv_393\", \"Conv_611\", \"Conv_829\"]}]",
         "training_steps": 256,
         "activation": "relu6",
         "compiled_model_path": "./build/model.pth",

@@ -8,9 +8,9 @@ Provides resource manager responsible for downloading and caching resources
 
 import hashlib
 from pathlib import Path
-from typing import Callable, Dict, Optional, Union, List
+from shutil import copy, rmtree
+from typing import Callable, Dict, List, Optional, Union
 from urllib.parse import ParseResult, urlparse
-from shutil import rmtree
 
 import requests
 
@@ -26,7 +26,6 @@ class ResourceManager(metaclass=Singleton):
     CACHE_DIR = Path.home() / '.kenning'
 
     BASE_URL_SCHEMES = {
-        '': None,
         'http': None,
         'https': None,
         'kenning': 'https://dl.antmicro.com/kenning/{path}',
@@ -78,10 +77,22 @@ class ResourceManager(metaclass=Singleton):
 
         output_path = output_path.resolve()
 
+        # no scheme in URI - treat as path string
+        if '' == parsed_uri.scheme:
+            if output_path is None:
+                return Path(uri)
+            else:
+                copy(uri, output_path)
+                return output_path
+
         resolved_uri = self._resolve_uri(parsed_uri)
 
         if 'file' == parsed_uri.scheme:
-            return Path(resolved_uri)
+            if output_path is None:
+                return Path(resolved_uri)
+            else:
+                copy(resolved_uri, output_path)
+                return output_path
 
         if output_path.exists():
             remote_sha_valid = self._validate_file_remote(

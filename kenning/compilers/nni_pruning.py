@@ -260,9 +260,9 @@ class NNIPruningOptimizer(Optimizer):
         self,
         dataset: Dataset,
         compiled_model_path: Path,
-        pruner_type: str,
-        config_list: str,
-        training_steps: int,
+        pruner_type: str = list(prunertypes.keys())[0],
+        config_list: str = '[{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}]',  # noqa: E501
+        training_steps: int = 1,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",
         optimizer: str = "torch.optim.SGD",
@@ -705,7 +705,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         assert pruner_type in self.prunertypes.keys(), (
             f"Unsupported pruner type {pruner_type}, only"
-            " {', '.join(self.prunertypes.keys())} are supported"
+            f" {', '.join(self.prunertypes.keys())} are supported"
         )
         self.pruner_cls = self.prunertypes[pruner_type]
 
@@ -720,7 +720,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         assert activation in self.arguments_structure["activation"]["enum"], (
             f"Unsupported pruner type {activation}, only"
-            " {', '.join(self.arguments_structure['activation']['enum'],)}"
+            f" {', '.join(self.arguments_structure['activation']['enum'],)}"
             " are supported"
         )
         self.activation_str = activation
@@ -736,7 +736,7 @@ class NNIPruningOptimizer(Optimizer):
         """
         assert mode in self.arguments_structure["mode"]["enum"], (
             f"Unsupported pruner type {mode}, only"
-            " {', '.join(self.arguments_structure['mode']['enum'],)}"
+            f" {', '.join(self.arguments_structure['mode']['enum'],)}"
             " are supported"
         )
         self.mode = mode

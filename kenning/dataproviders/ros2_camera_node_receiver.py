@@ -106,7 +106,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
             sensor_msgs.msg.Image,
             self._topic_name,
             self._topic_callback,
-            10
+            2
         )
 
     def detach_from_source(self):

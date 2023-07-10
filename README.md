@@ -580,9 +580,9 @@ As it can be observed, all classes accessible from JSON files in these scenarios
 
 ## Displaying information about available modules/classes
 
-Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`. An exemplary usecase is provided below.
+Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`. An exemplary use case is provided below.
 
-Let's say we want to choose a runtime for our workflow. We can list available runtimes by running `kenning.scenarios.list_classes`:
+To list available runtimes for the workflow, run `kenning.scenarios.list_classes`:
 
 ```bash
 python -m kenning.scenarios.list_classes runtimes
@@ -600,7 +600,7 @@ Runtimes (in kenning.runtimes):
 	kenning.runtimes.onnx.ONNXRuntime
 ```
 
-Now we can use `kenning.scenarios.class_info` to display more specific information about a class:
+To display more specific information about a class, use `kenning.scenarios.class_info`:
 
 ```bash
 python -m kenning.scenarios.class_info kenning.runtimes.tflite --class TFLiteRuntime
@@ -638,7 +638,9 @@ Arguments specification:
   * default: 4
 ```
 
-The script displays information which could be helpful while creating a json scenario, e.g. listing the specification of arguments which can be used. Required dependencies are also shown, along with the information whether they are available in the current python environment. For example, here we can see that TFLiteRuntime configuration accepts tflite models as input and will not be available because the `tflite_runtime` module is not installed.
+The script displays information which could be helpful while creating a json scenario, e.g. listing the specification of arguments which can be used.
+Required dependencies are also shown, along with the information whether they are available in the current python environment.
+In the given example TFLiteRuntime configuration accepts tflite models as input and will not be available because the `tflite_runtime` module is not installed.
 
 ## Adding new implementations
 

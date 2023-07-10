@@ -412,3 +412,55 @@ As for now, the available report types are:
 * `performance` - this is the most common report type that renders information about overall inference performance metrics, such as inference time, CPU usage, RAM usage, or GPU utilization,
 * `classification` - this report is specific to the classification task, it renders classification-specific quality figures and metrics, such as confusion matrices, accuracy, precision, G-mean,
 * `detection` - this report is specific to the detection task, it renders detection-specific quality figures and metrics, such as recall-precision curves or mean average precision.
+
+## Displaying information about available classes
+
+`kenning.scenarios.list_classes` and `kenning.scenarios.class_info` provide useful information about classes and can help create JSON scenarios.
+
+`kenning.scenarios.list_classes` will list all available classes by default, though the output can be limited by providing positional arguments representing groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`, `modelwrappers`, `onnxconversions`, `outputcollectors`, `runtimes`.
+The amount of information displayed can be controlled by flags `-v` and `-vv`.
+
+To print available arguments run `python -m kenning.scenarios.list_classes -h`:
+
+```
+usage: kenning/scenarios/list_classes.py [-h] [-v] [-vv] [base_classes ...]
+
+positional arguments:
+  base_classes  Base classes of a certain group of modules. List of zero or more base classes. Providing zero base classes will print information about all of them. The default verbosity will only list found subclasses.
+                
+                Available choices: [optimizers, runners, dataproviders, datasets, modelwrappers, onnxconversions, outputcollectors, runtimes]
+
+optional arguments:
+  -h, --help    show this help message and exit
+  -v            Also display class docstrings along with dependencies and their availability
+  -vv           Display all available information. That includes: docstrings, dependencies, input and output formats and specification of the arguments
+```
+
+`kenning.scenarios.class_info` provides information about a class given in an argument. More precisely, it will display:
+- module and class docstrings
+- dependencies along with the information whether they are available in the current python environment
+- supported input and output formats
+- arguments structure used in JSON configurations
+
+The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified with `--class` (e.g. `--class TFLiteRuntime`)
+
+The help dialog looks as follows:
+```
+usage: kenning/scenarios/class_info.py [-h] [--class [CLASS]] [--docstrings] [--dependencies]
+                                                              [--input-formats] [--output-formats] [--argument-formats]
+                                                              target
+
+Provides information about a given kenning module or class. If no flags are given, displays the full output
+
+positional arguments:
+  target              Module-like path of the module or class (e.g. kenning.compilers.onnx)
+
+optional arguments:
+  -h, --help          show this help message and exit
+  --class [CLASS]     Specify a class in the provided target path
+  --docstrings        Display class docstrings
+  --dependencies      Display class dependencies
+  --input-formats     Display class input formats
+  --output-formats    Display output formats
+  --argument-formats  Display the argument specification
+```

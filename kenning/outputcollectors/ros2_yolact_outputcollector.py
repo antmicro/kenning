@@ -28,28 +28,28 @@ class ROS2YolactOutputCollector(OutputCollector):
     """
 
     arguments_structure = {
-            'node_name': {
-                'description': 'Name for the ROS2 node',
-                'type': str,
-                'required': True,
-            },
-            'topic_name': {
-                'description': 'Name of the ROS2 topic for messages to be published to',  # noqa: E501
-                'type': str,
-                'required': True,
-            },
-            'input_color_format': {
-                'description': 'Color format of the input images (RGB, BGR, GRAY)',  # noqa: E501
-                'type': str,
-                'required': False,
-                'default': 'RGB',
-            },
-            'input_memory_layout': {
-                'description': 'Memory layout of the input images (NHWC or NCHW)',  # noqa: E501
-                'type': str,
-                'required': False,
-                'default': 'NHWC',
-            },
+        'node_name': {
+            'description': 'Name for the ROS2 node',
+            'type': str,
+            'required': True,
+        },
+        'topic_name': {
+            'description': 'Name of the ROS2 topic for messages to be published to',  # noqa: E501
+            'type': str,
+            'required': True,
+        },
+        'input_color_format': {
+            'description': 'Color format of the input images (RGB, BGR, GRAY)',
+            'type': str,
+            'required': False,
+            'default': 'RGB',
+        },
+        'input_memory_layout': {
+            'description': 'Memory layout of the input images (NHWC or NCHW)',
+            'type': str,
+            'required': False,
+            'default': 'NHWC',
+        },
     }
 
     def __init__(self,
@@ -124,15 +124,6 @@ class ROS2YolactOutputCollector(OutputCollector):
 
     def should_close(self):
         return False
-
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-                args.node_name,
-                args.topic_name,
-                args.input_color_format,
-                args.input_memory_layout,
-        )
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         return self._get_io_specification(self._input_memory_layout)

@@ -31,18 +31,18 @@ class PyTorchRuntime(Runtime):
         self,
         protocol: RuntimeProtocol,
         modelpath: Path,
-        collect_performance_data: bool = True,
+        disable_performance_measurements: bool = True,
     ):
         """
         Constructs PyTorch runtime
 
         Parameters
         ----------
-        protocol: RuntimeProtocol
+        protocol : RuntimeProtocol
             The implementation of the host-target communication protocol
-        modelpath: Path
+        modelpath : Path
             Path for the model file
-        collect_performance_data: bool
+        disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
         import torch
@@ -54,7 +54,7 @@ class PyTorchRuntime(Runtime):
         self.model = None
         self.input: Optional[List] = None
         self.output: Optional[List] = None
-        super().__init__(protocol, collect_performance_data)
+        super().__init__(protocol, disable_performance_measurements)
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
         self.log.info("Loading model")

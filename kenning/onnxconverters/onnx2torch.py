@@ -488,7 +488,7 @@ def max_pool_converter(
 @add_converter(operation_type="Sub", version=13)
 @add_converter(operation_type="Sub", version=14)
 def add_sub_converter(
-    node: OnnxNode, graph: OnnxGraph, scale: float = 1.0
+    node: OnnxNode, graph: OnnxGraph
 ) -> OperationConverterResult:
     """
     Extension of onnx2torch's Add and Sub conversion, if one input is not

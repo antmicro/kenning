@@ -283,43 +283,43 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        dataset: Dataset
+        dataset : Dataset
             Dataset used to prune and fie-tune model
         compiled_model_path: Path
             Path where compiled model will be saved
-        pruner_type: str
+        pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
             or ActivationMeanRankPruner
-        config_list: str
+        config_list : str
             String, with list of dictionaries in JSON format, containing
             pruning specification, for more information please see
             NNI documentation - Compression Config Specification
-        training_steps: int
+        training_steps : int
             The step number used to collect activation
-        mode: str
+        mode : str
             'normal' or 'dependency_aware' - to select pruner mode
-        criterion: str
+        criterion : str
             Path to class calculating loss
-        optimizer: str
+        optimizer : str
             Path to optimizer class
-        finetuning_learning_rate: float
+        finetuning_learning_rate : float
             Learning rate for fine-tuning
-        finetuning_batch_size: int
+        finetuning_batch_size : int
             Batch size for fine-tuning
-        activation: str
+        activation : str
             'relu', 'gelu' or 'relu6' - to select activation function
             used by pruner
-        modelframework: str
+        model_framework : str
             Framework of the input model, used to select proper backend
         finetuning_epochs: int
             Number of epoch used for fine-tuning model
-        confidence: int | None
+        confidence : int | None
             The confidence coefficient of the sparsity inference, actually
             used as batch size for NNI model speedup. If not specified, equals
             finetuning_batch_size
-        allow_cuda: bool
-            Allow using GPU CUDA
-        exclude_last_layer: bool
+        pruning_on_cuda : bool
+            Allow using GPU CUDA for pruning
+        exclude_last_layer : bool
             Condition for excluding last linear layer from pruning
         """
         super().__init__(dataset, compiled_model_path)
@@ -472,18 +472,18 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        model: torch.nn.Module
+        model : torch.nn.Module
             The PyTorch model to train
-        optimizer: torch.optim.Optimizer
+        optimizer : torch.optim.Optimizer
             The instance of the optimizer class
-        criterion:
+        criterion :
             The callable object used to calculate loss
-        lr_scheduler:
+        lr_scheduler :
             The scheduler for learning rate manipulation
-        max_steps: int | None
+        max_steps : int | None
             The number of maximum steps - one step is equal to processing
             one batch of data
-        max_epochs: int | None
+        max_epochs : int | None
             The number of maximum epochs
         """
         if max_steps is None and max_epochs is None:
@@ -532,7 +532,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        model: torch.nn.Module
+        model : torch.nn.Module
             The PyTorch model to evaluate
 
         Returns
@@ -562,7 +562,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        batch_begin: int
+        batch_begin : int
             The index of the batch begining
 
         Returns
@@ -617,13 +617,13 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        model: torch.nn.Module
+        model : torch.nn.Module
             The input model which will be pruned
-        criterion: Callable
+        criterion : Callable
             The callable object calculating loss
-        optimizer_cls: Type
+        optimizer_cls : Type
             The class of the optimizer
-        dummy_input: torch.Tensor
+        dummy_input : torch.Tensor
             The tensor with random data suitable for model's input
 
         Returns
@@ -650,7 +650,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        io_spec: Dict[str, List[Dict]]
+        io_spec : Dict[str, List[Dict]]
             The specification of model's input and output shape and type
 
         Returns
@@ -678,7 +678,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        model: torch.nn.Module
+        model : torch.nn.Module
             Model which will be pruned
         """
         added = False
@@ -700,7 +700,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        pruner_type: str
+        pruner_type : str
             String with pruner label
         """
         assert pruner_type in self.prunertypes.keys(), (
@@ -715,7 +715,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        activation: str
+        activation : str
             String with symbolic activation type
         """
         assert activation in self.arguments_structure["activation"]["enum"], (
@@ -731,7 +731,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Parameters
         ----------
-        mode: str
+        mode : str
             String with pruner mode
         """
         assert mode in self.arguments_structure["mode"]["enum"], (

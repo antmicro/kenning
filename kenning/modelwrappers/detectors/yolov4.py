@@ -117,16 +117,18 @@ class ONNXYOLOV4(YOLOWrapper):
 
         Parameters
         ----------
-        output: List[torch.Tensor]
+        outputs : List[torch.Tensor]
             One batch of YOLO network output
-        target: List[List[DectObject]]
+        target : List[List[DectObject]]
             True bounding boxes of object on precessed image
-        scale_noobj: float
+        scale_noobj : float
             Scaling factor of bounding boxes without object error
+        eps : float
+            Epsilon to prevent dividing by 0
 
         Returns
         -------
-        torch.Tensor:
+        torch.Tensor :
             Value of loss
         """
         import torch

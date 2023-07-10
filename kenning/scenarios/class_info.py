@@ -190,14 +190,14 @@ def get_output_specification(syntax_node: ast.Assign):
         return f'* {output_format.value}\n'
 
 
-def clean_variable_name(variable_name: str) -> str:
+def clean_variable_name(variable_name: ast.AST) -> str:
     """
     Unparses and cleans a parsed variable name as string from single quotation
     marks and trailing whitespaces
 
     Parameters
     ----------
-    variable_name: str
+    variable_name: ast.AST
         Variable to be cleaned up, e.g. "'tflite' "
 
     Returns
@@ -253,24 +253,13 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
                 argument_object.type = argument_type
             elif isinstance(value, ast.Call) \
                     and isinstance(value.func, ast.Attribute):
-                key_str = astunparse.unparse(key) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'")
-
-                value_str = astunparse.unparse(value) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'")
+                key_str = clean_variable_name(key)
+                value_str = clean_variable_name(value)
 
                 argument_object.__setattr__(key_str, [value_str])
 
             elif key.value == 'enum':
-                argument_list_variable = astunparse \
-                    .unparse(value) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'")
+                argument_list_variable = clean_variable_name(value)
 
                 enum_list, argument_type = evaluate_argument_list(
                     argument_list_variable,
@@ -280,16 +269,8 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
                 argument_object.type = argument_type
 
             else:
-
-                key_str = astunparse.unparse(key) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'")
-
-                value_str = astunparse.unparse(value) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'")
+                key_str = clean_variable_name(key)
+                value_str = clean_variable_name(value)
 
                 argument_object.__setattr__(key_str, value_str)
 

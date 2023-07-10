@@ -97,32 +97,6 @@ class ROS2CameraNodeDataProvider(DataProvider):
             outputs=outputs
         )
 
-    @classmethod
-    def from_argparse(cls, args):
-        return cls(
-            args.node_name,
-            args.topic_name,
-            args.output_width,
-            args.output_height
-        )
-
-    @classmethod
-    def from_json(
-            cls,
-            json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]] = {},
-            inputs_specs: Dict[str, Dict] = {},
-            outputs: Dict[str, str] = {}):
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **parsed_json_dict,
-            inputs_sources=inputs_sources,
-            inputs_specs=inputs_specs,
-            outputs=outputs
-        )
-
     def prepare(self):
         if not rclpy.ok():
             rclpy.init()

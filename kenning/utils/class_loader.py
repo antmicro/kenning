@@ -103,6 +103,8 @@ def get_all_subclasses(
         found_subclass = False
         checked_classes.add(class_def.name)
         for b in class_def.bases:
+            if not hasattr(b, "id"):
+                continue
             non_final_subclasses.add(b.id)
             if b.id == cls.__name__:
                 subclasses.add(class_def.name)

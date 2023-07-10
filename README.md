@@ -578,6 +578,68 @@ The `MeasurementsCollector` class collects all benchmarks' data for model infere
 
 As it can be observed, all classes accessible from JSON files in these scenarios share their configuration a with the classes in the Python scripts mentioned above.
 
+## Displaying information about available modules/classes
+
+Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`. An exemplary usecase is provided below.
+
+Let's say we want to choose a runtime for our workflow. We can list available runtimes by running `kenning.scenarios.list_classes`:
+
+```bash
+python -m kenning.scenarios.list_classes runtimes
+```
+
+The resulting output:
+
+```
+Runtimes (in kenning.runtimes):
+
+	kenning.runtimes.iree.IREERuntime
+	kenning.runtimes.tvm.TVMRuntime
+	kenning.runtimes.renode.RenodeRuntime
+	kenning.runtimes.tflite.TFLiteRuntime
+	kenning.runtimes.onnx.ONNXRuntime
+```
+
+Now we can use `kenning.scenarios.class_info` to display more specific information about a class:
+
+```bash
+python -m kenning.scenarios.class_info kenning.runtimes.tflite --class TFLiteRuntime
+```
+
+```
+Class: TFLiteRuntime
+
+	Runtime subclass that provides an API
+	for testing inference on TFLite models.
+
+Dependencies:
+* tflite_runtime.interpreter - Not available (Reason: No module named 'tflite_runtime')
+* tensorflow.lite
+
+Input formats:
+* tflite
+
+Output formats:
+
+Arguments specification:
+* modelpath
+  * argparse name: --save-model-path
+  * type: Path
+  * description: Path where the model will be uploaded
+  * default: model.tar
+* delegates
+  * argparse name: --delegates-list
+  * description: List of runtime delegates for the TFLite runtime
+  * default: None
+  * nullable: True
+* num_threads
+  * type: int
+  * description: Number of threads to use for inference
+  * default: 4
+```
+
+The script displays information which could be helpful while creating a json scenario, e.g. listing the specification of arguments which can be used. Required dependencies are also shown, along with the information whether they are available in the current python environment. For example, here we can see that TFLiteRuntime configuration accepts tflite models as input and will not be available because the `tflite_runtime` module is not installed.
+
 ## Adding new implementations
 
 `Dataset`, `ModelWrapper`, `Optimizer`, `RuntimeProtocol`, `Runtime` and other classes from the `kenning.core` module have dedicated directories for their implementations.

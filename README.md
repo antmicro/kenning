@@ -603,7 +603,7 @@ Runtimes (in kenning.runtimes):
 To display more specific information about a class, use `kenning.scenarios.class_info`:
 
 ```bash
-python -m kenning.scenarios.class_info kenning.runtimes.tflite --class TFLiteRuntime
+python -m kenning.scenarios.class_info kenning.runtimes.tflite.TFLiteRuntime
 ```
 
 ```

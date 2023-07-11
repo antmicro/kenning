@@ -13,7 +13,37 @@ from pathlib import Path
 import ast
 import sys
 
+from kenning.core.dataprovider import DataProvider
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.core.onnxconversion import ONNXConversion
+from kenning.core.optimizer import Optimizer
+from kenning.core.outputcollector import OutputCollector
+from kenning.core.runner import Runner
+from kenning.core.runtime import Runtime
+from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.logger import get_logger
+
+
+def get_base_classes_dict() -> dict[str, tuple[str, Type]]:
+    """
+    Returns unified collection of Kenning groups of modules.
+
+    Returns
+    -------
+    dict[str, tuple[str, Type]]: dict with keys corresponding to names of
+    groups of modules, values are module paths and base class names
+    """
+    return {
+        'optimizers': ('kenning.compilers', Optimizer),
+        'runners': ('kenning.runners', Runner),
+        'dataproviders': ('kenning.dataproviders', DataProvider),
+        'datasets': ('kenning.datasets', Dataset),
+        'modelwrappers': ('kenning.modelwrappers', ModelWrapper),
+        'onnxconversions': ('kenning.onnxconverters', ONNXConversion),
+        'outputcollectors': ('kenning.outputcollectors', OutputCollector),
+        'runtimeprotocols': ('kenning.runtimeprotocols', RuntimeProtocol),
+        'runtimes': ('kenning.runtimes', Runtime)}
 
 
 def get_all_subclasses(

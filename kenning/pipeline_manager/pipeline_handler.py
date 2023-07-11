@@ -3,15 +3,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from typing import Dict
-from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
-from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
 
+from kenning.core.model import ModelWrapper
+from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
-from kenning.utils.class_loader import get_all_subclasses  # noqa: E501
+from kenning.utils.class_loader import get_all_subclasses, \
+    get_base_classes_dict  # noqa: E501
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 
 
@@ -98,13 +96,18 @@ class PipelineHandler(BaseDataflowHandler):
         if io_mapping is None:
             io_mapping = {}
 
-        base_classes = [
-            ('kenning.datasets', Dataset),
-            ('kenning.modelwrappers', ModelWrapper),
-            ('kenning.runtimeprotocols', RuntimeProtocol),
-            ('kenning.runtimes', Runtime),
-            ('kenning.compilers', Optimizer)
-        ]
+        global_base_classes = get_base_classes_dict()
+
+        # classes that pipeline mode in pipeline manager uses
+        pipeline_mode_classes = ['kenning.datasets',
+                                 'kenning.modelwrappers',
+                                 'kenning.runtimeprotocols',
+                                 'kenning.runtimes',
+                                 'kenning.compilers']
+
+        base_classes = [v for k, v in global_base_classes.items() if v[0] in
+                        pipeline_mode_classes]
+
         base_type_names = {
             base_type: str.lower(base_type.__name__)
             for _, base_type in base_classes

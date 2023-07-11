@@ -2,19 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from collections import defaultdict
 import itertools
+from collections import defaultdict
 from typing import Any, Dict, Iterable, List
 
-from kenning.core.dataprovider import DataProvider
 from kenning.core.flow import KenningFlow
-from kenning.core.outputcollector import OutputCollector
-from kenning.core.runner import Runner
-from kenning.utils.class_loader import get_all_subclasses, load_class
-
-from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator  # noqa: E501
-from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.pipeline_manager.core import BaseDataflowHandler, \
+    GraphCreator  # noqa: E501
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
+from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.utils.class_loader import get_all_subclasses, load_class, \
+    get_base_classes_dict
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -122,16 +120,15 @@ class KenningFlowHandler(BaseDataflowHandler):
         if io_mapping is None:
             io_mapping = {}
 
-        base_modules = [
-            ('kenning.outputcollectors', OutputCollector),
-            ('kenning.dataproviders', DataProvider),
-            # It's possible that as Kenningflows develop, new runners are
-            # created such that their IO is incompatible with the
-            # 'modelruntime_runner'. In that case, these modules should be
-            # treated separately, adding individually each item to nodes
-            # and IO mapping
-            ('kenning.runners', Runner)
-        ]
+        global_base_classes = get_base_classes_dict()
+
+        flow_mode_classes = ['kenning.outputcollectors',
+                             'kenning.dataproviders',
+                             'kenning.runners']
+
+        base_modules = [v for k, v in global_base_classes.items() if v[0] in
+                        flow_mode_classes]
+
         for base_module, base_type in base_modules:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:

@@ -12,16 +12,9 @@ import os
 import sys
 from typing import List
 
-from kenning.core.dataprovider import DataProvider
-from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
-from kenning.core.onnxconversion import ONNXConversion
-from kenning.core.optimizer import Optimizer
-from kenning.core.outputcollector import OutputCollector
-from kenning.core.runner import Runner
-from kenning.core.runtime import Runtime
 from kenning.scenarios.class_info import generate_class_info
-from kenning.utils.class_loader import get_all_subclasses
+from kenning.utils.class_loader import get_all_subclasses,\
+    get_base_classes_dict
 
 
 def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
@@ -44,15 +37,7 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
     List of formatted strings to be printed out later
     """
 
-    kenning_base_classes = {
-        'optimizers': ('kenning.compilers', Optimizer),
-        'runners': ('kenning.runners', Runner),
-        'dataproviders': ('kenning.dataproviders', DataProvider),
-        'datasets': ('kenning.datasets', Dataset),
-        'modelwrappers': ('kenning.modelwrappers', ModelWrapper),
-        'onnxconversions': ('kenning.onnxconverters', ONNXConversion),
-        'outputcollectors': ('kenning.outputcollectors', OutputCollector),
-        'runtimes': ('kenning.runtimes', Runtime)}
+    kenning_base_classes = get_base_classes_dict()
 
     subclasses_dict = {}
 

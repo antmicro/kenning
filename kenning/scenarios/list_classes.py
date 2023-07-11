@@ -115,11 +115,11 @@ def main(argv):
         'runtimes',
     ]
 
-    available_choices_string = '['
+    available_choices_string = '\n'
     for base_class in base_class_arguments:
-        available_choices_string += f'{base_class}, '
+        available_choices_string += f'  * {base_class}\n'
     available_choices_string = available_choices_string[:-2]
-    available_choices_string += ']'
+    available_choices_string += '\n'
 
     parser.add_argument(
         'base_classes',

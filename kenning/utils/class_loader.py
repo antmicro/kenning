@@ -11,6 +11,7 @@ import importlib
 from typing import List
 from pathlib import Path
 import ast
+import sys
 
 from kenning.utils.logger import get_logger
 
@@ -187,7 +188,7 @@ def get_kenning_submodule_from_path(modulepath: str):
     return modulename
 
 
-def get_command(argv: List[str]):
+def get_command(argv: List[str] = None, with_slash: bool = True):
     """
     Creates a string with command.
 
@@ -195,22 +196,40 @@ def get_command(argv: List[str]):
     ----------
     argv : List[str]
         List or arguments from sys.argv.
+    with_slash : bool
+        Should \\ be included in command?
 
     Returns
     -------
     str :
         Full string with command.
     """
+    if argv is None:
+        argv = sys.argv
     command = [ar.strip() for ar in argv if ar.strip() != '']
-    modulename = get_kenning_submodule_from_path(command[0])
+
+    modulename = None
+    if not str(Path(command[0]).resolve()).endswith("kenning"):
+        modulename = get_kenning_submodule_from_path(command[0])
+
     flagpresent = False
+    first_flag = 1
     for i in range(len(command)):
         if command[i].startswith('-'):
+            if not flagpresent:
+                first_flag = i
             flagpresent = True
         elif flagpresent:
             command[i] = '    ' + command[i]
-    if (len(command) > 1):
-        command = [f'python -m {modulename} \\'] + [f'    {ar} \\' for ar in command[1:-1]] + [f'    {command[-1]}']  # noqa: E501
+
+    if modulename:
+        result = [f'python -m {modulename}']
+        first_flag = 1
     else:
-        command = [f'python -m {modulename}']
-    return command
+        result = [f'kenning {" ".join(command[1:first_flag])}']
+
+    if (len(command) > 1):
+        result[0] = f'{result[0]} ' + ('\\' if with_slash else '')
+        result += [f'    {ar} ' + ('\\' if with_slash else '')
+                   for ar in command[first_flag:-1]] + [f'    {command[-1]}']
+    return result

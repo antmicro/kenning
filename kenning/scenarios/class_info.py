@@ -191,6 +191,87 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     return input_formats
 
 
+def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
+    """
+    Parses an ast.Dict to a nicely formatted list of strings in markdown
+    format.
+
+    Parameters
+    ----------
+    dict_node: ast.Dict
+        AST dict node to extract the data from
+
+    Returns
+    -------
+    List[str]: List of formatted markdown-like strings to be printed later.
+    """
+
+    # formatted lines to be returned
+    resulting_output = []
+
+    dict_elements = []
+    for key, value in zip(dict_node.keys, dict_node.values):
+
+        if not isinstance(value, ast.List):
+            resulting_output.append(f'* {key.value}: {value.value}')
+            continue
+
+        [dict_elements.append(element) for element in value.elts]
+
+    for dict_element in dict_elements:
+
+        resulting_output.append(f'* {dict_element.values[0].value}\n')
+
+        for key, value in zip(dict_element.keys[1:], dict_element.values[1:]):
+            resulting_output.append(f'  * {key.value}: '
+                                    f'{clean_variable_name(value)}\n')
+
+    return resulting_output
+
+
+def get_io_specification(class_node: ast.ClassDef) -> List[str]:
+    """
+    Extracts io_specification when classes specify io this way.
+
+    Parameters
+    ----------
+    class_node: ast.ClassDef
+        AST class node to find and extract io_specification from
+
+    Returns
+    -------
+    List[str]: List of formatted markdown-like strings to be printed later.
+    """
+    io_spec_function_node = None
+
+    if len(class_node.body) <= 0:
+        return []
+
+    for node in class_node.body:
+        if not isinstance(node, ast.FunctionDef):
+            continue
+
+        if node.name != '_get_io_specification':
+            continue
+
+        io_spec_function_node = node
+
+    if io_spec_function_node is None or len(io_spec_function_node.body) <= 0:
+        return []
+
+    io_spec_dict_node = None
+    for node in io_spec_function_node.body:
+        if not isinstance(node, ast.Return):
+            continue
+
+        io_spec_dict_node = node.value
+
+    if io_spec_dict_node is None:
+        return []
+
+    return parse_dict_node_to_string(io_spec_dict_node)
+
+
 def get_output_specification(syntax_node: ast.Assign) -> str:
     """
     Displays information about the output specification as bullet points
@@ -222,7 +303,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
     -------
     str: Cleaned up variable
     """
-    return astunparse\
+    return astunparse \
         .unparse(variable_name) \
         .strip() \
         .removeprefix("'") \
@@ -465,15 +546,25 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     output_specification_node = None
     arguments_structure_node = None
 
-    for node in syntax_nodes:
-        if isinstance(node, (ast.ClassDef, ast.Module)):
-            if isinstance(node, ast.ClassDef) \
-                    and class_name != '' \
-                    and node.name == class_name:
-                class_nodes.append(node)
+    found_io_specification = False
+    io_specification_lines = {}
 
-            if isinstance(node, ast.ClassDef) and class_name == '':
-                class_nodes.append(node)
+    for node in syntax_nodes:
+        if isinstance(node, ast.ClassDef) and class_name != '' \
+                and node.name == class_name:
+            class_nodes.append(node)
+            io_specification_lines[node] = get_io_specification(node)
+            if len(io_specification_lines) > 0:
+                found_io_specification = True
+
+        if isinstance(node, ast.ClassDef) and class_name == '':
+            class_nodes.append(node)
+            io_specification_lines[node] = get_io_specification(node)
+            if len(io_specification_lines) > 0:
+                found_io_specification = True
+
+        if isinstance(node, ast.Module) and class_name == '':
+            class_nodes.append(node)
 
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             dependency_nodes.append(node)
@@ -502,6 +593,12 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         for node in class_nodes:
             resulting_lines.append(get_class_module_name(node))
 
+        if node in io_specification_lines.keys() \
+                and (input_formats or output_formats):
+            resulting_lines.append('Input/output specification:\n')
+            resulting_lines += io_specification_lines[node]
+            resulting_lines.append('\n')
+
     if dependencies:
         resulting_lines.append('Dependencies:\n')
         dependencies: List[str] = []
@@ -518,7 +615,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
         resulting_lines.append('\n')
 
-    if input_formats:
+    if input_formats and not found_io_specification:
         resulting_lines.append('Input formats:\n')
         if input_specification_node:
             data = get_input_specification(input_specification_node)
@@ -527,7 +624,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             resulting_lines.append('No inputs')
         resulting_lines.append('\n\n')
 
-    if output_formats:
+    if output_formats and not found_io_specification:
         resulting_lines.append('Output formats:\n')
         if output_specification_node:
             data = get_output_specification(output_specification_node)

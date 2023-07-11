@@ -5,11 +5,10 @@
 """
 Provides resource manager responsible for downloading and caching resources
 """
-
 import hashlib
 from pathlib import Path
 from shutil import copy, rmtree
-from typing import Callable, Dict, List, Optional, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import ParseResult, urlparse
 
 import requests
@@ -24,6 +23,8 @@ class ResourceManager(metaclass=Singleton):
     """
 
     CACHE_DIR = Path.home() / '.kenning'
+
+    MAX_CACHE_SIZE = 50_000_000_000  # 50 GB
 
     BASE_URL_SCHEMES = {
         'http': None,
@@ -69,14 +70,6 @@ class ResourceManager(metaclass=Singleton):
         # check if file is already cached
         parsed_uri = urlparse(uri)
 
-        if output_path is None:
-            parsed_path = parsed_uri.path
-            if parsed_path[0] == '/':
-                parsed_path = parsed_path[1:]
-            output_path = self.CACHE_DIR / parsed_path
-
-        output_path = output_path.resolve()
-
         # no scheme in URI - treat as path string
         if '' == parsed_uri.scheme:
             if output_path is None:
@@ -94,14 +87,24 @@ class ResourceManager(metaclass=Singleton):
                 copy(resolved_uri, output_path)
                 return output_path
 
+        if output_path is None:
+            parsed_path = parsed_uri.path
+            if parsed_path[0] == '/':
+                parsed_path = parsed_path[1:]
+            output_path = self.CACHE_DIR / parsed_path
+
+        output_path = output_path.resolve()
+
+        # file already exists - check if its valid
         if output_path.exists():
             remote_sha_valid = self._validate_file_remote(
                 resolved_uri, output_path
             )
             local_sha_valid = self._validate_file_local(output_path)
 
-            if (remote_sha_valid or
-                    (remote_sha_valid is None and local_sha_valid)):
+            if remote_sha_valid or (
+                remote_sha_valid is None and local_sha_valid
+            ):
                 if local_sha_valid is None:
                     self._save_file_checksum(output_path)
 
@@ -110,7 +113,7 @@ class ResourceManager(metaclass=Singleton):
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
 
-        download_url(resolved_uri, output_path)
+        self._download_resource(resolved_uri, output_path)
 
         if self._validate_file_remote(resolved_uri, output_path) is False:
             self.log.error(
@@ -198,7 +201,7 @@ class ResourceManager(metaclass=Singleton):
         raise ValueError(f'Invalid conversion for scheme {parsed_uri.scheme}')
 
     def _validate_file_remote(
-            self, url: str, file_path: Path
+        self, url: str, file_path: Path
     ) -> Optional[bool]:
         """
         Validate downloaded file using checksum obtained from remote.
@@ -244,10 +247,12 @@ class ResourceManager(metaclass=Singleton):
             None if checksum cannot be validate, otherwise True if file
             checksum is valid.
         """
-        if not file_path.with_suffix('.sha256').exists():
+        sha_file_path = file_path.with_suffix(file_path.suffix + '.sha256')
+
+        if not sha_file_path.exists():
             return None
 
-        with open(file_path.with_suffix('.sha256'), 'r') as checksum_file:
+        with open(sha_file_path, 'r') as checksum_file:
             local_sha = checksum_file.read().strip()
 
         file_sha = self._compute_file_checksum(file_path)
@@ -263,11 +268,64 @@ class ResourceManager(metaclass=Singleton):
         file_path : Path
             Path to the local file.
         """
-
         file_sha = self._compute_file_checksum(file_path)
 
-        with open(file_path.with_suffix('.sha256'), 'w') as checksum_file:
+        sha_file_path = file_path.with_suffix(file_path.suffix + '.sha256')
+
+        with open(sha_file_path, 'w') as checksum_file:
             checksum_file.write(file_sha)
+
+    def _download_resource(self, url: str, output_path: Path):
+        """
+        Downloads resource from given URL.
+
+        Parameters
+        ----------
+        url : str
+            Resource URL.
+        output_path : Path
+            Path where the resource should be saved.
+        """
+        if self.CACHE_DIR in output_path.parents:
+            response = requests.head(url)
+            if response.status_code != 200:
+                self.log.warning('Cannot read file size before downloading')
+
+            elif 'Content-Length' in response.headers:
+                required_size = int(response.headers['Content-Length'])
+                self._free_cache(required_size)
+
+        download_url(url, output_path)
+
+        if self.CACHE_DIR in output_path.parents:
+            # free cache in case the file size could not be read before
+            # downloading
+            self._free_cache(0)
+
+    def _free_cache(self, required_free: int):
+        """
+        Frees cache space.
+
+        Parameters
+        ----------
+        required_free : int
+            Amount of bytes that need to be available after freeing space.
+
+        Raises
+        ------
+        ValueError :
+            Raised when required free space is bigger that max cache size.
+        """
+        if required_free > self.MAX_CACHE_SIZE:
+            raise ValueError(f'Required free space too big: {required_free} B')
+        cached_files = self.list_cached_files()
+        cached_files.sort(key=lambda f: f.stat().st_mtime)
+        cache_size = sum(f.stat().st_size for f in cached_files)
+
+        while cache_size > self.MAX_CACHE_SIZE - required_free:
+            file = cached_files.pop(0)
+            cache_size -= file.stat().st_size
+            file.unlink()
 
     @staticmethod
     def _compute_file_checksum(file_path: Path) -> str:
@@ -302,20 +360,41 @@ class Resources(object):
     """
 
     def __init__(self, resources_uri: Dict[str, str]):
-        self.resources_uri = resources_uri
+        self._resources_uri = resources_uri
 
-    def __getitem__(self, key: str) -> Path:
-        if key not in self.resources_uri:
-            raise KeyError(f'Invalid resource name: {key}')
-        return ResourceManager().get_resource(self.resources_uri[key])
+    def __getitem__(self, keys: Union[Tuple[str], str]) -> Path:
+        if isinstance(keys, str):
+            keys = [keys]
+
+        resources_uri = self._resources_uri
+        for key in keys:
+            if key not in resources_uri:
+                raise KeyError(f'Invalid key: {keys}')
+            resources_uri = resources_uri[key]
+
+        return ResourceManager().get_resource(resources_uri)
 
     def __setitem__(self, key: str, value: str):
-        if key in self.resources_uri:
+        if key in self._resources_uri:
             raise KeyError(f'Resource {key} already exists')
-        self.resources_uri[key] = value
+        self._resources_uri[key] = value
 
     def __contains__(self, key: str) -> bool:
-        return key in self.resources_uri.keys()
+        return key in self._resources_uri.keys()
+
+    def keys(self) -> List[Tuple[str, ...]]:
+        result = []
+
+        def get_keys(resources_uri: dict, keys: list = []):
+            for key, value in resources_uri.items():
+                if isinstance(value, str):
+                    result.append((*keys, key))
+                elif isinstance(value, dict):
+                    get_keys(value, keys + [key])
+
+        get_keys(self._resources_uri)
+
+        return result
 
 
 class ChecksumVerifyError(Exception):
@@ -324,3 +403,31 @@ class ChecksumVerifyError(Exception):
     """
 
     pass
+
+
+def get_resource(uri: str, output_path: Path = None) -> Path:
+    """
+    Retrieve file and return path to it.
+
+    If the uri points to remote resource, then it is downloaded (if not
+    found in cache) and validated.
+
+    Parameters
+    ----------
+    uri : str
+        Resource URI.
+    output_path : Optional[Path]
+        Path to the output file. If not provided then the path is
+        automatically created.
+
+    Returns
+    -------
+    Path :
+        Path to the retrieved resource.
+
+    Raises
+    ------
+    ChecksumVerifyError :
+        Raised when downloaded file has invalid checksum
+    """
+    return ResourceManager().get_resource(uri, output_path)

@@ -11,6 +11,7 @@ import argparse
 import os
 import sys
 from typing import List
+import errno
 
 from kenning.scenarios.class_info import generate_class_info
 from kenning.utils.class_loader import get_all_subclasses,\
@@ -150,7 +151,7 @@ def main(argv):
     for base_class in args.base_classes:
         if base_class not in base_class_arguments:
             print(f'{base_class} is not a valid base class argument')
-            return
+            return errno.EINVAL
 
     verbosity = 'list'
     if args.v:
@@ -160,17 +161,19 @@ def main(argv):
 
     resulting_output = []
 
-    if len(args.base_classes) == 0:
-        resulting_output = list_classes(base_class_arguments,
-                                        verbosity=verbosity)
-
-    resulting_output = list_classes(args.base_classes, verbosity=verbosity)
+    resulting_output = list_classes(
+        args.base_classes if len(args.base_classes) > 0 else base_class_arguments,  # noqa: E501
+        verbosity=verbosity
+    )
 
     for line in resulting_output:
         print(line, end='')
 
+    return 0
+
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    main(sys.argv)
+    ret = main(sys.argv)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+    sys.exit(ret)

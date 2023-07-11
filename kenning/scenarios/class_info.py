@@ -7,11 +7,11 @@
 A script that provides information about a given kenning class.
 
 More precisely, it displays:
-    - module and class docstring
-    - imported dependencies, including information if they are available or not
-    - supported input and output formats (lots of the classes provide such
-     information one way or the other)
-    - node's parameters, with their help and default values
+* module and class docstring
+* imported dependencies, including information if they are available or not
+* supported input and output formats (lots of the classes provide such
+  information one way or the other)
+* node's parameters, with their help and default values
 """
 import argparse
 import ast
@@ -22,8 +22,6 @@ from typing import Union, List
 
 import astunparse
 from isort import place_module
-
-import astunparse
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 

@@ -442,13 +442,13 @@ optional arguments:
 - supported input and output formats
 - arguments structure used in JSON configurations
 
-The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified with `--class` (e.g. `--class TFLiteRuntime`)
+The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`
 
 The help dialog looks as follows:
 ```
-usage: kenning/scenarios/class_info.py [-h] [--class [CLASS]] [--docstrings] [--dependencies]
-                                                              [--input-formats] [--output-formats] [--argument-formats]
-                                                              target
+usage: kenning/scenarios/class_info.py [-h] [--docstrings] [--dependencies] [--input-formats]
+                                       [--output-formats] [--argument-formats]
+                                       target
 
 Provides information about a given kenning module or class. If no flags are given, displays the full output
 
@@ -457,7 +457,6 @@ positional arguments:
 
 optional arguments:
   -h, --help          show this help message and exit
-  --class [CLASS]     Specify a class in the provided target path
   --docstrings        Display class docstrings
   --dependencies      Display class dependencies
   --input-formats     Display class input formats

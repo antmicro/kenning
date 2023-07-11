@@ -156,7 +156,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
                 return ''
 
             return '* ' + dependency_path + '\n'
-        except ImportError or ModuleNotFoundError as e:
+        except (ImportError, ModuleNotFoundError, Exception) as e:
             return f'* {dependency_path} - Not available (Reason: {e})\n'
 
 

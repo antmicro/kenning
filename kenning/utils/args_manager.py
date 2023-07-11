@@ -150,7 +150,7 @@ def serialize_inference(
         runtime) -> Dict:
     """
     Serializes the given objects into a dictionary which
-    is a valid input for `json_inference_tester.py`.
+    is a valid input for `inference_tester.py`.
 
     Parameters
     ----------
@@ -557,7 +557,7 @@ class ArgumentsHandler(object):
             if not hasattr(curr_cls, 'arguments_structure'):
                 continue
             group = parser.add_argument_group(
-                title='{curr_cls.__name__} arguments'
+                title=f'{curr_cls.__name__} arguments'
             )
             add_argparse_argument(
                 group,

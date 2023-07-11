@@ -19,60 +19,166 @@ compilation and benchmark process.
 import sys
 import argparse
 import signal
+import json
+from typing import Optional, List, Dict, Tuple
 
-from kenning.utils.class_loader import load_class
+from kenning.cli.command_template import CommandTemplate
+from kenning.utils.class_loader import load_class, get_command
 import kenning.utils.logger as logger
 
 
-def main(argv):
-    parser = argparse.ArgumentParser(argv[0], add_help=False)
-    parser.add_argument(
-        'protocolcls',
-        help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
-    )
-    parser.add_argument(
-        'runtimecls',
-        help='Runtime-based class with the implementation of model runtime'
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
+JSON_CONFIG = "Server configuration with JSON"
+FLAG_CONFIG = "Server configuration with flags"
+ARGS_GROUPS = {
+    JSON_CONFIG: f"Configuration with data defined in JSON file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{JSON_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+}
 
-    args, _ = parser.parse_known_args(argv[1:])
 
-    protocolcls = load_class(args.protocolcls)
-    runtimecls = load_class(args.runtimecls)
+class InferenceServer(CommandTemplate):
+    parse_all = False
+    description = __doc__.split('\n\n')[0]
 
-    parser = argparse.ArgumentParser(
-        argv[0],
-        parents=[
-            parser,
-            protocolcls.form_argparse()[0],
-            runtimecls.form_argparse()[0],
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(
+            InferenceServer, InferenceServer
+        ).configure_parser(parser, command, types, groups)
+
+        for group_name in (JSON_CONFIG, FLAG_CONFIG):
+            if group_name not in groups:
+                groups[group_name] = parser.add_argument_group(
+                    group_name, ARGS_GROUPS[group_name]
+                )
+
+        groups[JSON_CONFIG].add_argument(
+            '--json-cfg',
+            help='* The path to the input JSON file with configuration'
+        )
+        groups[FLAG_CONFIG].add_argument(
+            '--protocol-cls',
+            help='* RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
+        )
+        groups[FLAG_CONFIG].add_argument(
+            '--runtime-cls',
+            help='* Runtime-based class with the implementation of model runtime'  # noqa: E501
+        )
+
+        return parser, groups
+
+    @staticmethod
+    def run(
+        args: argparse.Namespace,
+        not_parsed: List[str] = [],
+        **kwargs
+    ):
+        logger.set_verbosity(args.verbosity)
+        log = logger.get_logger()
+
+        flag_config_names = ('runtime_cls', 'protocol_cls')
+        flag_config_not_none = [getattr(args, name, None) is not None
+                                for name in flag_config_names]
+        if (args.json_cfg is None and not any(flag_config_not_none)):
+            raise argparse.ArgumentError(
+                None, "JSON or flag configuration is required."
+            )
+        if (args.json_cfg is not None and any(flag_config_not_none)):
+            raise argparse.ArgumentError(
+                None, "JSON and flag configurations are mutually exclusive. "
+                "Please use only one method of configuration.")
+
+        if args.json_cfg is not None:
+            InferenceServer._run_from_json(args, log, not_parsed)
+        missing_args = [
+            f"'{n}'" for i, n in enumerate(flag_config_names)
+            if not flag_config_not_none[i]
         ]
-    )
+        if missing_args:
+            raise argparse.ArgumentError(
+                None, f"the following arguments are required: {', '.join(missing_args)}")  # noqa: E501
+        InferenceServer._run_from_flags(args, log, not_parsed)
 
-    args = parser.parse_args(argv[1:])
+    @staticmethod
+    def _run_from_flags(
+        args: argparse.Namespace,
+        log,
+        not_parsed: List[str] = [],
+        **kwargs
+    ):
+        protocolcls = load_class(args.protocol_cls)
+        runtimecls = load_class(args.runtime_cls)
 
-    logger.set_verbosity(args.verbosity)
-    logger.get_logger()
+        parser = argparse.ArgumentParser(
+            ' '.join(map(lambda x: x.strip(), get_command(with_slash=False))),
+            parents=[
+                protocolcls.form_argparse()[0],
+                runtimecls.form_argparse()[0],
+            ]
+        )
 
-    protocol = protocolcls.from_argparse(args)
-    runtime = runtimecls.from_argparse(protocol, args)
+        if args.help:
+            parser.print_help()
+            return 0
 
-    formersighandler = signal.getsignal(signal.SIGINT)
+        args = parser.parse_args(not_parsed)
 
-    def sigint_handler(sig, frame):
-        runtime.close_server()
-        runtime.protocol.log.info('Closing application (press Ctrl-C again for force closing)...')  # noqa: E501
-        signal.signal(signal.SIGINT, formersighandler)
+        protocol = protocolcls.from_argparse(args)
+        runtime = runtimecls.from_argparse(protocol, args)
 
-    signal.signal(signal.SIGINT, sigint_handler)
+        InferenceServer._run_server(runtime)
 
-    runtime.run_server()
+    @staticmethod
+    def _run_from_json(
+        args: argparse.Namespace,
+        log,
+        not_parsed: List[str] = [],
+        **kwargs
+    ):
+        if not_parsed:
+            raise argparse.ArgumentError(
+                None,
+                f"unrecognized arguments: {' '.join(not_parsed)}"
+            )
+
+        with open(args.json_cfg, 'r') as f:
+            json_cfg = json.load(f)
+
+        protocolcfg = json_cfg['runtime_protocol']
+        runtimecfg = json_cfg['runtime']
+
+        protocolcls = load_class(protocolcfg['type'])
+        runtimecls = load_class(runtimecfg['type'])
+
+        protocol = protocolcls.from_json(protocolcfg['parameters'])
+        runtime = runtimecls.from_json(protocol, runtimecfg['parameters'])
+
+        InferenceServer._run_server(runtime)
+
+    @staticmethod
+    def _run_server(runtime):
+        formersighandler = signal.getsignal(signal.SIGINT)
+
+        def sigint_handler(sig, frame):
+            runtime.close_server()
+            runtime.protocol.log.info('Closing application (press Ctrl-C again for force closing)...')  # noqa: E501
+            signal.signal(signal.SIGINT, formersighandler)
+
+        signal.signal(signal.SIGINT, sigint_handler)
+
+        runtime.protocol.log.info('Starting server...')
+        runtime.run_server()
+
+
+def main(argv):
+    parser, _ = InferenceServer.configure_parser(command=argv[0])
+    args, not_parsed = parser.parse_known_args(argv[1:])
+
+    InferenceServer.run(args, not_parsed)
 
 
 if __name__ == '__main__':

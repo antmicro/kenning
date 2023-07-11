@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Script for running automated optimizations for pipelines. It performs
+A script for running automated optimizations for pipelines. It performs
 a search on given set of blocks based on JSON configuration passed.
 
 The `optimization_parameters` specifies the parameters of the
@@ -19,11 +19,13 @@ import json
 import sys
 from itertools import chain, product, combinations
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional, Tuple
 from pprint import pformat
 
 from jsonschema.exceptions import ValidationError
 
+from kenning.cli.command_template import (
+    CommandTemplate, GROUP_SCHEMA, FINE_TUNE)
 from kenning.core.metrics import compute_classification_metrics, compute_performance_metrics, compute_detection_metrics  # noqa: E501
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
@@ -296,111 +298,134 @@ def replace_paths(pipeline: Dict, id: int) -> Dict:
     return pipeline
 
 
-def main(argv):
-    parser = argparse.ArgumentParser(argv[0])
-    parser.add_argument(
-        'jsoncfg',
-        help='The path to the input JSON file with configuration',
-        type=Path
-    )
-    parser.add_argument(
-        'output',
-        help='The path to the output JSON file with the best pipeline',
-        type=Path,
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
-    args, _ = parser.parse_known_args(argv[1:])
-    logger.set_verbosity(args.verbosity)
+class OptimizationRunner(CommandTemplate):
+    parse_all = True
+    description = __doc__.split('\n\n')[0]
 
-    with open(args.jsoncfg, 'r') as f:
-        json_cfg = json.load(f)
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(
+            OptimizationRunner,
+            OptimizationRunner
+        ).configure_parser(parser, command, types, groups)
 
-    optimization_parameters = json_cfg['optimization_parameters']
-    optimization_strategy = optimization_parameters['strategy']
-    policy = optimization_parameters['policy']
-    metric = optimization_parameters['metric']
+        command_group = parser.add_argument_group(
+            GROUP_SCHEMA.format(FINE_TUNE))
 
-    pipelines = None
-    if optimization_strategy == 'grid_search':
-        pipelines = grid_search(json_cfg)
-
-    pipelines_num = len(pipelines)
-    pipelines_scores = []
-
-    log.info(f'Finding {policy} for {metric}')
-    for pipeline_count, pipeline in enumerate(pipelines):
-        pipeline = replace_paths(pipeline, pipeline_count)
-        MeasurementsCollector.clear()
-        try:
-            log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
-            log.info(f'Configuration {pformat(pipeline)}')
-            measurementspath = str(args.output.with_suffix('')) + \
-                '_' + \
-                str(pipeline_count) + \
-                str(args.output.suffix)
-
-            run_pipeline_json(
-                pipeline,
-                Path(measurementspath),
-                args.verbosity
-            )
-
-            # Consider using MeasurementsCollector.measurements
-            with open(measurementspath, 'r') as measurementsfile:
-                measurements = json.load(measurementsfile)
-
-            computed_metrics = {}
-
-            computed_metrics |= compute_performance_metrics(measurements)
-            computed_metrics |= compute_classification_metrics(measurements)
-            computed_metrics |= compute_detection_metrics(measurements)
-            computed_metrics.pop('session_utilization_cpus_percent_avg')
-
-            try:
-                pipelines_scores.append(
-                    {
-                        'pipeline': pipeline,
-                        'metrics': computed_metrics
-                    }
-                )
-            except KeyError:
-                log.error(f'{metric} not found in the metrics')
-                raise
-        except ValidationError as ex:
-            log.error('Incorrect parameters passed')
-            log.error(ex)
-            raise
-        except Exception as ex:
-            log.warning('Pipeline was invalid')
-            log.warning(ex)
-
-    if pipelines_scores:
-        policy_fun = min if policy == 'min' else max
-        best_pipeline = policy_fun(
-            pipelines_scores,
-            key=lambda pipeline: pipeline['metrics'][metric]
+        command_group.add_argument(
+            '--json-cfg',
+            help='The path to the input JSON file with configuration',
+            type=Path
+        )
+        command_group.add_argument(
+            '--output',
+            help='The path to the output JSON file with the best pipeline',
+            type=Path,
         )
 
-        best_score = best_pipeline['metrics'][metric]
-        log.info(f'Best score for {metric} is {best_score}')
-        with open(args.output, 'w') as f:
-            json.dump(best_pipeline, f, indent=4)
-        log.info(f'Pipeline stored in {args.output}')
+        return parser, groups
 
-        path_all_results = str(args.output.with_suffix('')) + \
-            '_' + \
-            'all_results' + \
-            str(args.output.suffix)
-        with open(path_all_results, 'w') as f:
-            json.dump(pipelines_scores, f, indent=4)
-        log.info(f'All results stored in {path_all_results}')
-    else:
-        log.info('No pipeline was found for the optimization problem')
+    @staticmethod
+    def run(args: argparse.Namespace, **kwargs):
+        logger.set_verbosity(args.verbosity)
+
+        with open(args.json_cfg, 'r') as f:
+            json_cfg = json.load(f)
+
+        optimization_parameters = json_cfg['optimization_parameters']
+        optimization_strategy = optimization_parameters['strategy']
+        policy = optimization_parameters['policy']
+        metric = optimization_parameters['metric']
+
+        pipelines = None
+        if optimization_strategy == 'grid_search':
+            pipelines = grid_search(json_cfg)
+
+        pipelines_num = len(pipelines)
+        pipelines_scores = []
+
+        log.info(f'Finding {policy} for {metric}')
+        for pipeline_count, pipeline in enumerate(pipelines):
+            pipeline = replace_paths(pipeline, pipeline_count)
+            MeasurementsCollector.clear()
+            try:
+                log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
+                log.info(f'Configuration {pformat(pipeline)}')
+                measurementspath = str(args.output.with_suffix('')) + \
+                    '_' + \
+                    str(pipeline_count) + \
+                    str(args.output.suffix)
+
+                run_pipeline_json(
+                    pipeline,
+                    Path(measurementspath),
+                    args.verbosity
+                )
+
+                # Consider using MeasurementsCollector.measurements
+                with open(measurementspath, 'r') as measurementsfile:
+                    measurements = json.load(measurementsfile)
+
+                computed_metrics = {}
+
+                computed_metrics |= compute_performance_metrics(measurements)
+                computed_metrics |= compute_classification_metrics(
+                    measurements)
+                computed_metrics |= compute_detection_metrics(measurements)
+                computed_metrics.pop('session_utilization_cpus_percent_avg')
+
+                try:
+                    pipelines_scores.append(
+                        {
+                            'pipeline': pipeline,
+                            'metrics': computed_metrics
+                        }
+                    )
+                except KeyError:
+                    log.error(f'{metric} not found in the metrics')
+                    raise
+            except ValidationError as ex:
+                log.error('Incorrect parameters passed')
+                log.error(ex)
+                raise
+            except Exception as ex:
+                log.warning('Pipeline was invalid')
+                log.warning(ex)
+
+        if pipelines_scores:
+            policy_fun = min if policy == 'min' else max
+            best_pipeline = policy_fun(
+                pipelines_scores,
+                key=lambda pipeline: pipeline['metrics'][metric]
+            )
+
+            best_score = best_pipeline['metrics'][metric]
+            log.info(f'Best score for {metric} is {best_score}')
+            with open(args.output, 'w') as f:
+                json.dump(best_pipeline, f, indent=4)
+            log.info(f'Pipeline stored in {args.output}')
+
+            path_all_results = str(args.output.with_suffix('')) + \
+                '_' + \
+                'all_results' + \
+                str(args.output.suffix)
+            with open(path_all_results, 'w') as f:
+                json.dump(pipelines_scores, f, indent=4)
+            log.info(f'All results stored in {path_all_results}')
+        else:
+            log.info('No pipeline was found for the optimization problem')
+
+
+def main(argv):
+    parser, _ = OptimizationRunner.configure_parser(command=argv[0])
+    args, _ = parser.parse_known_args(argv[1:])
+
+    OptimizationRunner.run(args)
 
 
 if __name__ == '__main__':

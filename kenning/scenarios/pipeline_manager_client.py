@@ -3,17 +3,22 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+"""
+A script for connecting Kenning with Pipeline Manager server.
+"""
 
 import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Tuple, Dict
+from typing import Tuple, Dict, Optional, List
 
 from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
 
 from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
 
+from kenning.cli.command_template import (
+    CommandTemplate, GROUP_SCHEMA, VISUAL_EDITOR)
 from kenning.core.measurements import MeasurementsCollector
 from kenning.pipeline_manager.core import BaseDataflowHandler
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
@@ -21,6 +26,98 @@ from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 import kenning.utils.logger as logger
 from kenning.utils.logger import Callback, TqdmCallback
 from jsonschema.exceptions import ValidationError
+
+
+class PipelineManagerClient(CommandTemplate):
+    parse_all = True
+    description = __doc__.split('\n\n')[0]
+
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(
+            PipelineManagerClient,
+            PipelineManagerClient).configure_parser(parser, command,
+                                                    types, groups)
+
+        ve_group = parser.add_argument_group(
+            GROUP_SCHEMA.format(VISUAL_EDITOR))
+
+        ve_group.add_argument(
+            '--host',
+            type=str,
+            help='The address of the Pipeline Manager Server',
+            default='127.0.0.1',
+        )
+        ve_group.add_argument(
+            '--port',
+            type=int,
+            help='The port of the Pipeline Manager Server',
+            default=9000,
+        )
+        ve_group.add_argument(
+            '--file-path',
+            type=Path,
+            help='Path where results of model benchmarking will be stored (pipeline mode only)',  # noqa: E501
+            required=True
+        )
+        ve_group.add_argument(
+            '--spec-type',
+            type=str,
+            help='Type of graph that should be represented in a Pipeline Manager - can choose between optimization pipeline or Kenningflow',  # noqa: E501
+            choices=('pipeline', 'flow'),
+            default='pipeline',
+        )
+
+        return parser, groups
+
+    @staticmethod
+    def run(args: argparse.Namespace, **kwargs):
+        logger.set_verbosity(args.verbosity)
+        log = logger.get_logger()
+
+        try:
+            if args.spec_type == "pipeline":
+                dataflow_handler = PipelineHandler()
+            elif args.spec_type == "flow":
+                dataflow_handler = KenningFlowHandler()
+            else:
+                raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
+
+            client = CommunicationBackend(args.host, args.port)
+            client.initialize_client()
+
+            callback_percent = Callback('runtime', send_progress, 1.0, client)
+            TqdmCallback.register_callback(callback_percent)
+
+            while client.client_socket:
+                status, message = client.wait_for_message()
+                if status == Status.DATA_READY:
+                    message_type, data = message
+                    return_status, return_message = parse_message(
+                        dataflow_handler, message_type, data, args.file_path
+                    )
+                    client.send_message(return_status, return_message)
+
+            TqdmCallback.unregister_callback(callback_percent)
+        except ValidationError as ex:
+            log.error(f'Failed to load JSON file:\n{ex}')
+            return 1
+        except RuntimeError as ex:
+            log.error(f'Server runtime error:\n{ex}')
+            return 1
+        except ConnectionRefusedError as ex:
+            log.error(
+                f'Could not connect to the Pipeline Manager server: {ex}')
+            return ex.errno
+        except Exception as ex:
+            log.error(f'Unexpected exception:\n{ex}')
+            raise
+        return 0
 
 
 def parse_message(
@@ -114,84 +211,13 @@ def send_progress(state: Dict, client: CommunicationBackend):
     client.send_message(MessageType.PROGRESS, str(progress).encode('UTF-8'))
 
 
-def connect_to_pipeline_manager(argv):
-    parser = argparse.ArgumentParser(argv[0])
-    parser.add_argument(
-        '--host',
-        type=str,
-        help='The address of the Pipeline Manager Server',
-        default='127.0.0.1',
-    )
-    parser.add_argument(
-        '--port',
-        type=int,
-        help='The port of the Pipeline Manager Server',
-        default=9000,
-    )
-    parser.add_argument(
-        '--file-path',
-        type=Path,
-        help='Path where results of model benchmarking will be stored (pipeline mode only)',  # noqa: E501
-        required=True
-    )
-    parser.add_argument(
-        '--spec-type',
-        type=str,
-        help='Type of graph that should be represented in a Pipeline Manager '
-        '- can choose between optimization pipeline or Kenningflow',
-        choices=('pipeline', 'flow'),
-        default='pipeline',
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
+def _connect_to_pipeline_manager(argv):
+    parser, _ = PipelineManagerClient.configure_parser(command=argv[0])
 
     args = parser.parse_args(argv[1:])
 
-    logger.set_verbosity(args.verbosity)
-    log = logger.get_logger()
-
-    try:
-        if args.spec_type == "pipeline":
-            dataflow_handler = PipelineHandler()
-        elif args.spec_type == "flow":
-            dataflow_handler = KenningFlowHandler()
-        else:
-            raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
-
-        client = CommunicationBackend(args.host, args.port)
-        client.initialize_client()
-
-        callback_percent = Callback('runtime', send_progress, 1.0, client)
-        TqdmCallback.register_callback(callback_percent)
-
-        while client.client_socket:
-            status, message = client.wait_for_message()
-            if status == Status.DATA_READY:
-                message_type, data = message
-                return_status, return_message = parse_message(
-                    dataflow_handler, message_type, data, args.file_path
-                )
-                client.send_message(return_status, return_message)
-
-        TqdmCallback.unregister_callback(callback_percent)
-    except ValidationError as ex:
-        log.error(f'Failed to load JSON file:\n{ex}')
-        return 1
-    except RuntimeError as ex:
-        log.error(f'Server runtime error:\n{ex}')
-        return 1
-    except ConnectionRefusedError as ex:
-        log.error(f'Could not connect to the Pipeline Manager server: {ex}')
-        return ex.errno
-    except Exception as ex:
-        log.error(f'Unexpected exception:\n{ex}')
-        raise
-    return 0
+    return PipelineManagerClient.run(args)
 
 
 if __name__ == '__main__':
-    sys.exit(connect_to_pipeline_manager(sys.argv))
+    sys.exit(_connect_to_pipeline_manager(sys.argv))

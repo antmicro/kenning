@@ -18,16 +18,14 @@ import json
 import numpy as np
 import re
 import copy
-from servis import (
-    render_time_series_plot_with_histogram,
-    render_multiple_time_series_plot
-)
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
 
+from kenning.cli.command_template import (
+    CommandTemplate, DEFAULT_GROUP, REPORT, GROUP_SCHEMA, TEST, OPTIMIZE)
 from kenning.resources import reports
 from kenning.core.drawing import (
     draw_confusion_matrix,
@@ -41,7 +39,6 @@ from kenning.core.drawing import (
     draw_barplot,
     IMMATERIAL_COLORS, RED_GREEN_CMAP)
 from kenning.utils import logger
-from kenning.core.report import create_report_from_measurements
 from kenning.utils.class_loader import get_command
 from kenning.core.metrics import (
     compute_performance_metrics,
@@ -117,6 +114,9 @@ def performance_report(
     str :
         Content of the report in MyST format.
     """
+    from servis import render_time_series_plot_with_histogram
+    from kenning.core.report import create_report_from_measurements
+
     log.info(
         f'Running performance_report for {measurementsdata["model_name"]}')
     metrics = compute_performance_metrics(measurementsdata)
@@ -305,6 +305,9 @@ def comparison_performance_report(
     str :
         Content of the report in MyST format.
     """
+    from servis import render_multiple_time_series_plot
+    from kenning.core.report import create_report_from_measurements
+
     log.info('Running comparison_performance_report')
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
@@ -481,6 +484,8 @@ def classification_report(
     str :
         Content of the report in MyST format.
     """
+    from kenning.core.report import create_report_from_measurements
+
     log.info(
         f'Running classification report for {measurementsdata["model_name"]}'
     )
@@ -572,6 +577,8 @@ def comparison_classification_report(
     str :
         Content of the report in MyST format.
     """
+    from kenning.core.report import create_report_from_measurements
+
     log.info('Running comparison_classification_report')
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
@@ -737,7 +744,7 @@ def detection_report(
     str :
         Content of the report in MyST format.
     """
-
+    from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import \
         get_recall_precision, \
         compute_ap, \
@@ -879,6 +886,7 @@ def comparison_detection_report(
     """
     log.info('Running comparison_detection_report')
 
+    from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import \
         compute_map_per_threshold
 
@@ -957,6 +965,9 @@ def renode_stats_report(
     str :
         Content of the report in MyST format.
     """
+    from servis import render_time_series_plot_with_histogram
+    from kenning.core.report import create_report_from_measurements
+
     log.info(
         f'Running renode_stats_report for {measurementsdata["model_name"]}'
     )
@@ -1265,6 +1276,9 @@ def comparison_renode_stats_report(
     str :
         Content of the report in MyST format.
     """
+    from servis import render_multiple_time_series_plot
+    from kenning.core.report import create_report_from_measurements
+
     def retrieve_non_zero_profiler_data(
             measurementsdata: List[Dict],
             keys: List[str] = []) -> Tuple[List, List, List]:
@@ -1639,6 +1653,7 @@ def generate_report(
     draw_titles : bool
         Should titles be drawn on the plot.
     """
+    from kenning.core.report import create_report_from_measurements
 
     reptypes = {
         PERFORMANCE: performance_report,
@@ -1665,7 +1680,10 @@ def generate_report(
             header_data['command'] += model_data['command'] + ['']
         header_data[model_data['model_name']] = model_data
 
-    header_data['command'] += command
+    # add command only if previous one is not the same
+    # if any(c1 != c2 for c1, c2 in zip(header_data['command'], command)):
+    if header_data['command'] == command:
+        header_data['command'] += command
 
     with path(reports, 'header.md') as reporttemplate:
         content = create_report_from_measurements(
@@ -1770,152 +1788,177 @@ def deduce_report_name(
     return report_name
 
 
-def main(argv):
-    command = get_command(argv)
-    parser = argparse.ArgumentParser(argv[0])
-    parser.add_argument(
-        '--measurements',
-        help='Path to the JSON files with measurements. If more than one file is provided, model comparison will be generated.',  # noqa: E501
-        type=Path,
-        nargs='+',
-        required=True
-    )
-    parser.add_argument(
-        'output',
-        help='Path to the output MyST file',
-        type=Path
-    )
-    parser.add_argument(
-        '--report-name',
-        help='Name of the report',
-        type=str
-    )
-    parser.add_argument(
-        '--root-dir',
-        help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
-        type=Path
-    )
-    parser.add_argument(
-        '--report-types',
-        help='List of types that implement this report',
-        nargs='*',
-        choices=REPORT_TYPES,
-    )
-    parser.add_argument(
-        '--img-dir',
-        help='Path to the directory where images will be stored',
-        type=Path
-    )
-    parser.add_argument(
-        '--model-names',
-        help='Names of the models used to create measurements in order',
-        nargs='+',
-        type=str
-    )
-    parser.add_argument(
-        '--only-png-images',
-        help="Forcing to generate images only in PNG format, if not specified also images in HTML will be generated",  # noqa: E501
-        action="store_true"
-    )
-    parser.add_argument(
-        '--use-default-theme',
-        help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
-        action='store_true'
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
+class RenderReport(CommandTemplate):
+    parse_all = True
+    description = __doc__.split('\n\n')[0]
 
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(RenderReport, RenderReport).configure_parser(
+            parser, command, types, groups)
+
+        other_group = groups[DEFAULT_GROUP]
+        # Group specific for this scenario,
+        # doesn't have to be added to global groups
+        report_group = parser.add_argument_group(GROUP_SCHEMA.format(REPORT))
+        run_in_sequence = TEST in types or OPTIMIZE in types
+
+        other_group.add_argument(
+            '--measurements',
+            help='Path to the JSON files with measurements' +
+            (f' created with {TEST} subcommand' if run_in_sequence else
+             '. If more than one file is provided, model comparison will be generated.'),  # noqa: E501
+            type=Path,
+            nargs=1 if run_in_sequence else '+',
+            required=True,
+        )
+        report_group.add_argument(
+            '--report-name',
+            help='Name of the report',
+            type=str,
+        )
+        other_group.add_argument(
+            '--report-path',
+            help='Path to the output MyST file',
+            type=Path,
+            required=True,
+        )
+        report_group.add_argument(
+            '--root-dir',
+            help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
+            type=Path,
+        )
+        report_group.add_argument(
+            '--report-types',
+            help='List of types that implement this report',
+            nargs='*',
+            choices=REPORT_TYPES,
+        )
+        report_group.add_argument(
+            '--img-dir',
+            help='Path to the directory where images will be stored',
+            type=Path
+        )
+        report_group.add_argument(
+            '--model-names',
+            help='Names of the models used to create measurements in order',
+            nargs='+',
+            type=str
+        )
+        report_group.add_argument(
+            '--only-png-images',
+            help="Forcing to generate images only in PNG format, if not specified also images in HTML will be generated",  # noqa: E501
+            action="store_true"
+        )
+        report_group.add_argument(
+            '--use-default-theme',
+            help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
+            action='store_true'
+        )
+        return parser, groups
+
+    @staticmethod
+    def run(args, **kwargs):
+        command = get_command()
+
+        logger.set_verbosity(args.verbosity)
+
+        root_dir = args.root_dir
+        if root_dir is None:
+            root_dir = args.report_path.parent.absolute()
+
+        if not args.img_dir:
+            img_dir = root_dir / "img"
+        else:
+            img_dir = args.img_dir
+        img_dir.mkdir(parents=True, exist_ok=True)
+
+        if args.model_names is not None and \
+                len(args.measurements) != len(args.model_names):
+            log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
+            args.model_names = None
+
+        image_formats = {'png'}
+        if not args.only_png_images:
+            image_formats |= {'html'}
+
+        measurementsdata = []
+        for i, measurementspath in enumerate(args.measurements):
+            with open(measurementspath, 'r') as measurementsfile:
+                measurements = json.load(measurementsfile)
+            if args.model_names is not None:
+                measurements['model_name'] = args.model_names[i]
+            elif 'model_name' not in measurements:
+                measurements['model_name'] = get_model_name(measurementspath)
+            measurements['model_name'] = measurements['model_name'].replace(
+                ' ', '_')
+            measurementsdata.append(measurements)
+
+        report_types = args.report_types
+        if not report_types:
+            report_types = deduce_report_types(measurementsdata)
+        if report_types is None:
+            raise argparse.ArgumentError(
+                None,
+                "Report types cannot be deduced. Please specify --report-types"
+                " or make sure correct measurments were chosen.")
+            return
+
+        report_name = args.report_name
+        if report_name is None:
+            report_name = deduce_report_name(measurementsdata, report_types)
+        for measurements in measurementsdata:
+            if 'build_cfg' in measurements:
+                measurements['build_cfg'] = json.dumps(
+                    measurements['build_cfg'],
+                    indent=4
+                ).split('\n')
+
+            if 'report_name' not in measurements:
+                measurements['report_name'] = deduce_report_name(
+                    [measurements], report_types)
+            measurements['report_name_simple'] = re.sub(
+                r'[\W]', '',
+                measurements['report_name'].lower().replace(' ', '_')
+            )
+
+        cmap, colors = None, None
+        if not args.use_default_theme:
+            SERVIS_PLOT_OPTIONS['colormap'] = IMMATERIAL_COLORS
+            cmap = RED_GREEN_CMAP
+            colors = IMMATERIAL_COLORS
+        elif 'colormap' in SERVIS_PLOT_OPTIONS:
+            del SERVIS_PLOT_OPTIONS['colormap']
+
+        with choose_theme(
+            custom_bokeh_theme=not args.use_default_theme,
+            custom_matplotlib_theme=not args.use_default_theme,
+        ):
+            generate_report(
+                report_name,
+                measurementsdata,
+                args.report_path,
+                img_dir,
+                report_types,
+                root_dir,
+                image_formats,
+                command,
+                cmap=cmap,
+                colors=colors,
+                draw_titles=args.use_default_theme,
+            )
+
+
+def main(argv):
+    parser, _ = RenderReport.configure_parser(command=argv[0])
     args = parser.parse_args(argv[1:])
 
-    logger.set_verbosity(args.verbosity)
-
-    root_dir = args.root_dir
-    if root_dir is None:
-        root_dir = args.output.parent.absolute()
-
-    if not args.img_dir:
-        img_dir = root_dir / "img"
-    else:
-        img_dir = args.img_dir
-    img_dir.mkdir(parents=True, exist_ok=True)
-
-    if args.model_names is not None and \
-            len(args.measurements) != len(args.model_names):
-        log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
-        args.model_names = None
-
-    image_formats = {'png'}
-    if not args.only_png_images:
-        image_formats |= {'html'}
-
-    measurementsdata = []
-    for i, measurementspath in enumerate(args.measurements):
-        with open(measurementspath, 'r') as measurementsfile:
-            measurements = json.load(measurementsfile)
-        if args.model_names is not None:
-            measurements['model_name'] = args.model_names[i]
-        elif 'model_name' not in measurements:
-            measurements['model_name'] = get_model_name(measurementspath)
-        measurements['model_name'] = measurements['model_name'].replace(
-            ' ', '_')
-        measurementsdata.append(measurements)
-
-    report_types = args.report_types
-    if not report_types:
-        report_types = deduce_report_types(measurementsdata)
-    if report_types is None:
-        parser.error(
-            "Report types cannot be deduced. Please specify --report-types "
-            "or make sure correct measurments were chosen.")
-        return
-
-    report_name = args.report_name
-    if report_name is None:
-        report_name = deduce_report_name(measurementsdata, report_types)
-    for measurements in measurementsdata:
-        if 'build_cfg' in measurements:
-            measurements['build_cfg'] = json.dumps(
-                measurements['build_cfg'],
-                indent=4
-            ).split('\n')
-
-        if 'report_name' not in measurements:
-            measurements['report_name'] = deduce_report_name(
-                [measurements], report_types)
-        measurements['report_name_simple'] = re.sub(
-            r'[\W]', '',
-            measurements['report_name'].lower().replace(' ', '_')
-        )
-
-    cmap, colors = None, None
-    if not args.use_default_theme:
-        SERVIS_PLOT_OPTIONS['colormap'] = IMMATERIAL_COLORS
-        cmap = RED_GREEN_CMAP
-        colors = IMMATERIAL_COLORS
-    elif 'colormap' in SERVIS_PLOT_OPTIONS:
-        del SERVIS_PLOT_OPTIONS['colormap']
-
-    with choose_theme(
-        custom_bokeh_theme=not args.use_default_theme,
-        custom_matplotlib_theme=not args.use_default_theme,
-    ):
-        generate_report(
-            report_name,
-            measurementsdata,
-            args.output,
-            img_dir,
-            report_types,
-            root_dir,
-            image_formats,
-            command,
-            cmap=cmap,
-            colors=colors,
-            draw_titles=args.use_default_theme,
-        )
+    RenderReport.run(args)
 
 
 if __name__ == '__main__':

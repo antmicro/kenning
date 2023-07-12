@@ -580,27 +580,65 @@ As it can be observed, all classes accessible from JSON files in these scenarios
 
 ## Displaying information about available modules/classes
 
-Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`. An exemplary use case is provided below.
+Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`.
 
-To list available runtimes for the workflow, run `kenning.scenarios.list_classes`:
+The first script can be executed as follows:
+
+```bash
+python3 -m kenning.scenarios.list_classes
+```
+
+It will list all of the available modules used to form optimization and runtime pipelines in Kenning:
+
+```
+Optimizers (in kenning.compilers):
+
+    kenning.compilers.nni_pruning.NNIPruningOptimizer
+    kenning.compilers.onnx.ONNXCompiler
+    kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer
+    kenning.compilers.model_inserter.ModelInserter
+    kenning.compilers.tvm.TVMCompiler
+    kenning.compilers.iree.IREECompiler
+    kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer
+    kenning.compilers.tflite.TFLiteCompiler
+
+Datasets (in kenning.datasets):
+
+    kenning.datasets.pet_dataset.PetDataset
+    kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset
+    kenning.datasets.random_dataset.RandomizedDetectionSegmentationDataset
+    kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+    kenning.datasets.random_dataset.RandomizedClassificationDataset
+    kenning.datasets.common_voice_dataset.CommonVoiceDataset
+    kenning.datasets.magic_wand_dataset.MagicWandDataset
+    kenning.datasets.coco_dataset.COCODataset2017
+    kenning.datasets.imagenet_dataset.ImageNetDataset
+
+Modelwrappers (in kenning.modelwrappers):
+
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+    kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
+    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
+    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACTWithPostprocessing
+    kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet
+    kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper
+    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2
+    kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
+    kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+
+...
+```
+
+To list available runtimes for the workflow, run:
 
 ```bash
 python -m kenning.scenarios.list_classes runtimes
 ```
 
-The resulting output:
+For more verbose information, use `-v` and `-vv` flags (module's dependencies, description, supported formats and more)
 
-```
-Runtimes (in kenning.runtimes):
-
-	kenning.runtimes.iree.IREERuntime
-	kenning.runtimes.tvm.TVMRuntime
-	kenning.runtimes.renode.RenodeRuntime
-	kenning.runtimes.tflite.TFLiteRuntime
-	kenning.runtimes.onnx.ONNXRuntime
-```
-
-To display more specific information about a class, use `kenning.scenarios.class_info`:
+To display more specific information about a particular class, use `kenning.scenarios.class_info`:
 
 ```bash
 python -m kenning.scenarios.class_info kenning.runtimes.tflite.TFLiteRuntime
@@ -638,9 +676,10 @@ Arguments specification:
   * default: 4
 ```
 
-The script displays information which could be helpful while creating a json scenario, e.g. listing the specification of arguments which can be used.
-Required dependencies are also shown, along with the information whether they are available in the current python environment.
-In the given example TFLiteRuntime configuration accepts tflite models as input and will not be available because the `tflite_runtime` module is not installed.
+The script displays information which could be helpful while creating a JSON scenario, e.g. listing the specification of arguments which can be used.
+Required dependencies are also shown, along with the information whether they are available in the current Python environment.
+In the given example TFLiteRuntime configuration accepts TensorFlow Lite Flatbuffer models as input.
+It also tells that some of the dependencies are missing.
 
 ## Adding new implementations
 

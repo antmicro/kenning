@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/local-cpu-tvm-tensorflow-classification.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
@@ -23,7 +23,7 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
+    --report-path docs/source/generated/local-cpu-tvm-tensorflow-classification.md \
     --report-name "Pet Dataset classification using TVM-compiled TensorFlow model" \
     --root-dir docs/source/ \
     --img-dir docs/source/generated/img \

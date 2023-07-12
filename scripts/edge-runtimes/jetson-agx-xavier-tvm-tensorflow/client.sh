@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/jetson-agx-xavier-tvm-tensorflow.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/jetson-agx-xavier-tvm-tensorflow.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \

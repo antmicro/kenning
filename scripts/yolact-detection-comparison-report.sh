@@ -4,18 +4,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python -m kenning.scenarios.json_inference_tester \
-    ./scripts/jsonconfigs/yolact-tvm-gpu-detection.json \
-    ./build/yolact-tvm.json \
+python -m kenning.scenarios.inference_tester \
+    --json-cfg ./scripts/jsonconfigs/yolact-tvm-gpu-detection.json \
+    --measurements ./build/yolact-tvm.json \
     --verbosity INFO
 
-python -m kenning.scenarios.json_inference_tester \
-    ./scripts/jsonconfigs/yolact-tflite-detection.json \
-    ./build/yolact-tflite.json \
+python -m kenning.scenarios.inference_tester \
+    --json-cfg ./scripts/jsonconfigs/yolact-tflite-detection.json \
+    --measurements ./build/yolact-tflite.json \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    build/yolact-report/report.md \
+    --report-path build/yolact-report/report.md \
     --report-name "YOLACT detection report" \
     --root-dir build/yolact-report \
     --img-dir build/yolact-report/imgs \

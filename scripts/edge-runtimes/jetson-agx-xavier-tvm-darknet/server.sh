@@ -5,8 +5,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_server \
-    kenning.runtimeprotocols.network.NetworkProtocol \
-    kenning.runtimes.tvm.TVMRuntime \
+    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --host 0.0.0.0 \
     --port 12345 \
     --packet-size 32768 \

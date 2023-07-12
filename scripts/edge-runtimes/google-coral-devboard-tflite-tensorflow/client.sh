@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/google-coral-devboard-tflite-tensorflow.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \

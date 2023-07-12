@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/pet-dataset-tvm.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/pet-dataset-tvm.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
@@ -23,9 +23,9 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/pet-dataset-tflite.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/pet-dataset-tflite.json \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
@@ -37,9 +37,9 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/pet-dataset-iree.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/pet-dataset-iree.json \
     --compiler-cls kenning.compilers.iree.IREECompiler \
     --runtime-cls kenning.runtimes.iree.IREERuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
@@ -53,7 +53,7 @@ python -m kenning.scenarios.inference_tester \
     --verbosity INFO
 
 python -m kenning.scenarios.render_report \
-    build/classification-report/report.md \
+    --report-path build/classification-report/report.md \
     --report-name "Classification comparison on Pet Dataset" \
     --root-dir build/classification-report \
     --img-dir build/classification-report/imgs \

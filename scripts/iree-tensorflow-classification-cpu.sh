@@ -5,9 +5,9 @@
 # SPDX-License-Identifier: Apache-2.0
 
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/local-cpu-iree-tensorflow-classification.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/local-cpu-iree-tensorflow-classification.json \
     --compiler-cls kenning.compilers.iree.IREECompiler \
     --runtime-cls kenning.runtimes.iree.IREERuntime \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \

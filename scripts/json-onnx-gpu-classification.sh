@@ -4,8 +4,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python -m kenning.scenarios.json_inference_tester \
-    ./scripts/jsonconfigs/onnx-gpu-classification.json \
-    ./build/report-output.json \
+python -m kenning.scenarios.inference_tester \
+    --json-cfg ./scripts/jsonconfigs/onnx-gpu-classification.json \
+    --measurements ./build/report-output.json \
     --verbosity INFO \
     --convert-to-onnx ./build/converted_model.onnx

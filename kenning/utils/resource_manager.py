@@ -8,7 +8,7 @@ Provides resource manager responsible for downloading and caching resources
 import hashlib
 from pathlib import Path
 from shutil import copy, rmtree
-from typing import Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.parse import ParseResult, urlparse
 
 import requests
@@ -26,11 +26,13 @@ class ResourceManager(metaclass=Singleton):
 
     MAX_CACHE_SIZE = 50_000_000_000  # 50 GB
 
+    HASHING_ALGORITHM = 'md5'
+
     BASE_URL_SCHEMES = {
         'http': None,
         'https': None,
         'kenning': 'https://dl.antmicro.com/kenning/{path}',
-        'file': lambda path: str(Path(path).resolve()),
+        'file': lambda path: Path(path).expanduser().resolve(),
     }
 
     def __init__(self):
@@ -38,6 +40,7 @@ class ResourceManager(metaclass=Singleton):
         Initialize ResourceManager.
         """
         self.url_schemes = ResourceManager.BASE_URL_SCHEMES
+        self.max_cache_size = ResourceManager.MAX_CACHE_SIZE
         self.log = get_logger()
 
     def get_resource(
@@ -69,20 +72,21 @@ class ResourceManager(metaclass=Singleton):
         """
         # check if file is already cached
         parsed_uri = urlparse(uri)
+        self.log.debug(parsed_uri)
 
         # no scheme in URI - treat as path string
         if '' == parsed_uri.scheme:
             if output_path is None:
-                return Path(uri)
+                return Path(uri).expanduser().resolve()
             else:
                 copy(uri, output_path)
                 return output_path
 
         resolved_uri = self._resolve_uri(parsed_uri)
 
-        if 'file' == parsed_uri.scheme:
+        if isinstance(resolved_uri, Path):
             if output_path is None:
-                return Path(resolved_uri)
+                return resolved_uri
             else:
                 copy(resolved_uri, output_path)
                 return output_path
@@ -97,15 +101,15 @@ class ResourceManager(metaclass=Singleton):
 
         # file already exists - check if its valid
         if output_path.exists():
-            remote_sha_valid = self._validate_file_remote(
+            remote_hash_valid = self._validate_file_remote(
                 resolved_uri, output_path
             )
-            local_sha_valid = self._validate_file_local(output_path)
+            local_hash_valid = self._validate_file_local(output_path)
 
-            if remote_sha_valid or (
-                remote_sha_valid is None and local_sha_valid
+            if remote_hash_valid or (
+                remote_hash_valid is None and local_hash_valid
             ):
-                if local_sha_valid is None:
+                if local_hash_valid is not True:
                     self._save_file_checksum(output_path)
 
                 self.log.info(f'Using cached: {output_path}')
@@ -152,7 +156,10 @@ class ResourceManager(metaclass=Singleton):
         result = []
 
         for cached_file in self.CACHE_DIR.glob('**/*'):
-            if cached_file.is_file() and '.sha256' not in cached_file.suffixes:
+            if (
+                cached_file.is_file()
+                and f'.{self.HASHING_ALGORITHM}' not in cached_file.suffixes
+            ):
                 result.append(cached_file)
 
         return result
@@ -164,7 +171,7 @@ class ResourceManager(metaclass=Singleton):
         rmtree(self.CACHE_DIR, ignore_errors=True)
         self.CACHE_DIR.mkdir()
 
-    def _resolve_uri(self, parsed_uri: ParseResult) -> str:
+    def _resolve_uri(self, parsed_uri: ParseResult) -> Union[str, Path]:
         """
         Resolve provided URI.
 
@@ -173,7 +180,7 @@ class ResourceManager(metaclass=Singleton):
         parsed_uri : ParseResult
             Parsed URI.
 
-        Returns
+        Union[str, Path]
         -------
         str :
             Resolved path to resource.
@@ -219,18 +226,20 @@ class ResourceManager(metaclass=Singleton):
             None if checksum cannot be validate, otherwise True if file
             checksum is valid.
         """
-        checksum_url = f'{url}.sha256'
+        checksum_url = f'{url}.{self.HASHING_ALGORITHM}'
 
         response = requests.get(checksum_url, allow_redirects=True)
         if 200 != response.status_code:
             self.log.warning(f'Cannot verify {file_path} checksum')
             return None
 
-        remote_sha = response.content.decode().strip()
+        remote_hash = response.content.decode().strip().lower()
+        self.log.debug(f'{url} {remote_hash=}')
 
-        file_sha = self._compute_file_checksum(file_path)
+        file_hash = self._compute_file_checksum(file_path)
+        self.log.debug(f'{file_path} {file_hash=}')
 
-        return file_sha == remote_sha
+        return file_hash == remote_hash
 
     def _validate_file_local(self, file_path: Path) -> Optional[bool]:
         """
@@ -247,17 +256,21 @@ class ResourceManager(metaclass=Singleton):
             None if checksum cannot be validate, otherwise True if file
             checksum is valid.
         """
-        sha_file_path = file_path.with_suffix(file_path.suffix + '.sha256')
+        hash_file_path = file_path.with_suffix(
+            file_path.suffix + f'.{self.HASHING_ALGORITHM}'
+        )
 
-        if not sha_file_path.exists():
+        if not hash_file_path.exists():
             return None
 
-        with open(sha_file_path, 'r') as checksum_file:
-            local_sha = checksum_file.read().strip()
+        with open(hash_file_path, 'r') as checksum_file:
+            local_hash = checksum_file.read().strip().lower()
+        self.log.debug(f'{file_path} {local_hash=}')
 
-        file_sha = self._compute_file_checksum(file_path)
+        file_hash = self._compute_file_checksum(file_path)
+        self.log.debug(f'{file_path} {file_hash=}')
 
-        return file_sha == local_sha
+        return file_hash == local_hash
 
     def _save_file_checksum(self, file_path: Path):
         """
@@ -268,12 +281,14 @@ class ResourceManager(metaclass=Singleton):
         file_path : Path
             Path to the local file.
         """
-        file_sha = self._compute_file_checksum(file_path)
+        file_hash = self._compute_file_checksum(file_path)
 
-        sha_file_path = file_path.with_suffix(file_path.suffix + '.sha256')
+        hash_file_path = file_path.with_suffix(
+            file_path.suffix + f'.{self.HASHING_ALGORITHM}'
+        )
 
-        with open(sha_file_path, 'w') as checksum_file:
-            checksum_file.write(file_sha)
+        with open(hash_file_path, 'w') as checksum_file:
+            checksum_file.write(file_hash)
 
     def _download_resource(self, url: str, output_path: Path):
         """
@@ -288,12 +303,13 @@ class ResourceManager(metaclass=Singleton):
         """
         if self.CACHE_DIR in output_path.parents:
             response = requests.head(url)
-            if response.status_code != 200:
+            if (
+                response.status_code == 200
+                and 'Content-Length' in response.headers
+            ):
+                self._free_cache(int(response.headers['Content-Length']))
+            else:
                 self.log.warning('Cannot read file size before downloading')
-
-            elif 'Content-Length' in response.headers:
-                required_size = int(response.headers['Content-Length'])
-                self._free_cache(required_size)
 
         download_url(url, output_path)
 
@@ -316,21 +332,20 @@ class ResourceManager(metaclass=Singleton):
         ValueError :
             Raised when required free space is bigger that max cache size.
         """
-        if required_free > self.MAX_CACHE_SIZE:
+        if required_free > self.max_cache_size:
             raise ValueError(f'Required free space too big: {required_free} B')
         cached_files = self.list_cached_files()
         cached_files.sort(key=lambda f: f.stat().st_mtime)
         cache_size = sum(f.stat().st_size for f in cached_files)
 
-        while cache_size > self.MAX_CACHE_SIZE - required_free:
+        while cache_size > self.max_cache_size - required_free:
             file = cached_files.pop(0)
             cache_size -= file.stat().st_size
             file.unlink()
 
-    @staticmethod
-    def _compute_file_checksum(file_path: Path) -> str:
+    def _compute_file_checksum(self, file_path: Path) -> str:
         """
-        Computes file SHA256 checksum.
+        Computes file checksum.
 
         Parameters
         ----------
@@ -342,16 +357,16 @@ class ResourceManager(metaclass=Singleton):
         str :
             Computed checksum as in hex format.
         """
-        sha = hashlib.sha256()
+        hash_algo = getattr(hashlib, self.HASHING_ALGORITHM)()
 
         with open(file_path, 'rb') as file:
             while True:
-                data = file.read(sha.block_size)
+                data = file.read(hash_algo.block_size)
                 if not data:
                     break
-                sha.update(data)
+                hash_algo.update(data)
 
-        return sha.hexdigest()
+        return hash_algo.hexdigest().lower()
 
 
 class Resources(object):
@@ -359,12 +374,20 @@ class Resources(object):
     Dictionary of resources.
     """
 
-    def __init__(self, resources_uri: Dict[str, str]):
+    def __init__(self, resources_uri: Dict[str, Any]):
+        """
+        Dictionary of resources. The keys can be strings or tuples of strings.
+
+        Parameters
+        ----------
+        resources_uri : Dict[str, Any]
+            Nested dictionary of resources.
+        """
         self._resources_uri = resources_uri
 
     def __getitem__(self, keys: Union[Tuple[str], str]) -> Path:
         if isinstance(keys, str):
-            keys = [keys]
+            keys = (keys,)
 
         resources_uri = self._resources_uri
         for key in keys:
@@ -372,17 +395,38 @@ class Resources(object):
                 raise KeyError(f'Invalid key: {keys}')
             resources_uri = resources_uri[key]
 
+        if not isinstance(resources_uri, str):
+            raise KeyError(f'Invalid key: {keys}')
+
         return ResourceManager().get_resource(resources_uri)
 
-    def __setitem__(self, key: str, value: str):
-        if key in self._resources_uri:
-            raise KeyError(f'Resource {key} already exists')
-        self._resources_uri[key] = value
+    def __setitem__(self, keys: Union[Tuple[str], str], value: str):
+        if isinstance(keys, str):
+            keys = (keys,)
+        if keys in self.keys():
+            raise KeyError(f'Resource {keys} already exists')
+        resources_uri = self._resources_uri
+        for key in keys[:-1]:
+            resources_uri = resources_uri[key]
+        resources_uri[keys[-1]] = value
 
-    def __contains__(self, key: str) -> bool:
-        return key in self._resources_uri.keys()
+    def __contains__(self, keys: Union[Tuple[str], str]) -> bool:
+        if isinstance(keys, str):
+            keys = (keys,)
+        return keys in self.keys()
+
+    def __len__(self):
+        return len(self.keys())
 
     def keys(self) -> List[Tuple[str, ...]]:
+        """
+        Returns all resources' keys.
+
+        Returns
+        -------
+        List[Tuple[str, ...] :
+            List of available resources' keys.
+        """
         result = []
 
         def get_keys(resources_uri: dict, keys: list = []):
@@ -405,7 +449,7 @@ class ChecksumVerifyError(Exception):
     pass
 
 
-def get_resource(uri: str, output_path: Path = None) -> Path:
+def get_resource(uri: str, output_path: Optional[Path] = None) -> Path:
     """
     Retrieve file and return path to it.
 

@@ -415,51 +415,20 @@ As for now, the available report types are:
 
 ## Displaying information about available classes
 
-`kenning.scenarios.list_classes` and `kenning.scenarios.class_info` provide useful information about classes and can help create JSON scenarios.
+`kenning.scenarios.list_classes` and `kenning.scenarios.class_info` provide useful information about classes and can help in creating JSON scenarios.
 
 `kenning.scenarios.list_classes` will list all available classes by default, though the output can be limited by providing positional arguments representing groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`, `modelwrappers`, `onnxconversions`, `outputcollectors`, `runtimes`.
-The amount of information displayed can be controlled by flags `-v` and `-vv`.
+The amount of information displayed can be controlled using `-v` and `-vv` flags.
 
-To print available arguments run `python -m kenning.scenarios.list_classes -h`:
-
-```
-usage: kenning/scenarios/list_classes.py [-h] [-v] [-vv] [base_classes ...]
-
-positional arguments:
-  base_classes  Base classes of a certain group of modules. List of zero or more base classes. Providing zero base classes will print information about all of them. The default verbosity will only list found subclasses.
-                
-                Available choices: [optimizers, runners, dataproviders, datasets, modelwrappers, onnxconversions, outputcollectors, runtimes]
-
-optional arguments:
-  -h, --help    show this help message and exit
-  -v            Also display class docstrings along with dependencies and their availability
-  -vv           Display all available information. That includes: docstrings, dependencies, input and output formats and specification of the arguments
-```
+To print available arguments run `python -m kenning.scenarios.list_classes -h`.
 
 `kenning.scenarios.class_info` provides information about a class given in an argument. More precisely, it will display:
-- module and class docstrings
-- dependencies along with the information whether they are available in the current python environment
-- supported input and output formats
-- arguments structure used in JSON configurations
 
-The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`
+* module and class docstrings,
+* dependencies along with the information whether they are available in the current python environment,
+* supported input and output formats,
+* arguments structure used in JSON configurations.
 
-The help dialog looks as follows:
-```
-usage: kenning/scenarios/class_info.py [-h] [--docstrings] [--dependencies] [--input-formats]
-                                       [--output-formats] [--argument-formats]
-                                       target
+The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`.
 
-Provides information about a given kenning module or class. If no flags are given, displays the full output
-
-positional arguments:
-  target              Module-like path of the module or class (e.g. kenning.compilers.onnx)
-
-optional arguments:
-  -h, --help          show this help message and exit
-  --docstrings        Display class docstrings
-  --dependencies      Display class dependencies
-  --input-formats     Display class input formats
-  --output-formats    Display output formats
-  --argument-formats  Display the argument specification
-```
+For more detail, check `python -m kenning.scenarios.class_info -h`.

@@ -16,6 +16,7 @@ More precisely, it displays:
 import argparse
 import ast
 import importlib
+import inspect
 import os.path
 import sys
 from typing import Union, List, Tuple, Optional, Dict
@@ -25,6 +26,8 @@ from kenning.utils import logger
 
 import astunparse
 from isort import place_module
+
+from kenning.utils.args_manager import serialize, to_argparse_name
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
@@ -310,7 +313,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
         .removesuffix("'")
 
 
-def get_arguments_structure(syntax_node: ast.Assign, source_path: str)\
+def get_arguments_structure(syntax_node: ast.Assign, source_path: str) \
         -> str:
     """
     Displays information about the argument structure specification as
@@ -482,9 +485,46 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     return enum_elements, argument_type
 
 
+def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
+    resulting_lines = []
+
+    args_structure = parameterschema['properties']
+
+    if not args_structure:
+        return ['']
+
+    for arg_name, arg_dict in args_structure.items():
+        resulting_lines.append(f'* {arg_name}\n')
+
+        resulting_lines.append(f'  * argparse_name: '
+                               f'{to_argparse_name(arg_name)}\n')
+        for key, value in arg_dict.items():
+            # skip real_name as it is the same as arg_name
+            if key == 'real_name':
+                continue
+
+            # expand enums (lists)
+            if isinstance(value, list):
+                resulting_lines.append(f'  * {key}\n')
+                for elt in value:
+                    resulting_lines.append(f'    * {elt}\n')
+                continue
+
+            # extract qualified class name if value is a class
+            if inspect.isclass(value):
+                resulting_lines.append(f'  * {key}: {value.__module__}.'
+                                       f'{value.__qualname__}\n')
+                continue
+
+            resulting_lines.append(f'  * {key}: {value}\n')
+
+    return resulting_lines
+
+
 def generate_class_info(target: str, class_name='', docstrings=True,
                         dependencies=True, input_formats=True,
-                        output_formats=True, argument_formats=True, **kwargs)\
+                        output_formats=True, argument_formats=True,
+                        load_class_with_args=[]) \
         -> List[str]:
     """
     Wrapper function that handles displaying information about a class
@@ -506,8 +546,8 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         Flag whether to display output formats
     argument_formats: bool
         Flag whether to display argument formats
-    **kwargs: dict
-        Extra arguments, unused in the function
+    load_class_with_args: List[str]
+        # TODO
 
     Returns
     -------
@@ -548,6 +588,35 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
     found_io_specification = False
     io_specification_lines = {}
+
+    imported_class = None
+    parameterschema = None
+
+    if class_name != '':
+        # try to load the class into memory
+        module_path = path = target_path[:-3].replace('/', '.')
+        try:
+            if class_name == '':
+                return [
+                    'Provide a class name in the module-like path when trying '
+                    'to load a class with arguments']
+
+            imported_class = getattr(
+                importlib.import_module(path),
+                class_name
+            )
+
+            parameterschema = imported_class.form_parameterschema()
+
+        except (ModuleNotFoundError, ImportError, Exception) as e:
+            pass
+
+    # except (ModuleNotFoundError, ImportError, Exception) as e:
+    #     return [f'Cannot import class {class_name} from {module_path}\n'
+    #             f'Reason: {e}']
+
+    if imported_class and parameterschema:
+        pass
 
     for node in syntax_nodes:
         if isinstance(node, ast.ClassDef) and class_name != '' \
@@ -645,6 +714,13 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             resulting_lines.append('No arguments')
         resulting_lines.append('\n\n')
 
+        if parameterschema:
+            resulting_lines += \
+                get_args_structure_from_parameterschema(parameterschema)
+
+        elif arguments_structure_node:
+            resulting_lines.append(get_arguments_structure(
+                arguments_structure_node, target_path))
     return resulting_lines
 
 
@@ -700,6 +776,11 @@ class ClassInfoRunner(CommandTemplate):
             '--argument-formats',
             help='Display the argument specification',
             action='store_true'
+        )
+        info_group.add_argument(
+            '--load-class-with-args',
+            help='',
+            nargs='*'
         )
         return parser, groups
 

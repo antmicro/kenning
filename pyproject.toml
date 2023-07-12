@@ -2,6 +2,13 @@
 requires = ["setuptools>=40.8.0", "wheel", "cython", "numpy~=1.23.5"]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "kenning"
+version = "0.0.1"
+
+[project.scripts]
+kenning = "kenning.cli.cli:main"
+
 [tool.pydocstyle]
 inherit = false
 select = [

@@ -37,6 +37,14 @@ pytest:
         when: always
     allow_failure: false
 
+kenning-cli:
+    stage: tests
+    script:
+        - pip install .
+        - kenning -h
+        - kenning test report -h
+    allow_failure: false
+
 sample-compilation:
     stage: tests
     script:

@@ -23,11 +23,14 @@ from typing import Union, List, Tuple, Optional, Dict
 from kenning.cli.command_template import (
     CommandTemplate, GROUP_SCHEMA, INFO)
 from kenning.utils import logger
+from pathlib import Path
+from typing import Union, List, Dict
 
 import astunparse
 from isort import place_module
 
-from kenning.utils.args_manager import serialize, to_argparse_name
+from kenning.core.model import ModelWrapper
+from kenning.utils.args_manager import to_argparse_name
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
@@ -521,6 +524,44 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
     return resulting_lines
 
 
+def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
+    """
+    Recursively parses a dictionary to a list of formatted, markdown-like strings  # noqa E501
+
+    Parameters
+    ----------
+    dictionary: Dict
+        A python dictionary to be parsed
+
+    Return
+    ------
+    List[str]: A list of formatted, markdown-like strings
+    """
+    resulting_output = []
+
+    dict_elements = []
+
+    for key, value in dictionary.items():
+        if not isinstance(value, list):
+            resulting_output.append(f'* {key}: {value}\n')
+
+        [dict_elements.append(elt) for elt in value]
+
+    for dict_element in dict_elements:
+        resulting_output.append(f'* {dict_element["name"]}\n')
+        dict_element.pop('name', None)
+
+        for key, value in dict_element.items():
+            if isinstance(value, list):
+                resulting_output.append(f'  * {key}\n')
+                [resulting_output.append(f'    * {elt}\n') for elt in value]
+                continue
+
+            resulting_output.append(f'  * {key}: {value}\n')
+
+    return resulting_output
+
+
 def generate_class_info(target: str, class_name='', docstrings=True,
                         dependencies=True, input_formats=True,
                         output_formats=True, argument_formats=True,
@@ -591,6 +632,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
     imported_class = None
     parameterschema = None
+    class_object = None
 
     if class_name != '':
         # try to load the class into memory
@@ -609,28 +651,43 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             parameterschema = imported_class.form_parameterschema()
 
         except (ModuleNotFoundError, ImportError, Exception) as e:
-            pass
+            return [f'Cannot import class {class_name} from {module_path}\n'
+                    f'Reason: {e}']
 
-    # except (ModuleNotFoundError, ImportError, Exception) as e:
-    #     return [f'Cannot import class {class_name} from {module_path}\n'
-    #             f'Reason: {e}']
+    if imported_class:
 
-    if imported_class and parameterschema:
-        pass
+        if issubclass(imported_class, ModelWrapper):
+            # create a temporary directory for the dataset
+            dataset_path = Path('build/tmp-dataset')
+            model_path = Path(imported_class.pretrained_modelpath)
+
+            dataset_path.touch(exist_ok=False)
+            dataset = imported_class.default_dataset(
+                Path(dataset_path), download_dataset=True)
+
+            class_object = imported_class(model_path, dataset, from_file=True)
+
+            dataset_path.unlink(missing_ok=True)
 
     for node in syntax_nodes:
         if isinstance(node, ast.ClassDef) and class_name != '' \
                 and node.name == class_name:
             class_nodes.append(node)
-            io_specification_lines[node] = get_io_specification(node)
-            if len(io_specification_lines) > 0:
-                found_io_specification = True
+
+            if not imported_class:
+                io_specification = get_io_specification(node)
+                if len(io_specification) > 0:
+                    io_specification_lines[node] = io_specification
+                    found_io_specification = True
 
         if isinstance(node, ast.ClassDef) and class_name == '':
             class_nodes.append(node)
-            io_specification_lines[node] = get_io_specification(node)
-            if len(io_specification_lines) > 0:
-                found_io_specification = True
+
+            if not imported_class:
+                io_specification = get_io_specification(node)
+                if len(io_specification) > 0:
+                    io_specification_lines[node] = io_specification
+                    found_io_specification = True
 
         if isinstance(node, ast.Module) and class_name == '':
             class_nodes.append(node)
@@ -664,9 +721,17 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
         if node in io_specification_lines.keys() \
                 and (input_formats or output_formats):
+            # i/o specification found, extract from static source code
             resulting_lines.append('Input/output specification:\n')
             resulting_lines += io_specification_lines[node]
             resulting_lines.append('\n')
+
+        if imported_class and (input_formats or output_formats):
+            # i/o specification found, extract by creating an object
+            resulting_lines.append('Input/output specification:\n')
+
+            io_spec = class_object.get_io_specification()
+            resulting_lines += parse_io_spec_dict_to_str(io_spec)
 
     if dependencies:
         resulting_lines.append('Dependencies:\n')
@@ -808,4 +873,8 @@ def main(argv):
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    ret = main(sys.argv)
+    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+    sys.exit(ret)
+

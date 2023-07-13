@@ -320,12 +320,14 @@ class OptimizationRunner(CommandTemplate):
         command_group.add_argument(
             '--json-cfg',
             help='The path to the input JSON file with configuration',
-            type=Path
+            type=Path,
+            required=True,
         )
         command_group.add_argument(
             '--output',
             help='The path to the output JSON file with the best pipeline',
             type=Path,
+            required=True,
         )
 
         return parser, groups
@@ -351,6 +353,7 @@ class OptimizationRunner(CommandTemplate):
 
         log.info(f'Finding {policy} for {metric}')
         for pipeline_count, pipeline in enumerate(pipelines):
+            module_error = None
             pipeline = replace_paths(pipeline, pipeline_count)
             MeasurementsCollector.clear()
             try:
@@ -393,9 +396,14 @@ class OptimizationRunner(CommandTemplate):
                 log.error('Incorrect parameters passed')
                 log.error(ex)
                 raise
+            except ModuleNotFoundError as missing_module_error:
+                module_error = missing_module_error
             except Exception as ex:
                 log.warning('Pipeline was invalid')
                 log.warning(ex)
+
+            if module_error:
+                raise module_error
 
         if pipelines_scores:
             policy_fun = min if policy == 'min' else max

@@ -585,7 +585,7 @@ Kenning provides two tools to display some information about the available class
 The first script can be executed as follows:
 
 ```bash
-python3 -m kenning.scenarios.list_classes
+kenning list
 ```
 
 It will list all of the available modules used to form optimization and runtime pipelines in Kenning:
@@ -633,7 +633,7 @@ Modelwrappers (in kenning.modelwrappers):
 To list available runtimes for the workflow, run:
 
 ```bash
-python -m kenning.scenarios.list_classes runtimes
+kenning list runtimes
 ```
 
 For more verbose information, use `-v` and `-vv` flags (module's dependencies, description, supported formats and more)
@@ -641,7 +641,7 @@ For more verbose information, use `-v` and `-vv` flags (module's dependencies, d
 To display more specific information about a particular class, use `kenning.scenarios.class_info`:
 
 ```bash
-python -m kenning.scenarios.class_info kenning.runtimes.tflite.TFLiteRuntime
+kenning info kenning.runtimes.tflite.TFLiteRuntime
 ```
 
 ```

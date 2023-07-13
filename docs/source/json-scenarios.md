@@ -128,7 +128,7 @@ The dataset test data is passed through the model and evaluation metrics are col
 To run the defined pipeline (assuming that the JSON file is under `pipeline.json`), run:
 
 ```bash
-python -m kenning.scenarios.json_inference_tester pipeline.json measurements.json --verbosity INFO
+python -m kenning.scenarios.inference_tester --json-cfg pipeline.json --measurements measurements.json --verbosity INFO
 ```
 
 The `measurements.json` file is the output of the {{json_compilation_script}} providing measurement data.
@@ -236,16 +236,16 @@ More details on input/output formats between [](optimizer-api) objects can be fo
 The scenario can be executed as follows:
 
 ```bash
-python -m kenning.scenarios.json_inference_tester scenario.json output.json
+python -m kenning.scenarios.inference_tester --json-cfg scenario.json --measurements output.json
 ```
 
 ## Compiling a model and running it remotely
 
 For some platforms, we cannot run a Python script to evaluate or run the model to check its quality - the dataset is too large to fit in the storage, no libraries or compilation tools are available for the target platform, or the device does not have an operating system to run Python on.
 
-In such cases, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and the ``kenning.scenarios.json_inference_server`` scenario.
+In such cases, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and the ``kenning.scenarios.inference_server`` scenario.
 
-For this use case, we need two JSON files - one for inference server configuration, and another one for the ``kenning.scenarios.json_inference_tester`` configuration, which acts as a runtime client.
+For this use case, we need two JSON files - one for inference server configuration, and another one for the ``kenning.scenarios.inference_tester`` configuration, which acts as a runtime client.
 
 The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication or other.
 It depends on the [](runtimeprotocol-api) used.
@@ -352,17 +352,17 @@ The server also sends measurements from its sensors in JSON format as long as it
 First, run the server, so that it is available for the client:
 
 ```bash
-python3 -m kenning.scenarios.json_inference_server \
-    ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
+python3 -m kenning.scenarios.inference_server \
+    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
     --verbosity INFO
 ```
 
 Then, run the client:
 
 ```bash
-python3 -m kenning.scenarios.json_inference_tester \
-    ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
-    ./build/tflite-tvm-classificationjson.json \
+python3 -m kenning.scenarios.inference_tester \
+    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
+    --measurements ./build/tflite-tvm-classificationjson.json \
     --verbosity INFO
 ```
 

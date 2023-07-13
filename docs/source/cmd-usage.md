@@ -95,13 +95,14 @@ It requires you to provide:
 The example call for the method is as follows:
 
 ```bash
-python -m kenning.scenarios.inference_performance \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
-    build/tensorflow_pet_dataset_mobilenetv2.json \
+python -m kenning.scenarios.inference_tester \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements build/tensorflow_pet_dataset_mobilenetv2.json \
     --model-path kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --dataset-root build/pet-dataset/ \
-    --download-dataset
+    --download-dataset \
+    --run-benchmarks-only
 ```
 
 The script downloads the dataset to the `build/pet-dataset` directory, loads the `tensorflow_pet_dataset_mobilenetv2.h5` model, runs inference on all images from the dataset and collects performance and quality metrics throughout the run.
@@ -157,76 +158,67 @@ To print the list of required arguments, run:
 
 ```bash
 python3 -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.runtimes.tvm.TVMRuntime \
-    kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --measurements ''
     -h
 ```
 
 With the above classes, the help can look as follows:
 
 ```bash
-positional arguments:
-  modelwrappercls       ModelWrapper-based class with inference implementation to import
-  runtimecls            Runtime-based class with the implementation of model runtime
-  datasetcls            Dataset-based class with dataset to import
-  output                The path to the output JSON file with measurements
-
 optional arguments:
   -h, --help            show this help message and exit
-  --modelcompiler-cls MODELCOMPILER_CLS
-                        Optimizer-based class with compiling routines to import
-  --protocol-cls PROTOCOL_CLS
-                        RuntimeProtocol-based class with the implementation of communication between inference tester and inference
-                        runner
-  --convert-to-onnx CONVERT_TO_ONNX
-                        Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)
-  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Verbosity level
 
-Inference model arguments:
+ModelWrapper arguments:
   --model-path MODEL_PATH
                         Path to the model
 
-Compiler arguments:
-  --compiled-model-path COMPILED_MODEL_PATH
-                        The path to the compiled model output
-  --model-framework {onnx,keras,darknet}
-                        The input type of the model, framework-wise
-  --target TARGET       The kind or tag of the target device
-  --target-host TARGET_HOST
-                        The kind or tag of the host (CPU) target device
-  --opt-level OPT_LEVEL
-                        The optimization level of the compilation
-  --libdarknet-path LIBDARKNET_PATH
-                        Path to the libdarknet.so library, for darknet models
-
-Runtime arguments:
-  --save-model-path SAVE_MODEL_PATH
-                        Path where the model will be uploaded
-  --target-device-context {llvm,stackvm,cpu,c,cuda,nvptx,cl,opencl,aocl,aocl_sw_emu,sdaccel,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
-                        What accelerator should be used on target device
-  --target-device-context-id TARGET_DEVICE_CONTEXT_ID
-                        ID of the device to run the inference on
-  --input-dtype INPUT_DTYPE
-                        Type of input tensor elements
-
-Dataset arguments:
-  --dataset-root DATASET_ROOT
-                        Path to the dataset directory
-  --download-dataset    Downloads the dataset before taking any action
-  --inference-batch-size INFERENCE_BATCH_SIZE
-                        The batch size for providing the input data
+PetDataset arguments:
   --classify-by {species,breeds}
                         Determines if classification should be performed by species or by breeds
   --image-memory-layout {NHWC,NCHW}
                         Determines if images should be delivered in NHWC or NCHW format
 
-Runtime protocol arguments:
+Dataset arguments:
+  --dataset-root DATASET_ROOT
+                        Path to the dataset directory
+  --inference-batch-size INFERENCE_BATCH_SIZE
+                        The batch size for providing the input data
+  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded
+                        then they are not downloaded again
+  --force-download-dataset
+                        Forces dataset download
+  --external-calibration-dataset EXTERNAL_CALIBRATION_DATASET
+                        Path to the directory with the external calibration dataset
+  --split-fraction-test SPLIT_FRACTION_TEST
+                        Default fraction of data to leave for model testing
+  --split-fraction-val SPLIT_FRACTION_VAL
+                        Default fraction of data to leave for model valdiation
+  --split-seed SPLIT_SEED
+                        Default seed used for dataset split
+
+TVMRuntime arguments:
+  --save-model-path SAVE_MODEL_PATH
+                        Path where the model will be uploaded
+  --target-device-context {llvm,stackvm,cpu,c,test,hybrid,composite,cuda,nvptx,cl,opencl,sdaccel,aocl,aocl_sw_emu,vulkan,metal,vpi,rocm,ext_dev,hexagon,webgpu}
+                        What accelerator should be used on target device
+  --target-device-context-id TARGET_DEVICE_CONTEXT_ID
+                        ID of the device to run the inference on
+  --runtime-use-vm      At runtime use the TVM Relay VirtualMachine
+
+Runtime arguments:
+  --disable-performance-measurements
+                        Disable collection and processing of performance metrics
+
+NetworkProtocol arguments:
   --host HOST           The address to the target device
   --port PORT           The port for the target device
+
+BytesBasedProtocol arguments:
   --packet-size PACKET_SIZE
                         The maximum size of the received packets, in bytes.
   --endianness {big,little}
@@ -244,11 +236,11 @@ An example script for the `inference_tester` is:
 
 ```bash
 python -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.runtimes.tflite.TFLiteRuntime \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/google-coral-devboard-tflite-tensorflow.json \
-    --modelcompiler-cls kenning.compilers.tflite.TFLiteCompiler \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
+    --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
@@ -269,8 +261,8 @@ The above runs with the following `inference_server` setup:
 
 ```bash
 python -m kenning.scenarios.inference_server \
-    kenning.runtimeprotocols.network.NetworkProtocol \
-    kenning.runtimes.tflite.TFLiteRuntime \
+    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --host 0.0.0.0 \
     --port 12345 \
     --packet-size 32768 \

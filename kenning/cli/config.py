@@ -13,40 +13,46 @@ from typing import Dict, Type
 
 from kenning.cli.command_template import (
     CommandTemplate,
-    OPTIMIZE,
-    TEST,
-    REPORT,
-    VISUAL_EDITOR,
-    FLOW,
-    SERVER,
     FINE_TUNE,
-    HELP
+    FLOW,
+    HELP,
+    INFO,
+    LIST,
+    OPTIMIZE,
+    REPORT,
+    SERVER,
+    TEST,
+    VISUAL_EDITOR,
 )
 from kenning.scenarios import (
-    inference_tester,
-    render_report,
-    pipeline_manager_client,
-    json_flow_runner,
+    class_info,
     inference_server,
+    inference_tester,
+    json_flow_runner,
+    list_classes,
     optimization_runner,
+    pipeline_manager_client,
+    render_report,
 )
 
 
 # Subcommands that can be used in sequence
 SEQUENCED_COMMANDS = (OPTIMIZE, TEST, REPORT)
 # Subcommands that can be used one at the time
-BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR, FINE_TUNE)
+BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR, FINE_TUNE, LIST, INFO)
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (*SEQUENCED_COMMANDS, *BASIC_COMMANDS, *HELP["flags"])
 # Connection between subcommand and its logic (extending CommandTemplate)
 MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
-    OPTIMIZE: inference_tester.InferenceTester,
-    TEST: inference_tester.InferenceTester,
-    REPORT: render_report.RenderReport,
-    VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
-    FLOW: json_flow_runner.FlowRunner,
-    SERVER: inference_server.InferenceServer,
     FINE_TUNE: optimization_runner.OptimizationRunner,
+    FLOW: json_flow_runner.FlowRunner,
+    INFO: class_info.ClassInfoRunner,
+    LIST: list_classes.ListClassesRunner,
+    OPTIMIZE: inference_tester.InferenceTester,
+    REPORT: render_report.RenderReport,
+    SERVER: inference_server.InferenceServer,
+    TEST: inference_tester.InferenceTester,
+    VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

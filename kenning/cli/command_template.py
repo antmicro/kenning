@@ -19,6 +19,8 @@ VISUAL_EDITOR = "visual-editor"
 FLOW = "flow"
 SERVER = "server"
 FINE_TUNE = "fine-tune-optimizers"
+LIST = "list"
+INFO = "info"
 HELP = {
     "flags": ('-h', '--help'),
     "msg": "show this help message and exit",

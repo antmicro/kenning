@@ -35,7 +35,7 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
 
     Returns
     -------
-    List of formatted strings to be printed out later
+    List[str]: List of formatted strings to be printed out later
     """
 
     kenning_base_classes = get_base_classes_dict()
@@ -72,26 +72,29 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
 
             if verbosity == 'list':
                 resulting_output.append(f'    {subclass}\n')
-                # print(f'\t{subclass}')
 
             if verbosity == 'docstrings':
-                output = generate_class_info(target=module_path,
-                                             class_name=class_name,
-                                             docstrings=True,
-                                             dependencies=True,
-                                             input_formats=False,
-                                             output_formats=False,
-                                             argument_formats=False)
+                output = generate_class_info(
+                    target=module_path,
+                    class_name=class_name,
+                    docstrings=True,
+                    dependencies=True,
+                    input_formats=False,
+                    output_formats=False,
+                    argument_formats=False)
+
                 resulting_output += output
 
             if verbosity == 'all':
-                output = generate_class_info(target=module_path,
-                                             class_name=class_name,
-                                             docstrings=True,
-                                             dependencies=True,
-                                             input_formats=True,
-                                             output_formats=True,
-                                             argument_formats=True)
+                output = generate_class_info(
+                    target=module_path,
+                    class_name=class_name,
+                    docstrings=True,
+                    dependencies=True,
+                    input_formats=True,
+                    output_formats=True,
+                    argument_formats=True)
+
                 resulting_output += output
 
         if verbosity == 'list':
@@ -158,8 +161,6 @@ def main(argv):
         verbosity = 'docstrings'
     if args.vv:
         verbosity = 'all'
-
-    resulting_output = []
 
     resulting_output = list_classes(
         args.base_classes if len(args.base_classes) > 0 else base_class_arguments,  # noqa: E501

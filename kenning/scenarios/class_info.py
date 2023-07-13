@@ -18,7 +18,7 @@ import ast
 import importlib
 import os.path
 import sys
-from typing import Union, List
+from typing import Union, List, Tuple
 
 import astunparse
 from isort import place_module
@@ -83,8 +83,7 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
         return f'Class: {syntax_node.name}\n\n'
 
 
-def print_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast.
-                                  Module]) -> str:
+def get_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast. Module]) -> str:  # noqa: E501
     """
     Displays docstrings of provided class or module
 
@@ -227,7 +226,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
         .removesuffix("'")
 
 
-def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
+def get_arguments_structure(syntax_node: ast.Assign, source_path: str)\
         -> str:
     """
     Displays information about the argument structure specification as
@@ -300,7 +299,7 @@ def print_arguments_structure(syntax_node: ast.Assign, source_path: str)\
 
 
 def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
-        -> tuple[List[str], str]:
+        -> Tuple[List[str], str]:
     """
     Evaluate an expression like `list(some_dict.keys())` and return the list
     of elements as strings.
@@ -314,7 +313,7 @@ def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
 
     Returns
     -------
-    tuple[List[str], str]: tuple with the first argument being the list of
+    Tuple[List[str], str]: tuple with the first argument being the list of
     evaluated elements and the second being the type as a string
     """
     with open(source_path, 'r') as file:
@@ -346,7 +345,7 @@ def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
 
 
 def evaluate_argument_list(argument_list_name: str, source_path: str) \
-        -> tuple[List[str], str]:
+        -> Tuple[List[str], str]:
     """
     Evaluate an expression like `list('tflite', 'tvm')` and return the list
     of elements as strings.
@@ -360,7 +359,7 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
 
     Returns
     -------
-    tuple[List[str], str]: tuple with the first argument being the list of
+    Tuple[List[str], str]: tuple with the first argument being the list of
     evaluated elements and the second being the type as a string
     """
     with open(source_path) as file:
@@ -493,7 +492,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             return resulting_lines
 
         for node in class_nodes:
-            resulting_lines.append(print_class_module_docstrings(node))
+            resulting_lines.append(get_class_module_docstrings(node))
     else:
         for node in class_nodes:
             resulting_lines.append(get_class_module_name(node))
@@ -519,7 +518,6 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         if input_specification_node:
             resulting_lines.append(get_input_specification(
                 input_specification_node))
-        # print('')
         resulting_lines.append('\n')
 
     if output_formats:
@@ -532,19 +530,17 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     if argument_formats:
         resulting_lines.append('Arguments specification:\n')
         if arguments_structure_node:
-            resulting_lines.append(print_arguments_structure(
+            resulting_lines.append(get_arguments_structure(
                 arguments_structure_node, target_path))
 
     return resulting_lines
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(argv[0],
-                                     description='Provides information about a'
-                                                 ' given kenning module or'
-                                                 ' class. If no flags are'
-                                                 ' given, displays'
-                                                 ' the full output')
+    parser = argparse.ArgumentParser(
+        argv[0],
+        description='Provides information about a given kenning module or '
+                    'class. If no flags are given, displays the full output')
 
     parser.add_argument(
         'target',

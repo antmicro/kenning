@@ -6,7 +6,7 @@
 Provides methods for importing classes and modules at runtime based on string.
 """
 
-from typing import Type, Union
+from typing import Type, Union, Dict, Tuple
 import importlib
 from typing import List
 from pathlib import Path
@@ -25,13 +25,13 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.logger import get_logger
 
 
-def get_base_classes_dict() -> dict[str, tuple[str, Type]]:
+def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
     """
-    Returns unified collection of Kenning groups of modules.
+    Returns collection of Kenning groups of modules.
 
     Returns
     -------
-    dict[str, tuple[str, Type]]: dict with keys corresponding to names of
+    Dict[str, Tuple[str, Type]] dict with keys corresponding to names of
     groups of modules, values are module paths and base class names
     """
     return {
@@ -50,8 +50,7 @@ def get_all_subclasses(
         modulepath: str,
         cls: Type,
         raise_exception: bool = False,
-        import_classes: bool = True) -> \
-        Union[List[Type], List[tuple[str, str]]]:
+        import_classes: bool = True) -> Union[List[Type], List[Tuple[str, str]]]:  # noqa: E501
     """
     Retrieves all subclasses of given class. Filters classes that are not
     final.
@@ -70,7 +69,7 @@ def get_all_subclasses(
 
     Returns
     -------
-    Union[List[Type], dict[str, any]]:
+    Union[List[Type], List[Tuple[str, str]]]:
         When importing classes: List of all final subclasses of given class.
         When not importing classes: list of tuples with name and module path
         of the class

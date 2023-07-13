@@ -10,12 +10,17 @@ provided base class.
 import argparse
 import os
 import sys
-from typing import List
+from typing import List, Optional, Dict, Tuple
 import errno
 
 from kenning.scenarios.class_info import generate_class_info
 from kenning.utils.class_loader import get_all_subclasses,\
     get_base_classes_dict
+
+from kenning.cli.command_template import (
+    CommandTemplate, GROUP_SCHEMA, LIST)
+
+from kenning.utils import logger
 
 
 def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
@@ -103,10 +108,9 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
     return resulting_output
 
 
-def main(argv):
-    parser = argparse.ArgumentParser(argv[0],
-                                     formatter_class=argparse.
-                                     RawTextHelpFormatter)
+class ListClassesRunner(CommandTemplate):
+    parse_all = True
+    description = __doc__.split('\n\n')[0]
 
     base_class_arguments = [
         'optimizers',
@@ -119,62 +123,88 @@ def main(argv):
         'runtimes',
     ]
 
-    available_choices_string = '\n'
-    for base_class in base_class_arguments:
-        available_choices_string += f'  * {base_class}\n'
-    available_choices_string = available_choices_string[:-2]
-    available_choices_string += '\n'
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(
+            ListClassesRunner, ListClassesRunner
+        ).configure_parser(
+            parser,
+            command,
+            types,
+            groups
+        )
 
-    parser.add_argument(
-        'base_classes',
-        help=f'Base classes of a certain group of modules. List of zero or '
-             f'more base classes. Providing zero base classes will print '
-             f'information about all of them. The default verbosity will only '
-             f'list found subclasses.\n\nAvailable choices: '
-             f'{available_choices_string}',
-        nargs='*',
-    )
+        list_group = parser.add_argument_group(GROUP_SCHEMA.format(LIST))
 
-    parser.add_argument(
-        '-v',
-        help='Also display class docstrings along with dependencies and their'
-             ' availability',
-        action='store_true'
-    )
-    parser.add_argument(
-        '-vv',
-        help='Display all available information. That includes: docstrings,'
-             ' dependencies, input and output formats and specification of '
-             'the arguments',
-        action='store_true'
-    )
+        available_choices_string = '\n'
+        for base_class in ListClassesRunner.base_class_arguments:
+            available_choices_string += f'  * {base_class}\n'
+        available_choices_string = available_choices_string[:-2]
+        available_choices_string += '\n'
 
-    args = parser.parse_args(argv[1:])
+        list_group.add_argument(
+            'base_classes',
+            help='Base classes of a certain group of modules. List of zero or'
+                 ' more base classes. Providing zero base classes will print'
+                 ' information about all of them. The default verbosity will'
+                 ' only list found subclasses.\n\nAvailable choices: '
+                 f'{available_choices_string}',
+            nargs='*',
+        )
 
-    for base_class in args.base_classes:
-        if base_class not in base_class_arguments:
-            print(f'{base_class} is not a valid base class argument')
-            return errno.EINVAL
+        list_group.add_argument(
+            '-v',
+            help='Also display class docstrings along with dependencies and'
+                 ' their availability',
+            action='store_true'
+        )
+        list_group.add_argument(
+            '-vv',
+            help='Display all available information, that is: docstrings,'
+                 ' dependencies, input and output formats and specification of'
+                 ' the arguments',
+            action='store_true'
+        )
+        return parser, groups
 
-    verbosity = 'list'
-    if args.v:
-        verbosity = 'docstrings'
-    if args.vv:
-        verbosity = 'all'
+    @staticmethod
+    def run(args: argparse.Namespace, **kwargs):
+        logger.set_verbosity(args.verbosity)
 
-    resulting_output = list_classes(
-        args.base_classes if len(args.base_classes) > 0 else base_class_arguments,  # noqa: E501
-        verbosity=verbosity
-    )
+        for base_class in args.base_classes:
+            if base_class not in ListClassesRunner.base_class_arguments:
+                print(f'{base_class} is not a valid base class argument')
+                sys.exit(errno.EINVAL)
 
-    for line in resulting_output:
-        print(line, end='')
+        verbosity = 'list'
 
-    return 0
+        if args.v:
+            verbosity = 'docstrings'
+        if args.vv:
+            verbosity = 'all'
+
+        resulting_output = list_classes(
+            args.base_classes if len(args.base_classes) > 0 else ListClassesRunner.base_class_arguments,  # noqa: E501
+            verbosity=verbosity
+        )
+
+        for line in resulting_output:
+            print(line, end='')
+
+
+def main(argv):
+    parser, _ = ListClassesRunner.configure_parser(command=argv[0])
+    args, _ = parser.parse_known_args(argv[1:])
+
+    ListClassesRunner.run(args)
 
 
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    ret = main(sys.argv)
+    main(sys.argv)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-    sys.exit(ret)

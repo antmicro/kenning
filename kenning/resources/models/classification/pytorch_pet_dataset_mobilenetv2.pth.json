@@ -1,1 +1,0 @@
-{"input": [{"name": "input.1", "shape": [1, 3, 224, 224], "dtype": "float32"}], "output": [{"name": "548", "shape": [1, 37], "dtype": "float32"}]}

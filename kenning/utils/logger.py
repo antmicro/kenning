@@ -16,7 +16,8 @@ import io
 import logging
 import urllib.request
 from dataclasses import dataclass
-from typing import Any, Callable, Optional, Union
+from types import TracebackType
+from typing import Any, Callable, Optional, Type, Union
 
 from tqdm import tqdm
 
@@ -65,16 +66,33 @@ class LoggerProgressBar(io.StringIO):
         super().__init__()
         self.logger = get_logger()
         self.buf = ''
+        self.prev_terminators = []
         if suppress_new_line:
             for handler in self.logger.handlers:
                 if isinstance(handler, logging.StreamHandler):
-                    handler.terminator = ''
+                    self.prev_terminators.append((handler, handler.terminator))
+                    handler.terminator = '\r'
+
+    def __enter__(self) -> 'LoggerProgressBar':
+        return self
+
+    def __exit__(
+            self,
+            exc_type: Optional[Type[BaseException]],
+            exc_value: Optional[BaseException],
+            traceback: Optional[TracebackType]) -> bool:
+        # restore previous terminator
+        for handler, terminator in self.prev_terminators:
+            handler.terminator = terminator
+        self.logger.log(logging.INFO, '')
+
+        return False
 
     def write(self, buf):
         self.buf = buf.strip('\r\n\t ')
 
     def flush(self):
-        self.logger.log(logging.INFO, '\r' + self.buf)
+        self.logger.log(logging.INFO, self.buf)
 
 
 def download_url(url, output_path):
@@ -86,12 +104,16 @@ def download_url(url, output_path):
                 self.total = tsize
             self.update(b * bsize - self.n)
 
-    with DownloadProgressBar(
+    with (
+        LoggerProgressBar() as progress_bar,
+        DownloadProgressBar(
             unit='B',
             unit_scale=True,
             miniters=1,
-            file=LoggerProgressBar(),
-            desc=url.split('/')[-1]) as t:
+            file=progress_bar,
+            desc=url.split('/')[-1],
+        ) as t,
+    ):
         urllib.request.urlretrieve(
             url,
             filename=output_path,

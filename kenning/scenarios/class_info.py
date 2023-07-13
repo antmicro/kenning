@@ -18,7 +18,10 @@ import ast
 import importlib
 import os.path
 import sys
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional, Dict
+from kenning.cli.command_template import (
+    CommandTemplate, GROUP_SCHEMA, INFO)
+from kenning.utils import logger
 
 import astunparse
 from isort import place_module
@@ -400,7 +403,7 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
 
 def generate_class_info(target: str, class_name='', docstrings=True,
                         dependencies=True, input_formats=True,
-                        output_formats=True, argument_formats=True)\
+                        output_formats=True, argument_formats=True, **kwargs)\
         -> List[str]:
     """
     Wrapper function that handles displaying information about a class
@@ -422,6 +425,8 @@ def generate_class_info(target: str, class_name='', docstrings=True,
         Flag whether to display output formats
     argument_formats: bool
         Flag whether to display argument formats
+    **kwargs: dict
+        Extra arguments, unused in the function
 
     Returns
     -------
@@ -507,8 +512,8 @@ def generate_class_info(target: str, class_name='', docstrings=True,
                 continue
             dependencies.append(dependency_str)
 
-        [resulting_lines.append(dep_str)
-         for dep_str in list(set(dependencies))]
+        for dep_str in list(set(dependencies)):
+            resulting_lines.append(dep_str)
 
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
         resulting_lines.append('\n')
@@ -516,78 +521,112 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     if input_formats:
         resulting_lines.append('Input formats:\n')
         if input_specification_node:
-            resulting_lines.append(get_input_specification(
-                input_specification_node))
-        resulting_lines.append('\n')
+            data = get_input_specification(input_specification_node)
+            resulting_lines.append(data if data else 'No inputs')
+        else:
+            resulting_lines.append('No inputs')
+        resulting_lines.append('\n\n')
 
     if output_formats:
         resulting_lines.append('Output formats:\n')
         if output_specification_node:
-            resulting_lines.append(get_output_specification(
-                output_specification_node))
-        resulting_lines.append('\n')
+            data = get_output_specification(output_specification_node)
+            resulting_lines.append(data if data else 'No outputs')
+        else:
+            resulting_lines.append('No outputs')
+        resulting_lines.append('\n\n')
 
     if argument_formats:
         resulting_lines.append('Arguments specification:\n')
         if arguments_structure_node:
-            resulting_lines.append(get_arguments_structure(
-                arguments_structure_node, target_path))
+            data = get_arguments_structure(
+                arguments_structure_node,
+                target_path
+            )
+            resulting_lines.append(data if data else 'No arguments')
+        else:
+            resulting_lines.append('No arguments')
+        resulting_lines.append('\n\n')
 
     return resulting_lines
 
 
+class ClassInfoRunner(CommandTemplate):
+    parse_all = True
+    description = __doc__.split('\n\n')[0]
+
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(
+            ClassInfoRunner, ClassInfoRunner
+        ).configure_parser(
+            parser,
+            command,
+            types,
+            groups
+        )
+
+        info_group = parser.add_argument_group(GROUP_SCHEMA.format(INFO))
+
+        info_group.add_argument(
+            'target',
+            help='Module-like path of the module or class '
+                 '(e.g. kenning.compilers.onnx)',
+            type=str
+        )
+        info_group.add_argument(
+            '--docstrings',
+            help='Display class docstrings',
+            action='store_true'
+        )
+        info_group.add_argument(
+            '--dependencies',
+            help='Display class dependencies',
+            action='store_true'
+        )
+        info_group.add_argument(
+            '--input-formats',
+            help='Display class input formats',
+            action='store_true'
+        )
+        info_group.add_argument(
+            '--output-formats',
+            help='Display output formats',
+            action='store_true'
+        )
+        info_group.add_argument(
+            '--argument-formats',
+            help='Display the argument specification',
+            action='store_true'
+        )
+        return parser, groups
+
+    @staticmethod
+    def run(args: argparse.Namespace, **kwargs):
+        logger.set_verbosity(args.verbosity)
+
+        args = {k: v for k, v in vars(args).items() if v is not None}  # noqa: E501
+
+        # if no flags are given, set all of them to True (display everything)
+        if not any([v for v in args.values() if type(v) is bool]):
+            for k, v in args.items():
+                args[k] = True if type(v) is bool else v
+        resulting_output = generate_class_info(**args)
+
+        for result_line in resulting_output:
+            print(result_line, end='')
+
+
 def main(argv):
-    parser = argparse.ArgumentParser(
-        argv[0],
-        description='Provides information about a given kenning module or '
-                    'class. If no flags are given, displays the full output')
+    parser, _ = ClassInfoRunner.configure_parser(command=argv[0])
+    args, _ = parser.parse_known_args(argv[1:])
 
-    parser.add_argument(
-        'target',
-        help='Module-like path of the module or class '
-             '(e.g. kenning.compilers.onnx)',
-        type=str
-    )
-    parser.add_argument(
-        '--docstrings',
-        help='Display class docstrings',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--dependencies',
-        help='Display class dependencies',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--input-formats',
-        help='Display class input formats',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--output-formats',
-        help='Display output formats',
-        action='store_true'
-    )
-    parser.add_argument(
-        '--argument-formats',
-        help='Display the argument specification',
-        action='store_true'
-    )
-
-    args = parser.parse_args(argv[1:])
-
-    args = {k: v for k, v in vars(args).items() if v is not None}
-
-    # if no flags are given, set all of them to True (display everything)
-    if not any([v for v in args.values() if type(v) is bool]):
-        for k, v in args.items():
-            args[k] = True if type(v) is bool else v
-
-    resulting_output = generate_class_info(**args)
-
-    for result_line in resulting_output:
-        print(result_line, end='')
-        pass
+    ClassInfoRunner.run(args)
 
 
 if __name__ == '__main__':

@@ -15,6 +15,7 @@ More precisely, it displays:
 """
 import argparse
 import ast
+import errno
 import importlib
 import inspect
 import os.path
@@ -30,9 +31,12 @@ import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
 
+from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.core.outputcollector import OutputCollector
+from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
@@ -79,6 +83,10 @@ class Argument:
             lines.append(f'    * {element}')
 
         return '\n'.join(lines)
+
+
+class ClassInfoInvalidArgument(Exception):
+    pass
 
 
 def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
@@ -221,6 +229,9 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
 
     # formatted lines to be returned
     resulting_output = []
+
+    if not isinstance(dict_node, ast.Dict):
+        return ['']
 
     dict_elements = []
     for key, value in zip(dict_node.keys, dict_node.values):
@@ -500,7 +511,9 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
 
     args_structure = parameterschema['properties']
 
-    required_args: List = parameterschema['required']
+    required_args: List = []
+    if 'required' in parameterschema.keys():
+        required_args = parameterschema['required']
 
     if not args_structure:
         return ['']
@@ -510,8 +523,7 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
 
         resulting_lines.append(f'  * argparse_name: '
                                f'{to_argparse_name(arg_name)}\n')
-        if arg_name in required_args:
-            resulting_lines.append('  * required: True\n')
+
         for key, value in arg_dict.items():
             # skip real_name as it is the same as arg_name
             if key == 'real_name':
@@ -531,6 +543,9 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
                 continue
 
             resulting_lines.append(f'  * {key}: {value}\n')
+
+        if arg_name in required_args:
+            resulting_lines.append('  * required: True\n')
 
     return resulting_lines
 
@@ -578,76 +593,98 @@ def instantiate_object(imported_class,
                        arguments: List = []) -> object:
     class_object = None
 
-    logger = get_logger()
-
     # create a dict of arguments that will be used to create an instance
     parsed_args: Dict = {}
-    if len(arguments) > 0:
+    # if len(arguments) == 0 and len(parameterschema['required']) > 0:
+    #     raise Exception('Provide the required arguments when loading a class '
+    #                     'with args')
 
-        # split the arguments into lists with two elements, i.e. argparse_name and value # noqa E501
-        arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
+    # split the arguments into lists with two elements, i.e. argparse_name and value # noqa E501
+    arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
 
-        for arg_tuple in arg_tuples:
-            parameter = parameterschema['properties'][from_argparse_name(
-                arg_tuple[0])]
+    for arg_tuple in arg_tuples:
+        parameter = parameterschema['properties'][from_argparse_name(
+            arg_tuple[0])]
 
-            argument_type = str
-            if 'type' in parameter.keys():
-                argument_type = jsontype_to_type[parameter['type'][0]]
+        argument_type = str
+        if 'type' in parameter.keys() and isinstance(parameter['type'], list):
+            argument_type = jsontype_to_type[parameter['type'][0]]
 
-            parsed_args[from_argparse_name(arg_tuple[0])] = \
-                argument_type(arg_tuple[1])
+        parsed_args[from_argparse_name(arg_tuple[0])] = \
+            argument_type(arg_tuple[1])
 
-    # create an object based on its base class
-    if issubclass(imported_class, Runtime):
-        class_object = imported_class.from_json(
-            json_dict=parsed_args,
-            protocol=RuntimeProtocol())
+    class_object = instantiate_object_based_on_base_class(
+        imported_class,
+        parsed_args)
 
-    if issubclass(imported_class, ModelWrapper):
-        # create a temporary directory for the dataset
-        dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
-        model_path = Path(imported_class.pretrained_modelpath)
+    return class_object
 
-        dataset_path.touch(exist_ok=False)
-        dataset = imported_class.default_dataset(
-            Path(dataset_path), download_dataset=True)
 
-        class_object = imported_class(model_path, dataset, from_file=True)
+def instantiate_object_based_on_base_class(imported_class,
+                                           parsed_args) -> object:  # noqa E501
 
-        dataset_path.unlink(missing_ok=True)
+    class_object = None
+    logger = get_logger()
 
-    if issubclass(imported_class, Dataset):
+    try:
+        # create an object based on its base class
+        if issubclass(imported_class, Runtime):
+            return imported_class.from_json(
+                json_dict=parsed_args,
+                protocol=RuntimeProtocol())
 
-        if len(parsed_args) == 0:
-            # try to create an object even if the user hasnt provided any arguments # noqa E501
-            dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
+        if issubclass(imported_class, ModelWrapper):
+            object_class = imported_class.from_json(
+                json_dict=parsed_args,
+                dataset=None,
+                from_file=False)
 
-            download_dataset = False
-            if not os.path.exists(dataset_path):
-                print('Downloading dataset...')
-                download_dataset = True
+            Path(parsed_args['model_path'] + '.json').unlink(missing_ok=False)
 
-            class_object = imported_class(
-                dataset_path,
-                download_dataset=download_dataset)
+            return object_class
 
-        # create an object with explicitly provided arguments
-        try:
-            class_object = imported_class.from_json(parsed_args)
-        except ValidationError as e:
-            reason = str(e).partition('\n')[0]
-            logger.error(f'Could not create a {imported_class.__name__} '
-                         f'object. Reason: {reason}')
-            return None
-        except FileNotFoundError as e:
-            logger.error(f'Could not create a {imported_class.__name__} '
-                         f'object. Reason: {e}')
+        if issubclass(imported_class, Dataset):
+            return imported_class.from_json(parsed_args)
 
-    if issubclass(imported_class, Optimizer):
-        dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
+        if issubclass(imported_class, Optimizer):
 
-    print(class_object)
+            object_class = imported_class.from_json(
+                dataset=None,
+                json_dict=parsed_args)
+
+            return object_class
+
+        if issubclass(imported_class, DataProvider):
+            return imported_class.from_json(
+                json_dict=parsed_args,
+                inputs_sources={},
+                inputs_specs={},
+                outputs={})
+
+        if issubclass(imported_class, Runner):
+            return imported_class.from_json(
+                json_dict=parsed_args,
+                inputs_sources={},
+                inputs_specs={},
+                outputs={})
+
+        if issubclass(imported_class, OutputCollector):
+            return imported_class.from_json(
+                json_dict=parsed_args,
+                inputs_sources={},
+                inputs_specs={},
+                outputs={})
+
+    except ValidationError as e:
+        reason = str(e).partition('\n')[0]
+        raise ClassInfoInvalidArgument(
+            f'Could not create a {imported_class.__name__} object. '
+            f'You need to provide the required arguments.\n'
+            f'Reason: {reason}\n')
+    except FileNotFoundError as e:
+        raise ClassInfoInvalidArgument(
+            f'Could not create a {imported_class.__name__} object.\n'
+            f'Reason: {e}\n')
 
     return class_object
 
@@ -655,7 +692,7 @@ def instantiate_object(imported_class,
 def generate_class_info(target: str, class_name='', docstrings=True,
                         dependencies=True, input_formats=True,
                         output_formats=True, argument_formats=True,
-                        load_class_with_args=[]) \
+                        load_class_with_args=None) \
         -> List[str]:
     """
     Wrapper function that handles displaying information about a class
@@ -724,7 +761,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     parameterschema = None
     class_object = None
 
-    if class_name != '' and len(load_class_with_args) > 0:
+    if class_name != '':
         # try to load the class into memory
         module_path = path = target_path[:-3].replace('/', '.')
         try:
@@ -745,21 +782,19 @@ def generate_class_info(target: str, class_name='', docstrings=True,
                     f'Reason: {e}']
 
     # create an object when it has no required arguments if possible
-    if imported_class and len(parameterschema['required']) == 0:
-        class_object = instantiate_object(imported_class)
+    if imported_class and load_class_with_args is not None:
+        try:
+            class_object = instantiate_object(
+                imported_class,
+                parameterschema,
+                load_class_with_args)
+        except ClassInfoInvalidArgument as e:
+            return [f'{e}']
 
-    if imported_class and len(parameterschema['required']) > 0:
-        if not len(load_class_with_args) > 0:
-            return ['Class needs to be loaded with required arguments, '
-                    'provide them with --load-class-with-args']
-
-        class_object = instantiate_object(
-            imported_class,
-            parameterschema,
-            load_class_with_args)
-
-        if class_object is None:
-            return ['']
+    # if imported_class and len(parameterschema['required']) > 0:
+    #     if not len(load_class_with_args) > 0:
+    #         return ['Class needs to be loaded with required arguments, '
+    #                 'provide them with --load-class-with-args']
 
     for node in syntax_nodes:
         if isinstance(node, ast.ClassDef) and class_name != '' \
@@ -819,14 +854,13 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             resulting_lines.append('\n')
 
         if imported_class and (input_formats or output_formats):
-            get_io_spec_method = getattr(class_object, 'get_io_specification',
-                                         None)
-
-            if get_io_spec_method:
+            if hasattr(class_object, 'get_io_specification'):
                 # i/o specification found
+                found_io_specification = True
                 resulting_lines.append('Input/output specification:\n')
-                io_spec = class_object.get_io_spec_method()
+                io_spec = class_object.get_io_specification()
                 resulting_lines += parse_io_spec_dict_to_str(io_spec)
+                resulting_lines.append('\n')
 
     if dependencies:
         resulting_lines.append('Dependencies:\n')
@@ -948,7 +982,8 @@ class ClassInfoRunner(CommandTemplate):
     def run(args: argparse.Namespace, **kwargs):
         logger.set_verbosity(args.verbosity)
 
-        args = {k: v for k, v in vars(args).items() if v is not None}  # noqa: E501
+        args = {k: v for k, v in vars(args).items() if v is not None
+                and k != 'help' and k != 'verbosity'}
 
         # if no flags are given, set all of them to True (display everything)
         if not any([v for v in args.values() if type(v) is bool]):

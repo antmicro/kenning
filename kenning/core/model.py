@@ -42,7 +42,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     def __init__(
             self,
             modelpath: Path,
-            dataset: Dataset,
+            dataset: Optional[Dataset],
             from_file: bool = True):
         """
         Creates the model wrapper.
@@ -51,7 +51,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         ----------
         modelpath : Path
             The path to the model.
-        dataset : Dataset
+        dataset : Optional[Dataset]
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.

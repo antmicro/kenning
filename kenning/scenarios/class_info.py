@@ -28,9 +28,16 @@ from typing import Union, List, Dict
 
 import astunparse
 from isort import place_module
+from jsonschema.exceptions import ValidationError
 
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.utils.args_manager import to_argparse_name
+from kenning.core.optimizer import Optimizer
+from kenning.core.runtime import Runtime
+from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
+    from_argparse_name
+from kenning.utils.logger import get_logger
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
@@ -493,6 +500,8 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
 
     args_structure = parameterschema['properties']
 
+    required_args: List = parameterschema['required']
+
     if not args_structure:
         return ['']
 
@@ -501,6 +510,8 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
 
         resulting_lines.append(f'  * argparse_name: '
                                f'{to_argparse_name(arg_name)}\n')
+        if arg_name in required_args:
+            resulting_lines.append('  * required: True\n')
         for key, value in arg_dict.items():
             # skip real_name as it is the same as arg_name
             if key == 'real_name':
@@ -560,6 +571,85 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
             resulting_output.append(f'  * {key}: {value}\n')
 
     return resulting_output
+
+
+def instantiate_object(imported_class,
+                       parameterschema: Dict = {},
+                       arguments: List = []) -> object:
+    class_object = None
+
+    logger = get_logger()
+
+    # create a dict of arguments that will be used to create an instance
+    parsed_args: Dict = {}
+    if len(arguments) > 0:
+
+        # split the arguments into lists with two elements, i.e. argparse_name and value # noqa E501
+        arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
+
+        for arg_tuple in arg_tuples:
+            parameter = parameterschema['properties'][from_argparse_name(
+                arg_tuple[0])]
+
+            argument_type = str
+            if 'type' in parameter.keys():
+                argument_type = jsontype_to_type[parameter['type'][0]]
+
+            parsed_args[from_argparse_name(arg_tuple[0])] = \
+                argument_type(arg_tuple[1])
+
+    # create an object based on its base class
+    if issubclass(imported_class, Runtime):
+        class_object = imported_class.from_json(
+            json_dict=parsed_args,
+            protocol=RuntimeProtocol())
+
+    if issubclass(imported_class, ModelWrapper):
+        # create a temporary directory for the dataset
+        dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
+        model_path = Path(imported_class.pretrained_modelpath)
+
+        dataset_path.touch(exist_ok=False)
+        dataset = imported_class.default_dataset(
+            Path(dataset_path), download_dataset=True)
+
+        class_object = imported_class(model_path, dataset, from_file=True)
+
+        dataset_path.unlink(missing_ok=True)
+
+    if issubclass(imported_class, Dataset):
+
+        if len(parsed_args) == 0:
+            # try to create an object even if the user hasnt provided any arguments # noqa E501
+            dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
+
+            download_dataset = False
+            if not os.path.exists(dataset_path):
+                print('Downloading dataset...')
+                download_dataset = True
+
+            class_object = imported_class(
+                dataset_path,
+                download_dataset=download_dataset)
+
+        # create an object with explicitly provided arguments
+        try:
+            class_object = imported_class.from_json(parsed_args)
+        except ValidationError as e:
+            reason = str(e).partition('\n')[0]
+            logger.error(f'Could not create a {imported_class.__name__} '
+                         f'object. Reason: {reason}')
+            return None
+        except FileNotFoundError as e:
+            logger.error(f'Could not create a {imported_class.__name__} '
+                         f'object. Reason: {e}')
+
+    if issubclass(imported_class, Optimizer):
+        dataset_path = Path(f'build/tmp-dataset/{imported_class.__name__}')
+
+    print(class_object)
+
+    return class_object
 
 
 def generate_class_info(target: str, class_name='', docstrings=True,
@@ -634,7 +724,7 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     parameterschema = None
     class_object = None
 
-    if class_name != '':
+    if class_name != '' and len(load_class_with_args) > 0:
         # try to load the class into memory
         module_path = path = target_path[:-3].replace('/', '.')
         try:
@@ -654,20 +744,22 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             return [f'Cannot import class {class_name} from {module_path}\n'
                     f'Reason: {e}']
 
-    if imported_class:
+    # create an object when it has no required arguments if possible
+    if imported_class and len(parameterschema['required']) == 0:
+        class_object = instantiate_object(imported_class)
 
-        if issubclass(imported_class, ModelWrapper):
-            # create a temporary directory for the dataset
-            dataset_path = Path('build/tmp-dataset')
-            model_path = Path(imported_class.pretrained_modelpath)
+    if imported_class and len(parameterschema['required']) > 0:
+        if not len(load_class_with_args) > 0:
+            return ['Class needs to be loaded with required arguments, '
+                    'provide them with --load-class-with-args']
 
-            dataset_path.touch(exist_ok=False)
-            dataset = imported_class.default_dataset(
-                Path(dataset_path), download_dataset=True)
+        class_object = instantiate_object(
+            imported_class,
+            parameterschema,
+            load_class_with_args)
 
-            class_object = imported_class(model_path, dataset, from_file=True)
-
-            dataset_path.unlink(missing_ok=True)
+        if class_object is None:
+            return ['']
 
     for node in syntax_nodes:
         if isinstance(node, ast.ClassDef) and class_name != '' \
@@ -727,11 +819,14 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             resulting_lines.append('\n')
 
         if imported_class and (input_formats or output_formats):
-            # i/o specification found, extract by creating an object
-            resulting_lines.append('Input/output specification:\n')
+            get_io_spec_method = getattr(class_object, 'get_io_specification',
+                                         None)
 
-            io_spec = class_object.get_io_specification()
-            resulting_lines += parse_io_spec_dict_to_str(io_spec)
+            if get_io_spec_method:
+                # i/o specification found
+                resulting_lines.append('Input/output specification:\n')
+                io_spec = class_object.get_io_spec_method()
+                resulting_lines += parse_io_spec_dict_to_str(io_spec)
 
     if dependencies:
         resulting_lines.append('Dependencies:\n')
@@ -845,7 +940,7 @@ class ClassInfoRunner(CommandTemplate):
         info_group.add_argument(
             '--load-class-with-args',
             help='',
-            nargs='*'
+            nargs=argparse.REMAINDER
         )
         return parser, groups
 
@@ -877,4 +972,3 @@ if __name__ == '__main__':
     ret = main(sys.argv)
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     sys.exit(ret)
-

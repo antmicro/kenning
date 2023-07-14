@@ -99,6 +99,13 @@ type_to_jsontype = {
     bool: 'boolean'
 }
 
+jsontype_to_type = {
+    'string': str,
+    'number': float,
+    'integer': int,
+    'boolean': bool
+}
+
 
 def serialize(obj: object, normalize: bool = True) -> Dict:
     """

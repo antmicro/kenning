@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Provides resource manager responsible for downloading and caching resources
+Provide resource manager responsible for downloading and caching resources
 """
 import hashlib
 from pathlib import Path
@@ -146,7 +146,7 @@ class ResourceManager(metaclass=Singleton):
 
     def list_cached_files(self) -> List[Path]:
         """
-        Returns list with cached files.
+        Return list with cached files.
 
         Returns
         -------
@@ -166,7 +166,7 @@ class ResourceManager(metaclass=Singleton):
 
     def clear_cache(self):
         """
-        Removes all cached files
+        Remove all cached files
         """
         rmtree(self.CACHE_DIR, ignore_errors=True)
         self.CACHE_DIR.mkdir()
@@ -274,7 +274,7 @@ class ResourceManager(metaclass=Singleton):
 
     def _save_file_checksum(self, file_path: Path):
         """
-        Saves file checksum.
+        Save file checksum.
 
         Parameters
         ----------
@@ -292,7 +292,7 @@ class ResourceManager(metaclass=Singleton):
 
     def _download_resource(self, url: str, output_path: Path):
         """
-        Downloads resource from given URL.
+        Download resource from given URL.
 
         Parameters
         ----------
@@ -320,7 +320,7 @@ class ResourceManager(metaclass=Singleton):
 
     def _free_cache(self, required_free: int):
         """
-        Frees cache space.
+        Free cache space.
 
         Parameters
         ----------
@@ -345,7 +345,7 @@ class ResourceManager(metaclass=Singleton):
 
     def _compute_file_checksum(self, file_path: Path) -> str:
         """
-        Computes file checksum.
+        Compute file checksum.
 
         Parameters
         ----------
@@ -367,6 +367,138 @@ class ResourceManager(metaclass=Singleton):
                 hash_algo.update(data)
 
         return hash_algo.hexdigest().lower()
+
+
+class ResourceURI(Path):
+    """
+    Handle access to resource used in Kenning.
+    """
+
+    _flavour = type(Path())._flavour
+
+    def __new__(cls, uri_or_path: Union[str, Path, 'ResourceURI']):
+        if isinstance(uri_or_path, str) and ':/' in uri_or_path:
+            uri = urlparse(uri_or_path)
+            path = uri.path
+        elif isinstance(uri_or_path, cls):
+            uri = uri_or_path._uri
+            path = Path(uri_or_path)
+        else:
+            uri = None
+            path = Path(uri_or_path).expanduser().resolve()
+
+        instance = super().__new__(cls, path)
+        instance._uri = uri
+
+        return instance
+
+    @property
+    def uri(self) -> str:
+        """
+        Get URI of the resource.
+        """
+        if self._uri is None:
+            return None
+
+        return self._uri._replace(path=str(self)).geturl()
+
+    def get_resource(self, output_path: Optional[Path] = None) -> Path:
+        """
+        Retrieve resource and returns path to it.
+
+        Parameters
+        ----------
+        output_path : Optional[Path]
+            If specified, the resource will be download there.
+
+        Returns
+        -------
+        Path :
+            Path to the downloaded resource.
+        """
+        if self._uri is None:
+            return Path(self)
+
+        return ResourceManager().get_resource(self.uri, output_path)
+
+    def get_path(self) -> Path:
+        """
+        Return path to the resource.
+
+        Returns
+        -------
+        Path :
+            Path to the resource.
+        """
+        if self._uri is None:
+            return Path(self)
+
+        path = ResourceManager().CACHE_DIR / self.relative_to('/')
+
+        return path
+
+    @property
+    def parent(self) -> 'ResourceURI':
+        """
+        Get parent of the URI.
+        """
+        ret = super().parent
+        ret._uri = self._uri
+        return ret
+
+    def with_suffix(self, suffix: str) -> 'ResourceURI':
+        """
+        Return new URI with changed suffix.
+
+        Parameters
+        ----------
+        suffix : str
+            New suffix to be used.
+
+        Returns
+        -------
+        ResourceURI :
+            URI with changed suffix.
+        """
+        ret = super().with_suffix(suffix)
+        ret._uri = self._uri
+        return ret
+
+    def with_name(self, name: str) -> 'ResourceURI':
+        """
+        Return new URI with changed name.
+
+        Parameters
+        ----------
+        name : str
+            New name to be used.
+
+        Returns
+        -------
+        ResourceURI :
+            URI with changed name.
+        """
+        ret = super().with_name(name)
+        ret._uri = self._uri
+        return ret
+
+    def with_stem(self, stem: str) -> 'ResourceURI':
+        """
+        Return new URI with changed stem.
+
+        Parameters
+        ----------
+        stem : str
+            New stem to be used.
+
+        Returns
+        -------
+        ResourceURI :
+            URI with changed stem.
+        """
+        ret = super().with_stem(stem)
+        ret._uri = self._uri
+        return ret
 
 
 class Resources(object):
@@ -391,14 +523,16 @@ class Resources(object):
 
         resources_uri = self._resources_uri
         for key in keys:
-            if key not in resources_uri:
+            if not isinstance(resources_uri, dict) or key not in resources_uri:
                 raise KeyError(f'Invalid key: {keys}')
             resources_uri = resources_uri[key]
 
-        if not isinstance(resources_uri, str):
-            raise KeyError(f'Invalid key: {keys}')
+        if isinstance(resources_uri, str):
+            return ResourceManager().get_resource(resources_uri)
+        if isinstance(resources_uri, ResourceURI):
+            return resources_uri.get_resource()
 
-        return ResourceManager().get_resource(resources_uri)
+        raise KeyError(f'Invalid key: {keys}')
 
     def __setitem__(self, keys: Union[Tuple[str], str], value: str):
         if isinstance(keys, str):
@@ -420,7 +554,7 @@ class Resources(object):
 
     def keys(self) -> List[Tuple[str, ...]]:
         """
-        Returns all resources' keys.
+        Return all resources' keys.
 
         Returns
         -------
@@ -431,7 +565,7 @@ class Resources(object):
 
         def get_keys(resources_uri: dict, keys: list = []):
             for key, value in resources_uri.items():
-                if isinstance(value, str):
+                if isinstance(value, (str, ResourceURI)):
                     result.append((*keys, key))
                 elif isinstance(value, dict):
                     get_keys(value, keys + [key])
@@ -447,31 +581,3 @@ class ChecksumVerifyError(Exception):
     """
 
     pass
-
-
-def get_resource(uri: str, output_path: Optional[Path] = None) -> Path:
-    """
-    Retrieve file and return path to it.
-
-    If the uri points to remote resource, then it is downloaded (if not
-    found in cache) and validated.
-
-    Parameters
-    ----------
-    uri : str
-        Resource URI.
-    output_path : Optional[Path]
-        Path to the output file. If not provided then the path is
-        automatically created.
-
-    Returns
-    -------
-    Path :
-        Path to the retrieved resource.
-
-    Raises
-    ------
-    ChecksumVerifyError :
-        Raised when downloaded file has invalid checksum
-    """
-    return ResourceManager().get_resource(uri, output_path)

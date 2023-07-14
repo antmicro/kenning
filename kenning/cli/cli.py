@@ -19,6 +19,8 @@ from kenning.cli.config import (
     MAP_COMMAND_TO_SCENARIO,
     SUBCOMMANDS,
 )
+from kenning.utils.excepthook import \
+    MissingKenningDependencies, find_missing_optional_dependency
 
 
 SUB_DEST_FORM = "__seq_{}"
@@ -221,7 +223,14 @@ def main():
             continue
         try:
             run(args, not_parsed=rem)
+        except ModuleNotFoundError as er:
+            extras = find_missing_optional_dependency(er.name)
+            if not extras:
+                raise
+            er = MissingKenningDependencies(
+                name=er.name, path=er.path, optional_dependencies=extras)
+            parser.exit(2, f"{parser.prog}: error: {er}")
         except argparse.ArgumentError as er:
             parser.error(er.message)
-            return
+
         used_functions.add(run)

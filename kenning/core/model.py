@@ -108,7 +108,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     @classmethod
     def from_json(
             cls,
-            dataset: Dataset,
+            dataset: Optional[Dataset],
             json_dict: Dict,
             from_file: bool = True):
         """
@@ -120,7 +120,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             The dataset object to feed to the model.
         json_dict : Dict
             Arguments for the constructor.

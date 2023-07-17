@@ -15,22 +15,19 @@ More precisely, it displays:
 """
 import argparse
 import ast
-import errno
 import importlib
 import inspect
 import os.path
 import sys
-from typing import Union, List, Tuple, Optional, Dict
-from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, INFO)
-from kenning.utils import logger
-from pathlib import Path
-from typing import Union, List, Dict
+from typing import Optional
+from typing import Union, List, Dict, Tuple, Type
 
 import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
 
+from kenning.cli.command_template import (
+    CommandTemplate, GROUP_SCHEMA, INFO)
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -39,9 +36,9 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils import logger
 from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
     from_argparse_name
-from kenning.utils.logger import get_logger
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
@@ -86,6 +83,9 @@ class Argument:
 
 
 class ClassInfoInvalidArgument(Exception):
+    """
+    Exception raised when the arguments provided are not valid
+    """
     pass
 
 
@@ -101,13 +101,14 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later.
+    str: Formatted Markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
         return f'Class: {syntax_node.name}\n\n'
 
 
-def get_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast. Module]) -> str:  # noqa: E501
+def get_class_module_docstrings(
+        syntax_node: Union[ast.ClassDef, ast.Module]) -> str:  # noqa: E501
     """
     Displays docstrings of provided class or module
 
@@ -118,7 +119,7 @@ def get_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast. Module]) -
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later.
+    str: Formatted Markdown-like string to be printed later.
     """
 
     docstring = ast.get_docstring(syntax_node, clean=True)
@@ -136,8 +137,7 @@ def get_class_module_docstrings(syntax_node: Union[ast.ClassDef, ast. Module]) -
         return f'Module description:\n\n{docstring}\n\n'
 
 
-def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
-        -> str:
+def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
     """
     Extracts a dependency from an import syntax node and checks whether the
     dependency is satisfied. It also skips internal kenning modules
@@ -149,7 +149,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) \
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later. Empty strings
+    str: Formatted Markdown-like string to be printed later. Empty strings
     represent dependencies that were skipped - either they belong to kenning
     or are provided by the default python distribution
     """
@@ -192,7 +192,7 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later.
+    str: Formatted Markdown-like string to be printed later.
     """
 
     input_formats = ''
@@ -214,7 +214,7 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
 
 def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     """
-    Parses an ast.Dict to a nicely formatted list of strings in markdown
+    Parses an ast.Dict to a nicely formatted list of strings in Markdown
     format.
 
     Parameters
@@ -224,7 +224,7 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
 
     Returns
     -------
-    List[str]: List of formatted markdown-like strings to be printed later.
+    List[str]: List of formatted Markdown-like strings to be printed later.
     """
 
     # formatted lines to be returned
@@ -240,11 +240,15 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
             resulting_output.append(f'* {key.value}: {value.value}')
             continue
 
-        [dict_elements.append(element) for element in value.elts]
+        dict_elements.extend(value.elts)
 
     for dict_element in dict_elements:
 
-        resulting_output.append(f'* {dict_element.values[0].value}\n')
+        if isinstance(dict_element.values[0], ast.Constant):
+            resulting_output.append(f'* {dict_element.values[0].value}\n')
+        else:
+            # if the first value (name) is not a string, use the variable name
+            resulting_output.append(f'* {dict_element.values[0].id}\n')
 
         for key, value in zip(dict_element.keys[1:], dict_element.values[1:]):
             resulting_output.append(f'  * {key.value}: '
@@ -264,11 +268,11 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
 
     Returns
     -------
-    List[str]: List of formatted markdown-like strings to be printed later.
+    List[str]: List of formatted Markdown-like strings to be printed later.
     """
     io_spec_function_node = None
 
-    if len(class_node.body) <= 0:
+    if not class_node.body:
         return []
 
     for node in class_node.body:
@@ -307,7 +311,7 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later.
+    str: Formatted Markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
         return f'* {output_format.value}\n'
@@ -334,8 +338,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
         .removesuffix("'")
 
 
-def get_arguments_structure(syntax_node: ast.Assign, source_path: str) \
-        -> str:
+def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
     """
     Displays information about the argument structure specification as
     bullet points
@@ -349,7 +352,7 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) \
 
     Returns
     -------
-    str: Formatted markdown-like string to be printed later.
+    str: Formatted Markdown-like string to be printed later.
     """
     output_string = ''
 
@@ -394,6 +397,9 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) \
 
                 argument_object.enum = enum_list
                 argument_object.type = argument_type
+
+                if argument_type == 'Error':
+                    return f'Error: {enum_list[0]}'
 
             else:
                 key_str = clean_variable_name(key)
@@ -480,7 +486,13 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
 
     # argument list is an explicit python list (['int8', 'float16'])
     if argument_list_name.endswith(']') and argument_list_name[0] == '[':
-        enum_elements = eval(argument_list_name)
+        try:
+            enum_elements = eval(argument_list_name)
+        except NameError:
+            return ['Static code analysis failed here, please import the '
+                    'necessary modules and/or try to load the class with '
+                    'arguments'], 'Error'
+
         if len(enum_elements) > 0:
             argument_type = f'List[{type(enum_elements[0]).__name__}]'
         else:
@@ -506,13 +518,27 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     return enum_elements, argument_type
 
 
-def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
+def get_args_structure_from_parameterschema(parameterschema: Dict) -> List[
+    str]:  # noqa E501
+    """
+    Returns argument structure in the form of Markdown-like strings based on
+    the provided parameterschema.
+
+    Parameters
+    ----------
+    parameterschema: Dict
+        Arguments specification of the class
+
+    Returns
+    -------
+    List[str]: Formatted Markdown-like string to be printed later.
+    """
     resulting_lines = []
 
     args_structure = parameterschema['properties']
 
     required_args: List = []
-    if 'required' in parameterschema.keys():
+    if 'required' in parameterschema:
         required_args = parameterschema['required']
 
     if not args_structure:
@@ -550,9 +576,10 @@ def get_args_structure_from_parameterschema(parameterschema) -> List[str]:
     return resulting_lines
 
 
-def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
+def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
     """
-    Recursively parses a dictionary to a list of formatted, markdown-like strings  # noqa E501
+    Recursively parses a dictionary to a list of formatted,
+    Markdown-like strings
 
     Parameters
     ----------
@@ -561,11 +588,14 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
 
     Return
     ------
-    List[str]: A list of formatted, markdown-like strings
+    List[str]: A list of formatted, Markdown-like strings
     """
     resulting_output = []
 
     dict_elements = []
+
+    if not isinstance(dictionary, dict):
+        return ['']
 
     for key, value in dictionary.items():
         if not isinstance(value, list):
@@ -580,7 +610,8 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
         for key, value in dict_element.items():
             if isinstance(value, list):
                 resulting_output.append(f'  * {key}\n')
-                [resulting_output.append(f'    * {elt}\n') for elt in value]
+                for elt in value:
+                    resulting_output.append(f'    * {elt}\n')
                 continue
 
             resulting_output.append(f'  * {key}: {value}\n')
@@ -588,29 +619,48 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:  # noqa E501
     return resulting_output
 
 
-def instantiate_object(imported_class,
+def instantiate_object(imported_class: Type,
                        parameterschema: Dict = {},
-                       arguments: List = []) -> object:
-    class_object = None
+                       arguments: List[str] = []) -> object:
+    """
+    Parses provided arguments into a dictionary, then creates an instance of
+    the provided class.
+
+    Parameters
+    ----------
+    imported_class: Type
+        Class to create an instance of.
+    parameterschema: Dict
+        Argument structure of the class
+    arguments: List[str]
+        Arguments provided by the user, will be used to create an object
+
+    Returns
+    -------
+    object: An instance of imported_class
+    """
 
     # create a dict of arguments that will be used to create an instance
     parsed_args: Dict = {}
-    # if len(arguments) == 0 and len(parameterschema['required']) > 0:
-    #     raise Exception('Provide the required arguments when loading a class '
-    #                     'with args')
 
     # split the arguments into lists with two elements, i.e. argparse_name and value # noqa E501
     arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
 
     for arg_tuple in arg_tuples:
-        parameter = parameterschema['properties'][from_argparse_name(
-            arg_tuple[0])]
+        argparse_name = from_argparse_name(arg_tuple[0])
+
+        if argparse_name not in parameterschema['properties'].keys():
+            raise ClassInfoInvalidArgument(
+                f'Argparse name {to_argparse_name(argparse_name)} not present '
+                f'in argument specification')
+
+        parameter = parameterschema['properties'][argparse_name]
 
         argument_type = str
         if 'type' in parameter.keys() and isinstance(parameter['type'], list):
             argument_type = jsontype_to_type[parameter['type'][0]]
 
-        parsed_args[from_argparse_name(arg_tuple[0])] = \
+        parsed_args[argparse_name] = \
             argument_type(arg_tuple[1])
 
     class_object = instantiate_object_based_on_base_class(
@@ -620,12 +670,25 @@ def instantiate_object(imported_class,
     return class_object
 
 
-def instantiate_object_based_on_base_class(imported_class,
-                                           parsed_args) -> object:  # noqa E501
+def instantiate_object_based_on_base_class(
+        imported_class: Type,
+        parsed_args: Dict) -> object:
+    """
+    Creates an object of the provided class, based on the arguments provided
+    in dictionary format and the class it inherits from. Raises a custom
+    exception when there was an error.
 
-    class_object = None
-    logger = get_logger()
+    Parameters
+    ----------
+    imported_class: Type
+        Class to create an instance of.
+    parsed_args: Dict
+        Arguments following the arguments_structure of the class.
 
+    Returns
+    -------
+    object: An instance of imported_class
+    """
     try:
         # create an object based on its base class
         if issubclass(imported_class, Runtime):
@@ -634,34 +697,20 @@ def instantiate_object_based_on_base_class(imported_class,
                 protocol=RuntimeProtocol())
 
         if issubclass(imported_class, ModelWrapper):
-            object_class = imported_class.from_json(
+            return imported_class.from_json(
                 json_dict=parsed_args,
                 dataset=None,
                 from_file=False)
-
-            Path(parsed_args['model_path'] + '.json').unlink(missing_ok=False)
-
-            return object_class
 
         if issubclass(imported_class, Dataset):
             return imported_class.from_json(parsed_args)
 
         if issubclass(imported_class, Optimizer):
-
-            object_class = imported_class.from_json(
+            return imported_class.from_json(
                 dataset=None,
                 json_dict=parsed_args)
 
-            return object_class
-
         if issubclass(imported_class, DataProvider):
-            return imported_class.from_json(
-                json_dict=parsed_args,
-                inputs_sources={},
-                inputs_specs={},
-                outputs={})
-
-        if issubclass(imported_class, Runner):
             return imported_class.from_json(
                 json_dict=parsed_args,
                 inputs_sources={},
@@ -671,9 +720,13 @@ def instantiate_object_based_on_base_class(imported_class,
         if issubclass(imported_class, OutputCollector):
             return imported_class.from_json(
                 json_dict=parsed_args,
-                inputs_sources={},
                 inputs_specs={},
+                inputs_sources={},
                 outputs={})
+
+        if issubclass(imported_class, Runner):
+            # TODO Runner class is to be updated
+            return None
 
     except ValidationError as e:
         reason = str(e).partition('\n')[0]
@@ -686,14 +739,18 @@ def instantiate_object_based_on_base_class(imported_class,
             f'Could not create a {imported_class.__name__} object.\n'
             f'Reason: {e}\n')
 
-    return class_object
+    return None
 
 
-def generate_class_info(target: str, class_name='', docstrings=True,
-                        dependencies=True, input_formats=True,
-                        output_formats=True, argument_formats=True,
-                        load_class_with_args=None) \
-        -> List[str]:
+def generate_class_info(
+        target: str,
+        class_name='',
+        docstrings=True,
+        dependencies=True,
+        input_formats=True,
+        output_formats=True,
+        argument_formats=True,
+        load_class_with_args=None) -> List[str]:
     """
     Wrapper function that handles displaying information about a class
 
@@ -715,16 +772,13 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     argument_formats: bool
         Flag whether to display argument formats
     load_class_with_args: List[str]
-        # TODO
+        List of arguments provided to load a specific class with arguments
 
     Returns
     -------
-    List[str]: List of formatted, markdown-like lines to be printed
+    List[str]: List of formatted, Markdown-like lines to be printed
     """
     resulting_lines = []
-
-    if class_name is None:
-        class_name = ''
 
     # if target contains a class, split to path and class name
     split_target = target.split('.')
@@ -761,25 +815,23 @@ def generate_class_info(target: str, class_name='', docstrings=True,
     parameterschema = None
     class_object = None
 
-    if class_name != '':
+    if class_name:
         # try to load the class into memory
-        module_path = path = target_path[:-3].replace('/', '.')
+        module_path = target_path[:-3].replace('/', '.')
         try:
-            if class_name == '':
-                return [
-                    'Provide a class name in the module-like path when trying '
-                    'to load a class with arguments']
-
             imported_class = getattr(
-                importlib.import_module(path),
+                importlib.import_module(module_path),
                 class_name
             )
 
             parameterschema = imported_class.form_parameterschema()
 
-        except (ModuleNotFoundError, ImportError, Exception) as e:
-            return [f'Cannot import class {class_name} from {module_path}\n'
-                    f'Reason: {e}']
+        except (ModuleNotFoundError, ImportError, Exception):
+            resulting_lines.append(
+                'Warning: Only static code analysis will be performed - '
+                f'cannot import class {class_name}.\nTry installing the '
+                f'required dependencies or loading the class with '
+                f'arguments.\n\n')
 
     # create an object when it has no required arguments if possible
     if imported_class and load_class_with_args is not None:
@@ -789,32 +841,17 @@ def generate_class_info(target: str, class_name='', docstrings=True,
                 parameterschema,
                 load_class_with_args)
         except ClassInfoInvalidArgument as e:
-            return [f'{e}']
+            return [str(e)]
 
-    # if imported_class and len(parameterschema['required']) > 0:
-    #     if not len(load_class_with_args) > 0:
-    #         return ['Class needs to be loaded with required arguments, '
-    #                 'provide them with --load-class-with-args']
-
+    # perform static code analysis
     for node in syntax_nodes:
-        if isinstance(node, ast.ClassDef) and class_name != '' \
-                and node.name == class_name:
+        if isinstance(node, ast.ClassDef):
             class_nodes.append(node)
 
-            if not imported_class:
-                io_specification = get_io_specification(node)
-                if len(io_specification) > 0:
-                    io_specification_lines[node] = io_specification
-                    found_io_specification = True
-
-        if isinstance(node, ast.ClassDef) and class_name == '':
-            class_nodes.append(node)
-
-            if not imported_class:
-                io_specification = get_io_specification(node)
-                if len(io_specification) > 0:
-                    io_specification_lines[node] = io_specification
-                    found_io_specification = True
+            io_specification = get_io_specification(node)
+            if len(io_specification) > 0:
+                io_specification_lines[node] = io_specification
+                found_io_specification = True
 
         if isinstance(node, ast.Module) and class_name == '':
             class_nodes.append(node)
@@ -835,31 +872,31 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             if node.targets[0].id == KEYWORDS[2]:
                 arguments_structure_node = node
 
-    if docstrings:
-        if len(class_nodes) == 0:
-            resulting_lines.append(f'Class {class_name} has not been found')
-            return resulting_lines
-
-        for node in class_nodes:
+    # prepare output
+    for node in class_nodes:
+        if docstrings:
+            if len(class_nodes) == 0:
+                resulting_lines.append(f'Class {class_name}'
+                                       f' has not been found')
+                return resulting_lines
             resulting_lines.append(get_class_module_docstrings(node))
-    else:
-        for node in class_nodes:
+        else:
             resulting_lines.append(get_class_module_name(node))
 
-        if node in io_specification_lines.keys() \
-                and (input_formats or output_formats):
-            # i/o specification found, extract from static source code
-            resulting_lines.append('Input/output specification:\n')
-            resulting_lines += io_specification_lines[node]
-            resulting_lines.append('\n')
-
-        if imported_class and (input_formats or output_formats):
-            if hasattr(class_object, 'get_io_specification'):
-                # i/o specification found
+        if input_formats or output_formats:
+            if imported_class and hasattr(class_object, 'get_io_specification'): # noqa E501
+                # object has been created - detailed i/o specification found
                 found_io_specification = True
                 resulting_lines.append('Input/output specification:\n')
                 io_spec = class_object.get_io_specification()
                 resulting_lines += parse_io_spec_dict_to_str(io_spec)
+                resulting_lines.append('\n')
+
+            elif node in io_specification_lines:
+                # no object, but i/o specification found - extract statically
+                # from source code
+                resulting_lines.append('Input/output specification:\n')
+                resulting_lines += io_specification_lines[node]
                 resulting_lines.append('\n')
 
     if dependencies:
@@ -898,7 +935,11 @@ def generate_class_info(target: str, class_name='', docstrings=True,
 
     if argument_formats:
         resulting_lines.append('Arguments specification:\n')
-        if arguments_structure_node:
+        if parameterschema:
+            resulting_lines += \
+                get_args_structure_from_parameterschema(parameterschema)
+
+        elif arguments_structure_node:
             data = get_arguments_structure(
                 arguments_structure_node,
                 target_path
@@ -908,13 +949,6 @@ def generate_class_info(target: str, class_name='', docstrings=True,
             resulting_lines.append('No arguments')
         resulting_lines.append('\n\n')
 
-        if parameterschema:
-            resulting_lines += \
-                get_args_structure_from_parameterschema(parameterschema)
-
-        elif arguments_structure_node:
-            resulting_lines.append(get_arguments_structure(
-                arguments_structure_node, target_path))
     return resulting_lines
 
 
@@ -924,10 +958,10 @@ class ClassInfoRunner(CommandTemplate):
 
     @staticmethod
     def configure_parser(
-        parser: Optional[argparse.ArgumentParser] = None,
-        command: Optional[str] = None,
-        types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
+            parser: Optional[argparse.ArgumentParser] = None,
+            command: Optional[str] = None,
+            types: List[str] = [],
+            groups: Dict[str, argparse._ArgumentGroup] = None,
     ) -> Tuple[argparse.ArgumentParser, Dict]:
         parser, groups = super(
             ClassInfoRunner, ClassInfoRunner
@@ -973,7 +1007,11 @@ class ClassInfoRunner(CommandTemplate):
         )
         info_group.add_argument(
             '--load-class-with-args',
-            help='',
+            help='Provide arguments in the format specified by argument '
+                 'structure to create an instance of the specified class '
+                 '(e.g. --model-path model.onnx). '
+                 'This option can be used to gain access to more detailed '
+                 'information than just static code analysis.',
             nargs=argparse.REMAINDER
         )
         return parser, groups
@@ -983,7 +1021,7 @@ class ClassInfoRunner(CommandTemplate):
         logger.set_verbosity(args.verbosity)
 
         args = {k: v for k, v in vars(args).items() if v is not None
-                and k != 'help' and k != 'verbosity'}
+                and k != 'help' and k != 'verbosity' and k != '__seq_0'}
 
         # if no flags are given, set all of them to True (display everything)
         if not any([v for v in args.values() if type(v) is bool]):

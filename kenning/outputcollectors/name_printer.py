@@ -8,7 +8,7 @@ handling of multiple OutputCollectors in inference_runner scenario
 """
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
-from typing import Any, Union
+from typing import Any, Union, Dict, Tuple
 import numpy as np
 from pathlib import Path
 
@@ -30,7 +30,13 @@ class NamePrinter(OutputCollector):
         }
     }
 
-    def __init__(self, print_type: str = "detector", file_path: Path = None):
+    def __init__(
+            self,
+            print_type: str = "detector",
+            file_path: Path = None,
+            inputs_sources: Dict[str, Tuple[int, str]] = {},
+            inputs_specs: Dict[str, Dict] = {},
+            outputs: Dict[str, str] = {}):
         self.frame_counter = 0
         self.print_type = print_type
         self.classnames = []
@@ -39,7 +45,10 @@ class NamePrinter(OutputCollector):
             with open(file_path, 'r') as f:
                 for line in f:
                     self.classnames.append(line.strip())
-        super().__init__()
+        super().__init__(
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs)
 
     def detach_from_output(self):
         pass

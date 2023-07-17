@@ -60,14 +60,14 @@ class Optimizer(ArgumentsHandler, ABC):
 
     def __init__(
             self,
-            dataset: Dataset,
+            dataset: Optional[Dataset],
             compiled_model_path: Path):
         """
         Prepares the Optimizer object.
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             Dataset used to train the model - may be used for quantization
             during compilation stage.
         compiled_model_path : Path
@@ -103,7 +103,7 @@ class Optimizer(ArgumentsHandler, ABC):
         )
 
     @classmethod
-    def from_json(cls, dataset: Dataset, json_dict: Dict):
+    def from_json(cls, dataset: Optional[Dataset], json_dict: Dict):
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -113,7 +113,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
         json_dict : Dict
             Arguments for the constructor.

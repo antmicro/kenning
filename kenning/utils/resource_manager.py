@@ -6,6 +6,7 @@
 Provide resource manager responsible for downloading and caching resources
 """
 import hashlib
+import os
 from pathlib import Path
 from shutil import copy, rmtree
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
@@ -22,7 +23,11 @@ class ResourceManager(metaclass=Singleton):
     Download and cache resources used by Kenning.
     """
 
-    CACHE_DIR = Path.home() / '.kenning'
+    CACHE_DIR = (
+        Path(os.environ.get('KENNING_CACHE_DIR', Path.home() / '.kenning'))
+        .expanduser()
+        .resolve()
+    )
 
     MAX_CACHE_SIZE = 50_000_000_000  # 50 GB
 
@@ -39,6 +44,7 @@ class ResourceManager(metaclass=Singleton):
         """
         Initialize ResourceManager.
         """
+        self.cache_dir = ResourceManager.CACHE_DIR
         self.url_schemes = ResourceManager.BASE_URL_SCHEMES
         self.max_cache_size = ResourceManager.MAX_CACHE_SIZE
         self.log = get_logger()
@@ -72,7 +78,6 @@ class ResourceManager(metaclass=Singleton):
         """
         # check if file is already cached
         parsed_uri = urlparse(uri)
-        self.log.debug(parsed_uri)
 
         # no scheme in URI - treat as path string
         if '' == parsed_uri.scheme:
@@ -95,7 +100,7 @@ class ResourceManager(metaclass=Singleton):
             parsed_path = parsed_uri.path
             if parsed_path[0] == '/':
                 parsed_path = parsed_path[1:]
-            output_path = self.CACHE_DIR / parsed_path
+            output_path = self.cache_dir / parsed_path
 
         output_path = output_path.resolve()
 
@@ -120,14 +125,25 @@ class ResourceManager(metaclass=Singleton):
         self._download_resource(resolved_uri, output_path)
 
         if self._validate_file_remote(resolved_uri, output_path) is False:
-            self.log.error(
+            raise ChecksumVerifyError(
                 f'Error downloading file {uri} from {resolved_uri}. Invalid '
                 'checksum.'
             )
-            raise ChecksumVerifyError()
         self._save_file_checksum(output_path)
 
         return output_path
+
+    def set_cache_dir(self, cache_dir_path: Path):
+        """
+        Set the cache directory path and creates it if not exists.
+
+        Parameters
+        ----------
+        cache_dir_path : Path
+            Path to be set as cache directory.
+        """
+        self.cache_dir = cache_dir_path
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def add_custom_url_schemes(
         self, custom_url_schemes: Dict[str, Optional[Union[str, Callable]]]
@@ -155,12 +171,12 @@ class ResourceManager(metaclass=Singleton):
         """
         result = []
 
-        for cached_file in self.CACHE_DIR.glob('**/*'):
+        for cached_file in self.cache_dir.glob('**/*'):
             if (
                 cached_file.is_file()
                 and f'.{self.HASHING_ALGORITHM}' not in cached_file.suffixes
             ):
-                result.append(cached_file)
+                result.append(cached_file.resolve())
 
         return result
 
@@ -168,8 +184,8 @@ class ResourceManager(metaclass=Singleton):
         """
         Remove all cached files
         """
-        rmtree(self.CACHE_DIR, ignore_errors=True)
-        self.CACHE_DIR.mkdir()
+        rmtree(self.cache_dir, ignore_errors=True)
+        self.cache_dir.mkdir()
 
     def _resolve_uri(self, parsed_uri: ParseResult) -> Union[str, Path]:
         """
@@ -223,7 +239,7 @@ class ResourceManager(metaclass=Singleton):
         Returns
         -------
         Optional[bool] :
-            None if checksum cannot be validate, otherwise True if file
+            None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
         checksum_url = f'{url}.{self.HASHING_ALGORITHM}'
@@ -253,7 +269,7 @@ class ResourceManager(metaclass=Singleton):
         Returns
         -------
         Optional[bool] :
-            None if checksum cannot be validate, otherwise True if file
+            None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
         hash_file_path = file_path.with_suffix(
@@ -301,7 +317,7 @@ class ResourceManager(metaclass=Singleton):
         output_path : Path
             Path where the resource should be saved.
         """
-        if self.CACHE_DIR in output_path.parents:
+        if self.cache_dir in output_path.parents:
             response = requests.head(url)
             if (
                 response.status_code == 200
@@ -313,7 +329,7 @@ class ResourceManager(metaclass=Singleton):
 
         download_url(url, output_path)
 
-        if self.CACHE_DIR in output_path.parents:
+        if self.cache_dir in output_path.parents:
             # free cache in case the file size could not be read before
             # downloading
             self._free_cache(0)
@@ -433,7 +449,7 @@ class ResourceURI(Path):
         if self._uri is None:
             return Path(self)
 
-        path = ResourceManager().CACHE_DIR / self.relative_to('/')
+        path = ResourceManager().cache_dir / self.relative_to('/')
 
         return path
 

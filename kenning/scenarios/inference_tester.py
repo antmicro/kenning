@@ -86,13 +86,6 @@ class InferenceTester(CommandTemplate):
         json_group = groups[JSON_CONFIG]
         flag_group = groups[FLAG_CONFIG]
 
-        other_group.add_argument(
-            '--measurements',
-            help='The path to the output JSON file with measurements',
-            nargs=1,
-            type=Path,
-            required=True,
-        )
         json_group.add_argument(
             '--json-cfg',
             help='* The path to the input JSON file with configuration of the inference',  # noqa: E501
@@ -116,6 +109,13 @@ class InferenceTester(CommandTemplate):
                 type=Path
             )
         if not types or TEST in types:
+            other_group.add_argument(
+                '--measurements',
+                help='The path to the output JSON file with measurements',
+                nargs=1,
+                type=Path,
+                required=True,
+            )
             flag_group.add_argument(
                 '--runtime-cls',
                 help='Runtime-based class with the implementation of model runtime',  # noqa: E501

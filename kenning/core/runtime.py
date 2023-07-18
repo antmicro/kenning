@@ -84,14 +84,14 @@ class Runtime(ArgumentsHandler, ABC):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
+            protocol: Optional[RuntimeProtocol],
             disable_performance_measurements: bool = False):
         """
         Creates Runtime object.
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
+        protocol : Optional[RuntimeProtocol]
             The implementation of the host-target communication  protocol.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
@@ -115,13 +115,16 @@ class Runtime(ArgumentsHandler, ABC):
         self.output_spec = None
 
     @classmethod
-    def from_argparse(cls, protocol: RuntimeProtocol, args: Namespace):
+    def from_argparse(
+            cls,
+            protocol: Optional[RuntimeProtocol],
+            args: Namespace):
         """
         Constructor wrapper that takes the parameters from argparse args.
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
+        protocol : Optional[RuntimeProtocol]
             RuntimeProtocol object.
         args : Namespace
             Arguments from ArgumentParser object.
@@ -140,7 +143,10 @@ class Runtime(ArgumentsHandler, ABC):
         )
 
     @classmethod
-    def from_json(cls, protocol: RuntimeProtocol, json_dict: Dict):
+    def from_json(
+            cls,
+            protocol: Optional[RuntimeProtocol],
+            json_dict: Dict):
         """
         Constructor wrapper that takes the parameters from json dict.
 

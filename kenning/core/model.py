@@ -76,7 +76,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     @classmethod
     def from_argparse(
             cls,
-            dataset: Dataset,
+            dataset: Optional[Dataset],
             args: Namespace,
             from_file: bool = True):
         """
@@ -84,7 +84,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             The dataset object to feed to the model.
         args : Namespace
             Arguments from ArgumentParser object.

@@ -6,6 +6,7 @@ include kenning/resources/reports/*.md
 include kenning/resources/reports/*.rst
 include kenning/resources/reports/matplotlib_theme_rc
 include kenning/resources/reports/bokeh_theme.yml
+include kenning/resources/reports/_static/**/*
 include kenning/resources/coco_detection/*.classes
 include kenning/resources/coco_detection/*.json
 

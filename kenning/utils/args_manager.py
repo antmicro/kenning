@@ -5,6 +5,8 @@
 """
 Module for preparing and serializing class arguments.
 """
+import json
+import os.path
 
 import jsonschema
 import argparse
@@ -330,6 +332,28 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
                 raise Exception(
                     f'No default value provided for {argparse_name}'
                 )
+
+        # For arguments of type 'object' value is embedded in a JSON file
+        if 'type' in arg_properties and arg_properties['type'] == object:
+            if value is None:
+                try:
+                    value = arg_properties['default']
+                    parsed_args[arg_name] = value
+                    continue
+                except KeyError:
+                    raise Exception(
+                        f'No default value provided for {argparse_name}'
+                    )
+
+            if not os.path.exists(value):
+                raise Exception(
+                    f'JSON configuration file {value} doesnt exist'
+                )
+
+            with open(value, 'r') as file:
+                value = json.load(file)
+                parsed_args[arg_name] = value
+                continue
 
         # convert type
         if 'type' in arg_properties and value is not None:

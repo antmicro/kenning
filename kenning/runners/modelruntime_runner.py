@@ -26,22 +26,21 @@ class ModelRuntimeRunner(Runner):
     arguments_structure = {
         'model_wrapper': {
             'argparse_name': '--model-wrapper',
-            'description': '',
+            'description': 'Path to JSON describing the ModelWrapper object, '
+                           'following its argument structure',
             'type': object,
             'required': True,
         },
         'dataset': {
             'argparse_name': '--dataset',
-            'description': '',
+            'description': 'Path to JSON describing the Dataset object, '
+                           'following its argument structure',
             'type': object,
-            'default': {
-                'dataset_root': './build/pet-dataset',
-                'download_dataset': False
-            },
         },
         'runtime': {
             'argparse_name': '--runtime',
-            'description': '',
+            'description': 'Path to JSON describing the Runtime object, '
+                           'following its argument structure',
             'type': object,
             'required': True,
         },
@@ -98,7 +97,8 @@ class ModelRuntimeRunner(Runner):
         model_json_dict = parsed_json_dict['model_wrapper']
         runtime_json_dict = parsed_json_dict['runtime']
 
-        if 'dataset' in parsed_json_dict.keys():
+        if 'dataset' in parsed_json_dict.keys() \
+                and parsed_json_dict['dataset']:
             dataset = cls._create_dataset(parsed_json_dict['dataset'])
         else:
             dataset = None
@@ -129,8 +129,8 @@ class ModelRuntimeRunner(Runner):
         model_json_dict = parsed_json_dict['model_wrapper']
         runtime_json_dict = parsed_json_dict['runtime']
 
-        if 'dataset' in parsed_json_dict.keys() and parsed_json_dict[
-            'dataset']:  # noqa E501
+        if 'dataset' in parsed_json_dict.keys() \
+                and parsed_json_dict['dataset']:
             dataset = cls._create_dataset(parsed_json_dict['dataset'])
         else:
             dataset = None

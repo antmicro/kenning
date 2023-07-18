@@ -4,12 +4,13 @@
 
 import numpy as np
 from pathlib import Path
+from abc import ABC
 
 from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
 
 
-class TensorFlowWrapper(ModelWrapper):
+class TensorFlowWrapper(ModelWrapper, ABC):
     def __init__(
             self,
             modelpath: Path,

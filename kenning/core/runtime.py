@@ -10,6 +10,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 from pathlib import Path
 from typing import Optional, Dict, List, Any
+from abc import ABC
 from argparse import Namespace
 import time
 import json
@@ -60,7 +61,7 @@ class InputNotPreparedError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
-class Runtime(ArgumentsHandler):
+class Runtime(ArgumentsHandler, ABC):
     """
     Runtime object provides an API for testing inference on target devices.
 

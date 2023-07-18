@@ -23,6 +23,30 @@ class ModelRuntimeRunner(Runner):
     Runner that performs inference using given model and runtime.
     """
 
+    arguments_structure = {
+        'model_wrapper': {
+            'argparse_name': '--model-wrapper',
+            'description': '',
+            'type': object,
+            'required': True,
+        },
+        'dataset': {
+            'argparse_name': '--dataset',
+            'description': '',
+            'type': object,
+            'default': {
+                'dataset_root': './build/pet-dataset',
+                'download_dataset': False
+            },
+        },
+        'runtime': {
+            'argparse_name': '--runtime',
+            'description': '',
+            'type': object,
+            'required': True,
+        },
+    }
+
     def __init__(
             self,
             model: ModelWrapper,
@@ -60,53 +84,6 @@ class ModelRuntimeRunner(Runner):
 
     def cleanup(self):
         self.runtime.inference_session_end()
-
-    @classmethod
-    def _form_parameterschema(cls):
-        """
-        Wrapper for creating parameterschema structure
-        for the ModelRuntimeRunner class.
-
-        Returns
-        -------
-        Dict :
-            Schema for the class.
-        """
-        parameterschema = {
-            "type": "object",
-            "properties": {
-                "model_wrapper": {
-                    "type": "object",
-                    "real_name": "model_wrapper"
-                },
-                "dataset": {
-                    "type": "object",
-                    "real_name": "dataset"
-                },
-                "runtime": {
-                    "type": "object",
-                    "real_name": "runtime"
-                }
-            },
-            "required": ["model_wrapper", "runtime"],
-            "additionalProperties": False
-        }
-
-        return parameterschema
-
-    @classmethod
-    def form_parameterschema(cls):
-        """
-        Creates schema for the ModelRuntimeRunner class.
-
-        Returns
-        -------
-        Dict :
-            Schema for the class.
-        """
-        parameterschema = cls._form_parameterschema()
-
-        return parameterschema
 
     @classmethod
     def from_argparse(
@@ -152,7 +129,8 @@ class ModelRuntimeRunner(Runner):
         model_json_dict = parsed_json_dict['model_wrapper']
         runtime_json_dict = parsed_json_dict['runtime']
 
-        if 'dataset' in parsed_json_dict.keys():
+        if 'dataset' in parsed_json_dict.keys() and parsed_json_dict[
+            'dataset']:  # noqa E501
             dataset = cls._create_dataset(parsed_json_dict['dataset'])
         else:
             dataset = None
@@ -264,8 +242,8 @@ class ModelRuntimeRunner(Runner):
         model_json_dict = parsed_json_dict['model_wrapper']
         model_cls = load_class(model_json_dict['type'])
         model_io_spec = model_cls.parse_io_specification_from_json(
-                model_json_dict['parameters']
-            )
+            model_json_dict['parameters']
+        )
         return cls._get_io_specification(model_io_spec)
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:

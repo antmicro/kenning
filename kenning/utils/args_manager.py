@@ -99,7 +99,8 @@ type_to_jsontype = {
     str: 'string',
     float: 'number',
     int: 'integer',
-    bool: 'boolean'
+    bool: 'boolean',
+    object: 'object',
 }
 
 jsontype_to_type = {

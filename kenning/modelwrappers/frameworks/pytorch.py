@@ -2,14 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.core.model import ModelWrapper
-
 import numpy as np
 import copy
+from abc import ABC
 from collections import OrderedDict
 
+from kenning.core.model import ModelWrapper
 
-class PyTorchWrapper(ModelWrapper):
+
+class PyTorchWrapper(ModelWrapper, ABC):
     def __init__(self, modelpath, dataset, from_file):
         import torch
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501

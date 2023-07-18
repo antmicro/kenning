@@ -2,11 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.utils.class_loader import get_command
-from kenning.utils.class_loader import get_kenning_submodule_from_path
-from kenning.utils.class_loader import load_class
+import abc
+import inspect
 import pytest
+
 import kenning.datasets.pet_dataset
+from kenning.utils.class_loader import (
+    get_all_subclasses,
+    get_base_classes_dict,
+    get_command,
+    get_kenning_submodule_from_path,
+    load_class,
+)
 
 
 @pytest.mark.fast
@@ -143,3 +150,51 @@ tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \\',
              ]
         y = ['python -m kenning.scenarios.model_training']
         assert get_command(x) == y
+
+
+class TestGetAllSubclasses:
+    @pytest.mark.parametrize(
+        'module_path,cls',
+        get_base_classes_dict().values()
+    )
+    def test_get_all_subclasses_should_return_non_abstract_classes(
+        self,
+        module_path: str,
+        cls: type,
+    ):
+        """
+        Tests loading all subclasses of given class.
+        """
+        subclasses = get_all_subclasses(
+            module_path,
+            cls,
+            raise_exception=False
+        )
+
+        for subcls in subclasses:
+            assert isinstance(subcls, type)
+            assert not inspect.isabstract(subcls)
+            assert abc.ABC not in subcls.__bases__
+
+    @pytest.mark.parametrize(
+        'module_path,cls',
+        get_base_classes_dict().values()
+    )
+    def test_get_all_subclasses_should_not_load_classes_if_specified(
+        self,
+        module_path: str,
+        cls: type,
+    ):
+        """
+        Tests retrieving without loading all subclasses of given class.
+        """
+        subclasses = get_all_subclasses(
+            module_path,
+            cls,
+            raise_exception=False,
+            import_classes=False
+        )
+
+        for subcls, module in subclasses:
+            assert isinstance(subcls, str)
+            assert isinstance(module, str)

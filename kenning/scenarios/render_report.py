@@ -1795,9 +1795,7 @@ def generate_html_report(
     debug: bool = False,
 ):
     """
-    Runs Sphinx build for generated report.
-
-    It requires dependencies from `kenning[docs]`.
+    Runs Sphinx with HTML builder for generated report.
 
     Parameters
     ----------
@@ -1839,7 +1837,7 @@ def generate_html_report(
             mock_args = namedtuple(
                 "MockArgs", ('pdb', 'verbosity', 'traceback')
             )(pdb=debug, verbosity=debug, traceback=debug)
-            handle_exception(None, mock_args, ex)
+            handle_exception(app, mock_args, ex)
             log.error("Error occured, HTML report won't be generated", ex.args)
 
 
@@ -1867,10 +1865,10 @@ class RenderReport(CommandTemplate):
             '--measurements',
             help='Path to the JSON files with measurements' +
             (f' created with {TEST} subcommand' if run_in_sequence else
-             '. If more than one file is provided, model comparison will be generated.'),  # noqa: E501
+             '. If more than one file is provided, model comparison will be generated.') +  # noqa: E501
+            "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report form --report-path",  # noqa: E501
             type=Path,
-            nargs=1 if run_in_sequence else '+',
-            required=True,
+            nargs=1 if run_in_sequence else '*',
         )
         report_group.add_argument(
             '--report-name',
@@ -1884,11 +1882,11 @@ class RenderReport(CommandTemplate):
             required=True,
         )
         other_group.add_argument(
-            '--html-report',
+            '--to-html',
             help='Generate HTML version of the report, it can recieve path to the folder where HTML will be saved',  # noqa: E501
             nargs='?',
             default=False,
-            const=None,
+            const=True,
             type=Path,
         )
         report_group.add_argument(
@@ -1931,6 +1929,22 @@ class RenderReport(CommandTemplate):
 
         logger.set_verbosity(args.verbosity)
 
+        if args.to_html:
+            if not isinstance(args.to_html, (str, Path)):
+                args.to_html = Path(args.report_path).with_suffix('')
+            if not args.measurements and args.report_path.exists():
+                # Only render HTML report
+                generate_html_report(
+                    args.report_path, args.to_html,
+                    args.verbosity == 'DEBUG'
+                )
+                return
+            elif not args.measurements:
+                raise argparse.ArgumentError(None, "HTML report cannot be generated, file from '--report-path' does not exist. Please, make sure the path is correct or use '--measurements' to generate new report.")  # noqa: E501
+
+        if not args.measurements:
+            raise argparse.ArgumentError(None, "'--measurements' have to be defined to generate new report. If only HTML version from existing report has to be rendered, please use '--to-html' flag")  # noqa: E501
+
         root_dir = args.root_dir
         if root_dir is None:
             root_dir = args.report_path.parent.absolute()
@@ -1958,19 +1972,15 @@ class RenderReport(CommandTemplate):
                 measurements['model_name'] = args.model_names[i]
             elif 'model_name' not in measurements:
                 measurements['model_name'] = get_model_name(measurementspath)
-            measurements['model_name'] = measurements['model_name'].replace(
-                ' ', '_')
+            measurements['model_name'] = \
+                measurements['model_name'].replace(' ', '_')
             measurementsdata.append(measurements)
 
         report_types = args.report_types
         if not report_types:
             report_types = deduce_report_types(measurementsdata)
         if report_types is None:
-            raise argparse.ArgumentError(
-                None,
-                "Report types cannot be deduced. Please specify --report-types"
-                " or make sure correct measurments were chosen.")
-            return
+            raise argparse.ArgumentError(None, "Report types cannot be deduced. Please specify '--report-types' or make sure the path is correct measurements were chosen.")  # noqa: E501
 
         report_name = args.report_name
         if report_name is None:
@@ -2016,13 +2026,9 @@ class RenderReport(CommandTemplate):
                 draw_titles=args.use_default_theme,
             )
 
-        if args.html_report or args.html_report is None:
-            html_path = args.html_report
-            print(args.html_report, str(args.html_report))
-            if args.html_report is None:
-                html_path = Path(args.report_path).with_suffix('')
+        if args.to_html:
             generate_html_report(
-                args.report_path, html_path,
+                args.report_path, args.to_html,
                 args.verbosity == 'DEBUG'
             )
 

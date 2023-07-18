@@ -46,7 +46,7 @@ setuptools.setup(
             'antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git',  # noqa: E501
             'docutils',
             'myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git',  # noqa: E501
-            'sphinx',
+            'sphinx>=5.1.0',
             'sphinxcontrib-mermaid',
             'sphinxcontrib-napoleon',
             'sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl',  # noqa: E501
@@ -111,8 +111,9 @@ setuptools.setup(
             'pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git'  # noqa: E501
         ],
         'reports': [
+            'kenning[docs]',
             'Jinja2>=2.11.2',
-            'servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis'
+            'servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis',  # noqa: E501
         ],
         'uart': [
             'pyserial'

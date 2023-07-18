@@ -14,6 +14,7 @@ import sys
 import argparse
 from pathlib import Path
 from typing import Dict, List, Set, Optional, Tuple, Callable, Any
+from collections import namedtuple
 import json
 import numpy as np
 import re
@@ -1788,6 +1789,60 @@ def deduce_report_name(
     return report_name
 
 
+def generate_html_report(
+    report_path: Path,
+    output_folder: Path,
+    debug: bool = False,
+):
+    """
+    Runs Sphinx build for generated report.
+
+    It requires dependencies from `kenning[docs]`.
+
+    Parameters
+    ----------
+    report_path : Path
+        Path to the generated report file
+    output_folder : Path
+        Where generated HTML report should be saved
+    debug : bool
+        Debug mode -- allows to print more information
+    """
+    from sphinx.util.docutils import patch_docutils, docutils_namespace
+    from sphinx.application import Sphinx
+    from sphinx.cmd.build import handle_exception
+
+    with path(reports, 'conf.py') as _conf:
+        override_conf = {
+            # Include only report file
+            "include_patterns": [f'{report_path.name}'],
+            # Ensure report file isn't excluded
+            "exclude_patterns": [],
+            # Use report file as main source
+            "master_doc": f'{report_path.with_suffix("").name}',
+            # Static files for HTML
+            "html_static_path": [f'{_conf.parent / "_static"}'],
+            # Remove PFD button
+            "html_theme_options.pdf_url": [],
+            # Warning about using h2 header
+            "suppress_warnings": ["myst.header"],
+        }
+        app = None
+        try:
+            with patch_docutils(_conf.parent), docutils_namespace():
+                app = Sphinx(
+                    report_path.parent, _conf.parent, output_folder,
+                    output_folder / '.doctrees', 'html',
+                    override_conf, freshenv=False)
+                app.build(False, [str(report_path)])
+        except Exception as ex:
+            mock_args = namedtuple(
+                "MockArgs", ('pdb', 'verbosity', 'traceback')
+            )(pdb=debug, verbosity=debug, traceback=debug)
+            handle_exception(None, mock_args, ex)
+            log.error("Error occured, HTML report won't be generated", ex.args)
+
+
 class RenderReport(CommandTemplate):
     parse_all = True
     description = __doc__.split('\n\n')[0]
@@ -1827,6 +1882,14 @@ class RenderReport(CommandTemplate):
             help='Path to the output MyST file',
             type=Path,
             required=True,
+        )
+        other_group.add_argument(
+            '--html-report',
+            help='Generate HTML version of the report, it can recieve path to the folder where HTML will be saved',  # noqa: E501
+            nargs='?',
+            default=False,
+            const=None,
+            type=Path,
         )
         report_group.add_argument(
             '--root-dir',
@@ -1951,6 +2014,16 @@ class RenderReport(CommandTemplate):
                 cmap=cmap,
                 colors=colors,
                 draw_titles=args.use_default_theme,
+            )
+
+        if args.html_report or args.html_report is None:
+            html_path = args.html_report
+            print(args.html_report, str(args.html_report))
+            if args.html_report is None:
+                html_path = Path(args.report_path).with_suffix('')
+            generate_html_report(
+                args.report_path, html_path,
+                args.verbosity == 'DEBUG'
             )
 
 

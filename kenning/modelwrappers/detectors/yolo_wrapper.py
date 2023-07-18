@@ -9,6 +9,7 @@ Contains methods for YOLO models for object detection.
 import re
 import sys
 import numpy as np
+from abc import ABC
 from collections import defaultdict
 
 from kenning.resources import coco_detection
@@ -23,7 +24,7 @@ else:
     from importlib.resources import path
 
 
-class YOLOWrapper(ModelWrapper):
+class YOLOWrapper(ModelWrapper, ABC):
 
     arguments_structure = {
         'class_names': {

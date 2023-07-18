@@ -254,17 +254,24 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
     for name, value in converted_json_dict.items():
         keywords = schema['properties'][name]
 
-        if 'convert-type' in keywords and value:
-            converter = keywords['convert-type']
-
-            if 'type' in keywords and 'array' in keywords['type']:
-                converted_json_dict[name] = [
-                    converter(v) if v else v for v in value
-                ]
-            else:
-                converted_json_dict[name] = converter(value)
-        else:
+        if 'convert-type' not in keywords or not value:
             converted_json_dict[name] = value
+            continue
+
+        # do not convert to an object as this should be done by the class
+        # which called this function
+        if keywords['convert-type'] == object:
+            converted_json_dict[name] = value
+            continue
+
+        converter = keywords['convert-type']
+
+        if 'type' in keywords and 'array' in keywords['type']:
+            converted_json_dict[name] = [
+                converter(v) if v else v for v in value
+            ]
+        else:
+            converted_json_dict[name] = converter(value)
 
     # Changing names so they match the constructor arguments
     converted_json_dict = {

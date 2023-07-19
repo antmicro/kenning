@@ -52,7 +52,7 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
 
     for base_class in base_classes:
         subclasses = get_all_subclasses(
-            modulepath=kenning_base_classes[base_class][0],
+            module_path=kenning_base_classes[base_class][0],
             cls=kenning_base_classes[base_class][1],
             raise_exception=False,
             import_classes=False)

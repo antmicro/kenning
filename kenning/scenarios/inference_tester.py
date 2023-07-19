@@ -90,13 +90,13 @@ class InferenceTester(CommandTemplate):
             '--json-cfg',
             help='* The path to the input JSON file with configuration of the inference',  # noqa: E501
         )
-        flag_group .add_argument(
+        flag_group.add_argument(
             '--modelwrapper-cls',
             help='* ModelWrapper-based class with inference implementation to import',  # noqa: E501
         )
-        flag_group.add_argument(
+        dataset_flag = flag_group.add_argument(
             '--dataset-cls',
-            help='* Dataset-based class with dataset to import',
+            help='Dataset-based class with dataset to import',
         )
         if not types or OPTIMIZE in types:
             flag_group.add_argument(
@@ -116,6 +116,7 @@ class InferenceTester(CommandTemplate):
                 type=Path,
                 required=True,
             )
+            dataset_flag.help = f"* {dataset_flag.help}"
             flag_group.add_argument(
                 '--runtime-cls',
                 help='Runtime-based class with the implementation of model runtime',  # noqa: E501
@@ -143,9 +144,6 @@ class InferenceTester(CommandTemplate):
         logger.set_verbosity(args.verbosity)
         log = logger.get_logger()
 
-        only_test = 'subcommands' in args and \
-            'optimize' not in args.subcommands
-
         flag_config_names = ('modelwrapper_cls', 'dataset_cls', 'compiler_cls',
                              'runtime_cls', 'protocol_cls')
         flag_config_not_none = [getattr(args, name, None) is not None
@@ -161,12 +159,12 @@ class InferenceTester(CommandTemplate):
 
         if args.json_cfg is not None:
             return InferenceTester._run_from_json(
-                args, only_test, command, log, not_parsed=not_parsed, **kwargs)
+                args, command, log, not_parsed=not_parsed, **kwargs)
 
-        required_args = 3 if 'compiler_cls' in args \
-            and 'run_benchmarks_only' not in args else 2
+        required_args = [0] + [1] if 'measurements' in args else [] + \
+            [2] if 'compiler_cls' in args else []
         missing_args = [
-            f"'{n}'" for i, n in enumerate(flag_config_names[:required_args])
+            f"'{flag_config_names[i]}'" for i in required_args
             if not flag_config_not_none[i]
         ]
 
@@ -175,11 +173,10 @@ class InferenceTester(CommandTemplate):
                 None, f"missing required arguments: {', '.join(missing_args)}")
 
         return InferenceTester._run_from_flags(
-            args, only_test, command, log, not_parsed=not_parsed, **kwargs)
+            args, command, log, not_parsed=not_parsed, **kwargs)
 
     def _run_from_json(
         args: argparse.Namespace,
-        only_test: bool,
         command: List[str],
         log,
         not_parsed: List[str] = [],
@@ -197,11 +194,13 @@ class InferenceTester(CommandTemplate):
         try:
             ret = run_pipeline_json(
                 json_cfg,
-                args.measurements[0],
+                args.measurements[0] if 'measurements' in args else None,
                 args.verbosity,
                 getattr(args, "convert_to_onnx", False),
                 command,
-                only_test or getattr(args, "run_benchmarks_only", False),
+                run_optimizations="compiler_cls" in args and not getattr(
+                    args, "run_benchmars_only", False),
+                run_benchmarks="measurements" in args,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')
@@ -210,20 +209,20 @@ class InferenceTester(CommandTemplate):
             log.error(ex)
             raise
 
-        if not ret:
+        if ret is None:
             return 1
         return ret
 
     def _run_from_flags(
         args: argparse.Namespace,
-        only_test: bool,
         command: List[str],
         log,
         not_parsed: List[str] = [],
         **kwargs
     ):
         modelwrappercls = load_class(args.modelwrapper_cls)
-        datasetcls = load_class(args.dataset_cls)
+        datasetcls = load_class(args.dataset_cls) \
+            if getattr(args, 'dataset_cls', None) else None
         runtimecls = load_class(args.runtime_cls) \
             if getattr(args, 'runtime_cls', None) else None
         compilercls = load_class(args.compiler_cls) \
@@ -231,15 +230,19 @@ class InferenceTester(CommandTemplate):
         protocolcls = load_class(args.protocol_cls) \
             if getattr(args, 'protocol_cls', None) else None
 
-        if (compilercls or protocolcls) and not runtimecls:
-            raise RuntimeError('Runtime is not provided')
+        if not compilercls and (protocolcls and not runtimecls):
+            raise argparse.ArgumentError(
+                None,
+                "'--protocol-cls' requires '--runtime-cls' to be defined"
+            )
 
         parser = argparse.ArgumentParser(
-            ' '.join(map(lambda x: x.strip(), get_command(with_slash=False))),
+            ' '.join(map(lambda x: x.strip(),
+                     get_command(with_slash=False))) + '\n',
             parents=[
                 modelwrappercls.form_argparse()[0],
-                datasetcls.form_argparse()[0]
-            ] + ([runtimecls.form_argparse()[0]] if runtimecls else [])
+            ] + ([datasetcls.form_argparse()[0]] if datasetcls else [])
+              + ([runtimecls.form_argparse()[0]] if runtimecls else [])
               + ([compilercls.form_argparse()[0]] if compilercls else [])
               + ([protocolcls.form_argparse()[0]] if protocolcls else [])
         )
@@ -250,7 +253,7 @@ class InferenceTester(CommandTemplate):
 
         args = parser.parse_args(not_parsed, namespace=args)
 
-        dataset = datasetcls.from_argparse(args)
+        dataset = datasetcls.from_argparse(args) if datasetcls else None
         model = modelwrappercls.from_argparse(dataset, args)
         compiler = [compilercls.from_argparse(dataset, args)] if compilercls else []  # noqa: E501
         protocol = protocolcls.from_argparse(args) if protocolcls else None
@@ -264,11 +267,13 @@ class InferenceTester(CommandTemplate):
                 compiler,
                 runtime,
                 protocol,
-                args.measurements[0],
+                args.measurements[0] if 'measurements' in args else None,
                 args.verbosity,
                 getattr(args, "convert_to_onnx", False),
                 command,
-                only_test or getattr(args, "run_benchmarks_only", False),
+                run_optimizations="compiler_cls" in args and not getattr(
+                    args, "run_benchmars_only", False),
+                run_benchmarks="measurements" in args,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')
@@ -277,7 +282,7 @@ class InferenceTester(CommandTemplate):
             log.error(ex)
             raise
 
-        if not ret:
+        if ret is None:
             return 1
         return ret
 

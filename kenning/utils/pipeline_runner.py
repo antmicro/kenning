@@ -143,11 +143,13 @@ def parse_json_pipeline(
 
 def run_pipeline_json(
         json_cfg: Dict,
-        output: Path,
+        output: Optional[Path],
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
         command: List = ['Run in a different environment'],
-        run_benchmarks_only: bool = False) -> int:
+        run_optimizations: bool = True,
+        run_benchmarks: bool = True,
+) -> int:
     """
     Simple wrapper for `run_pipeline` method that parses `json_cfg` argument,
     asserts its integrity and then runs the pipeline with given parameters.
@@ -156,7 +158,7 @@ def run_pipeline_json(
     ----------
     json_cfg : dict
         Configuration of the inference pipeline.
-    output : Path
+    output : Optional[Path]
         Path to the output JSON file with measurements.
     verbosity : Optional[str]
         Verbosity level.
@@ -166,9 +168,10 @@ def run_pipeline_json(
     command : Optional[List]
         Command used to run this inference pipeline. It is put in
         the output JSON file.
-    run_benchmarks_only : bool
-        Instead of running the full compilation and testing flow,
-        only testing of the model is executed.
+    run_optimizations : bool
+        If False, optimizations will not be executed.
+    run_benchmarks : bool
+        If False, model will not be tested.
 
     Returns
     -------
@@ -188,7 +191,8 @@ def run_pipeline_json(
         verbosity,
         convert_to_onnx,
         command,
-        run_benchmarks_only,
+        run_optimizations,
+        run_benchmarks,
         json_cfg.get("model_name", None),
     )
 
@@ -199,12 +203,14 @@ def run_pipeline(
         optimizers,
         runtime,
         protocol,
-        output: Path,
+        output: Optional[Path] = None,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
         command: List = ['Run in a different environment'],
-        run_benchmarks_only: bool = False,
-        model_name: Optional[str] = None):
+        run_optimizations: bool = True,
+        run_benchmarks: bool = True,
+        model_name: Optional[str] = None,
+) -> int:
     """
     Wrapper function that runs a pipeline using given parameters.
 
@@ -220,7 +226,7 @@ def run_pipeline(
         Runtime to use in inference.
     protocol : RuntimeProtocol
         RuntimeProtocol to use in inference.
-    output : Path
+    output : Optional[Path]
         Path to the output JSON file with measurements.
     verbosity : Optional[str]
         Verbosity level.
@@ -230,9 +236,10 @@ def run_pipeline(
     command : Optional[List]
         Command used to run this inference pipeline. It is put in
         the output JSON file.
-    run_benchmarks_only : bool
-        Instead of running the full compilation and testing flow,
-        only testing of the model is executed.
+    run_optimizations : bool
+        If False, optimizations will not be executed.
+    run_benchmarks : bool
+        If False, model will not be tested.
     model_name : Optional[str]
         Custom name of the model.
 
@@ -248,6 +255,7 @@ def run_pipeline(
     jsonschema.exceptions.ValidationError :
         Raised if parameters are incorrect.
     """
+    assert run_optimizations or run_benchmarks, "If both optimizations and benchmarks are skipped, pipeline will not be executed"  # noqa: E501
     logger.set_verbosity(verbosity)
     log = logger.get_logger()
 
@@ -255,37 +263,43 @@ def run_pipeline(
 
     modelframeworktuple = model.get_framework_and_version()
 
-    MeasurementsCollector.measurements += {
-        'model_framework': modelframeworktuple[0],
-        'model_version': modelframeworktuple[1],
-        'compilers': [
-            {
-                'compiler_framework': optimizer.get_framework_and_version()[0],
-                'compiler_version': optimizer.get_framework_and_version()[1]
-            }
-            for optimizer in optimizers
-        ],
-        'command': command,
-        'build_cfg': serialize_inference(
-            dataset,
-            model,
-            optimizers,
-            protocol,
-            runtime
-        ),
-    }
-    if model_name is not None:
-        MeasurementsCollector.measurements += {"model_name": model_name}
+    if run_benchmarks and not output:
+        log.warn("Running benchmarks without defined output -- measurements will not be saved")  # noqa: E501
 
-    # TODO add method for providing metadata to dataset
-    if hasattr(dataset, 'classnames'):
+    if output:
         MeasurementsCollector.measurements += {
-            'class_names': [val for val in dataset.get_class_names()]
+            'model_framework': modelframeworktuple[0],
+            'model_version': modelframeworktuple[1],
+            'compilers': [
+                {
+                    'compiler_framework':
+                        optimizer.get_framework_and_version()[0],
+                    'compiler_version':
+                        optimizer.get_framework_and_version()[1],
+                }
+                for optimizer in optimizers
+            ],
+            'command': command,
+            'build_cfg': serialize_inference(
+                dataset,
+                model,
+                optimizers,
+                protocol,
+                runtime
+            ),
         }
+        if model_name is not None:
+            MeasurementsCollector.measurements += {"model_name": model_name}
+
+        # TODO add method for providing metadata to dataset
+        if hasattr(dataset, 'classnames'):
+            MeasurementsCollector.measurements += {
+                'class_names': [val for val in dataset.get_class_names()]
+            }
 
     modelpath = model.get_path()
 
-    if not run_benchmarks_only:
+    if run_optimizations:
         prev_block = model
         if convert_to_onnx:
             log.warn(
@@ -322,21 +336,23 @@ def run_pipeline(
         if len(optimizers) > 0:
             modelpath = optimizers[-1].compiled_model_path
 
-    if runtime:
+    ret = True
+    if run_benchmarks and runtime:
         if protocol:
             ret = runtime.run_client(dataset, model, modelpath)
         else:
             ret = runtime.run_locally(dataset, model, modelpath)
-    else:
+    elif run_benchmarks:
         model.test_inference()
         ret = True
 
     if not ret:
         return 1
 
-    MeasurementsCollector.measurements += {
-        'compiled_model_size': Path(modelpath).stat().st_size
-    }
+    if output:
+        MeasurementsCollector.measurements += {
+            'compiled_model_size': Path(modelpath).stat().st_size
+        }
 
-    MeasurementsCollector.save_measurements(output)
+        MeasurementsCollector.save_measurements(output)
     return 0

@@ -681,6 +681,109 @@ Required dependencies are also shown, along with the information whether they ar
 In the given example TFLiteRuntime configuration accepts TensorFlow Lite Flatbuffer models as input.
 It also tells that some of the dependencies are missing.
 
+Provided the dependencies are satisfied, the script can gain access to more detailed and parameterized information by using `--load-class-with-args` argument.
+Here is a comparison between the regular and more descriptive outputs:
+
+```bash
+kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+```
+
+```
+Class: ONNXYOLOV4
+
+Input/output specification:
+* input
+  * shape: (1, 3, keyparams['width'], keyparams['height'])
+  * dtype: float32
+* output
+  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 0))), (keyparams['height'] // (8 * (2 ** 0))))
+  * dtype: float32
+* output.3
+  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 1))), (keyparams['height'] // (8 * (2 ** 1))))
+  * dtype: float32
+* output.7
+  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 2))), (keyparams['height'] // (8 * (2 ** 2))))
+  * dtype: float32
+* detection_output
+  * type: List[DetectObject]
+
+Dependencies:
+* onnx
+* numpy
+* torch.nn.functional
+* importlib_resources.files
+* torch
+
+Arguments specification:
+* classes
+  * argparse_name: --classes
+  * convert-type: builtins.str
+  * type
+    * string
+  * description: File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type
+  * default: coco
+* model_path
+  * argparse_name: --model-path
+  * convert-type: pathlib.Path
+  * type
+    * string
+  * description: Path to the model
+  * required: True
+```
+
+To load a class with arguments, all required arguments must be provided.
+In the case of `ONNXYOLOV4`, only `--model-path` is needed:
+
+```bash
+kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4 \
+        --load-class-with-args \
+        --model-path \
+            kenning/resources/models/detection/yolov4.onnx
+```
+
+```
+Class: ONNXYOLOV4
+
+Input/output specification:
+* input
+  * shape: (1, 3, 608, 608)
+  * dtype: float32
+* output
+  * shape: (1, 255, 76, 76)
+  * dtype: float32
+* output.3
+  * shape: (1, 255, 38, 38)
+  * dtype: float32
+* output.7
+  * shape: (1, 255, 19, 19)
+  * dtype: float32
+* detection_output
+  * type: List[DetectObject]
+
+Dependencies:
+* torch.nn.functional
+* numpy
+* importlib_resources.files
+* onnx
+* torch
+
+Arguments specification:
+* classes
+  * argparse_name: --classes
+  * convert-type: builtins.str
+  * type
+    * string
+  * description: File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type
+  * default: coco
+* model_path
+  * argparse_name: --model-path
+  * convert-type: pathlib.Path
+  * type
+    * string
+  * description: Path to the model
+  * required: True
+```
+
 ## Adding new implementations
 
 `Dataset`, `ModelWrapper`, `Optimizer`, `RuntimeProtocol`, `Runtime` and other classes from the `kenning.core` module have dedicated directories for their implementations.

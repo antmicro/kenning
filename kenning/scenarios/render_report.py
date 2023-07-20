@@ -26,7 +26,7 @@ else:
     from importlib.resources import path
 
 from kenning.cli.command_template import (
-    CommandTemplate, DEFAULT_GROUP, REPORT, GROUP_SCHEMA, TEST, OPTIMIZE)
+    CommandTemplate, DEFAULT_GROUP, REPORT, GROUP_SCHEMA, TEST)
 from kenning.resources import reports
 from kenning.core.drawing import (
     draw_confusion_matrix,
@@ -1859,7 +1859,7 @@ class RenderReport(CommandTemplate):
         # Group specific for this scenario,
         # doesn't have to be added to global groups
         report_group = parser.add_argument_group(GROUP_SCHEMA.format(REPORT))
-        run_in_sequence = TEST in types or OPTIMIZE in types
+        run_in_sequence = TEST in types
 
         other_group.add_argument(
             '--measurements',
@@ -1869,6 +1869,7 @@ class RenderReport(CommandTemplate):
             "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
             type=Path,
             nargs=1 if run_in_sequence else '*',
+            required=run_in_sequence,
         )
         report_group.add_argument(
             '--report-name',
@@ -2033,12 +2034,5 @@ class RenderReport(CommandTemplate):
             )
 
 
-def main(argv):
-    parser, _ = RenderReport.configure_parser(command=argv[0])
-    args = parser.parse_args(argv[1:])
-
-    RenderReport.run(args)
-
-
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(RenderReport.scenario_run())

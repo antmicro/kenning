@@ -12,11 +12,10 @@ performs a grid search to find optimal parameters for each block specified
 in `optimizable` parameter. Every block that is to be optimized should have
 list of parameters instead of a singular value specified.
 """
-
+import sys
 import argparse
 import copy
 import json
-import sys
 from itertools import chain, product, combinations
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -429,12 +428,5 @@ class OptimizationRunner(CommandTemplate):
             log.info('No pipeline was found for the optimization problem')
 
 
-def main(argv):
-    parser, _ = OptimizationRunner.configure_parser(command=argv[0])
-    args, _ = parser.parse_known_args(argv[1:])
-
-    OptimizationRunner.run(args)
-
-
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(OptimizationRunner.scenario_run())

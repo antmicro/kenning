@@ -213,12 +213,5 @@ class PipelineManagerClient(CommandTemplate):
         return 0
 
 
-def _connect_to_pipeline_manager(argv):
-    parser, _ = PipelineManagerClient.configure_parser(command=argv[0])
-    args = parser.parse_args(argv[1:])
-
-    return PipelineManagerClient.run(args)
-
-
 if __name__ == '__main__':
-    sys.exit(_connect_to_pipeline_manager(sys.argv))
+    sys.exit(PipelineManagerClient.scenario_run())

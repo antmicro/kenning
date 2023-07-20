@@ -197,14 +197,8 @@ class ListClassesRunner(CommandTemplate):
             print(line, end='')
 
 
-def main(argv):
-    parser, _ = ListClassesRunner.configure_parser(command=argv[0])
-    args, _ = parser.parse_known_args(argv[1:])
-
-    ListClassesRunner.run(args)
-
-
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    main(sys.argv)
+    result = ListClassesRunner.scenario_run()
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+    sys.exit(result)

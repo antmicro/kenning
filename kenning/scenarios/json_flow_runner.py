@@ -6,9 +6,9 @@
 A script for running Kenning Flows.
 """
 
+import sys
 import argparse
 import json
-import sys
 from typing import Optional, List, Dict, Tuple
 
 from kenning.cli.command_template import (
@@ -55,12 +55,5 @@ class FlowRunner(CommandTemplate):
         return 0
 
 
-def main(argv):
-    parser, _ = FlowRunner.configure_parser(command=argv[0])
-    args, _ = parser.parse_known_args(argv[1:])
-
-    FlowRunner.run(args)
-
-
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(FlowRunner.scenario_run())

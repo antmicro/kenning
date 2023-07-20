@@ -22,7 +22,7 @@ import signal
 import json
 from typing import Optional, List, Dict, Tuple
 
-from kenning.cli.command_template import CommandTemplate
+from kenning.cli.command_template import CommandTemplate, ParserHelpException
 from kenning.utils.class_loader import load_class, get_command
 import kenning.utils.logger as logger
 
@@ -94,13 +94,15 @@ class InferenceServer(CommandTemplate):
 
         if args.json_cfg is not None:
             InferenceServer._run_from_json(args, log, not_parsed)
+
         missing_args = [
             f"'{n}'" for i, n in enumerate(flag_config_names)
             if not flag_config_not_none[i]
         ]
-        if missing_args:
+        if missing_args and not args.help:
             raise argparse.ArgumentError(
                 None, f"the following arguments are required: {', '.join(missing_args)}")  # noqa: E501
+
         InferenceServer._run_from_flags(args, log, not_parsed)
 
     @staticmethod
@@ -110,20 +112,21 @@ class InferenceServer(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs
     ):
-        protocolcls = load_class(args.protocol_cls)
-        runtimecls = load_class(args.runtime_cls)
+        protocolcls = load_class(args.protocol_cls) \
+            if args.protocol_cls else None
+        runtimecls = load_class(args.runtime_cls) \
+            if args.runtime_cls else None
 
         parser = argparse.ArgumentParser(
             ' '.join(map(lambda x: x.strip(), get_command(with_slash=False))),
-            parents=[
-                protocolcls.form_argparse()[0],
-                runtimecls.form_argparse()[0],
-            ]
+            parents=[]
+            + ([protocolcls.form_argparse()[0]] if protocolcls else [])
+            + ([runtimecls.form_argparse()[0]] if runtimecls else []),
+            add_help=False,
         )
 
         if args.help:
-            parser.print_help()
-            return 0
+            raise ParserHelpException(parser)
 
         args = parser.parse_args(not_parsed)
 
@@ -174,12 +177,5 @@ class InferenceServer(CommandTemplate):
         runtime.run_server()
 
 
-def main(argv):
-    parser, _ = InferenceServer.configure_parser(command=argv[0])
-    args, not_parsed = parser.parse_known_args(argv[1:])
-
-    InferenceServer.run(args, not_parsed)
-
-
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(InferenceServer.scenario_run())

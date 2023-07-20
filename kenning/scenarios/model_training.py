@@ -16,7 +16,7 @@ from typing import Optional, List, Dict, Tuple
 
 from kenning.utils.class_loader import load_class, get_command
 from kenning.cli.command_template import (
-    CommandTemplate, TRAIN, TEST, GROUP_SCHEMA)
+    CommandTemplate, TRAIN, TEST, GROUP_SCHEMA, ParserHelpException)
 
 
 class TrainModel(CommandTemplate):
@@ -76,7 +76,6 @@ class TrainModel(CommandTemplate):
     def run(
         args: argparse.Namespace,
         not_parsed: List[str] = [],
-        parser: argparse.ArgumentParser = None,
         **kwargs
     ):
         modelwrappercls = load_class(args.modelwrapper_cls) \
@@ -87,7 +86,7 @@ class TrainModel(CommandTemplate):
         parser = argparse.ArgumentParser(
             ' '.join(map(lambda x: x.strip(),
                      get_command(with_slash=False))),
-            parents=[parser]
+            parents=[]
             + ([modelwrappercls.form_argparse()[0]]
                if modelwrappercls else [])
             + ([datasetcls.form_argparse()[0]] if datasetcls else []),
@@ -95,8 +94,7 @@ class TrainModel(CommandTemplate):
         )
 
         if args.help:
-            parser.print_help()
-            return
+            raise ParserHelpException(parser)
         args = parser.parse_args(not_parsed, namespace=args)
 
         dataset = datasetcls.from_argparse(args)
@@ -113,12 +111,5 @@ class TrainModel(CommandTemplate):
         model.save_model(model.get_path())
 
 
-def main(argv):
-    parser, _ = TrainModel.configure_parser()
-    args, not_parsed = parser.parse_known_args(argv[1:])
-
-    TrainModel.run(args, not_parsed, parser=parser)
-
-
 if __name__ == '__main__':
-    main(sys.argv)
+    sys.exit(TrainModel.scenario_run(sys.argv))

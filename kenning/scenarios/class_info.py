@@ -13,18 +13,16 @@ More precisely, it displays:
   information one way or the other)
 * node's parameters, with their help and default values
 """
+import sys
 import argparse
 import ast
 import importlib
 import inspect
 import os.path
-import sys
-from typing import Optional
-from typing import Union, List, Dict, Tuple, Type
-
 import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
+from typing import Union, List, Tuple, Optional, Dict, Type
 
 from kenning.cli.command_template import (
     CommandTemplate, GROUP_SCHEMA, INFO)
@@ -884,7 +882,7 @@ def generate_class_info(
             resulting_lines.append(get_class_module_name(node))
 
         if input_formats or output_formats:
-            if imported_class and hasattr(class_object, 'get_io_specification'): # noqa E501
+            if imported_class and hasattr(class_object, 'get_io_specification'):  # noqa E501
                 # object has been created - detailed i/o specification found
                 found_io_specification = True
                 resulting_lines.append('Input/output specification:\n')
@@ -1033,15 +1031,8 @@ class ClassInfoRunner(CommandTemplate):
             print(result_line, end='')
 
 
-def main(argv):
-    parser, _ = ClassInfoRunner.configure_parser(command=argv[0])
-    args, _ = parser.parse_known_args(argv[1:])
-
-    ClassInfoRunner.run(args)
-
-
 if __name__ == '__main__':
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-    ret = main(sys.argv)
+    ret = ClassInfoRunner.scenario_run()
     os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
     sys.exit(ret)

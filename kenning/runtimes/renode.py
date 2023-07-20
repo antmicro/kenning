@@ -6,7 +6,7 @@
 Runtime implementation for Renode.
 """
 
-from typing import Dict, Any, Tuple, BinaryIO, Optional
+from typing import Dict, Any, List, Tuple, BinaryIO, Optional
 from pathlib import Path
 from collections import defaultdict
 import tempfile
@@ -25,7 +25,7 @@ from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import tagmeasurements
 from kenning.utils.logger import get_logger
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class RenodeRuntime(Runtime):
@@ -40,12 +40,18 @@ class RenodeRuntime(Runtime):
         'runtime_binary_path': {
             'argparse_name': '--runtime-binary-path',
             'description': 'Path to bare-metal runtime binary',
-            'type': Path
+            'type': ResourceURI
         },
         'platform_resc_path': {
             'argparse_name': '--platform-resc-path',
             'description': 'Path to platform script',
-            'type': Path
+            'type': ResourceURI
+        },
+        'resc_dependencies': {
+            'argparse_name': '--resc-dependencies',
+            'description': 'Renode script dependencies',
+            'type': ResourceURI,
+            'is_list': True
         },
         'disable_profiler': {
             'argparse_name': '--disable-profiler',
@@ -85,8 +91,9 @@ class RenodeRuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            runtime_binary_path: Path,
-            platform_resc_path: Path,
+            runtime_binary_path: PathOrURI,
+            platform_resc_path: PathOrURI,
+            resc_dependencies: List[ResourceURI] = [],
             disable_profiler: bool = False,
             profiler_dump_path: Optional[Path] = None,
             profiler_interval_step: float = 10.,
@@ -101,10 +108,12 @@ class RenodeRuntime(Runtime):
         protocol : RuntimeProtocol
             The implementation of the host-target communication protocol used
             to communicate with simulated platform.
-        runtime_binary_path : Path
+        runtime_binary_path : PathOrURI
             Path to the runtime binary.
-        platform_resc_path : Path
+        platform_resc_path : PathOrURI
             Path to the Renode script.
+        resc_dependencies : List[ResourceURI] = []
+            Renode script dependencies.
         disable_profiler : bool
             Disables Renode profiler.
         profiler_dump_path : Optional[Path]
@@ -119,8 +128,11 @@ class RenodeRuntime(Runtime):
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.runtime_binary_path = runtime_binary_path.resolve()
-        self.platform_resc_path = platform_resc_path.resolve()
+        self.runtime_binary_path = runtime_binary_path
+        self.platform_resc_path = platform_resc_path
+        # check resc dependencies
+        for dependency in resc_dependencies:
+            assert dependency.is_file()
         self.disable_profiler = disable_profiler
         if profiler_dump_path is not None:
             profiler_dump_path = profiler_dump_path.resolve()

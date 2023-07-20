@@ -7,12 +7,13 @@ Provide resource manager responsible for downloading and caching resources
 """
 import hashlib
 import os
+import re
 import tarfile
 from pathlib import Path
 from shutil import copy, rmtree
 from tqdm import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from urllib.error import HTTPError
+from urllib.error import URLError
 from urllib.parse import ParseResult, urlparse
 from zipfile import ZipFile
 
@@ -78,6 +79,7 @@ class ResourceManager(metaclass=Singleton):
         'http': None,
         'https': None,
         'kenning': 'https://dl.antmicro.com/kenning/{path}',
+        'gh': 'https://raw.githubusercontent.com/{path[:2]}/main/{path[2:]}',
         'file': lambda path: Path(path).expanduser().resolve(),
     }
 
@@ -88,6 +90,13 @@ class ResourceManager(metaclass=Singleton):
         self.cache_dir = ResourceManager.CACHE_DIR
         self.url_schemes = ResourceManager.BASE_URL_SCHEMES
         self.max_cache_size = ResourceManager.MAX_CACHE_SIZE
+        self.params_pattern = re.compile(
+            r'(\{([a-zA-Z][a-zA-Z0-9_]+)'
+            r'(?:\[((?:[+-]?[0-9]+)?(?::[+-]?[0-9]*){0,2})\])?\})'
+        )
+        self.params_pattern_check = re.compile(
+            r'(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})'
+        )
         self.log = get_logger()
 
     def get_resource(
@@ -261,18 +270,65 @@ class ResourceManager(metaclass=Singleton):
             scheme's conversion is invalid.
         """
         try:
-            format = self.url_schemes[parsed_uri.scheme]
+            format_str = self.url_schemes[parsed_uri.scheme]
         except KeyError:
             raise ValueError(
                 f'Invalid URI scheme provided: {parsed_uri.scheme}'
             )
 
-        if format is None:
+        if format_str is None:
             return parsed_uri.geturl()
-        if isinstance(format, str):
-            return format.format(path=parsed_uri.path)
-        if callable(format):
-            return format(parsed_uri.path)
+        if isinstance(format_str, str):
+            params = set(self.params_pattern.findall(format_str))
+            self.log.debug(params)
+            for param_str, param, index in params:
+                if not hasattr(parsed_uri, param):
+                    raise ValueError(f'Invalid param name {param}')
+
+                if index == '' and ('[' in param_str or ']' in param_str):
+                    raise ValueError(
+                        f'Invalid index for param: {param_str}'
+                    )
+
+                param_value = getattr(parsed_uri, param)
+                if 'path' == param:
+                    sep = '/'
+                    param_as_list = param_value.split(sep)[1:]
+                elif 'netloc' == param:
+                    sep = '.'
+                    param_as_list = param_value.split(sep)
+                elif '' != index:
+                    raise ValueError(
+                        f'Invalid conversion for scheme {parsed_uri.scheme}, '
+                        f'param {param} does not support indexing and slicing'
+                    )
+
+                if ':' in index:
+                    # convert slice str to slice object
+                    param_slice = slice(*[
+                        {True: lambda n: None, False: int}[x == ''](x)
+                        for x in (index.split(':') + ['', '', ''])[:3]
+                    ])
+                    value = sep.join(param_as_list[param_slice])
+                elif '' != index:
+                    value = param_as_list[int(index)]
+                else:
+                    value = param_value
+
+                format_str = format_str.replace(param_str, value)
+
+            # check if there are any params left
+            params_check = set(self.params_pattern_check.findall(format_str))
+            if len(params_check):
+                raise ValueError(
+                    'Invalid syntax for params: '
+                    f'{[p[1] for p in params_check]}'
+                )
+
+            return format_str
+
+        if callable(format_str):
+            return format_str(parsed_uri.path)
 
         raise ValueError(f'Invalid conversion for scheme {parsed_uri.scheme}')
 
@@ -466,7 +522,10 @@ class ResourceURI(Path):
         if instance.uri is not None:
             try:
                 ResourceManager().get_resource(instance.uri, Path(instance))
-            except HTTPError:
+            except URLError:
+                # ignore the exception as the __new__ might be called during
+                # URI manipulations (by using with_suffix etc.) and the URI
+                # could be invalid as some stage of such operations
                 pass
 
         return instance

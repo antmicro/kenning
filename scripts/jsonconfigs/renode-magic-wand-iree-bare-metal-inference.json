@@ -35,8 +35,12 @@
     "runtime": {
         "type": "kenning.runtimes.renode.RenodeRuntime",
         "parameters": {
-            "runtime_binary_path": "build/renode-resources/springbok/iree_runtime",
-            "platform_resc_path": "build/renode-resources/springbok/springbok.resc",
+            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime",
+            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok.resc;branch=main",
+            "resc_dependencies": [
+                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main",
+                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=24140ce0"
+            ],
             "profiler_dump_path": "build/profiler.dump"
         }
     },

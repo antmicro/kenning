@@ -8,9 +8,11 @@ Module with main logic of Kenning CLI
 
 import argparse
 import sys
-from typing import List, Dict, Generator, Tuple
+from typing import List, Dict, Generator, Tuple, Optional
 
+from kenning.cli.parser import Parser
 from kenning.cli.formatter import Formatter
+from kenning.cli.command_template import DEFAULT_GROUP
 from kenning.cli.config import (
     HELP,
     SEQUENCED_COMMANDS,
@@ -27,30 +29,41 @@ SUB_DEST_FORM = "__seq_{}"
 
 
 def get_all_sequences(
-    sequence: List[str],
-) -> Generator[List[str], None, None]:
+    sequence: List[List[str]],
+    prefix: Optional[List[str]] = None,
+) -> Generator[Tuple[str], None, None]:
     """
     Yields possible sequences of commands.
 
     Parameters
     ----------
-    sequence : List[str]
+    sequence : List[List[str]]
         Sequence with commands in right order
+    prefix : Optional[List[str]]
+        Prefix appended to the results
 
     Yields
     ------
     List[str] :
         Sequence of commands
     """
-    for i in range(len(sequence)):
-        yield sequence[i:]
+    if prefix is None:
+        prefix = []
+    if not sequence:
+        for i in range(len(prefix)):
+            yield tuple(prefix[i:])
+        return
+    for item in (
+        sequence[0] if isinstance(sequence[0], List) else [sequence[0]]
+    ):
+        yield from get_all_sequences(sequence[1:], prefix + [item])
 
 
 def create_subcommands(
     subparser: argparse._SubParsersAction,
     names: List[str],
     number: int = 0
-) -> Dict[Tuple[str], argparse.ArgumentParser]:
+) -> Dict[Tuple[str], Parser]:
     """
     Creates nested subcommands from list of names.
 
@@ -86,7 +99,7 @@ def create_subcommands(
     return parsers
 
 
-def setup_base_parser() -> Tuple[argparse.ArgumentParser, Dict[Tuple[str], argparse.ArgumentParser]]:  # noqa: E501
+def setup_base_parser() -> Tuple[Parser, Dict[Tuple[str], Parser]]:
     """
     Sets up parser containing only subcommands and help message.
 
@@ -108,17 +121,20 @@ def setup_base_parser() -> Tuple[argparse.ArgumentParser, Dict[Tuple[str], argpa
     subparsers = parser.add_subparsers(
         title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(0))
 
-    flag_group = parser.add_argument_group('Flags')
+    flag_group = parser.add_argument_group(DEFAULT_GROUP)
     flag_group.add_argument(
         *HELP["flags"],
         action='store_true',
         help=HELP["msg"],
     )
 
-    for sequence in get_all_sequences(SEQUENCED_COMMANDS):
+    sequences = set()
+    for sequence in SEQUENCED_COMMANDS:
+        sequences.update(get_all_sequences(sequence))
+    for sequence in sorted(sequences, key=lambda x: x[0]):
         parsers.update(create_subcommands(subparsers, sequence))
 
-    for subcommand in BASIC_COMMANDS:
+    for subcommand in sorted(BASIC_COMMANDS):
         parsers[(subcommand,)] = subparsers.add_parser(
             subcommand,
             help=MAP_COMMAND_TO_SCENARIO[subcommand].description.split('.')[0],
@@ -184,7 +200,7 @@ def main():
             parse_all = parse_all and scenario.parse_all
 
     # The main parser without subcommands
-    parser = argparse.ArgumentParser(
+    parser = Parser(
         "kenning "+" ".join(subcommands),
         conflict_handler='resolve',
         parents=parents,
@@ -195,7 +211,7 @@ def main():
 
     # Print help, including possible subcommands
     if args.help:
-        argparse.ArgumentParser(
+        Parser(
             "kenning "+" ".join(subcommands),
             conflict_handler='resolve',
             parents=[parsers[tuple(subcommands)], parser],
@@ -222,7 +238,7 @@ def main():
         if run in used_functions:
             continue
         try:
-            run(args, not_parsed=rem)
+            run(args, not_parsed=rem, parser=parser)
         except ModuleNotFoundError as er:
             extras = find_missing_optional_dependency(er.name)
             if not extras:

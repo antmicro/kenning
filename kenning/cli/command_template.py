@@ -10,9 +10,12 @@ import argparse
 from abc import abstractstaticmethod, ABC
 from typing import Dict, Optional, List, Union, Tuple
 
+from kenning.cli.parser import Parser
+
 
 # Subcommands:
 OPTIMIZE = "optimize"
+TRAIN = "train"
 TEST = "test"
 REPORT = "report"
 VISUAL_EDITOR = "visual-editor"
@@ -27,7 +30,7 @@ HELP = {
 }
 
 # Groups:
-DEFAULT_GROUP = "arguments"
+DEFAULT_GROUP = "common arguments"
 GROUP_SCHEMA = "'{}' arguments"
 
 
@@ -69,7 +72,7 @@ class CommandTemplate(ABC):
         argparse.ArgumentParser : Configured parser
         """
         if parser is None:
-            parser = argparse.ArgumentParser(
+            parser = Parser(
                 command,
                 conflict_handler='resolve' if resolve_conflict else 'error',
                 add_help=False,
@@ -98,6 +101,7 @@ class CommandTemplate(ABC):
     def run(
         args: argparse.Namespace,
         not_parsed: List[str] = [],
+        parser: argparse.ArgumentParser = None,
         **kwargs
     ):
         """
@@ -109,5 +113,7 @@ class CommandTemplate(ABC):
             Parsed and validated arguments used for this scenario
         not_parsed : List[str]
             Additinal arguments which haven't been parsed yet
+        parser : argparse.ArgumentParser
+            Parser used for this command
         """
         raise NotImplementedError

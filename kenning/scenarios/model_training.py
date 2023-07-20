@@ -12,80 +12,112 @@ in Dataset object.
 import sys
 import argparse
 from pathlib import Path
+from typing import Optional, List, Dict, Tuple
 
-from kenning.utils.class_loader import load_class
+from kenning.utils.class_loader import load_class, get_command
+from kenning.cli.command_template import (
+    CommandTemplate, TRAIN, TEST, GROUP_SCHEMA)
+
+
+class TrainModel(CommandTemplate):
+    parse_all = False
+    description = __doc__[:-1]
+
+    @staticmethod
+    def configure_parser(
+        parser: Optional[argparse.ArgumentParser] = None,
+        command: Optional[str] = None,
+        types: List[str] = [],
+        groups: Dict[str, argparse._ArgumentGroup] = None,
+    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        parser, groups = super(TrainModel, TrainModel).configure_parser(
+            parser, command, types, groups, TEST in types
+        )
+        # other_group = groups[DEFAULT_GROUP]
+        train_group = parser.add_argument_group(GROUP_SCHEMA.format(TRAIN))
+
+        train_group.add_argument(
+            '--modelwrapper-cls',
+            help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
+            required=True,
+        )
+        train_group.add_argument(
+            '--dataset-cls',
+            help='Dataset-based class with dataset to import',
+            required=True,
+        )
+        train_group.add_argument(
+            '--batch-size',
+            help='The batch size for training',
+            type=int,
+            required=True,
+        )
+        train_group.add_argument(
+            '--learning-rate',
+            help='The learning rate for training',
+            type=float,
+            required=True
+        )
+        train_group.add_argument(
+            '--num-epochs',
+            help='Number of epochs to train for',
+            type=int,
+            required=True
+        )
+        train_group.add_argument(
+            '--logdir',
+            help='Path to the training logs directory',
+            type=Path,
+            required=True
+        )
+        return parser, groups
+
+    @staticmethod
+    def run(
+        args: argparse.Namespace,
+        not_parsed: List[str] = [],
+        parser: argparse.ArgumentParser = None,
+        **kwargs
+    ):
+        modelwrappercls = load_class(args.modelwrapper_cls) \
+            if args.modelwrapper_cls else None
+        datasetcls = load_class(args.dataset_cls) \
+            if args.dataset_cls else None
+
+        parser = argparse.ArgumentParser(
+            ' '.join(map(lambda x: x.strip(),
+                     get_command(with_slash=False))),
+            parents=[parser]
+            + ([modelwrappercls.form_argparse()[0]]
+               if modelwrappercls else [])
+            + ([datasetcls.form_argparse()[0]] if datasetcls else []),
+            add_help=False,
+        )
+
+        if args.help:
+            parser.print_help()
+            return
+        args = parser.parse_args(not_parsed, namespace=args)
+
+        dataset = datasetcls.from_argparse(args)
+        model = modelwrappercls.from_argparse(dataset, args, from_file=False)
+
+        args.logdir.mkdir(parents=True, exist_ok=True)
+
+        model.train_model(
+            args.batch_size,
+            args.learning_rate,
+            args.num_epochs,
+            args.logdir
+        )
+        model.save_model(model.get_path())
 
 
 def main(argv):
-    parser = argparse.ArgumentParser(argv[0], add_help=False)
-    parser.add_argument(
-        'modelwrappercls',
-        help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
-    )
-    parser.add_argument(
-        'datasetcls',
-        help='Dataset-based class with dataset to import',
-    )
+    parser, _ = TrainModel.configure_parser()
+    args, not_parsed = parser.parse_known_args(argv[1:])
 
-    args, _ = parser.parse_known_args(argv[1:])
-
-    modelwrappercls = load_class(args.modelwrappercls)
-    datasetcls = load_class(args.datasetcls)
-
-    parser = argparse.ArgumentParser(
-        argv[0],
-        parents=[
-            parser,
-            modelwrappercls.form_argparse()[0],
-            datasetcls.form_argparse()[0]
-        ]
-    )
-
-    parser.add_argument(
-        '--batch-size',
-        help='The batch size for training',
-        type=int,
-        required=True,
-    )
-    parser.add_argument(
-        '--learning-rate',
-        help='The learning rate for training',
-        type=float,
-        required=True
-    )
-    parser.add_argument(
-        '--num-epochs',
-        help='Number of epochs to train for',
-        type=int,
-        required=True
-    )
-    parser.add_argument(
-        '--logdir',
-        help='Path to the training logs directory',
-        type=Path,
-        required=True
-    )
-    parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
-    )
-
-    args = parser.parse_args(argv[1:])
-
-    dataset = datasetcls.from_argparse(args)
-    model = modelwrappercls.from_argparse(dataset, args, from_file=False)
-
-    args.logdir.mkdir(parents=True, exist_ok=True)
-
-    model.train_model(
-        args.batch_size,
-        args.learning_rate,
-        args.num_epochs,
-        args.logdir
-    )
-    model.save_model(model.get_path())
+    TrainModel.run(args, not_parsed, parser=parser)
 
 
 if __name__ == '__main__':

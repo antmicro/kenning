@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
+from typing import Dict
+from urllib.parse import urlparse
 
 import pytest
 
@@ -140,7 +142,7 @@ class TestResourceManager:
         target_path: Path = pytest.test_directory
 
         ResourceManager().add_custom_url_schemes(
-            {'customschema': lambda path: target_path / path[1:]}
+            {'customschema': lambda uri: target_path / uri.path[1:]}
         )
 
         expected_path = target_path / 'test_file.txt'
@@ -160,6 +162,211 @@ class TestResourceManager:
             ResourceURI('customschema:///test/test_file.txt').read_text()
             == 'test12345'
         )
+
+    def test_resolve_file_uri(self):
+        """
+        Tests if file URI is properly resolved
+        """
+
+        test_file = (pytest.test_directory / 'test.txt').resolve()
+        test_file.touch()
+        test_file.write_text('test123')
+
+        resource = ResourceURI(f'file://{str(test_file)}')
+
+        assert resource.is_file()
+        assert resource.read_text() == 'test123'
+
+    @pytest.mark.parametrize(
+        'url_schema,uri,expected_resolved_uri',
+        [
+            # check inserting netloc and path
+            (
+                {'test': 'https://{netloc}{path}'},
+                'test://test-netloc/path_a',
+                'https://test-netloc/path_a'
+            ),
+            (
+                {'test': 'https://{netloc}{path}'},
+                'test://netloc-test/path_a/path_b',
+                'https://netloc-test/path_a/path_b'
+            ),
+            (
+                {'test': 'https://{netloc}{path}'},
+                'test://test-netloc/path_a?a=1&b=2',
+                'https://test-netloc/path_a'
+            ),
+            (
+                {'test': 'https://{netloc}{path}'},
+                'test://netloc-test/path_a?a=1&b=2',
+                'https://netloc-test/path_a'
+            ),
+            (
+                {'test': 'https://{netloc}{path}'},
+                'test:///path_a?a=1&b=2',
+                'https:///path_a'
+            ),
+            # check inserting query
+            (
+                {'test': 'https://{netloc}{path}?{query}'},
+                'test://test-netloc/path_a?a=1&b=2',
+                'https://test-netloc/path_a?a=1&b=2'
+            ),
+            # check inserting path part of given index
+            (
+                {'test': 'https://{netloc}/{path[0]}'},
+                'test://test-netloc/path_a/path_b',
+                'https://test-netloc/path_a'
+            ),
+            (
+                {'test': 'https://{netloc}/{path[1]}'},
+                'test://test-netloc/path_a/path_b',
+                'https://test-netloc/path_b'
+            ),
+            # check inserting param of given name
+            (
+                {'test': 'https://{netloc};target={params["branch"]}'},
+                'test://test-netloc/path_a/path_b;branch=main;test=1',
+                'https://test-netloc;target=main'
+            ),
+            (
+                {'test': 'https://{netloc};target={params["branch"]}'},
+                'test://test-netloc/path_a/path_b;test=1;branch=main',
+                'https://test-netloc;target=main'
+            ),
+            # check inserting query param of given name
+            (
+                {'test': 'https://{netloc}?target={query["branch"]}'},
+                'test://test-netloc/path_a/path_b?branch=main&test=1',
+                'https://test-netloc?target=main'
+            ),
+            (
+                {'test': 'https://{netloc}?target={query["branch"]}'},
+                'test://test-netloc/path_a/path_b?test=1&branch=main',
+                'https://test-netloc?target=main'
+            ),
+            # check inserting path slice
+            (
+                {'test': 'https://{netloc}/{path[1:]}'},
+                'test://test-netloc/path_a/path_b/path_c/path_d',
+                'https://test-netloc/path_b/path_c/path_d'
+            ),
+            (
+                {'test': 'https://{netloc}/{path[:2]}'},
+                'test://test-netloc/path_a/path_b/path_c/path_d',
+                'https://test-netloc/path_a/path_b'
+            ),
+            # check inserting netloc slice
+            (
+                {'test': 'https://{netloc[1:]}{path}'},
+                'test://a.bb.ccc.dd/path_a',
+                'https://bb.ccc.dd/path_a'
+            ),
+            (
+                {'test': 'https://{netloc[::-1]}{path}'},
+                'test://a.bb.ccc.dd/path_a',
+                'https://dd.ccc.bb.a/path_a'
+            ),
+            # check more complicated format
+            (
+                {'test': 'http://{netloc[1]}.{netloc[0]}/{path[2:0:-1]}?{query}'},  # noqa: E501
+                'test://test.loc/path_a/path_b/path_c?a=1&b=2&c=3',
+                'http://loc.test/path_c/path_b?a=1&b=2&c=3'
+            ),
+        ]
+    )
+    def test_resolve_uri_should_properly_insert_parameters(
+        self,
+        url_schema: Dict[str, str],
+        uri: str,
+        expected_resolved_uri: str
+    ):
+        """
+        Tests if resolve_uri properly parses pattern string.
+        """
+
+        resource_manager = ResourceManager()
+
+        resource_manager.add_custom_url_schemes(url_schema)
+
+        assert (
+            resource_manager._resolve_uri(urlparse(uri))
+            == expected_resolved_uri
+        )
+
+    @pytest.mark.parametrize(
+        'url_schema,uri,expected_exception',
+        [
+            # invalid index format
+            (
+                {'test': 'https://{netloc}{path[abc]}'},
+                'test://test-netloc/path_a',
+                ValueError
+            ),
+            # empty index
+            (
+                {'test': 'https://{netloc}{path[]}'},
+                'test://test-netloc/path_a',
+                ValueError
+            ),
+            # invalid param
+            (
+                {'test': 'https://{netloc}{unknown_param}'},
+                'test://test-netloc/path_a',
+                ValueError
+            ),
+            # whitespaces in index
+            (
+                {'test': 'https://{netloc}/{path[1 :]}'},
+                'test://test-netloc/path_a/path_b/path_c',
+                ValueError
+            ),
+            #  index out of range
+            (
+                {'test': 'https://{netloc}{path[2]}'},
+                'test://test-netloc/path_a',
+                IndexError
+            ),
+            (
+                {'test': 'https://{netloc[3]}{path}'},
+                'test://test-netloc/path_a',
+                IndexError
+            ),
+            # invalid key
+            (
+                {'test': 'https://{netloc}?target={query["branch"]}'},
+                'test://test-netloc/path_a/path_b?abc=main&test=1',
+                KeyError
+            ),
+            (
+                {'test': 'https://{netloc}?target={params["branch"]}'},
+                'test://test-netloc/path_a/path_b;abc=main;test=1',
+                KeyError
+            ),
+            #  indexing param that does not support it
+            (
+                {'test': 'https://{netloc}{path}{query[1]}'},
+                'test://test-netloc/path_a?a=1&b=2&c=3',
+                ValueError
+            ),
+        ]
+    )
+    def test_resolve_uri_should_raise_exception_for_invalid_patterns(
+        self,
+        url_schema: Dict[str, str],
+        uri: str,
+        expected_exception: Exception
+    ):
+        """
+        Tests if resolve_uri raises exception for invalid patterns.
+        """
+
+        resource_manager = ResourceManager()
+
+        resource_manager.add_custom_url_schemes(url_schema)
+
+        with pytest.raises(expected_exception):
+            resource_manager._resolve_uri(urlparse(uri))
 
 
 @pytest.mark.xdist_group(name='cache_test')

@@ -295,7 +295,7 @@ class TestGetParsedArgsDict:
         'mock_modelruntime_runner_args_structure',
         'mock_runner_args_structure',
         'mock_argumentshandler_args_structure',
-        'mock_configuration_file_contents'
+        'mock_configuration_file_contents_modelruntime_runner'
     )
     @pytest.mark.parametrize(
         'class_type,args,expected_result,expectation',

@@ -103,9 +103,8 @@ class TestGetCommand:
 
     def test_multiple_flags(self):
         x = ['/usr/lib/python3.10/kenning/scenarios/model_training.py',
-             'kenning.modelwrappers.classification.\
-tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',
-             'kenning.datasets.pet_dataset.PetDataset',
+             '--modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
+             '--dataset-cls kenning.datasets.pet_dataset.PetDataset',
              '--logdir',
              'build/logs',
              '--dataset-root',
@@ -120,9 +119,8 @@ tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',
              '50',
              ]
         y = ['python -m kenning.scenarios.model_training \\',
-             '    kenning.modelwrappers.classification.\
-tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \\',
-             '    kenning.datasets.pet_dataset.PetDataset \\',
+             '    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \\',  # noqa: E501
+             '    --dataset-cls kenning.datasets.pet_dataset.PetDataset \\',
              '    --logdir \\',
              '        build/logs \\',
              '    --dataset-root \\',

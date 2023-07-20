@@ -146,10 +146,10 @@ We will skip the training process. The trained model can be found in `kenning/re
 The training of the above model can be performed using the following command:
 
 <!-- name="cmd-test" -->
-```
-python -m kenning.scenarios.model_training \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
+```bash
+kenning train \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --logdir build/logs \
     --dataset-root build/pet-dataset \
     --model-path build/trained-model.h5 \

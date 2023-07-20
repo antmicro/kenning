@@ -21,8 +21,8 @@ To get the list of training parameters, select the model and training dataset to
 
 ```bash
 python -m kenning.scenarios.model_training \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     -h
 ```
 
@@ -30,12 +30,16 @@ This will list the possible parameters that can be used to configure the dataset
 For the above call, the output is as follows:
 
 ```bash
-positional arguments:
-  modelwrappercls       ModelWrapper-based class with inference implementation to import
-  datasetcls            Dataset-based class with dataset to import
-
-optional arguments:
+common arguments:
   -h, --help            show this help message and exit
+  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Verbosity level
+
+'train' arguments:
+  --modelwrapper-cls MODELWRAPPER_CLS
+                        ModelWrapper-based class with inference implementation to import
+  --dataset-cls DATASET_CLS
+                        Dataset-based class with dataset to import
   --batch-size BATCH_SIZE
                         The batch size for training
   --learning-rate LEARNING_RATE
@@ -43,23 +47,34 @@ optional arguments:
   --num-epochs NUM_EPOCHS
                         Number of epochs to train for
   --logdir LOGDIR       Path to the training logs directory
-  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
-                        Verbosity level
 
-Inference model arguments:
+ModelWrapper arguments:
   --model-path MODEL_PATH
                         Path to the model
 
-Dataset arguments:
-  --dataset-root DATASET_ROOT
-                        Path to the dataset directory
-  --download-dataset    Downloads the dataset before taking any action
-  --inference-batch-size INFERENCE_BATCH_SIZE
-                        The batch size for providing the input data
+PetDataset arguments:
   --classify-by {species,breeds}
                         Determines if classification should be performed by species or by breeds
   --image-memory-layout {NHWC,NCHW}
                         Determines if images should be delivered in NHWC or NCHW format
+
+Dataset arguments:
+  --dataset-root DATASET_ROOT
+                        Path to the dataset directory
+  --inference-batch-size INFERENCE_BATCH_SIZE
+                        The batch size for providing the input data
+  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded
+                        then they are not downloaded again
+  --force-download-dataset
+                        Forces dataset download
+  --external-calibration-dataset EXTERNAL_CALIBRATION_DATASET
+                        Path to the directory with the external calibration dataset
+  --split-fraction-test SPLIT_FRACTION_TEST
+                        Default fraction of data to leave for model testing
+  --split-fraction-val SPLIT_FRACTION_VAL
+                        Default fraction of data to leave for model valdiation
+  --split-seed SPLIT_SEED
+                        Default seed used for dataset split
 ```
 
 ```{note}
@@ -70,8 +85,8 @@ At the end, the training can be configured as follows:
 
 ```bash
 python -m kenning.scenarios.model_training \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --logdir build/logs \
     --dataset-root build/pet-dataset \
     --model-path build/trained-model.h5 \
@@ -163,15 +178,45 @@ python3 -m kenning.scenarios.inference_tester \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --measurements ''
     -h
 ```
 
 With the above classes, the help can look as follows:
 
 ```bash
-optional arguments:
+common arguments:
   -h, --help            show this help message and exit
+  --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
+                        Verbosity level
+  --convert-to-onnx CONVERT_TO_ONNX
+                        Before compiling the model, convert it to ONNX and use in compilation (provide a path to
+                        save here)
+  --measurements MEASUREMENTS
+                        The path to the output JSON file with measurements
+  --run-benchmarks-only
+                        Instead of running the full compilation and testing flow, only testing of the model is
+                        executed
+
+Inference configuration with JSON:
+  Configuration with pipeline defined in JSON file. This section is not compatible with 'Inference configuration
+  with flags'.
+
+  --json-cfg JSON_CFG   * The path to the input JSON file with configuration of the inference
+
+Inference configuration with flags:
+  Configuration with flags. This section is not compatible with 'Inference configuration with JSON'.
+
+  --modelwrapper-cls MODELWRAPPER_CLS
+                        * ModelWrapper-based class with inference implementation to import
+  --dataset-cls DATASET_CLS
+                        * Dataset-based class with dataset to import
+  --compiler-cls COMPILER_CLS
+                        * Optimizer-based class with compiling routines to import
+  --runtime-cls RUNTIME_CLS
+                        Runtime-based class with the implementation of model runtime
+  --protocol-cls PROTOCOL_CLS
+                        RuntimeProtocol-based class with the implementation of communication between inference
+                        tester and inference runner
 
 ModelWrapper arguments:
   --model-path MODEL_PATH
@@ -280,10 +325,10 @@ The example call is as follows:
 
 ```bash
 python3 -m kenning.scenarios.inference_tester \
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    kenning.runtimes.tvm.TVMRuntime \
-    kenning.datasets.pet_dataset.PetDataset \
-    ./build/local-cpu-tvm-tensorflow-classification.json \
+    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
+    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
     --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
     --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \

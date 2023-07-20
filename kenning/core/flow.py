@@ -218,7 +218,6 @@ class KenningFlow:
         Runs flow one time.
         """
         try:
-            self.log.info('Flow started')
             for runner in self.runners:
                 if runner.should_close():
                     self.should_close = True
@@ -259,4 +258,4 @@ class KenningFlow:
 
         self.cleanup()
 
-        self.log.info(f'Final {self.flow_state=}')
+        self.log.debug(f'Final {self.flow_state=}')

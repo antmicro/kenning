@@ -15,6 +15,7 @@ from typing import Optional, Dict, List
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
+from kenning.utils.resource_manager import PathOrURI
 
 
 class EdgeTPUCompilerError(Exception):
@@ -24,29 +25,31 @@ class EdgeTPUCompilerError(Exception):
     pass
 
 
-def kerasconversion(modelpath: Path):
+def kerasconversion(model_path: PathOrURI):
     import tensorflow as tf
-    model = tf.keras.models.load_model(modelpath)
+    model = tf.keras.models.load_model(str(model_path), compile=False)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     return converter
 
 
-def tensorflowconversion(modelpath: Path):
+def tensorflowconversion(model_path: PathOrURI):
     import tensorflow as tf
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(modelpath))
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(model_path))
     return converter
 
 
-def onnxconversion(modelpath: Path):
+def onnxconversion(model_path: PathOrURI):
     import tensorflow as tf
     from onnx_tf.backend import prepare
     import onnx
     from datetime import datetime
-    onnxmodel = onnx.load(modelpath)
+    onnxmodel = onnx.load(str(model_path))
     model = prepare(onnxmodel)
-    convertedpath = str(Path(modelpath).with_suffix(f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'))  # noqa: E501
-    model.export_graph(convertedpath)
-    converter = tf.lite.TFLiteConverter.from_saved_model(convertedpath)
+    convertedpath = model_path.with_suffix(
+        f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'
+    )
+    model.export_graph(str(convertedpath))
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(convertedpath))
     return converter
 
 
@@ -109,7 +112,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
+            compiled_model_path: PathOrURI,
             target: str = 'default',
             epochs: int = 10,
             batch_size: int = 32,
@@ -133,8 +136,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
             during compilation stage.
-        compiled_model_path : Path
-            Path where compiled model will be saved.
+        compiled_model_path : PathOrURI
+            Path or URI where compiled model will be saved.
         target : str
             Target accelerator on which the model will be executed.
         epochs : int
@@ -174,13 +177,13 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
         import tensorflow as tf
         import tensorflow_model_optimization as tfmot
 
         if io_spec is None:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
         if not io_spec or not io_spec['output'] or not io_spec['input']:
             raise IOSpecificationNotFoundError('No input/ouput specification found')  # noqa: E501
@@ -190,7 +193,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if self.quantization_aware_training:
             assert self.inputtype == 'keras'
-            model = tf.keras.models.load_model(inputmodelpath)
+            model = tf.keras.models.load_model(str(input_model_path))
 
             def annotate_model(layer):
                 if isinstance(layer, tf.keras.layers.Dense):
@@ -212,7 +215,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             pcqat_model = self.train_model(pcqat_model)
             converter = tf.lite.TFLiteConverter.from_keras_model(pcqat_model)
         else:
-            converter = self.inputtypes[self.inputtype](inputmodelpath)
+            converter = self.inputtypes[self.inputtype](input_model_path)
 
         if self.target in ['int8', 'edgetpu']:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]
@@ -277,7 +280,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         update_io_spec(signature.get_input_details(), interpreter.get_input_details(), 'input')  # noqa: E501
         update_io_spec(signature.get_output_details(), interpreter.get_output_details(), 'output')  # noqa: E501
 
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)
 
         if self.target == 'edgetpu':
             edgetpu_compiler = which('edgetpu_compiler')

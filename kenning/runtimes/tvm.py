@@ -6,8 +6,6 @@
 Runtime implementation for TVM-compiled models.
 """
 
-from pathlib import Path
-
 import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import VirtualMachine, Executable
@@ -16,6 +14,7 @@ from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class TVMRuntime(Runtime):
@@ -27,10 +26,10 @@ class TVMRuntime(Runtime):
     inputtypes = ['tvm']
 
     arguments_structure = {
-        'modelpath': {
+        'model_path': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
-            'type': Path,
+            'type': ResourceURI,
             'default': 'model.tar'
         },
         'contextname': {
@@ -56,7 +55,7 @@ class TVMRuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            modelpath: Path,
+            model_path: PathOrURI,
             contextname: str = 'cpu',
             contextid: int = 0,
             use_tvm_vm: bool = False,
@@ -68,8 +67,8 @@ class TVMRuntime(Runtime):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication  protocol.
-        modelpath : Path
-            Path for the model file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         contextname : str
             Name of the runtime context on the target device.
         contextid : int
@@ -79,7 +78,7 @@ class TVMRuntime(Runtime):
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.modelpath = modelpath
+        self.model_path = model_path
         self.contextname = contextname
         self.contextid = contextid
         self.module = None
@@ -123,18 +122,23 @@ class TVMRuntime(Runtime):
         self.log.info('Loading model')
         ctx = tvm.runtime.device(self.contextname, self.contextid)
         if self.use_tvm_vm:
-            self.module = tvm.runtime.load_module(str(self.modelpath)+'.so')
+            self.module = tvm.runtime.load_module(str(
+                self.model_path.with_suffix(self.model_path.suffix + '.so')
+
+            ))
             loaded_bytecode = bytearray(
-                open(str(self.modelpath)+'.ro', "rb").read()
+                open(str(self.model_path)+'.ro', "rb").read()
             )
             loaded_vm_exec = Executable.load_exec(loaded_bytecode, self.module)
 
             self.model = VirtualMachine(loaded_vm_exec, ctx)
         else:
             if input_data:
-                with open(self.modelpath, 'wb') as outmodel:
+                with open(self.model_path, 'wb') as outmodel:
                     outmodel.write(input_data)
-            self.module = tvm.runtime.load_module(str(self.modelpath))
+            else:
+                self.model_path
+            self.module = tvm.runtime.load_module(str(self.model_path))
             self.func = self.module.get_function('default')
             self.model = graph_executor.GraphModule(self.func(ctx))
         self.log.info('Model loading ended successfully')

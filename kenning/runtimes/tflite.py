@@ -6,13 +6,13 @@
 Runtime implementation for TFLite models.
 """
 
-from pathlib import Path
 from typing import Optional, List
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class TFLiteRuntime(Runtime):
@@ -24,10 +24,10 @@ class TFLiteRuntime(Runtime):
     inputtypes = ['tflite']
 
     arguments_structure = {
-        'modelpath': {
+        'model_path': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
-            'type': Path,
+            'type': ResourceURI,
             'default': 'model.tar'
         },
         'delegates': {
@@ -47,7 +47,7 @@ class TFLiteRuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            modelpath: Path,
+            model_path: PathOrURI,
             delegates: Optional[List] = None,
             num_threads: int = 4,
             disable_performance_measurements: bool = False):
@@ -58,8 +58,8 @@ class TFLiteRuntime(Runtime):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication  protocol.
-        modelpath : Path
-            Path for the model file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         delegates : Optional[List]
             List of TFLite acceleration delegate libraries.
         num_threads : int
@@ -67,7 +67,7 @@ class TFLiteRuntime(Runtime):
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.modelpath = modelpath
+        self.model_path = model_path
         self.interpreter = None
         self._input_prepared = False
         self.num_threads = num_threads
@@ -84,13 +84,15 @@ class TFLiteRuntime(Runtime):
             from tensorflow import lite as tflite
         self.log.info('Loading model')
         if input_data:
-            with open(self.modelpath, 'wb') as outmodel:
+            with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
+        else:
+            self.model_path
         delegates = None
         if self.delegates:
             delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
         self.interpreter = tflite.Interpreter(
-            str(self.modelpath),
+            str(self.model_path),
             experimental_delegates=delegates,
             num_threads=self.num_threads
         )

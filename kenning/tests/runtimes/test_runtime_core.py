@@ -74,5 +74,5 @@ class TestIREERuntime(RuntimeTests):
 
     def initruntime(self, *args, **kwargs):
         runtime = self.runtimecls(self.runtimeprotocolcls(),
-                                  self.modelpath, *args, **kwargs)
+                                  self.model_path, *args, **kwargs)
         return runtime

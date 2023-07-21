@@ -6,11 +6,13 @@ import pytest
 from typing import Type
 
 from kenning.core.model import ModelWrapper
+from kenning.core.dataset import Dataset
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_tmp_path
 from kenning.tests.core.conftest import remove_file_or_dir
 from kenning.tests.core.conftest import get_dataset_random_mock
 from kenning.tests.core.conftest import copy_model_to_tmp
+from kenning.utils.resource_manager import ResourceURI
 
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
@@ -24,20 +26,22 @@ MODELWRAPPER_SUBCLASSES = get_all_subclasses(
 def prepare_models_io_specs():
     for model_cls in MODELWRAPPER_SUBCLASSES:
         if (model_cls.default_dataset is None or
-                model_cls.pretrained_modelpath is None):
+                model_cls.pretrained_model_uri is None):
             continue
         dataset_cls = model_cls.default_dataset
         dataset = get_dataset_random_mock(dataset_cls)
 
-        model_path = model_cls.pretrained_modelpath
+        model_path = ResourceURI(model_cls.pretrained_model_uri)
 
         model = model_cls(model_path, dataset, from_file=True)
         model.save_io_specification(model_path)
 
 
-def create_model(model_cls, dataset):
-    if model_cls.pretrained_modelpath is not None:
-        model_path = copy_model_to_tmp(model_cls.pretrained_modelpath)
+def create_model(model_cls: Type[ModelWrapper], dataset: Dataset):
+    if model_cls.pretrained_model_uri is not None:
+        model_path = copy_model_to_tmp(
+            ResourceURI(model_cls.pretrained_model_uri)
+        )
         from_file = True
     else:
         model_path = get_tmp_path()

@@ -6,8 +6,8 @@
 Wrapper for TensorFlow optimizers.
 """
 
-from pathlib import Path
 from typing import List, Tuple, Optional
+from kenning.utils.resource_manager import PathOrURI
 import tensorflow as tf
 
 from kenning.core.optimizer import Optimizer
@@ -45,7 +45,7 @@ class TensorFlowOptimizer(Optimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
+            compiled_model_path: PathOrURI,
             epochs: int = 10,
             batch_size: int = 32,
             optimizer: str = 'adam',
@@ -61,8 +61,8 @@ class TensorFlowOptimizer(Optimizer):
         dataset : Dataset
             Dataset used to train the model - may be used for quantization or
             fine-tuning.
-        compiled_model_path : Path
-            Path where compiled model will be saved.
+        compiled_model_path : PathOrURI
+            Path or URI where compiled model will be saved.
         epochs : int
             Number of epochs used to fine-tune the model.
         batch_size : int

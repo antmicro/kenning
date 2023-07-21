@@ -2,6 +2,12 @@ from pathlib import Path
 
 import pytest
 
+from kenning.modelwrappers.classification.tflite_magic_wand import (
+    MagicWandModelWrapper,
+)
+from kenning.modelwrappers.classification.tflite_person_detection import (
+    PersonDetectionModelWrapper,
+)
 from kenning.utils.resource_manager import (
     ResourceManager,
     ResourceURI,
@@ -9,12 +15,8 @@ from kenning.utils.resource_manager import (
 )
 
 
-MAGIC_WAND_MODEL_URI = ResourceURI(
-    'kenning:///models/classification/magic_wand.h5'
-)
-PERSON_DETECTION_MODEL_URI = ResourceURI(
-    'kenning:///models/classification/person_detect.tflite'
-)
+MAGIC_WAND_MODEL_URI = MagicWandModelWrapper.pretrained_model_uri
+PERSON_DETECTION_MODEL_URI = PersonDetectionModelWrapper.pretrained_model_uri
 
 
 @pytest.fixture(scope='function', autouse=True)
@@ -23,55 +25,46 @@ def clear_cache():
     ResourceManager().clear_cache()
 
 
-@pytest.fixture
-def download_path() -> Path:
-    download_path = pytest.test_directory / 'resources' / 'model.h5'
-    if download_path.exists():
-        download_path.unlink()
-
-    return download_path
-
-
 @pytest.mark.xdist_group(name='cache_test')
 class TestResourceManager:
-    def test_download_resource(self, download_path: Path):
+    def test_download_resource(self):
         """
         Tests if resource manager properly downloads model file.
         """
-        MAGIC_WAND_MODEL_URI.get_resource(download_path)
+        model = ResourceURI(MAGIC_WAND_MODEL_URI)
 
-        assert download_path.is_file()
-        assert download_path.with_suffix(
-            download_path.suffix + f'.{ResourceManager.HASHING_ALGORITHM}'
+        assert model.is_file()
+        assert model.with_suffix(
+            model.suffix + f'.{ResourceManager.HASHING_ALGORITHM}'
         ).is_file()
 
-    def test_use_cached_file_if_available(self, download_path: Path):
+    def test_use_cached_file_if_available(self):
         """
         Tests if resource manager uses cached file when its valid.
         """
-        MAGIC_WAND_MODEL_URI.get_resource(download_path)
+        model_1 = ResourceURI(MAGIC_WAND_MODEL_URI)
 
-        mtime = download_path.stat().st_mtime
+        model_1_mtime = model_1.stat().st_mtime
 
-        MAGIC_WAND_MODEL_URI.get_resource(download_path)
+        model_2 = ResourceURI(MAGIC_WAND_MODEL_URI)
 
-        assert mtime == download_path.stat().st_mtime
+        assert model_1_mtime == model_2.stat().st_mtime
 
-    def test_download_file_when_checksum_is_invalid(self, download_path: Path):
+    def test_download_file_when_checksum_is_invalid(self):
         """
         Tests if resource manager downloads file again when cached file is
         invalid.
         """
-        MAGIC_WAND_MODEL_URI.get_resource(download_path)
+        model_1 = ResourceURI(MAGIC_WAND_MODEL_URI)
 
-        mtime = download_path.stat().st_mtime
+        model_1_mtime = model_1.stat().st_mtime
 
-        with open(download_path, 'wb') as downloaded_file:
+        with open(model_1, 'wb') as downloaded_file:
             downloaded_file.write(b'test')
 
-        MAGIC_WAND_MODEL_URI.get_resource(download_path)
+        model_2 = ResourceURI(MAGIC_WAND_MODEL_URI)
 
-        assert mtime != download_path.stat().st_mtime
+        assert model_1_mtime != model_2.stat().st_mtime
 
     def test_list_cached_files_should_return_all_cached_files(self):
         """
@@ -79,11 +72,11 @@ class TestResourceManager:
         """
         resource_manager = ResourceManager()
 
-        model_1 = MAGIC_WAND_MODEL_URI.get_resource()
+        model_1 = ResourceURI(MAGIC_WAND_MODEL_URI)
 
         assert model_1 in resource_manager.list_cached_files()
 
-        model_2 = PERSON_DETECTION_MODEL_URI.get_resource()
+        model_2 = ResourceURI(PERSON_DETECTION_MODEL_URI)
 
         assert model_2 in resource_manager.list_cached_files()
         assert 2 == len(resource_manager.list_cached_files())
@@ -103,8 +96,8 @@ class TestResourceManager:
 
         assert len(resource_manager.list_cached_files()) == 0
 
-        MAGIC_WAND_MODEL_URI.get_resource()
-        PERSON_DETECTION_MODEL_URI.get_resource()
+        _ = ResourceURI(MAGIC_WAND_MODEL_URI)
+        _ = ResourceURI(PERSON_DETECTION_MODEL_URI)
 
         assert len(resource_manager.list_cached_files()) == 2
 
@@ -119,19 +112,19 @@ class TestResourceManager:
         ResourceManager().max_cache_size = 100
 
         with pytest.raises(ValueError):
-            MAGIC_WAND_MODEL_URI.get_resource()
+            _ = ResourceURI(MAGIC_WAND_MODEL_URI)
 
     def test_get_file_resource(self):
         """
         Tests if path to file is properly interpreted.
         """
-        resource = ResourceURI(
-            str(pytest.test_directory / 'test_file.txt')
-        ).get_resource()
+        resource = ResourceURI(str(pytest.test_directory / 'test_file.txt'))
 
-        assert resource == pytest.test_directory.resolve() / 'test_file.txt'
+        assert (
+            Path(resource) == pytest.test_directory.resolve() / 'test_file.txt'
+        )
 
-        resource = ResourceURI('~/test_file.txt').get_resource()
+        resource = ResourceURI('~/test_file.txt')
 
         assert resource == Path().home() / 'test_file.txt'
 
@@ -139,24 +132,28 @@ class TestResourceManager:
         """
         Tests adding custom schema.
         """
-        target_path = pytest.test_directory
+        target_path: Path = pytest.test_directory
 
         ResourceManager().add_custom_url_schemes(
             {'customschema': lambda path: target_path / path[1:]}
         )
 
         expected_path = target_path / 'test_file.txt'
+        expected_path.parent.mkdir(parents=True, exist_ok=True)
+        expected_path.write_text('test123')
 
         assert (
-            ResourceURI('customschema:///test_file.txt').get_resource()
-            == expected_path
+            ResourceURI('customschema:///test_file.txt').read_text()
+            == 'test123'
         )
 
         expected_path = target_path / 'test/test_file.txt'
+        expected_path.parent.mkdir(parents=True, exist_ok=True)
+        expected_path.write_text('test12345')
 
         assert (
-            ResourceURI('customschema:///test/test_file.txt').get_resource()
-            == expected_path
+            ResourceURI('customschema:///test/test_file.txt').read_text()
+            == 'test12345'
         )
 
 
@@ -190,9 +187,7 @@ class TestResources:
         assert len(resources) == 2
 
     def test_invalid_key_raises_exception(self):
-        resources = Resources(
-            {'model': MAGIC_WAND_MODEL_URI}
-        )
+        resources = Resources({'model': MAGIC_WAND_MODEL_URI})
 
         with pytest.raises(KeyError):
             _ = resources['model_1']
@@ -220,18 +215,3 @@ class TestResources:
 
         with pytest.raises(KeyError):
             _ = resources['nested', 'model_1']
-
-    def test_resource_is_downloaded_when_accessed(self):
-        resources = Resources(
-            {'model': MAGIC_WAND_MODEL_URI}
-        )
-        print(ResourceManager().max_cache_size)
-        model_path = resources['model']
-
-        assert model_path.is_file()
-
-        model_path.unlink()
-
-        _ = resources['model']
-
-        assert model_path.is_file()

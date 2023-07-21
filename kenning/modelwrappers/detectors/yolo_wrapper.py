@@ -8,16 +8,20 @@ Contains methods for YOLO models for object detection.
 
 import re
 import sys
-import numpy as np
 from abc import ABC
 from collections import defaultdict
-
-from kenning.resources import coco_detection
-from kenning.core.model import ModelWrapper
-from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import DetectObject, compute_dect_iou  # noqa: E501
-
 from pathlib import Path
+from typing import Any, Dict, List
+
+import numpy as np
+
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.datasets.helpers.detection_and_segmentation import (
+    DetectObject, compute_dect_iou)
+from kenning.resources import coco_detection
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -42,13 +46,13 @@ class YOLOWrapper(ModelWrapper, ABC):
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = True,
             class_names: str = "coco"):
+        super().__init__(model_path, dataset, from_file)
         self.class_names = class_names
         # for work with dataproviders, this is handling dataset-less operation
-        super().__init__(modelpath, dataset, from_file)
         self.classnames = []
         if class_names == 'coco':
             with path(coco_detection, 'coco.names') as p:
@@ -69,12 +73,12 @@ class YOLOWrapper(ModelWrapper, ABC):
         self.model_prepared = True
 
     @classmethod
-    def load_config_file(cls, config_path):
+    def load_config_file(cls, config_path: PathOrURI):
         keyparamsrgx = re.compile(r'(width|height|classes)=(\d+)')
         perlayerrgx = re.compile(r'(mask|anchors|num)=((\d+,?)+)')
         keyparams = {}
         perlayerparams = defaultdict(list)
-        with open(config_path.with_suffix(".cfg"), 'r') as config:
+        with open(config_path.with_suffix('.cfg'), 'r') as config:
             for line in config:
                 line = line.replace(' ', '')
                 res = keyparamsrgx.match(line)
@@ -89,16 +93,16 @@ class YOLOWrapper(ModelWrapper, ABC):
         }
         return keyparams, perlayerparams
 
-    def load_model(self, modelpath):
+    def load_model(self, model_path: PathOrURI):
         self.keyparams, self.perlayerparams = self.load_config_file(
-            self.modelpath.with_suffix('.cfg')
+            self.model_path.with_suffix('.cfg')
         )
-        self.save_io_specification(self.modelpath)
+        self.save_io_specification(self.model_path)
 
     def prepare_model(self):
         if self.model_prepared:
             return None
-        self.load_model(self.modelpath)
+        self.load_model(self.model_path)
         self.model_prepared = True
 
     def preprocess_input(self, X):
@@ -278,8 +282,16 @@ class YOLOWrapper(ModelWrapper, ABC):
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
-        keyparams, _ = cls.load_config_file(json_dict['modelpath'])
+        keyparams, _ = cls.load_config_file(
+            ResourceURI(json_dict['model_path']).with_suffix('.cfg')
+        )
         return cls._get_io_specification(keyparams)
 
     def get_io_specification_from_model(self):
         return self._get_io_specification(self.keyparams)
+
+    @classmethod
+    def _get_io_specification(
+            cls,
+            keyparams: Dict[str, Any]) -> Dict[str, List[Dict]]:
+        raise NotImplementedError

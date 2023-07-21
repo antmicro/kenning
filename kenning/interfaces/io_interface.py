@@ -7,10 +7,11 @@ Provides implementation of interface used by other Kenning components to manage
 their input and output types.
 """
 
-from typing import Dict, List, Tuple, Any
 from abc import ABC, abstractmethod
-from pathlib import Path
+from typing import Dict, List, Tuple, Any
 import json
+
+from kenning.utils.resource_manager import PathOrURI
 
 
 class IOInterface(ABC):
@@ -136,29 +137,35 @@ class IOInterface(ABC):
         """
         return NotImplementedError
 
-    def save_io_specification(self, path: Path):
+    def save_io_specification(
+            self,
+            path: PathOrURI):
         """
         Saves input/output specification to a file named `path` + `.json`. This
         function uses `get_io_specification()` function to get the properties.
 
         Parameters
         ----------
-        path : Path
+        path : PathOrURI
             Path that is used to store the input/output specification.
         """
-        spec_path = path.parent / (path.name + '.json')
-        spec_path = Path(spec_path)
+        spec_path = path.with_suffix(path.suffix + '.json')
+
+        if not spec_path.parent.exists():
+            spec_path.parent.mkdir(parents=True, exist_ok=True)
 
         with open(spec_path, 'w') as f:
             json.dump(self.get_io_specification(), f)
 
-    def load_io_specification(self, path: Path) -> Dict[str, List[Dict]]:
+    def load_io_specification(
+            self,
+            path: PathOrURI) -> Dict[str, List[Dict]]:
         """
         Loads input/output specification from a file named `path` + `.json`.
 
         Parameters
         ----------
-        path : Path
+        path : PathOrURI
             Path that is used to store the input/output specification.
 
         Returns
@@ -166,8 +173,7 @@ class IOInterface(ABC):
         Dict[str, List[Dict]] :
             Loaded IO specification.
         """
-        spec_path = path.parent / (path.name + '.json')
-        spec_path = Path(spec_path)
+        spec_path = path.with_suffix(path.suffix + '.json')
 
         with open(spec_path, 'r') as f:
             return json.load(f)

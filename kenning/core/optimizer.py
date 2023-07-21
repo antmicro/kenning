@@ -18,6 +18,7 @@ from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class ConversionError(Exception):
@@ -53,7 +54,7 @@ class Optimizer(ArgumentsHandler, ABC):
     arguments_structure = {
         'compiled_model_path': {
             'description': 'The path to the compiled model output',
-            'type': Path,
+            'type': ResourceURI,
             'required': True
         }
     }
@@ -70,7 +71,7 @@ class Optimizer(ArgumentsHandler, ABC):
         dataset : Optional[Dataset]
             Dataset used to train the model - may be used for quantization
             during compilation stage.
-        compiled_model_path : Path
+        compiled_model_path : PathOrURI
             Path to file where the compiled model should be saved.
         """
         self.dataset = dataset
@@ -135,12 +136,18 @@ class Optimizer(ArgumentsHandler, ABC):
     def set_compiled_model_path(self, compiled_model_path: Path):
         """
         Sets path for compiled model.
+
+        compiled_model_path : PathOrURI
+            Path to be set.
         """
         self.compiled_model_path = compiled_model_path
 
     def set_input_type(self, inputtype: str):
         """
         Sets input type of the model for the compiler.
+
+        inputtype : str
+            Path to be set.
         """
         assert inputtype in self.inputtypes.keys(), \
             f'Unsupported input type {inputtype}, only ' \
@@ -150,7 +157,7 @@ class Optimizer(ArgumentsHandler, ABC):
     @abstractmethod
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
         """
         Compiles the given model to a target format.
@@ -162,14 +169,14 @@ class Optimizer(ArgumentsHandler, ABC):
 
         If `io_spec` is passed, then the function uses it during the
         compilation, otherwise `load_io_specification` is used to fetch the
-        specification saved in `inputmodelpath` + `.json`.
+        specification saved in `input_model_path` + `.json`.
 
         The compiled model is saved to compiled_model_path and
         the specification is saved to compiled_model_path + .json
 
         Parameters
         ----------
-        inputmodelpath : Path
+        input_model_path : PathOrURI
             Path to the input model.
         io_spec : Optional[Dict[str, List[Dict]]]
             Dictionary that has `input` and `output` keys that contain list
@@ -263,34 +270,36 @@ class Optimizer(ArgumentsHandler, ABC):
             f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
         )
 
-    def get_spec_path(self, modelpath: Path) -> Path:
+    def get_spec_path(
+            self,
+            model_path: PathOrURI) -> ResourceURI:
         """
         Returns input/output specification path for the model
-        saved in `modelpath`. It concatenates `modelpath` and `.json`.
+        saved in `model_path`. It concatenates `model_path` and `.json`.
 
         Parameters
         ----------
-        modelpath : Path
+        model_path : PathOrURI
             Path where the model is saved.
 
         Returns
         -------
-        Path :
+        ResourceURI :
             Path to the input/output specification of a given model.
         """
-        modelpath = Path(modelpath)
-        spec_path = modelpath.parent / (modelpath.name + '.json')
-        return Path(spec_path)
+        spec_path = model_path.with_suffix(model_path.suffix + '.json')
+
+        return spec_path
 
     def save_io_specification(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
         """
         Internal function that saves input/output model specification
         which is used during both inference and compilation. If `io_spec`
         is None, the function uses specification of an input model
-        stored in `inputmodelpath` + `.json`. If there is no specification
+        stored in `input_model_path` + `.json`. If there is no specification
         stored in this path the function does not do anything.
 
         The input/output specification is a list of dictionaries mapping
@@ -301,14 +310,13 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        inputmodelpath : Path
+        input_model_path : PathOrURI
             Path to the input model.
         io_spec : Optional[Dict[str, List[Dict]]]
             Specification of the input/ouput layers.
         """
-        inputmodelpath = Path(inputmodelpath)
         if not io_spec:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
         if io_spec:
             with open(self.get_spec_path(self.compiled_model_path), 'w') as f:
@@ -323,24 +331,24 @@ class Optimizer(ArgumentsHandler, ABC):
 
     def load_io_specification(
             self,
-            modelpath: Path) -> Optional[Dict[str, List[Dict]]]:
+            model_path: PathOrURI,
+    ) -> Optional[Dict[str, List[Dict]]]:
         """
         Returns saved input and output specification of a model
-        saved in `modelpath` if there is one. Otherwise returns None.
+        saved in `model_path` if there is one. Otherwise returns None.
 
         Parameters
         ----------
-        modelpath : Path
+        model_path : PathOrURI
             Path to the model which specification the function should read.
 
         Returns
         -------
         Optional[Dict[str, List[Dict]]] :
             Specification of a model saved
-            in `modelpath` if there is one. None otherwise.
+            in `model_path` if there is one. None otherwise.
         """
-        modelpath = Path(modelpath)
-        spec_path = self.get_spec_path(modelpath)
+        spec_path = self.get_spec_path(model_path)
         if spec_path.exists():
             with open(spec_path, 'r') as f:
                 spec = json.load(f)

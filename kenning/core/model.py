@@ -7,11 +7,13 @@ Provides a wrapper for deep learning models.
 """
 
 import json
-from typing import List, Any, Tuple, Dict, Type, Optional
+from typing import List, Any, Tuple, Dict, Type, Optional, Union
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
 from urllib.request import HTTPError
+
+import numpy as np
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -211,7 +213,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     def _preprocess_input(self, X):
         return self.preprocess_input(X)
 
-    def postprocess_outputs(self, y: List[Any]) -> Any:
+    def postprocess_outputs(self, y: Union[List[Any], np.ndarray]) -> Any:
         """
         Processes the outputs for a given model.
 
@@ -228,6 +230,10 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
+        if isinstance(y, np.ndarray):
+            return np.vsplit(y, self.dataset.batch_size)
+
+        y = np.vsplit(y[0], self.dataset.batch_size)
         return y
 
     def _postprocess_outputs(self, y):

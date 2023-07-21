@@ -306,7 +306,7 @@ def run_pipeline(
                 'class_names': [val for val in dataset.get_class_names()]
             }
 
-    modelpath = model.get_path()
+    model_path = model.get_path()
 
     if run_optimizations:
         prev_block = model
@@ -314,8 +314,8 @@ def run_pipeline(
             log.warn(
                 'Force conversion of the input model to the ONNX format'
             )
-            modelpath = convert_to_onnx
-            prev_block.save_to_onnx(modelpath)
+            model_path = convert_to_onnx
+            prev_block.save_to_onnx(model_path)
 
         for i in range(len(optimizers)):
             next_block = optimizers[i]
@@ -329,21 +329,21 @@ def run_pipeline(
 
             if (format == 'onnx' and prev_block == model) and \
                     not convert_to_onnx:
-                modelpath = Path(tempfile.NamedTemporaryFile().name)
-                prev_block.save_to_onnx(modelpath)
+                model_path = Path(tempfile.NamedTemporaryFile().name)
+                prev_block.save_to_onnx(model_path)
 
-            prev_block.save_io_specification(modelpath)
+            prev_block.save_io_specification(model_path)
             next_block.set_input_type(format)
-            next_block.compile(modelpath)
+            next_block.compile(model_path)
 
             prev_block = next_block
-            modelpath = prev_block.compiled_model_path
+            model_path = prev_block.compiled_model_path
 
         if not optimizers:
-            model.save_io_specification(modelpath)
+            model.save_io_specification(model_path)
     else:
         if len(optimizers) > 0:
-            modelpath = optimizers[-1].compiled_model_path
+            model_path = optimizers[-1].compiled_model_path
 
     ret = True
     if run_benchmarks and runtime:
@@ -351,9 +351,9 @@ def run_pipeline(
             log.error('The benchmarks cannot be performed without a dataset')
             ret = False
         elif protocol:
-            ret = runtime.run_client(dataset, model, modelpath)
+            ret = runtime.run_client(dataset, model, model_path)
         else:
-            ret = runtime.run_locally(dataset, model, modelpath)
+            ret = runtime.run_locally(dataset, model, model_path)
     elif run_benchmarks:
         model.test_inference()
         ret = True
@@ -363,7 +363,7 @@ def run_pipeline(
 
     if output:
         MeasurementsCollector.measurements += {
-            'compiled_model_size': Path(modelpath).stat().st_size
+            'compiled_model_size': Path(model_path).stat().st_size
         }
 
         MeasurementsCollector.save_measurements(output)

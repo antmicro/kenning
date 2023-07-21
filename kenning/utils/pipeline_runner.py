@@ -96,7 +96,7 @@ def parse_json_pipeline(
         Raised if parameters are incorrect.
     """
     modelwrappercfg = json_cfg['model_wrapper']
-    datasetcfg = json_cfg['dataset']
+    datasetcfg = json_cfg['dataset'] if 'dataset' in json_cfg else None
     runtimecfg = (
         json_cfg['runtime']
         if 'runtime' in json_cfg else None
@@ -111,7 +111,7 @@ def parse_json_pipeline(
     )
 
     modelwrappercls = load_class(modelwrappercfg['type'])
-    datasetcls = load_class(datasetcfg['type'])
+    datasetcls = load_class(datasetcfg['type']) if datasetcfg else None
     optimizerscls = [load_class(cfg['type']) for cfg in optimizerscfg]
     protocolcls = (
         load_class(protocolcfg['type'])
@@ -121,7 +121,10 @@ def parse_json_pipeline(
         load_class(runtimecfg['type'])
         if runtimecfg else None
     )
-    dataset = datasetcls.from_json(datasetcfg['parameters'])
+    dataset = (
+        datasetcls.from_json(datasetcfg['parameters'])
+        if datasetcls else None
+    )
     model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
     optimizers = [
         cls.from_json(dataset, cfg['parameters'])
@@ -338,7 +341,10 @@ def run_pipeline(
 
     ret = True
     if run_benchmarks and runtime:
-        if protocol:
+        if not dataset:
+            log.error('The benchmarks cannot be performed without a dataset')
+            ret = False
+        elif protocol:
             ret = runtime.run_client(dataset, model, modelpath)
         else:
             ret = runtime.run_locally(dataset, model, modelpath)

@@ -100,7 +100,7 @@ TENSORFLOW_MOBILE_NET_DATAFLOW_NODE = {
         {
             "name": "model_path",
             "id": "8",
-            "value": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
+            "value": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
         }
     ],
     "name": ""

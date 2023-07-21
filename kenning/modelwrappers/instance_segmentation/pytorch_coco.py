@@ -9,7 +9,6 @@ Pretrained on COCO dataset.
 """
 
 import numpy as np
-from pathlib import Path
 from functools import reduce
 import operator
 
@@ -17,9 +16,10 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.datasets.coco_dataset import COCODataset2017
-
 from kenning.resources import coco_instance_segmentation
+from kenning.utils.resource_manager import PathOrURI
 import sys
+
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -30,11 +30,15 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     default_dataset = COCODataset2017
 
-    def __init__(self, modelpath: Path, dataset: Dataset, from_file=True):
+    def __init__(
+            self,
+            model_path: PathOrURI,
+            dataset: Dataset,
+            from_file=True):
+        super().__init__(model_path, dataset, from_file)
         self.threshold = 0.7
         if dataset is not None:
             self.numclasses = dataset.numclasses
-        super().__init__(modelpath, dataset, from_file)
 
     def create_model_structure(self):
         from torchvision import models
@@ -49,12 +53,12 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         if self.model_prepared:
             return None
         if self.from_file:
-            self.load_model(self.modelpath)
+            self.load_model(self.model_path)
             self.model_prepared = True
         else:
             self.create_model_structure()
             self.model_prepared = True
-            self.save_model(self.modelpath)
+            self.save_model(self.model_path)
 
         self.model.to(self.device)
         self.model.eval()
@@ -88,7 +92,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                     score=float(out['scores'][i]),
                     iscrowd=False
                 ))
-            return ret
+        return ret
 
     def convert_input_to_bytes(self, input_data):
         data = bytes()

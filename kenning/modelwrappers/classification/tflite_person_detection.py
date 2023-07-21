@@ -9,28 +9,21 @@ Trained on VisualWakeWords dataset.
 """
 
 from typing import List, Tuple
-from pathlib import Path
-import sys
+
+import cv2
 import numpy as np
 import tensorflow as tf
-import cv2
 
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
-
-from kenning.core.model import ModelWrapper
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
-from kenning.resources.models import classification
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PersonDetectionModelWrapper(ModelWrapper):
 
     default_dataset = VisualWakeWordsDataset
-    pretrained_modelpath = files(classification) / 'person_detect.tflite'
-
+    pretrained_model_uri = 'kenning:///models/classification/person_detect.tflite'  # noqa: E501
     arguments_structure = {
         'central_fraction': {
             'argparse_name': '--central-fraction',
@@ -52,7 +45,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = True,
             central_fraction: float = .875,
@@ -63,8 +56,8 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
         Parameters
         ----------
-        modelpath : Path
-            The path to the model.
+        model_path : PathOrURI
+            Path or URI to the model file.
         dataset : Dataset
             The dataset to verify the inference.
         from_file : bool
@@ -76,11 +69,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
         image_height : int
             Height of the input images.
         """
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
+        super().__init__(model_path, dataset, from_file)
         self.central_fraction = central_fraction
         self.image_width = image_width
         self.image_height = image_height
@@ -90,7 +79,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
             class_names = self.dataset.get_class_names()
             assert len(class_names) == 2
             self.class_names = class_names
-            self.save_io_specification(self.modelpath)
+            self.save_io_specification(self.model_path)
 
     @classmethod
     def _get_io_specification(

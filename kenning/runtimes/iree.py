@@ -6,13 +6,13 @@
 Runtime implementation for IREE models.
 """
 
-from pathlib import Path
 from iree import runtime as ireert
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class IREERuntime(Runtime):
@@ -24,10 +24,10 @@ class IREERuntime(Runtime):
     inputtypes = ['iree']
 
     arguments_structure = {
-        'modelpath': {
+        'model_path': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
-            'type': Path,
+            'type': ResourceURI,
             'default': 'model.vmfb'
         },
         'driver': {
@@ -41,7 +41,7 @@ class IREERuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            modelpath: Path,
+            model_path: PathOrURI,
             driver: str = 'local-sync',
             disable_performance_measurements: bool = False):
         """
@@ -51,14 +51,14 @@ class IREERuntime(Runtime):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication protocol.
-        modelpath : Path
-            Path for the model file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         driver : str
             Name of the deployment target on the device.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.modelpath = modelpath
+        self.model_path = model_path
         self.model = None
         self.input = None
         self.driver = driver
@@ -82,10 +82,10 @@ class IREERuntime(Runtime):
     def prepare_model(self, input_data):
         self.log.info("loading model")
         if input_data:
-            with open(self.modelpath, 'wb') as outmodel:
+            with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
 
-        with open(self.modelpath, "rb") as outmodel:
+        with open(self.model_path, "rb") as outmodel:
             compiled_buffer = outmodel.read()
 
         self.model = ireert.load_vm_flatbuffer(

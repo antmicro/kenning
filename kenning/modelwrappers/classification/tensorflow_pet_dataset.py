@@ -9,33 +9,29 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
 
-import tensorflow as tf
 import numpy as np
+import tensorflow as tf
 
 from kenning.core.dataset import Dataset
-from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
-from kenning.interfaces.io_interface import IOInterface
 from kenning.datasets.pet_dataset import PetDataset
-from kenning.resources.models import classification
+from kenning.interfaces.io_interface import IOInterface
+from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     default_dataset = PetDataset
-    pretrained_modelpath = files(classification) / 'tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: 501
+    pretrained_model_uri = 'kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: 501
     arguments_structure = {}
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file=True
     ):
+        super().__init__(model_path, dataset, from_file)
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
@@ -45,7 +41,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.mean, self.std = dataset.get_input_mean_std()
             self.class_names = dataset.get_class_names()
         else:
-            io_spec = self.load_io_specification(modelpath)
+            io_spec = self.load_io_specification(model_path)
             input_1 = IOInterface.find_spec(io_spec, 'input', 'input_1')
             out_layer = IOInterface.find_spec(io_spec, 'output', 'out_layer')
 
@@ -53,12 +49,6 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.std = input_1['std']
             self.class_names = out_layer['class_names']
             self.numclasses = len(self.class_names)
-
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
 
     @classmethod
     def _get_io_specification(cls, numclasses, class_names=None,
@@ -104,7 +94,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             return None
         import tensorflow as tf
         if self.from_file:
-            self.load_model(self.modelpath)
+            self.load_model(self.model_path)
             self.model_prepared = True
         else:
             self.base = tf.keras.applications.MobileNetV2(
@@ -137,7 +127,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
                 outputs=output
             )
             self.model_prepared = True
-            self.save_model(self.modelpath)
+            self.save_model(self.model_path)
             self.model.summary()
 
     def train_model(

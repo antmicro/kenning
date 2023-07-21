@@ -6,15 +6,21 @@ import pytest
 import kenning
 import tempfile
 import shutil
+from pathlib import Path
 from pytest import Metafunc
 from typing import Optional
 from random import randint, random
-from pathlib import Path
 from PIL import Image
 from kenning.utils.class_loader import load_class
 from kenning.core.dataset import Dataset
 from dataclasses import dataclass
 from argparse import ArgumentParser
+
+from kenning.utils.resource_manager import (
+    PathOrURI,
+    ResourceManager,
+    ResourceURI
+)
 
 
 @dataclass
@@ -112,10 +118,14 @@ def pytest_sessionstart(session: pytest.Session):
     """
     Initialize session.
     """
-    test_directory = Path(session.config.option.test_directory)
+    test_directory = Path(session.config.option.test_directory).resolve()
     pytest.test_directory = test_directory
     # only master worker should do init
     if hasattr(session.config, 'workerinput'):
+        # set cache dir per worker
+        ResourceManager().set_cache_dir(
+            test_directory / f'cache_{session.config.workerinput["workerid"]}'
+        )
         return
     # do nothing when only collecting tests
     if '--collect-only' in session.config.invocation_params.args:
@@ -184,31 +194,47 @@ def modelsamples():
             Stores paths to models presented in Kenning docs.
             """
             super().__init__()
-            self.add("/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",   # noqa: E501
-                     'torch',
-                     'PyTorchPetDatasetMobileNetV2')
-            self.add("/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth",    # noqa: E501
-                     'torch_weights',
-                     'PyTorchPetDatasetMobileNetV2')
-            self.add("/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5",  # noqa: E501
-                     'keras',
-                     'TensorFlowPetDatasetMobileNetV2')
+            self.add(
+                ResourceURI(
+                    'kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth'  # noqa: E501
+                ),
+                'torch',
+                'PyTorchPetDatasetMobileNetV2'
+            )
+            self.add(
+                ResourceURI(
+                    'kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth'  # noqa: E501
+                ),
+                'torch_weights',
+                'PyTorchPetDatasetMobileNetV2'
+            )
+            self.add(
+                ResourceURI(
+                    'kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: E501
+                ),
+                'keras',
+                'TensorFlowPetDatasetMobileNetV2'
+            )
 
-        def add(self, model_path: str, modelframework: str, modelwrapper: str):
+        def add(
+                self,
+                model_path: PathOrURI,
+                modelframework: str,
+                modelwrapper: str):
             """
             Adds path to model with associated framework
             and associated modelwrapper name to samples.
 
             Parameters
             ----------
-            model_path : str
-                The path to the model (Relative to kenning's directory).
+            model_path : PathOrURI
+                Path or URI to the model file.
             modelframework : str
                 The framework model is compatible with.
             modelwrapper : str
                 The name of ModelWrapper that is compatible with model.
             """
-            model_path = self.kenning_path + model_path
+            model_path = model_path
             self.samples[modelframework] = (model_path, modelwrapper)
 
         def get(self, model_name: str):
@@ -259,8 +285,8 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 target: str,
                 modelframework: str,
                 filesuffix: str,
-                dataset: str = None,
-                compiled_model_path: Path = datasetimages.path,
+                dataset: Optional[str] = None,
+                compiled_model_path: PathOrURI = datasetimages.path,
                 **kwargs):
             """
             Adds Optimizer class to samples with its parameters.
@@ -278,8 +304,8 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             dataset : Dataset
                 Dataset used to train the model - may be used for quantization
                 during compilation stage.
-            compiled_model_path : Path
-                Path where compiled model will be saved.
+            compiled_model_path : PathOrURI
+                Path or URI where compiled model will be saved.
             """
             optimizer = load_class(import_path)
             optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework

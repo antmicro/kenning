@@ -6,7 +6,6 @@
 Wrapper for ONNX deep learning compiler.
 """
 
-from pathlib import Path
 import onnx
 from typing import Optional, Dict, List
 
@@ -15,12 +14,13 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
 from kenning.core.optimizer import IOSpecificationNotFoundError
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
-def kerasconversion(model_path, input_spec, output_names):
+def kerasconversion(model_path: PathOrURI, input_spec, output_names):
     import tensorflow as tf
     import tf2onnx
-    model = tf.keras.models.load_model(model_path)
+    model = tf.keras.models.load_model(str(model_path))
 
     input_spec = [tf.TensorSpec(
         spec['shape'],
@@ -35,10 +35,10 @@ def kerasconversion(model_path, input_spec, output_names):
     return modelproto
 
 
-def torchconversion(model_path, input_spec, output_names):
+def torchconversion(model_path: PathOrURI, input_spec, output_names):
     import torch
     dev = 'cpu'
-    model = torch.load(model_path, map_location=dev)
+    model = torch.load(str(model_path), map_location=dev)
 
     if not isinstance(model, torch.nn.Module):
         raise CompilationError(
@@ -66,7 +66,7 @@ def torchconversion(model_path, input_spec, output_names):
     return onnx_model
 
 
-def tfliteconversion(model_path, input_spec, output_names):
+def tfliteconversion(model_path: PathOrURI, input_spec, output_names):
     import tf2onnx
     try:
         modelproto, _ = tf2onnx.convert.from_tflite(
@@ -102,7 +102,7 @@ class ONNXCompiler(Optimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
+            compiled_model_path: PathOrURI,
             modelframework: str = 'keras'):
         """
         The ONNX compiler.
@@ -111,8 +111,8 @@ class ONNXCompiler(Optimizer):
         ----------
         dataset : Dataset
             Dataset used to train the model.
-        compiled_model_path : Path
-            Path where compiled model will be saved.
+        compiled_model_path : PathOrURI
+            Path or URI where compiled model will be saved.
         modelframework : str
             Framework of the input model, used to select a proper backend.
         """
@@ -122,11 +122,12 @@ class ONNXCompiler(Optimizer):
 
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
+        input_model_path = ResourceURI(input_model_path)
 
         if io_spec is None:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
         try:
             from copy import deepcopy
@@ -143,7 +144,7 @@ class ONNXCompiler(Optimizer):
             output_names = None
 
         model = self.inputtypes[self.inputtype](
-            inputmodelpath,
+            input_model_path,
             input_spec,
             output_names
         )
@@ -158,7 +159,7 @@ class ONNXCompiler(Optimizer):
             spec['name'] = output.name
 
         self.save_io_specification(
-            inputmodelpath,
+            input_model_path,
             {
                 'input': input_spec,
                 'output': output_spec

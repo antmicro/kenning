@@ -76,8 +76,9 @@ class TestOptimizer:
         Tests optimizer compilation.
         """
         optimizer, model = prepare_objects(opt_cls, inputtype)
+
         try:
-            optimizer.compile(model.modelpath)
+            optimizer.compile(model.model_path)
             assert optimizer.compiled_model_path.exists()
         except CompilationError as e:
             pytest.xfail(f'compilation error {e}')

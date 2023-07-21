@@ -9,7 +9,6 @@ The Visual Wake Words dataset.
 from typing import Optional
 from pathlib import Path
 from collections import defaultdict
-import tempfile
 import numpy as np
 import cv2
 from pycocotools.coco import COCO
@@ -17,7 +16,7 @@ from pycocotools.coco import COCO
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 from kenning.utils.logger import get_logger
-from kenning.datasets.coco_dataset import download_and_extract
+from kenning.utils.resource_manager import Resources, extract_zip
 
 
 class VisualWakeWordsDataset(Dataset):
@@ -39,23 +38,23 @@ class VisualWakeWordsDataset(Dataset):
     *Page*: `Visual Wake Words Dataset site <https://arxiv.org/abs/1906.05721>`
     """
 
-    dataset_urls = {
+    resources = Resources({
         'train2017': {
-            'images': ['http://images.cocodataset.org/zips/train2017.zip'],
-            'annotations': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
+            'images': 'http://images.cocodataset.org/zips/train2017.zip',
+            'annotations': 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',  # noqa: E501
         },
         'val2017': {
-            'images': ['http://images.cocodataset.org/zips/val2017.zip'],
-            'annotations': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
+            'images': 'http://images.cocodataset.org/zips/val2017.zip',
+            'annotations': 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',  # noqa: E501
         }
-    }
+    })
 
     arguments_structure = {
         'dataset_type': {
             'argparse_name': '--dataset-type',
             'description': 'Type of dataset to download and use',
             'default': 'val2017',
-            'enum': list(dataset_urls.keys())
+            'enum': list(set([key[0] for key in resources.keys()])),
         },
         'objects_class': {
             'argparse_name': '--objects_class',
@@ -131,11 +130,10 @@ class VisualWakeWordsDataset(Dataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            for url in self.dataset_urls[self.dataset_type]['images']:
-                download_and_extract(url, self.root, Path(tmpdir) / 'data.zip')
-            for url in self.dataset_urls[self.dataset_type]['annotations']:
-                download_and_extract(url, self.root, Path(tmpdir) / 'data.zip')
+        extract_zip(self.root, self.resources[self.dataset_type, 'images'])
+        extract_zip(
+            self.root, self.resources[self.dataset_type, 'annotations']
+        )
 
     def prepare(self):
         annotationspath = \

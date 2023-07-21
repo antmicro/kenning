@@ -150,8 +150,8 @@ class RuntimeTests:
         runtime = self.initruntime()
         path = Path(uuid.uuid4().hex)
 
-        def moc_func(self, modelpath: Path):
-            assert modelpath == path
+        def moc_func(self, model_path: Path):
+            assert model_path.resolve() == path.resolve()
             return
 
         mocker.patch(

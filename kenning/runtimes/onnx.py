@@ -8,13 +8,13 @@ Runtime implementation for ONNX models.
 
 from typing import List
 import onnxruntime as ort
-from pathlib import Path
 import numpy as np
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class ONNXRuntime(Runtime):
@@ -25,10 +25,10 @@ class ONNXRuntime(Runtime):
     inputtypes = ['onnx']
 
     arguments_structure = {
-        'modelpath': {
+        'model_path': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
-            'type': Path,
+            'type': ResourceURI,
             'default': 'model.tar'
         },
         'execution_providers': {
@@ -41,7 +41,7 @@ class ONNXRuntime(Runtime):
     def __init__(
             self,
             protocol: RuntimeProtocol,
-            modelpath: Path,
+            model_path: PathOrURI,
             execution_providers: List[str] = ['CPUExecutionProvider'],
             disable_performance_measurements: bool = False):
         """
@@ -51,14 +51,14 @@ class ONNXRuntime(Runtime):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication protocol.
-        modelpath : Path
-            Path for the model file.
+        model_path : PathOrURI
+            URI for the model file.
         execution_providers : List[str]
             List of execution providers ordered by priority.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.modelpath = modelpath
+        self.model_path = model_path
         self.session = None
         self.input = None
         self.execution_providers = execution_providers
@@ -86,11 +86,11 @@ class ONNXRuntime(Runtime):
     def prepare_model(self, input_data):
         self.log.info('Loading model')
         if input_data:
-            with open(self.modelpath, 'wb') as outmodel:
+            with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
 
         self.session = ort.InferenceSession(
-            str(self.modelpath),
+            str(self.model_path),
             providers=self.execution_providers
         )
 

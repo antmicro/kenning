@@ -7,27 +7,21 @@ Contains TFLite model for MagicWand dataset.
 """
 
 from typing import List
-import tensorflow as tf
+
 import numpy as np
-from pathlib import Path
-import sys
+import tensorflow as tf
 
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
-
-from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
-from kenning.utils.logger import get_logger
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
-from kenning.resources.models import classification
+from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
+from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
 
     default_dataset = MagicWandDataset
-    pretrained_modelpath = files(classification) / 'magic_wand.h5'
+    pretrained_model_uri = 'kenning:///models/classification/magic_wand.h5'
     arguments_structure = {
         'window_size': {
             'argparse_name': '--window-size',
@@ -39,7 +33,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool,
             window_size: int = 128):
@@ -48,25 +42,21 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
         Parameters
         ----------
-        modelpath : Path
-            The path to the model.
-        dataset : Datasetgg
+        model_path : PathOrURI
+            Path or URI to the model file.
+        dataset : Dataset
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
         window_size : int
             Size of single sample window.
         """
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
+        super().__init__(model_path, dataset, from_file)
         self.window_size = window_size
         if dataset is not None:
             self.class_names = self.dataset.get_class_names()
             self.numclasses = len(self.class_names)
-            self.save_io_specification(self.modelpath)
+            self.save_io_specification(self.model_path)
 
     @classmethod
     def _get_io_specification(
@@ -126,12 +116,12 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         self.model.summary()
 
         if self.from_file:
-            self.model.load_weights(self.modelpath)
+            self.model.load_weights(self.model_path)
             self.model_prepared = True
         else:
             self.train_model()
             self.model_prepared = True
-            self.save_model(self.modelpath)
+            self.save_model(self.model_path)
 
     def train_model(
             self,
@@ -185,4 +175,4 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         )
         log.info(confusion)
         log.info(f'loss: {loss}, accuracy: {acc}')
-        self.model.save(self.modelpath)
+        self.model.save(self.model_path)

@@ -52,11 +52,11 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
 
     @classmethod
     def _get_io_specification(cls, numclasses, class_names=None,
-                              mean=None, std=None):
+                              mean=None, std=None, batch_size=1):
         io_spec = {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, 224, 224, 3),
+                'shape': (batch_size, 224, 224, 3),
                 'dtype': 'float32',
                 'mean': mean,
                 'std': std
@@ -82,12 +82,13 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     def get_io_specification_from_model(self):
         mean = self.mean
         std = self.std
+        batch_size = self.dataset.batch_size
         if isinstance(mean, np.ndarray):
             mean = mean.tolist()
         if isinstance(std, np.ndarray):
             std = std.tolist()
         return self._get_io_specification(self.numclasses, self.class_names,
-                                          mean, std)
+                                          mean, std, batch_size)
 
     def prepare_model(self):
         if self.model_prepared:

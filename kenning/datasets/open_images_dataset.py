@@ -29,6 +29,8 @@ import re
 import numpy as np
 from typing import Tuple, List, Optional
 from collections import defaultdict
+
+from kenning.utils.resource_manager import Resources
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
@@ -207,6 +209,21 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
     <https://storage.googleapis.com/openimages/web/index.html>`_.
     """
 
+    resources = Resources({
+        'class_names': 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv',  # noqa: E501,
+        'train': {
+            'object_detection': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
+            'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv',  # noqa: E501
+        },
+        'validation': {
+            'object_detection': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
+            'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv',  # noqa: E501
+        },
+        'test': {
+            'object_detection': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv',  # noqa: E501
+            'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv',  # noqa: E501
+        },
+    })
     arguments_structure = {
         'classes': {
             'argparse_name': '--classes',
@@ -302,42 +319,24 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         self.root.mkdir(parents=True, exist_ok=True)
 
         # prepare class files
-        classnamespath = self.root / 'classnames.csv'
+        class_names_path = self.root / 'classnames.csv'
         if self.classes_path:
-            shutil.copy(self.classes_path, classnamespath)
+            shutil.copy(self.classes_path, class_names_path)
         else:
-            classnamesurl = 'https://storage.googleapis.com/openimages/v5/class-descriptions-boxable.csv'  # noqa: E501
-            download_url(classnamesurl, classnamespath)
-
-        # prepare annotations
-        annotationsurls = {
-            'train': {
-                'object_detection': 'https://storage.googleapis.com/openimages/v6/oidv6-train-annotations-bbox.csv',  # noqa: E501
-                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/train-annotations-object-segmentation.csv'  # noqa: E501
-            },
-            'validation': {
-                'object_detection': 'https://storage.googleapis.com/openimages/v5/validation-annotations-bbox.csv',  # noqa: E501
-                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/validation-annotations-object-segmentation.csv'  # noqa: E501
-            },
-            'test': {
-                'object_detection': 'https://storage.googleapis.com/openimages/v5/test-annotations-bbox.csv',  # noqa: E501
-                'instance_segmentation': 'https://storage.googleapis.com/openimages/v5/test-annotations-object-segmentation.csv'  # noqa: E501
-            }
-        }
-        origannotationspath = self.root / 'original-annotations.csv'
-        download_url(
-            annotationsurls[self.download_annotations_type][self.task],
-            origannotationspath
-        )
+            classes_path = self.resources['class_names']
+            shutil.copy(classes_path, class_names_path)
 
         # load classes
         self.classmap = {}
-        with open(classnamespath, 'r') as clsfile:
+        with open(class_names_path, 'r') as clsfile:
             for line in clsfile:
                 clsid, clsname = line.strip().split(',')
                 self.classmap[clsid] = clsname
 
-        annotations = pd.read_csv(origannotationspath)
+        # prepare annotations
+        annotations = pd.read_csv(
+            self.resources[self.download_annotations_type, self.task]
+        )
 
         # drop grouped bboxes (where one bbox covers multiple examples of a
         # class)
@@ -484,9 +483,9 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             self.dataY.append(v)
 
     def prepare(self):
-        classnamespath = self.root / 'classnames.csv'
+        class_names_path = self.root / 'classnames.csv'
         self.classmap = {}
-        with open(classnamespath, 'r') as clsfile:
+        with open(class_names_path, 'r') as clsfile:
             for line in clsfile:
                 clsid, clsname = line.strip().split(',')
                 self.classmap[clsid] = clsname

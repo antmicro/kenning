@@ -5,38 +5,17 @@
 import cv2
 import numpy as np
 from pathlib import Path
-import tempfile
-from zipfile import ZipFile
-from tqdm import tqdm
 from collections import defaultdict
 from typing import Optional
 
-from kenning.utils.logger import download_url, get_logger
+from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import Resources, extract_zip
 
 from pycocotools.coco import COCO
 
 from kenning.datasets.helpers.detection_and_segmentation import \
         DetectObject, \
         ObjectDetectionSegmentationDataset
-
-
-def download_and_extract(url: str, targetdir: Path, downloadpath: Path):
-    """
-    Downloads the ZIP file and extracts it to the provided target directory.
-
-    Parameters
-    ----------
-    url : str
-        URL to the ZIP file to download.
-    targetdir : Path
-        Path to the target directory where extracted files will be saved.
-    downloadpath : Path
-        Path where the ZIP file will be downloaded to.
-    """
-    download_url(url, downloadpath)
-    with ZipFile(downloadpath, 'r') as zip:
-        for f in tqdm(iterable=zip.namelist(), total=len(zip.namelist())):
-            zip.extract(member=f, path=targetdir)
 
 
 class COCODataset2017(ObjectDetectionSegmentationDataset):
@@ -57,32 +36,29 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     *Page*: `COCO Dataset site <https://cocodataset.org>`_.
     """
 
-    annotationsurls = {
+    resources = Resources({
         'train2017': {
-            'images': ['http://images.cocodataset.org/zips/train2017.zip'],
-            'object_detection': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
+            'images': 'http://images.cocodataset.org/zips/train2017.zip',
+            'object_detection': 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',  # noqa: E501
         },
         'val2017': {
-            'images': ['http://images.cocodataset.org/zips/val2017.zip'],
-            'object_detection': ['http://images.cocodataset.org/annotations/annotations_trainval2017.zip'],  # noqa: E501
+            'images': 'http://images.cocodataset.org/zips/val2017.zip',
+            'object_detection': 'http://images.cocodataset.org/annotations/annotations_trainval2017.zip',  # noqa: E501
         }
-    }
+    })
 
     arguments_structure = {
         'task': {
             'argparse_name': '--task',
             'description': 'The task type',
             'default': 'object_detection',
-            'enum': list(set(
-                key for dataset in annotationsurls.values()
-                for key in dataset.keys() if key != 'images'
-            ))
+            'enum': list(set([key[1] for key in resources.keys()])),
         },
         'dataset_type': {
             'argparse_name': '--dataset-type',
             'description': 'Type of dataset to download and use',  # noqa: E501
             'default': 'val2017',
-            'enum': list(annotationsurls.keys())
+            'enum': list(set([key[0] for key in resources.keys()])),
         }
     }
 
@@ -124,11 +100,8 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        with tempfile.TemporaryDirectory() as tmpdir:
-            for url in self.annotationsurls[self.dataset_type]['images']:
-                download_and_extract(url, self.root, Path(tmpdir) / 'data.zip')
-            for url in self.annotationsurls[self.dataset_type][self.task]:
-                download_and_extract(url, self.root, Path(tmpdir) / 'data.zip')
+        extract_zip(self.root, self.resources[self.dataset_type, 'images'])
+        extract_zip(self.root, self.resources[self.dataset_type, self.task])
 
     def prepare(self):
         annotationspath = self.root / f'annotations/instances_{self.dataset_type}.json'  # noqa: E501

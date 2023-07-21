@@ -25,6 +25,7 @@ from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import tagmeasurements
 from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI
 
 
 class RenodeRuntime(Runtime):
@@ -141,7 +142,7 @@ class RenodeRuntime(Runtime):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
-            compiledmodelpath: Path):
+            compiled_model_path: PathOrURI):
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
         with Pyrenode() as renode_handler:
@@ -151,8 +152,8 @@ class RenodeRuntime(Runtime):
             try:
                 check_request(self.prepare_client(), 'prepare client')
                 check_request(
-                        self.upload_essentials(compiledmodelpath),
-                        'upload essentials'
+                    self.upload_essentials(compiled_model_path),
+                    'upload essentials'
                 )
                 measurements = Measurements()
 

@@ -33,14 +33,14 @@ MDL_RT_RUNNER_YOLOV4_JSON = {
         "model_wrapper": {
             "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
             "parameters": {
-                "model_path": "./kenning/resources/models/detection/yolov4.onnx"    # noqa: 501
+                "model_path": "kenning:///models/detection/yolov4.onnx"    # noqa: 501
             }
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters":
             {
-                "save_model_path": "./kenning/resources/models/detection/yolov4.onnx",  # noqa: 501
+                "save_model_path": "kenning:///models/detection/yolov4.onnx",  # noqa: 501
                 "execution_providers": ["CPUExecutionProvider"]
             }
         }
@@ -69,14 +69,14 @@ MDL_RT_RUNNER_YOLACT_JSON = {
         "model_wrapper": {
             "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",    # noqa: 501
             "parameters": {
-                "model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx"    # noqa: 501
+                "model_path": "kenning:///models/instance_segmentation/yolact.onnx"    # noqa: 501
             }
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters":
             {
-                "save_model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",  # noqa: 501
+                "save_model_path": "kenning:///models/instance_segmentation/yolact.onnx",  # noqa: 501
                 "execution_providers": ["CPUExecutionProvider"]
             }
         }

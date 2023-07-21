@@ -389,6 +389,10 @@ class Runtime(ArgumentsHandler, ABC):
         else:
             reordered_input_spec = self.input_spec
 
+        if not input_data:
+            self.log.error("Received empty data payload")
+            raise ValueError
+
         # reading input
         inputs = []
         for spec in reordered_input_spec:
@@ -400,11 +404,16 @@ class Runtime(ArgumentsHandler, ABC):
             )
 
             expected_size = np.abs(np.prod(shape) * np.dtype(dtype).itemsize)
-            if len(input_data) < expected_size:
-                self.log.error("Received less data than model expected.")
+
+            if len(input_data) % (expected_size / shape[0]) != 0:
+                self.log.error("Received input data that is not a multiple of "
+                               "the sample size")
                 raise ValueError
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
+
+            # fill input to match expected shape
+            input = np.resize(input, np.prod(shape))
             input = input.reshape(shape)
 
             # quantization

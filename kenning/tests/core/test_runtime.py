@@ -44,7 +44,7 @@ def prepare_objects(
             disable_profiler=True
         )
     else:
-        runtime = runtime_cls(protocol=None, modelpath=model.modelpath)
+        runtime = runtime_cls(protocol=None, model_path=model.model_path)
 
     return runtime, dataset, model
 
@@ -102,4 +102,4 @@ class TestRuntime:
         """
         runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
 
-        runtime.run_locally(dataset, model, str(model.modelpath))
+        runtime.run_locally(dataset, model, str(model.model_path))

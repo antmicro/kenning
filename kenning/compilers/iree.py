@@ -5,7 +5,7 @@
 """
 Wrapper for IREE compiler.
 """
-from pathlib import Path
+
 from typing import List, Optional, Dict
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
@@ -15,6 +15,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import CompilationError
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
+from kenning.utils.resource_manager import PathOrURI
 
 
 def input_shapes_dict_to_list(inputshapes):
@@ -43,13 +44,13 @@ def input_shapes_dict_to_list(inputshapes):
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def kerasconversion(model_path, input_spec):
+def kerasconversion(model_path: PathOrURI, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
     # Calling the .fit() method of keras model taints the state of the model,
     # breaking the IREE compiler. Because of that, the workaround is needed.
-    original_model = tf.keras.models.load_model(model_path, compile=False)
+    original_model = tf.keras.models.load_model(str(model_path), compile=False)
     model = tf.keras.models.clone_model(original_model)
     model.set_weights(original_model.get_weights())
     del original_model
@@ -72,7 +73,7 @@ def kerasconversion(model_path, input_spec):
         WrapperModule(), exported_names=['main'], import_only=True)
 
 
-def tensorflowconversion(model_path, input_spec):
+def tensorflowconversion(model_path: PathOrURI, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
     model = tf.saved_model.load(model_path)
@@ -89,7 +90,7 @@ def tensorflowconversion(model_path, input_spec):
         model, exported_names=['main'], import_only=True)
 
 
-def tfliteconversion(model_path, input_spec):
+def tfliteconversion(model_path: PathOrURI, input_spec):
     from iree.compiler import tflite as ireetflite
 
     return ireetflite.compile_file(str(model_path), import_only=True)
@@ -144,7 +145,7 @@ class IREECompiler(Optimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
+            compiled_model_path: PathOrURI,
             backend: str = 'vmvx',
             modelframework: str = 'keras',
             compiler_args: Optional[List[str]] = None):
@@ -156,8 +157,8 @@ class IREECompiler(Optimizer):
         dataset : Dataset
             Dataset used to train the model - may be used for quantization
             during compilation stage.
-        compiled_model_path : Path
-            Path where compiled model will be saved.
+        compiled_model_path : PathOrURI
+            Path or URI where compiled model will be saved.
         backend : str
             Backend on which the model will be executed.
         modelframework : str
@@ -192,10 +193,10 @@ class IREECompiler(Optimizer):
 
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
         if io_spec is None:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
         try:
             input_spec = io_spec['input']
@@ -203,7 +204,7 @@ class IREECompiler(Optimizer):
             raise IOSpecificationNotFoundError('No input specification found')
 
         self.model_load = self.inputtypes[self.inputtype]
-        imported_model = self.model_load(inputmodelpath, input_spec)
+        imported_model = self.model_load(input_model_path, input_spec)
         try:
             compiled_buffer = ireecmp.compile_str(
                 imported_model,
@@ -216,7 +217,7 @@ class IREECompiler(Optimizer):
 
         with open(self.compiled_model_path, "wb") as f:
             f.write(compiled_buffer)
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)
 
     def get_framework_and_version(self):
         return "iree", version.VERSION

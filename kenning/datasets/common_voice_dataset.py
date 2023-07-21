@@ -8,8 +8,6 @@ Mozilla Common Voice Dataset wrapper.
 
 from typing import Any, List, Tuple, Union, Optional
 from pathlib import Path
-import tarfile
-import tempfile
 import string
 import numpy as np
 import pandas as pd
@@ -18,7 +16,7 @@ import librosa
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.utils.logger import download_url
+from kenning.utils.resource_manager import Resources, extract_tar
 
 
 def dynamic_levenshtein_distance(a: str, b: str) -> int:
@@ -136,6 +134,37 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
     return dst
 
 
+def _init_resources():
+    """
+    Initializes Common Voice Dataset resources.
+    """
+    languages = ['en']
+    url_per_version = {
+        '1': 'cv-corpus-1/',
+        '2': 'cv-corpus-2/',
+        '3': 'cv-corpus-3/',
+        '4': 'cv-corpus-4-2019-12-10/',
+        '5.1': 'cv-corpus-5.1-2020-06-22/',
+        '6.1': 'cv-corpus-6.1-2020-12-11/',
+        '7.0': 'cv-corpus-7.0-2021-07-21/cv-corpus-7.0-2021-07-21-',
+        '8.0': 'cv-corpus-8.0-2022-01-19/cv-corpus-8.0-2022-01-19-',
+        '9.0': 'cv-corpus-9.0-2022-04-27/cv-corpus-9.0-2022-04-27-',
+        '10.0': 'cv-corpus-10.0-2022-07-04/cv-corpus-10.0-2022-07-04-',
+        '11.0': 'cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-',
+        '12.0': 'cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-'
+    }
+    url_format = 'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz'  # noqa: 501
+
+    return Resources({
+        version: {
+            language: url_format.format(
+                version_url=version_url, language=language
+            )
+            for language in languages
+        } for version, version_url in url_per_version.items()
+    })
+
+
 class CommonVoiceDataset(Dataset):
     """
     The Mozilla Common Voice Dataset.
@@ -152,20 +181,16 @@ class CommonVoiceDataset(Dataset):
     *Page*: `Common Voice site <https://commonvoice.mozilla.org/>`_.
     """
 
-    languages = ['en']
+    resources = _init_resources()
     annotations_types = ['train', 'validation', 'test']
     selection_methods = ['none', 'length', 'accent']
-    dataset_versions = [
-        '1', '2', '3', '4', '5.1', '6.1', '7.0', '8.0', '9.0', '10.0', '11.0',
-        '12.0'
-    ]
 
     arguments_structure = {
         'language': {
             'argparse_name': '--language',
             'description': 'Determines language of recordings',
             'default': 'en',
-            'enum': languages
+            'enum': list(set(key[1] for key in resources.keys())),
         },
         'annotation_type': {
             'argparse_name': '--annotation-type',
@@ -195,7 +220,7 @@ class CommonVoiceDataset(Dataset):
             'argparse_name': '--dataset-version',
             'description': 'Version of the dataset',
             'default': '12.0',
-            'enum': dataset_versions
+            'enum': list(set(key[0] for key in resources.keys())),
         }
     }
 
@@ -252,9 +277,9 @@ class CommonVoiceDataset(Dataset):
         dataset_version : str
             Version of the dataset.
         """
-        assert language in self.languages, (
+        assert language in set(key[1] for key in self.resources.keys()), (
             f'Unsupported language {language}, should be one'
-            f'of {self.languages}')
+            f'of {set(key[1] for key in self.resources.keys())}')
         assert annotations_type in self.annotations_types, (
             f'Unsupported annotations type {annotations_type}, should be one'
             f'of {self.annotations_types}')
@@ -280,27 +305,9 @@ class CommonVoiceDataset(Dataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        url_per_version = {
-            '1': 'cv-corpus-1/',
-            '2': 'cv-corpus-2/',
-            '3': 'cv-corpus-3/',
-            '4': 'cv-corpus-4-2019-12-10/',
-            '5.1': 'cv-corpus-5.1-2020-06-22/',
-            '6.1': 'cv-corpus-6.1-2020-12-11/',
-            '7.0': 'cv-corpus-7.0-2021-07-21/cv-corpus-7.0-2021-07-21-',
-            '8.0': 'cv-corpus-8.0-2022-01-19/cv-corpus-8.0-2022-01-19-',
-            '9.0': 'cv-corpus-9.0-2022-04-27/cv-corpus-9.0-2022-04-27-',
-            '10.0': 'cv-corpus-10.0-2022-07-04/cv-corpus-10.0-2022-07-04-',
-            '11.0': 'cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-',
-            '12.0': 'cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-'
-        }
-        dataset_url = f'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{url_per_version[self.dataset_version]}{self.language}.tar.gz'  # noqa: E501
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tarpath = Path(tmpdir) / 'dataset.tar.gz'
-            download_url(dataset_url, tarpath)
-            tf = tarfile.open(tarpath)
-            tf.extractall(self.root)
+        extract_tar(
+            self.root, self.resources[self.dataset_version, self.language]
+        )
 
     def prepare(self):
         # take the first found folder containing language subfolder inside

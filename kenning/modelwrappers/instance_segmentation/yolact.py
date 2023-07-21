@@ -8,32 +8,26 @@ Wrapper for YOLACT model for instance segmentation.
 Pretrained on COCO dataset.
 """
 
-from pathlib import Path
+import operator
+import shutil
+from functools import reduce
+from typing import Dict, List, Optional, Tuple
 
-import onnx
 import cv2
 import numpy as np
-from functools import reduce
-from typing import Tuple, Dict, Optional, List
-import operator
+import onnx
 import pyximport
-import shutil
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
 
 from kenning.core.dataset import Dataset
-from kenning.datasets.helpers.detection_and_segmentation import SegmObject  # noqa: E501
 from kenning.core.model import ModelWrapper
-from kenning.interfaces.io_interface import IOInterface
 from kenning.datasets.coco_dataset import COCODataset2017
-from kenning.resources.models import instance_segmentation
+from kenning.datasets.helpers.detection_and_segmentation import SegmObject
+from kenning.interfaces.io_interface import IOInterface
+from kenning.utils.resource_manager import PathOrURI
 
 pyximport.install(setup_args={"include_dirs": np.get_include()},
                   reload_support=True)
-from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: E402, E501
+from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: 402
 
 
 def crop(
@@ -184,17 +178,18 @@ class YOLACTWrapper(ModelWrapper):
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file=True,
-            top_k: int = None,
+            top_k: Optional[int] = None,
             score_threshold: float = 0.05,
     ):
+        super().__init__(model_path, dataset, from_file)
         self.model = None
         if dataset is not None:
             self.class_names = dataset.get_class_names()
         else:
-            io_spec = self.load_io_specification(modelpath)
+            io_spec = self.load_io_specification(self.model_path)
             segmentation_output = IOInterface.find_spec(
                 io_spec,
                 'processed_output',
@@ -204,8 +199,7 @@ class YOLACTWrapper(ModelWrapper):
 
         self.top_k = top_k
         self.score_threshold = score_threshold
-        self.original_model_path = modelpath
-        super().__init__(modelpath, dataset, from_file)
+        self.original_model_path = self.model_path
 
     def prepare_model(self):
         if self.model_prepared:
@@ -214,16 +208,16 @@ class YOLACTWrapper(ModelWrapper):
             raise NotImplementedError(
                 "Yolact ModelWrapper only supports loading model from a file."
             )
-        self.load_model(self.modelpath)
+        self.load_model(self.model_path)
         self.model_prepared = True
 
-    def load_model(self, modelpath):
+    def load_model(self, model_path: PathOrURI):
         if self.model is not None:
             del self.model
-        self.model = onnx.load_model(modelpath)
+        self.model = onnx.load_model(str(model_path))
 
-    def save_model(self, modelpath):
-        shutil.copy(self.original_model_path, modelpath)
+    def save_model(self, model_path: PathOrURI):
+        shutil.copy(self.original_model_path, model_path)
 
     def get_framework_and_version(self):
         return ('onnx', onnx.__version__)
@@ -231,8 +225,8 @@ class YOLACTWrapper(ModelWrapper):
     def get_output_formats(self):
         return ["onnx"]
 
-    def save_to_onnx(self, modelpath):
-        self.save_model(modelpath)
+    def save_to_onnx(self, model_path: PathOrURI):
+        self.save_model(model_path)
 
     def convert_input_to_bytes(self, inputdata):
         return inputdata.tobytes()
@@ -249,8 +243,7 @@ class YOLACTWrapper(ModelWrapper):
 
 class YOLACTWithPostprocessing(YOLACTWrapper):
 
-    pretrained_modelpath = (files(instance_segmentation) /
-                            'yolact_with_postprocessing.onnx')
+    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx'  # noqa: 501
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -378,8 +371,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
 
 class YOLACT(YOLACTWrapper):
 
-    pretrained_modelpath = (files(instance_segmentation) /
-                            'yolact.onnx')
+    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact.onnx'  # noqa: E501
 
     def preprocess_input(self, X):
         if len(X) > 1:

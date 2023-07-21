@@ -2,7 +2,7 @@
   "model_wrapper": {
     "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
     "parameters": {
-      "model_path": "./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
+      "model_path": "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
     }
   },
   "dataset": {

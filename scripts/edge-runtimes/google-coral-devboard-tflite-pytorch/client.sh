@@ -11,7 +11,7 @@ python -m kenning.scenarios.inference_tester \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
+    --model-path kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \
     --model-framework onnx \
     --target "edgetpu" \

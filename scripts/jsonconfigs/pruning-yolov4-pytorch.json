@@ -2,13 +2,13 @@
   "model_wrapper": {
     "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
     "parameters": {
-      "model_path": "./kenning/resources/models/detection/yolov4.onnx"
+      "model_path": "kenning:///models/detection/yolov4.onnx"
     }
   },
   "dataset": {
     "type": "kenning.datasets.coco_dataset.COCODataset2017",
     "parameters": {
-      "dataset_root": "./kenning/resources/coco_detection",
+      "dataset_root": "./build/coco-dataset",
       "dataset_type": "val2017",
       "download_dataset": false,
       "image_width": 608,

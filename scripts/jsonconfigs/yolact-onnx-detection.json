@@ -4,7 +4,7 @@
         "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx"
+            "model_path": "kenning:///models/instance_segmentation/yolact.onnx"
         }
     },
     "dataset":
@@ -24,7 +24,7 @@
         "type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters":
         {
-            "save_model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",
+            "save_model_path": "build/yolact.onnx",
             "execution_providers": ["CUDAExecutionProvider", "CPUExecutionProvider"]
         }
     }

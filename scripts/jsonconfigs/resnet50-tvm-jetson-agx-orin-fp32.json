@@ -4,7 +4,7 @@
         "type": "kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_imagenet_resnet50.h5",
+            "model_path": "kenning:///models/classification/tensorflow_imagenet_resnet50.h5",
             "model_cls": "tensorflow.keras.applications.resnet50.ResNet50",
             "model_input_name": "input_1",
             "input_shape": [1, 224, 224, 3],

@@ -19,7 +19,7 @@
       "model_wrapper": {
         "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",
         "parameters": {
-          "model_path": "./kenning/resources/models/instance_segmentation/yolact.onnx",
+          "model_path": "kenning:///models/instance_segmentation/yolact.onnx",
           "top_k": 100,
           "score_threshold": 0.2
         }

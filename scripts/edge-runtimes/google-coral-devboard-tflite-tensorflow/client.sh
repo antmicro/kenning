@@ -11,7 +11,7 @@ python -m kenning.scenarios.inference_tester \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \
     --compiled-model-path ./build/compiled-model.tflite \

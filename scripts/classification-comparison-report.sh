@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/pet-dataset-tvm.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target cuda \
     --compiled-model-path ./build/compiled-model.tar \
@@ -28,7 +28,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/pet-dataset-tflite.json \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --compiled-model-path ./build/compiled-model.tflite \
     --save-model-path ./build/compiled-model.tflite \
@@ -42,7 +42,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/pet-dataset-iree.json \
     --compiler-cls kenning.compilers.iree.IREECompiler \
     --runtime-cls kenning.runtimes.iree.IREERuntime \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --backend vulkan \
     --compiled-model-path ./build/compiled-model.vmbf \

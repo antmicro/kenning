@@ -4,7 +4,7 @@
         "type": "kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_imagenet_mobilenetv3small.h5",
+            "model_path": "kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5",
             "model_cls": "tensorflow.keras.applications.MobileNetV3Small"
         }
     },

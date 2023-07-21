@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/local-cpu-iree-tensorflow-classification.json \
     --compiler-cls kenning.compilers.iree.IREECompiler \
     --runtime-cls kenning.runtimes.iree.IREERuntime \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --backend dylib \
     --compiled-model-path ./build/compiled-model.vmbf \

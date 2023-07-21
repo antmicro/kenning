@@ -9,7 +9,7 @@
     "model_wrapper": {
         "type": "kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper",
         "parameters": {
-            "model_path": "./kenning/resources/models/classification/person_detect.tflite"
+            "model_path": "kenning:///models/classification/person_detect.tflite"
         }
     },
     "optimizers":

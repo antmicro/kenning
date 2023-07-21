@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/cpu-tvm-darknet.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --model-path ./kenning/resources/models/detection/yolov3.weights \
+    --model-path kenning:///models/detection/yolov3.weights \
     --model-framework darknet \
     --target "llvm" \
     --compiled-model-path ./build/compiled-model.tar \

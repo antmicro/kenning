@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \
     --compiled-model-path ./build/compiled-model.tar \

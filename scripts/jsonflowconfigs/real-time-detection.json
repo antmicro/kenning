@@ -17,14 +17,14 @@
       "model_wrapper": {
         "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
         "parameters": {
-          "model_path": "./kenning/resources/models/detection/yolov4.onnx"
+          "model_path": "kenning:///models/detection/yolov4.onnx"
         }
       },
       "runtime": {
         "type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters":
         {
-          "save_model_path": "./kenning/resources/models/detection/yolov4.onnx",
+          "save_model_path": "./build/yolov4.onnx",
           "execution_providers": ["CUDAExecutionProvider"]
         }
       }

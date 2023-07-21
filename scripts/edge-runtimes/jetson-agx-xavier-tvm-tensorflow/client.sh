@@ -11,7 +11,7 @@ python -m kenning.scenarios.inference_tester \
     --compiler-cls kenning.compilers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "nvidia/jetson-agx-xavier" \
     --target-host "llvm -mtriple=aarch64-linux-gnu" \

@@ -4,7 +4,7 @@
         "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/magic_wand.h5"
+            "model_path": "kenning:///models/classification/magic_wand.h5"
         }
     },
     "dataset":

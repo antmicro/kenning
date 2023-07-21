@@ -10,7 +10,11 @@ import argparse
 import sys
 from typing import List, Dict, Generator, Tuple, Optional
 
-from kenning.cli.parser import Parser
+from kenning.cli.parser import (
+    Parser,
+    ParserHelpException,
+    print_help_from_parsers,
+)
 from kenning.cli.formatter import Formatter
 from kenning.cli.command_template import DEFAULT_GROUP
 from kenning.cli.config import (
@@ -198,38 +202,48 @@ def main():
             )
             used_configs.add(scenario.configure_parser)
             parse_all = parse_all and scenario.parse_all
+    description = '\n'.join(description)
 
     # The main parser without subcommands
     parser = Parser(
         "kenning "+" ".join(subcommands),
         conflict_handler='resolve',
         parents=parents,
-        formatter_class=Formatter,
-        description='\n'.join(description),
+        description=description,
         add_help=False,
     )
 
     # Print help, including possible subcommands
     if args.help:
-        Parser(
+        print_help_from_parsers(
             "kenning "+" ".join(subcommands),
-            conflict_handler='resolve',
-            parents=[parsers[tuple(subcommands)], parser],
-            formatter_class=Formatter,
-            description='\n'.join(description),
-            add_help=False,
-        ).print_help()
+            [parsers[tuple(subcommands)], parser],
+            description,
+        )
         return
 
+    errors = []
     # Parse arguments
     if parse_all:
-        args = parser.parse_args(
-            args=sys.argv[1 + len(subcommands):], namespace=args)
+        try:
+            args = parser.parse_args(
+                args=sys.argv[1 + len(subcommands):], namespace=args
+            )
+        except ParserHelpException as ex:
+            ex.print(
+                parser,
+                [parsers[tuple(subcommands)], parser],
+                description,
+            )
+            return
         rem = []
     else:
         # Parse only known args if scenario will add more arguments
-        args, rem = parser.parse_known_args(
-            sys.argv[1 + len(subcommands):], namespace=args)
+        try:
+            args, rem = parser.parse_known_args(
+                sys.argv[1 + len(subcommands):], namespace=args)
+        except ParserHelpException as ex:
+            errors.append(ex.error)
 
     # Run subcommands
     used_functions = set()
@@ -238,7 +252,7 @@ def main():
         if run in used_functions:
             continue
         try:
-            run(args, not_parsed=rem, parser=parser)
+            run(args, not_parsed=rem)
         except ModuleNotFoundError as er:
             extras = find_missing_optional_dependency(er.name)
             if not extras:
@@ -249,5 +263,23 @@ def main():
 
         except argparse.ArgumentError as er:
             parser.error(er.message)
+            return 2
+        except ParserHelpException as ex:
+            # Prepare combined errors
+            if ex.error is not None:
+                errors.append(ex.error)
+            if len(errors) > 1:
+                ex.error = ''
+                for error in errors:
+                    ex.error += f'- {error}\n'
+            elif errors:
+                ex.error = errors[0]
+            # Print help with errors
+            ex.print(
+                parser,
+                [parsers[tuple(subcommands)], parser],
+                description,
+            )
+            return
 
         used_functions.add(run)

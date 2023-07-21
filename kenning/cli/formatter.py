@@ -15,6 +15,7 @@ Changes:
 
 import argparse
 import re
+from gettext import gettext
 
 
 # TODO: try to print mutually exclusive groups
@@ -137,6 +138,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
 
         # collect all actions format strings
         parts = []
+        append_dots = False
         for i, action in enumerate(actions):
 
             # suppressed arguments are marked with None
@@ -161,9 +163,9 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
                 # add the action string to the list
                 # new: place subcommands at the beginning
                 if isinstance(action, argparse._SubParsersAction):
+                    append_dots = True
                     command, dots = part.split(' ')
                     parts.insert(0, command)
-                    parts.append(dots)
                 else:
                     parts.append(part)
 
@@ -194,6 +196,10 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
         for i in sorted(inserts, reverse=True):
             parts[i:i] = [inserts[i]]
 
+        # new: make sure dots are at the end of usage
+        if append_dots:
+            parts.append(dots)
+
         # join all the action items with spaces
         text = ' '.join([item for item in parts if item is not None])
 
@@ -207,3 +213,105 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
 
         # return the text
         return text
+
+    def _format_usage(self, usage, actions, groups, prefix):
+        if prefix is None:
+            prefix = gettext('usage: ')
+
+        # if usage is specified, use that
+        if usage is not None:
+            usage = usage % dict(prog=self._prog)
+
+        # if no optionals or positionals are available, usage is just prog
+        elif usage is None and not actions:
+            usage = str(self._prog)
+
+        # if optionals and positionals are available, calculate usage
+        elif usage is None:
+            prog = str(self._prog)
+
+            # split optionals from positionals
+            optionals = []
+            positionals = []
+            for action in actions:
+                if action.option_strings:
+                    optionals.append(action)
+                else:
+                    positionals.append(action)
+
+            # build full usage string
+            format = self._format_actions_usage
+            action_usage = format(optionals + positionals, groups)
+            usage = ' '.join([s for s in [prog, action_usage] if s])
+
+            # wrap the usage parts if it's too long
+            text_width = self._width - self._current_indent
+            if len(prefix) + len(usage) > text_width:
+
+                # break usage into wrappable parts
+                part_regexp = (
+                    r'\(.*?\)+(?=\s|$)|'
+                    r'\[.*?\]+(?=\s|$)|'
+                    r'\S+'
+                )
+                opt_usage = format(optionals, groups)
+                pos_usage = format(positionals, groups)
+                opt_parts = re.findall(part_regexp, opt_usage)
+                pos_parts = re.findall(part_regexp, pos_usage)
+                assert ' '.join(opt_parts) == opt_usage
+                assert ' '.join(pos_parts) == pos_usage
+
+                # new: if only subcommands are in pos_parts append them
+                # to opt_parts, so subcommands are always at the beginning
+                if opt_parts and len(pos_parts) == 2 and pos_parts[1] == '...':
+                    opt_parts = [pos_parts[0], *opt_parts, pos_parts[1]]
+                    pos_parts = []
+
+                # helper for wrapping lines
+                def get_lines(parts, indent, prefix=None):
+                    lines = []
+                    line = []
+                    if prefix is not None:
+                        line_len = len(prefix) - 1
+                    else:
+                        line_len = len(indent) - 1
+                    for part in parts:
+                        if line_len + 1 + len(part) > text_width and line:
+                            lines.append(indent + ' '.join(line))
+                            line = []
+                            line_len = len(indent) - 1
+                        line.append(part)
+                        line_len += len(part) + 1
+                    if line:
+                        lines.append(indent + ' '.join(line))
+                    if prefix is not None:
+                        lines[0] = lines[0][len(indent):]
+                    return lines
+
+                # if prog is short, follow it with optionals or positionals
+                if len(prefix) + len(prog) <= 0.75 * text_width:
+                    indent = ' ' * (len(prefix) + len(prog) + 1)
+                    if opt_parts:
+                        lines = get_lines([prog] + opt_parts, indent, prefix)
+                        lines.extend(get_lines(pos_parts, indent))
+                    elif pos_parts:
+                        lines = get_lines([prog] + pos_parts, indent, prefix)
+                    else:
+                        lines = [prog]
+
+                # if prog is long, put it on its own line
+                else:
+                    indent = ' ' * len(prefix)
+                    parts = opt_parts + pos_parts
+                    lines = get_lines(parts, indent)
+                    if len(lines) > 1:
+                        lines = []
+                        lines.extend(get_lines(pos_parts, indent))
+                        lines.extend(get_lines(opt_parts, indent))
+                    lines = [prog] + lines
+
+                # join lines into usage
+                usage = '\n'.join(lines)
+
+        # prefix with 'usage:'
+        return f'{prefix}{usage}\n\n'

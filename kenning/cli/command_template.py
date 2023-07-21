@@ -6,11 +6,12 @@
 Module containing template for creating commands and their names
 """
 
+import sys
 import argparse
 from abc import abstractstaticmethod, ABC
 from typing import Dict, Optional, List, Union, Tuple
 
-from kenning.cli.parser import Parser
+from kenning.cli.parser import Parser, ParserHelpException, HELP_FLAGS
 
 
 # Subcommands:
@@ -25,7 +26,7 @@ FINE_TUNE = "fine-tune-optimizers"
 LIST = "list"
 INFO = "info"
 HELP = {
-    "flags": ('-h', '--help'),
+    "flags": HELP_FLAGS,
     "msg": "show this help message and exit",
 }
 
@@ -101,9 +102,8 @@ class CommandTemplate(ABC):
     def run(
         args: argparse.Namespace,
         not_parsed: List[str] = [],
-        parser: argparse.ArgumentParser = None,
         **kwargs
-    ):
+    ) -> Optional[int]:
         """
         The method containing logic of the scenario.
 
@@ -113,7 +113,43 @@ class CommandTemplate(ABC):
             Parsed and validated arguments used for this scenario
         not_parsed : List[str]
             Additinal arguments which haven't been parsed yet
-        parser : argparse.ArgumentParser
-            Parser used for this command
+
+        Returns
+        -------
+        Optional[int] :
+            Status of executed scenario
         """
         raise NotImplementedError
+
+    @classmethod
+    def scenario_run(cls, argv: Optional[List[str]] = None) -> Optional[int]:
+        """
+        The method for running command as a scenario.
+
+        Is manages arguments and help message.
+
+        Parameters
+        ----------
+        argv : Optional[List[str]]
+            Argument used for the scenario
+
+        Returns
+        -------
+        Optional[int] :
+            Status of executed scenario
+        """
+        if argv is None:
+            argv = sys.argv
+        parser, _ = cls.configure_parser()
+
+        try:
+            if cls.parse_all:
+                args, not_parsed = parser.parse_args(argv[1:]), []
+                if args.help:
+                    raise ParserHelpException
+            else:
+                args, not_parsed = parser.parse_known_args(argv[1:])
+
+            return cls.run(args, not_parsed=not_parsed)
+        except ParserHelpException as ex:
+            ex.print(parser)

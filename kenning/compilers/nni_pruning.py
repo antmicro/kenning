@@ -16,7 +16,6 @@ from nni.compression.pytorch.speedup.compress_modules import (
 )
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from nni.common.graph_utils import _logger as nni_graph_logger
-from pathlib import Path
 import numpy as np
 from typing import Callable, Dict, Optional, List, Type, Tuple
 from enum import Enum
@@ -33,10 +32,11 @@ from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import LoggerProgressBar
 from kenning.onnxconverters.onnx2torch import convert
+from kenning.utils.resource_manager import PathOrURI
 
 
-def torchconversion(modelpath: Path, device: torch.device, **kwargs):
-    loaded = torch.load(modelpath, map_location=device)
+def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
+    loaded = torch.load(str(model_path), map_location=device)
     if not isinstance(loaded, torch.nn.Module):
         raise CompilationError(
             f'Expecting model of type:'
@@ -44,12 +44,12 @@ def torchconversion(modelpath: Path, device: torch.device, **kwargs):
     return loaded
 
 
-def onnxconversion(modelpath: Path, device: torch.device, **kwargs):
+def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
     conversion = PyTorchONNXConversion()
-    if conversion.onnx_import(None, modelpath) != SupportStatus.SUPPORTED:
+    if conversion.onnx_import(None, model_path) != SupportStatus.SUPPORTED:
         raise CompilationError('Conversion for provided model to PyTorch'
                                ' is not supported')
-    model = convert(modelpath)
+    model = convert(str(model_path))
     model.to(device)
     return model
 
@@ -259,7 +259,7 @@ class NNIPruningOptimizer(Optimizer):
     def __init__(
         self,
         dataset: Dataset,
-        compiled_model_path: Path,
+        compiled_model_path: PathOrURI,
         pruner_type: str = list(prunertypes.keys())[0],
         config_list: str = '[{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}]',  # noqa: E501
         training_steps: int = 1,
@@ -285,8 +285,8 @@ class NNIPruningOptimizer(Optimizer):
         ----------
         dataset : Dataset
             Dataset used to prune and fie-tune model
-        compiled_model_path: Path
-            Path where compiled model will be saved
+        compiled_model_path: PathOrURI
+            Path or URI where compiled model will be saved
         pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
             or ActivationMeanRankPruner
@@ -364,16 +364,16 @@ class NNIPruningOptimizer(Optimizer):
 
     def compile(
         self,
-        inputmodelpath: Path,
+        input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
-        model = self.inputtypes[self.inputtype](inputmodelpath, self.device)
+        model = self.inputtypes[self.inputtype](input_model_path, self.device)
 
         if self.exclude_last_layer:
             self.add_exclude_to_config(model)
 
         if not io_spec:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
         self.io_spec = io_spec
         self.log.info(f"Model before pruning\n{model}")
 
@@ -452,7 +452,7 @@ class NNIPruningOptimizer(Optimizer):
                     f"Full model was saved to {self.compiled_model_path} "
                     "by `dill` and state dict was saved to "
                     f"{self.compiled_model_path}.state_dict")
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)
 
     def train_model(
         self,

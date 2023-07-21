@@ -11,7 +11,7 @@ from typing import List, Any, Tuple, Dict, Type, Optional
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from collections import defaultdict
+from urllib.request import HTTPError
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -22,26 +22,27 @@ from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     """
     Wraps the given model.
     """
-    pretrained_modelpath: Optional[Path] = None
+    pretrained_model_uri: Optional[str] = None
     default_dataset: Optional[Type[Dataset]] = None
     arguments_structure = {
-        'modelpath': {
+        'model_path': {
             'argparse_name': '--model-path',
             'description': 'Path to the model',
-            'type': Path,
+            'type': ResourceURI,
             'required': True
         }
     }
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Optional[Dataset],
             from_file: bool = True):
         """
@@ -49,29 +50,28 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        modelpath : Path
-            The path to the model.
+        model_path : PathOrURI
+            Path or URI to the model file.
         dataset : Optional[Dataset]
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
         """
-        self.modelpath = Path(modelpath)
+        self.model_path = model_path
         self.dataset = dataset
-        self.data = defaultdict(list)
         self.from_file = from_file
         self.model_prepared = False
 
-    def get_path(self) -> Path:
+    def get_path(self) -> PathOrURI:
         """
-        Returns path to the model in a form of a Path object.
+        Returns path to the model in a form of a Path or ResourceURI object.
 
         Returns
         -------
-        Path :
-            The path to the model.
+        PathOrURI :
+            Path or URI to the model.
         """
-        return self.modelpath
+        return self.model_path
 
     @classmethod
     def from_argparse(
@@ -89,7 +89,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         args : Namespace
             Arguments from ArgumentParser object.
         from_file : bool
-            Determines if the model should be loaded from modelpath.
+            Determines if the model should be loaded from model_path.
 
         Returns
         -------
@@ -125,7 +125,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         json_dict : Dict
             Arguments for the constructor.
         from_file : bool
-            Determines if the model should be loaded from modelpath.
+            Determines if the model should be loaded from model_path.
 
         Returns
         -------
@@ -157,36 +157,36 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         raise NotImplementedError
 
-    def load_model(self, modelpath: Path):
+    def load_model(self, model_path: PathOrURI):
         """
         Loads the model from file.
 
         Parameters
         ----------
-        modelpath : Path
-            Path to the model file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         """
         raise NotImplementedError
 
-    def save_model(self, modelpath: Path):
+    def save_model(self, model_path: PathOrURI):
         """
         Saves the model to file.
 
         Parameters
         ----------
-        modelpath : Path
-            Path to the model file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         """
         raise NotImplementedError
 
-    def save_to_onnx(self, modelpath: Path):
+    def save_to_onnx(self, model_path: PathOrURI):
         """
         Saves the model in the ONNX format.
 
         Parameters
         ----------
-        modelpath : Path
-            Path to the ONNX file.
+        model_path : PathOrURI
+            Path or URI to the model file.
         """
         raise NotImplementedError
 
@@ -381,11 +381,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     def parse_io_specification_from_json(cls, json_dict):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-        modelpath = parsed_json_dict['modelpath']
+        model_path = ResourceURI(parsed_json_dict['model_path'])
+        io_spec = model_path.with_suffix(model_path.suffix + '.json')
         try:
-            with open(modelpath.parent / (modelpath.name + ".json"), 'r') as f:
+            with open(io_spec, 'r') as f:
                 return json.load(f)
-        except FileNotFoundError:
+        except (FileNotFoundError, HTTPError):
             return cls.derive_io_spec_from_json_params(parsed_json_dict)
 
     @classmethod

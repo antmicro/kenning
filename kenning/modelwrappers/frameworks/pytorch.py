@@ -2,19 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import numpy as np
 import copy
 from abc import ABC
 from collections import OrderedDict
 
+import numpy as np
+
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchWrapper(ModelWrapper, ABC):
-    def __init__(self, modelpath, dataset, from_file):
+    def __init__(
+            self,
+            model_path: PathOrURI,
+            dataset: Dataset,
+            from_file: bool = True):
+        super().__init__(model_path, dataset, from_file)
         import torch
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501
-        super().__init__(modelpath, dataset, from_file)
 
     def load_weights(self, weights: OrderedDict):
         """
@@ -38,10 +45,10 @@ class PyTorchWrapper(ModelWrapper, ABC):
         """
         raise NotImplementedError
 
-    def load_model(self, modelpath):
+    def load_model(self, model_path: PathOrURI):
         import torch
         input_data = torch.load(
-            self.modelpath,
+            self.model_path,
             map_location=self.device
         )
 
@@ -54,7 +61,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
         elif isinstance(input_data, torch.nn.Module):
             self.model = input_data
 
-    def save_to_onnx(self, modelpath):
+    def save_to_onnx(self, model_path: PathOrURI):
         import torch
         self.prepare_model()
         x = tuple(torch.randn(
@@ -65,7 +72,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
         torch.onnx.export(
             self.model.to(device='cpu'),
             x,
-            modelpath,
+            model_path,
             opset_version=11,
             input_names=[
                 spec['name'] for spec in self.get_io_specification()['input']
@@ -75,13 +82,16 @@ class PyTorchWrapper(ModelWrapper, ABC):
             ]
         )
 
-    def save_model(self, modelpath, export_dict=True):
+    def save_model(
+            self,
+            model_path: PathOrURI,
+            export_dict: bool = True):
         import torch
         self.prepare_model()
         if export_dict:
-            torch.save(self.model.state_dict(), modelpath)
+            torch.save(self.model.state_dict(), model_path)
         else:
-            torch.save(self.model, modelpath)
+            torch.save(self.model, model_path)
 
     def preprocess_input(self, X):
         import torch

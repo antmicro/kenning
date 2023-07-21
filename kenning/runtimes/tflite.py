@@ -107,6 +107,12 @@ class TFLiteRuntime(Runtime):
 
         try:
             ordered_input = self.preprocess_input(input_data)
+
+            # resize tensors to handle batched inputs correctly
+            for i, spec in enumerate(self.input_spec):
+                self.interpreter.resize_tensor_input(i, spec['shape'])
+            self.interpreter.allocate_tensors()
+
             for det, inp in zip(self.interpreter.get_input_details(), ordered_input):  # noqa: E501
                 self.interpreter.set_tensor(det['index'], inp)
         except ValueError as ex:

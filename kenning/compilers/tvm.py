@@ -6,10 +6,10 @@
 Wrapper for TVM deep learning compiler.
 """
 
+from pathlib import Path
 import tvm
 import onnx
 import tvm.relay as relay
-from pathlib import Path
 from typing import Optional, Dict, List
 
 from kenning.core.optimizer import Optimizer
@@ -18,11 +18,12 @@ from kenning.core.optimizer import CompilationError
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 def onnxconversion(
         compiler: 'TVMCompiler',
-        modelpath: Path,
+        model_path: PathOrURI,
         input_shapes,
         dtypes):
     try:
@@ -30,7 +31,7 @@ def onnxconversion(
     except IndexError:
         raise IndexError('No dtype in the input specification')
 
-    onnxmodel = onnx.load(modelpath)
+    onnxmodel = onnx.load(model_path)
     return relay.frontend.from_onnx(
         onnxmodel,
         shape=input_shapes,
@@ -41,12 +42,12 @@ def onnxconversion(
 
 def kerasconversion(
         compiler: 'TVMCompiler',
-        modelpath: Path,
+        model_path: PathOrURI,
         input_shapes,
         dtypes):
     import tensorflow as tf
     tf.keras.backend.clear_session()
-    model = tf.keras.models.load_model(str(modelpath), compile=False)
+    model = tf.keras.models.load_model(str(model_path), compile=False)
     print(model.summary())
     return relay.frontend.from_keras(
         model,
@@ -61,7 +62,7 @@ def no_conversion(out_dict):
 
 def torchconversion(
         compiler: 'TVMCompiler',
-        modelpath: Path,
+        model_path: PathOrURI,
         input_shapes,
         dtypes):
     import torch
@@ -70,8 +71,11 @@ def torchconversion(
     # This is a model-specific selector of output conversion functions.
     # It defaults to a no_conversion function that just returns its input
     # It is easily expandable in case it is needed for other models
-    if compiler.conversion_func == 'dict_to_tuple':  # For PyTorch Mask R-CNN Model  # noqa: E501
-        from kenning.modelwrappers.instance_segmentation.pytorch_coco import dict_to_tuple  # noqa: E501
+    if compiler.conversion_func == 'dict_to_tuple':
+        # For PyTorch Mask R-CNN Model
+        from kenning.modelwrappers.instance_segmentation.pytorch_coco import (
+            dict_to_tuple
+        )
         wrapper = dict_to_tuple
     else:  # General case - no conversion is happening
         wrapper = no_conversion
@@ -110,16 +114,16 @@ def torchconversion(
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    def model_func(modelpath: Path):
+    def model_func(model_path: PathOrURI):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-        loaded_model = torch.load(modelpath, map_location=device)
+        loaded_model = torch.load(str(model_path), map_location=device)
         if not isinstance(loaded_model, torch.nn.Module):
             raise CompilationError(
                 f'TVM compiler expects the input data of type: torch.nn.Module, but got: {type(loaded_model).__name__}'  # noqa: E501
             )
         return loaded_model
 
-    model = TraceWrapper(model_func(modelpath))
+    model = TraceWrapper(model_func(model_path))
     model.eval()
     inp = torch.Tensor(
         np.random.uniform(
@@ -152,7 +156,7 @@ def torchconversion(
 
 def darknetconversion(
         compiler: 'TVMCompiler',
-        modelpath: Path,
+        model_path: PathOrURI,
         input_shapes,
         dtypes):
     try:
@@ -172,8 +176,8 @@ def darknetconversion(
     except OSError as e:
         raise ConversionError(e)
     net = lib.load_network(
-        str(modelpath.with_suffix('.cfg')).encode('utf-8'),
-        str(modelpath).encode('utf-8'),
+        str(model_path.with_suffix('.cfg')).encode('utf-8'),
+        str(model_path).encode('utf-8'),
         0
     )
     return relay.frontend.from_darknet(
@@ -185,11 +189,11 @@ def darknetconversion(
 
 def tfliteconversion(
         compiler: 'TVMCompiler',
-        modelpath: Path,
+        model_path: PathOrURI,
         input_shapes,
         dtypes):
 
-    with open(modelpath, 'rb') as f:
+    with open(model_path, 'rb') as f:
         tflite_model_buf = f.read()
 
     try:
@@ -321,7 +325,7 @@ class TVMCompiler(Optimizer):
         ----------
         dataset : Dataset
             Dataset object.
-        compiled_model_path : Path
+        compiled_model_path : PathOrURI
             Path where compiled model will be saved.
         modelframework : str
             Framework of the input model, used to select a proper backend.
@@ -472,11 +476,12 @@ class TVMCompiler(Optimizer):
 
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
+        input_model_path = ResourceURI(input_model_path)
 
         if io_spec is None:
-            io_spec = self.load_io_specification(inputmodelpath)
+            io_spec = self.load_io_specification(input_model_path)
 
         try:
             input_spec = io_spec['input']
@@ -491,7 +496,7 @@ class TVMCompiler(Optimizer):
 
         mod, params = self.inputtypes[self.inputtype](
             self,
-            inputmodelpath,
+            input_model_path,
             inputshapes,
             dtypes
         )
@@ -501,7 +506,7 @@ class TVMCompiler(Optimizer):
             for id in range(len(io_spec['output'])):
                 io_spec['output'][id]['prequantized_dtype'] = io_spec['output'][id]['dtype']  # noqa: E501
                 io_spec['output'][id]['dtype'] = output_dtype
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)
 
     def get_framework_and_version(self):
         return ('tvm', tvm.__version__)

@@ -15,5 +15,6 @@ pipeline-optimizer
 sample-report
 kenning-flow
 kenning-development
+kenning-resources
 kenning-api
 ```

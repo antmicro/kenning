@@ -23,6 +23,7 @@ from .measurements import Measurements
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.utils.resource_manager import Resources
 
 
 class Dataset(ArgumentsHandler, ABC):
@@ -54,6 +55,7 @@ class Dataset(ArgumentsHandler, ABC):
         ID of the next data to be delivered for inference.
     """
 
+    resources: Resources = Resources(dict())
     arguments_structure = {
         'root': {
             'argparse_name': '--dataset-root',

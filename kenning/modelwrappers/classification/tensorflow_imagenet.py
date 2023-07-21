@@ -9,25 +9,18 @@ Pretrained on ImageNet dataset.
 """
 
 from typing import List
-from pathlib import Path
-import sys
 
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
-
-from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import load_class
 from kenning.datasets.imagenet_dataset import ImageNetDataset
-from kenning.resources.models import classification
+from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
+from kenning.utils.class_loader import load_class
+from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
 
     default_dataset = ImageNetDataset
-    pretrained_modelpath = files(classification) / 'tensorflow_imagenet_mobilenetv3small.h5'   # noqa: 501
+    pretrained_model_uri = 'kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5'  # noqa: 501
     arguments_structure = {
         'modelcls': {
             'argparse_name': '--model-cls',
@@ -69,7 +62,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
 
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = False,
             modelcls: str = '',
@@ -84,8 +77,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
 
         Parameters
         ----------
-        modelpath : Path
-            The path to the model.
+        model_path : PathOrURI
+            Path or URI to the model file.
         dataset : Dataset
             The dataset to verify the inference.
         from_file : bool
@@ -104,6 +97,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         disablebuiltinpreprocessing : bool
             Tells if the input preprocessing should be removed from the model.
         """
+        super().__init__(model_path, dataset, from_file)
         import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
@@ -115,12 +109,6 @@ class TensorFlowImageNet(TensorFlowWrapper):
         self.numclasses = numclasses
         self.outputshape = [inputshape[0], numclasses]
         self.disablebuiltinpreprocessing = disablebuiltinpreprocessing
-
-        super().__init__(
-            modelpath,
-            dataset,
-            from_file
-        )
 
     @classmethod
     def _get_io_specification(
@@ -153,7 +141,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         if self.model_prepared:
             return None
         if self.from_file:
-            self.load_model(self.modelpath)
+            self.load_model(self.model_path)
             self.model_prepared = True
         else:
             if self.disablebuiltinpreprocessing:
@@ -166,5 +154,5 @@ class TensorFlowImageNet(TensorFlowWrapper):
                     input_shape=tuple(self.inputshape[1:])
                 )
             self.model_prepared = True
-            self.save_model(self.modelpath)
+            self.save_model(self.model_path)
             self.model.summary()

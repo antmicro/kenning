@@ -9,25 +9,20 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
+
 import numpy as np
 from tqdm import tqdm
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
 
 from kenning.core.dataset import Dataset
-from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.datasets.pet_dataset import PetDataset
-from kenning.resources.models import classification
+from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
     default_dataset = PetDataset
-    pretrained_modelpath = files(classification) / 'pytorch_pet_dataset_mobilenetv2.pth'  # noqa: 501
-
+    pretrained_model_uri = 'kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth'  # noqa: E501
     arguments_structure = {
         'class_count': {
             'argparse_name': '--num-classes',
@@ -38,18 +33,18 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     }
 
     def __init__(
-                self,
-                modelpath: Path,
-                dataset: Dataset,
-                from_file=True,
-                class_count: int = 37
-            ):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = True,
+        class_count: int = 37
+    ):
+        super().__init__(model_path, dataset, from_file)
         self.class_count = class_count
         if hasattr(dataset, 'numclasses'):
             self.numclasses = dataset.numclasses
         else:
             self.numclasses = class_count
-        super().__init__(modelpath, dataset, from_file)
 
     @classmethod
     def _get_io_specification(cls, numclasses):
@@ -97,7 +92,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             return None
         import torch
         if self.from_file:
-            self.load_model(self.modelpath)
+            self.load_model(self.model_path)
             self.model_prepared = True
         else:
             self.create_model_structure()
@@ -108,7 +103,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     torch.nn.init.zeros_(m.bias)
             self.model.classifier.apply(weights_init)
             self.model_prepared = True
-            self.save_model(self.modelpath)
+            self.save_model(self.model_path)
         self.model.to(self.device)
 
     def train_model(
@@ -219,7 +214,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
                 losssum += loss
                 losscount += 1
-                bar.set_description(f'train epoch: {epoch:3}')  # noqa: E501
+                bar.set_description(f'train epoch: {epoch:3}')
             writer.add_scalar(
                 'Loss/train',
                 losssum.data.cpu().numpy() / losscount,
@@ -238,16 +233,16 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
                     correct += (predicted == labels).sum().item()
-                    bar.set_description(f'valid epoch: {epoch:3}')  # noqa: E501
+                    bar.set_description(f'valid epoch: {epoch:3}')
                 acc = 100 * correct / total
                 writer.add_scalar('Accuracy/valid', acc, epoch)
 
                 if acc > best_acc:
-                    self.save_model(self.modelpath)
+                    self.save_model(self.model_path)
                     best_acc = acc
 
         self.save_model(
-            self.modelpath.parent / f'{self.modelpath.stem}_final{self.modelpath.suffix}'  # noqa: E501
+            self.model_path.with_stem(f'{self.model_path.stem}_final')
         )
 
         self.dataset.standardize = True

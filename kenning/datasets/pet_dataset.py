@@ -6,16 +6,14 @@
 The Oxford-IIIT Pet Dataset wrapper.
 """
 
-import tempfile
 from pathlib import Path
-import tarfile
 from PIL import Image
 import numpy as np
 from typing import Tuple, Any, Optional
 
 from kenning.core.dataset import Dataset
-from kenning.utils.logger import download_url
 from kenning.core.measurements import Measurements
+from kenning.utils.resource_manager import Resources, extract_tar
 
 
 class PetDataset(Dataset):
@@ -46,6 +44,11 @@ class PetDataset(Dataset):
     """
 
     classification_types = ['species', 'breeds']
+
+    resources = Resources({
+        'images': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz',  # noqa: 501
+        'annotations': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz',  # noqa: 501
+    })
 
     arguments_structure = {
         'classify_by': {
@@ -136,17 +139,8 @@ class PetDataset(Dataset):
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        imgs = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz'
-        anns = 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz'  # noqa: E501
-        with tempfile.TemporaryDirectory() as tmpdir:
-            tarimgspath = Path(tmpdir) / 'dataset.tar.gz'
-            tarannspath = Path(tmpdir) / 'annotations.tar.gz'
-            download_url(imgs, tarimgspath)
-            download_url(anns, tarannspath)
-            tf = tarfile.open(tarimgspath)
-            tf.extractall(self.root)
-            tf = tarfile.open(tarannspath)
-            tf.extractall(self.root)
+        extract_tar(self.root, self.resources['images'])
+        extract_tar(self.root, self.resources['annotations'])
 
     def prepare(self):
         with open(self.root / 'annotations' / 'list.txt', 'r') as datadesc:

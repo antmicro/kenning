@@ -20,21 +20,17 @@ After this, to remove the embedded processing of outputs, run in Python shell::
     yolov4_remove_postprocessing('<input_onnx_path>', '<output_onnx_path>')
 """
 
-import onnx
-import numpy as np
-from pathlib import Path
-import shutil
-from typing import List
-import sys
-if sys.version_info.minor < 9:
-    from importlib_resources import files
-else:
-    from importlib.resources import files
 import math
+import shutil
+from pathlib import Path
+from typing import List
 
-from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+import numpy as np
+import onnx
+
 from kenning.datasets.coco_dataset import COCODataset2017
-from kenning.resources.models import detection
+from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 def yolov4_remove_postprocessing(
@@ -73,7 +69,7 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
-    pretrained_modelpath = files(detection) / 'yolov4.onnx'
+    pretrained_model_uri = 'kenning:///models/detection/yolov4.onnx'
     default_dataset = COCODataset2017
     arguments_structure = {}
 
@@ -303,5 +299,5 @@ class ONNXYOLOV4(YOLOWrapper):
     def get_output_formats(self):
         return ['onnx']
 
-    def save_to_onnx(self, modelpath: Path):
-        shutil.copy(self.modelpath, modelpath)
+    def save_to_onnx(self, model_path: PathOrURI):
+        shutil.copy(self.model_path, model_path)

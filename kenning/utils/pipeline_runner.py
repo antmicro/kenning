@@ -188,14 +188,20 @@ def run_pipeline_json(
     jsonschema.exceptions.ValidationError :
         Raised if parameters are incorrect.
     """
+    dataset, model, optimizers, runtime, protocol = \
+        parse_json_pipeline(json_cfg)
     return run_pipeline(
-        *parse_json_pipeline(json_cfg),
+        dataset,
+        model,
+        optimizers,
+        runtime,
+        protocol,
         output,
         verbosity,
         convert_to_onnx,
         command,
-        run_optimizations,
-        run_benchmarks,
+        run_optimizations and optimizers,
+        run_benchmarks and dataset,
         json_cfg.get("model_name", None),
     )
 

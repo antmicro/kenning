@@ -2,18 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import numpy as np
-from pathlib import Path
 from abc import ABC
 
-from kenning.core.model import ModelWrapper
+import numpy as np
+
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowWrapper(ModelWrapper, ABC):
     def __init__(
             self,
-            modelpath: Path,
+            model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool):
         """
@@ -24,26 +25,26 @@ class TensorFlowWrapper(ModelWrapper, ABC):
 
         Parameters
         ----------
-        modelpath : Path
-            The path to the model.
+        model_path : PathOrURI
+            Path or URI to the model file.
         dataset : Dataset
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
         """
-        super().__init__(modelpath, dataset, from_file)
+        super().__init__(model_path, dataset, from_file)
 
-    def load_model(self, modelpath):
+    def load_model(self, model_path: PathOrURI):
         import tensorflow as tf
         tf.keras.backend.clear_session()
         if hasattr(self, 'model') and self.model is not None:
             del self.model
-        self.model = tf.keras.models.load_model(str(modelpath))
+        self.model = tf.keras.models.load_model(str(model_path))
         print(self.model.summary())
 
-    def save_model(self, modelpath):
+    def save_model(self, model_path: PathOrURI):
         self.prepare_model()
-        self.model.save(modelpath)
+        self.model.save(model_path)
 
     def preprocess_input(self, X):
         return np.array(X, dtype='float32')
@@ -59,7 +60,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
     def get_output_formats(self):
         return ['onnx', 'keras']
 
-    def save_to_onnx(self, modelpath):
+    def save_to_onnx(self, model_path: PathOrURI):
         import tensorflow as tf
         import tf2onnx
 
@@ -73,7 +74,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         modelproto, _ = tf2onnx.convert.from_keras(
             self.model,
             input_signature=x,
-            output_path=modelpath,
+            output_path=model_path,
             opset=11
         )
 

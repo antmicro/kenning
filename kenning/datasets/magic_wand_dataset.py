@@ -7,15 +7,13 @@ The Tensorflow Magic Wand dataset.
 """
 from typing import Tuple, Any, List, Optional
 from pathlib import Path
-import tarfile
-import tempfile
 import glob
 import os
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.utils.logger import download_url
 from kenning.core.measurements import Measurements
+from kenning.utils.resource_manager import Resources, extract_tar
 
 
 class MagicWandDataset(Dataset):
@@ -26,6 +24,9 @@ class MagicWandDataset(Dataset):
     gestures captured by accelerometer and gyroscope.
     """
 
+    resources = Resources({
+        'data': 'http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz',  # noqa: 501
+    })
     arguments_structure = {
         'window_size': {
             'argparse_name': '--window-size',
@@ -168,12 +169,7 @@ class MagicWandDataset(Dataset):
         assert len(self.dataX) == len(self.dataY)
 
     def download_dataset_fun(self):
-        dataset_url = r'http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz'  # noqa: E501
-        with tempfile.TemporaryDirectory() as tempdir:
-            tarpath = Path(tempdir) / 'data.tar.gz'
-            download_url(dataset_url, tarpath)
-            data = tarfile.open(tarpath)
-            data.extractall(self.root)
+        extract_tar(self.root, self.resources['data'])
 
         # cleanup MacOS-related hidden metadata files present in the dataset
         for macos_dotfile in (

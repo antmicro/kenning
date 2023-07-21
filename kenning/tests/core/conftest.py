@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import pytest
-from typing import Tuple, Type
+from typing import Tuple, Type, Union
 from pathlib import Path
 import tempfile
 import shutil
@@ -26,12 +26,10 @@ from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
 from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
 from kenning.compilers.iree import IREECompiler
 from kenning.compilers.tvm import TVMCompiler
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
-KENNING_MODELS_PATH = Path(r'kenning/resources/models/')
-
-
-def get_tmp_path(suffix: str = '') -> Path:
+def get_tmp_path(suffix: str = '') -> ResourceURI:
     """
     Generates temporary path.
 
@@ -50,41 +48,55 @@ def get_tmp_path(suffix: str = '') -> Path:
         candidate = (pytest.test_directory / 'tmp' /
                      next(tempfile._get_candidate_names())).with_suffix(suffix)
 
-    return candidate
+    return ResourceURI(candidate)
 
 
-def copy_model_to_tmp(modelpath: Path) -> Path:
+def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
     """
     Copies model to tmp folder and returns its path.
 
     Parameters
     ----------
-    modelpath : Path
-        Path to the model.
+    model_path : PathOrURI
+        Path or URI to the model file.
 
     Returns
     -------
-    Path :
-        Path to the model copy.
+    ResourceURI :
+        URI to the model copy.
     """
     tmp_path = get_tmp_path()
-    if modelpath.is_file():
-        tmp_modelpath = tmp_path.with_suffix(modelpath.suffix)
-        shutil.copy(modelpath, tmp_modelpath)
-        jsonpath = modelpath.parent / (modelpath.name + ".json")
-        if jsonpath.exists():
-            tmp_jsonpath = tmp_modelpath.parent / (tmp_modelpath.name + ".json")  # noqa: E501
-            shutil.copy(jsonpath, tmp_jsonpath)
-        configfile = modelpath.with_suffix('.cfg')
-        if configfile.exists():
-            tmp_configfile = tmp_modelpath.with_suffix(".cfg")
-            shutil.copy(configfile, tmp_configfile)
-    elif modelpath.is_dir():
-        tmp_modelpath = tmp_path
-        shutil.copytree(modelpath, tmp_modelpath)
+    if model_path.is_file():
+        tmp_model_path = tmp_path.with_suffix(model_path.suffix)
+        shutil.copy(model_path, tmp_model_path)
+
+        json_path = model_path.with_suffix(model_path.suffix + '.json')
+        try:
+            json_path
+        except Exception:
+            pass
+        if json_path.exists():
+            shutil.copy(
+                json_path,
+                tmp_model_path.with_suffix(tmp_model_path.suffix + '.json')
+            )
+
+        config_file = model_path.with_suffix('.cfg')
+        try:
+            config_file
+        except Exception:
+            pass
+        if config_file.exists():
+            shutil.copy(
+                config_file,
+                tmp_model_path.with_suffix('.cfg')
+            )
+    elif model_path.is_dir():
+        tmp_model_path = tmp_path
+        shutil.copytree(model_path, tmp_model_path)
     else:
         raise FileNotFoundError
-    return tmp_modelpath
+    return ResourceURI(tmp_model_path)
 
 
 def get_default_dataset_model(
@@ -105,89 +117,96 @@ def get_default_dataset_model(
     """
     if framework == 'keras':
         dataset = get_dataset_random_mock(PetDataset)
-        modelpath = copy_model_to_tmp(
-            TensorFlowPetDatasetMobileNetV2.pretrained_modelpath
+        model_path = copy_model_to_tmp(
+            ResourceURI(TensorFlowPetDatasetMobileNetV2.pretrained_model_uri)
         )
         model = TensorFlowPetDatasetMobileNetV2(
-            modelpath,
+            model_path,
             dataset,
             from_file=True
         )
 
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = get_tmp_path()
+        model_path = get_tmp_path()
         keras_model = load_model(
-            MagicWandModelWrapper.pretrained_modelpath,
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
             compile=False
         )
-        keras_model.save(modelpath)
-        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+        keras_model.save(model_path)
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'tflite':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = copy_model_to_tmp(
-            KENNING_MODELS_PATH / 'classification/magic_wand.tflite'
+        model_path = copy_model_to_tmp(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            .with_suffix('.tflite')
         )
-        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'onnx':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = copy_model_to_tmp(ONNXYOLOV4.pretrained_modelpath)
-        shutil.copy(
-            ONNXYOLOV4.pretrained_modelpath.with_suffix('.cfg'),
-            modelpath.with_suffix('.cfg')
+        model_path = copy_model_to_tmp(
+            ResourceURI(ONNXYOLOV4.pretrained_model_uri)
         )
-        model = ONNXYOLOV4(modelpath, dataset)
+        shutil.copy(
+            ResourceURI(ONNXYOLOV4.pretrained_model_uri).with_suffix('.cfg'),
+            model_path.with_suffix('.cfg')
+        )
+        model = ONNXYOLOV4(model_path, dataset)
 
     elif framework == 'torch':
         dataset = get_dataset_random_mock(PetDataset)
-        modelpath = copy_model_to_tmp(
-            PyTorchPetDatasetMobileNetV2.pretrained_modelpath
+        model_path = copy_model_to_tmp(
+            ResourceURI(PyTorchPetDatasetMobileNetV2.pretrained_model_uri)
         )
         model = PyTorchPetDatasetMobileNetV2(
-            modelpath,
+            model_path,
             dataset=dataset,
             from_file=True
         )
         # save whole model instead of state dict
-        model.save_model(modelpath, export_dict=False)
+        model.save_model(model_path, export_dict=False)
 
     elif framework == 'darknet':
         dataset = get_dataset_random_mock(COCODataset2017)
-        modelpath = copy_model_to_tmp(
-            TVMDarknetCOCOYOLOV3.pretrained_modelpath
+        model_path = copy_model_to_tmp(
+            ResourceURI(TVMDarknetCOCOYOLOV3.pretrained_model_uri)
         )
-        model = TVMDarknetCOCOYOLOV3(modelpath, dataset)
+        model = TVMDarknetCOCOYOLOV3(model_path, dataset)
 
     elif framework == 'iree':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = get_tmp_path(suffix='.vmfb')
-        iree_compiler = IREECompiler(dataset, modelpath)
-        iree_compiler.compile(MagicWandModelWrapper.pretrained_modelpath)
-        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+        model_path = get_tmp_path(suffix='.vmfb')
+        iree_compiler = IREECompiler(dataset, model_path)
+        iree_compiler.compile(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+        )
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'tvm':
         dataset = get_dataset_random_mock(MagicWandDataset)
-        modelpath = get_tmp_path(suffix='.tar')
-        tvm_compiler = TVMCompiler(dataset, modelpath, modelframework='keras')
-        tvm_compiler.compile(MagicWandModelWrapper.pretrained_modelpath)
-        model = MagicWandModelWrapper(modelpath, dataset, from_file=True)
+        model_path = get_tmp_path(suffix='.tar')
+        tvm_compiler = TVMCompiler(dataset, model_path, modelframework='keras')
+        tvm_compiler.compile(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+        )
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     else:
         raise UnknownFramework(f'Unknown framework: {framework}')
 
-    model.save_io_specification(model.modelpath)
+    model.save_io_specification(model.model_path)
     return dataset, model
 
 
-def remove_file_or_dir(path: str):
+def remove_file_or_dir(path: Union[Path, str]):
     """
     Removes directory of given path.
 
     Parameters
     ----------
-    path : str
+    path : Union[Path, str]
         Path of given directory or file.
     """
     if Path(path).is_file():

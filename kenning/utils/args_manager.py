@@ -13,6 +13,8 @@ from typing import Dict, Tuple
 from pathlib import Path
 import numpy as np
 
+from kenning.utils.resource_manager import ResourceURI
+
 """
 arguments_structure is a mapping (argument_name -> keywords)
 
@@ -93,6 +95,7 @@ def convert_to_jsontype(v):
 
 type_to_jsontype = {
     Path: 'string',
+    ResourceURI: 'string',
     str: 'string',
     float: 'number',
     int: 'integer',

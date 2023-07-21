@@ -6,16 +6,16 @@
 Wrapper for TensorFlowClustering optimizer.
 """
 import tensorflow as tf
-from pathlib import Path
 from typing import Optional, Dict, List
 import tensorflow_model_optimization as tfmot
 
 from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
+from kenning.utils.resource_manager import PathOrURI
 
 
-def kerasconversion(modelpath: Path):
-    model = tf.keras.models.load_model(modelpath, compile=False)
+def kerasconversion(model_path: PathOrURI):
+    model = tf.keras.models.load_model(str(model_path), compile=False)
     return model
 
 
@@ -63,7 +63,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     def __init__(
             self,
             dataset: Dataset,
-            compiled_model_path: Path,
+            compiled_model_path: PathOrURI,
             epochs: int = 10,
             batch_size: int = 32,
             optimizer: str = 'adam',
@@ -82,8 +82,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         ----------
         dataset : Dataset
             Dataset used to train the model - may be used for fine-tuning.
-        compiled_model_path : Path
-            Path where compiled model will be saved.
+        compiled_model_path : PathOrURI
+            Path or URI where compiled model will be saved.
         epochs : int
             Number of epochs used for fine-tuning.
         batch_size : int
@@ -113,9 +113,9 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
 
     def compile(
             self,
-            inputmodelpath: Path,
+            input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
-        model = self.inputtypes[self.inputtype](inputmodelpath)
+        model = self.inputtypes[self.inputtype](input_model_path)
         for layer in model.layers:
             layer.trainable = True
 
@@ -157,4 +157,4 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             save_format='h5'
         )
 
-        self.save_io_specification(inputmodelpath, io_spec)
+        self.save_io_specification(input_model_path, io_spec)

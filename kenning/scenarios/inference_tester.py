@@ -114,7 +114,8 @@ class InferenceTester(CommandTemplate):
                 help='The path to the output JSON file with measurements',
                 nargs=1,
                 type=Path,
-                required=True,
+                default=[None],
+                required=bool(types),
             )
             dataset_flag.help = f"* {dataset_flag.help}"
             flag_group.add_argument(
@@ -156,13 +157,15 @@ class InferenceTester(CommandTemplate):
             raise argparse.ArgumentError(
                 None, "JSON and flag configurations are mutually exclusive. "
                 "Please use only one method of configuration.")
+        if "measurements" not in args:
+            args.measurements = [None]
 
         if args.json_cfg is not None:
             return InferenceTester._run_from_json(
                 args, command, log, not_parsed=not_parsed, **kwargs)
 
-        required_args = [0] + [1] if 'measurements' in args else [] + \
-            [2] if 'compiler_cls' in args else []
+        required_args = [0] + [1] if args.measurements[0] is not None else [] \
+            + [2] if 'compiler_cls' in args else []
         missing_args = [
             f"'{flag_config_names[i]}'" for i in required_args
             if not flag_config_not_none[i]
@@ -194,7 +197,7 @@ class InferenceTester(CommandTemplate):
         try:
             ret = run_pipeline_json(
                 json_cfg,
-                args.measurements[0] if 'measurements' in args else None,
+                args.measurements[0] if args.measurements[0] else None,
                 args.verbosity,
                 getattr(args, "convert_to_onnx", False),
                 command,
@@ -267,13 +270,13 @@ class InferenceTester(CommandTemplate):
                 compiler,
                 runtime,
                 protocol,
-                args.measurements[0] if 'measurements' in args else None,
+                args.measurements[0] if args.measurements[0] else None,
                 args.verbosity,
                 getattr(args, "convert_to_onnx", False),
                 command,
                 run_optimizations="compiler_cls" in args and not getattr(
-                    args, "run_benchmars_only", False),
-                run_benchmarks="measurements" in args,
+                    args, "run_benchmars_only", False) and compiler,
+                run_benchmarks="measurements" in args and dataset,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')

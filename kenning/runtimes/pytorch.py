@@ -10,6 +10,7 @@ from kenning.core.runtime import (
     Runtime,
 )
 from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchRuntime(Runtime):
@@ -19,7 +20,7 @@ class PyTorchRuntime(Runtime):
     """
 
     arguments_structure = {
-        "modelpath": {
+        "model_path": {
             "argparse_name": "--save-model-path",
             "description": "Path where the model will be uploaded",
             "type": Path,
@@ -30,7 +31,7 @@ class PyTorchRuntime(Runtime):
     def __init__(
         self,
         protocol: RuntimeProtocol,
-        modelpath: Path,
+        model_path: PathOrURI,
         disable_performance_measurements: bool = True,
     ):
         """
@@ -40,8 +41,8 @@ class PyTorchRuntime(Runtime):
         ----------
         protocol : RuntimeProtocol
             The implementation of the host-target communication protocol
-        modelpath : Path
-            Path for the model file
+        model_path : PathOrURI
+            Path or URI to the model file.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics
         """
@@ -50,7 +51,7 @@ class PyTorchRuntime(Runtime):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
         )
-        self.modelpath = modelpath
+        self.model_path = model_path
         self.model = None
         self.input: Optional[List] = None
         self.output: Optional[List] = None
@@ -62,14 +63,17 @@ class PyTorchRuntime(Runtime):
         from torch.jit.frontend import UnsupportedNodeError
 
         if input_data:
-            with open(self.modelpath, "wb") as fd:
+            with open(self.model_path, "wb") as fd:
                 fd.write(input_data)
 
         try:
-            self.model = torch.load(self.modelpath, map_location=self.device)
+            self.model = torch.load(
+                self.model_path,
+                map_location=self.device
+            )
         except Exception:
             import dill
-            with open(self.modelpath, 'rb') as fd:
+            with open(self.model_path, 'rb') as fd:
                 self.model = dill.load(fd)
 
         if isinstance(self.model, torch.nn.Module):

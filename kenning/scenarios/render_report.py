@@ -1866,7 +1866,7 @@ class RenderReport(CommandTemplate):
             help='Path to the JSON files with measurements' +
             (f' created with {TEST} subcommand' if run_in_sequence else
              '. If more than one file is provided, model comparison will be generated.') +  # noqa: E501
-            "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report form --report-path",  # noqa: E501
+            "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
             type=Path,
             nargs=1 if run_in_sequence else '*',
         )

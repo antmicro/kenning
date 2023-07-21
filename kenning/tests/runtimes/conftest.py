@@ -11,6 +11,8 @@ from torch.autograd import Variable
 from typing import Dict, Tuple
 from pytest import FixtureRequest
 
+from kenning.utils.resource_manager import ResourceURI
+
 
 def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
     """
@@ -47,12 +49,12 @@ def create_onnx_model(path: Path) -> Tuple[Path, Dict[str, Tuple[int, ...]]]:
         [[[[i for i in range(5)] for _ in range(5)]]])
                     )
 
-    modelpath = path / modelname
-    torch.onnx.export(model, data, modelpath,
+    model_path = path / modelname
+    torch.onnx.export(model, data, model_path,
                       input_names=['input.1'],
                       output_names=['output'], verbose=True)
     return (
-        modelpath,
+        model_path,
         {
             'input': [{'name': 'input.1', 'shape': (1, 1, 5, 5), 'dtype': 'float32'}],  # noqa: E501
             'output': [{'name': 'output', 'shape': (1, 1, 3, 3), 'dtype': 'float32'}]   # noqa: E501
@@ -84,7 +86,7 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path):
 
     Returns
     -------
-    runtimemodel: Path
+    runtimemodel: PathOrURI
         The path to created model for runtime
     inputshapes: Tuple[int, ...]
         The input shape of model
@@ -96,9 +98,9 @@ def runtimemodel(request: FixtureRequest, tmpfolder: Path):
     compiledmodelname = (uuid.uuid4().hex)
     if issubclass(request.param, TVMCompiler):
         compiledmodelname += '.so'
-    compiledmodelpath = tmpfolder / compiledmodelname
-    optimizer = request.param(None, compiledmodelpath)
+    compiled_model_path = tmpfolder / compiledmodelname
+    optimizer = request.param(None, compiled_model_path)
     optimizer.compile(onnxmodel, io_specs)
-    request.cls.runtimemodel = compiledmodelpath
+    request.cls.runtimemodel = ResourceURI(compiled_model_path)
     request.cls.inputshapes = (1, 1, 5, 5)
     request.cls.outputshapes = (1, 1, 3, 3)

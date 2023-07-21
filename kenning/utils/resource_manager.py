@@ -7,15 +7,50 @@ Provide resource manager responsible for downloading and caching resources
 """
 import hashlib
 import os
+import tarfile
 from pathlib import Path
 from shutil import copy, rmtree
+from tqdm import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from urllib.error import HTTPError
 from urllib.parse import ParseResult, urlparse
+from zipfile import ZipFile
 
 import requests
 
 from kenning.utils.logger import download_url, get_logger
 from kenning.utils.singleton import Singleton
+
+
+def extract_tar(target_dir: Path, src_path: Path):
+    """
+    Extract the tar file to the provided target directory.
+
+    Parameters
+    ----------
+    target_dir : Path
+        Path to the target directory where extracted files will be saved.
+    src_path : Path
+        Path to the tar file.
+    """
+    with tarfile.open(src_path) as tf:
+        tf.extractall(target_dir)
+
+
+def extract_zip(target_dir: Path, src_path: Path):
+    """
+    Extract the ZIP file to the provided target directory.
+
+    Parameters
+    ----------
+    target_dir : Path
+        Path to the target directory where extracted files will be saved.
+    src_path : Path
+        Path to the ZIP file.
+    """
+    with ZipFile(src_path, 'r') as zip:
+        for f in tqdm(iterable=zip.namelist(), total=len(zip.namelist())):
+            zip.extract(member=f, path=target_dir)
 
 
 class ResourceManager(metaclass=Singleton):
@@ -29,7 +64,8 @@ class ResourceManager(metaclass=Singleton):
         .resolve()
     )
 
-    MAX_CACHE_SIZE = 50_000_000_000  # 50 GB
+    # 50 GB by default
+    MAX_CACHE_SIZE = os.environ.get('KENNING_MAX_CACHE_SIZE', 50_000_000_000)
 
     HASHING_ALGORITHM = 'md5'
 
@@ -84,6 +120,7 @@ class ResourceManager(metaclass=Singleton):
             if output_path is None:
                 return Path(uri).expanduser().resolve()
             else:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
                 copy(uri, output_path)
                 return output_path
 
@@ -93,14 +130,14 @@ class ResourceManager(metaclass=Singleton):
             if output_path is None:
                 return resolved_uri
             else:
+                output_path.parent.mkdir(parents=True, exist_ok=True)
                 copy(resolved_uri, output_path)
                 return output_path
 
         if output_path is None:
-            parsed_path = parsed_uri.path
-            if parsed_path[0] == '/':
-                parsed_path = parsed_path[1:]
-            output_path = self.cache_dir / parsed_path
+            output_path = self.cache_dir / Path(parsed_uri.path).relative_to(
+                '/'
+            )
 
         output_path = output_path.resolve()
 
@@ -133,6 +170,17 @@ class ResourceManager(metaclass=Singleton):
 
         return output_path
 
+    def set_max_cache_size(self, max_cache_size: int):
+        """
+        Set the max cache size.
+
+        Parameters
+        ----------
+        max_cache_size : int
+            Max cache size in bytes.
+        """
+        self.max_cache_size = max_cache_size
+
     def set_cache_dir(self, cache_dir_path: Path):
         """
         Set the cache directory path and creates it if not exists.
@@ -142,7 +190,7 @@ class ResourceManager(metaclass=Singleton):
         cache_dir_path : Path
             Path to be set as cache directory.
         """
-        self.cache_dir = cache_dir_path
+        self.cache_dir = cache_dir_path.expanduser().resolve()
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def add_custom_url_schemes(
@@ -327,6 +375,7 @@ class ResourceManager(metaclass=Singleton):
             else:
                 self.log.warning('Cannot read file size before downloading')
 
+        self.log.debug(f'Downloading {url} to {output_path}')
         download_url(url, output_path)
 
         if self.cache_dir in output_path.parents:
@@ -391,11 +440,14 @@ class ResourceURI(Path):
     """
 
     _flavour = type(Path())._flavour
+    _uri: Optional[ParseResult]
 
     def __new__(cls, uri_or_path: Union[str, Path, 'ResourceURI']):
         if isinstance(uri_or_path, str) and ':/' in uri_or_path:
             uri = urlparse(uri_or_path)
-            path = uri.path
+            path = ResourceManager().cache_dir / Path(uri.path).relative_to(
+                '/'
+            )
         elif isinstance(uri_or_path, cls):
             uri = uri_or_path._uri
             path = Path(uri_or_path)
@@ -406,52 +458,25 @@ class ResourceURI(Path):
         instance = super().__new__(cls, path)
         instance._uri = uri
 
+        if instance.uri is not None:
+            try:
+                ResourceManager().get_resource(instance.uri, Path(instance))
+            except HTTPError:
+                pass
+
         return instance
 
     @property
-    def uri(self) -> str:
+    def uri(self) -> Optional[str]:
         """
         Get URI of the resource.
         """
         if self._uri is None:
             return None
 
-        return self._uri._replace(path=str(self)).geturl()
-
-    def get_resource(self, output_path: Optional[Path] = None) -> Path:
-        """
-        Retrieve resource and returns path to it.
-
-        Parameters
-        ----------
-        output_path : Optional[Path]
-            If specified, the resource will be download there.
-
-        Returns
-        -------
-        Path :
-            Path to the downloaded resource.
-        """
-        if self._uri is None:
-            return Path(self)
-
-        return ResourceManager().get_resource(self.uri, output_path)
-
-    def get_path(self) -> Path:
-        """
-        Return path to the resource.
-
-        Returns
-        -------
-        Path :
-            Path to the resource.
-        """
-        if self._uri is None:
-            return Path(self)
-
-        path = ResourceManager().cache_dir / self.relative_to('/')
-
-        return path
+        return self._uri._replace(
+            path=f'/{str(Path(self).relative_to(ResourceManager().cache_dir))}'
+        ).geturl()
 
     @property
     def parent(self) -> 'ResourceURI':
@@ -478,7 +503,7 @@ class ResourceURI(Path):
         """
         ret = super().with_suffix(suffix)
         ret._uri = self._uri
-        return ret
+        return ResourceURI(ret)
 
     def with_name(self, name: str) -> 'ResourceURI':
         """
@@ -496,7 +521,7 @@ class ResourceURI(Path):
         """
         ret = super().with_name(name)
         ret._uri = self._uri
-        return ret
+        return ResourceURI(ret)
 
     def with_stem(self, stem: str) -> 'ResourceURI':
         """
@@ -514,7 +539,13 @@ class ResourceURI(Path):
         """
         ret = super().with_stem(stem)
         ret._uri = self._uri
-        return ret
+        return ResourceURI(ret)
+
+    def __str__(self) -> str:
+        return super().__str__()
+
+    def __repr__(self) -> str:
+        return f'ResourceURI({self.uri})'
 
 
 class Resources(object):
@@ -533,7 +564,7 @@ class Resources(object):
         """
         self._resources_uri = resources_uri
 
-    def __getitem__(self, keys: Union[Tuple[str], str]) -> Path:
+    def __getitem__(self, keys: Union[Tuple[str, ...], str]) -> Path:
         if isinstance(keys, str):
             keys = (keys,)
 
@@ -546,7 +577,7 @@ class Resources(object):
         if isinstance(resources_uri, str):
             return ResourceManager().get_resource(resources_uri)
         if isinstance(resources_uri, ResourceURI):
-            return resources_uri.get_resource()
+            return resources_uri
 
         raise KeyError(f'Invalid key: {keys}')
 
@@ -597,3 +628,6 @@ class ChecksumVerifyError(Exception):
     """
 
     pass
+
+
+PathOrURI = Union[Path, ResourceURI]

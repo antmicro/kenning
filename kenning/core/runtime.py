@@ -33,6 +33,7 @@ from kenning.core.measurements import systemstatsmeasurements
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.utils.resource_manager import PathOrURI
 
 
 class ModelNotPreparedError(Exception):
@@ -523,7 +524,7 @@ class Runtime(ArgumentsHandler, ABC):
             True if succeeded.
         """
         if input_data is None:
-            path = self.get_io_spec_path(self.modelpath)
+            path = self.get_io_spec_path(self.model_path)
             if not path.exists():
                 self.log.info("No Input/Output specification found")
                 return False
@@ -545,24 +546,24 @@ class Runtime(ArgumentsHandler, ABC):
 
     def get_io_spec_path(
             self,
-            modelpath: Path) -> Path:
+            model_path: PathOrURI) -> Path:
         """
         Gets path to a input/output specification file which is
-        `modelpath` and `.json` concatenated.
+        `model_path` and `.json` concatenated.
 
         Parameters
         ----------
-        modelpath : Path
-            Path to the compiled model.
+        model_path : PathOrURI
+            URI to the compiled model.
 
         Returns
         -------
         Path :
             Returns path to the specification.
         """
-        modelpath = Path(modelpath)
-        spec_path = modelpath.parent / (modelpath.name + '.json')
-        return Path(spec_path)
+        spec_path = model_path.with_suffix(model_path.suffix + '.json')
+
+        return Path(str(spec_path))
 
     def process_input(self, input_data):
         """
@@ -694,27 +695,29 @@ class Runtime(ArgumentsHandler, ABC):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
-    def upload_essentials(self, compiledmodelpath: Path) -> bool:
+    def upload_essentials(
+            self,
+            compiled_model_path: PathOrURI) -> bool:
         """
         Wrapper for uploading data to the server.
         Uploads model by default.
 
         Parameters
         ----------
-        compiledmodelpath : Path
-            Path to the file with a compiled model.
+        compiled_model_path : PathOrURI
+            Path or URI to the file with a compiled model.
 
         Returns
         -------
         bool :
             True if succeeded.
         """
-        spec_path = self.get_io_spec_path(compiledmodelpath)
+        spec_path = self.get_io_spec_path(compiled_model_path)
         if spec_path.exists():
             self.protocol.upload_io_specification(spec_path)
         else:
             self.log.info("No Input/Output specification found")
-        return self.protocol.upload_model(compiledmodelpath)
+        return self.protocol.upload_model(compiled_model_path)
 
     def prepare_local(self) -> bool:
         """
@@ -733,7 +736,7 @@ class Runtime(ArgumentsHandler, ABC):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
-            compiledmodelpath: Path) -> bool:
+            compiled_model_path: PathOrURI) -> bool:
         """
         Runs inference locally using a given runtime.
 
@@ -743,15 +746,14 @@ class Runtime(ArgumentsHandler, ABC):
             Dataset to verify the inference on.
         modelwrapper : ModelWrapper
             Model that is executed on target hardware.
-        compiledmodelpath : Path
-            Path to the file with a compiled model.
+        compiled_model_path : PathOrURI
+            Path or URI to the file with a compiled model.
 
         Returns
         -------
         bool :
             True if executed successfully.
         """
-        compiledmodelpath = Path(compiledmodelpath)
         from kenning.utils.logger import TqdmCallback
         measurements = Measurements()
         try:
@@ -814,7 +816,7 @@ class Runtime(ArgumentsHandler, ABC):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
-            compiledmodelpath: Path) -> bool:
+            compiled_model_path: PathOrURI) -> bool:
         """
         Main runtime client program.
 
@@ -837,8 +839,8 @@ class Runtime(ArgumentsHandler, ABC):
             Dataset to verify the inference on.
         modelwrapper : ModelWrapper
             Model that is executed on target hardware.
-        compiledmodelpath : Path
-            Path to the file with a compiled model.
+        compiled_model_path : PathOrURI
+            Path or URI to the file with a compiled model.
 
         Returns
         -------
@@ -851,7 +853,7 @@ class Runtime(ArgumentsHandler, ABC):
         try:
             check_request(self.prepare_client(), 'prepare client')
             check_request(
-                    self.upload_essentials(compiledmodelpath),
+                    self.upload_essentials(compiled_model_path),
                     'upload essentials'
             )
             measurements = Measurements()

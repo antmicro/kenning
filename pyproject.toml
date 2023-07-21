@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 [build-system]
 requires = ["setuptools>=40.8.0", "wheel", "cython", "numpy~=1.23.5"]
 build-backend = "setuptools.build_meta"
@@ -141,7 +145,7 @@ select = [
     "D405", # Section name should be properly capitalized
     "D406", # Section name should end with a newline
     "D407", # Missing dashed underline after section
-    "D408", # Section underline should be in the line following the section’s name
+    "D408", # Section underline should be in the line following the section's name
     "D409", # Section underline should match the length of its name
     "D410", # Missing blank line after section
     "D411", # Missing blank line before section
@@ -150,3 +154,13 @@ select = [
     "D417", # Missing argument descriptions in the docstring
     "D419", # Docstring is empty
 ]
+
+[tool.pytest.ini_options]
+markers = [
+    "slow",  # marks tests as slow (deselect with '-m "not slow"')
+    "fast",  # marks tests as fast (deselect with '-m "not fast"')
+    "serial",
+]
+log_cli = true
+log_level = "DEBUG"
+log_format = "[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s"

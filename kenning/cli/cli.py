@@ -229,7 +229,8 @@ def main():
                 raise
             er = MissingKenningDependencies(
                 name=er.name, path=er.path, optional_dependencies=extras)
-            parser.exit(2, f"{parser.prog}: error: {er}")
+            raise
+
         except argparse.ArgumentError as er:
             parser.error(er.message)
 

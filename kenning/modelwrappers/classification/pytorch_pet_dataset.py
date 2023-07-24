@@ -47,9 +47,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.numclasses = class_count
 
     @classmethod
-    def _get_io_specification(cls, numclasses):
+    def _get_io_specification(cls, numclasses, batch_size=1):
         return {
-            'input': [{'name': 'input.1', 'shape': (1, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
+            'input': [{'name': 'input.1', 'shape': (batch_size, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
             'output': [{'name': '548', 'shape': (1, numclasses), 'dtype': 'float32'}]  # noqa: E501
         }
 
@@ -58,6 +58,13 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return cls._get_io_specification(json_dict['class_count'])
 
     def get_io_specification_from_model(self):
+        if self.dataset:
+            if hasattr(self.dataset, 'numclasses'):
+                assert self.numclasses == self.dataset.numclasses
+            return self._get_io_specification(
+                self.numclasses,
+                self.dataset.batch_size)
+
         return self._get_io_specification(self.numclasses)
 
     def preprocess_input(self, X):

@@ -82,13 +82,22 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     def get_io_specification_from_model(self):
         mean = self.mean
         std = self.std
-        batch_size = self.dataset.batch_size
+
         if isinstance(mean, np.ndarray):
             mean = mean.tolist()
         if isinstance(std, np.ndarray):
             std = std.tolist()
+
+        if self.dataset:
+            return self._get_io_specification(
+                self.numclasses,
+                self.class_names,
+                mean,
+                std,
+                self.dataset.batch_size)
+
         return self._get_io_specification(self.numclasses, self.class_names,
-                                          mean, std, batch_size)
+                                          mean, std)
 
     def prepare_model(self):
         if self.model_prepared:

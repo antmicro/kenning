@@ -47,10 +47,10 @@ class MissingKenningDependencies(ModuleNotFoundError):
 
     def __str__(self) -> str:
         if self.optional_dependencies == 'kenning':
-            return 'Required module is missing, please reinstall Kenning.'
+            return 'Required module is missing, please reinstall Kenning.\n'
         else:
             return 'This method requires additional dependencies, please use' \
-                f' `pip install "kenning[{self.optional_dependencies}]"` to install them.'  # noqa: E501
+                f' `pip install "kenning[{self.optional_dependencies}]"` to install them.\n'  # noqa: E501
 
 
 def kenning_missing_import_excepthook(

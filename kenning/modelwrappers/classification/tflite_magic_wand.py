@@ -60,11 +60,11 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
     @classmethod
     def _get_io_specification(
-            cls, window_size, numclasses=-1, class_names=None):
+            cls, window_size, numclasses=-1, class_names=None, batch_size=1):
         io_spec = {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, window_size, 3, 1),
+                'shape': (batch_size, window_size, 3, 1),
                 'dtype': 'float32'
             }],
             'output': [{
@@ -82,6 +82,11 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         return cls._get_io_specification(json_dict['window_size'])
 
     def get_io_specification_from_model(self):
+        if self.dataset:
+            return self._get_io_specification(
+                self.window_size, self.numclasses, self.class_names,
+                self.dataset.batch_size)
+
         return self._get_io_specification(
             self.window_size, self.numclasses, self.class_names)
 

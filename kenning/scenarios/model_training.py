@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Optional, List, Dict, Tuple
 
 from kenning.utils.class_loader import load_class, get_command
+from kenning.cli.completers import ClassPathCompleter, MODEL_WRAPPERS, DATASETS
 from kenning.cli.command_template import (
     CommandTemplate, TRAIN, TEST, GROUP_SCHEMA, ParserHelpException)
 
@@ -40,12 +41,12 @@ class TrainModel(CommandTemplate):
             '--modelwrapper-cls',
             help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
             required=True,
-        )
+        ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         train_group.add_argument(
             '--dataset-cls',
             help='Dataset-based class with dataset to import',
             required=True,
-        )
+        ).completer = ClassPathCompleter(DATASETS)
         train_group.add_argument(
             '--batch-size',
             help='The batch size for training',

@@ -10,6 +10,7 @@ import sys
 import argparse
 import json
 from typing import Optional, List, Dict, Tuple
+from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
     CommandTemplate, GROUP_SCHEMA, FLOW)
@@ -37,7 +38,7 @@ class FlowRunner(CommandTemplate):
             '--json-cfg',
             help='The path to the input JSON file with configuration of the graph',  # noqa: E501
             required=True,
-        )
+        ).completer = FilesCompleter('*.json')
         return parser, groups
 
     @staticmethod

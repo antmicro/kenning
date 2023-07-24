@@ -21,8 +21,12 @@ import argparse
 import signal
 import json
 from typing import Optional, List, Dict, Tuple
+from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import CommandTemplate, ParserHelpException
+from kenning.cli.completers import (
+    ClassPathCompleter, RUNTIMES, RUNTIME_PROTOCOLS
+)
 from kenning.utils.class_loader import load_class, get_command
 import kenning.utils.logger as logger
 
@@ -59,15 +63,15 @@ class InferenceServer(CommandTemplate):
         groups[JSON_CONFIG].add_argument(
             '--json-cfg',
             help='* The path to the input JSON file with configuration'
-        )
+        ).completer = FilesCompleter("*.json")
         groups[FLAG_CONFIG].add_argument(
             '--protocol-cls',
             help='* RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
-        )
+        ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         groups[FLAG_CONFIG].add_argument(
             '--runtime-cls',
             help='* Runtime-based class with the implementation of model runtime'  # noqa: E501
-        )
+        ).completer = ClassPathCompleter(RUNTIMES)
 
         return parser, groups
 

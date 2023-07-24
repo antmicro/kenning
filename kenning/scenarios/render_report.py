@@ -19,6 +19,7 @@ import json
 import numpy as np
 import re
 import copy
+from argcomplete import FilesCompleter, DirectoriesCompleter
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -1871,7 +1872,7 @@ class RenderReport(CommandTemplate):
             nargs=1 if run_in_sequence else '*',
             default=[None],
             required=run_in_sequence,
-        )
+        ).completer = FilesCompleter("*.json")
         report_group.add_argument(
             '--report-name',
             help='Name of the report',
@@ -1890,7 +1891,7 @@ class RenderReport(CommandTemplate):
             default=False,
             const=True,
             type=Path,
-        )
+        ).completer = DirectoriesCompleter()
         report_group.add_argument(
             '--root-dir',
             help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
@@ -1899,7 +1900,7 @@ class RenderReport(CommandTemplate):
         report_group.add_argument(
             '--report-types',
             help='List of types that implement this report',
-            nargs='*',
+            nargs='+',
             choices=REPORT_TYPES,
         )
         report_group.add_argument(

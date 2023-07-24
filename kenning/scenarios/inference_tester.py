@@ -40,9 +40,14 @@ import sys
 import json
 from pathlib import Path
 from typing import Optional, List, Dict, Tuple
+from argcomplete.completers import FilesCompleter
 
 from jsonschema.exceptions import ValidationError
 
+from kenning.cli.completers import (
+    ClassPathCompleter, MODEL_WRAPPERS, OPTIMIZERS,
+    RUNTIMES, RUNTIME_PROTOCOLS, DATASETS,
+)
 from kenning.cli.command_template import (
     CommandTemplate, TRAIN, TEST, OPTIMIZE,
     REPORT, DEFAULT_GROUP, GROUP_SCHEMA,
@@ -96,7 +101,7 @@ class InferenceTester(CommandTemplate):
             json_group.add_argument(
                 '--json-cfg',
                 help=f'{required_prefix}The path to the input JSON file with configuration of the inference',  # noqa: E501
-            )
+            ).completer = FilesCompleter(allowednames=("*.json",))
             flag_group = groups[FLAG_CONFIG]
             shared_flags_group = flag_group
         else:
@@ -108,18 +113,19 @@ class InferenceTester(CommandTemplate):
             '--modelwrapper-cls',
             help=f'{required_prefix}ModelWrapper-based class with inference implementation to import',  # noqa: E501
             required=TRAIN in types,
-        )
+        ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         dataset_flag = shared_flags_group.add_argument(
             '--dataset-cls',
             help='Dataset-based class with dataset to import',
             required=TRAIN in types,
         )
+        dataset_flag.completer = ClassPathCompleter(DATASETS)
         # 'optimize' specific arguments
         if not types or OPTIMIZE in types:
             flag_group.add_argument(
                 '--compiler-cls',
                 help=f'{required_prefix}Optimizer-based class with compiling routines to import',  # noqa: E501
-            )
+            ).completer = ClassPathCompleter(OPTIMIZERS)
             other_group.add_argument(
                 '--convert-to-onnx',
                 help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
@@ -139,11 +145,11 @@ class InferenceTester(CommandTemplate):
             flag_group.add_argument(
                 '--runtime-cls',
                 help='Runtime-based class with the implementation of model runtime',  # noqa: E501
-            )
+            ).completer = ClassPathCompleter(RUNTIMES)
             flag_group.add_argument(
                 '--protocol-cls',
                 help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
-            )
+            ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         # Only when scenario is used outside of Kenning CLI
         if not types:
             other_group.add_argument(

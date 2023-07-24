@@ -20,6 +20,7 @@ from itertools import chain, product, combinations
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from pprint import pformat
+from argcomplete.completers import FilesCompleter
 
 from jsonschema.exceptions import ValidationError
 
@@ -321,13 +322,13 @@ class OptimizationRunner(CommandTemplate):
             help='The path to the input JSON file with configuration',
             type=Path,
             required=True,
-        )
+        ).completer = FilesCompleter("*.json")
         command_group.add_argument(
             '--output',
             help='The path to the output JSON file with the best pipeline',
             type=Path,
             required=True,
-        )
+        ).completer = FilesCompleter("*.json")
 
         return parser, groups
 

@@ -50,7 +50,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def _get_io_specification(cls, numclasses, batch_size=1):
         return {
             'input': [{'name': 'input.1', 'shape': (batch_size, 3, 224, 224), 'dtype': 'float32'}],  # noqa: E501
-            'output': [{'name': '548', 'shape': (1, numclasses), 'dtype': 'float32'}]  # noqa: E501
+            'output': [{'name': '548', 'shape': (batch_size, numclasses), 'dtype': 'float32'}]  # noqa: E501
         }
 
     @classmethod

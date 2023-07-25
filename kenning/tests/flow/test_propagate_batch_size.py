@@ -5,10 +5,13 @@ import pytest
 from kenning.compilers.tflite import TFLiteCompiler
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
+from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import \
     TensorFlowPetDatasetMobileNetV2
 from kenning.modelwrappers.classification.tflite_magic_wand import \
     MagicWandModelWrapper
+from kenning.modelwrappers.classification.tflite_person_detection import \
+    PersonDetectionModelWrapper
 from kenning.runtimes.tflite import TFLiteRuntime
 
 
@@ -128,6 +131,70 @@ def test_scenario_tflite_magic_wand(
             compiler.compile(
                 inputmodelpath='kenning/resources/models/classification/'
                                'magic_wand.h5'
+            )
+
+            runtime = TFLiteRuntime(
+                protocol=None,
+                modelpath=compiled_model_path
+            )
+            runtime.run_locally(
+                dataset,
+                model,
+                compiled_model_path
+            )
+
+            assert compiler.dataset.batch_size == batch_size
+
+            for model_input_spec in model.io_specification['input']:
+                assert model_input_spec['shape'][0] == batch_size
+
+            for runtime_input_spec in runtime.input_spec:
+                assert runtime_input_spec['shape'][0] == batch_size
+
+
+@pytest.mark.parametrize(
+    'batch_sizes,expectation',
+    [
+        ([1, 16, 32], does_not_raise()),
+        ([0, -1], pytest.raises(AssertionError))
+    ],
+    ids=[
+        'batch_sizes_valid',
+        'batch_sizes_invalid'
+    ]
+)
+def test_scenario_tflite_person_detection(
+        batch_sizes,
+        expectation,
+        tmpfolder,
+        datasetimages_parametrized
+):
+    for batch_size in batch_sizes:
+        with expectation:
+            compiled_model_path = tmpfolder / f'model-{batch_size}.tflite'
+
+            dataset = VisualWakeWordsDataset(
+                root=tmpfolder,
+                batch_size=batch_size,
+                download_dataset=True
+            )
+            model = PersonDetectionModelWrapper(
+                modelpath='kenning/resources/models/classification/'
+                          'person_detect.tflite',
+                dataset=dataset
+            )
+            model.save_io_specification(model.modelpath)
+            compiler = TFLiteCompiler(
+                dataset=dataset,
+                compiled_model_path=compiled_model_path,
+                modelframework='tensorflow',
+                target='default',
+                inferenceinputtype='float32',
+                inferenceoutputtype='float32'
+            )
+            compiler.compile(
+                inputmodelpath='kenning/resources/models/classification/'
+                               'person_detect.tflite',
             )
 
             runtime = TFLiteRuntime(

@@ -83,11 +83,11 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def _get_io_specification(
-            cls, img_width=96, img_height=96, class_names=None):
+            cls, img_width=96, img_height=96, class_names=None, batch_size=1):
         io_spec = {
             'input': [{
                 'name': 'input_1',
-                'shape': (1, img_width, img_height, 1),
+                'shape': (batch_size, img_width, img_height, 1),
                 'dtype': 'int8',
                 'prequantized_dtype': 'float32',
                 'zero_point': -1,
@@ -111,6 +111,13 @@ class PersonDetectionModelWrapper(ModelWrapper):
         return cls._get_io_specification()
 
     def get_io_specification_from_model(self):
+        if self.dataset:
+            return self._get_io_specification(
+                self.image_width,
+                self.image_height,
+                self.class_names,
+                self.dataset.batch_size)
+
         return self._get_io_specification(
             self.image_width, self.image_height, self.class_names
         )

@@ -6,6 +6,7 @@
 Provide resource manager responsible for downloading and caching resources
 """
 import hashlib
+from inspect import getfullargspec
 import os
 import re
 import tarfile
@@ -14,7 +15,7 @@ from shutil import copy, rmtree
 from tqdm import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.error import URLError
-from urllib.parse import ParseResult, urlparse
+from urllib.parse import ParseResult, urlparse, uses_params
 from zipfile import ZipFile
 
 import requests
@@ -54,6 +55,14 @@ def extract_zip(target_dir: Path, src_path: Path):
             zip.extract(member=f, path=target_dir)
 
 
+def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
+    netloc = netloc.split(':')
+    return (
+        f'https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/'
+        f'{params_dict["branch"]}{path}'
+    )
+
+
 class ResourceManager(metaclass=Singleton):
     """
     Download and cache resources used by Kenning.
@@ -79,8 +88,8 @@ class ResourceManager(metaclass=Singleton):
         'http': None,
         'https': None,
         'kenning': 'https://dl.antmicro.com/kenning/{path}',
-        'gh': 'https://raw.githubusercontent.com/{path[:2]}/main/{path[2:]}',
-        'file': lambda path: Path(path).expanduser().resolve(),
+        'gh': _gh_converter,
+        'file': lambda uri: Path(uri.path).expanduser().resolve(),
     }
 
     def __init__(self):
@@ -90,11 +99,24 @@ class ResourceManager(metaclass=Singleton):
         self.cache_dir = ResourceManager.CACHE_DIR
         self.url_schemes = ResourceManager.BASE_URL_SCHEMES
         self.max_cache_size = ResourceManager.MAX_CACHE_SIZE
-        self.params_pattern = re.compile(
-            r'(\{([a-zA-Z][a-zA-Z0-9_]+)'
-            r'(?:\[((?:[+-]?[0-9]+)?(?::[+-]?[0-9]*){0,2})\])?\})'
+        for schema in self.url_schemes.keys():
+            if schema not in uses_params:
+                uses_params.append(schema)
+
+        # find parameters indexed by numbers, slices or string
+        # (e.g. netloc[0], path[2:], params["branch"])
+        self.param_pattern = re.compile(
+            r'(\{'                                      # opening brace
+            r'([a-zA-Z][a-zA-Z0-9_]+)'                  # match param name
+            r'(?:\[((?:'                                # opening bracket
+            r'(?:[+-]?[0-9]+)?(?::[+-]?[0-9]*){0,2})'   # match number or slice
+            r'|(?:\"[a-zA-Z0-9]+\")'                    # or match string
+            r')\])?'                                    # closing bracket
+            r'\})'                                      # closing brace
         )
-        self.params_pattern_check = re.compile(
+        # find parameters indexed (or not) by anything
+        # used only to check if there are some params left after parsing
+        self.params_any_index_pattern = re.compile(
             r'(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})'
         )
         self.log = get_logger()
@@ -221,6 +243,9 @@ class ResourceManager(metaclass=Singleton):
             pattern or callable returning string.
         """
         self.url_schemes = dict(self.url_schemes, **custom_url_schemes)
+        for schema in custom_url_schemes.keys():
+            if schema not in uses_params:
+                uses_params.append(schema)
 
     def list_cached_files(self) -> List[Path]:
         """
@@ -270,67 +295,172 @@ class ResourceManager(metaclass=Singleton):
             scheme's conversion is invalid.
         """
         try:
-            format_str = self.url_schemes[parsed_uri.scheme]
+            converter = self.url_schemes[parsed_uri.scheme]
         except KeyError:
             raise ValueError(
                 f'Invalid URI scheme provided: {parsed_uri.scheme}'
             )
 
-        if format_str is None:
+        if converter is None:
             return parsed_uri.geturl()
-        if isinstance(format_str, str):
-            params = set(self.params_pattern.findall(format_str))
-            self.log.debug(params)
-            for param_str, param, index in params:
-                if not hasattr(parsed_uri, param):
-                    raise ValueError(f'Invalid param name {param}')
 
-                if index == '' and ('[' in param_str or ']' in param_str):
-                    raise ValueError(
-                        f'Invalid index for param: {param_str}'
-                    )
+        if isinstance(converter, str):
+            return self._handle_str_converter(parsed_uri, converter)
 
-                param_value = getattr(parsed_uri, param)
-                if 'path' == param:
-                    sep = '/'
-                    param_as_list = param_value.split(sep)[1:]
-                elif 'netloc' == param:
-                    sep = '.'
-                    param_as_list = param_value.split(sep)
-                elif '' != index:
-                    raise ValueError(
-                        f'Invalid conversion for scheme {parsed_uri.scheme}, '
-                        f'param {param} does not support indexing and slicing'
-                    )
-
-                if ':' in index:
-                    # convert slice str to slice object
-                    param_slice = slice(*[
-                        {True: lambda n: None, False: int}[x == ''](x)
-                        for x in (index.split(':') + ['', '', ''])[:3]
-                    ])
-                    value = sep.join(param_as_list[param_slice])
-                elif '' != index:
-                    value = param_as_list[int(index)]
-                else:
-                    value = param_value
-
-                format_str = format_str.replace(param_str, value)
-
-            # check if there are any params left
-            params_check = set(self.params_pattern_check.findall(format_str))
-            if len(params_check):
-                raise ValueError(
-                    'Invalid syntax for params: '
-                    f'{[p[1] for p in params_check]}'
-                )
-
-            return format_str
-
-        if callable(format_str):
-            return format_str(parsed_uri.path)
+        if callable(converter):
+            return self._handle_callable_converter(parsed_uri, converter)
 
         raise ValueError(f'Invalid conversion for scheme {parsed_uri.scheme}')
+
+    def _handle_str_converter(
+        self,
+        parsed_uri: ParseResult,
+        converter: str
+    ) -> str:
+        """
+        Handle string converter parsing.
+
+        Parameters
+        ----------
+        parsed_uri : ParseResult
+            Parsed URI.
+        converter : str
+            Converter format.
+
+        Returns
+        -------
+        str :
+            Parsed string.
+        """
+        params = set(self.param_pattern.findall(converter))
+
+        for param_str, param, index in params:
+            if not hasattr(parsed_uri, param):
+                raise ValueError(f'Invalid param name {param}')
+
+            if index == '' and ('[' in param_str or ']' in param_str):
+                raise ValueError(
+                    f'Invalid index for param: {param_str}'
+                )
+
+            param_value = getattr(parsed_uri, param)
+            param_as_list = None
+            param_as_dict = None
+            if 'path' == param:
+                sep = '/'
+                param_as_list = self._param_as_list(param_value, sep)
+            elif 'netloc' == param:
+                sep = '.'
+                param_as_list = self._param_as_list(param_value, sep)
+            elif 'params' == param and '=' in param_value:
+                sep = ';'
+                param_as_dict = self._param_as_dict(param_value, sep)
+            elif 'query' == param and '=' in param_value:
+                sep = '&'
+                param_as_dict = self._param_as_dict(param_value, sep)
+            elif len(index):
+                raise ValueError(
+                    f'Invalid conversion for scheme {parsed_uri.scheme}, '
+                    f'param {param} does not support indexing and slicing'
+                )
+
+            if ':' in index:
+                # slice index
+                if param_as_list is None:
+                    raise ValueError(f'Invalid param: {param}')
+                # convert slice str to slice object
+                param_slice = slice(*[
+                    {True: lambda n: None, False: int}[x == ''](x)
+                    for x in (index.split(':') + ['', '', ''])[:3]
+                ])
+                value = sep.join(param_as_list[param_slice])
+            elif index.isnumeric():
+                # numeric index
+                if param_as_list is None:
+                    raise ValueError(f'Invalid param: {param}')
+                value = param_as_list[int(index)]
+            elif len(index):
+                # string index
+                index = index.strip('"')
+                if param_as_dict is None:
+                    raise ValueError(f'Invalid param: {param}')
+                value = param_as_dict[index]
+            else:
+                value = param_value
+
+            converter = converter.replace(param_str, value)
+
+        # check if there are any params left
+        params_check = set(
+            self.params_any_index_pattern.findall(converter)
+        )
+        if len(params_check):
+            raise ValueError(
+                'Invalid syntax for params: '
+                f'{[p[1] for p in params_check]}'
+            )
+
+        return converter
+
+    def _handle_callable_converter(
+        self,
+        parsed_uri: ParseResult,
+        converter: Callable
+    ) -> str:
+        """
+        Handle string converter parsing.
+
+        Parameters
+        ----------
+        parsed_uri : ParseResult
+            Parsed URI.
+        converter : Callable
+            Converter function.
+
+        Returns
+        -------
+        str :
+            Parsed string.
+        """
+        callable_arg_spec = getfullargspec(converter)
+
+        args = []
+
+        for arg in callable_arg_spec.args:
+            if arg == 'uri':
+                args.append(parsed_uri)
+            elif hasattr(parsed_uri, arg):
+                args.append(getattr(parsed_uri, arg))
+            elif '_' in arg:
+                arg_name, arg_type = arg.rsplit('_', 1)
+                if 'netloc' == arg_name and 'list' == arg_type:
+                    args.append(self._param_as_list(parsed_uri.netloc, '.'))
+                elif 'path' == arg_name and 'list' == arg_type:
+                    args.append(self._param_as_list(parsed_uri.path, '/'))
+                elif 'params' == arg_name and 'dict' == arg_type:
+                    args.append(self._param_as_dict(parsed_uri.params, ';'))
+                elif 'query' == arg_name and 'dict' == arg_type:
+                    args.append(self._param_as_dict(parsed_uri.query, '&'))
+                else:
+                    raise ValueError(
+                        'Invalid parameter name {arg} in converter'
+                    )
+            else:
+                raise ValueError('Invalid parameter name {arg} in converter')
+
+        return converter(*args)
+
+    @staticmethod
+    def _param_as_list(param_value: str, sep: str):
+        return param_value.strip(sep).split(sep)
+
+    @staticmethod
+    def _param_as_dict(param_value: str, sep: str):
+        return {
+            name: val
+            for name_val in param_value.strip(sep).split(sep)
+            for name, val in (name_val.split('='),)
+        }
 
     def _validate_file_remote(
         self, url: str, file_path: Path

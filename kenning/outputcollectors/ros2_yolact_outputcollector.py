@@ -11,7 +11,7 @@ Requires 'rclpy' and 'cvnode_msgs' packages to be sourced in the environment.
 import numpy as np
 import rclpy
 import sensor_msgs.msg
-from cvnode_msgs.msg import SegmentationMsg
+from cvnode_msgs.msg import SegmentationMsg, BoxMsg, MaskMsg
 
 from rclpy.node import Node
 from typing import Dict, Tuple, List, Optional
@@ -174,22 +174,25 @@ class ROS2YolactOutputCollector(OutputCollector):
         yolact_msg : SegmentationMsg
             SegmentationMsg to be filled with masks, boxes, scores and classes.
         """
-        classes = []
-        masks = np.array([], dtype=np.uint8)
-        scores = []
-        boxes = np.array([], dtype=np.float32)
+        classes, scores, masks, boxes = [], [], [], []
         for obj in y:
             classes.append(obj.clsname)
             scores.append(float(obj.score))
-            masks = np.concatenate((masks, obj.mask.flatten().astype(np.uint8)
-                                    ))
-            boxes = np.concatenate((boxes, (obj.xmin, obj.ymin, obj.xmax,
-                                            obj.ymax)))
+            obj_mask = obj.mask.astype(np.uint8)
+            mask = MaskMsg()
+            mask._dimension = [obj_mask.shape[0], obj_mask.shape[1]]
+            mask._data = obj_mask.flatten()
+            masks.append(mask)
+            box = BoxMsg()
+            box._xmin = float(obj.xmin)
+            box._ymin = float(obj.ymin)
+            box._xmax = float(obj.xmax)
+            box._ymax = float(obj.ymax)
+            boxes.append(box)
         yolact_msg._classes = classes
         yolact_msg._masks = masks
         yolact_msg._scores = scores
-        yolact_msg._num_dets = len(classes)
-        yolact_msg._boxes.extend(boxes)
+        yolact_msg._boxes = boxes
 
     def _create_yolact_msg(self, image: np.ndarray, y: List[SegmObject]
                            ) -> SegmentationMsg:

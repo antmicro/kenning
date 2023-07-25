@@ -13,7 +13,7 @@ MODELRUNTIME_JSON_VALID = {
         'type': 'kenning.modelwrappers.classification.tensorflow_pet_dataset.'
                 'TensorFlowPetDatasetMobileNetV2',
         'parameters': {
-            'model_path': 'kenning/resources/models/classification/'
+            'model_path': 'kenning:///models/classification/'
                           'tensorflow_pet_dataset_mobilenetv2.h5'
         }
     },
@@ -29,7 +29,7 @@ MODELRUNTIME_JSON_VALID = {
         'type': 'kenning.runtimes.tflite.TFLiteRuntime',
         'parameters':
             {
-                'save_model_path': './kenning/resources/models/classification/'
+                'save_model_path': 'kenning:///models/classification/'
                                    'magic_wand.tflite'
             }
     }
@@ -40,14 +40,14 @@ MODELRUNTIME_JSON_VALID_NO_DATASET = {
         'type': 'kenning.modelwrappers.classification.tensorflow_pet_dataset.'
                 'TensorFlowPetDatasetMobileNetV2',
         'parameters': {
-            'model_path': './kenning/resources/models/classification/'
+            'model_path': 'kenning:///models/classification/'
                           'tensorflow_pet_dataset_mobilenetv2.h5'
         }
     },
     'runtime': {
         'type': 'kenning.runtimes.tflite.TFLiteRuntime',
         'parameters': {
-            'save_model_path': './kenning/resources/models/classification/'
+            'save_model_path': 'kenning:///models/classification/'
                                'magic_wand.tflite'
         }
     }
@@ -58,7 +58,7 @@ MODELRUNTIME_JSON_INVALID_NO_RUNTIME = {
         'type': 'kenning.modelwrappers.classification.tensorflow_pet_dataset.'
                 'TensorFlowPetDatasetMobileNetV2',
         'parameters': {
-            'model_path': './kenning/resources/models/classification/'
+            'model_path': 'kenning:///models/classification/'
                           'tensorflow_pet_dataset_mobilenetv2.h5'
         }
     },
@@ -85,7 +85,7 @@ MODELRUNTIME_JSON_INVALID_NO_MODELWRAPPER = {
         'type': 'kenning.runtimes.tflite.TFLiteRuntime',
         'parameters':
             {
-                'save_model_path': './kenning/resources/models/'
+                'save_model_path': 'kenning:///models/'
                                    'classification/magic_wand.tflite'
             }
     }

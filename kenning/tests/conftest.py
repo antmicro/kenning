@@ -498,19 +498,19 @@ def mock_configuration_file_contents_modelruntime_runner(tmp_path):
         {
             "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
             "parameters": {
-                "model_path": "kenning/resources/models/detection/yolov4.onnx"
+                "model_path": "kenning:///models/detection/yolov4.onnx"
             }
         }''')
     runtime_file.write_text('''
         {"type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters": {
-        "save_model_path": "kenning/resources/models/detection/yolov4.onnx"
+        "save_model_path": "kenning:///models/detection/yolov4.onnx"
         }
     }''')
     invalid_runtime_file.write_text('''
         {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters": {
-                "invalid_arg": "kenning/resources/models/detection/yolov4.onnx"
+                "invalid_arg": "build/yolov4.onnx"
             }
         }''')

@@ -1,5 +1,5 @@
 import argparse
-import pathlib
+from pathlib import Path
 from contextlib import nullcontext as does_not_raise
 from typing import Dict, Type
 
@@ -22,7 +22,7 @@ def mock_onnxruntime_args_structure():
         'modelpath': {
             'argparse_name': '--save-model-path',
             'description': 'Path where the model will be uploaded',
-            'type': pathlib.Path,
+            'type': Path,
             'default': 'model.tar'
         },
         'execution_providers': {
@@ -105,7 +105,7 @@ class TestGetParsedJsonDict:
         'properties': {
             'save_model_path': {
                 'real_name': 'modelpath',
-                'convert-type': pathlib.Path,
+                'convert-type': Path,
                 'type': ['string'],
                 'description': 'Path where the model will be uploaded',
                 'default': 'model.vmfb'},
@@ -121,15 +121,14 @@ class TestGetParsedJsonDict:
                 'default': False}},
         'required': ['driver']}
     VALID_JSON_DICT_PYTHON_TYPES_IREERUNTIME = {
-        'save_model_path': 'kenning/resources/models/detection/yolov4.onnx',
+        'save_model_path': 'build/yolov4.onnx',
         'driver': 'cuda',
         'disable_performance_measurements': True
     }
     VALID_RESULT_PYTHON_TYPES_IREERUNTIME = {
         'disable_performance_measurements': True,
         'driver': 'cuda',
-        'modelpath': pathlib.PosixPath(
-            'kenning/resources/models/detection/yolov4.onnx')}
+        'modelpath': Path('build/yolov4.onnx')}
 
     JSON_SCHEMA_OBJECT_TYPE_MODELRUNTIME_RUNNER = {
         'type': 'object',
@@ -159,12 +158,12 @@ class TestGetParsedJsonDict:
         'model_wrapper': {
             'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
             'parameters': {
-                'model_path': 'kenning/resources/models/detection/yolov4.onnx'}
+                'model_path': 'build/yolov4.onnx'}
         },
         'runtime': {
             'type': 'kenning.runtimes.onnx.ONNXRuntime',
             'parameters': {
-                'save_model_path': 'kenning/resources/models/detection/yolov4.onnx' # noqa E501
+                'save_model_path': 'build/yolov4.onnx'
             }
         }
     }
@@ -172,17 +171,17 @@ class TestGetParsedJsonDict:
         'model_wrapper': {
             'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
             'parameters': {
-                'model_path': 'kenning/resources/models/detection/yolov4.onnx'}
+                'model_path': 'build/yolov4.onnx'}
         },
         'runtime': {
             'type': 'kenning.runtimes.onnx.ONNXRuntime',
             'parameters': {
-                'save_model_path': 'kenning/resources/models/detection/yolov4.onnx'} # noqa E501
+                'save_model_path': 'build/yolov4.onnx'} # noqa E501
         }
     }
 
     INVALID_JSON_DICT_PYTHON_TYPES_IREERUNTIME_MISSING_REQUIRED = {
-        'save_model_path': 'kenning/resources/models/detection/yolov4.onnx',
+        'save_model_path': 'build/yolov4.onnx',
         'disable_performance_measurements': True
     }
 
@@ -190,7 +189,7 @@ class TestGetParsedJsonDict:
         'model_wrapper': {
             'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
             'parameters': {
-                'model_path': 'kenning/resources/models/detection/yolov4.onnx'}
+                'model_path': 'build/yolov4.onnx'}
         },
     }
 
@@ -245,22 +244,21 @@ class TestGetParsedArgsDict:
 
     VALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME = \
         argparse.Namespace(
-            save_model_path='kenning/resources/models/detection/yolov4.onnx',
+            save_model_path='build/yolov4.onnx',
             execution_providers=['CPUExecutionProvider'])
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME = {
         'disable_performance_measurements': False,
         'execution_providers': ['CPUExecutionProvider'],
-        'modelpath': pathlib.PosixPath(
-            'kenning/resources/models/detection/yolov4.onnx')}  # noqa E501
+        'modelpath': Path('build/yolov4.onnx')}
 
     INVALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME_UNDEFINED_ARG_NAME = \
         argparse.Namespace(
-            modelpath='kenning/resources/models/detection/yolov4.onnx',
+            modelpath='build/yolov4.onnx',
             execution_providers=['CPUExecutionProvider'])
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME_DEFAULT_MODELPATH = {
         'disable_performance_measurements': False,
         'execution_providers': ['CPUExecutionProvider'],
-        'modelpath': pathlib.PosixPath('model.tar')}
+        'modelpath': Path('model.tar')}
 
     VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER = \
         argparse.Namespace(
@@ -272,13 +270,13 @@ class TestGetParsedArgsDict:
         'model_wrapper': {
             'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
             'parameters': {
-                'model_path': 'kenning/resources/models/detection/yolov4.onnx'}
+                'model_path': 'kenning:///models/detection/yolov4.onnx'}
         },
         'dataset': {},
         'runtime': {
             'type': 'kenning.runtimes.onnx.ONNXRuntime',
             'parameters': {
-                'save_model_path': 'kenning/resources/models/detection/yolov4.onnx'} # noqa E501
+                'save_model_path': 'kenning:///models/detection/yolov4.onnx'}
         }
     }
 

@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+# PYTHON_ARGCOMPLETE_OK
 
 """
 Module with main logic of Kenning CLI
@@ -25,7 +26,7 @@ from kenning.utils.excepthook import (
     MissingKenningDependencies,
     find_missing_optional_dependency
 )
-from kenning.cli.completion import configure_autocomplete
+from kenning.cli.autocompletion import configure_autocomplete
 
 
 def main():

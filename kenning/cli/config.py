@@ -15,6 +15,7 @@ from typing import List, Generator, Dict, Tuple, Type, Optional
 from kenning.cli.formatter import Formatter
 from kenning.cli.command_template import (
     CommandTemplate,
+    COMPLETION,
     FINE_TUNE,
     FLOW,
     SEARCH,
@@ -41,6 +42,7 @@ from kenning.scenarios import (
     render_report,
     model_training,
     fuzzy_search_class,
+    configure_autocompletion,
 )
 
 
@@ -48,8 +50,17 @@ from kenning.scenarios import (
 # defining possible order
 SEQUENCED_COMMANDS = ([[TRAIN, OPTIMIZE], TEST, REPORT],)
 # Subcommands that can be used one at the time
-BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR,
-                  FINE_TUNE, LIST, CACHE, INFO, SEARCH,)
+BASIC_COMMANDS = (
+    FLOW,
+    SERVER,
+    VISUAL_EDITOR,
+    FINE_TUNE,
+    LIST,
+    CACHE,
+    INFO,
+    SEARCH,
+    COMPLETION,
+)
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (OPTIMIZE, TRAIN, TEST, REPORT,
                       *BASIC_COMMANDS, *HELP["flags"])
@@ -67,6 +78,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     TRAIN: model_training.TrainModel,
     CACHE: manage_cache.ManageCacheRunner,
     VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
+    COMPLETION: configure_autocompletion.ConfigureCompletion,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

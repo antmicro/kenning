@@ -27,6 +27,17 @@ from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.logger import get_logger
 
 
+OPTIMIZERS = 'optimizers'
+RUNNERS = 'runners'
+DATA_PROVIDERS = 'dataproviders'
+DATASETS = 'datasets'
+MODEL_WRAPPERS = 'modelwrappers'
+ONNX_CONVERSIONS = 'onnxconversions'
+OUTPUT_COLLECTORS = 'outputcollectors'
+RUNTIME_PROTOCOLS = 'runtimeprotocols'
+RUNTIMES = 'runtimes'
+
+
 def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
     """
     Returns collection of Kenning groups of modules.
@@ -37,15 +48,15 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
     groups of modules, values are module paths and base class names
     """
     return {
-        'optimizers': ('kenning.compilers', Optimizer),
-        'runners': ('kenning.runners', Runner),
-        'dataproviders': ('kenning.dataproviders', DataProvider),
-        'datasets': ('kenning.datasets', Dataset),
-        'modelwrappers': ('kenning.modelwrappers', ModelWrapper),
-        'onnxconversions': ('kenning.onnxconverters', ONNXConversion),
-        'outputcollectors': ('kenning.outputcollectors', OutputCollector),
-        'runtimeprotocols': ('kenning.runtimeprotocols', RuntimeProtocol),
-        'runtimes': ('kenning.runtimes', Runtime)}
+        OPTIMIZERS: ('kenning.compilers', Optimizer),
+        RUNNERS: ('kenning.runners', Runner),
+        DATA_PROVIDERS: ('kenning.dataproviders', DataProvider),
+        DATASETS: ('kenning.datasets', Dataset),
+        MODEL_WRAPPERS: ('kenning.modelwrappers', ModelWrapper),
+        ONNX_CONVERSIONS: ('kenning.onnxconverters', ONNXConversion),
+        OUTPUT_COLLECTORS: ('kenning.outputcollectors', OutputCollector),
+        RUNTIME_PROTOCOLS: ('kenning.runtimeprotocols', RuntimeProtocol),
+        RUNTIMES: ('kenning.runtimes', Runtime)}
 
 
 def get_all_subclasses(

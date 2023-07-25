@@ -10,13 +10,23 @@ provided base class.
 import argparse
 import os
 import sys
-from typing import List, Optional, Dict, Tuple
 import errno
+from typing import List, Optional, Dict, Tuple
+from argcomplete.completers import ChoicesCompleter
 
-from kenning.scenarios.class_info import generate_class_info
+from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
+    OPTIMIZERS,
+    RUNNERS,
+    DATA_PROVIDERS,
+    DATASETS,
+    MODEL_WRAPPERS,
+    ONNX_CONVERSIONS,
+    OUTPUT_COLLECTORS,
+    RUNTIME_PROTOCOLS,
+    RUNTIMES,
 )
 
 from kenning.cli.command_template import (
@@ -25,24 +35,31 @@ from kenning.cli.command_template import (
 from kenning.utils import logger
 
 
-def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
+def list_classes(
+    base_classes: List[str],
+    verbosity: str = 'list',
+    prefix: str = '',
+) -> List[str]:
     """
     Lists classes of given module, displays their parameters and descriptions
 
     Parameters
     ----------
-    base_classes: str
+    base_classes : str
         List of Kenning base classes subclasses of which will be listed
-    verbosity: str
+    verbosity : str
         Verbosity mode, available options:
         'list' - just list subclasses,
         'docstrings' - display class docstrings and their dependencies,
         'all' - list subclasses along with their docstring,
         dependencies, input/output/argument formats
+        'autocomplete' - path of subclasses with descriptions
+    prefix : str
+        List classes which contains prefix
 
     Returns
     -------
-    List[str]: List of formatted strings to be printed out later
+    List[str] : List of formatted strings to be printed out later
     """
 
     kenning_base_classes = get_base_classes_dict()
@@ -67,20 +84,41 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
         if not kenning_base_classes[base_class][1] in subclasses_dict.keys():
             continue
 
-        resulting_output.append(f'{base_class.title()} '
-                                f'(in {kenning_base_classes[base_class][0]}):'
-                                f'\n\n')
+        if verbosity != 'autocomplete':
+            resulting_output.append(
+                f'{base_class.title()} '
+                f'(in {kenning_base_classes[base_class][0]}):\n\n'
+            )
 
         subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
 
         for subclass in subclass_list:
+            if not subclass.startswith(prefix):
+                continue
             module_path = '.'.join(subclass.split('.')[:-1])
             class_name = subclass.split('.')[-1]
 
-            if verbosity == 'list':
+            if verbosity == 'autocomplete':
+                resulting_output.append((
+                    subclass,
+                    ' '.join(tuple(
+                        filter(lambda x: x.startswith(f'Class: {class_name}'),
+                                        generate_class_info(
+                            target=module_path,
+                            class_name=class_name,
+                            docstrings=True,
+                            dependencies=False,
+                            input_formats=False,
+                            output_formats=False,
+                            argument_formats=False
+                        )))[0].split('\n\n', 1)[1].replace(
+                        '\n', '').strip().split())
+                ))
+
+            elif verbosity == 'list':
                 resulting_output.append(f'    {subclass}\n')
 
-            if verbosity == 'docstrings':
+            elif verbosity == 'docstrings':
                 output = generate_class_info(
                     target=module_path,
                     class_name=class_name,
@@ -92,7 +130,7 @@ def list_classes(base_classes: List[str], verbosity='list') -> List[str]:
 
                 resulting_output += output
 
-            if verbosity == 'all':
+            elif verbosity == 'all':
                 output = generate_class_info(
                     target=module_path,
                     class_name=class_name,
@@ -115,14 +153,15 @@ class ListClassesRunner(CommandTemplate):
     description = __doc__.split('\n\n')[0]
 
     base_class_arguments = [
-        'optimizers',
-        'runners',
-        'dataproviders',
-        'datasets',
-        'modelwrappers',
-        'onnxconversions',
-        'outputcollectors',
-        'runtimes',
+        OPTIMIZERS,
+        RUNNERS,
+        DATA_PROVIDERS,
+        DATASETS,
+        MODEL_WRAPPERS,
+        ONNX_CONVERSIONS,
+        OUTPUT_COLLECTORS,
+        RUNTIME_PROTOCOLS,
+        RUNTIMES,
     ]
 
     @staticmethod
@@ -146,7 +185,7 @@ class ListClassesRunner(CommandTemplate):
         available_choices_string = '\n'
         for base_class in ListClassesRunner.base_class_arguments:
             available_choices_string += f'  * {base_class}\n'
-        available_choices_string = available_choices_string[:-2]
+        available_choices_string = available_choices_string[:-1]
         available_choices_string += '\n'
 
         list_group.add_argument(
@@ -157,7 +196,7 @@ class ListClassesRunner(CommandTemplate):
                  ' only list found subclasses.\n\nAvailable choices: '
                  f'{available_choices_string}',
             nargs='*',
-        )
+        ).completer = ChoicesCompleter(ListClassesRunner.base_class_arguments)
 
         list_group.add_argument(
             '-v',

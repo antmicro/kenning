@@ -32,6 +32,7 @@ dependencies = [
     "isort>=5.12.0",
     "astunparse>=1.6.3",
     "requests",
+    "argcomplete",
     "tomli; python_version<'3.11'",
     "importlib_resources>=5.1.4; python_version<'3.9'",
 ]

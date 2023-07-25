@@ -184,8 +184,7 @@ In our case, the JSON file (named `native.json`) will look like this:
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./build/pet-dataset",
-            "download_dataset": true
+            "dataset_root": "./build/pet-dataset"
         }
     },
     "model_name": "native"
@@ -199,7 +198,7 @@ For every class in the above JSON file, there are two keys required: `type` whic
 In `model_wrapper`, we specify the model used for evaluation - here it is MobileNetV2 trained on Pet Dataset. The `model_path` is the path to the saved model.
 The `TensorFlowPetDatasetMobileNetV2` model wrapper provides methods for loading the model, preprocessing the inputs, postprocessing the outputs and running inference using the native framework (TensorFlow in this case).
 
-The dataset provided for evaluation is Pet Dataset - here we specify that we want to download the dataset (`download_dataset`) to the `./build/pet-dataset` directory (`dataset_root`).
+The dataset provided for evaluation is Pet Dataset - here we specify that we want to download the dataset to the `./build/pet-dataset` directory (`dataset_root`).
 The `PetDataset` class can download the dataset (if necessary), load it, read the inputs and outputs from files, process them, and implement evaluation methods for the model.
 
 With the above config saved in the `native.json` file, run the `inference_tester` scenario:
@@ -267,8 +266,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./build/pet-dataset",
-            "download_dataset": false
+            "dataset_root": "./build/pet-dataset"
         }
     },
     "optimizers":
@@ -296,7 +294,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
 }
 ```
 
-In the already existing blocks, we only disable dataset download - the `download_dataset` parameter can be also removed, since the dataset is not downloaded by default.
+The configuration of the already existing blocks has not changed - the dataset will not be downloaded again though, since the files are present already.
 
 The first new addition is the presence of the `optimizers` list - it allows us to add one or more objects inheriting from the `kenning.core.optimizer.Optimizer` class.
 Optimizers read the model from the input file, apply various optimizations, and then save the optimized model to a new file.
@@ -484,7 +482,7 @@ kenning report \
         build/native.json \
         build/tflite-fp32.json \
         build/tflite-int8.json \
-        build/tvm-avx2-int8.json \
+        build/tvm-avx2-int8.json
 ```
 
 Some examples of comparisons between various models rendered with the script:
@@ -514,8 +512,7 @@ from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.core.measurements import MeasurementsCollector
 
 dataset = PetDataset(
-    root='./build/pet-dataset/',
-    download_dataset=True
+    root='./build/pet-dataset/'
 )
 model = TensorFlowPetDatasetMobileNetV2(
     modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',

@@ -63,8 +63,8 @@ Dataset arguments:
                         Path to the dataset directory
   --inference-batch-size INFERENCE_BATCH_SIZE
                         The batch size for providing the input data
-  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded
-                        then they are not downloaded again
+  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded and
+                        the checksum is correct then they are not downloaded again. Is enabled by default.
   --force-download-dataset
                         Forces dataset download
   --external-calibration-dataset EXTERNAL_CALIBRATION_DATASET
@@ -116,7 +116,6 @@ python -m kenning.scenarios.inference_tester \
     --measurements build/tensorflow_pet_dataset_mobilenetv2.json \
     --model-path kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --dataset-root build/pet-dataset/ \
-    --download-dataset \
     --run-benchmarks-only
 ```
 
@@ -233,8 +232,8 @@ Dataset arguments:
                         Path to the dataset directory
   --inference-batch-size INFERENCE_BATCH_SIZE
                         The batch size for providing the input data
-  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded
-                        then they are not downloaded again
+  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded and
+                        the checksum is correct then they are not downloaded again. Is enabled by default.
   --force-download-dataset
                         Forces dataset download
   --external-calibration-dataset EXTERNAL_CALIBRATION_DATASET
@@ -339,7 +338,6 @@ python3 -m kenning.scenarios.inference_tester \
     --target-device-context cpu \
     --dataset-root ./build/pet-dataset/ \
     --inference-batch-size 1 \
-    --download-dataset \
     --verbosity INFO
 ```
 

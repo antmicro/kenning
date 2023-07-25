@@ -22,9 +22,9 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
     arguments_structure = {}
 
     @classmethod
-    def _get_io_specification(cls, keyparams):
+    def _get_io_specification(cls, keyparams, batch_size):
         return {
-            'input': [{'name': 'data', 'shape': (1, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
+            'input': [{'name': 'data', 'shape': (batch_size, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
             'output': []
         }
 

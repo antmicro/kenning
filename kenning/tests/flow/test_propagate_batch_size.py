@@ -1,7 +1,9 @@
 from contextlib import nullcontext as does_not_raise
+from pathlib import Path
 
 import pytest
 
+from kenning.compilers.iree import IREECompiler
 from kenning.compilers.tflite import TFLiteCompiler
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
@@ -12,17 +14,18 @@ from kenning.modelwrappers.classification.tflite_magic_wand import \
     MagicWandModelWrapper
 from kenning.modelwrappers.classification.tflite_person_detection import \
     PersonDetectionModelWrapper
+from kenning.runtimes.renode import RenodeRuntime
 from kenning.runtimes.tflite import TFLiteRuntime
 
 
 @pytest.mark.parametrize(
     'batch_sizes,expectation',
     [
-        # ([1, 16, 32], does_not_raise()),
+        ([1, 16, 32], does_not_raise()),
         ([-1], pytest.raises(AssertionError))
     ],
     ids=[
-        # 'batch_sizes_valid',
+        'batch_sizes_valid',
         'batch_sizes_invalid'
     ]
 )
@@ -152,6 +155,7 @@ def test_scenario_tflite_magic_wand(
                 assert runtime_input_spec['shape'][0] == batch_size
 
 
+@pytest.mark.slow
 @pytest.mark.parametrize(
     'batch_sizes,expectation',
     [
@@ -169,9 +173,9 @@ def test_scenario_tflite_person_detection(
         tmpfolder,
         datasetimages_parametrized
 ):
-    for batch_size in batch_sizes:
-        with expectation:
-            compiled_model_path = tmpfolder / f'model-{batch_size}.tflite'
+    with expectation:
+        for batch_size in batch_sizes:
+            compiled_model_path = tmpfolder / f'model-{batch_size}.vmfb'
 
             dataset = VisualWakeWordsDataset(
                 root=tmpfolder,
@@ -184,27 +188,32 @@ def test_scenario_tflite_person_detection(
                 dataset=dataset
             )
             model.save_io_specification(model.modelpath)
-            compiler = TFLiteCompiler(
+
+            compiler = IREECompiler(
                 dataset=dataset,
                 compiled_model_path=compiled_model_path,
-                modelframework='tensorflow',
-                target='default',
-                inferenceinputtype='float32',
-                inferenceoutputtype='float32'
+                backend='llvm-cpu',
+                modelframework='tflite',
+                compiler_args=[
+                    "iree-llvm-debug-symbols=false",
+                    "iree-vm-bytecode-module-strip-source-map=true",
+                    "iree-vm-emit-polyglot-zip=false",
+                    "iree-llvm-target-triple=riscv32-pc-linux-elf",
+                    "iree-llvm-target-cpu=generic-rv32",
+                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f", # noqa E501
+                    "iree-llvm-target-abi=ilp32"]
             )
             compiler.compile(
                 inputmodelpath='kenning/resources/models/classification/'
                                'person_detect.tflite',
             )
 
-            runtime = TFLiteRuntime(
+            runtime = RenodeRuntime(
                 protocol=None,
-                modelpath=compiled_model_path
-            )
-            runtime.run_locally(
-                dataset,
-                model,
-                compiled_model_path
+                runtime_binary_path=Path('/renode-resources/springbok/'
+                                         'iree_runtime'),
+                platform_resc_path=Path('/renode-resources/springbok/'
+                                        'springbok.resc')
             )
 
             assert compiler.dataset.batch_size == batch_size
@@ -212,5 +221,6 @@ def test_scenario_tflite_person_detection(
             for model_input_spec in model.io_specification['input']:
                 assert model_input_spec['shape'][0] == batch_size
 
+            runtime.read_io_specification(model.io_specification)
             for runtime_input_spec in runtime.input_spec:
                 assert runtime_input_spec['shape'][0] == batch_size

@@ -280,13 +280,13 @@ class ONNXYOLOV4(YOLOWrapper):
     # where C is a class vector and B is the number of detectable object
     # in a pixel.
     @classmethod
-    def _get_io_specification(cls, keyparams):
+    def _get_io_specification(cls, keyparams, batch_size):
         return {
-            'input': [{'name': 'input', 'shape': (1, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
+            'input': [{'name': 'input', 'shape': (batch_size, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
             'output': [
-                {'name': 'output', 'shape': (1, 255, keyparams['width'] // (8 * 2 ** 0), keyparams['height'] // (8 * 2 ** 0)), 'dtype': 'float32'},  # noqa: E501
-                {'name': 'output.3', 'shape': (1, 255, keyparams['width'] // (8 * 2 ** 1), keyparams['height'] // (8 * 2 ** 1)), 'dtype': 'float32'},  # noqa: E501
-                {'name': 'output.7', 'shape': (1, 255, keyparams['width'] // (8 * 2 ** 2), keyparams['height'] // (8 * 2 ** 2)), 'dtype': 'float32'}  # noqa: E501
+                {'name': 'output', 'shape': (batch_size, 255, keyparams['width'] // (8 * 2 ** 0), keyparams['height'] // (8 * 2 ** 0)), 'dtype': 'float32'},  # noqa: E501
+                {'name': 'output.3', 'shape': (batch_size, 255, keyparams['width'] // (8 * 2 ** 1), keyparams['height'] // (8 * 2 ** 1)), 'dtype': 'float32'},  # noqa: E501
+                {'name': 'output.7', 'shape': (batch_size, 255, keyparams['width'] // (8 * 2 ** 2), keyparams['height'] // (8 * 2 ** 2)), 'dtype': 'float32'}  # noqa: E501
             ],
             'processed_output': [
                 {'name': 'detection_output', 'type': 'List[DetectObject]'}

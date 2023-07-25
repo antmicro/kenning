@@ -288,10 +288,11 @@ class YOLOWrapper(ModelWrapper, ABC):
         return cls._get_io_specification(keyparams)
 
     def get_io_specification_from_model(self):
-        return self._get_io_specification(self.keyparams)
+        return self._get_io_specification(self.keyparams, self.batch_size)
 
     @classmethod
     def _get_io_specification(
             cls,
-            keyparams: Dict[str, Any]) -> Dict[str, List[Dict]]:
+            keyparams: Dict[str, Any],
+            batch_size: int) -> Dict[str, List[Dict]]:
         raise NotImplementedError

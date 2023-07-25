@@ -71,10 +71,11 @@ class Dataset(ArgumentsHandler, ABC):
         },
         'download_dataset': {
             'description': 'Downloads the dataset before taking any action. '
-                           'If the dataset files are already downloaded then '
-                           'they are not downloaded again',
+                           'If the dataset files are already downloaded and '
+                           'the checksum is correct then they are not '
+                           'downloaded again',
             'type': bool,
-            'default': False
+            'default': True
         },
         'force_download_dataset': {
             'description': 'Forces dataset download',
@@ -116,7 +117,7 @@ class Dataset(ArgumentsHandler, ABC):
             self,
             root: Path,
             batch_size: int = 1,
-            download_dataset: bool = False,
+            download_dataset: bool = True,
             force_download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
             split_fraction_test: float = 0.2,

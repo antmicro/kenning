@@ -70,10 +70,11 @@ class Dataset(ArgumentsHandler, ABC):
             'default': 1
         },
         'download_dataset': {
+            'argparse_name': '--download-dataset',
             'description': 'Downloads the dataset before taking any action. '
                            'If the dataset files are already downloaded and '
                            'the checksum is correct then they are not '
-                           'downloaded again',
+                           'downloaded again. Is enabled by default.',
             'type': bool,
             'default': True
         },
@@ -170,6 +171,7 @@ class Dataset(ArgumentsHandler, ABC):
             shutil.rmtree(self.root, ignore_errors=True)
             self.download_dataset_fun()
             self.save_dataset_checksum()
+
         self.prepare()
 
     @classmethod

@@ -2,8 +2,7 @@
     "dataset": {
         "type": "kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset",
         "parameters": {
-            "dataset_root": "./build/COCODataset2017",
-            "download_dataset": false
+            "dataset_root": "./build/coco-dataset"
         }
     },
     "model_wrapper": {

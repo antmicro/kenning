@@ -10,7 +10,6 @@
     "parameters": {
       "dataset_root": "./build/coco-dataset",
       "dataset_type": "val2017",
-      "download_dataset": false,
       "image_width": 608,
       "image_height": 608
     }

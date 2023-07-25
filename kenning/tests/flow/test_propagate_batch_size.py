@@ -5,6 +5,7 @@ import pytest
 
 from kenning.compilers.iree import IREECompiler
 from kenning.compilers.tflite import TFLiteCompiler
+from kenning.core.measurements import MeasurementsCollector
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
@@ -16,6 +17,7 @@ from kenning.modelwrappers.classification.tflite_person_detection import \
     PersonDetectionModelWrapper
 from kenning.runtimes.renode import RenodeRuntime
 from kenning.runtimes.tflite import TFLiteRuntime
+from kenning.utils.resource_manager import ResourceURI, ResourceManager
 
 
 @pytest.mark.parametrize(
@@ -46,13 +48,16 @@ def test_scenario_pet_database_tflite(
 
             tmp_model_path = tmpfolder / f'model-{batch_size}.tflite'
 
+            model_path = ResourceManager().\
+                get_resource('kenning:///models/classification/'
+                             'tensorflow_pet_dataset_mobilenetv2.h5')
+
             model = TensorFlowPetDatasetMobileNetV2(
-                modelpath='./kenning/resources/models/classification/'
-                          'tensorflow_pet_dataset_mobilenetv2.h5',
+                model_path=model_path,
                 dataset=dataset
             )
 
-            model.save_io_specification(model.modelpath)
+            model.save_io_specification(Path(model.model_path))
             compiler = TFLiteCompiler(
                 dataset=dataset,
                 compiled_model_path=tmp_model_path,
@@ -62,17 +67,13 @@ def test_scenario_pet_database_tflite(
                 inferenceoutputtype='float32'
             )
             compiler.compile(
-                inputmodelpath='./kenning/resources/models/classification/'
-                               'tensorflow_pet_dataset_mobilenetv2.h5'
+                input_model_path=model_path
             )
 
             runtime = TFLiteRuntime(
                 protocol=None,
-                modelpath=tmp_model_path
+                model_path=tmp_model_path
             )
-
-            print(f'batch {batch_size} path {tmp_model_path} '
-                  f'rt modelpath {runtime.modelpath}')
 
             runtime.run_locally(
                 dataset,
@@ -110,19 +111,24 @@ def test_scenario_tflite_magic_wand(
 
         for batch_size in batch_sizes:
 
-            compiled_model_path = tmpfolder / f'model-{batch_size}.tflite'
+            ResourceManager().clear_cache()
+
+            compiled_model_path = tmpfolder / f'model-magicwand-{batch_size}.tflite' # noqa E501
 
             dataset = MagicWandDataset(
                 root=tmpfolder,
                 batch_size=batch_size,
                 download_dataset=True
             )
+            model_path = ResourceManager().\
+                get_resource('kenning:///models/classification/magic_wand.h5')
+
             model = MagicWandModelWrapper(
-                modelpath='kenning/resources/models/classification/'
-                          'magic_wand.h5',
+                model_path=model_path,
                 dataset=dataset,
                 from_file=True
             )
+            model.save_io_specification(model.model_path)
             compiler = TFLiteCompiler(
                 dataset=dataset,
                 compiled_model_path=compiled_model_path,
@@ -132,19 +138,24 @@ def test_scenario_tflite_magic_wand(
                 inferenceoutputtype='float32'
             )
             compiler.compile(
-                inputmodelpath='kenning/resources/models/classification/'
-                               'magic_wand.h5'
+                input_model_path=model.model_path
             )
 
             runtime = TFLiteRuntime(
                 protocol=None,
-                modelpath=compiled_model_path
+                model_path=compiled_model_path
             )
+            runtime.prepare_io_specification(input_data=None)
+
+            MeasurementsCollector.clear()
+
             runtime.run_locally(
                 dataset,
                 model,
                 compiled_model_path
             )
+
+            MeasurementsCollector.clear()
 
             assert compiler.dataset.batch_size == batch_size
 
@@ -182,12 +193,14 @@ def test_scenario_tflite_person_detection(
                 batch_size=batch_size,
                 download_dataset=True
             )
+            model_path = ResourceManager().\
+                get_resource('kenning:///models/classification/'
+                             'person_detect.tflite')
             model = PersonDetectionModelWrapper(
-                modelpath='kenning/resources/models/classification/'
-                          'person_detect.tflite',
+                model_path=model_path,
                 dataset=dataset
             )
-            model.save_io_specification(model.modelpath)
+            model.save_io_specification(model.model_path)
 
             compiler = IREECompiler(
                 dataset=dataset,
@@ -204,8 +217,7 @@ def test_scenario_tflite_person_detection(
                     "iree-llvm-target-abi=ilp32"]
             )
             compiler.compile(
-                inputmodelpath='kenning/resources/models/classification/'
-                               'person_detect.tflite',
+                input_model_path=ResourceURI(model_path),
             )
 
             runtime = RenodeRuntime(

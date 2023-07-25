@@ -69,7 +69,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             }],
             'output': [{
                 'name': 'out_layer',
-                'shape': (1, numclasses),
+                'shape': (batch_size, numclasses),
                 'dtype': 'float32',
             }]
         }

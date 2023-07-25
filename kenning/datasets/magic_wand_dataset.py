@@ -52,7 +52,7 @@ class MagicWandDataset(Dataset):
             self,
             root: Path,
             batch_size: int = 1,
-            download_dataset: bool = False,
+            download_dataset: bool = True,
             force_download_dataset: bool = False,
             external_calibration_dataset: Optional[Path] = None,
             split_fraction_test: float = 0.2,

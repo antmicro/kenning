@@ -8,6 +8,7 @@ project-readme
 dl-deployment-stack
 json-scenarios
 cmd-usage
+kenning-variables
 pipeline-manager
 kenning-measurements
 pipeline-optimizer

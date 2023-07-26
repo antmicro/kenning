@@ -18,6 +18,7 @@ IGNORED_MODULES = {
     # ROS dependencies -- manual installation
     'sensor_msgs', 'cvnode_msgs', 'rclpy',
     'tflite_runtime',  # fallback to tensorflow
+    '__future__',  # builtin module not in stdlib
 } | stdlibs.py3.stdlib
 
 

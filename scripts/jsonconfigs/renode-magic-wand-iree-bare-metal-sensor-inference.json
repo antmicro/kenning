@@ -35,8 +35,12 @@
     "runtime": {
         "type": "kenning.runtimes.renode.RenodeRuntime",
         "parameters": {
-            "runtime_binary_path": "build/renode-resources/springbok/iree_runtime_i2c_accelerometer",
-            "platform_resc_path": "build/renode-resources/springbok/springbok_accelerometer.resc",
+            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime_i2c_accelerometer",
+            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok_accelerometer.resc;branch=main",
+            "resc_dependencies": [
+                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok_accelerometer.repl;branch=main",
+                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=24140ce0"
+            ],
             "profiler_dump_path": "build/profiler.dump",
             "sensor": "adxl345",
             "batches_count": 100

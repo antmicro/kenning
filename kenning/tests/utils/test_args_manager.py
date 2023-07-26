@@ -5,106 +5,23 @@ from typing import Dict, Type
 
 import jsonschema
 import pytest
+from kenning.utils.resource_manager import ResourceURI
 
-from kenning.core.runner import Runner
-from kenning.core.runtime import Runtime
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.runtimes.onnx import ONNXRuntime
 from kenning.utils.args_manager import (
     get_parsed_json_dict,
-    ArgumentsHandler,
     get_parsed_args_dict)
 
 
-@pytest.fixture
-def mock_onnxruntime_args_structure():
-    arguments_structure = {
-        'modelpath': {
-            'argparse_name': '--save-model-path',
-            'description': 'Path where the model will be uploaded',
-            'type': Path,
-            'default': 'model.tar'
-        },
-        'execution_providers': {
-            'description': 'List of execution providers ordered by priority',
-            'is_list': True,
-            'default': ['CPUExecutionProvider']
-        }
-    }
-
-    ONNXRuntime.arguments_structure = arguments_structure
-
-
-@pytest.fixture
-def mock_runtime_args_structure():
-    arguments_structure = {
-        'disable_performance_measurements': {
-            'argparse_name': '--disable-performance-measurements',
-            'description': 'Disable collection and processing of performance metrics', # noqa E501
-            'type': bool,
-            'default': False
-        }
-    }
-
-    Runtime.arguments_structure = arguments_structure
-
-
-@pytest.fixture
-def mock_modelruntime_runner_args_structure():
-    arguments_structure = {
-        'model_wrapper': {
-            'argparse_name': '--model-wrapper',
-            'description': 'Path to JSON describing the ModelWrapper object, '
-                           'following its argument structure',
-            'type': object,
-            'required': True,
-        },
-        'dataset': {
-            'argparse_name': '--dataset',
-            'description': 'Path to JSON describing the Dataset object, '
-                           'following its argument structure',
-            'type': object,
-        },
-        'runtime': {
-            'argparse_name': '--runtime',
-            'description': 'Path to JSON describing the Runtime object, '
-                           'following its argument structure',
-            'type': object,
-            'required': True,
-        },
-    }
-
-    ModelRuntimeRunner.arguments_structure = arguments_structure
-
-
-@pytest.fixture
-def mock_runner_args_structure():
-    Runner.arguments_structure = {}
-
-
-@pytest.fixture
-def mock_argumentshandler_args_structure():
-    arguments_structure = {}
-    ArgumentsHandler.arguments_structure = arguments_structure
-
-
-@pytest.mark.fast
-class TestGetParsedJsonDict:
-    """
-    Tests the get_parsed_json_dict method.
-
-    Things being tested:
-    * If the dict validates the schema correctly
-    * If the returned parsed dict is correct, i.e. adds missing values and
-    converts to the correct types
-    """
+class TestArgsManagerWrapper:
 
     JSON_SCHEMA_PYTHON_TYPES_IREERUNTIME = {
         'type': 'object',
         'additionalProperties': False,
         'properties': {
             'save_model_path': {
-                'real_name': 'modelpath',
+                'real_name': 'model_path',
                 'convert-type': Path,
                 'type': ['string'],
                 'description': 'Path where the model will be uploaded',
@@ -128,7 +45,7 @@ class TestGetParsedJsonDict:
     VALID_RESULT_PYTHON_TYPES_IREERUNTIME = {
         'disable_performance_measurements': True,
         'driver': 'cuda',
-        'modelpath': Path('build/yolov4.onnx')}
+        'model_path': Path('build/yolov4.onnx')}
 
     JSON_SCHEMA_OBJECT_TYPE_MODELRUNTIME_RUNNER = {
         'type': 'object',
@@ -193,6 +110,7 @@ class TestGetParsedJsonDict:
         },
     }
 
+    @pytest.mark.fast
     @pytest.mark.parametrize(
         'schema,json_dict,expected_result,expectation',
         [
@@ -226,21 +144,18 @@ class TestGetParsedJsonDict:
             json_dict: Dict,
             expected_result: Dict,
             expectation):
+        """
+        Tests the get_parsed_json_dict method.
+
+        Things being tested:
+        * If the dict is validated with the schema correctly
+        * If the returned parsed dict is correct, e.g. ArgManager should add
+        missing values, convert parameters to the correct types
+        """
+
         with expectation:
             parsed_json_dict = get_parsed_json_dict(schema, json_dict)
             assert expected_result == parsed_json_dict
-
-
-@pytest.mark.fast
-class TestGetParsedArgsDict:
-    """
-    Tests the get_parsed_args_dict method.
-
-    Things being tested:
-    * If the dict validates the schema correctly
-    * If the returned parsed dict is correct, i.e. adds missing values and
-    converts to the correct types
-    """
 
     VALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME = \
         argparse.Namespace(
@@ -249,16 +164,16 @@ class TestGetParsedArgsDict:
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME = {
         'disable_performance_measurements': False,
         'execution_providers': ['CPUExecutionProvider'],
-        'modelpath': Path('build/yolov4.onnx')}
+        'model_path': ResourceURI('build/yolov4.onnx')}
 
     INVALID_ARGPARSE_ARGS_PYTHON_TYPES_ONNXRUNTIME_UNDEFINED_ARG_NAME = \
         argparse.Namespace(
-            modelpath='build/yolov4.onnx',
+            model_path='build/yolov4.onnx',
             execution_providers=['CPUExecutionProvider'])
     VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME_DEFAULT_MODELPATH = {
         'disable_performance_measurements': False,
         'execution_providers': ['CPUExecutionProvider'],
-        'modelpath': Path('model.tar')}
+        'model_path': ResourceURI('model.tar')}
 
     VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER = \
         argparse.Namespace(
@@ -287,12 +202,8 @@ class TestGetParsedArgsDict:
             dataset='dataset.json'
         )
 
+    @pytest.mark.fast
     @pytest.mark.usefixtures(
-        'mock_onnxruntime_args_structure',
-        'mock_runtime_args_structure',
-        'mock_modelruntime_runner_args_structure',
-        'mock_runner_args_structure',
-        'mock_argumentshandler_args_structure',
         'mock_configuration_file_contents_modelruntime_runner'
     )
     @pytest.mark.parametrize(
@@ -329,9 +240,21 @@ class TestGetParsedArgsDict:
             args: argparse.Namespace,
             expected_result,
             expectation):
-        if args == TestGetParsedArgsDict.\
+        """
+        Tests the get_parsed_args_dict method.
+
+        Things being tested:
+        * If the dict is validated with the schema correctly
+        * If the returned parsed dict is correct, e.g. ArgManager should add
+        missing values, convert parameters to the correct types
+
+        This test also sets paths for the ModelRuntimeRunner, since the JSON
+        configuration files should exist
+        """
+
+        if args == TestArgsManagerWrapper.\
                 VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER \
-                or args == TestGetParsedArgsDict.\
+                or args == TestArgsManagerWrapper.\
                 INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME: # noqa E501
             args = argparse.Namespace(
                 runtime=tmp_path / 'dir/' / args.runtime,
@@ -340,5 +263,7 @@ class TestGetParsedArgsDict:
             )
 
         with expectation:
+            print('test')
+
             parsed_args_dict = get_parsed_args_dict(class_type, args)
             assert expected_result == parsed_args_dict

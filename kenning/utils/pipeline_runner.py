@@ -353,7 +353,7 @@ def run_pipeline(
 
             prev_block.save_io_specification(model_path)
             next_block.set_input_type(format)
-            next_block.compile(model_path)
+            next_block.compile(model_path, prev_block.get_io_specification())
 
             prev_block = next_block
             model_path = prev_block.compiled_model_path

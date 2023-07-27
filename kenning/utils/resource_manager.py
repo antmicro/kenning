@@ -58,14 +58,19 @@ class ResourceManager(metaclass=Singleton):
     Download and cache resources used by Kenning.
     """
 
+    CACHE_DIR_ENV_VAR = 'KENNING_CACHE_DIR'
+    MAX_CACHE_SIZE_ENV_VAR = 'KENNING_MAX_CACHE_SIZE'
+
     CACHE_DIR = (
-        Path(os.environ.get('KENNING_CACHE_DIR', Path.home() / '.kenning'))
+        Path(os.environ.get(CACHE_DIR_ENV_VAR, Path.home() / '.kenning'))
         .expanduser()
         .resolve()
     )
 
     # 50 GB by default
-    MAX_CACHE_SIZE = os.environ.get('KENNING_MAX_CACHE_SIZE', 50_000_000_000)
+    MAX_CACHE_SIZE = int(
+        os.environ.get(MAX_CACHE_SIZE_ENV_VAR, 50_000_000_000)
+    )
 
     HASHING_ALGORITHM = 'md5'
 

@@ -364,7 +364,6 @@ class RuntimeProtocolTests(TestCoreRuntimeProtocol):
                                          args=(client, data, shared_list))
 
         thread.start()
-        time.sleep(0.1)
         status, message = server.receive_message(timeout=1)
         server.send_message(Message(MessageType.OK, b''))
         thread.join()

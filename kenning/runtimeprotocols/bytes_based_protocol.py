@@ -6,6 +6,7 @@
 Base class for bytes-based inference communication protocol.
 """
 
+from time import time
 from typing import Optional, Tuple
 import selectors
 
@@ -67,23 +68,25 @@ class BytesBasedProtocol(RuntimeProtocol):
             self,
             timeout: Optional[float] = None
             ) -> Tuple[ServerStatus, Optional[bytes]]:
-        events = self.selector.select(timeout=timeout)
+        start_time = time()
+        while True:
+            events = self.selector.select(timeout=timeout)
 
-        results = b''
-        for key, mask in events:
-            if mask & selectors.EVENT_READ:
-                callback = key.data
-                server_status, data = callback(key.fileobj, mask)
-                if (server_status == ServerStatus.CLIENT_DISCONNECTED
-                        or data is None):
-                    return server_status, None
+            results = b''
+            for key, mask in events:
+                if mask & selectors.EVENT_READ:
+                    callback = key.data
+                    server_status, data = callback(key.fileobj, mask)
+                    if (server_status == ServerStatus.CLIENT_DISCONNECTED
+                            or data is None):
+                        return server_status, None
 
-                results += data
+                    results += data
 
-        if len(results) == 0:
-            return ServerStatus.NOTHING, None
-
-        return ServerStatus.DATA_READY, results
+            if results:
+                return ServerStatus.DATA_READY, results
+            elif not timeout or (time() - start_time > timeout):
+                return ServerStatus.NOTHING, None
 
     def parse_message(self, message: bytes) -> Message:
         """

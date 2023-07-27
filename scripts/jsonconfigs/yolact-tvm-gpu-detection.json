@@ -12,7 +12,7 @@
         "type": "kenning.datasets.open_images_dataset.OpenImagesDatasetV6",
         "parameters":
         {
-            "dataset_root": "./build/open-images-dataset",
+            "dataset_root": "./build/OpenImagesDatasetV6",
             "inference_batch_size": 1,
             "task": "instance_segmentation"
         }

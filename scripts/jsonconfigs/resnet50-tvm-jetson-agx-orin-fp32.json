@@ -17,7 +17,7 @@
         "type": "kenning.datasets.imagenet_dataset.ImageNetDataset",
         "parameters":
         {
-            "dataset_root": "./build/imagenet-dataset",
+            "dataset_root": "./build/ImageNetDataset",
             "image_memory_layout": "NHWC",
             "preprocess_type": "caffe"
         }

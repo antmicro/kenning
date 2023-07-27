@@ -8,7 +8,7 @@
   "dataset": {
     "type": "kenning.datasets.coco_dataset.COCODataset2017",
     "parameters": {
-      "dataset_root": "./build/coco-dataset",
+      "dataset_root": "./build/COCODataset2017",
       "dataset_type": "val2017",
       "image_width": 608,
       "image_height": 608

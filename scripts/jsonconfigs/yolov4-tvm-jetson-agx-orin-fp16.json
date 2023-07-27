@@ -12,7 +12,7 @@
         "type": "kenning.datasets.coco_dataset.COCODataset2017",
         "parameters":
         {
-            "dataset_root": "./build/coco-dataset",
+            "dataset_root": "./build/COCODataset2017",
             "task": "object_detection",
             "dataset_type": "val2017",
             "image_memory_layout": "NCHW",

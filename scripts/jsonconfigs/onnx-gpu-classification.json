@@ -4,7 +4,7 @@
         "parameters": {
             "classify_by": "breeds",
             "image_memory_layout": "NHWC",
-            "dataset_root": "./build/pet-dataset",
+            "dataset_root": "./build/PetDataset",
             "inference_batch_size": 1
         }
     },

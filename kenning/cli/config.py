@@ -15,6 +15,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
     FINE_TUNE,
     FLOW,
+    SEARCH,
     HELP,
     INFO,
     LIST,
@@ -37,6 +38,7 @@ from kenning.scenarios import (
     pipeline_manager_client,
     render_report,
     model_training,
+    fuzzy_search_class,
 )
 
 
@@ -44,7 +46,8 @@ from kenning.scenarios import (
 # defining possible order
 SEQUENCED_COMMANDS = ([[TRAIN, OPTIMIZE], TEST, REPORT],)
 # Subcommands that can be used one at the time
-BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR, FINE_TUNE, LIST, CACHE, INFO)
+BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR,
+                  FINE_TUNE, LIST, CACHE, INFO, SEARCH,)
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (OPTIMIZE, TRAIN, TEST, REPORT,
                       *BASIC_COMMANDS, *HELP["flags"])
@@ -52,6 +55,7 @@ AVAILABLE_COMMANDS = (OPTIMIZE, TRAIN, TEST, REPORT,
 MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     FINE_TUNE: optimization_runner.OptimizationRunner,
     FLOW: json_flow_runner.FlowRunner,
+    SEARCH: fuzzy_search_class.FuzzySearchClass,
     INFO: class_info.ClassInfoRunner,
     LIST: list_classes.ListClassesRunner,
     OPTIMIZE: inference_tester.InferenceTester,

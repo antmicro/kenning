@@ -25,6 +25,7 @@ SERVER = "server"
 FINE_TUNE = "fine-tune-optimizers"
 LIST = "list"
 INFO = "info"
+CACHE = "cache"
 HELP = {
     "flags": HELP_FLAGS,
     "msg": "show this help message and exit",

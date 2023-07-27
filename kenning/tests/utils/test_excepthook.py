@@ -16,7 +16,7 @@ RE_IMPORT_NAME = r'^\s*(import ([^ \.]+))|(from ([^ \.]+)(\.[^ \.]+)* import)'
 # Ignored modules (don't count into the threshold) extended with stdlibs
 IGNORED_MODULES = {
     # ROS dependencies -- manual installation
-    'sensor_msgs', 'cvnode_msgs', 'rclpy',
+    'sensor_msgs', 'kenning_computer_vision_msgs', 'rclpy',
     'tflite_runtime',  # fallback to tensorflow
     '__future__',  # builtin module not in stdlib
 } | stdlibs.py3.stdlib

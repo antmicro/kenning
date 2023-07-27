@@ -45,7 +45,7 @@
     "type": "kenning.outputcollectors.ros2_yolact_outputcollector.ROS2YolactOutputCollector",
     "parameters": {
       "node_name": "ros2_yolact_outputcollector",
-      "topic_name": "camera_frame_kenning",
+      "topic_name": "instance_segmentation_kenning",
       "input_color_format": "BGR",
       "input_memory_layout": "NCHW"
     },

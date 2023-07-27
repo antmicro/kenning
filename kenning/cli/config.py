@@ -23,6 +23,7 @@ from kenning.cli.command_template import (
     SERVER,
     TEST,
     TRAIN,
+    CACHE,
     VISUAL_EDITOR,
 )
 from kenning.scenarios import (
@@ -31,6 +32,7 @@ from kenning.scenarios import (
     inference_tester,
     json_flow_runner,
     list_classes,
+    manage_cache,
     optimization_runner,
     pipeline_manager_client,
     render_report,
@@ -42,7 +44,7 @@ from kenning.scenarios import (
 # defining possible order
 SEQUENCED_COMMANDS = ([[TRAIN, OPTIMIZE], TEST, REPORT],)
 # Subcommands that can be used one at the time
-BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR, FINE_TUNE, LIST, INFO)
+BASIC_COMMANDS = (FLOW, SERVER, VISUAL_EDITOR, FINE_TUNE, LIST, CACHE, INFO)
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (OPTIMIZE, TRAIN, TEST, REPORT,
                       *BASIC_COMMANDS, *HELP["flags"])
@@ -57,6 +59,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     SERVER: inference_server.InferenceServer,
     TEST: inference_tester.InferenceTester,
     TRAIN: model_training.TrainModel,
+    CACHE: manage_cache.ManageCacheRunner,
     VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
 }
 # Name of the subcommand group -- displayed in help message

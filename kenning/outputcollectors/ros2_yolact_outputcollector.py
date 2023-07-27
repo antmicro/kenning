@@ -5,13 +5,14 @@
 """
 An OutputCollector-derived class used to broadcast YOLACT output to ROS2 topic.
 
-Requires 'rclpy' and 'cvnode_msgs' packages to be sourced in the environment.
+Requires 'rclpy' and 'kenning_computer_vision_msgs' packages to be sourced in
+the environment.
 """
 
 import numpy as np
 import rclpy
 import sensor_msgs.msg
-from cvnode_msgs.msg import SegmentationMsg, BoxMsg, MaskMsg
+from kenning_computer_vision_msgs.msg import SegmentationMsg, BoxMsg, MaskMsg
 
 from rclpy.node import Node
 from typing import Dict, Tuple, List, Optional

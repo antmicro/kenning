@@ -61,13 +61,19 @@ We can distinguish the following groups of extra requirements:
 * `mxnet` - modules for work with MXNet models,
 * `nvidia_perf` - modules for performance measurements for NVIDIA GPUs,
 * `object_detection` - modules for work with YOLOv3 object detection and the Open Images Dataset V6 computer vision dataset,
+* `speech_to_text` - modules for work with audio samples and speech-to-text models,
 * `iree` - modules for IREE compilation and runtime,
 * `tvm` - modules for Apache TVM compilation and runtime,
 * `onnxruntime` - modules for ONNX Runtime,
 * `nni` - modules for Neural Network Intelligence optimizers,
 * `docs` - modules for generating documentation,
 * `test` - modules for Kenning framework testing,
-* `real_time_visualization` - modules for real time visualization runners.
+* `real_time_visualization` - modules for real time visualization runners,
+* `pipeline_manager` - modules for communication with visual editor,
+* `reports` - modules for generating reports and comparisons,
+* `uart` - modules for work with serial ports,
+* `renode` - modules for work with Renode,
+* `fuzzy` - modules for fuzzy search.
 
 To install the extra requirements, e.g. `tensorflow`, run:
 
@@ -173,6 +179,7 @@ The available subcommands are:
 * `server` - runs a benchmark and evaluation server on target device.
 * `info` - provides information about a given Kenning class.
 * `list` - lists available Kenning modules for optimization and runtime.
+* `fuzzy-search` - searches for class path across Kenning and returns it.
 
 For more details on each of the above scenarios, see the [Kenning documentation](https://antmicro.github.io/kenning/).
 

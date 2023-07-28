@@ -1869,6 +1869,7 @@ class RenderReport(CommandTemplate):
             "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
             type=Path,
             nargs=1 if run_in_sequence else '*',
+            default=[None],
             required=run_in_sequence,
         )
         report_group.add_argument(

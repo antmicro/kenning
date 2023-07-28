@@ -601,7 +601,7 @@ As it can be observed, all classes accessible from JSON files in these scenarios
 
 ## Inspecting Kenning modules from CLI
 
-Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`.
+Kenning provides two tools for displaying information about available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`.
 
 The first script can be executed as follows:
 
@@ -657,7 +657,7 @@ To list available runtimes for the workflow, run:
 kenning list runtimes
 ```
 
-For more verbose information, use `-v` and `-vv` flags (module's dependencies, description, supported formats and more)
+For more verbose information, use the `-v` and `-vv` flags (module dependencies, description, supported formats and more)
 
 To display more specific information about a particular class, use `kenning.scenarios.class_info`:
 
@@ -697,12 +697,12 @@ Arguments specification:
   * default: 4
 ```
 
-The script displays information which could be helpful while creating a JSON scenario, e.g. listing the specification of arguments which can be used.
-Required dependencies are also shown, along with the information whether they are available in the current Python environment.
-In the given example TFLiteRuntime configuration accepts TensorFlow Lite Flatbuffer models as input.
-It also tells that some of the dependencies are missing.
+The script displays information that can be helpful while creating a JSON scenario, e.g. listing the specification of possible arguments.
+It also displays required dependencies along with the information about their availability in the current Python environment.
+In the example above, the TFLiteRuntime configuration accepts TensorFlow Lite Flatbuffer models as input.
+We can also see that some of the dependencies are missing.
 
-Provided the dependencies are satisfied, the script can gain access to more detailed and parameterized information by using `--load-class-with-args` argument.
+Provided the dependencies are satisfied, the script can gain access to more detailed and parameterized information by using the `--load-class-with-args` argument.
 Here is a comparison between the regular and more descriptive outputs:
 
 ```bash

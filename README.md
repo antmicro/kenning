@@ -10,6 +10,19 @@ Kenning is a framework for creating deployment flows and runtimes for Deep Neura
 
 ![](img/report-mosaic.png)
 
+Contents:
+
+* [Introduction](#introduction)
+* [Kenning installation](#kenning-installation)
+* [Kenning structure](#kenning-structure)
+* [Kenning usage](#kenning-usage)
+* [Example use case of Kenning](#example-use-case-of-kenning)
+* [Using Kenning as a library in Python scripts](#using-kenning-as-a-library-in-python-scripts)
+* [Inspecting Kenning modules from CLI](#inspecting-kenning-modules-from-cli)
+* [Adding new implementations](#adding-new-implementations)
+
+## Introduction
+
 Kenning aims towards providing modular execution blocks for:
 
 * dataset management,
@@ -34,7 +47,7 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 
 ### Module installation with pip
 
-To install Kenning with its basic dependencies with pip, run:
+To install Kenning with its basic dependencies with `pip`, run:
 
 ```
 pip install -U git+https://github.com/antmicro/kenning.git
@@ -65,22 +78,22 @@ sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorf
 or, in newer `pip` releases:
 
 ```
-pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
+pip install "kenning[tensorflow,reports,tvm] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ### Working directly with the repository
 
-For development purposes, and for usage of additional resources (as sample scripts or trained models), clone repository with:
+For development purposes, and for usage of additional resources (such as sample scripts), clone repository with:
 
 ```
 git clone https://github.com/antmicro/kenning.git
-```
-
-To download model weights, install [Git Large File Storage](https://git-lfs.com) (if not installed) and run:
-
-```
 cd kenning/
-git lfs pull
+```
+
+and then install for development using:
+
+```bash
+pip install -e ".[tensorflow,reports,tvm]"
 ```
 
 ## Kenning structure
@@ -100,12 +113,13 @@ The `kenning` module consists of the following submodules:
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
 * `runners` - provide implementations for runners that can be used in runtime,
-* `report` - provides methods for rendering reports,
 * `drawing` - provides methods for rendering plots for reports,
 * `resources` - contains project's resources, like RST templates, or trained models,
 * `scenarios` - contains executable scripts for running training, inference, benchmarks and other tests on target devices,
 * `utils` - various functions and classes used in all above-mentioned submodules,
-* `tests` - submodules for framework testing.
+* `tests` - submodules for framework testing,
+* `pipeline_manager` - contains tools for integrating with [Pipeline Manager visualizer](https://github.com/antmicro/kenning-pipeline-manager)
+* `cli` - provides tools and methods for creating CLI tools based on Kenning
 
 `core` classes used throughout the entire Kenning framework:
 
@@ -128,10 +142,37 @@ There are several ways to use Kenning:
 
 Kenning scenarios are executable scripts for:
 
-* Model training and benchmarking using its native framework (`model_training`),
-* Model optimization and compilation for target hardware (`inference_tester`),
-* Model benchmarking on target hardware (`inference_tester` and `inference_server`),
-* Rendering performance and quality reports from benchmark data (`render_report`).
+* Model training and benchmarking using its native framework ([`kenning.scenarios.model_training`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/model_training.py)),
+* Model optimization and compilation for target hardware ([`kenning.scenarios.inference_tester`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/inference_tester.py)),
+* Model benchmarking on target hardware ([`kenning.scenarios.inference_tester`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/inference_tester.py) and [`kenning.scenarios.inference_server`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/inference_server.py)),
+* Rendering performance and quality reports from benchmark data ([`kenning.scenarios.render_report`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/render_report.py)),
+* and more.
+
+Those scenarios can be accessed directly using e.g.:
+
+```bash
+python -m kenning.scenarios.inference_tester -h
+```
+
+They can be also accessed through `kenning` executable as subcommands.
+To get the current list of subcommands, run:
+
+```bash
+kenning -h
+```
+
+The available subcommands are:
+
+* `train` - trains the given model (`kenning.scenarios.model_training`).
+* `optimize` - optimizes and compiles the model for a given target device (`kenning.scenarios.inference_tester`).
+* `test` - runs benchmark and evaluation of the model on the target device (`kenning.scenarios.inference_tester`).
+* `report` - creates a Markdown and HTML files summarizing the quality of the model, both in terms of performance and predictions.
+* `flow` - runs Kenning-based applications.
+* `visual-editor` - runs graphical interface allowing to represent, edit and run optimizations and applications in browser using [Pipeline Manager](https://github.com/antmicro/kenning-pipeline-manager).
+* `fine-tune-optimizers` - runs a search for the best optimizations for a given target platform based on selected optimizers, runtimes and models,  along with their settings.
+* `server` - runs benchmark and evaluation server on target device.
+* `info` - provides information on given Kenning class.
+* `list` - lists available Kenning modules for optimization and runtime.
 
 For more details on each of the above scenarios, check the [Kenning documentation](https://antmicro.github.io/kenning/).
 
@@ -141,12 +182,12 @@ Let's consider a simple scenario, where we want to optimize the inference time a
 
 For this, we are going to use the [`PetDataset`](https://github.com/antmicro/kenning/blob/main/kenning/datasets/pet_dataset.py) Dataset and the [`TensorFlowPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) ModelWrapper.
 
-We will skip the training process. The trained model can be found in `kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5`.
+We will skip the training process - we will use [tensorflow_pet_dataset_mobilenetv2.h5](https://dl.antmicro.com/kenning/models/classification/tensorflow_pet_dataset_mobilenetv2.h5).
+In Kenning, available models and resources can be downloaded using URIs with `kenning://` scheme, in this case `kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5`.
 
 The training of the above model can be performed using the following command:
 
-<!-- name="cmd-test" -->
-```bash
+```
 kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -158,8 +199,6 @@ kenning train \
     --num-epochs 50
 ```
 
-For more information about scenarios and their usage, run chosen module with `--help` flag.
-
 ### Benchmarking a model using a native framework
 
 First of all, we want to check how the trained model performs using the native framework on CPU.
@@ -168,7 +207,6 @@ For this, we will use the `inference_tester` scenario.
 Scenarios are configured using JSON format files.
 In our case, the JSON file (named `native.json`) will look like this:
 
-<!-- name="json-scenario" -->
 ```json
 {
     "model_wrapper":
@@ -176,7 +214,7 @@ In our case, the JSON file (named `native.json`) will look like this:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -203,37 +241,33 @@ The `PetDataset` class can download the dataset (if necessary), load it, read th
 
 With the above config saved in the `native.json` file, run the `inference_tester` scenario:
 
-<!-- name="json-scenario-runner" -->
 ```bash
-python -m kenning.scenarios.inference_tester --json-cfg native.json --measurements build/native.json
+kenning test --json-cfg native.json --measurements build/native.json
 ```
 
 This module runs inference based on the given configuration, evaluates the model and stores quality and performance metrics in JSON format, saved to the `build/native.json` file.
-All below configurations can be executed with this command.
+All other JSONs in this example use case can be executed with this command.
 
 To visualize the evaluation and benchmark results, run the `render_report` module:
 
-<!-- name="json-scenario-runner" -->
 ```bash
-python -m kenning.scenarios.render_report --report-path build/benchmarks/native.md --measurements build/native.json --root-dir build/benchmarks --img-dir build/benchmarks/imgs --report-types performance classification --report-name 'native'
+kenning report --report-path build/benchmarks/native.md --measurements build/native.json --root-dir build/benchmarks --img-dir build/benchmarks/imgs --report-types performance classification --report-name 'native'
 ```
 
-Or use the simplefied command:
+Or use the simplified command:
 
-<!-- name="json-scenario-runner" -->
 ```bash
-python -m kenning.scenarios.render_report --report-path build/benchmarks/native.md --measurements build/native.json
+kenning report --report-path build/benchmarks/native.md --measurements build/native.json
 ```
 
-Moreover, all these commands can be reduced to only Kenning CLI run:
+Moreover, all these commands can be reduced to only one `kenning` run:
 
-<!-- name="json-scenario-runner" -->
 ```bash
 kenning test report --json-cfg native.json --measurements build/native.json --report-path build/benchmarks/native.md
 ```
 
 This module takes the output JSON file generated by the `inference_tester` module, and creates a report titled `native`, which is saved in the `build/benchmarks/native.md` directory.
-As specified in the `--report-types` flag, we create `peformance` and `classification` metrics sections in the report (for example, there is also a `detection` report type for object detection tasks).
+As specified in the `--report-types` flag, we create `performance` and `classification` metrics sections in the report (for example, there is also a `detection` report type for object detection tasks).
 
 In `build/benchmarks/imgs` there will be images with the `native_*` prefix visualizing the confusion matrix, CPU and memory usage, as well as inference time.
 
@@ -250,7 +284,6 @@ Before the TensorFlow Lite Interpreter (runtime for the TensorFlow Lite library)
 
 Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to a FlatBuffer format, as well as TensorFlow Lite Runtime that will execute the model:
 
-<!-- name="json-scenario" -->
 ```json
 {
     "model_wrapper":
@@ -258,7 +291,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -294,7 +327,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
 }
 ```
 
-The configuration of the already existing blocks has not changed - the dataset will not be downloaded again though, since the files are present already.
+The configuration of the already existing blocks has not changed - the dataset will not be downloaded again though, since the files are already present.
 
 The first new addition is the presence of the `optimizers` list - it allows us to add one or more objects inheriting from the `kenning.core.optimizer.Optimizer` class.
 Optimizers read the model from the input file, apply various optimizations, and then save the optimized model to a new file.
@@ -310,7 +343,6 @@ The second thing that is added to the previous flow is the `runtime` block - it 
 
 To compile the scenario (called `tflite-fp32.json`), run:
 
-<!-- name="json-scenario-runner" -->
 ```bash
 kenning optimize test report --json-cfg tflite-fp32.json --measurements build/tflite-fp32.json --report-path build/benchmarks/tflite-fp32.md
 ```
@@ -328,7 +360,6 @@ While it may severely harm the quality of the predictions, the quality reduction
 The model can be quantized during the compilation process in TensorFlow Lite.
 With Kenning, it can be achieved with the following simple additions:
 
-<!-- name="json-scenario" -->
 ```json
 {
     "model_wrapper":
@@ -336,7 +367,7 @@ With Kenning, it can be achieved with the following simple additions:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -377,7 +408,6 @@ Then, in the background, `TFLiteCompiler` fetches a subset of images from the `P
 
 Let's run the above scenario (`tflite-int8.json`):
 
-<!-- name="json-scenario-runner" -->
 ```bash
 kenning optimize test report --json-cfg tflite-int8.json --measurements build/tflite-int8.json --report-path build/benchmarks/tflite-int8.md
 ```
@@ -390,7 +420,6 @@ To speed up inference of a quantized model, we can utilize vector extensions in 
 For this, let's use the Apache TVM framework to compile efficient runtimes for various hardware platforms.
 The scenario looks like this:
 
-<!-- name="json-scenario" -->
 ```json
 {
     "model_wrapper":
@@ -398,7 +427,7 @@ The scenario looks like this:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -441,7 +470,6 @@ The scenario looks like this:
     },
     "model_name": "tvm-avx2-int8"
 }
-
 ```
 
 As it can be observed, addition of a new framework is just a matter of simply adding and configuring another optimizer and using the corresponding `Runtime` to the final `Optimizer`.
@@ -450,7 +478,6 @@ The `TVMCompiler`, with `llvm -mcpu=core-avx2` as the target, optimizes and comp
 
 Let's compile the scenario (`tvm-avx2-int8.json`):
 
-<!-- name="json-scenario-runner" -->
 ```bash
 kenning optimize test report --json-cfg tvm-avx2-int8.json --measurements build/tvm-avx2-int8.json --report-path build/benchmarks/tvm-avx2-int8.md
 ```
@@ -503,7 +530,6 @@ Some examples of comparisons between various models rendered with the script:
 Kenning is also a regular Python module - after pip installation it can be used in Python scripts.
 The example compilation of the model can look as follows:
 
-<!-- name="python-script" -->
 ```python
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
@@ -536,7 +562,6 @@ The above script downloads the dataset and compiles the model with FP32 inputs a
 
 To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
 
-<!-- name="python-script" -->
 ```python
 compiler = TFLiteCompiler(
     dataset=dataset,
@@ -554,7 +579,6 @@ compiler.compile(
 
 To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
 
-<!-- name="python-script" -->
 ```python
 runtime = TFLiteRuntime(
     protocol=None,
@@ -575,7 +599,7 @@ The `MeasurementsCollector` class collects all benchmarks' data for model infere
 
 As it can be observed, all classes accessible from JSON files in these scenarios share their configuration a with the classes in the Python scripts mentioned above.
 
-## Displaying information about available modules/classes
+## Inspecting Kenning modules from CLI
 
 Kenning provides two tools to display some information about the available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`.
 

@@ -49,7 +49,7 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 
 To install Kenning with its basic dependencies with `pip`, run:
 
-```
+```bash
 pip install -U git+https://github.com/antmicro/kenning.git
 ```
 
@@ -77,13 +77,13 @@ We can distinguish the following groups of extra requirements:
 
 To install the extra requirements, e.g. `tensorflow`, run:
 
-```
+```bash
 sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorflow]
 ```
 
 or, in newer `pip` releases:
 
-```
+```bash
 pip install "kenning[tensorflow,reports,tvm] @ git+https://github.com/antmicro/kenning.git"
 ```
 
@@ -91,7 +91,7 @@ pip install "kenning[tensorflow,reports,tvm] @ git+https://github.com/antmicro/k
 
 For development purposes, and to use additional resources (such as sample scripts), clone the repository with:
 
-```
+```bash
 git clone https://github.com/antmicro/kenning.git
 cd kenning/
 ```
@@ -194,7 +194,7 @@ In Kenning, available models and resources can be downloaded using URIs with the
 
 The training of the above model can be performed using the following command:
 
-```
+```bash
 kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \

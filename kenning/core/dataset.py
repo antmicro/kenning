@@ -519,7 +519,7 @@ class Dataset(ArgumentsHandler, ABC):
         if self.external_calibration_dataset is None:
             _, X, _, _ = self.train_test_split_representations(
                 percentage,
-                seed
+                seed=seed
             )
         else:
             X = self.prepare_external_calibration_dataset(percentage, seed)

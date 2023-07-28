@@ -213,13 +213,19 @@ def main():
         add_help=False,
     )
 
-    # Print help, including possible subcommands
-    if args.help:
+    def _print_help():
+        """
+        Prints help message for non seqenced subcommands.
+        """
         print_help_from_parsers(
             "kenning "+" ".join(subcommands),
             [parsers[tuple(subcommands)], parser],
             description,
         )
+
+    # Print help, including possible subcommands
+    if args.help:
+        _print_help()
         return
 
     errors = []
@@ -229,12 +235,10 @@ def main():
             args = parser.parse_args(
                 args=sys.argv[1 + len(subcommands):], namespace=args
             )
-        except ParserHelpException as ex:
-            ex.print(
-                parser,
-                [parsers[tuple(subcommands)], parser],
-                description,
-            )
+        except ParserHelpException:
+            args.help = True
+        if args.help:
+            _print_help()
             return
         rem = []
     else:
@@ -252,24 +256,25 @@ def main():
         if run in used_functions:
             continue
         try:
-            run(args, not_parsed=rem)
-        except ModuleNotFoundError as er:
-            extras = find_missing_optional_dependency(er.name)
-            if not extras:
+            try:
+                run(args, not_parsed=rem)
+            except ModuleNotFoundError as er:
+                extras = find_missing_optional_dependency(er.name)
+                if not extras:
+                    raise
+                er = MissingKenningDependencies(
+                    name=er.name, path=er.path, optional_dependencies=extras)
                 raise
-            er = MissingKenningDependencies(
-                name=er.name, path=er.path, optional_dependencies=extras)
-            raise
 
-        except argparse.ArgumentError as er:
-            parser.error(er.message)
-            return 2
+            except argparse.ArgumentError as er:
+                parser.error(er.message)
+                return 2
         except ParserHelpException as ex:
             # Prepare combined errors
             if ex.error is not None:
                 errors.append(ex.error)
             if len(errors) > 1:
-                ex.error = ''
+                ex.error = '\n'
                 for error in errors:
                     ex.error += f'- {error}\n'
             elif errors:

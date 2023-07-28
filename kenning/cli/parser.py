@@ -92,11 +92,16 @@ class ParserHelpException(BaseException):
             description = parser.description
         print_help_from_parsers(
             self.parser.prog if self.parser else parser.prog,
-            parents=parents + ([self.parser] if self.parser else []),
+            parents=parents
+            + (
+                [self.parser]
+                if self.parser and self.parser not in parents
+                else []
+            ),
             description=description,
         )
         if self.error:
-            parser.error(self.error, _exit=True)
+            parser.error(self.error, early_exit=True)
 
 
 class Parser(argparse.ArgumentParser):
@@ -116,14 +121,15 @@ class Parser(argparse.ArgumentParser):
                 self.error(msg.format(' '.join(argv)))
         return args
 
-    def error(self, message: str, _exit=False):
+    def error(self, message: str, early_exit=False):
         args = {'prog': self.prog, 'message': message}
         error = gettext('%(prog)s: error: %(message)s\n') % args
-        # new: end program when _exit is True
+        # new: end program when early_exit is True
         # when help flag is present raise exception
-        if _exit:
+        if early_exit:
             self.exit(2, error)
         if any(help in sys.argv[1:] for help in HELP_FLAGS):
             raise ParserHelpException(self, message)
         self.print_usage(sys.stderr)
-        self._print_message(error, sys.stderr)
+        # self._print_message(error, sys.stderr)
+        self.exit(2, error)

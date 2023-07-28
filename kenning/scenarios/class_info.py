@@ -23,6 +23,7 @@ import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
 from typing import Union, List, Tuple, Optional, Dict, Type
+from importlib.util import find_spec
 
 from kenning.cli.command_template import (
     CommandTemplate, GROUP_SCHEMA, INFO)
@@ -755,8 +756,7 @@ def generate_class_info(
     Parameters
     ----------
     target: str
-        Target class path or module name e.g. either `kenning.core.flow` or
-         `kenning/core/flow.py`
+        Target module-like path e.g. `kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4` # noqa E501
     class_name: str
         Name of a specific class to display information about
     docstrings: bool
@@ -786,10 +786,7 @@ def generate_class_info(
 
     target = '.'.join(split_target)
 
-    target_path = target
-    if not target.endswith('.py'):
-        target_path = target.replace('.', '/')
-        target_path += '.py'
+    target_path = find_spec(target).origin
 
     if not os.path.exists(target_path):
         return [f'File {target_path} does not exist\n']
@@ -815,10 +812,9 @@ def generate_class_info(
 
     if class_name:
         # try to load the class into memory
-        module_path = target_path[:-3].replace('/', '.')
         try:
             imported_class = getattr(
-                importlib.import_module(module_path),
+                importlib.import_module(find_spec(target).name),
                 class_name
             )
 

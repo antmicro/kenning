@@ -83,14 +83,14 @@ pip install "kenning[tensorflow,reports,tvm] @ git+https://github.com/antmicro/k
 
 ### Working directly with the repository
 
-For development purposes, and for usage of additional resources (such as sample scripts), clone repository with:
+For development purposes, and to use additional resources (such as sample scripts), clone the repository with:
 
 ```
 git clone https://github.com/antmicro/kenning.git
 cd kenning/
 ```
 
-and then install for development using:
+Then install using:
 
 ```bash
 pip install -e ".[tensorflow,reports,tvm]"
@@ -148,13 +148,13 @@ Kenning scenarios are executable scripts for:
 * Rendering performance and quality reports from benchmark data ([`kenning.scenarios.render_report`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/render_report.py)),
 * and more.
 
-Those scenarios can be accessed directly using e.g.:
+You can access these scenarios directly using e.g.:
 
 ```bash
 python -m kenning.scenarios.inference_tester -h
 ```
 
-They can be also accessed through `kenning` executable as subcommands.
+You can also access them through the `kenning` executable as subcommands.
 To get the current list of subcommands, run:
 
 ```bash
@@ -166,15 +166,15 @@ The available subcommands are:
 * `train` - trains the given model (`kenning.scenarios.model_training`).
 * `optimize` - optimizes and compiles the model for a given target device (`kenning.scenarios.inference_tester`).
 * `test` - runs benchmark and evaluation of the model on the target device (`kenning.scenarios.inference_tester`).
-* `report` - creates a Markdown and HTML files summarizing the quality of the model, both in terms of performance and predictions.
+* `report` - creates Markdown and HTML files summarizing the quality of the model in terms of performance and predictions.
 * `flow` - runs Kenning-based applications.
-* `visual-editor` - runs graphical interface allowing to represent, edit and run optimizations and applications in browser using [Pipeline Manager](https://github.com/antmicro/kenning-pipeline-manager).
-* `fine-tune-optimizers` - runs a search for the best optimizations for a given target platform based on selected optimizers, runtimes and models,  along with their settings.
-* `server` - runs benchmark and evaluation server on target device.
-* `info` - provides information on given Kenning class.
+* `visual-editor` - runs a graphical interface letting you represent, edit and run optimizations and applications in-browser using [Pipeline Manager](https://github.com/antmicro/kenning-pipeline-manager).
+* `fine-tune-optimizers` - runs a search for the best optimizations for a given target platform based on selected optimizers, runtimes and models, along with their settings.
+* `server` - runs a benchmark and evaluation server on target device.
+* `info` - provides information about a given Kenning class.
 * `list` - lists available Kenning modules for optimization and runtime.
 
-For more details on each of the above scenarios, check the [Kenning documentation](https://antmicro.github.io/kenning/).
+For more details on each of the above scenarios, see the [Kenning documentation](https://antmicro.github.io/kenning/).
 
 ## Example use case of Kenning
 
@@ -183,7 +183,7 @@ Let's consider a simple scenario, where we want to optimize the inference time a
 For this, we are going to use the [`PetDataset`](https://github.com/antmicro/kenning/blob/main/kenning/datasets/pet_dataset.py) Dataset and the [`TensorFlowPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) ModelWrapper.
 
 We will skip the training process - we will use [tensorflow_pet_dataset_mobilenetv2.h5](https://dl.antmicro.com/kenning/models/classification/tensorflow_pet_dataset_mobilenetv2.h5).
-In Kenning, available models and resources can be downloaded using URIs with `kenning://` scheme, in this case `kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5`.
+In Kenning, available models and resources can be downloaded using URIs with the `kenning://` scheme, in this case `kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5`.
 
 The training of the above model can be performed using the following command:
 
@@ -260,7 +260,7 @@ Or use the simplified command:
 kenning report --report-path build/benchmarks/native.md --measurements build/native.json
 ```
 
-Moreover, all these commands can be reduced to only one `kenning` run:
+Moreover, all these commands can be reduced to a single `kenning` run:
 
 ```bash
 kenning test report --json-cfg native.json --measurements build/native.json --report-path build/benchmarks/native.md

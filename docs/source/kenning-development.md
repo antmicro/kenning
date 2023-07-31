@@ -562,7 +562,7 @@ The scenario can look as follows:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":

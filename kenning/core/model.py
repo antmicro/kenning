@@ -27,6 +27,18 @@ from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
+class VariableBatchSizeNotSupportedError(Exception):
+    """
+    Exception raised when trying to create a model which is not fitted to
+    handle variable batch sizes yet
+    """
+    def __init__(
+            self,
+            msg=f"Inference batch size greater than one not supported for this model.", # noqa E501
+            *args, **kwargs):
+        super().__init__(msg, *args, **kwargs)
+
+
 class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     """
     Wraps the given model.
@@ -230,10 +242,6 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
-        if isinstance(y, np.ndarray):
-            return np.vsplit(y, self.dataset.batch_size)
-
-        y = np.vsplit(y[0], self.dataset.batch_size)
         return y
 
     def _postprocess_outputs(self, y):

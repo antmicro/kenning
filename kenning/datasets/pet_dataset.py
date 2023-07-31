@@ -190,7 +190,7 @@ class PetDataset(Dataset):
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))
         top_5_count = 0
-        for prediction, label in zip(predictions, truth):
+        for prediction, label in zip(predictions[0], truth):
             confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             top_5_count += 1 if np.argmax(label) in np.argsort(prediction)[::-1][:5] else 0  # noqa: E501
         measurements = Measurements()

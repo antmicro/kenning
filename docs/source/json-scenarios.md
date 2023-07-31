@@ -34,7 +34,7 @@ The simplest JSON configuration looks as follows:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -169,7 +169,7 @@ Such case will result is the following scenario:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -260,7 +260,7 @@ Let's start with client configuration by adding a `runtime_protocol` entry:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":

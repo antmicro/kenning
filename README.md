@@ -541,7 +541,7 @@ dataset = PetDataset(
     root='./build/pet-dataset/'
 )
 model = TensorFlowPetDatasetMobileNetV2(
-    modelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
+    modelpath='kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5',
     dataset=dataset
 )
 model.save_io_specification(model.modelpath)
@@ -554,7 +554,7 @@ compiler = TFLiteCompiler(
     inferenceoutputtype='float32'
 )
 compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
+    inputmodelpath='kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
 )
 ```
 
@@ -573,7 +573,7 @@ compiler = TFLiteCompiler(
     dataset_percentage=0.3
 )
 compiler.compile(
-    inputmodelpath='./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
+    inputmodelpath='kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'
 )
 ```
 
@@ -759,7 +759,7 @@ In the case of `ONNXYOLOV4`, only `--model-path` is needed:
 kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4 \
         --load-class-with-args \
         --model-path \
-            kenning/resources/models/detection/yolov4.onnx
+            kenning:///models/detection/yolov4.onnx
 ```
 
 ```

@@ -31,7 +31,7 @@ The example configuration looks like this:
         "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
         "parameters":
         {
-            "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
         }
     },
     "dataset":
@@ -111,7 +111,7 @@ The example `<OUTPUT PATH>.json` JSON file can look like this:
         "model_wrapper": {
             "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
             "parameters": {
-                "model_path": "./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+                "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
             }
         },
         "dataset": {

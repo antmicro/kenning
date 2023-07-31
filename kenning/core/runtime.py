@@ -769,6 +769,7 @@ class Runtime(ArgumentsHandler, ABC):
         bool :
             True if executed successfully.
         """
+        self.model_path = Path(compiled_model_path)
         from kenning.utils.logger import TqdmCallback
         measurements = Measurements()
         try:

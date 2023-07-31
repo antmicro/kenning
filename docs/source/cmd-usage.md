@@ -114,7 +114,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements build/tensorflow_pet_dataset_mobilenetv2.json \
-    --model-path kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --dataset-root build/pet-dataset/ \
     --run-benchmarks-only
 ```
@@ -286,7 +286,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
     --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \
     --compiled-model-path build/compiled-model.tflite \
@@ -329,7 +329,7 @@ python3 -m kenning.scenarios.inference_tester \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
     --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
-    --model-path ./kenning/resources/models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
+    --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \
     --compiled-model-path ./build/compiled-model.tar \
@@ -422,7 +422,7 @@ python3 -m kenning.scenarios.inference_runner \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
     --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter \
     --disable-performance-measurements \
-    --model-path ./kenning/resources/models/detection/yolov3.weights \
+    --model-path kenning:///models/detection/yolov3.weights \
     --save-model-path ../compiled-model.tar \
     --target-device-context "cuda" \
     --verbosity INFO \

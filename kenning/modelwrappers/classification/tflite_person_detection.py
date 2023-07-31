@@ -95,7 +95,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
             }],
             'output': [{
                 'name': 'out_layer',
-                'shape': (1, 2),
+                'shape': (batch_size, 2),
                 'dtype': 'int8',
                 'prequantized_dtype': 'float32',
                 'zero_point': -128,

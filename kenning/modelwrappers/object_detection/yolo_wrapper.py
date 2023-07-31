@@ -16,7 +16,7 @@ from typing import Any, Dict, List
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper, VariableBatchSizeNotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject, compute_dect_iou)
 from kenning.resources import coco_detection
@@ -103,6 +103,10 @@ class YOLOWrapper(ModelWrapper, ABC):
         if self.model_prepared:
             return None
         self.load_model(self.model_path)
+
+        if self.batch_size > 1:
+            raise VariableBatchSizeNotSupportedError
+
         self.model_prepared = True
 
     def preprocess_input(self, X):

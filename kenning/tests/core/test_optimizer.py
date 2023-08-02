@@ -41,6 +41,7 @@ def prepare_objects(
     return optimizer, model
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestOptimizer:
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[

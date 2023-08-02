@@ -60,6 +60,7 @@ def model(request):
     return create_model(model_cls, dataset)
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestModelWrapper:
 
     @pytest.mark.parametrize('model_cls', [

@@ -6,6 +6,7 @@ from kenning.tests.conftest import DataFolder, Samples
 import pytest
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestModelWrapperAndDatasetCompatibility:
     @pytest.mark.fast
     @pytest.mark.parametrize("datasetname", [

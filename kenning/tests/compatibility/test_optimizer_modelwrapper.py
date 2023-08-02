@@ -10,6 +10,7 @@ from pathlib import Path
 
 
 @pytest.mark.slow
+@pytest.mark.xdist_group(name='use_resources')
 class TestOptimizerModelWrapper:
     @pytest.mark.parametrize('optimizername', [('TFLiteCompiler_keras'),
                                                ('TVMCompiler_keras'),

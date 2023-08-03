@@ -140,13 +140,13 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             loss='categorical_crossentropy',
             metrics=['accuracy']
         )
-        train_data, test_data,\
-            train_labels, test_labels,\
-            val_data, val_labels = \
-            self.dataset.train_test_split_representations(
-                test_fraction=.2,
-                val_fraction=.1
-            )
+        (
+            train_data, test_data,
+            train_labels, test_labels,
+            val_data, val_labels,
+        ) = self.dataset.train_test_split_representations(
+            test_fraction=0.2, val_fraction=0.1
+        )
 
         train_dataset = convert_to_tf_dataset(
             train_data, train_labels

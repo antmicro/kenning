@@ -45,7 +45,7 @@ The data flow is represented in the {numref}`class-flow` with green blocks.
 The input data flow is depicted using green arrows, and the output data flow is depicted using grey arrows.
 
 Firstly, the input and output data is loaded from dataset files and processed.
-Later, since every model has its specific input preprocessing and output postprocessing routines, the data is passed to the [](modelwrapper-api) methods in order to to apply modifications.
+Later, since every model has its specific input preprocessing and output postprocessing routines, the data is passed to the [](modelwrapper-api) methods in order to apply modifications.
 During inference testing, the data is sent to and from the target using [](runtimeprotocol-api).
 
 Lastly, since [](runtime-api)s also have their specific representations of data, proper I/O processing is applied.
@@ -75,7 +75,7 @@ It is responsible for validating all runners provided in a config file and their
 (runner-api)=
 ## Runner
 
-`kenning.core.runner.Runner`-based classes are responsible for executing various operation in KenningFlow (i.e. data providing, model execution, data visualization).
+`kenning.core.runner.Runner` - based classes are responsible for executing various operation in KenningFlow (i.e. data providing, model execution, data visualization).
 
 The available runner implementations are:
 * [DataProvider](dataprovider-api) - base class for data providing,
@@ -90,7 +90,7 @@ The available runner implementations are:
 (dataset-api)=
 ## Dataset
 
-`kennning.core.dataset.Dataset`-based classes are responsible for:
+`kennning.core.dataset.Dataset` - based classes are responsible for:
 
 * dataset preparation, including download routines (use the `--download-dataset` flag to download the dataset data),
 * input preprocessing into a format expected by most models for a given task,

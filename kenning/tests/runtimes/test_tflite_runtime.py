@@ -8,6 +8,7 @@ from kenning.compilers.tflite import TFLiteCompiler
 import pytest
 
 
+@pytest.mark.xdist_group(name='use_resources')
 @pytest.mark.parametrize('runtimemodel', [TFLiteCompiler], indirect=True)
 class TestTFLiteRuntime(RuntimeWithModel):
     runtimecls = TFLiteRuntime

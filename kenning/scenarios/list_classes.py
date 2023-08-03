@@ -14,8 +14,10 @@ from typing import List, Optional, Dict, Tuple
 import errno
 
 from kenning.scenarios.class_info import generate_class_info
-from kenning.utils.class_loader import get_all_subclasses,\
-    get_base_classes_dict
+from kenning.utils.class_loader import (
+    get_all_subclasses,
+    get_base_classes_dict,
+)
 
 from kenning.cli.command_template import (
     CommandTemplate, GROUP_SCHEMA, LIST)

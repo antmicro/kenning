@@ -100,7 +100,7 @@ DECT_VISUALIZER_JSON = {
         "output_width": 608,
         "output_height": 608,
         "save_to_file": True,
-        "save_path": "out_1.mp4"
+        "save_path": str(pytest.test_directory / "out_1.mp4")
     },
     "inputs": {
         "frame": "cam_frame",
@@ -172,11 +172,15 @@ MDL_RT_RUNNER_YOLOV4_2_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
 MDL_RT_RUNNER_YOLOV4_2_JSON['outputs']['detection_output'] = 'predictions_2'
 
 DECT_VISUALIZER_2_JSON = deepcopy(DECT_VISUALIZER_JSON)
-DECT_VISUALIZER_2_JSON['parameters']['save_path'] = 'out_2.mp4'
+DECT_VISUALIZER_2_JSON['parameters']['save_path'] = str(
+    pytest.test_directory / 'out_2.mp4'
+)
 
 DECT_VISUALIZER_3_JSON = deepcopy(DECT_VISUALIZER_JSON)
 DECT_VISUALIZER_3_JSON['inputs']['detection_data'] = 'predictions_2'
-DECT_VISUALIZER_3_JSON['parameters']['save_path'] = 'out_3.mp4'
+DECT_VISUALIZER_3_JSON['parameters']['save_path'] = str(
+    pytest.test_directory / 'out_3.mp4'
+)
 
 FLOW_SCENARIO_COMPLEX = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,

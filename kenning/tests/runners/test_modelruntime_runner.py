@@ -114,6 +114,7 @@ def invalid_argparse_namespace(tmp_path) -> argparse.Namespace:
     )
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestModelRuntimeRunner:
 
     @pytest.mark.parametrize(

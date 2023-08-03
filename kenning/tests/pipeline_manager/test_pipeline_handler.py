@@ -244,6 +244,7 @@ TFLITE_COMPILER_DATAFLOW_NODE = {
 }
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestPipelineHandler(HandlerTests):
     dataflow_nodes = [
         PET_DATASET_DATAFLOW_NODE,

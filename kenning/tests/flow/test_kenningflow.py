@@ -270,6 +270,7 @@ def mock_dear_py_gui():
     BaseRealTimeVisualizer.should_close = lambda self: False
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestKenningFlowScenarios:
 
     @pytest.mark.parametrize(

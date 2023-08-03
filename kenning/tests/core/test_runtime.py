@@ -49,6 +49,7 @@ def prepare_objects(
     return runtime, dataset, model
 
 
+@pytest.mark.xdist_group(name='use_resources')
 class TestRuntime:
 
     @pytest.mark.parametrize('runtime_cls,inputtype', [

@@ -11,6 +11,7 @@ from unittest.mock import patch
 
 
 @patch.multiple(Runtime, __abstractmethods__=set())
+@pytest.mark.xdist_group(name='use_resources')
 class TestCoreRuntime(RuntimeTests):
     runtimecls = Runtime
     runtimeprotocolcls = RuntimeProtocol
@@ -68,6 +69,7 @@ class TestCoreRuntime(RuntimeTests):
 
 # FIXME: Implement tests for IREECompiler
 @pytest.mark.xfail
+@pytest.mark.xdist_group(name='use_resources')
 class TestIREERuntime(RuntimeTests):
     runtimecls = IREERuntime
     runtimeprotocolcls = RuntimeProtocol

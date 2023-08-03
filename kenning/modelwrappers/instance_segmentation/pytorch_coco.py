@@ -152,8 +152,9 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
 
 def dict_to_tuple(out_dict):
-    return \
-        out_dict["boxes"],\
-        out_dict["labels"],\
-        out_dict["scores"],\
-        out_dict["masks"]
+    return (
+        out_dict['boxes'],
+        out_dict['labels'],
+        out_dict['scores'],
+        out_dict['masks'],
+    )

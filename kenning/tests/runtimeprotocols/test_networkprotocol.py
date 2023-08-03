@@ -2,10 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import pytest
+
 from runtimeprotocolbase import RuntimeProtocolTests
 from kenning.runtimeprotocols.network import NetworkProtocol
 
 
+@pytest.mark.xdist_group(name='use_socket')
 class TestNetworkProtocol(RuntimeProtocolTests):
     host = ''
     port = 1234

@@ -8,6 +8,7 @@ from kenning.compilers.tvm import TVMCompiler
 import pytest
 
 
+@pytest.mark.xdist_group(name='use_resources')
 @pytest.mark.parametrize('runtimemodel', [TVMCompiler], indirect=True)
 class TestTVMRuntime(RuntimeWithModel):
     runtimecls = TVMRuntime

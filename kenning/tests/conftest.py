@@ -8,7 +8,7 @@ import tempfile
 import shutil
 from pathlib import Path
 from pytest import Metafunc
-from typing import Optional, Callable
+from typing import Optional
 from random import randint, random
 from PIL import Image
 from kenning.utils.class_loader import load_class
@@ -468,44 +468,6 @@ def datasetimages(tmpfolder: Path) -> DataFolder:
         img.save(file, 'JPEG')
 
     return DataFolder(tmpfolder, images_amount)
-
-
-@pytest.fixture(scope='class')
-def datasetimages_parametrized(tmpfolder: Path) -> Callable[[int], DataFolder]:
-    """
-    Creates a temporary dict with variable number of random images.
-    Exemplary usage: datasetimages_parametrized(123)
-
-    Parameters
-    ----------
-    tmpfolder : Path
-        A temporary folder.
-
-    Returns
-    -------
-    Callable[[int], DataFolder] :
-        Function that takes a number as input and returns a DataFolder.
-        A DataFolder is an object that stores path to data and images amount.
-    """
-    def _dataset_images(images_amount):
-        if (tmpfolder / 'images').exists():
-            return DataFolder(tmpfolder, images_amount)
-
-        (tmpfolder / 'images').mkdir()
-        (tmpfolder / 'img').symlink_to(tmpfolder / 'images')
-        (tmpfolder / 'annotations').mkdir()
-        (tmpfolder / 'annotations' / 'list.txt').touch()
-        write_to_dirs(tmpfolder, images_amount)
-
-        for i in range(images_amount):
-            file = (tmpfolder / 'images' / f'image_{i}.jpg')
-            color = (randint(0, 255), randint(0, 255), randint(0, 255))
-            img = Image.new(mode='RGB', size=(5, 5), color=color)
-            img.save(file, 'JPEG')
-
-        return DataFolder(tmpfolder, images_amount)
-
-    return _dataset_images
 
 
 def write_to_dirs(path, amount):

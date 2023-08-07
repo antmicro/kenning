@@ -7,6 +7,9 @@ import multiprocessing
 import socket
 import time
 import uuid
+from multiprocessing.managers import ListProxy
+from pathlib import Path
+from typing import Optional, Tuple
 
 import pytest
 
@@ -29,6 +32,8 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
     port = random_network_port()
 
     def init_protocol(self):
+        if self.port is None:
+            pytest.fail('Cannot find free port')
         return NetworkProtocol(self.host, self.port)
 
     def test_initialize_server(self):
@@ -55,13 +60,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         client.disconnect()
         server.disconnect()
 
-    def test_receive_message(self, server_and_client):
+    def test_receive_message(
+        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
+    ):
         """
         Tests client status using `receive_message()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -82,14 +89,16 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status == ServerStatus.NOTHING and message is None
 
     def test_receive_message_send_data(
-        self, server_and_client, random_byte_data
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
     ):
         """
         Tests the `receive_message()` method by sending data.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -107,14 +116,16 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         )
 
     def test_receive_message_send_error(
-        self, server_and_client, random_byte_data
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
     ):
         """
         Tests the `receive_message()` method by sending error message.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -131,13 +142,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message.message_type == MessageType.ERROR
         )
 
-    def test_receive_message_send_empty(self, server_and_client):
+    def test_receive_message_send_empty(
+        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
+    ):
         """
         Tests the `receive_message()` method by sending empty message.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -155,38 +168,48 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert message is None
         assert status == ServerStatus.NOTHING, status
 
-    def test_send_data(self, server_and_client, random_byte_data):
+    def test_send_data(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `send_data()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
         assert client.send_data(random_byte_data) is True
 
-    def test_receive_data(self, server_and_client):
+    def test_receive_data(
+        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
+    ):
         """
         Tests the `receive_data()` method with not initialized client.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
         with pytest.raises(AttributeError):
             server.receive_data(None, None)
 
-    def test_receive_data_data_sent(self, server_and_client, random_byte_data):
+    def test_receive_data_data_sent(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `receive_data()` method with data being sent.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -197,13 +220,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status is ServerStatus.DATA_READY
         assert random_byte_data == received_data
 
-    def test_receive_client_disconnect(self, server_and_client):
+    def test_receive_client_disconnect(
+        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
+    ):
         """
         Tests the `receive_data()` method with client being disconnected.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -260,19 +285,23 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         protocol = self.init_protocol()
         assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
 
-    def test_wait_send(self, server_and_client, random_byte_data):
+    def test_wait_send(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `wait_send()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
-        for i in range(10):
+        for _ in range(10):
             # Send the data
             client_out = client.wait_send(random_byte_data)
             assert client_out == len(random_byte_data)
@@ -284,13 +313,17 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
                 server_data == random_byte_data
             ), f'{server_data}!={random_byte_data}'
 
-    def test_send_message(self, server_and_client, random_byte_data):
+    def test_send_message(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `send_message(Message())` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -311,31 +344,36 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
     @pytest.mark.parametrize(
         'message,expected',
         [
-            ((MessageType.OK, b''), (True, b'')),
-            ((MessageType.ERROR, b''), (False, None)),
-            ((MessageType.DATA, b''), (False, None)),
-            ((MessageType.MODEL, b''), (False, None)),
-            ((MessageType.PROCESS, b''), (False, None)),
-            ((MessageType.OUTPUT, b''), (False, None)),
-            ((MessageType.STATS, b''), (False, None)),
-            ((MessageType.IOSPEC, b''), (False, None)),
+            (Message(MessageType.OK), (True, b'')),
+            (Message(MessageType.ERROR), (False, None)),
+            (Message(MessageType.DATA), (False, None)),
+            (Message(MessageType.MODEL), (False, None)),
+            (Message(MessageType.PROCESS), (False, None)),
+            (Message(MessageType.OUTPUT), (False, None)),
+            (Message(MessageType.STATS), (False, None)),
+            (Message(MessageType.IOSPEC), (False, None)),
         ],
     )
-    def test_receive_confirmation(self, server_and_client, message, expected):
+    def test_receive_confirmation(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        message: Message,
+        expected: Tuple[bool, Optional[bytes]],
+    ):
         """
         Tests the `receive_confirmation()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
-        message : Tuple[MessageType, bytes]
+        message : Message
             Message to be sent
-        expected : Tuple[bool, Any]
+        expected : Tuple[bool, Optional[bytes]]
             Expected output
         """
         server, client = server_and_client
-        client.send_message(Message(*message))
+        client.send_message(message)
         output = server.receive_confirmation()
         assert output == expected
 
@@ -344,28 +382,36 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         output = server.receive_confirmation()
         assert output == (False, None)
 
-    def test_upload_input(self, server_and_client, random_byte_data):
+    def test_upload_input(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `upload_input()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
 
-        def upload(client, data, shared_list):
+        def upload(
+            client: NetworkProtocol,
+            data: bytes,
+            shared_list: ListProxy,
+        ):
             """
             Waits for confirmation message and sends input data.
 
             Parameters
             ----------
-            client : RuntimeProtocol
-                Initialized RuntimeProtocol client
+            client : NetworkProtocol
+                Initialized NetworkProtocol client
             data : bytes
                 Input data to be sent
-            shared_list : List
+            shared_list : ListProxy
                 Shared list to append output of `upload_input()` method
             """
             output = client.upload_input(data)
@@ -379,21 +425,24 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
 
         thread.start()
         status, message = server.receive_message(timeout=1)
-        server.send_message(Message(MessageType.OK, b''))
+        server.send_message(Message(MessageType.OK))
         thread.join()
         assert status == ServerStatus.DATA_READY
         assert message.payload == random_byte_data
         assert shared_list[0] is True
 
     def test_upload_model(
-        self, server_and_client, tmpfolder, random_byte_data
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        tmpfolder: Path,
+        random_byte_data: bytes,
     ):
         """
         Tests the `upload_model()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         tmpfolder : Path
             Fixture to get folder for model.
@@ -403,15 +452,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with open(path, "wb") as file:
             file.write(random_byte_data)
 
-        def receive_model(server: RuntimeProtocol, shared_list: list):
+        def receive_model(server: NetworkProtocol, shared_list: ListProxy):
             """
             Receives uploaded model.
 
             Parameters
             ----------
-            server : RuntimeProtocol
-                Initialized RuntimeProtocol server.
-            shared_list : List
+            server : NetworkProtocol
+                Initialized NetworkProtocol server.
+            shared_list : ListProxy
                 Shared list to to append received data.
             """
             time.sleep(0.1)
@@ -435,13 +484,17 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         parsed_message = client.parse_message(received_data)
         assert parsed_message == answer, f'{parsed_message}!={answer}'
 
-    def test_upload_io_specification(self, server_and_client, tmpfolder):
+    def test_upload_io_specification(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        tmpfolder: Path,
+    ):
         """
         Tests the `upload_io_specification()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         tmpfolder : Path
             Fixture to get folder for io_specification.
@@ -453,15 +506,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with open(path, 'w') as file:
             json.dump(io_specification, file)
 
-        def receive_io(server: RuntimeProtocol, shared_list: list):
+        def receive_io(server: NetworkProtocol, shared_list: ListProxy):
             """
             Receives input/output details.
 
             Parameters
             ----------
-            server : RuntimeProtocol
-                Initialized RuntimeProtocol server
-            shared_list : List
+            server : NetworkProtocol
+                Initialized NetworkProtocol server
+            shared_list : ListProxy
                 Shared list to append received input/output details
             """
             time.sleep(0.1)
@@ -488,13 +541,17 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         parsed_message = client.parse_message(received_data)
         assert parsed_message == answer, f'{parsed_message}!={answer}'
 
-    def test_download_output(self, server_and_client, random_byte_data):
+    def test_download_output(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `download_output()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -508,13 +565,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status is True
         assert downloaded_data == random_byte_data
 
-    def test_download_statistics(self, server_and_client):
+    def test_download_statistics(
+        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
+    ):
         """
         Tests the `download_statistics()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -522,15 +581,15 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         to_send = json.dumps(data).encode()
         server.accept_client(server.serversocket, None)
 
-        def download_stats(client, shared_list):
+        def download_stats(client: NetworkProtocol, shared_list: ListProxy):
             """
             Downloads statistics sent by server.
 
             Parameters
             ----------
-            client : RuntimeProtocol
-                Initialized RuntimeProtocol client
-            shared_list : List
+            client : NetworkProtocol
+                Initialized NetworkProtocol client
+            shared_list : ListProxy
                 Shared list to append downloaded statistics
             """
             time.sleep(0.1)
@@ -576,14 +635,17 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         ],
     )
     def test_parse_message(
-        self, server_and_client, message_type, random_byte_data
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        message_type: MessageType,
+        random_byte_data: bytes,
     ):
         """
         Tests the `parse_message()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         message_type : MessageType
             A MessageType to send along with data
@@ -605,7 +667,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -621,34 +683,34 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with pytest.raises(OSError):
             server.send_message(Message(MessageType.OK))
 
-    def test_request_processing(self, server_and_client):
+    @pytest.mark.parametrize(
+        'client_response,expected',
+        [(Message(MessageType.OK), True), (Message(MessageType.ERROR), False)],
+    )
+    def test_request_processing(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        client_response: Message,
+        expected: bool,
+    ):
         """
         Tests the `request_processing()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
-        def send_ok(client):
-            client.send_message(Message(MessageType.OK))
-
-        def send_error(client):
-            client.send_message(Message(MessageType.ERROR))
-
-        functions = (send_ok, send_error)
-        expected = (True, False)
-        args = (client,)
-
-        for function, expected in zip(functions, expected):
-            thread_send = multiprocessing.Process(target=function, args=args)
-            thread_send.start()
-            response = server.request_processing()
-            assert response is expected, f'{response}!={expected}'
-            thread_send.join()
+        thread_send = multiprocessing.Process(
+            target=client.send_message, args=(client_response,)
+        )
+        thread_send.start()
+        response = server.request_processing()
+        assert response is expected, f'{response}!={expected}'
+        thread_send.join()
 
     def test_request_failure(self, server_and_client):
         """
@@ -656,7 +718,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client
@@ -670,13 +732,17 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message.payload == b''
         )
 
-    def test_request_success(self, server_and_client, random_byte_data):
+    def test_request_success(
+        self,
+        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
+        random_byte_data: bytes,
+    ):
         """
         Tests the `request_success()` method.
 
         Parameters
         ----------
-        server_and_client : Tuple[RuntimeProtocol, RuntimeProtocol]
+        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
             Fixture to get initialized server and client
         """
         server, client = server_and_client

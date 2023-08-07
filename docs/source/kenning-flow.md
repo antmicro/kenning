@@ -31,7 +31,7 @@ A sample [](runner-api) specification looks as follows:
   "outputs": {
     "frame": "cam_frame"
   }
-},
+}
 ```
 
 Each [](runner-api) dictionary consists of:
@@ -142,8 +142,9 @@ This JSON creates a [](kenningflow-api) that consists of three runners - [Camera
 Now, you can execute KenningFlow using the above configuration.
 
 With the config saved in the `flow_scenario_detection.json` file, run the {{json_flow_runner_script}} as follows:
+<!-- skip=True -->
 ```bash
-python -m kenning.scenarios.json_flow_runner flow_scenario_detection.json
+kenning flow --json-cfg flow_scenario_detection.json
 ```
 
 This module runs KenningFlow defined in given JSON file.

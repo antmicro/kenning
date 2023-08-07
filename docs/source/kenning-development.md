@@ -195,7 +195,9 @@ The fields describing the argument are as follows:
 Let's add parameters to the example class:
 
 ```python
+from pathlib import Path
 from kenning.core.optimizer import Optimizer
+from kenning.core.dataset import Dataset
 
 
 class TensorFlowLiteCompiler(Optimizer):
@@ -268,6 +270,7 @@ Usually, each class can accept multiple model input formats and provides at leas
 
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
+<!-- skip=True -->
 ```python
     outputtypes = [
         'tflite'
@@ -276,6 +279,7 @@ The list of supported output formats is represented in a class with an `outputty
 
 The supported input formats are delivered in a form of a dictionary, mapping the supported input type name to the function used to load a model:
 
+<!-- skip=True -->
 ```python
     inputtypes = {
         'keras': kerasconversion,
@@ -636,8 +640,10 @@ E.g. for `DetectionVisualizer` defined in JSON as
 
 the `run` method access inputs as follows
 
-{ emphasize-lines="2-3" }
+{ emphasize-lines="4-5" }
 ```python
+from typing import Any, Dict
+
 def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
     input_data = inputs['frame']
     output_data = inputs['detection_data']

@@ -26,7 +26,7 @@ Optionally, it can be configured as described in [argcomplete documentation](htt
 To get the list of training parameters, select the model and training dataset to use (i.e. `TensorFlowPetDatasetMobileNetV2` model and `PetDataset` dataset) and run:
 
 ```bash
-python -m kenning.scenarios.model_training \
+kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     -h
@@ -35,6 +35,7 @@ python -m kenning.scenarios.model_training \
 This will list the possible parameters that can be used to configure the dataset, the model, and the training parameters.
 For the above call, the output is as follows:
 
+<!-- skip=True -->
 ```bash
 common arguments:
   -h, --help            show this help message and exit
@@ -89,8 +90,9 @@ The list of options depends on [](modelwrapper-api) and [](dataset-api).
 
 At the end, the training can be configured as follows:
 
+<!-- timeout=5 -->
 ```bash
-python -m kenning.scenarios.model_training \
+kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --logdir build/logs \
@@ -115,14 +117,14 @@ It requires you to provide:
 
 The example call for the method is as follows:
 
+<!-- timeout=10 -->
 ```bash
-python -m kenning.scenarios.inference_tester \
+kenning test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements build/tensorflow_pet_dataset_mobilenetv2.json \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
-    --dataset-root build/pet-dataset/ \
-    --run-benchmarks-only
+    --dataset-root build/pet-dataset/
 ```
 
 The script downloads the dataset to the `build/pet-dataset` directory, loads the `tensorflow_pet_dataset_mobilenetv2.h5` model, runs inference on all images from the dataset and collects performance and quality metrics throughout the run.
@@ -137,6 +139,7 @@ The example report with the command call is available in [](./onnx-conversion-su
 `kenning.scenarios.onnx_conversion` requires a list of [](onnxconversion-api) classes that implement model providers and a conversion method.
 For the below, call:
 
+<!-- skip=True -->
 ```bash
 python -m kenning.scenarios.onnx_conversion \
     build/models-directory \
@@ -177,39 +180,35 @@ Optionally, it requires a [](protocol-api)-based class when running remotely to 
 To print the list of required arguments, run:
 
 ```bash
-python3 -m kenning.scenarios.inference_tester \
+kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
-    --modelcompiler-cls kenning.optimizers.tvm.TVMCompiler \
+    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
     -h
 ```
 
 With the above classes, the help can look as follows:
 
+<!-- skip=True -->
 ```bash
 common arguments:
   -h, --help            show this help message and exit
   --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
                         Verbosity level
   --convert-to-onnx CONVERT_TO_ONNX
-                        Before compiling the model, convert it to ONNX and use in compilation (provide a path to
-                        save here)
+                        Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)
   --measurements MEASUREMENTS
                         The path to the output JSON file with measurements
-  --run-benchmarks-only
-                        Instead of running the full compilation and testing flow, only testing of the model is
-                        executed
 
 Inference configuration with JSON:
-  Configuration with pipeline defined in JSON file. This section is not compatible with 'Inference configuration
-  with flags'.
+  Configuration with pipeline defined in JSON file. This section is not compatible with 'Inference configuration with flags'. Arguments with '*' are required.
 
   --json-cfg JSON_CFG   * The path to the input JSON file with configuration of the inference
 
 Inference configuration with flags:
-  Configuration with flags. This section is not compatible with 'Inference configuration with JSON'.
+  Configuration with flags. This section is not compatible with 'Inference configuration with JSON'. Arguments with '*' are required.
 
   --modelwrapper-cls MODELWRAPPER_CLS
                         * ModelWrapper-based class with inference implementation to import
@@ -238,8 +237,7 @@ Dataset arguments:
                         Path to the dataset directory
   --inference-batch-size INFERENCE_BATCH_SIZE
                         The batch size for providing the input data
-  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded and
-                        the checksum is correct then they are not downloaded again. Is enabled by default.
+  --download-dataset    Downloads the dataset before taking any action. If the dataset files are already downloaded and the checksum is correct then they are not downloaded again. Is enabled by default.
   --force-download-dataset
                         Forces dataset download
   --external-calibration-dataset EXTERNAL_CALIBRATION_DATASET
@@ -264,6 +262,33 @@ Runtime arguments:
   --disable-performance-measurements
                         Disable collection and processing of performance metrics
 
+TVMCompiler arguments:
+  --model-framework {keras,onnx,darknet,torch,tflite}
+                        The input type of the model, framework-wise
+  --target TARGET       The kind or tag of the target device
+  --target-host TARGET_HOST
+                        The kind or tag of the host (CPU) target device
+  --opt-level OPT_LEVEL
+                        The optimization level of the compilation
+  --libdarknet-path LIBDARKNET_PATH
+                        Path to the libdarknet.so library, for darknet models
+  --compile-use-vm      At compilation stage use the TVM Relay VirtualMachine
+  --output-conversion-function {default,dict_to_tuple}
+                        The type of output conversion function used for PyTorch conversion
+  --conv2d-data-layout CONV2D_DATA_LAYOUT
+                        Configures the I/O layout for the CONV2D operations
+  --conv2d-kernel-layout CONV2D_KERNEL_LAYOUT
+                        Configures the kernel layout for the CONV2D operations
+  --use-fp16-precision  Applies conversion of FP32 weights to FP16
+  --use-int8-precision  Applies conversion of FP32 weights to INT8
+  --use-tensorrt        For CUDA targets: delegates supported operations to TensorRT
+  --dataset-percentage DATASET_PERCENTAGE
+                        Tells how much data from the calibration dataset (training or external) will be used for calibration dataset
+
+Optimizer arguments:
+  --compiled-model-path COMPILED_MODEL_PATH
+                        The path to the compiled model output
+
 NetworkProtocol arguments:
   --host HOST           The address to the target device
   --port PORT           The port for the target device
@@ -284,8 +309,9 @@ Both classes may require some additional arguments that can be listed with the `
 
 An example script for the `inference_tester` is:
 
+<!-- timeout=5 -->
 ```bash
-python -m kenning.scenarios.inference_tester \
+kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -299,7 +325,7 @@ python -m kenning.scenarios.inference_tester \
     --inference-input-type int8 \
     --inference-output-type int8 \
     --host 192.168.188.35 \
-    --port 12345 \
+    --port 12344 \
     --packet-size 32768 \
     --save-model-path /home/mendel/compiled-model.tflite \
     --dataset-root build/pet-dataset \
@@ -309,12 +335,13 @@ python -m kenning.scenarios.inference_tester \
 
 The above runs with the following `inference_server` setup:
 
+<!-- timeout=5 -->
 ```bash
-python -m kenning.scenarios.inference_server \
+kenning server \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --host 0.0.0.0 \
-    --port 12345 \
+    --port 12344 \
     --packet-size 32768 \
     --save-model-path /home/mendel/compiled-model.tflite \
     --delegates-list libedgetpu.so.1 \
@@ -328,13 +355,14 @@ This run was tested on a Google Coral Devboard device.
 `kenning.scenarios.inference_tester` can be also executed locally - in this case, the `--protocol-cls` argument can be skipped.
 The example call is as follows:
 
+<!-- timeout=5 -->
 ```bash
-python3 -m kenning.scenarios.inference_tester \
+kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
-    --modelcompiler-cls kenning.optimizers.tvm.TVMCompiler \
+    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \
@@ -370,12 +398,13 @@ python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
-     --output-collectors kenning.outputcollectors.name_printer.NamePrinter \
+    --output-collectors kenning.outputcollectors.name_printer.NamePrinter \
     -h
 ```
 
 With the above classes, the help can look as follows:
 
+<!-- skip=True -->
 ```bash
 positional arguments:
   modelwrappercls       ModelWrapper-based class with inference implementation to import
@@ -421,6 +450,8 @@ OutputCollector arguments:
 
 An example script for `inference_runner`:
 
+<!-- TODO: update argparser -->
+<!-- skip=True -->
 ```bash
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \

@@ -7,14 +7,32 @@
 ## Installing Pipeline Manager
 
 Kenning requires extra dependencies to run integration with Pipeline Manager. To install them run:
+<!-- skip=True -->
 ```bash
 pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
+```
+
+To use Pipeline Manager, clone the repository:
+
+```bash
+git clone https://github.com/antmicro/kenning-pipeline-manager.git
+cd kenning-pipeline-manager
+```
+
+And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager).
+
+After this, build the server application for Pipeline Manager with:
+
+```bash
+pip install -r requirements.txt
+./build server-app
 ```
 
 ## Running Pipeline Manager with Kenning
 
 Start the Pipeline Manager client with
 
+<!-- timeout=10 -->
 ```bash
 kenning visual-editor [OPTIONS]
 ```
@@ -22,7 +40,13 @@ kenning visual-editor [OPTIONS]
 This command will build the frontend, start a backend server in the background,
 generate Kenning nodes specification and finally run the client.
 
-The possible options are:
+Secondly, start the Kenning pipeline manager with:
+
+```bash
+kenning visual-editor -h
+```
+
+Where possible options are:
 
 * `--spec-type` - the type of Kenning scenarios to run, can be either `pipeline` (for [optimization and deployment pipeline](json-scenarios)) or `flow` (for creating [runtime scenarios](kenning-flow)).
   By default it is `pipeline`

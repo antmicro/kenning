@@ -4,12 +4,13 @@ The {{optimization_runner_script}} script allows to optimize over multiple pipel
 
 The script can be run as follows:
 
+<!-- skip=True -->
 ```bash
-python3 -m kenning.scenarios.optimization_runner <CONFIG_JSON> <OUTPUT_PATH>.json
+kenning fine-tune-optimizers --json-cfg <CONFIG_JSON>.json --output <OUTPUT_PATH>.json
 ```
 
 With the arguments:
-* `<CONFIG_JSON>` - describes the configuration, which pipelines would be executed and optimization settings
+* `<CONFIG_JSON>.json` - describes the configuration, which pipelines would be executed and optimization settings
 * `<OUTPUT_PATH>.json` - base path to the output files with measurements.
 
 ## Optimization config specification
@@ -105,7 +106,7 @@ The {{optimization_runner_script}} outputs multiple JSON files:
 
 The example `<OUTPUT PATH>.json` JSON file can look like this:
 
-```JSON
+```json
 {
     "pipeline": {
         "model_wrapper": {

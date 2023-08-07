@@ -15,6 +15,9 @@ The parameters of this method are a URI of the resource and optional output path
 If the output path is not specified, the file will be saved in `$KENNING_CACHE_DIR/uri.path`.
 
 ```python
+import pathlib
+from kenning.utils.resource_manager import ResourceManager, ResourceURI
+
 model_path = pathlib.Path('./model.h5')
 ResourceManager().get_resource('kenning:///models/classification/magic_wand.h5', model_path)
 ```
@@ -84,6 +87,7 @@ The conversion can be:
 
 The above default scheme conversions can be defined as:
 
+<!-- skip=True -->
 ```python
 BASE_URL_SCHEMES = {
     'http': None,
@@ -99,6 +103,8 @@ The keys in this dictionary are scheme names, and values are conversion methods.
 The `_gh_converter` is defined as:
 
 ```python
+from typing import Dict
+
 def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
     netloc = netloc.split(':')
     return (

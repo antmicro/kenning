@@ -8,6 +8,8 @@ This documentation consists of the following chapters:
 * [Deep Learning deployment stack](dl-deployment-stack) section describes a typical model deployment flow on edge devices,
 * [Defining optimization pipelines in Kenning](json-scenarios) section describes a way to create advanced optimization scenarios with JSON config,
 * [Using Kenning via command-line arguments](cmd-usage) section describes executable scripts available in {{projecturl}},
+* [Kenning gallery](kenning-gallery) contains use cases with models optimization and integration with ROS2, Renode and Pipeline Manager,
+* [Kenning environment variables](kenning-variables) section describes specific variables which can influence how the Kenning works,
 * [Visualizing Kenning data flows with Pipeline Manager](pipeline-manager) section describes integration with [Pipeline Manager](https://github.com/antmicro/kenning-pipeline-manager) GUI tool for visualizing optimization flows,
 * [Kenning measurements](kenning-measurements) section describes data gathered during the compilation and evaluation process,
 * [Choosing optimal optimization pipeline](pipeline-optimizer) section describes a way to run multiple pipelines and search for the one that achieves the best result

@@ -27,6 +27,7 @@ Each dictionary in the fields above consists of:
 
 The simplest JSON configuration looks as follows:
 
+<!-- name="pipeline.json" -->
 ```json
 {
     "model_wrapper":
@@ -58,6 +59,7 @@ In the `type` field, we specify the full "path" to the class by specifying the m
 In `parameters`, arguments specific to `TensorFlowPetDatasetMobileNetV2` are provided.
 The following parameters are available based on the argument specification:
 
+<!-- skip=True -->
 ```python
 # this argument structure is taken from kenning.core.model - it is inherited by child classes
 arguments_structure = {
@@ -75,6 +77,7 @@ It is a required argument.
 
 The `dataset` used here, is `PetDataset`. Like previously, it is provided in a module-like format (`kenning.datasets.pet_dataset.PetDataset`). The parameters here are specified in `kenning.core.dataset.Dataset` (inherited) and `kenning.core.dataset.PetDataset`:
 
+<!-- skip=True -->
 ```python
 arguments_structure = {
     # coming from kenning.core.dataset.Dataset
@@ -127,8 +130,9 @@ The dataset test data is passed through the model and evaluation metrics are col
 
 To run the defined pipeline (assuming that the JSON file is under `pipeline.json`), run:
 
+<!-- timeout=10 -->
 ```bash
-python -m kenning.scenarios.inference_tester --json-cfg pipeline.json --measurements measurements.json --verbosity INFO
+kenning test --json-cfg pipeline.json --measurements measurements.json --verbosity INFO
 ```
 
 The `measurements.json` file is the output of the {{json_compilation_script}} providing measurement data.
@@ -162,6 +166,7 @@ For example, a model can be subjected to the following optimizations:
 Such case will result is the following scenario:
 
 { emphasize-lines="18-47" }
+<!-- name="scenario.json" -->
 ```json
 {
     "model_wrapper":
@@ -235,8 +240,9 @@ More details on input/output formats between [](optimizer-api) objects can be fo
 
 The scenario can be executed as follows:
 
+<!-- timeout=10 -->
 ```bash
-python -m kenning.scenarios.inference_tester --json-cfg scenario.json --measurements output.json
+kenning optimize test --json-cfg scenario.json --measurements output.json
 ```
 
 ## Compiling a model and running it remotely
@@ -307,7 +313,7 @@ Let's start with client configuration by adding a `protocol` entry:
         "parameters":
         {
             "host": "10.9.8.7",
-            "port": 12345,
+            "port": 12346,
             "packet_size": 32768
         }
     }
@@ -335,7 +341,7 @@ The server configuration looks as follows:
         "parameters":
         {
             "host": "0.0.0.0",
-            "port": 12345,
+            "port": 12346,
             "packet_size": 32768
         }
     }
@@ -351,16 +357,18 @@ The server also sends measurements from its sensors in JSON format as long as it
 
 First, run the server, so that it is available for the client:
 
+<!-- timeout=10 -->
 ```bash
-python3 -m kenning.scenarios.inference_server \
+kenning server \
     --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
     --verbosity INFO
 ```
 
 Then, run the client:
 
+<!-- timeout=10 -->
 ```bash
-python3 -m kenning.scenarios.inference_tester \
+kenning optimize test \
     --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
     --measurements ./build/tflite-tvm-classificationjson.json \
     --verbosity INFO

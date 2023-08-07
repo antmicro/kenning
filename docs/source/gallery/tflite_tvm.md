@@ -195,15 +195,6 @@ The summary of passes can be seen below:
 | tflite-int8   | 1.683232669 | 0.9519662539 |      7.02033412 |
 | tvm-avx2-int8 | 41.61514549 | 0.9487005035 |     3.229375069 |
 
-Generated report:
-
-```{toctree}
-:maxdepth: 1
-:titlesonly:
-
-reports/tvm-avx2-int8
-```
-
 ## Automated model comparison
 
 The `kenning.scenarios.render_report` script also allows us to compare evaluation results for multiple models.
@@ -221,12 +212,17 @@ kenning report \
         build/tvm-avx2-int8.json
 ```
 
-Generated report:
+Some examples of comparisons between various models rendered with the script:
 
-```{toctree}
-:maxdepth: 1
-:titlesonly:
+* Accuracy, inference time and model size comparison:
 
-reports/summary
-```
+  ![](../img/accuracy-inference-time-comparison.png)
+* Resource utilization distribution:
+
+  ![](../img/utilization-comparison.png)
+* Comparison of classification metrics:
+
+  ![](../img/classification-metrics-comparison.png)
+* And more
+
 

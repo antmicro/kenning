@@ -6,6 +6,7 @@
 Base class for bytes-based inference communication protocol.
 """
 
+from abc import ABC
 from time import time
 from typing import Optional, Tuple
 import selectors
@@ -15,7 +16,7 @@ from kenning.core.runtimeprotocol import ServerStatus
 from kenning.core.runtimeprotocol import Message
 
 
-class BytesBasedProtocol(RuntimeProtocol):
+class BytesBasedProtocol(RuntimeProtocol, ABC):
 
     arguments_structure = {
         'packet_size': {

@@ -27,4 +27,5 @@ python -m kenning report \
     --root-dir docs/source/ \
     --img-dir docs/source/generated/img \
     --report-types performance classification \
-    --measurements build/local-cpu-tvm-tensorflow-classification.json
+    --measurements build/local-cpu-tvm-tensorflow-classification.json \
+    --smaller-header

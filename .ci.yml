@@ -35,22 +35,12 @@ pytest:
         - mkdir -p build
         - ln -s /data/* build/
         - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
-        - python setup.py develop
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -n=auto --dist=loadgroup --color=yes --report-log=log.json -vvl
+        - pip install --no-deps -e .
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json -vvl
     artifacts:
         paths:
             - log.json
         when: always
-    allow_failure: false
-
-kenning-cli:
-    <<: *ace
-    <<: *common_only
-    stage: tests
-    script:
-        - pip install .
-        - kenning -h
-        - kenning test report -h
     allow_failure: false
 
 sample-compilation:

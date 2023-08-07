@@ -20,9 +20,8 @@ import sys
 import argparse
 import signal
 import json
-from typing import Any, Dict, Optional, List, Tuple
 from argcomplete.completers import FilesCompleter
-from pathlib import Path
+from typing import Optional, List, Tuple
 
 from kenning.cli.command_template import (
     ArgumentsGroups,
@@ -34,7 +33,6 @@ from kenning.cli.completers import (
     RUNTIMES,
     RUNTIME_PROTOCOLS,
 )
-from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
 from kenning.core.protocol import (
     MessageType,
@@ -251,7 +249,7 @@ class InferenceServerRunner(CommandTemplate):
             )
 
         if args.json_cfg is not None:
-            InferenceServerRunner._run_from_json(args, not_parsed)
+            return InferenceServer._run_from_json(args, not_parsed)
 
         else:
             missing_args = [
@@ -266,7 +264,7 @@ class InferenceServerRunner(CommandTemplate):
                     f'{", ".join(missing_args)}',
                 )
 
-            InferenceServerRunner._run_from_flags(args, not_parsed)
+        return InferenceServer._run_from_flags(args, not_parsed)
 
     @staticmethod
     def _run_from_flags(

@@ -127,7 +127,7 @@ class Parser(argparse.ArgumentParser):
         # new: end program when early_exit is True
         # when help flag is present raise exception
         if early_exit:
-            self.exit(2, error)
+            self.exit(0, error)
         if any(help in sys.argv[1:] for help in HELP_FLAGS):
             raise ParserHelpException(self, message)
         if print_usage:

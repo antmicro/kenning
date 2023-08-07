@@ -88,7 +88,7 @@ def main(argv):
         argv[0],
         parents=[
             parser,
-            modelwrappercls.form_argparse(True)[0],
+            modelwrappercls.form_argparse()[0],
             runtimecls.form_argparse()[0],
             dataprovidercls.form_argparse()[0]
         ] + ([i.form_argparse()[0] for i in outputcollectorcls])

@@ -1638,7 +1638,8 @@ def generate_report(
         command: List[str] = [],
         cmap: Optional[Any] = None,
         colors: Optional[List] = None,
-        draw_titles: bool = True):
+        draw_titles: bool = True,
+        smaller_header: bool = False,):
     """
     Generates an MyST report based on Measurements data.
 
@@ -1674,6 +1675,8 @@ def generate_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    smaller_header : bool
+        Use H2 header instead of H1.
     """
     from kenning.core.report import create_report_from_measurements
 
@@ -1693,7 +1696,8 @@ def generate_report(
     header_data = {
         'report_name': report_name,
         'model_names': [],
-        'command': []
+        'command': [],
+        'bigger_title': not smaller_header,
     }
 
     for model_data in data:
@@ -1952,6 +1956,11 @@ class RenderReport(CommandTemplate):
             help='Do not use measurements of unoptimized model',
             action='store_true',
         )
+        report_group.add_argument(
+            '--smaller-header',
+            help="Use smaller size for header containing report name",
+            action="store_true",
+        )
         return parser, groups
 
     @staticmethod
@@ -2064,6 +2073,7 @@ class RenderReport(CommandTemplate):
                 cmap=cmap,
                 colors=colors,
                 draw_titles=args.use_default_theme,
+                smaller_header=args.smaller_header,
             )
 
         if args.to_html:

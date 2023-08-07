@@ -13,7 +13,6 @@ from kenning.core.runtimeprotocol import RuntimeProtocol, Message, \
         MessageType, ServerStatus
 
 from kenning_computer_vision_msgs.srv import RuntimeProtocolSrv
-from kenning_computer_vision_msgs.msg import RuntimeProtocolMsg
 
 import rclpy
 from rclpy.node import Node
@@ -108,12 +107,11 @@ class ROS2Protocol(RuntimeProtocol):
         RuntimeProtocolSrv.Request :
             Converted service request.
         """
-        ros2_message = RuntimeProtocolMsg(
-                message_type=message.message_type.value,
-                data=[message.payload]
-        )
+        request = RuntimeProtocolSrv.Request()
+        request.message_type = message.message_type.value
+        request._data = bytearray(message.payload)
 
-        return RuntimeProtocolSrv.Request(request=ros2_message)
+        return request
 
     def convert_from_srv(self, srv: RuntimeProtocolSrv.Response) -> Message:
         """
@@ -129,8 +127,8 @@ class ROS2Protocol(RuntimeProtocol):
         Message :
             Converted message according to the runtime protocol specification.
         """
-        runtime_message = Message(MessageType(srv.response.message_type),
-                                  srv.response.data)
+        runtime_message = Message(MessageType(srv.message_type),
+                                  b''.join(srv.data))
         return runtime_message
 
     def initialize_client(self):
@@ -191,11 +189,11 @@ class ROS2Protocol(RuntimeProtocol):
 
         # Process the response
         response = self.future.result()
-        self.future = None
         if not response:
             self.log_debug('No response from communication service')
             return ServerStatus.NOTHING, None
 
+        self.future = None
         message = self.convert_from_srv(response)
         return ServerStatus.DATA_READY, message
 

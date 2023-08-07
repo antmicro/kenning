@@ -100,6 +100,9 @@ test = [
     "pytest-mock",
     "pytest-dependency",
     "pytest-xdist",
+    "pytest-order",
+    "pytest-reportlog",
+    "tuttest @ git+https://github.com/antmicro/tuttest.git",
 ]
 real_time_visualization = [
     "dearpygui>=1.6.2",

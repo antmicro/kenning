@@ -10,7 +10,7 @@ from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
 from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.tests.core.conftest import get_tmp_path
+from kenning.tests.conftest import get_tmp_path
 from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
 

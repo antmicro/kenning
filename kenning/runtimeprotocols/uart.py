@@ -30,6 +30,8 @@ MAX_LENGTH_MODEL_NAME = 20
 
 MODEL_STRUCT_SIZE = 160
 
+ALLOCATION_STATS_SIZE = 24
+
 
 def _io_spec_to_struct(
         io_spec: Dict[str, Any],
@@ -56,6 +58,12 @@ def _io_spec_to_struct(
     bytes :
         IO specification structure.
     """
+
+    if len(entry_func) > MAX_LENGTH_ENTRY_FUNC_NAME:
+        raise ValueError(f'Invalid entry func name: {entry_func}')
+    if len(model_name) > MAX_LENGTH_MODEL_NAME:
+        raise ValueError(f'Invalid model name: {model_name}')
+
     input_shape = [inp['shape'] for inp in io_spec['input']]
     output_length = [
         int(np.prod(outp['shape'])) for outp in io_spec['output']
@@ -63,7 +71,13 @@ def _io_spec_to_struct(
     dtype = io_spec['input'][0]['dtype']
 
     dtype_size = re.findall(r'\d+', dtype)
-    assert len(dtype_size) == 1, f'Wrong dtype {dtype}'
+    if (
+        len(dtype_size) != 1 or
+        int(dtype_size[0]) % 8 != 0 or
+        int(dtype_size[0]) == 0
+    ):
+        raise ValueError(f'Invalid dtype: {dtype}')
+
     dtype_size_bytes = int(dtype_size[0])//8
     dtype = dtype[0] + dtype_size[0]
 
@@ -73,6 +87,21 @@ def _io_spec_to_struct(
     input_size_bytes = [dtype_size_bytes for _ in input_shape]
     num_output = len(output_length)
     output_size_bytes = dtype_size_bytes
+
+    # check constraints
+    if num_input > MAX_MODEL_INPUT_NUM:
+        raise ValueError(
+            f'Too many inputs: {num_input} > {MAX_MODEL_INPUT_NUM}'
+        )
+    for dim in num_input_dim:
+        if dim > MAX_MODEL_INPUT_DIM:
+            raise ValueError(
+                f'Too many dimensions: {dim} > {MAX_MODEL_INPUT_DIM}'
+            )
+    if num_output > MAX_MODEL_OUTPUTS:
+        raise ValueError(
+            f'Too many outputs: {num_output} > {MAX_MODEL_OUTPUTS}'
+        )
 
     def int_to_bytes(num: int) -> bytes:
         return num.to_bytes(4, byteorder=byteorder, signed=False)
@@ -129,6 +158,9 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     Dict[str, int] :
         Parsed stats.
     """
+    if len(data) != ALLOCATION_STATS_SIZE:
+        raise ValueError(f'Invalid allocations stats size: {len(data)}')
+
     stats = np.frombuffer(data, dtype=np.uint32, count=6)
     stats_json = {
         'host_bytes_peak': int(stats[0]),

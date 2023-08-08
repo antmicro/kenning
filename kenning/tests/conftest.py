@@ -130,6 +130,8 @@ def pytest_sessionstart(session: pytest.Session):
     # do nothing when only collecting tests
     if '--collect-only' in session.config.invocation_params.args:
         return
+
+    ResourceManager().set_cache_dir(test_directory / 'cache')
     (test_directory / 'tmp').mkdir(parents=True, exist_ok=True)
 
 
@@ -156,6 +158,32 @@ def pytest_generate_tests(metafunc: Metafunc):
     if 'tmpfolder' in metafunc.fixturenames:
         metafunc.parametrize('test_directory', [test_directory],
                              scope='class')
+
+
+def get_tmp_path(suffix: str = '') -> Path:
+    """
+    Generates temporary path.
+
+    Parameters
+    ----------
+    suffix : str
+        Suffix of the file.
+
+    Returns
+    -------
+    Path :
+        Temporary path.
+    """
+    candidate = None
+
+    while candidate is None or candidate.exists():
+        candidate = (
+            pytest.test_directory
+            / 'tmp'
+            / next(tempfile._get_candidate_names())
+        ).with_suffix(suffix)
+
+    return Path(candidate)
 
 
 @pytest.fixture(scope='class')

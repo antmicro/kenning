@@ -5,7 +5,6 @@
 import pytest
 from typing import Tuple, Type, Union
 from pathlib import Path
-import tempfile
 import shutil
 import os
 from tensorflow.keras.models import load_model
@@ -26,29 +25,8 @@ from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
 from kenning.modelwrappers.detectors.darknet_coco import TVMDarknetCOCOYOLOV3
 from kenning.compilers.iree import IREECompiler
 from kenning.compilers.tvm import TVMCompiler
+from kenning.tests.conftest import get_tmp_path
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
-
-
-def get_tmp_path(suffix: str = '') -> ResourceURI:
-    """
-    Generates temporary path.
-
-    Parameters
-    ----------
-    suffix : str
-        Suffix of the file.
-
-    Returns
-    -------
-    Path :
-        Temporary path.
-    """
-    candidate = None
-    while candidate is None or candidate.exists():
-        candidate = (pytest.test_directory / 'tmp' /
-                     next(tempfile._get_candidate_names())).with_suffix(suffix)
-
-    return ResourceURI(candidate)
 
 
 def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:

@@ -479,7 +479,7 @@ class RuntimeProtocol(ArgumentsHandler):
                     self.log.error('Error during uploading input')
                     return False, None
                 if message.message_type != MessageType.OK:
-                    self.log.error('Unexpected message')
+                    self.log.error(f'Unexpected message {message}')
                     return False, None
                 self.log.debug('Upload finished successfully')
                 return True, message.payload

@@ -4,15 +4,17 @@
 
 import shutil
 import tempfile
-from argparse import ArgumentParser
-from dataclasses import dataclass
+import os
+from glob import glob
 from pathlib import Path
-from random import randint, random
+from pytest import Metafunc
 from typing import Optional
+from random import randint, random
+from PIL import Image
+from dataclasses import dataclass
+from argparse import ArgumentParser
 
 import pytest
-from PIL import Image
-from pytest import Metafunc
 
 import kenning
 from kenning.core.dataset import Dataset
@@ -145,7 +147,15 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
         return
     test_directory_tmp = pytest.test_directory / 'tmp'
     if test_directory_tmp.exists():
-        shutil.rmtree(test_directory_tmp)
+        # Remove all symlink from tmp test directory
+        for path in glob(str(test_directory_tmp / "**" / "*"), recursive=True):
+            if os.path.islink(path):
+                os.remove(path)
+        try:
+            shutil.rmtree(test_directory_tmp)
+        except OSError as er:
+            print(er)
+            shutil.rmtree(test_directory_tmp, ignore_errors=True)
 
 
 def pytest_generate_tests(metafunc: Metafunc):

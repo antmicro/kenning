@@ -472,7 +472,7 @@ class RuntimeProtocol(ArgumentsHandler):
             True if OK received and attached message data, False otherwise.
         """
         while True:
-            status, message = self.receive_message()
+            status, message = self.receive_message(.01)
 
             if status == ServerStatus.DATA_READY:
                 if message.message_type == MessageType.ERROR:

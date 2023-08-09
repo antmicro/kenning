@@ -38,8 +38,9 @@ class TestRuntimeNetwork:
             Optional number of four sized byte words to generate.
 
         Returns
-        ------
-        bytes: Generated sequence of bytes
+        -------
+        bytes :
+            Generated sequence of bytes
         """
         data = bytes()
         if length is None:
@@ -56,7 +57,8 @@ class TestRuntimeNetwork:
 
         Returns
         -------
-        Runtime : Initialized runtime object.
+        Runtime :
+            Initialized runtime object.
         """
         protocol = self.runtimeprotocolcls(self.host, self.port)
         runtimeobj = runtimecls(protocol, self.runtimemodel)
@@ -70,7 +72,8 @@ class TestRuntimeNetwork:
 
         Returns
         -------
-        RuntimeProtocol : Initialized NetworkProtocol server
+        RuntimeProtocol :
+            Initialized NetworkProtocol server
         """
         serverobj = self.runtimeprotocolcls(self.host, self.port)
         serverobj.initialize_server()

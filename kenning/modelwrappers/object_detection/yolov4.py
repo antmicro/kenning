@@ -13,7 +13,7 @@ repositories' README (Darknet2ONNX section).
 
 After this, to remove the embedded processing of outputs, run in Python shell::
 
-    from kenning.modelwrappers.detectors.yolov4 import \
+    from kenning.modelwrappers.object_detection.yolov4 import \
             yolov4_remove_postprocessing
 
 
@@ -29,7 +29,7 @@ import numpy as np
 import onnx
 
 from kenning.datasets.coco_dataset import COCODataset2017
-from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 from kenning.utils.resource_manager import PathOrURI
 
 

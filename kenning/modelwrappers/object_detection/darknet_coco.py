@@ -12,7 +12,7 @@ additional metadata from the CFG model definition stored in the outputs
 from TVM-compiled model.
 """
 from kenning.datasets.coco_dataset import COCODataset2017
-from kenning.modelwrappers.detectors.yolo_wrapper import YOLOWrapper
+from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 
 
 class TVMDarknetCOCOYOLOV3(YOLOWrapper):

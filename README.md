@@ -651,13 +651,13 @@ Modelwrappers (in kenning.modelwrappers):
     kenning.modelwrappers.instance_segmentation.yolact.YOLACT
     kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
     kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
-    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3
+    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3
     kenning.modelwrappers.instance_segmentation.yolact.YOLACTWithPostprocessing
     kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet
     kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2
     kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
-    kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+    kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
 
 ...
 ```
@@ -717,7 +717,7 @@ Provided the dependencies are satisfied, the script can gain access to more deta
 Here is a comparison between the regular and more descriptive outputs:
 
 ```bash
-kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
 ```
 
 ```
@@ -767,7 +767,7 @@ To load a class with arguments, all required arguments must be provided.
 In the case of `ONNXYOLOV4`, only `--model-path` is needed:
 
 ```bash
-kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4 \
+kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4 \
         --load-class-with-args \
         --model-path \
             kenning:///models/detection/yolov4.onnx

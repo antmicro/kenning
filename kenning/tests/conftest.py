@@ -524,7 +524,7 @@ def mock_configuration_file_contents_modelruntime_runner(tmp_path):
     dataset_file.write_text('{}')
     model_file.write_text('''
         {
-            "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+            "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
             "parameters": {
                 "model_path": "kenning:///models/detection/yolov4.onnx"
             }

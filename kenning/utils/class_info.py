@@ -741,7 +741,8 @@ def generate_class_info(
     Parameters
     ----------
     target: str
-        Target module-like path e.g. `kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4` # noqa E501
+        Target module-like path e.g.
+        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`
     class_name: str
         Name of a specific class to display information about
     docstrings: bool

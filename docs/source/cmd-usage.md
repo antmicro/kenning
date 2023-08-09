@@ -367,7 +367,7 @@ To print the list of required arguments, run:
 
 ```bash
 python3 -m kenning.scenarios.inference_runner \
-    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
+    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
      --output-collectors kenning.outputcollectors.name_printer.NamePrinter \
@@ -423,7 +423,7 @@ An example script for `inference_runner`:
 
 ```bash
 python3 -m kenning.scenarios.inference_runner \
-    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3 \
+    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
     --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter \

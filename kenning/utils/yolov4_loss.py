@@ -5,7 +5,7 @@
 import torch
 from typing import List
 
-from kenning.modelwrappers.detectors.yolov4 import ONNXYOLOV4
+from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 
 
 class YOLOv4Loss(object):

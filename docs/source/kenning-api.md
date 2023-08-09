@@ -143,7 +143,7 @@ Model wrapper examples:
 * [PyTorchWrapper](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/frameworks/pytorch.py) and [TensorFlowWrapper](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/frameworks/tensorflow.py) implement common methods for all PyTorch and TensorFlow framework models,
 * [PyTorchPetDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/pytorch_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in PyTorch,
 * [TensorFlowDatasetMobileNetV2](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py) wraps the MobileNetV2 model for Pet classification implemented in TensorFlow,
-* [TVMDarknetCOCOYOLOV3](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/detectors/darknet_coco.py) wraps the YOLOv3 model for COCO object detection implemented in Darknet (without training and inference methods).
+* [TVMDarknetCOCOYOLOV3](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/object_detection/darknet_coco.py) wraps the YOLOv3 model for COCO object detection implemented in Darknet (without training and inference methods).
 
 ```{eval-rst}
 .. autoclass:: kenning.core.model.ModelWrapper

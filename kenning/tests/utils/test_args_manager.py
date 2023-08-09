@@ -77,7 +77,7 @@ class TestArgsManagerWrapper:
     }
     VALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER = {
         'model_wrapper': {
-            'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
+            'type': 'kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4',
             'parameters': {
                 'model_path': 'build/yolov4.onnx'}
         },
@@ -90,7 +90,7 @@ class TestArgsManagerWrapper:
     }
     VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER = {
         'model_wrapper': {
-            'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
+            'type': 'kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4',
             'parameters': {
                 'model_path': 'build/yolov4.onnx'}
         },
@@ -108,7 +108,7 @@ class TestArgsManagerWrapper:
 
     INVALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER_MISSING_REQUIRED = {
         'model_wrapper': {
-            'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
+            'type': 'kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4',
             'parameters': {
                 'model_path': 'build/yolov4.onnx'}
         },
@@ -187,7 +187,7 @@ class TestArgsManagerWrapper:
         )
     VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER = {
         'model_wrapper': {
-            'type': 'kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4',
+            'type': 'kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4',
             'parameters': {
                 'model_path': 'kenning:///models/detection/yolov4.onnx'}
         },

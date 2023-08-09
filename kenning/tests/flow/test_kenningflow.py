@@ -35,7 +35,7 @@ MDL_RT_RUNNER_YOLOV4_JSON = {
     "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
     "parameters": {
         "model_wrapper": {
-            "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+            "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
             "parameters": {
                 "model_path": "kenning:///models/detection/yolov4.onnx"    # noqa: 501
             }

@@ -94,7 +94,7 @@ In order to create a [](kenningflow-api) presenting YOLOv4 model performance, cr
     "type": "kenning.runners.modelruntime_runner.ModelRuntimeRunner",
     "parameters": {
       "model_wrapper": {
-        "type": "kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4",
+        "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
         "parameters": {
           "model_path": "kenning:///models/detection/yolov4.onnx"
         }

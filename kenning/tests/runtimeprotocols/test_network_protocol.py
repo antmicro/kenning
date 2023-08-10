@@ -7,7 +7,6 @@ import multiprocessing
 import socket
 import time
 import uuid
-from multiprocessing.managers import ListProxy
 from pathlib import Path
 from typing import Optional, Tuple
 
@@ -27,6 +26,7 @@ from kenning.tests.runtimeprotocols.test_core_protocol import (
 )
 
 
+@pytest.mark.xdist_group(name='use_socket')
 class TestNetworkProtocol(TestCoreRuntimeProtocol):
     host = 'localhost'
     port = random_network_port()
@@ -41,9 +41,9 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         Tests the `initialize_server()` method.
         """
         server = self.init_protocol()
-        assert server.initialize_server() is True
+        assert server.initialize_server()
         second_server = self.init_protocol()
-        assert second_server.initialize_server() is False
+        assert not second_server.initialize_server()
         assert second_server.serversocket is None
         server.disconnect()
 
@@ -55,8 +55,8 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with pytest.raises(ConnectionRefusedError):
             client.initialize_client()
         server = self.init_protocol()
-        assert server.initialize_server() is True
-        assert client.initialize_client() is True
+        assert server.initialize_server()
+        assert client.initialize_client()
         client.disconnect()
         server.disconnect()
 
@@ -182,7 +182,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             Fixture to get initialized server and client
         """
         server, client = server_and_client
-        assert client.send_data(random_byte_data) is True
+        assert client.send_data(random_byte_data)
 
     def test_receive_data(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
@@ -215,7 +215,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
-        assert client.send_data(random_byte_data) is True
+        assert client.send_data(random_byte_data)
         status, received_data = server.receive_data(None, None)
         assert status is ServerStatus.DATA_READY
         assert random_byte_data == received_data
@@ -329,14 +329,9 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
-        assert (
-            client.send_message(Message(MessageType.DATA, random_byte_data))
-            is True
-        )
-        assert (
-            server.send_message(Message(MessageType.DATA, random_byte_data))
-            is True
-        )
+        assert client.send_message(Message(MessageType.DATA, random_byte_data))
+        assert server.send_message(Message(MessageType.DATA, random_byte_data))
+
         client.disconnect()
         with pytest.raises(ConnectionResetError):
             server.send_message(Message(MessageType.OK))
@@ -400,7 +395,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         def upload(
             client: NetworkProtocol,
             data: bytes,
-            shared_list: ListProxy,
+            queue: multiprocessing.Queue,
         ):
             """
             Waits for confirmation message and sends input data.
@@ -411,16 +406,16 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
                 Initialized NetworkProtocol client
             data : bytes
                 Input data to be sent
-            shared_list : ListProxy
+            queue : multiprocessing.Queue
                 Shared list to append output of `upload_input()` method
             """
             output = client.upload_input(data)
-            shared_list.append(output)
+            queue.put(output)
 
         server.accept_client(server.serversocket, None)
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread = multiprocessing.Process(
-            target=upload, args=(client, random_byte_data, shared_list)
+            target=upload, args=(client, random_byte_data, queue)
         )
 
         thread.start()
@@ -429,7 +424,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         thread.join()
         assert status == ServerStatus.DATA_READY
         assert message.payload == random_byte_data
-        assert shared_list[0] is True
+        assert queue.get()
 
     def test_upload_model(
         self,
@@ -452,7 +447,9 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with open(path, "wb") as file:
             file.write(random_byte_data)
 
-        def receive_model(server: NetworkProtocol, shared_list: ListProxy):
+        def receive_model(
+            server: NetworkProtocol, queue: multiprocessing.Queue
+        ):
             """
             Receives uploaded model.
 
@@ -460,25 +457,25 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             ----------
             server : NetworkProtocol
                 Initialized NetworkProtocol server.
-            shared_list : ListProxy
+            queue : multiprocessing.Queue
                 Shared list to to append received data.
             """
             time.sleep(0.1)
             status, received_model = server.receive_data(None, None)
-            shared_list.append((status, received_model))
+            queue.put((status, received_model))
             output = server.send_message(Message(MessageType.OK))
-            shared_list.append(output)
+            queue.put(output)
 
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread_receive = multiprocessing.Process(
-            target=receive_model, args=(server, shared_list)
+            target=receive_model, args=(server, queue)
         )
         server.accept_client(server.serversocket, None)
         thread_receive.start()
-        assert client.upload_model(path) is True
+        assert client.upload_model(path)
         thread_receive.join()
-        assert shared_list[1] is True
-        receive_status, received_data = shared_list[0]
+        receive_status, received_data = queue.get()
+        assert queue.get()
         assert receive_status == ServerStatus.DATA_READY
         answer = Message(MessageType.MODEL, random_byte_data)
         parsed_message = client.parse_message(received_data)
@@ -506,7 +503,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with open(path, 'w') as file:
             json.dump(io_specification, file)
 
-        def receive_io(server: NetworkProtocol, shared_list: ListProxy):
+        def receive_io(server: NetworkProtocol, queue: multiprocessing.Queue):
             """
             Receives input/output details.
 
@@ -514,27 +511,28 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             ----------
             server : NetworkProtocol
                 Initialized NetworkProtocol server
-            shared_list : ListProxy
+            queue : multiprocessing.Queue
                 Shared list to append received input/output details
             """
             time.sleep(0.1)
             status, received = server.receive_data(None, None)
-            shared_list.append((status, received))
+            queue.put((status, received))
             output = server.send_message(Message(MessageType.OK))
-            shared_list.append(output)
+            queue.put(output)
 
-        shared_list = (multiprocessing.Manager()).list()
-        args = (server, shared_list)
-        thread_receive = multiprocessing.Process(target=receive_io, args=args)
+        queue = multiprocessing.Queue()
+        thread_receive = multiprocessing.Process(
+            target=receive_io, args=(server, queue)
+        )
         server.accept_client(server.serversocket, None)
 
         thread_receive.start()
-        assert client.upload_io_specification(path) is True
+        assert client.upload_io_specification(path)
         thread_receive.join()
 
-        receive_status, received_data = shared_list[0]
-        send_message_status = shared_list[1]
-        assert send_message_status is True
+        receive_status, received_data = queue.get()
+        send_message_status = queue.get()
+        assert send_message_status
         assert receive_status == ServerStatus.DATA_READY
         encoded_data = (json.dumps(io_specification)).encode()
         answer = Message(MessageType.IOSPEC, encoded_data)
@@ -557,12 +555,9 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
 
-        assert (
-            server.send_message(Message(MessageType.OK, random_byte_data))
-            is True
-        )
+        assert server.send_message(Message(MessageType.OK, random_byte_data))
         status, downloaded_data = client.download_output()
-        assert status is True
+        assert status
         assert downloaded_data == random_byte_data
 
     def test_download_statistics(
@@ -581,7 +576,9 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         to_send = json.dumps(data).encode()
         server.accept_client(server.serversocket, None)
 
-        def download_stats(client: NetworkProtocol, shared_list: ListProxy):
+        def download_stats(
+            client: NetworkProtocol, queue: multiprocessing.Queue
+        ):
             """
             Downloads statistics sent by server.
 
@@ -589,18 +586,19 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             ----------
             client : NetworkProtocol
                 Initialized NetworkProtocol client
-            shared_list : ListProxy
+            queue : multiprocessing.Queue
                 Shared list to append downloaded statistics
             """
             time.sleep(0.1)
             client.send_message(Message(MessageType.OK))
             client.receive_confirmation()
             output = client.download_statistics()
-            shared_list.append(output)
+            queue.put(output)
 
-        shared_list = (multiprocessing.Manager()).list()
-        args = (client, shared_list)
-        thread_send = multiprocessing.Process(target=download_stats, args=args)
+        queue = multiprocessing.Queue()
+        thread_send = multiprocessing.Process(
+            target=download_stats, args=(client, queue)
+        )
         thread_send.start()
 
         output = server.receive_confirmation()
@@ -614,10 +612,10 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             message.message_type == MessageType.STATS
             and message.payload == b''
         )
-        assert server.send_message(Message(MessageType.OK, to_send)) is True
+        assert server.send_message(Message(MessageType.OK, to_send))
         thread_send.join()
 
-        downloaded_stats = shared_list[0]
+        downloaded_stats = queue.get()
         assert isinstance(downloaded_stats, Measurements)
         assert downloaded_stats.data == data
 
@@ -672,8 +670,8 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         """
         server, client = server_and_client
         server.accept_client(server.serversocket, None)
-        assert client.send_message(Message(MessageType.OK)) is True
-        assert server.send_message(Message(MessageType.OK)) is True
+        assert client.send_message(Message(MessageType.OK))
+        assert server.send_message(Message(MessageType.OK))
         client.disconnect()
         with pytest.raises(OSError):
             client.send_message(Message(MessageType.OK))

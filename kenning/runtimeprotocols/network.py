@@ -95,7 +95,7 @@ class NetworkProtocol(BytesBasedProtocol):
             )
             return ServerStatus.CLIENT_CONNECTED, None
 
-    def initialize_server(self):
+    def initialize_server(self) -> bool:
         self.log.debug(f'Initializing server at {self.host}:{self.port}')
         self.serversocket = socket.socket(
             socket.AF_INET,
@@ -117,7 +117,7 @@ class NetworkProtocol(BytesBasedProtocol):
         )
         return True
 
-    def initialize_client(self):
+    def initialize_client(self) -> bool:
         self.log.debug(f'Initializing client at {self.host}:{self.port}')
         self.socket = socket.socket(
             socket.AF_INET,

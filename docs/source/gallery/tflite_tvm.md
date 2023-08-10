@@ -133,7 +133,7 @@ kenning optimize test report --json-cfg scripts/jsonconfigs/mobilenetv2-tensorfl
 While it depends on the platform used, there should be a significant improvement in both inference time (model ca. 10-15x faster model compared to the native model) and memory usage (output model ca. 2x smaller).
 What’s worth noting is that we get a significant improvement with no harm to the quality of the model - the outputs stay the same.
 
-![Confusion matrix](../img/confusion-matrix.png)
+![Confusion matrix](../img/confusion-matrix.*)
 
 ## Quantizing a model using TensorFlow Lite
 
@@ -216,13 +216,13 @@ Some examples of comparisons between various models rendered with the script:
 
 * Accuracy, inference time and model size comparison:
 
-  ![](../img/accuracy-inference-time-comparison.png)
+  ![](../img/accuracy-inference-time-comparison.*)
 * Resource utilization distribution:
 
-  ![](../img/utilization-comparison.png)
+  ![](../img/utilization-comparison.*)
 * Comparison of classification metrics:
 
-  ![](../img/classification-metrics-comparison.png)
+  ![](../img/classification-metrics-comparison.*)
 * And more
 
 

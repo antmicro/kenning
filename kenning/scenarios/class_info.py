@@ -50,7 +50,7 @@ class ClassInfoRunner(CommandTemplate):
         info_group.add_argument(
             'target',
             help='Module-like path of the module or class '
-                 '(e.g. kenning.compilers.onnx)',
+                 '(e.g. kenning.optimizers.onnx)',
             type=str
         ).completer = ClassPathCompleter()
         info_group.add_argument(

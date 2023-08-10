@@ -181,7 +181,7 @@ python3 -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
+    --modelcompiler-cls kenning.optimizers.tvm.TVMCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     -h
 ```
@@ -290,7 +290,7 @@ python -m kenning.scenarios.inference_tester \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
-    --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
+    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
@@ -334,7 +334,7 @@ python3 -m kenning.scenarios.inference_tester \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
-    --modelcompiler-cls kenning.compilers.tvm.TVMCompiler \
+    --modelcompiler-cls kenning.optimizers.tvm.TVMCompiler \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \

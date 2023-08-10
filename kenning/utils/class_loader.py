@@ -48,7 +48,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
     groups of modules, values are module paths and base class names
     """
     return {
-        OPTIMIZERS: ('kenning.compilers', Optimizer),
+        OPTIMIZERS: ('kenning.optimizers', Optimizer),
         RUNNERS: ('kenning.runners', Runner),
         DATA_PROVIDERS: ('kenning.dataproviders', DataProvider),
         DATASETS: ('kenning.datasets', Dataset),

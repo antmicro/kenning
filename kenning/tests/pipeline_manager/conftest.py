@@ -38,6 +38,6 @@ def mock_enviroment(mocker: MockerFixture):
     modelwrapper and dataset module
     """
     create_mocks(mocker, 'kenning.runtimes', Runtime)
-    create_mocks(mocker, 'kenning.compilers', Optimizer)
+    create_mocks(mocker, 'kenning.optimizers', Optimizer)
     create_mocks(mocker, 'kenning.modelwrappers', ModelWrapper)
     create_mocks(mocker, "kenning.datasets", Dataset)

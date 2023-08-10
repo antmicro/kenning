@@ -183,7 +183,7 @@ Such case will result is the following scenario:
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "int8",
@@ -193,7 +193,7 @@ Such case will result is the following scenario:
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "target": "llvm -mcpu=core-avx2",
                 "opt_level": 3,
@@ -216,8 +216,8 @@ Such case will result is the following scenario:
 
 As emphasized above, the `optimizers` list is added, with two entries:
 
-* a `kenning.compilers.tflite.TFLiteCompiler` type block, quantizing the model,
-* a `kenning.compilers.tvm.TVMCompiler` type block, performing remaining optimization steps.
+* a `kenning.optimizers.tflite.TFLiteCompiler` type block, quantizing the model,
+* a `kenning.optimizers.tvm.TVMCompiler` type block, performing remaining optimization steps.
 
 In the `runtime` field, a TVM-specific `kenning.runtimes.tvm.TVMRuntime` type is used.
 
@@ -274,7 +274,7 @@ Let's start with client configuration by adding a `runtime_protocol` entry:
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "int8",
@@ -284,7 +284,7 @@ Let's start with client configuration by adding a `runtime_protocol` entry:
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "target": "llvm -mcpu=core-avx2",
                 "opt_level": 3,

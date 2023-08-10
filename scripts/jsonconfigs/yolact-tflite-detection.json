@@ -20,7 +20,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "default",

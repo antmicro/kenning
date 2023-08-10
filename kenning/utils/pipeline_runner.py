@@ -279,7 +279,7 @@ def run_pipeline(
         MeasurementsCollector.measurements += {
             'model_framework': modelframeworktuple[0],
             'model_version': modelframeworktuple[1],
-            'compilers': [
+            'optimizers': [
                 {
                     'compiler_framework':
                         optimizer.get_framework_and_version()[0],

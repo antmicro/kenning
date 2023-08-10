@@ -102,7 +102,7 @@ class PipelineHandler(BaseDataflowHandler):
                                  'kenning.modelwrappers',
                                  'kenning.runtimeprotocols',
                                  'kenning.runtimes',
-                                 'kenning.compilers']
+                                 'kenning.optimizers']
 
         base_classes = [v for k, v in global_base_classes.items() if v[0] in
                         pipeline_mode_classes]

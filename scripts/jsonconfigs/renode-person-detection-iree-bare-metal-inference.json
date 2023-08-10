@@ -14,7 +14,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.iree.IREECompiler",
+            "type": "kenning.optimizers.iree.IREECompiler",
             "parameters":
             {
                 "compiled_model_path": "./build/tflite-person-detect.vmfb",

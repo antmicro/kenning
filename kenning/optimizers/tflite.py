@@ -13,7 +13,7 @@ import numpy as np
 from typing import Optional, Dict, List
 
 from kenning.core.optimizer import IOSpecificationNotFoundError
-from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
+from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
 

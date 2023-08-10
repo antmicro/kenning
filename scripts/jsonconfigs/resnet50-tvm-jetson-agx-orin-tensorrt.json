@@ -25,14 +25,14 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.onnx.ONNXCompiler",
+            "type": "kenning.optimizers.onnx.ONNXCompiler",
             "parameters":
             {
                 "compiled_model_path": "./build/resnet50-fp32.onnx"
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "target": "cuda -arch=sm_87",
                 "target_host": null,

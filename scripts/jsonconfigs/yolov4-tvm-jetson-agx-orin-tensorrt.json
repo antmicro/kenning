@@ -23,7 +23,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
                 "target": "cuda -arch=sm_87",

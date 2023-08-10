@@ -4,7 +4,7 @@
 
 from runtimetests import RuntimeWithModel
 from kenning.runtimes.tvm import TVMRuntime
-from kenning.compilers.tvm import TVMCompiler
+from kenning.optimizers.tvm import TVMCompiler
 import pytest
 
 

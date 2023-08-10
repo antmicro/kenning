@@ -93,7 +93,7 @@ Parameters specific to `input` and `output`:
 
 * `shape` - input/output tensor shape,
 * `dtype` - input/output type,
-* `order` - some of the runtimes/compilers allow accessing inputs and outputs by id.
+* `order` - some of the runtimes/optimizers allow accessing inputs and outputs by id.
   This field describes the id of the current input/output,
 * `scale` - scale parameter for the quantization purposes.
   Present only if the input/output requires quantization/dequantization,

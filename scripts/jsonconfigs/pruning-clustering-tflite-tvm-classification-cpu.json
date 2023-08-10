@@ -18,7 +18,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer",
+            "type": "kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer",
             "parameters":
             {
                 "compiled_model_path": "./build/pruned.h5",
@@ -28,7 +28,7 @@
             }
         },
         {
-            "type": "kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer",
+            "type": "kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer",
             "parameters":
             {
                 "compiled_model_path": "./build/clustered.h5",
@@ -37,7 +37,7 @@
             }
         },
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "int8",
@@ -47,7 +47,7 @@
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
                 "target": "llvm -mcpu=core-avx2",

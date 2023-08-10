@@ -8,7 +8,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/jetson-agx-xavier-tvm-tensorflow.json \
-    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \

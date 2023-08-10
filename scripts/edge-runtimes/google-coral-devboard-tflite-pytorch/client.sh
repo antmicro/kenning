@@ -8,7 +8,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/google-coral-devboard-tflite-pytorch.json \
-    --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
+    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth \

@@ -111,7 +111,7 @@ The `kenning` module consists of the following submodules:
 * `core` - provides interface APIs for datasets, models, optimizers, runtimes and runtime protocols,
 * `datasets` - provides implementations for datasets,
 * `modelwrappers` - provides implementations for models for various problems implemented in various frameworks,
-* `compilers` - provides implementations for compilers and optimizers for deep learning models,
+* `optimizers` - provides implementations for compilers and optimizers for deep learning models,
 * `runtimes` - provides implementations of runtime on target devices,
 * `interfaces` - provides interface classes to group related methods used in Kenning `core` classes,
 * `runtimeprotocols` - provides implementations for communication protocols between host and tested target,
@@ -316,7 +316,7 @@ Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "default",
@@ -392,7 +392,7 @@ With Kenning, it can be achieved with the following simple additions:
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "int8",
@@ -452,7 +452,7 @@ The scenario looks like this:
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "int8",
@@ -462,7 +462,7 @@ The scenario looks like this:
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "target": "llvm -mcpu=core-avx2",
                 "opt_level": 3,
@@ -544,7 +544,7 @@ The example compilation of the model can look as follows:
 ```python
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
-from kenning.compilers.tflite import TFLiteCompiler
+from kenning.optimizers.tflite import TFLiteCompiler
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.core.measurements import MeasurementsCollector
 
@@ -623,16 +623,16 @@ kenning list
 It will list all of the available modules used to form optimization and runtime pipelines in Kenning:
 
 ```
-Optimizers (in kenning.compilers):
+Optimizers (in kenning.optimizers):
 
-    kenning.compilers.nni_pruning.NNIPruningOptimizer
-    kenning.compilers.onnx.ONNXCompiler
-    kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer
-    kenning.compilers.model_inserter.ModelInserter
-    kenning.compilers.tvm.TVMCompiler
-    kenning.compilers.iree.IREECompiler
-    kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer
-    kenning.compilers.tflite.TFLiteCompiler
+    kenning.optimizers.nni_pruning.NNIPruningOptimizer
+    kenning.optimizers.onnx.ONNXCompiler
+    kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer
+    kenning.optimizers.model_inserter.ModelInserter
+    kenning.optimizers.tvm.TVMCompiler
+    kenning.optimizers.iree.IREECompiler
+    kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
+    kenning.optimizers.tflite.TFLiteCompiler
 
 Datasets (in kenning.datasets):
 

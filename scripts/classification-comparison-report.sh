@@ -8,7 +8,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-tvm.json \
-    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
@@ -26,7 +26,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-tflite.json \
-    --compiler-cls kenning.compilers.tflite.TFLiteCompiler \
+    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
@@ -40,7 +40,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-iree.json \
-    --compiler-cls kenning.compilers.iree.IREECompiler \
+    --compiler-cls kenning.optimizers.iree.IREECompiler \
     --runtime-cls kenning.runtimes.iree.IREERuntime \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \

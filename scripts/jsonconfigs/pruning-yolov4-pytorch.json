@@ -16,7 +16,7 @@
   },
   "optimizers": [
     {
-      "type": "kenning.compilers.nni_pruning.NNIPruningOptimizer",
+      "type": "kenning.optimizers.nni_pruning.NNIPruningOptimizer",
       "parameters": {
         "model_framework": "onnx",
         "pruner_type": "apoz",

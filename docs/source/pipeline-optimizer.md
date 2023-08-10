@@ -45,7 +45,7 @@ The example configuration looks like this:
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": ["default"],
@@ -53,7 +53,7 @@ The example configuration looks like this:
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters":
             {
                 "target": ["llvm"],
@@ -122,7 +122,7 @@ The example `<OUTPUT PATH>.json` JSON file can look like this:
         },
         "optimizers": [
             {
-                "type": "kenning.compilers.tvm.TVMCompiler",
+                "type": "kenning.optimizers.tvm.TVMCompiler",
                 "parameters": {
                     "target": "llvm",
                     "compiled_model_path": "build/7_compiled_model.tar",

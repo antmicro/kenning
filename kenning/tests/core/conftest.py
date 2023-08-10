@@ -17,14 +17,14 @@ from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
-from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: 501
-from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: 501
-from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: 501
-from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2    # noqa: 501
+from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: E501
+from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: E501
+from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: E501
+from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2    # noqa: E501
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
-from kenning.modelwrappers.object_detection.darknet_coco import TVMDarknetCOCOYOLOV3
-from kenning.compilers.iree import IREECompiler
-from kenning.compilers.tvm import TVMCompiler
+from kenning.modelwrappers.object_detection.darknet_coco import TVMDarknetCOCOYOLOV3  # noqa: E501
+from kenning.optimizers.iree import IREECompiler
+from kenning.optimizers.tvm import TVMCompiler
 from kenning.tests.conftest import get_tmp_path
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

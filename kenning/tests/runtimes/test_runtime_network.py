@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.compilers.tflite import TFLiteCompiler
-from kenning.compilers.tvm import TVMCompiler
+from kenning.optimizers.tflite import TFLiteCompiler
+from kenning.optimizers.tvm import TVMCompiler
 from kenning.runtimeprotocols.network import NetworkProtocol
 from kenning.core.runtimeprotocol import Message
 from kenning.core.runtimeprotocol import MessageType

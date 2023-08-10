@@ -293,17 +293,17 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             Stores basic Optimizer objects with its parameters.
             """
             super().__init__()
-            self.add('kenning.compilers.tflite.TFLiteCompiler',
+            self.add('kenning.optimizers.tflite.TFLiteCompiler',
                      'default', 'keras', 'tflite',
                      dataset=datasetsamples.get('PetDataset'),
                      compiled_model_path=datasetimages.path)
 
-            self.add('kenning.compilers.tvm.TVMCompiler',
+            self.add('kenning.optimizers.tvm.TVMCompiler',
                      'llvm', 'keras', 'so',
                      dataset='PetDataset',
                      compiled_model_path=datasetimages.path)
 
-            self.add('kenning.compilers.tvm.TVMCompiler',
+            self.add('kenning.optimizers.tvm.TVMCompiler',
                      'llvm', 'torch', 'so',
                      dataset='PetDataset',
                      compiled_model_path=datasetimages.path)

@@ -21,14 +21,14 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.onnx.ONNXCompiler",
+            "type": "kenning.optimizers.onnx.ONNXCompiler",
             "parameters":
             {
                 "compiled_model_path": "./build/mobilenetv3-fp16.onnx"
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "model_framework": "onnx",
                 "target": "cuda -arch=sm_87 -libs=cudnn,cublas",

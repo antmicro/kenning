@@ -8,7 +8,7 @@ python -m kenning.scenarios.inference_tester \
     --modelwrapper-cls kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     --dataset-cls kenning.datasets.open_images_dataset.OpenImagesDatasetV6 \
     --measurements ./build/jetson-agx-xavier-tvm-darknet.json \
-    --compiler-cls kenning.compilers.tvm.TVMCompiler \
+    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
     --model-path kenning:///models/detection/yolov3.weights \

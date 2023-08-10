@@ -25,7 +25,7 @@
     "optimizers":
     [
         {
-            "type": "kenning.compilers.tflite.TFLiteCompiler",
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
             "parameters":
             {
                 "target": "default",
@@ -35,7 +35,7 @@
             }
         },
         {
-            "type": "kenning.compilers.tvm.TVMCompiler",
+            "type": "kenning.optimizers.tvm.TVMCompiler",
             "parameters": {
                 "target": "cuda -arch=sm_87 -libs=cudnn,cublas",
                 "target_host": null,

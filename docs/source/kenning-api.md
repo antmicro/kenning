@@ -159,10 +159,10 @@ They can perform the model optimization (operation fusion, quantization) as well
 
 All Optimizer objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
 
-Example model compilers:
+Example model optimizers:
 
-* [TFLiteCompiler](https://github.com/antmicro/kenning/blob/main/kenning/compilers/tflite.py) - wraps TensorFlow Lite compilation,
-* [TVMCompiler](https://github.com/antmicro/kenning/blob/main/kenning/compilers/tvm.py) - wraps TVM compilation.
+* [TFLiteCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tflite.py) - wraps TensorFlow Lite compilation,
+* [TVMCompiler](https://github.com/antmicro/kenning/blob/main/kenning/optimizers/tvm.py) - wraps TVM compilation.
 
 ```{eval-rst}
 .. autoclass:: kenning.core.optimizer.Optimizer

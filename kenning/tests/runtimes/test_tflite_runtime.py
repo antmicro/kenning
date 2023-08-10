@@ -4,7 +4,7 @@
 
 from runtimetests import RuntimeWithModel
 from kenning.runtimes.tflite import TFLiteRuntime
-from kenning.compilers.tflite import TFLiteCompiler
+from kenning.optimizers.tflite import TFLiteCompiler
 import pytest
 
 

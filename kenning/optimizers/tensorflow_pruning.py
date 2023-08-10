@@ -10,7 +10,7 @@ import tensorflow as tf
 from typing import Optional, Dict, List
 import tensorflow_model_optimization as tfmot
 
-from kenning.compilers.tensorflow_optimizers import TensorFlowOptimizer
+from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
 

@@ -13,7 +13,7 @@
   },
   "optimizers": [
     {
-      "type": "kenning.compilers.nni_pruning.NNIPruningOptimizer",
+      "type": "kenning.optimizers.nni_pruning.NNIPruningOptimizer",
       "parameters": {
         "pruner_type": "apoz",
         "config_list": "[{\"sparsity_per_layer\": 0.15, \"op_types\": [\"Conv2d\", \"Linear\"]}]",

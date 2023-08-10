@@ -16,7 +16,7 @@ from kenning.tests.core.conftest import UnknownFramework
 
 
 OPTIMIZER_SUBCLASSES = get_all_subclasses(
-    'kenning.compilers',
+    'kenning.optimizers',
     Optimizer,
     raise_exception=True
 )

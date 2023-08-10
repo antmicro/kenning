@@ -5,7 +5,7 @@
 import pytest
 import uuid
 import torch
-from kenning.compilers.tvm import TVMCompiler
+from kenning.optimizers.tvm import TVMCompiler
 from pathlib import Path
 from torch.autograd import Variable
 from typing import Dict, Tuple

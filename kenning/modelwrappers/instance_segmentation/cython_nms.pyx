@@ -35,11 +35,11 @@ def nms(np.ndarray[np.float32_t, ndim=2] boxes,
     cdef int ndets = scores.shape[0]
 
     if ndets == 0:
-        return np.array([], dtype=np.int)
+        return np.array([], dtype=int)
 
     # Indices of detections to be suppressed
     cdef np.ndarray[np.int_t, ndim=1] suppressed = \
-            np.zeros((ndets), dtype=np.int)
+            np.zeros((ndets), dtype=int)
 
     # Areas of detections
     cdef np.ndarray[np.float32_t, ndim=1] areas = np.array(

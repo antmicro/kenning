@@ -1,0 +1,41 @@
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+    "parameters": {
+      "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/PetDataset"
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.optimizers.tflite.TFLiteCompiler",
+      "parameters": {
+        "target": "int8",
+        "compiled_model_path": "./build/int8.tflite",
+        "inference_input_type": "int8",
+        "inference_output_type": "int8"
+      }
+    },
+    {
+      "type": "kenning.optimizers.tvm.TVMCompiler",
+      "parameters": {
+        "target": "llvm -mcpu=core-avx2",
+        "opt_level": 3,
+        "conv2d_data_layout": "NCHW",
+        "compiled_model_path": "./build/int8_tvm.tar"
+      }
+    }
+  ],
+  "runtime": {
+    "type": "kenning.runtimes.tvm.TVMRuntime",
+    "parameters": {
+      "save_model_path": "./build/int8_tvm.tar"
+    }
+  },
+  "model_name": "tvm-avx2-int8"
+}

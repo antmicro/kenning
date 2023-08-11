@@ -1,0 +1,32 @@
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+    "parameters": {
+      "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/PetDataset"
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.compilers.tflite.TFLiteCompiler",
+      "parameters": {
+        "target": "int8",
+        "compiled_model_path": "./build/int8.tflite",
+        "inference_input_type": "int8",
+        "inference_output_type": "int8"
+      }
+    }
+  ],
+  "runtime": {
+    "type": "kenning.runtimes.tflite.TFLiteRuntime",
+    "parameters": {
+      "save_model_path": "./build/int8.tflite"
+    }
+  },
+  "model_name": "tflite-int8"
+}

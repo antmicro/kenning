@@ -3,6 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from abc import ABC
+from typing import Optional
 
 import numpy as np
 
@@ -16,7 +17,8 @@ class TensorFlowWrapper(ModelWrapper, ABC):
             self,
             model_path: PathOrURI,
             dataset: Dataset,
-            from_file: bool):
+            from_file: bool,
+            model_name: Optional[str] = None):
         """
         Creates the TensorFlow model wrapper.
 
@@ -31,8 +33,10 @@ class TensorFlowWrapper(ModelWrapper, ABC):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
         """
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
 
     def load_model(self, model_path: PathOrURI):
         import tensorflow as tf

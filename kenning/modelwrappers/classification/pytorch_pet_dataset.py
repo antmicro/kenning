@@ -9,6 +9,7 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 from tqdm import tqdm
@@ -37,9 +38,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         model_path: PathOrURI,
         dataset: Dataset,
         from_file: bool = True,
+        model_name: Optional[str] = None,
         class_count: int = 37
     ):
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         self.class_count = class_count
         if hasattr(dataset, 'numclasses'):
             self.numclasses = dataset.numclasses

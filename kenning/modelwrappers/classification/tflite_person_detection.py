@@ -8,7 +8,7 @@ Contains Tensorflow Lite model for the person detection.
 Trained on VisualWakeWords dataset.
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import cv2
 import numpy as np
@@ -48,6 +48,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
             model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = True,
+            model_name: Optional[str] = None,
             central_fraction: float = .875,
             image_width: int = 96,
             image_height: int = 96):
@@ -62,6 +63,8 @@ class PersonDetectionModelWrapper(ModelWrapper):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
         central_fraction : float
             Fraction used to crop images during preprocessing.
         image_width : int
@@ -69,7 +72,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
         image_height : int
             Height of the input images.
         """
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         self.central_fraction = central_fraction
         self.image_width = image_width
         self.image_height = image_height

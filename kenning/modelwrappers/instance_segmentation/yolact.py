@@ -182,10 +182,11 @@ class YOLACTWrapper(ModelWrapper):
             model_path: PathOrURI,
             dataset: Dataset,
             from_file=True,
+            model_name: Optional[str] = None,
             top_k: Optional[int] = None,
             score_threshold: float = 0.05,
     ):
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         self.model = None
         if dataset is not None:
             self.class_names = dataset.get_class_names()

@@ -6,7 +6,7 @@
 Contains TFLite model for MagicWand dataset.
 """
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import tensorflow as tf
@@ -36,6 +36,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool,
+            model_name: Optional[str] = None,
             window_size: int = 128):
         """
         Creates the Magic Wand model wrapper.
@@ -48,10 +49,12 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
         window_size : int
             Size of single sample window.
         """
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         self.window_size = window_size
         if dataset is not None:
             self.class_names = self.dataset.get_class_names()

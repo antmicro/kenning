@@ -8,7 +8,7 @@ Contains Tensorflow models for the classification problem.
 Pretrained on ImageNet dataset.
 """
 
-from typing import List
+from typing import List, Optional
 
 from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
@@ -66,6 +66,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = False,
+            model_name: Optional[str] = None,
             modelcls: str = '',
             modelinputname: str = 'input',
             modeloutputname: str = 'output',
@@ -84,6 +85,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
             The dataset to verify the inference.
         from_file : bool
             True if model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
         modelcls : str
             The model class import path.
             Used for loading keras.applications pretrained models.
@@ -98,7 +101,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         disablebuiltinpreprocessing : bool
             Tells if the input preprocessing should be removed from the model.
         """
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         import tensorflow as tf
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:

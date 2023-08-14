@@ -9,6 +9,7 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
+from typing import Optional
 
 import numpy as np
 import tensorflow as tf
@@ -29,9 +30,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self,
             model_path: PathOrURI,
             dataset: Dataset,
-            from_file=True
+            from_file=True,
+            model_name: Optional[str] = None,
     ):
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         gpus = tf.config.list_physical_devices('GPU')
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)

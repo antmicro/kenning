@@ -4,6 +4,7 @@
 
 import copy
 from abc import ABC
+from typing import Optional
 from collections import OrderedDict
 
 import numpy as np
@@ -18,8 +19,9 @@ class PyTorchWrapper(ModelWrapper, ABC):
             self,
             model_path: PathOrURI,
             dataset: Dataset,
-            from_file: bool = True):
-        super().__init__(model_path, dataset, from_file)
+            from_file: bool = True,
+            model_name: Optional[str] = None):
+        super().__init__(model_path, dataset, from_file, model_name)
         import torch
         self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501
 

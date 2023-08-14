@@ -52,6 +52,11 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             'description': 'Path to the model',
             'type': ResourceURI,
             'required': True
+        },
+        'model_name': {
+            'argparse_name': '--model-name',
+            'description': 'Name of the model used for the report',
+            'type': str,
         }
     }
 
@@ -59,7 +64,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             self,
             model_path: PathOrURI,
             dataset: Optional[Dataset],
-            from_file: bool = True):
+            from_file: bool = True,
+            model_name: Optional[str] = None):
         """
         Creates the model wrapper.
 
@@ -71,8 +77,11 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             The dataset to verify the inference.
         from_file : bool
             True if the model should be loaded from file.
+        model_name : Optional[str]
+            Name of the model used for the report
         """
         self.model_path = model_path
+        self.model_name = model_name
         self.dataset = dataset
         self.from_file = from_file
         self.model_prepared = False

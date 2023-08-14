@@ -10,6 +10,7 @@ Pretrained on COCO dataset.
 
 import numpy as np
 from functools import reduce
+from typing import Optional
 import operator
 
 from kenning.core.dataset import Dataset
@@ -34,8 +35,9 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             self,
             model_path: PathOrURI,
             dataset: Dataset,
-            from_file=True):
-        super().__init__(model_path, dataset, from_file)
+            from_file: bool = True,
+            model_name: Optional[str] = None):
+        super().__init__(model_path, dataset, from_file, model_name)
         self.threshold = 0.7
         if dataset is not None:
             self.numclasses = dataset.numclasses

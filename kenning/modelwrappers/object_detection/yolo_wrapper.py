@@ -11,7 +11,7 @@ import sys
 from abc import ABC
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 import numpy as np
 
@@ -49,8 +49,9 @@ class YOLOWrapper(ModelWrapper, ABC):
             model_path: PathOrURI,
             dataset: Dataset,
             from_file: bool = True,
+            model_name: Optional[str] = None,
             class_names: str = "coco"):
-        super().__init__(model_path, dataset, from_file)
+        super().__init__(model_path, dataset, from_file, model_name)
         self.class_names = class_names
         # for work with dataproviders, this is handling dataset-less operation
         self.classnames = []

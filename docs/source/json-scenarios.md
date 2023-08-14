@@ -27,27 +27,8 @@ Each dictionary in the fields above consists of:
 
 The simplest JSON configuration looks as follows:
 
-<!-- name="pipeline.json" -->
-```json
-{
-    "model_wrapper":
-    {
-        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
-        "parameters":
-        {
-            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
-        }
-    },
-    "dataset":
-    {
-        "type": "kenning.datasets.pet_dataset.PetDataset",
-        "parameters":
-        {
-            "dataset_root": "./build/pet-dataset",
-            "download_dataset": true
-        }
-    }
-}
+```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-native.json
+:language: json
 ```
 
 It only takes `model_wrapper` and `dataset`.
@@ -132,7 +113,7 @@ To run the defined pipeline (assuming that the JSON file is under `pipeline.json
 
 <!-- timeout=10 -->
 ```bash
-kenning test --json-cfg pipeline.json --measurements measurements.json --verbosity INFO
+kenning test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json --measurements measurements.json --verbosity INFO
 ```
 
 The `measurements.json` file is the output of the {{json_compilation_script}} providing measurement data.
@@ -165,58 +146,9 @@ For example, a model can be subjected to the following optimizations:
 
 Such case will result is the following scenario:
 
-{ emphasize-lines="18-47" }
-<!-- name="scenario.json" -->
-```json
-{
-    "model_wrapper":
-    {
-        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
-        "parameters":
-        {
-            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
-        }
-    },
-    "dataset":
-    {
-        "type": "kenning.datasets.pet_dataset.PetDataset",
-        "parameters":
-        {
-            "dataset_root": "./build/pet-dataset"
-        }
-    },
-    "optimizers":
-    [
-        {
-            "type": "kenning.optimizers.tflite.TFLiteCompiler",
-            "parameters":
-            {
-                "target": "int8",
-                "compiled_model_path": "./build/int8.tflite",
-                "inference_input_type": "int8",
-                "inference_output_type": "int8"
-            }
-        },
-        {
-            "type": "kenning.optimizers.tvm.TVMCompiler",
-            "parameters": {
-                "target": "llvm -mcpu=core-avx2",
-                "opt_level": 3,
-                "conv2d_data_layout": "NCHW",
-                "compiled_model_path": "./build/int8_tvm.tar"
-            }
-        }
-    ],
-    "runtime":
-    {
-        "type": "kenning.runtimes.tvm.TVMRuntime",
-        "parameters":
-        {
-            "save_model_path": "./build/int8_tvm.tar"
-        }
-    }
-}
-
+```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json
+:language: json
+:emphasize-lines: 14-39
 ```
 
 As emphasized above, the `optimizers` list is added, with two entries:
@@ -240,9 +172,8 @@ More details on input/output formats between [](optimizer-api) objects can be fo
 
 The scenario can be executed as follows:
 
-<!-- timeout=10 -->
-```bash
-kenning optimize test --json-cfg scenario.json --measurements output.json
+```bash timeout=20
+kenning optimize test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json --measurements output.json
 ```
 
 ## Compiling a model and running it remotely
@@ -258,66 +189,9 @@ It depends on the [](protocol-api) used.
 
 Let's start with client configuration by adding a `protocol` entry:
 
-{ emphasize-lines="48-57" }
-```json
-{
-    "model_wrapper":
-    {
-        "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
-        "parameters":
-        {
-            "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
-        }
-    },
-    "dataset":
-    {
-        "type": "kenning.datasets.pet_dataset.PetDataset",
-        "parameters":
-        {
-            "dataset_root": "./build/pet-dataset"
-        }
-    },
-    "optimizers":
-    [
-        {
-            "type": "kenning.optimizers.tflite.TFLiteCompiler",
-            "parameters":
-            {
-                "target": "int8",
-                "compiled_model_path": "./build/int8.tflite",
-                "inference_input_type": "int8",
-                "inference_output_type": "int8"
-            }
-        },
-        {
-            "type": "kenning.optimizers.tvm.TVMCompiler",
-            "parameters": {
-                "target": "llvm -mcpu=core-avx2",
-                "opt_level": 3,
-                "conv2d_data_layout": "NCHW",
-                "compiled_model_path": "./build/int8_tvm.tar"
-            }
-        }
-    ],
-    "runtime":
-    {
-        "type": "kenning.runtimes.tvm.TVMRuntime",
-        "parameters":
-        {
-            "save_model_path": "./build/int8_tvm.tar"
-        }
-    },
-    "protocol":
-    {
-        "type": "kenning.protocols.network.NetworkProtocol",
-        "parameters":
-        {
-            "host": "10.9.8.7",
-            "port": 12346,
-            "packet_size": 32768
-        }
-    }
-}
+```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client.json
+:language: json
+:emphasize-lines: 48-57
 ```
 
 In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
@@ -325,27 +199,8 @@ The `runtime` block is still needed to perform runtime-specific data preprocessi
 
 The server configuration looks as follows:
 
-```json
-{
-    "runtime":
-    {
-        "type": "kenning.runtimes.tvm.TVMRuntime",
-        "parameters":
-        {
-            "save_model_path": "./build/compiled_model_server.tar"
-        }
-    },
-    "protocol":
-    {
-        "type": "kenning.protocols.network.NetworkProtocol",
-        "parameters":
-        {
-            "host": "0.0.0.0",
-            "port": 12346,
-            "packet_size": 32768
-        }
-    }
-}
+```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-server.json
+:language: json
 ```
 
 Here, only `runtime` and `protocol` need to be specified.

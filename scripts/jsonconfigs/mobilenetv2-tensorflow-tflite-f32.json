@@ -2,6 +2,7 @@
   "model_wrapper": {
     "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
     "parameters": {
+      "model_name": "tflite-fp32",
       "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
     }
   },
@@ -27,6 +28,5 @@
     "parameters": {
       "save_model_path": "./build/fp32.tflite"
     }
-  },
-  "model_name": "tflite-fp32"
+  }
 }

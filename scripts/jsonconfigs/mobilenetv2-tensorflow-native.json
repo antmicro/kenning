@@ -2,6 +2,7 @@
   "model_wrapper": {
     "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
     "parameters": {
+      "model_name": "native",
       "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
     }
   },
@@ -10,6 +11,5 @@
     "parameters": {
       "dataset_root": "./build/PetDataset"
     }
-  },
-  "model_name": "native"
+  }
 }

@@ -7,7 +7,6 @@ import multiprocessing
 import os
 import time
 from contextlib import nullcontext as does_not_raise
-from multiprocessing.managers import ListProxy
 from pathlib import Path
 from typing import Any, Dict, Tuple
 
@@ -43,12 +42,7 @@ MODEL_WRAPPER_SUBCLASSES = get_all_subclasses(
 MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
     modelwrapper_cls
     for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES
-    if (
-        hasattr(modelwrapper_cls, 'pretrained_model_uri')
-        and ResourceURI(
-            f'{modelwrapper_cls.pretrained_model_uri}.json'
-        ).exists()
-    )
+    if hasattr(modelwrapper_cls, 'pretrained_model_uri')
 ]
 
 
@@ -72,7 +66,7 @@ def valid_stats() -> bytes:
     return stats.tobytes()
 
 
-def mock_serial() -> Path:
+def mock_serial() -> Tuple[Path, Path]:
     class SerialMock:
         def __init__(self, port: Tuple[Path, Path], *args, **kwargs):
             self.fifo_in = open(port[0], 'wb+', 0)
@@ -111,9 +105,9 @@ def mock_serial() -> Path:
 
 class TestIOSpecToStruct:
     @pytest.mark.parametrize(
-        'io_spec_path',
+        'io_spec_path_str',
         [
-            ResourceURI(f'{modelwrapper_cls.pretrained_model_uri}.json')
+            f'{modelwrapper_cls.pretrained_model_uri}.json'
             for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC
         ],
         ids=[
@@ -121,7 +115,10 @@ class TestIOSpecToStruct:
             for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC
         ],
     )
-    def test_parse_valid_io_spec(self, io_spec_path: ResourceURI):
+    def test_parse_valid_io_spec(self, io_spec_path_str: str):
+        io_spec_path = ResourceURI(io_spec_path_str)
+        if not io_spec_path.exists():
+            pytest.skip(f'{io_spec_path} does not exist')
         with open(io_spec_path, 'r') as io_spec_f:
             io_spec = json.load(io_spec_f)
 
@@ -278,9 +275,10 @@ class TestParseAllocationStats:
     def test_parse_stats_with_invalid_size(
         self, valid_stats: bytes, invalid_size: int
     ):
-        invalid_stats = [
-            valid_stats[i % len(valid_stats)] for i in range(invalid_size)
-        ]
+        invalid_stats = (
+            valid_stats * (invalid_size // len(valid_stats))
+            + valid_stats[: invalid_size % len(valid_stats)]
+        )
 
         with pytest.raises(ValueError):
             _ = _parse_allocation_stats(invalid_stats)
@@ -313,7 +311,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         client.disconnect()
 
     def mock_recv_message(self, message_type: MessageType):
-        def recv_message(shared_list: ListProxy):
+        def recv_message(queue: multiprocessing.Queue):
             data = b''
             time.sleep(0.1)
             # wait for msg
@@ -328,7 +326,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
                         break
                     time.sleep(0.01)
 
-                shared_list.append(message)
+                queue.put(message)
 
             if message.message_type == message_type:
                 response = Message(MessageType.OK)
@@ -456,7 +454,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         Test client send_message method.
         """
 
-        class EmptyMessage(object):
+        class EmptyMessage():
             def to_bytes(self):
                 return b''
 
@@ -505,6 +503,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         status, data = client.receive_data(None, None)
 
         assert status == ServerStatus.DATA_READY
+        assert data is not None
         message = client.parse_message(data)
         assert message.message_type == MessageType.OK
         assert message.payload == b''
@@ -520,6 +519,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         status, data = client.receive_data(None, None)
 
         assert status == ServerStatus.DATA_READY
+        assert data is not None
         message = client.parse_message(data)
         assert message.message_type == MessageType.ERROR
         assert message.payload == b''
@@ -529,10 +529,10 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         Test client upload_input method.
         """
 
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.DATA),
-            args=(shared_list,),
+            args=(queue,),
         )
         thread_recv.start()
 
@@ -541,20 +541,21 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         thread_recv.join()
 
         assert ret
-        assert len(shared_list) == 1
-        assert isinstance(shared_list[0], Message)
-        assert shared_list[0].message_type == MessageType.DATA
-        assert shared_list[0].payload == random_byte_data
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.DATA
+        assert message.payload == random_byte_data
 
     def test_upload_model(self, client: UARTProtocol, random_byte_data: bytes):
         """
         Test client upload_input method.
         """
 
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.MODEL),
-            args=(shared_list,),
+            args=(queue,),
         )
         thread_recv.start()
 
@@ -566,10 +567,11 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         thread_recv.join()
 
         assert ret
-        assert len(shared_list) == 1
-        assert isinstance(shared_list[0], Message)
-        assert shared_list[0].message_type == MessageType.MODEL
-        assert shared_list[0].payload == random_byte_data
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.MODEL
+        assert message.payload == random_byte_data
 
     def test_upload_io_specification(
         self, client: UARTProtocol, valid_io_spec: Dict[str, Any]
@@ -578,10 +580,10 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         Test client upload_io_specification method.
         """
 
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.IOSPEC),
-            args=(shared_list,),
+            args=(queue,),
         )
         thread_recv.start()
 
@@ -593,20 +595,21 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         thread_recv.join()
 
         assert ret
-        assert len(shared_list) == 1
-        assert isinstance(shared_list[0], Message)
-        assert shared_list[0].message_type == MessageType.IOSPEC
-        assert shared_list[0].payload == _io_spec_to_struct(valid_io_spec)
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.IOSPEC
+        assert message.payload == _io_spec_to_struct(valid_io_spec)
 
     def test_request_processing(self, client: UARTProtocol):
         """
         Test client request_processing method.
         """
 
-        shared_list = (multiprocessing.Manager()).list()
+        queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.PROCESS),
-            args=(shared_list,),
+            args=(queue,),
         )
         thread_recv.start()
 
@@ -615,13 +618,14 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         thread_recv.join()
 
         assert ret
-        assert len(shared_list) == 1
-        assert isinstance(shared_list[0], Message)
-        assert shared_list[0].message_type == MessageType.PROCESS
-        assert shared_list[0].payload == b''
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.PROCESS
+        assert message.payload == b''
 
     def test_download_statistics(
-        self, client: UARTProtocol, valid_stats: np.ndarray
+        self, client: UARTProtocol, valid_stats: bytes
     ):
         """
         Test client download_statistics method.

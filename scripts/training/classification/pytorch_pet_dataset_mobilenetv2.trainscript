@@ -9,5 +9,5 @@ python -m kenning.scenarios.model_training \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --logdir build/pytorch-training-`date +%Y-%m-%d-%H%M%S` \
     --dataset-root build/pet-dataset/ \
-    --model-path kenning/resources/models/classification/pytorch_pet_dataset_mobilenetv2.pth \
+    --model-path kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --batch-size 32 --learning-rate 0.0001 --num-epochs 50

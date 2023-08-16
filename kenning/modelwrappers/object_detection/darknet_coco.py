@@ -17,7 +17,7 @@ from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 
 class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
-    pretrained_model_uri = 'kenning:///models/detection/yolov3.cfg'
+    pretrained_model_uri = 'kenning:///models/object_detection/yolov3.cfg'
     default_dataset = COCODataset2017
     arguments_structure = {}
 

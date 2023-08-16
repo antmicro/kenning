@@ -770,7 +770,7 @@ In the case of `ONNXYOLOV4`, only `--model-path` is needed:
 kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4 \
         --load-class-with-args \
         --model-path \
-            kenning:///models/detection/yolov4.onnx
+            kenning:///models/object_detection/yolov4.onnx
 ```
 
 ```

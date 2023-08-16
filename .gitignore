@@ -143,7 +143,7 @@ tags
 
 # generated resources for docs
 docs/source/generated/*
-kenning/resources/models/detection/yolov3.weights
+kenning:///models/object_detection/yolov3.weights
 
 # VSCode project settings
 .vscode/

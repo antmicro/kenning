@@ -96,14 +96,14 @@ In order to create a [](kenningflow-api) presenting YOLOv4 model performance, cr
       "model_wrapper": {
         "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
         "parameters": {
-          "model_path": "kenning:///models/detection/yolov4.onnx"
+          "model_path": "kenning:///models/object_detection/yolov4.onnx"
         }
       },
       "runtime": {
         "type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters":
         {
-          "save_model_path": "kenning:///models/detection/yolov4.onnx",
+          "save_model_path": "kenning:///models/object_detection/yolov4.onnx",
           "execution_providers": ["CUDAExecutionProvider"]
         }
       }

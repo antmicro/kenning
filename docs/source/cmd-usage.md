@@ -428,7 +428,7 @@ python3 -m kenning.scenarios.inference_runner \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
     --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter \
     --disable-performance-measurements \
-    --model-path kenning:///models/detection/yolov3.weights \
+    --model-path kenning:///models/object_detection/yolov3.weights \
     --save-model-path ../compiled-model.tar \
     --target-device-context "cuda" \
     --verbosity INFO \

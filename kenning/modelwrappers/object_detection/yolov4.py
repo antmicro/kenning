@@ -69,7 +69,7 @@ def yolov4_remove_postprocessing(
 
 class ONNXYOLOV4(YOLOWrapper):
 
-    pretrained_model_uri = 'kenning:///models/detection/yolov4.onnx'
+    pretrained_model_uri = 'kenning:///models/object_detection/yolov4.onnx'
     default_dataset = COCODataset2017
     arguments_structure = {}
 

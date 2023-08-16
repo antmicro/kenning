@@ -11,7 +11,7 @@ from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 class YOLOv4Loss(object):
     def __init__(self):
         self.model_wrapper = ONNXYOLOV4(
-            'kenning:///models/detection/yolov4.onnx', None
+            'kenning:///models/object_detection/yolov4.onnx', None
         )
 
     def __call__(self, output: List[torch.Tensor], target: List):

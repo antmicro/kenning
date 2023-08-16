@@ -129,18 +129,15 @@ class PyTorchRuntime(Runtime):
             self.output = [self.model(data) for data in self.input]
         self.input = None
 
-    def upload_output(self, input_data):
-        self.log.debug("Uploading output")
-        if self.model is None:
-            raise ModelNotPreparedError
+    def extract_output(self):
         import torch
 
         results = []
         for id, output in enumerate(self.output):
             if isinstance(output, torch.Tensor):
-                results.append(output.cpu().numpy())
+                results.append(output.detach().cpu().numpy())
             elif isinstance(output, list):
-                results.extend([out.cpu().numpy() for out in output])
+                results.extend([out.detach().cpu().numpy() for out in output])
             else:
                 results.append(output)
 

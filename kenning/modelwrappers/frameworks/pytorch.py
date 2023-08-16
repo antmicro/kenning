@@ -98,7 +98,14 @@ class PyTorchWrapper(ModelWrapper, ABC):
         return torch.Tensor(np.array(X)).to(self.device)
 
     def postprocess_outputs(self, y):
-        return y.detach().cpu().numpy()
+        import torch
+        if isinstance(y, torch.Tensor):
+            return y.detach().cpu().numpy()
+        if isinstance(y, np.ndarray):
+            return y
+        if isinstance(y, list):
+            return [self.postprocess_outputs(_y) for _y in y]
+        raise NotImplementedError
 
     def run_inference(self, X):
         self.prepare_model()

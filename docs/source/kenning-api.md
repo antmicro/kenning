@@ -354,3 +354,26 @@ In order to make some class being able to be instantiated from command line argu
 .. autoclass:: kenning.utils.args_manager.ArgumentsHandler
    :members:
 ```
+
+(resourcemanager-api)=
+
+## ResourceManager
+
+The `ResourceManager` is a singleton class which handles local and remote files for Kenning, such as datasets or models.
+It downloads missing files, provides paths to the available files, resolves custom URL schemes for and manages resource directories for Kenning, including cleanup.
+
+```{eval-rst}
+.. autoclass:: kenning.utils.resource_manager.ResourceManager
+   :members:
+```
+
+(resourceuri-api)=
+
+## ResourceURI
+
+The `ResourceURI` class is a [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)-based object allowing the user to work with Kenning resources, both using regular paths and URI schemes supported by the [](resourcemanager-api).
+
+```{eval-rst}
+.. autoclass:: kenning.utils.resource_manager.ResourceURI
+   :members:
+```

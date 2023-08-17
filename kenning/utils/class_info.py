@@ -23,6 +23,8 @@ from kenning.core.runtime import Runtime
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
     from_argparse_name
+from kenning.utils.excepthook import MissingKenningDependencies, \
+    find_missing_optional_dependency
 
 KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
 
@@ -162,7 +164,17 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
             return '* ' + dependency_path + '\n'
         except (ImportError, ModuleNotFoundError, Exception) as e:
-            return f'* {dependency_path} - Not available (Reason: {e})\n'
+            err = MissingKenningDependencies(
+                name=module_path,
+                path=dependency_path,
+                optional_dependencies=find_missing_optional_dependency(e.name)
+            )
+
+            if find_missing_optional_dependency(e.name) is None:
+                breakpoint()
+                return f'* {dependency_path} - Not available (Reason: {e})\n'
+
+            return f'* {dependency_path} - Not available (Reason: {e})\n    {err}'  # noqa E501
 
 
 def get_input_specification(syntax_node: ast.Assign) -> str:

@@ -27,7 +27,8 @@ from kenning.utils.resource_manager import PathOrURI
 
 pyximport.install(setup_args={"include_dirs": np.get_include()},
                   reload_support=True)
-from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: 402
+from kenning.modelwrappers.instance_segmentation.cython_nms import \
+    nms  # noqa: E402
 
 
 def crop(
@@ -243,7 +244,7 @@ class YOLACTWrapper(ModelWrapper):
 
 class YOLACTWithPostprocessing(YOLACTWrapper):
 
-    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx'  # noqa: 501
+    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx'  # noqa: E501
 
     def preprocess_input(self, X):
         if len(X) > 1:

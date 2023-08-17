@@ -61,9 +61,9 @@ sample-compilation:
 sample-pipeline-optimization:
     stage: tests
     script:
-        - mkdir build
-        - ln -s /pet-dataset build/pet-dataset
-        - ./scripts/optimization-tflite-tvm-tensorflow-pet-dataset.sh
+        - mkdir -p build
+        - ln -s /data/MagicWandDataset build/MagicWandDataset
+        - ./scripts/optimization-tflite-tvm-tensorflow-magic-wand.sh
     artifacts:
         paths:
             - build/

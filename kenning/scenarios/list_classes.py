@@ -183,11 +183,11 @@ class ListClassesRunner(CommandTemplate):
 
         list_group = parser.add_argument_group(GROUP_SCHEMA.format(LIST))
 
-        available_choices_string = '\n'
+        available_choices_string = '[ '
         for base_class in ListClassesRunner.base_class_arguments:
-            available_choices_string += f'  * {base_class}\n'
-        available_choices_string = available_choices_string[:-1]
-        available_choices_string += '\n'
+            available_choices_string += f'{base_class}, '
+        available_choices_string = available_choices_string[:-2]
+        available_choices_string += ' ]'
 
         list_group.add_argument(
             'base_classes',

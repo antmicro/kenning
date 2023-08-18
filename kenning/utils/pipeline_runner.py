@@ -9,7 +9,10 @@ Module with pipelines running helper functions.
 import tempfile
 from pathlib import Path
 
-from typing import Optional, Dict, Tuple, List
+from typing import Optional, Dict, Tuple, List, Union
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
+from kenning.core.runtime import Runtime
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.args_manager import serialize_inference
@@ -17,7 +20,10 @@ import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
 
 
-def assert_io_formats(model, optimizers, runtime) -> None:
+def assert_io_formats(
+        model: Optional[ModelWrapper],
+        optimizers: Union[List[Optimizer], Optimizer],
+        runtime: Optional[Runtime]):
     """
     Asserts that given blocks can be put together in a pipeline.
 
@@ -35,6 +41,9 @@ def assert_io_formats(model, optimizers, runtime) -> None:
     ValueError :
         Raised if blocks are incompatible.
     """
+    if isinstance(optimizers, Optimizer):
+        optimizers = [optimizers]
+
     chain = [model] + optimizers + [runtime]
     chain = [block for block in chain if block is not None]
 
@@ -49,17 +58,20 @@ def assert_io_formats(model, optimizers, runtime) -> None:
 
         if next_block == runtime:
             log = logger.get_logger()
-            log.warn(
-                f'Runtime {next_block} has no matching format with the previous block: {previous_block}\n' +  # noqa: E501
-                'Model may not run correctly'
+            log.warning(
+                f'Runtime {next_block} has no matching format with the '
+                f'previous block: {previous_block}\nModel may not run '
+                'correctly'
             )
             continue
 
+        output_formats_str = ', '.join(previous_block.get_output_formats())
+        input_formats_str = ', '.join(previous_block.get_output_formats())
         raise ValueError(
-            f'No matching formats between two objects: {previous_block} and ' +  # noqa: E501
-            f'{next_block}\n' +
-            f'Output block supported formats: {", ".join(previous_block.get_output_formats())}\n' +  # noqa: E501
-            f'Input block supported formats: {", ".join(next_block.get_input_formats())}'  # noqa: E501
+            f'No matching formats between two objects: {previous_block} and '
+            f'{next_block}\n'
+            f'Output block supported formats: {output_formats_str}\n'
+            f'Input block supported formats: {input_formats_str}'
         )
 
 
@@ -85,8 +97,9 @@ def parse_json_pipeline(
     Returns
     -------
     Tuple :
-        Tuple that consists of (Dataset, Model, List[Optimizer], Optional[Runtime], Optional[RuntimeProtocol])  # noqa: E501
-        It can be used to run a pipeline using `run_pipeline` function.
+        Tuple that consists of (Dataset, Model, List[Optimizer],
+        Optional[Runtime], Optional[RuntimeProtocol]). It can be used to run a
+        pipeline using `run_pipeline` function.
 
     Raises
     ------
@@ -264,7 +277,10 @@ def run_pipeline(
     jsonschema.exceptions.ValidationError :
         Raised if parameters are incorrect.
     """
-    assert run_optimizations or run_benchmarks, "If both optimizations and benchmarks are skipped, pipeline will not be executed"  # noqa: E501
+    assert run_optimizations or run_benchmarks, (
+        'If both optimizations and benchmarks are skipped, pipeline will not '
+        'be executed'
+    )
     logger.set_verbosity(verbosity)
     log = logger.get_logger()
 
@@ -273,7 +289,10 @@ def run_pipeline(
     modelframeworktuple = model.get_framework_and_version()
 
     if run_benchmarks and not output:
-        log.warn("Running benchmarks without defined output -- measurements will not be saved")  # noqa: E501
+        log.warning(
+            'Running benchmarks without defined output -- measurements will '
+            'not be saved'
+        )
 
     if output:
         MeasurementsCollector.measurements += {
@@ -311,7 +330,7 @@ def run_pipeline(
     if run_optimizations:
         prev_block = model
         if convert_to_onnx:
-            log.warn(
+            log.warning(
                 'Force conversion of the input model to the ONNX format'
             )
             model_path = convert_to_onnx

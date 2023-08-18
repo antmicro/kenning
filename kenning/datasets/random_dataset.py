@@ -10,7 +10,7 @@ import cv2
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.datasets.helpers.detection_and_segmentation import ObjectDetectionSegmentationDataset  # noqa: 501
+from kenning.datasets.helpers.detection_and_segmentation import ObjectDetectionSegmentationDataset  # noqa: E501
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
@@ -139,7 +139,7 @@ class RandomizedClassificationDataset(Dataset):
             yield [np.random.randint(0, 255, size=self.inputdims)]
 
 
-class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset):   # noqa: 501
+class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset):   # noqa: E501
     """
     Creates a sample randomized detection dataset.
 

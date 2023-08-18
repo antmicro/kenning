@@ -10,7 +10,7 @@ from copy import deepcopy
 
 from kenning.core.flow import KenningFlow
 from kenning.dataproviders.camera_dataprovider import CameraDataProvider
-from kenning.outputcollectors.real_time_visualizers import BaseRealTimeVisualizer # noqa: 501
+from kenning.outputcollectors.real_time_visualizers import BaseRealTimeVisualizer   # noqa: E501
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.interfaces.io_interface import IOCompatibilityError
 
@@ -37,14 +37,14 @@ MDL_RT_RUNNER_YOLOV4_JSON = {
         "model_wrapper": {
             "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
             "parameters": {
-                "model_path": "kenning:///models/object_detection/yolov4.onnx"    # noqa: 501
+                "model_path": "kenning:///models/object_detection/yolov4.onnx"
             }
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters":
             {
-                "save_model_path": "kenning:///models/object_detection/yolov4.onnx",  # noqa: 501
+                "save_model_path": "kenning:///models/object_detection/yolov4.onnx",    # noqa: E501
                 "execution_providers": ["CPUExecutionProvider"]
             }
         }
@@ -71,16 +71,16 @@ MDL_RT_RUNNER_YOLACT_JSON = {
             }
         },
         "model_wrapper": {
-            "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",    # noqa: 501
+            "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",    # noqa: E501
             "parameters": {
-                "model_path": "kenning:///models/instance_segmentation/yolact.onnx"    # noqa: 501
+                "model_path": "kenning:///models/instance_segmentation/yolact.onnx"    # noqa: E501
             }
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters":
             {
-                "save_model_path": "kenning:///models/instance_segmentation/yolact.onnx",  # noqa: 501
+                "save_model_path": "kenning:///models/instance_segmentation/yolact.onnx",  # noqa: E501
                 "execution_providers": ["CPUExecutionProvider"]
             }
         }
@@ -95,7 +95,7 @@ MDL_RT_RUNNER_YOLACT_JSON = {
 
 # base detection visualizer runner
 DECT_VISUALIZER_JSON = {
-    "type": "kenning.outputcollectors.detection_visualizer.DetectionVisualizer",    # noqa: 501
+    "type": "kenning.outputcollectors.detection_visualizer.DetectionVisualizer",    # noqa: E501
     "parameters": {
         "output_width": 608,
         "output_height": 608,
@@ -110,7 +110,7 @@ DECT_VISUALIZER_JSON = {
 
 # base real time detection visualizer runner
 RT_DECT_VISUALIZER_JSON = {
-    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer",   # noqa: 501
+    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeDetectionVisualizer",   # noqa: E501
     "parameters": {
         "viewer_width": 512,
         "viewer_height": 512,
@@ -125,7 +125,7 @@ RT_DECT_VISUALIZER_JSON = {
 
 # base real time segmentation visualizer runner
 RT_SEGM_VISUALIZER_JSON = {
-    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualization", # noqa: 501
+    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualization",     # noqa: E501
     "parameters": {
         "viewer_width": 512,
         "viewer_height": 512,
@@ -197,7 +197,7 @@ FLOW_SCENARIO_VALID = FLOW_SCENARIO_DETECTION
 # to prepare scenario with redefined variable, we change model output name to
 # same as camera provider output - 'cam_frame'
 MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
-MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON['outputs']['detection_output'] = 'cam_frame'    # noqa: 501
+MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON['outputs']['detection_output'] = 'cam_frame'    # noqa: E501
 
 FLOW_SCENARIO_REDEF_VARIABLE = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,
@@ -234,6 +234,7 @@ def mock_camera_fetch_input():
     """
     Mocks camera input - instead of camera frame returns random noise.
     """
+
     def fetch_input(self):
         return np.random.randint(
             low=0,
@@ -252,6 +253,7 @@ def set_should_close_after_3_calls():
     """
     Mocks should_close method so that after 3 calls it returns True.
     """
+
     def should_close(self):
         should_close.calls += 1
         return should_close.calls >= 3
@@ -266,6 +268,7 @@ def mock_dear_py_gui():
     """
     Mocks DearPyGui so that there is no GUI being showed.
     """
+
     def _gui_thread(self):
         while not self.stop:
             _ = self.process_data.get()

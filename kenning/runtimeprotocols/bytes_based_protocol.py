@@ -20,7 +20,7 @@ class BytesBasedProtocol(RuntimeProtocol, ABC):
 
     arguments_structure = {
         'packet_size': {
-            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E50
+            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E501
             'type': int,
             'default': 4096
         },

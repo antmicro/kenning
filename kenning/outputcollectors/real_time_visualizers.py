@@ -616,7 +616,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         return {
             'input': [
                 {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}],  # noqa: 501
+                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}],  # noqa: E501
             'output': []
         }
 

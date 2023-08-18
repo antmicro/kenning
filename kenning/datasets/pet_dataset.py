@@ -46,8 +46,8 @@ class PetDataset(Dataset):
     classification_types = ['species', 'breeds']
 
     resources = Resources({
-        'images': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz',  # noqa: 501
-        'annotations': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz',  # noqa: 501
+        'images': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz',  # noqa: E501
+        'annotations': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz',  # noqa: E501
     })
 
     arguments_structure = {
@@ -156,7 +156,7 @@ class PetDataset(Dataset):
                 else:
                     self.dataY.append(int(fields[1]) - 1)
                     clsname = fields[0].rsplit('_', 1)[0]
-                    if not self.dataY[-1] in self.classnames:
+                    if self.dataY[-1] not in self.classnames:
                         self.classnames[self.dataY[-1]] = clsname
                     assert self.classnames[self.dataY[-1]] == clsname
             if self.classify_by == 'species':

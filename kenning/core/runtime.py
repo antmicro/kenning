@@ -376,7 +376,7 @@ class Runtime(ArgumentsHandler, ABC):
         AttributeError :
             Raised if output specification is not loaded.
         ValueError :
-            Raised if size of input doesn't match the input specification.  # noqa: E501
+            Raised if size of input doesn't match the input specification.
         """
         if self.input_spec is None:
             raise AttributeError("You must load the input specification first.")  # noqa: E501
@@ -780,7 +780,7 @@ class Runtime(ArgumentsHandler, ABC):
             self.inference_session_start()
             self.prepare_local()
             for X, y in TqdmCallback('runtime', dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
+                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: E501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 succeed = self.prepare_input(prepX)
                 if not succeed:
@@ -878,7 +878,7 @@ class Runtime(ArgumentsHandler, ABC):
             )
             measurements = Measurements()
             for X, y in tqdm(dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: 501
+                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: E501
                 prepX = modelwrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(
@@ -893,7 +893,7 @@ class Runtime(ArgumentsHandler, ABC):
                     f'Received output ({len(preds)} bytes)'
                 )
                 preds = modelwrapper.convert_output_from_bytes(preds)
-                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: 501
+                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: E501
                 measurements += dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()

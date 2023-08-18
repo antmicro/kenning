@@ -21,7 +21,7 @@ from kenning.utils.resource_manager import PathOrURI
 class TensorFlowImageNet(TensorFlowWrapper):
 
     default_dataset = ImageNetDataset
-    pretrained_model_uri = 'kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5'  # noqa: 501
+    pretrained_model_uri = 'kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5'  # noqa: E501
     arguments_structure = {
         'modelcls': {
             'argparse_name': '--model-cls',

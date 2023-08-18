@@ -19,8 +19,8 @@
         "type": "kenning.datasets.pet_dataset.PetDataset",
         "parameters":
         {
-            "dataset_root": "./build/pet-dataset",
-            "split_fraction_test": 0.01
+            "dataset_root": "./build/PetDataset",
+            "download_dataset": false
         }
     },
     "optimizers":

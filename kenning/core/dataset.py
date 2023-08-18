@@ -53,6 +53,24 @@ class Dataset(ArgumentsHandler, ABC):
         The batch size for the dataset.
     _dataindex : int
         ID of the next data to be delivered for inference.
+    dataXtrain: List[Any]
+        dataX subset representing a training set. Available after executing
+        train_test_split_representations, otherwise empty.
+    dataYtrain: List[Any]
+        dataY subset representing a training set. Available after executing
+        train_test_split_representations, otherwise empty.
+    dataXtest: List[Any]
+        dataX subset representing a testing set. Available after executing
+        train_test_split_representations, otherwise empty.
+    dataYtest: List[Any]
+        dataY subset representing a testing set. Available after executing
+        train_test_split_representations, otherwise empty.
+    dataXval: List[Any]
+        Optional dataX subset representing a validation set. Available after
+        executing train_test_split_representations, otherwise empty.
+    dataYval: List[Any]
+        Optional dataY subset representing a validation set. Available after
+        executing train_test_split_representations, otherwise empty.
     """
 
     resources: Resources = Resources(dict())
@@ -159,6 +177,12 @@ class Dataset(ArgumentsHandler, ABC):
         self._dataindex = 0
         self.dataX = []
         self.dataY = []
+        self.dataXtrain = []
+        self.dataXtest = []
+        self.dataXval = []
+        self.dataYtrain = []
+        self.dataYtest = []
+        self.dataYval = []
         self.batch_size = batch_size
         self.download_dataset = download_dataset
         self.force_download_dataset = force_download_dataset
@@ -265,12 +289,12 @@ class Dataset(ArgumentsHandler, ABC):
 
     def __len__(self) -> int:
         """
-        Returns the number of data samples.
+        Returns the number of data samples. Takes the batch size into account.
 
         Returns
         -------
         int :
-            Number of input samples.
+            Number of input samples in a single batch.
         """
         return ceil(len(self.dataX) / self.batch_size)
 
@@ -427,6 +451,65 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return (self.dataX, self.dataY)
 
+    def _subset_len(self, subset: List[Any]) -> int:
+        """
+        Returns the length of a given subset (e.g. train, test or val). Takes
+        batch_size into account.
+
+        Parameters
+        ----------
+        subset: List[Any]
+            A list representing given dataset subset
+
+        Returns
+        -------
+        int :
+            The length of a single batch from a given subset
+        """
+        return ceil(len(subset) / self.batch_size)
+
+    def train_subset_len(self) -> Optional[int]:
+        """
+        Returns the length of a single batch from the training set.
+
+        Returns
+        -------
+        Optional[int] :
+            The number of samples in a single batch from the training set or
+            None if the dataset has not been split
+        """
+        if not self.dataXtrain:
+            return None
+        return self._subset_len(self.dataXtrain)
+
+    def test_subset_len(self) -> Optional[int]:
+        """
+        Returns the length of a single batch from the training set.
+
+        Returns
+        -------
+        Optional[int] :
+            The number of samples in a single batch from the testing set or
+            None if the dataset has not been split
+        """
+        if not self.dataXtest:
+            return None
+        return self._subset_len(self.dataXtest)
+
+    def val_subset_len(self) -> Optional[int]:
+        """
+        Returns the length of a single batch from the training set.
+
+        Returns
+        -------
+        Optional[int] :
+            The number of samples in a single batch from the validation set or
+            None if the dataset has not been split
+        """
+        if not self.dataXval:
+            return None
+        return self._subset_len(self.dataXval)
+
     def train_test_split_representations(
             self,
             test_fraction: Optional[float] = None,
@@ -471,36 +554,42 @@ class Dataset(ArgumentsHandler, ABC):
         else:
             stratify_arg = None
 
-        dataXtrain, dataXtest, dataYtrain, dataYtest = train_test_split(
-            self.dataX,
-            self.dataY,
-            test_size=test_fraction,
-            random_state=seed,
-            shuffle=True,
-            stratify=stratify_arg
-        )
-        if val_fraction is not None:
-            if stratify:
-                stratify_arg = dataYtrain
-            else:
-                stratify_arg = None
-            dataXtrain, dataXval, dataYtrain, dataYval = train_test_split(
-                dataXtrain,
-                dataYtrain,
-                test_size=val_fraction/(1 - test_fraction),
+        self.dataXtrain, self.dataXtest, \
+            self.dataYtrain, self.dataYtest = train_test_split(
+                self.dataX,
+                self.dataY,
+                test_size=test_fraction,
                 random_state=seed,
                 shuffle=True,
                 stratify=stratify_arg
             )
+
+        if val_fraction is not None:
+            if stratify:
+                stratify_arg = self.dataYtrain
+            else:
+                stratify_arg = None
+            self.dataXtrain, self.dataXval, \
+                self.dataYtrain, self.dataYval = train_test_split(
+                    self.dataXtrain,
+                    self.dataYtrain,
+                    test_size=val_fraction/(1 - test_fraction),
+                    random_state=seed,
+                    shuffle=True,
+                    stratify=stratify_arg
+                )
             return (
-                dataXtrain,
-                dataXtest,
-                dataYtrain,
-                dataYtest,
-                dataXval,
-                dataYval
+                self.dataXtrain,
+                self.dataXtest,
+                self.dataYtrain,
+                self.dataYtest,
+                self.dataXval,
+                self.dataYval
             )
-        return (dataXtrain, dataXtest, dataYtrain, dataYtest)
+        return (self.dataXtrain,
+                self.dataXtest,
+                self.dataYtrain,
+                self.dataYtest)
 
     def calibration_dataset_generator(
             self,

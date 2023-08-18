@@ -19,20 +19,12 @@ stages:
     - docs
     - docs-deploy
 
-flake8:
+pre-commit:
     <<: *ace
     <<: *common_only
     stage: lint
     script:
-        - flake8 .
-    allow_failure: false
-
-pydocstyle:
-    <<: *ace
-    <<: *common_only
-    stage: lint
-    script:
-        - pydocstyle .
+        - pre-commit run --all-files
     allow_failure: false
 
 pytest:

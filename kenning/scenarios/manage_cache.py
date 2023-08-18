@@ -62,14 +62,10 @@ class ManageCacheRunner(CommandTemplate):
 
         list_group = parser.add_argument_group(GROUP_SCHEMA.format(CACHE))
 
-        available_choices_string = (
-            '\n  * '.join(ManageCacheRunner.action_arguments) + '\n'
-        )
-
         list_group.add_argument(
             'action',
-            help='Action to be performed.\n\nAvailable choices: '
-            f'{available_choices_string}',
+            help='Action to be performed',
+            choices=ManageCacheRunner.action_arguments,
         )
         list_group.add_argument(
             '-v', help='Display full paths', action='store_true'

@@ -18,7 +18,7 @@ import copy
 import json
 from itertools import chain, product, combinations
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from pprint import pformat
 from argcomplete.completers import FilesCompleter
 
@@ -34,11 +34,25 @@ from kenning.utils.pipeline_runner import run_pipeline_json
 log = logger.get_logger()
 
 
-def get_block_product(block: Dict[str, List]) -> List:
+def get_block_product(block: Dict[str, Any]) -> List:
     """
     Gets a cartesian product of the parameter values.
 
-    Example:
+    Parameters
+    ----------
+    block : Dict[str, List]
+        Dictionary with parameters and type keys.
+        For parameters, key is the name
+        of a parameter and value defines range of values.
+
+    Returns
+    -------
+    List :
+        Cartesian product of input `block`.
+
+    Examples
+    --------
+    For argument
     ```python
     block = {
         'type': 'example',
@@ -48,7 +62,7 @@ def get_block_product(block: Dict[str, List]) -> List:
         }
     }
     ```
-    will yield
+    will return
     ```python
     [
         {
@@ -62,6 +76,13 @@ def get_block_product(block: Dict[str, List]) -> List:
             'type': 'example',
             'parameters': {
                 'optimization_level' : 1,
+                'dtype': 'float32'
+            }
+        },
+        {
+            'type': 'example',
+            'parameters': {
+                'optimization_level' : 2,
                 'dtype': 'int8'
             }
         },
@@ -72,27 +93,8 @@ def get_block_product(block: Dict[str, List]) -> List:
                 'dtype': 'float32'
             }
         }
-        {
-            'type': 'example',
-            'parameters': {
-                'optimization_level' : 2,
-                'dtype': 'float32'
-            }
-        }
     ]
     ```
-
-    Parameters
-    ----------
-    block : Dict[str, List]
-        Dictionary with parameters and type keys.
-        For parameters, key is the name
-        of a parameter and value defines range of values.
-
-    Returns
-    -------
-    List :
-        Cartesian product of input `block`.
     """
     return [
         {
@@ -107,16 +109,6 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     """
     Generates a powerset of ordered elements of `iterable` argument.
 
-    Example
-    ```python
-    iterable = [1, 2, 3]
-    min_elements = 1
-    ```
-    will return
-    ```
-    [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
-    ```
-
     Parameters
     ----------
     iterable : List
@@ -128,6 +120,13 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
     -------
     List[List] :
         Powerset of ordered values.
+
+    Examples
+    --------
+    ```python
+    >>> ordered_powerset([1, 2, 3], 1)
+    [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]
+    ```
     """
     res = []
     for i in range(min_elements, len(iterable) + 1):
@@ -143,6 +142,18 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     of this type that can be used to run a pipeline.
     Then for all of the generated blocks cartesian product is computed.
 
+    Parameters
+    ----------
+    json_cfg : Dict
+        Configuration for the grid search optimization.
+
+    Returns
+    -------
+    List[Dict] :
+        List of pipeline configurations.
+
+    Examples
+    --------
     An example of an optimizable runtime block
     ```python
     "runtime":
@@ -198,16 +209,6 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     This is done to every block type.
     Then a cartesian product is computed that returns all possible
     pipeline configurations.
-
-    Parameters
-    ----------
-    json_cfg : Dict
-        Configuration for the grid search optimization.
-
-    Returns
-    -------
-    List[Dict] :
-        List of pipeline configurations.
     """
     optimization_parameters = json_cfg['optimization_parameters']
     blocks_to_optimize = [
@@ -307,7 +308,7 @@ class OptimizationRunner(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
+        groups: Optional[Dict[str, argparse._ArgumentGroup]] = None,
     ) -> Tuple[argparse.ArgumentParser, Dict]:
         parser, groups = super(
             OptimizationRunner,
@@ -344,24 +345,27 @@ class OptimizationRunner(CommandTemplate):
         policy = optimization_parameters['policy']
         metric = optimization_parameters['metric']
 
-        pipelines = None
         if optimization_strategy == 'grid_search':
             pipelines = grid_search(json_cfg)
+        else:
+            raise ValueError(
+                f'Invalid optimization strategy: {optimization_strategy}'
+            )
 
         pipelines_num = len(pipelines)
         pipelines_scores = []
 
         log.info(f'Finding {policy} for {metric}')
-        for pipeline_count, pipeline in enumerate(pipelines):
+        for pipeline_idx, pipeline in enumerate(pipelines):
             module_error = None
-            pipeline = replace_paths(pipeline, pipeline_count)
+            pipeline = replace_paths(pipeline, pipeline_idx)
             MeasurementsCollector.clear()
             try:
-                log.info(f'Running pipeline {pipeline_count + 1} / {pipelines_num}')  # noqa: E501
+                log.info(f'Running pipeline {pipeline_idx + 1} / {pipelines_num}')  # noqa: E501
                 log.info(f'Configuration {pformat(pipeline)}')
                 measurementspath = str(args.output.with_suffix('')) + \
                     '_' + \
-                    str(pipeline_count) + \
+                    str(pipeline_idx) + \
                     str(args.output.suffix)
 
                 run_pipeline_json(

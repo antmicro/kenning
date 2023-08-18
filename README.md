@@ -180,6 +180,10 @@ The available subcommands are:
 * `info` - provides information about a given Kenning class.
 * `list` - lists available Kenning modules for optimization and runtime.
 * `fuzzy-search` - searches for class path across Kenning and returns it.
+* `cache` - manages Kenning cache used for models and datasets.
+* `completion` - configures autocompletion feature for Kenning CLI.
+
+Kenning also provides autocompletion for the CLI, which has to be configured separately with `kenning completion`.
 
 For more details on each of the above scenarios, see the [Kenning documentation](https://antmicro.github.io/kenning/).
 

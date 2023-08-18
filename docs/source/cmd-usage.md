@@ -478,7 +478,7 @@ To print available arguments run `python -m kenning.scenarios.list_classes -h`.
 * supported input and output formats,
 * arguments structure used in JSON configurations.
 
-The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`. 
+The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`.
 To get more detailed information, an optional `--load-class-with-args` argument can be passed. This needs all required class arguments to be provided, and that all dependencies are available.
 
 For more detail, check `python -m kenning.scenarios.class_info -h`.

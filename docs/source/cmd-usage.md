@@ -14,6 +14,12 @@ Each class in `kenning.core` implements `form_argparse` and `from_argparse` meth
 The former creates an `argparse` group for a given class with its parameters.
 The latter takes the arguments parsed by `argparse` and returns the object of a class.
 
+## Autocompletion for command line interface
+
+{{project}} provides autocompletion for its command line interface.
+This feature requires additional configuration to work properly, which can be done using `kenning completion` command.
+Optionally, it can be configured as described in [argcomplete documentation](https://kislyuk.github.io/argcomplete/).
+
 ## Model training
 
 `kenning.scenarios.model_training` performs model training using Kenning's [](modelwrapper-api) and [](dataset-api) objects.

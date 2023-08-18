@@ -5,7 +5,7 @@
 """
 Provides an API for dataset loading, creation and configuration.
 """
-
+from math import ceil
 from typing import Tuple, List, Any, Dict, Optional, Generator, Iterable
 from abc import ABC, abstractmethod
 from argparse import Namespace
@@ -272,7 +272,7 @@ class Dataset(ArgumentsHandler, ABC):
         int :
             Number of input samples.
         """
-        return len(self.dataX)
+        return ceil(len(self.dataX) / self.batch_size)
 
     def _iter_subset(self, dataXsubset: List[Any], dataYsubset: List[Any]
                      ) -> Iterable['Dataset']:

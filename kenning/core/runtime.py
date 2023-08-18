@@ -391,7 +391,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         if not input_data:
             self.log.error("Received empty data payload")
-            raise ValueError
+            raise ValueError('Received empty data payload')
 
         # reading input
         inputs = []
@@ -408,12 +408,16 @@ class Runtime(ArgumentsHandler, ABC):
             if len(input_data) % (expected_size / shape[0]) != 0:
                 self.log.error("Received input data that is not a multiple of "
                                "the sample size")
-                raise ValueError
+                raise ValueError('Received input data that is not a multiple of ' # noqa E501
+                                 'the sample size')
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
 
-            # fill input to match expected shape
-            input = np.resize(input, np.prod(shape))
+            # fill input with zeroes to match expected shape
+            # the data needs to be copied because otherwise the array does not
+            # own its data - which is needed for resizing
+            input = input.copy()
+            input.resize(np.prod(shape))
             input = input.reshape(shape)
 
             # quantization
@@ -427,7 +431,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         if input_data:
             self.log.error("Received more data than model expected.")
-            raise ValueError
+            raise ValueError("Received more data than model expected.")
 
         # retrieving original order
         reordered_inputs = [None] * len(inputs)

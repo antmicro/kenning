@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 """
 Module for converting ONNX models to PyTorch framework with help of onnx2torch.
 It contains custom converters to enable pruning with NNI.

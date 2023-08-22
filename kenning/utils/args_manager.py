@@ -203,7 +203,7 @@ def serialize_inference(
             serialized_dict[name]['parameters'] = serialized_obj
 
     if optimizers:
-        if type(optimizers) is not list:
+        if not isinstance(optimizers, list):
             optimizers = [optimizers]
 
         serialized_dict['optimizers'] = []
@@ -489,13 +489,13 @@ def add_parameterschema_argument(
         else:
             argschema_name = name
 
-        # Check if there is a property that is not going to be overriden
+        # Check if there is a property that is not going to be overridden
         # by the new property but has the same property name
         for k, p in schema['properties'].items():
             if p['real_name'] == name and k != argschema_name:
                 raise KeyError(f'{p} already has a property name: {name}')
 
-        # If the property is going to be overriden it has to be removed
+        # If the property is going to be overridden it has to be removed
         # from the list of required properties
         try:
             schema['required'].remove(argschema_name)

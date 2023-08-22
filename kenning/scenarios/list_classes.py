@@ -82,7 +82,7 @@ def list_classes(
              subclasses if class_name[0] != '_']
 
     for base_class in base_classes:
-        if not kenning_base_classes[base_class][1] in subclasses_dict.keys():
+        if kenning_base_classes[base_class][1] not in subclasses_dict.keys():
             continue
 
         if verbosity != 'autocomplete':

@@ -145,11 +145,11 @@ class PipelineManagerClient(CommandTemplate):
                     return MessageType.ERROR, str(ex).encode()
 
                 if message_type == MessageType.VALIDATE:
-                    feedback_msg = 'Successfuly validated'
+                    feedback_msg = 'Successfully validated'
                 elif message_type == MessageType.RUN:
-                    feedback_msg = f'Successfuly run. Output saved in {output_file_path}'  # noqa: E501
+                    feedback_msg = f'Successfully run. Output saved in {output_file_path}'  # noqa: E501
                 elif message_type == MessageType.EXPORT:
-                    feedback_msg = f'Successfuly exported. Output saved in {output_file_path}'  # noqa: E501
+                    feedback_msg = f'Successfully exported. Output saved in {output_file_path}'  # noqa: E501
 
             elif message_type == MessageType.IMPORT:
                 pipeline = json.loads(data)

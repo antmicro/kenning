@@ -509,7 +509,7 @@ def classification_report(
             str(confusionpath.relative_to(rootdir)) + '.*'
         )
     elif 'predictions' in measurementsdata:
-        log.info('Using predictons')
+        log.info('Using predictions')
 
         predictions = list(zip(
             measurementsdata['predictions'],
@@ -537,7 +537,7 @@ def classification_report(
         )
     else:
         log.error(
-            'Confusion matrix and predictons not present for classification '
+            'Confusion matrix and predictions not present for classification '
             'report'
         )
         return ''
@@ -680,7 +680,7 @@ def comparison_classification_report(
         predictions_batplot_path = imgdir / 'predictions'
         draw_barplot(
             outpath=predictions_batplot_path,
-            title='Predictons barplot' if draw_titles else None,
+            title='Predictions barplot' if draw_titles else None,
             xtitle='Class',
             xunit=None,
             ytitle='Percentage',
@@ -1718,13 +1718,13 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
     """
     Deduces what type of report should be generated based on measurements data.
 
-    Report type is choosen only when all mesurements data are compatible
+    Report type is chosen only when all measurements data are compatible
     with it.
 
     Parameters
     ----------
     measurements_data : List[Dict]
-        List with mesurements data from which the report will be generated.
+        List with measurements data from which the report will be generated.
 
     Returns
     -------
@@ -1764,7 +1764,7 @@ def deduce_report_name(
     Parameters
     ----------
     measurements_data : List[Dict]
-        List with mesurements data from which the report will be generated.
+        List with measurements data from which the report will be generated.
     report_types : List[str]
         List with types of report.
 
@@ -1839,7 +1839,8 @@ def generate_html_report(
                 "MockArgs", ('pdb', 'verbosity', 'traceback')
             )(pdb=debug, verbosity=debug, traceback=debug)
             handle_exception(app, mock_args, ex)
-            log.error("Error occured, HTML report won't be generated", ex.args)
+            log.error("Error occurred, HTML report won't be generated",
+                      ex.args)
 
 
 class RenderReport(CommandTemplate):
@@ -1886,7 +1887,7 @@ class RenderReport(CommandTemplate):
         )
         other_group.add_argument(
             '--to-html',
-            help='Generate HTML version of the report, it can recieve path to the folder where HTML will be saved',  # noqa: E501
+            help='Generate HTML version of the report, it can receive path to the folder where HTML will be saved',  # noqa: E501
             nargs='?',
             default=False,
             const=True,

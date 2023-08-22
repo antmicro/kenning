@@ -233,7 +233,7 @@ class InferenceTester(CommandTemplate):
                 getattr(args, "convert_to_onnx", False),
                 command,
                 run_optimizations="compiler_cls" in args and not getattr(
-                    args, "run_benchmars_only", False),
+                    args, "run_benchmarks_only", False),
                 run_benchmarks="measurements" in args,
             )
         except ValidationError as ex:
@@ -307,7 +307,7 @@ class InferenceTester(CommandTemplate):
                 getattr(args, "convert_to_onnx", False),
                 command,
                 run_optimizations="compiler_cls" in args and not getattr(
-                    args, "run_benchmars_only", False) and compiler,
+                    args, "run_benchmarks_only", False) and compiler,
                 run_benchmarks="measurements" in args and dataset,
             )
         except ValidationError as ex:

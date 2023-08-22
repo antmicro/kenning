@@ -17,7 +17,7 @@ def create_report_from_measurements(
     """
     Creates a report from template and measurements data.
 
-    It additionaly provides methods for quality metrics.
+    It additionally provides methods for quality metrics.
 
     Parameters
     ----------

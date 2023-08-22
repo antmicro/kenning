@@ -27,7 +27,7 @@ class KenningFlow:
     JSON format.
 
     The JSON format must follow well defined structure.
-    Each runner should consist of following entires:
+    Each runner should consist of following entries:
 
     type - Type of a Kenning class to use for this module
     parameters - Inner parameters of chosen class

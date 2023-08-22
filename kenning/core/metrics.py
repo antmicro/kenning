@@ -84,7 +84,7 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     Those metrics are stored as <name_of_key>_<mean|std|median>
 
-    Additionaly computes time of first inference step
+    Additionally computes time of first inference step
     as `inferencetime_first` and average utilization
     of all cpus used as `session_utilization_cpus_percent_avg` key.
 

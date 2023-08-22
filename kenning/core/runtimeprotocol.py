@@ -154,8 +154,8 @@ class Message(object):
     * data - optional data that comes with the message of MessageType.
     """
 
-    def __init__(self, messsage_type: MessageType, payload: bytes = b''):
-        self.message_type = messsage_type
+    def __init__(self, message_type: MessageType, payload: bytes = b''):
+        self.message_type = message_type
         self.payload = payload
 
     @property
@@ -208,7 +208,7 @@ class Message(object):
         Parameters
         ----------
         endianness : str
-            Endiannes of the bytes.
+            Endianness of the bytes.
 
         Returns
         -------

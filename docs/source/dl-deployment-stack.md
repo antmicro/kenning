@@ -23,7 +23,7 @@ Each model requires a dataset - a set of sample inputs (audio signals, images, v
 Datasets are usually split into the following categories:
 
 * training dataset - the largest subset that is used to train a model,
-* validation dataset - a relatively small set that is used to verify model performance after each training epoch (the metrics and loss function values show if any overfitting occured during the training process),
+* validation dataset - a relatively small set that is used to verify model performance after each training epoch (the metrics and loss function values show if any overfitting occurred during the training process),
 * test dataset - the subset that acts as the final evaluation of a trained model.
 
 It is required that the test dataset and the training dataset are mutually exclusive, so that the evaluation results are not biased in any way.
@@ -46,7 +46,7 @@ Finally, some additional layers are unfrozen and the training is performed on a 
 Transfer learning provides a better starting point for the training process, allows to train a correctly performing model with smaller datasets and reduces the time required to train a model.
 The intuition behind this is that there are multiple common features between various objects in real-life environments, and the features learned from one deep learning scenario can be then reused in another scenario.
 
-Once a model is seleceted, it requires adequate data input preprocessing in order to perform valid training.
+Once a model is selected, it requires adequate data input preprocessing in order to perform valid training.
 The input data should be normalized and resized to fit input tensor requirements.
 In case of the training dataset, especially if it is quite small, applying reasonable data augmentations like random brightness, contrast, cropping, jitters or rotations can significantly improve the training process and prevent the network from overfitting.
 
@@ -68,7 +68,7 @@ The optimizations may involve precision of weights, computational representation
 
 Models are usually trained with FP32 precision or mixed precision (FP32 + FP16, depending on the operator).
 Some targets, on the other hand, may significantly benefit from changing the precision from FP32 to FP16, INT8 or INT4.
-The optimizations here are straightforward for the FP16 precision, but the integer-based quantizations require dataset calibration to reduce precision without a siginificant loss in a model's quality.
+The optimizations here are straightforward for the FP16 precision, but the integer-based quantizations require dataset calibration to reduce precision without a significant loss in a model's quality.
 
 Other optimizations change the computational representation of the model by e.g. layer fusion or specialized operators for convolutions of a particular shape, among others.
 

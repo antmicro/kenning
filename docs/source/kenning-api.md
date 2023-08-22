@@ -57,7 +57,7 @@ The flow for this is presented with grey lines and blocks in {numref}`class-flow
 
 On target side, performance metrics are computed and sent back to the host using the [](runtimeprotocol-api), and later passed to report rendering.
 After the output data goes through processing in the [](runtime-api) and [](modelwrapper-api), it is compared to the ground truth in the [](dataset-api) during model evaluation.
-In the end, the results of model evaluation are passsed to report rendering.
+In the end, the results of model evaluation are passed to report rendering.
 
 The final report is generated as an RST file containing figures, as can be observed in the [](./sample-report).
 
@@ -125,7 +125,7 @@ Example implementations:
 * model preparation,
 * model saving and loading,
 * model saving to the ONNX format,
-* model-specific preprocessing of inputs and postprocessing of outputs, if neccessary,
+* model-specific preprocessing of inputs and postprocessing of outputs, if necessary,
 * model inference,
 * providing metadata (framework name and version),
 * model training,

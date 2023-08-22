@@ -234,7 +234,7 @@ class InferenceTester(CommandTemplate):
                 command,
                 run_optimizations="compiler_cls" in args and not getattr(
                     args, "run_benchmarks_only", False),
-                run_benchmarks="measurements" in args,
+                run_benchmarks=bool(args.measurements[0]),
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')
@@ -302,13 +302,15 @@ class InferenceTester(CommandTemplate):
                 compiler,
                 runtime,
                 protocol,
+                compiler[-1].compiled_model_path if len(
+                    compiler) > 0 else None,
                 args.measurements[0] if args.measurements[0] else None,
                 args.verbosity,
                 getattr(args, "convert_to_onnx", False),
                 command,
                 run_optimizations="compiler_cls" in args and not getattr(
                     args, "run_benchmarks_only", False) and compiler,
-                run_benchmarks="measurements" in args and dataset,
+                run_benchmarks=bool(args.measurements[0]) and dataset,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')

@@ -76,8 +76,11 @@ def assert_io_formats(
 
 
 def parse_json_pipeline(
-        json_cfg: Dict,
-        assert_integrity: bool = True) -> Tuple:
+    json_cfg: Dict,
+    assert_integrity: bool = True,
+    skip_optimizers: bool = False,
+    skip_runtime: bool = False,
+) -> Tuple:
     """
     Method that parses a json configuration of an inference pipeline.
 
@@ -93,13 +96,17 @@ def parse_json_pipeline(
         Configuration of the inference pipeline.
     assert_integrity : bool
         States whether integrity of connected blocks should be checked.
+    skip_optimizers : bool
+        States whether optimizers should be created
+    skip_runtime : bool
+        States whether runtime should be created
 
     Returns
     -------
     Tuple :
         Tuple that consists of (Dataset, Model, List[Optimizer],
-        Optional[Runtime], Optional[RuntimeProtocol]). It can be used to run a
-        pipeline using `run_pipeline` function.
+        Optional[Runtime], Optional[RuntimeProtocol], Optional[str])
+        It can be used to run a pipeline using `run_pipeline` function.
 
     Raises
     ------
@@ -112,16 +119,21 @@ def parse_json_pipeline(
     datasetcfg = json_cfg['dataset'] if 'dataset' in json_cfg else None
     runtimecfg = (
         json_cfg['runtime']
-        if 'runtime' in json_cfg else None
+        if 'runtime' in json_cfg and not skip_runtime else None
     )
     optimizerscfg = (
         json_cfg['optimizers']
-        if 'optimizers' in json_cfg else []
+        if 'optimizers' in json_cfg and not skip_optimizers else []
     )
     protocolcfg = (
         json_cfg['runtime_protocol']
         if 'runtime_protocol' in json_cfg else None
     )
+    try:
+        last_compiled_model_path = \
+            json_cfg['optimizers'][-1]['parameters']['compiled_model_path']
+    except (KeyError, IndexError):
+        last_compiled_model_path = None
 
     modelwrappercls = load_class(modelwrappercfg['type'])
     datasetcls = load_class(datasetcfg['type']) if datasetcfg else None
@@ -151,10 +163,15 @@ def parse_json_pipeline(
         runtimecls.from_json(protocol, runtimecfg['parameters'])
         if runtimecls else None
     )
+    model_name = modelwrappercfg['parameters']['model_name'] \
+        if 'model_name' in modelwrappercfg['parameters'] else None
 
     if assert_integrity:
         assert_io_formats(model, optimizers, runtime)
-    return (dataset, model, optimizers, runtime, protocol)
+    return (
+        dataset, model, optimizers, runtime, protocol,
+        model_name, last_compiled_model_path
+    )
 
 
 def run_pipeline_json(
@@ -201,21 +218,27 @@ def run_pipeline_json(
     jsonschema.exceptions.ValidationError :
         Raised if parameters are incorrect.
     """
-    dataset, model, optimizers, runtime, protocol = \
-        parse_json_pipeline(json_cfg)
+    (
+        dataset, model, optimizers, runtime, protocol,
+        model_name, last_compiled_model_path
+    ) = parse_json_pipeline(
+            json_cfg, skip_optimizers=not run_optimizations,
+            skip_runtime=not run_benchmarks
+        )
     return run_pipeline(
         dataset,
         model,
         optimizers,
         runtime,
         protocol,
+        last_compiled_model_path,
         output,
         verbosity,
         convert_to_onnx,
         command,
         run_optimizations and optimizers,
         run_benchmarks and dataset,
-        json_cfg.get("model_name", None),
+        model_name,
     )
 
 
@@ -225,6 +248,7 @@ def run_pipeline(
         optimizers,
         runtime,
         protocol,
+        last_compiled_model_path: Optional[Path] = None,
         output: Optional[Path] = None,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
@@ -248,6 +272,8 @@ def run_pipeline(
         Runtime to use in inference.
     protocol : RuntimeProtocol
         RuntimeProtocol to use in inference.
+    last_compiled_model_path : Optional[Path]
+        Model path from last optimizer
     output : Optional[Path]
         Path to the output JSON file with measurements.
     verbosity : Optional[str]
@@ -353,12 +379,7 @@ def run_pipeline(
 
             prev_block.save_io_specification(model_path)
             next_block.set_input_type(format)
-            if hasattr(prev_block, 'get_io_specification'):
-                next_block.compile(
-                    model_path,
-                    prev_block.get_io_specification())
-            else:
-                next_block.compile(model_path)
+            next_block.compile(model_path)
             del prev_block
 
             prev_block = next_block
@@ -368,8 +389,11 @@ def run_pipeline(
         if not optimizers:
             model.save_io_specification(model_path)
     else:
-        if len(optimizers) > 0:
-            model_path = optimizers[-1].compiled_model_path
+        if last_compiled_model_path:
+            model_path = last_compiled_model_path
+        elif runtime:
+            model_path = runtime.model_path
+            model.save_io_specification(model_path)
 
     ret = True
     if run_benchmarks and runtime:
@@ -381,6 +405,7 @@ def run_pipeline(
         else:
             ret = runtime.run_locally(dataset, model, model_path)
     elif run_benchmarks:
+        model.model_path = model_path
         model.test_inference()
         ret = True
 
@@ -388,8 +413,14 @@ def run_pipeline(
         return 1
 
     if output:
+        model_path = Path(model_path)
+        # If model compressed in ZIP exists use its size
+        # It is more accurate for Keras models
+        if model_path.with_suffix('.zip').exists():
+            model_path = model_path.with_suffix('.zip')
+
         MeasurementsCollector.measurements += {
-            'compiled_model_size': Path(model_path).stat().st_size
+            'compiled_model_size': model_path.stat().st_size
         }
 
         MeasurementsCollector.save_measurements(output)

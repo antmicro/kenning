@@ -105,7 +105,7 @@ def factory_test_equivalence(path_to_json_files: Union[str, Path]) -> Callable:
     return test_equivalence
 
 
-@pytest.mark.usefixtures('mock_enviroment')
+@pytest.mark.usefixtures('mock_environment')
 class HandlerTests(ABC):
 
     @pytest.fixture

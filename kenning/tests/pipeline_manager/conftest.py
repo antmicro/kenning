@@ -32,7 +32,7 @@ def create_mocks(mocker, module_name, core_cls):
 
 
 @pytest.fixture(scope='function')
-def mock_enviroment(mocker: MockerFixture):
+def mock_environment(mocker: MockerFixture):
     """
     Creates mocks of every implementation of Kenning's runtime, compiler,
     modelwrapper and dataset module

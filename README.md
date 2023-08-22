@@ -612,7 +612,7 @@ As it can be observed, all classes accessible from JSON files in these scenarios
 
 ## Inspecting Kenning modules from CLI
 
-Kenning provides two tools for displaying information about available classes: `kenning.scenarios.list_classses` and `kenning.scenarios.class_info`.
+Kenning provides two tools for displaying information about available classes: `kenning.scenarios.list_classes` and `kenning.scenarios.class_info`.
 
 The first script can be executed as follows:
 
@@ -823,7 +823,7 @@ Each method in the base classes that requires implementation raises an `NotImple
 They can be easily implemented or extended, but they need to conform to certain rules, usually described in the source documentation.
 
 For more details and examples on how the Kenning framework can be adjusted and enhanced, follow the [Kenning documentation](https://antmicro.github.io/kenning/).
-Implemented methods can be also overriden, if neccessary.
+Implemented methods can be also overridden, if necessary.
 
 Most of the base classes implement `form_argparse` and `from_argparse` methods.
 The former creates an argument parser and a group of arguments specific to the base class.

@@ -49,10 +49,6 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
         shutil.copy(model_path, tmp_model_path)
 
         json_path = model_path.with_suffix(model_path.suffix + '.json')
-        try:
-            json_path
-        except Exception:
-            pass
         if json_path.exists():
             shutil.copy(
                 json_path,
@@ -60,10 +56,6 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
             )
 
         config_file = model_path.with_suffix('.cfg')
-        try:
-            config_file
-        except Exception:
-            pass
         if config_file.exists():
             shutil.copy(
                 config_file,

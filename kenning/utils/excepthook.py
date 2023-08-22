@@ -15,7 +15,7 @@ from typing import Optional, Type
 from kenning.resources.pyproject.dependencies import \
     get_all_dependencies
 
-# Regexes for comparising dependencies
+# Regexes for comparing dependencies
 END_CHARS = " >=<@~"
 RE_NAME = f"^[^{END_CHARS}]+(?=[{END_CHARS}]?)"
 RE_KENNING_DEP = r"kenning\[[a-zA-Z]+\]"
@@ -135,7 +135,7 @@ def find_missing_optional_dependency(module_name: str) -> Optional[str]:
     Returns
     -------
     Optional[str] :
-        Name of group with optional dependencies which containt missing module
+        Name of group with optional dependencies which contain missing module
         or None otherwise.
     """
     found = None

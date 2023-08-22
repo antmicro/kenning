@@ -51,7 +51,7 @@ def try_extracting_input_shape_from_onnx(
                     return None
             shapes.append(dims)
     except AttributeError:
-        _LOGGER.error("ONNX model's graph don't have neccesary atributes"
+        _LOGGER.error("ONNX model's graph don't have necessary attributes"
                       " to extract input shape")
         return None
     return shapes

@@ -20,10 +20,26 @@
       "parameters": {
         "model_framework": "onnx",
         "pruner_type": "apoz",
-        "config_list": "[{\"sparsity_per_layer\": 0.1, \"op_types\": [\"Conv2d\", \"Linear\"]}, {\"exclude\": true, \"op_names\": [\"Conv_393\", \"Conv_611\", \"Conv_829\"]}]",
+        "config_list": [
+          {
+            "sparsity_per_layer": 0.1,
+            "op_types": [
+              "Conv2d",
+              "Linear"
+            ]
+          },
+          {
+            "exclude": true,
+            "op_names": [
+              "Conv_393",
+              "Conv_611",
+              "Conv_829"
+            ]
+          }
+        ],
         "training_steps": 256,
         "activation": "relu6",
-        "compiled_model_path": "./build/model.pth",
+        "compiled_model_path": "./build/model-yolo.pth",
         "mode": "dependency_aware",
         "finetuning_epochs": 1,
         "finetuning_batch_size": 2,
@@ -39,7 +55,7 @@
   "runtime": {
     "type": "kenning.runtimes.pytorch.PyTorchRuntime",
     "parameters": {
-      "save_model_path": "./build/model.pth"
+      "save_model_path": "./build/model-yolo.pth"
     }
   }
 }

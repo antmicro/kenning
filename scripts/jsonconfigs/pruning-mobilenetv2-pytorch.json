@@ -16,7 +16,15 @@
       "type": "kenning.optimizers.nni_pruning.NNIPruningOptimizer",
       "parameters": {
         "pruner_type": "apoz",
-        "config_list": "[{\"sparsity_per_layer\": 0.15, \"op_types\": [\"Conv2d\", \"Linear\"]}]",
+        "config_list": [
+          {
+            "sparsity_per_layer": 0.15,
+            "op_types": [
+              "Conv2d",
+              "Linear"
+            ]
+          }
+        ],
         "training_steps": 174,
         "activation": "relu",
         "compiled_model_path": "./build/model.pth",

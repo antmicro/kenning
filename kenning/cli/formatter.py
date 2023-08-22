@@ -4,10 +4,10 @@
 
 """
 Module with custom formatter with changed way of displaying
-subcommands informations.
+subcommands information.
 
 Changes:
-* subcommands are always dispalyed right after the main command
+* subcommands are always displayed right after the main command
 * removed list of subcommands from description -- they are already listed
   and described
 * usage: list subcommands in [...|...] instead of {...|...}

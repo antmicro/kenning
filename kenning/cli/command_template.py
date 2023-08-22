@@ -69,7 +69,8 @@ class CommandTemplate(ABC):
         groups : Dict[str, argparse._ArgumentGroup]
             Groups of arguments used by parser.
         resolve_conflict : bool
-            Should created parser resolve confilct instead of raising errors?
+            Indicates if parser should try to resolve conflicts instead of
+            raising an error.
 
         Returns
         -------
@@ -115,7 +116,7 @@ class CommandTemplate(ABC):
         args : argparse.Namespace
             Parsed and validated arguments used for this scenario
         not_parsed : List[str]
-            Additinal arguments which haven't been parsed yet
+            Additional arguments which haven't been parsed yet
 
         Returns
         -------

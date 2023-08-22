@@ -98,7 +98,7 @@ def main():
 
     def _print_help():
         """
-        Prints help message for non seqenced subcommands.
+        Prints help message for non sequenced subcommands.
         """
         print_help_from_parsers(
             "kenning "+" ".join(subcommands),

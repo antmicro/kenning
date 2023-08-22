@@ -72,7 +72,7 @@ class PyTorchONNXConversion(ONNXConversion):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model_onnx = onnx.load(str(importpath))
         if model_onnx.ir_version <= 3:
-            self.logger.error("Model unsupported due to the not suficient "
+            self.logger.error("Model unsupported due to the not sufficient "
                               f"ir_version {model_onnx.ir_version}, have to be"
                               " greater than 3")
             return SupportStatus.UNSUPPORTED

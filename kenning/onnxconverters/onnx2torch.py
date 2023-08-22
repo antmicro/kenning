@@ -597,7 +597,7 @@ def fill_none(
     Parameters
     ----------
     module : torch.nn.Module
-        Module which will receive the input, has to have template attirbute
+        Module which will receive the input, has to have template attribute
     *inputs : List[torch.Tensor]
         Inputs for the forward method
 
@@ -622,7 +622,7 @@ def fill_none(
 class FunctionWrapperForCheckingConst:
     """
     Class wrapping existing onnx2torch converters, for checking
-    constant inputs and converting nodes to OnnxConstant if neccessary
+    constant inputs and converting nodes to OnnxConstant if necessary
     """
 
     # Operation types with different behavior depending on test/eval
@@ -677,7 +677,7 @@ class FunctionWrapperForCheckingConst:
             if len(params) > 0 or \
                     node.operation_type in self.op_type_train_eval:
                 # Creating module with registered submodule - NNI can see it
-                # and prune it separetly
+                # and prune it separately
                 module.register_module(
                     'wrapped_module',
                     default_conversion.torch_module)
@@ -685,7 +685,7 @@ class FunctionWrapperForCheckingConst:
                 # Creating module without registered submodule
                 module.__dict__[
                     'wrapped_module'] = default_conversion.torch_module
-            # Registring constant values as module buffer,
+            # Registering constant values as module buffer,
             # so it will be moved to specific device when method .to() invoked
             i = 0
             for const in inputs:

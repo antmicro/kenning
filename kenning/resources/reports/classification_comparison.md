@@ -45,7 +45,7 @@ align: center
 
 * - Model name
   - Accuracy
-  - Mean precison
+  - Mean precision
   - Mean recall
 {% for model_name in data["model_names"] %}
 * - {{model_name}}

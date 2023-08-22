@@ -144,7 +144,7 @@ def torchconversion(
         model_trace,
         # this is a list of input infos where there is a dict
         # constructed from {input_name: (n-dim tuple-shape)}
-        # into {input_name: [product_of_the_dimmensions]}
+        # into {input_name: [product_of_the_dimensions]}
         list(
             {
                 list(input_shapes.keys())[0]:

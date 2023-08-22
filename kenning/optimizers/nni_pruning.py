@@ -422,7 +422,7 @@ class NNIPruningOptimizer(Optimizer):
                                   lr=self.finetuning_learning_rate)
         if self.log.level == logging.INFO and self.finetuning_epochs > 0:
             mean_loss = self.evaluate_model(model)
-            self.log.info("Fine-tunning model starting with mean loss "
+            self.log.info("Fine-tuning model starting with mean loss "
                           f"{mean_loss if mean_loss else None}")
         for finetuning_epoch in range(self.finetuning_epochs):
             self.train_model(
@@ -567,7 +567,7 @@ class NNIPruningOptimizer(Optimizer):
         Parameters
         ----------
         batch_begin : int
-            The index of the batch begining
+            The index of the batch beginning
 
         Returns
         -------

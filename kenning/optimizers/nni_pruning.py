@@ -23,7 +23,6 @@ from nni.common.graph_utils import _logger as nni_graph_logger
 import numpy as np
 from typing import Callable, Dict, Optional, List, Type, Tuple
 from enum import Enum
-import json
 import copy
 import dill
 import logging
@@ -187,7 +186,8 @@ class NNIPruningOptimizer(Optimizer):
         },
         "config_list": {
             "description": "Pruning specification, for more information please see NNI documentation - Compression Config Specification",  # noqa: E501
-            "type": str,
+            "type": list,
+            "items": object,
             "required": True,
         },
         "mode": {
@@ -265,7 +265,7 @@ class NNIPruningOptimizer(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         pruner_type: str = list(prunertypes.keys())[0],
-        config_list: str = '[{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}]',  # noqa: E501
+        config_list: List[Dict] = [{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}],  # noqa: E501
         training_steps: int = 1,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",
@@ -294,8 +294,8 @@ class NNIPruningOptimizer(Optimizer):
         pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
             or ActivationMeanRankPruner
-        config_list : str
-            String, with list of dictionaries in JSON format, containing
+        config_list : List[Dict]
+            List of objects in JSON format, containing
             pruning specification, for more information please see
             NNI documentation - Compression Config Specification
         training_steps : int
@@ -347,8 +347,7 @@ class NNIPruningOptimizer(Optimizer):
         self.pruner_type = pruner_type
         self.set_pruner_class(pruner_type)
 
-        # TODO: for now pass List[Dict] as str in json, upgrade argparse
-        self.config_list: List[Dict] = json.loads(config_list)
+        self.config_list = config_list
         self.set_pruner_mode(mode)
 
         self.prepare_dataloader_train_valid()

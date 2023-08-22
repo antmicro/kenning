@@ -71,6 +71,7 @@ supported_keywords = [
     'argparse_name',
     'description',
     'type',
+    'items',
     'default',
     'required',
     'enum',
@@ -103,6 +104,7 @@ type_to_jsontype = {
     int: 'integer',
     bool: 'boolean',
     object: 'object',
+    list: 'array',
 }
 
 jsontype_to_type = {
@@ -399,6 +401,8 @@ def add_argparse_argument(
     for name in names:
         prop = struct[name]
 
+        if 'items' in prop and ('type' not in prop or prop['type'] != list):
+            raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
                 raise KeyError(f'{p} is not a supported keyword')
@@ -473,6 +477,8 @@ def add_parameterschema_argument(
     for name in names:
         prop = struct[name]
 
+        if 'items' in prop and ('type' not in prop or prop['type'] != list):
+            raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
                 raise KeyError(f'{p} is not a supported keyword')
@@ -513,7 +519,13 @@ def add_parameterschema_argument(
                 }
         # Case for a single argument
         else:
-            if 'type' in prop:
+            if 'items' in prop:
+                keywords['type'] = [type_to_jsontype[prop['type']]]
+                keywords['items'] = {
+                    'type': type_to_jsontype[prop['items']],
+                    'convert-type': prop['type'],
+                }
+            elif 'type' in prop:
                 keywords['convert-type'] = prop['type']
                 keywords['type'] = [type_to_jsontype[prop['type']]]
 

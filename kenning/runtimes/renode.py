@@ -132,7 +132,8 @@ class RenodeRuntime(Runtime):
         self.platform_resc_path = platform_resc_path
         # check resc dependencies
         for dependency in resc_dependencies:
-            assert dependency.is_file()
+            assert dependency.is_file(), f'Dependency {dependency} not found'
+        self.resc_dependencies = resc_dependencies
         self.disable_profiler = disable_profiler
         if profiler_dump_path is not None:
             profiler_dump_path = profiler_dump_path.resolve()
@@ -260,6 +261,9 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
+        if self.renode_handler is None:
+            raise ValueError('Renode handler not initialized')
+
         if (not self.disable_performance_measurements and
                 self.profiler_dump_path is None):
             self.profiler_dump_path = Path(tempfile.mktemp(
@@ -272,6 +276,12 @@ class RenodeRuntime(Runtime):
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', f'$bin=@{self.runtime_binary_path}'
         )
+        for dep in self.resc_dependencies:
+            dep_name = dep.name.lower().replace('.', '_')
+            dep_path = str(dep.resolve())
+            self.renode_handler.run_robot_keyword(
+                'ExecuteCommand', f'${dep_name}=@{dep_path}'
+            )
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', f'i @{self.platform_resc_path}'
         )

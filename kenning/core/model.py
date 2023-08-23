@@ -295,7 +295,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     @timemeasurements('inference')
     def test_inference(self) -> 'Measurements':
         """
-        Runs the inference with a given dataset.
+        Runs the inference on test split of the dataset.
 
         Returns
         -------
@@ -306,7 +306,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         measurements = Measurements()
 
-        for X, y in tqdm(iter(self.dataset)):
+        for X, y in tqdm(self.dataset.iter_test()):
             prepX = self._preprocess_input(X)
             preds = self._run_inference(prepX)
             posty = self._postprocess_outputs(preds)

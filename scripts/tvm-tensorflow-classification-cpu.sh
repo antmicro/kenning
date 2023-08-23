@@ -17,7 +17,7 @@ python -m kenning.scenarios.inference_tester \
     --opt-level 3 \
     --save-model-path ./build/compiled-model.tar \
     --target-device-context cpu \
-    --dataset-root ./build/pet-dataset/ \
+    --dataset-root ./build/PetDataset/ \
     --inference-batch-size 1 \
     --verbosity INFO
 

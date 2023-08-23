@@ -1,5 +1,14 @@
 image: $CI_IMAGE
 
+.ace: &ace
+    tags: ['ace-x86_64']
+
+.common_only: &common_only
+    only:
+        - main
+        - dev
+        - merge_requests
+
 variables:
     GIT_STRATEGY: clone
     GIT_SUBMODULE_STRATEGY: recursive
@@ -11,18 +20,24 @@ stages:
     - docs-deploy
 
 flake8:
+    <<: *ace
+    <<: *common_only
     stage: lint
     script:
         - flake8 .
     allow_failure: false
 
 pydocstyle:
+    <<: *ace
+    <<: *common_only
     stage: lint
     script:
         - pydocstyle .
     allow_failure: false
 
 pytest:
+    <<: *ace
+    <<: *common_only
     stage: tests
     script:
         - mkdir -p build
@@ -38,6 +53,8 @@ pytest:
     allow_failure: false
 
 kenning-cli:
+    <<: *ace
+    <<: *common_only
     stage: tests
     script:
         - pip install .
@@ -46,6 +63,8 @@ kenning-cli:
     allow_failure: false
 
 sample-compilation:
+    <<: *ace
+    <<: *common_only
     stage: tests
     script:
         - mkdir build
@@ -59,6 +78,8 @@ sample-compilation:
     allow_failure: false
 
 sample-pipeline-optimization:
+    <<: *ace
+    <<: *common_only
     stage: tests
     script:
         - mkdir -p build
@@ -70,6 +91,8 @@ sample-pipeline-optimization:
     allow_failure: false
 
 docs:
+    <<: *ace
+    <<: *common_only
     stage: docs
     dependencies:
         - sample-compilation
@@ -90,6 +113,8 @@ docs:
     allow_failure: false
 
 linkcheck:
+    <<: *ace
+    <<: *common_only
     stage: docs
     dependencies:
         - sample-compilation
@@ -101,6 +126,7 @@ linkcheck:
     allow_failure: true
 
 docs-deploy:
+    <<: *common_only
     image: $CI_DOCS_DOCKER_IMAGE
     dependencies:
         - docs

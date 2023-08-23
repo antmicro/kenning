@@ -27,6 +27,9 @@ PERSON_DETECTION_MODEL_URI = PersonDetectionModelWrapper.pretrained_model_uri
 
 @pytest.fixture(scope='function', autouse=True)
 def clear_cache():
+    ResourceManager().set_cache_dir(
+        pytest.test_directory / 'cache_test'
+    )
     ResourceManager().max_cache_size = ResourceManager.MAX_CACHE_SIZE
     ResourceManager().clear_cache()
 

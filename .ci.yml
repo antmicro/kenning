@@ -43,7 +43,6 @@ pytest:
         - mkdir -p build
         - cp -r /data/* build/
         - cp -r build/COCODataset2017 build/VisualWakeWordsDataset
-        - cp -r /renode-resources/* build/renode-resources/
         - python setup.py develop
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -n=auto --dist=loadgroup --color=yes --report-log=log.json -vvl
     artifacts:

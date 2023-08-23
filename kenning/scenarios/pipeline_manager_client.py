@@ -20,6 +20,8 @@ from kenning.pipeline_manager.core import BaseDataflowHandler
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 import kenning.utils.logger as logger
+from kenning.utils.excepthook import find_missing_optional_dependency, \
+    MissingKenningDependencies
 from kenning.utils.logger import Callback, TqdmCallback
 from jsonschema.exceptions import ValidationError
 
@@ -179,6 +181,7 @@ class PipelineManagerClient(CommandTemplate):
         logger.set_verbosity(args.verbosity)
         log = logger.get_logger()
 
+        client = CommunicationBackend(args.host, args.port)
         try:
             if args.spec_type == "pipeline":
                 dataflow_handler = PipelineHandler(layout_algorithm=args.layout) # noqa E501
@@ -187,7 +190,6 @@ class PipelineManagerClient(CommandTemplate):
             else:
                 raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 
-            client = CommunicationBackend(args.host, args.port)
             client.initialize_client()
 
             callback_percent = Callback('runtime', send_progress, 1.0, client)
@@ -197,24 +199,49 @@ class PipelineManagerClient(CommandTemplate):
                 status, message = client.wait_for_message()
                 if status == Status.DATA_READY:
                     message_type, data = message
-                    return_status, return_message = parse_message(
-                        dataflow_handler, message_type, data, args.file_path
-                    )
+
+                    try:
+                        return_status, return_message = parse_message(
+                            dataflow_handler, message_type,
+                            data, args.file_path
+                        )
+                    except ModuleNotFoundError as e:
+                        extras = find_missing_optional_dependency(e.name)
+                        error_message = MissingKenningDependencies(
+                            name=e.name, path=e.path,
+                            optional_dependencies=extras)
+                        client.send_message(
+                            MessageType.ERROR,
+                            bytes(str(error_message), 'utf-8'))
+                        continue
+
                     client.send_message(return_status, return_message)
 
             TqdmCallback.unregister_callback(callback_percent)
         except ValidationError as ex:
             log.error(f'Failed to load JSON file:\n{ex}')
+            client.send_message(
+                MessageType.ERROR,
+                bytes(f'Failed to load JSON file:\n{ex}', 'utf-8'))
             return 1
         except RuntimeError as ex:
             log.error(f'Server runtime error:\n{ex}')
+            client.send_message(
+                MessageType.ERROR,
+                bytes(f'Server runtime error:\n{ex}', 'utf-8'))
             return 1
         except ConnectionRefusedError as ex:
             log.error(
                 f'Could not connect to the Pipeline Manager server: {ex}')
+            client.send_message(
+                MessageType.ERROR,
+                bytes(f'Could not connect to the Pipeline Manager server: {ex}', 'utf-8')) # noqa E501
             return ex.errno
         except Exception as ex:
             log.error(f'Unexpected exception:\n{ex}')
+            client.send_message(
+                MessageType.ERROR,
+                bytes(f'Unexpected exception:\n{ex}', 'utf-8'))
             raise
         return 0
 

@@ -67,7 +67,7 @@ sample-compilation:
     stage: tests
     script:
         - mkdir build
-        - ln -s /pet-dataset build/pet-dataset
+        - ln -s /data/PetDataset build/PetDataset
         - sed -i '/download-dataset/d' ./scripts/tvm-tensorflow-classification-cpu.sh
         - ./scripts/tvm-tensorflow-classification-cpu.sh
     artifacts:

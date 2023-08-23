@@ -18,7 +18,6 @@ from argparse import ArgumentParser
 
 from kenning.utils.resource_manager import (
     PathOrURI,
-    ResourceManager,
     ResourceURI
 )
 
@@ -122,10 +121,6 @@ def pytest_sessionstart(session: pytest.Session):
     pytest.test_directory = test_directory
     # only master worker should do init
     if hasattr(session.config, 'workerinput'):
-        # set cache dir per worker
-        ResourceManager().set_cache_dir(
-            test_directory / f'cache_{session.config.workerinput["workerid"]}'
-        )
         return
     # do nothing when only collecting tests
     if '--collect-only' in session.config.invocation_params.args:

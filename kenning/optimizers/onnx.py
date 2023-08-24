@@ -20,7 +20,7 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 def kerasconversion(model_path: PathOrURI, input_spec, output_names):
     import tensorflow as tf
     import tf2onnx
-    model = tf.keras.models.load_model(str(model_path))
+    model = tf.keras.models.load_model(str(model_path), compile=False)
 
     input_spec = [tf.TensorSpec(
         spec['shape'],

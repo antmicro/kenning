@@ -172,7 +172,7 @@ class TestFilterInvalidPipelines:
         invalid_pipeline['optimizers'].insert(
             0,
             {
-                'type': 'kenning.compilers.tvm.TVMCompiler',
+                'type': 'kenning.optimizers.tvm.TVMCompiler',
                 'parameters': {
                     'target': 'llvm -mcpu=core-avx2',
                     'compiled_model_path': './build/compiled_tvm.tar',

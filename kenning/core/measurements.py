@@ -6,32 +6,27 @@
 Module containing decorators for benchmark data gathering.
 """
 
-from typing import List, Dict, Union, Any, Callable, Optional, Type
-from types import TracebackType
-import time
-from kenning.utils import logger
-import psutil
-import subprocess
-import re
-import numpy as np
-from pathlib import Path
 import json
+import re
+import subprocess
 import tempfile
+import time
+from functools import wraps
+from pathlib import Path
+from shutil import which
+from threading import Condition, Thread
+from types import TracebackType
+from typing import Any, Callable, Dict, List, Optional, Type, Union
+
+import numpy as np
+import psutil
+
+from kenning.utils import logger
 
 try:
     from pynvml.smi import nvidia_smi
 except ImportError:
     nvidia_smi = None
-from threading import Thread, Condition
-
-from shutil import which
-
-from functools import wraps
-
-logger = logger.get_logger()
-
-
-is_nvidia_smi_loadable = True
 
 
 class Measurements(object):
@@ -250,7 +245,7 @@ def tagmeasurements(tagname: str):
             starttimestamp = time.perf_counter()
             returnvalue = function(*args)
             endtimestamp = time.perf_counter()
-            logger.debug(
+            logger.get_logger().debug(
                 f'{function.__name__} start: {starttimestamp * 1000} ms end: {endtimestamp * 1000} ms'  # noqa: E501
             )
             MeasurementsCollector.measurements += {
@@ -280,7 +275,7 @@ def timemeasurements(measurementname: str):
             start = time.perf_counter()
             returnvalue = function(*args)
             duration = time.perf_counter() - start
-            logger.debug(
+            logger.get_logger().debug(
                 f'{function.__name__} time:  {duration * 1000} ms'
             )
             MeasurementsCollector.measurements += {
@@ -306,6 +301,7 @@ class SystemStatsCollector(Thread):
     It can be executed in parallel to another function to check its
     utilization of resources.
     """
+
     def __init__(self, prefix: str, step: float = 0.1):
         """
         Prepares thread for execution.
@@ -317,20 +313,18 @@ class SystemStatsCollector(Thread):
         step : float
             The step for the measurements, in seconds.
         """
-        global is_nvidia_smi_loadable
         Thread.__init__(self)
         self.measurements = Measurements()
         self.running = True
         self.prefix = prefix
-        if is_nvidia_smi_loadable and nvidia_smi is not None:
+        if nvidia_smi is not None:
             try:
                 self.nvidia_smi = nvidia_smi.getInstance()
             except Exception as ex:
-                logger.warning(
+                logger.get_logger().warning(
                     f'No NVML support due to error {ex}'
                 )
                 self.nvidia_smi = None
-                is_nvidia_smi_loadable = False
         else:
             self.nvidia_smi = None
         self.step = step

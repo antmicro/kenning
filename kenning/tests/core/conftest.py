@@ -2,28 +2,35 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-from typing import Tuple, Type, Union
-from pathlib import Path
-import shutil
 import os
-from tensorflow.keras.models import load_model
+import shutil
+from pathlib import Path
+from typing import Tuple, Type, Union
+
+import onnx2torch
+import pytest
+from tensorflow.keras.models import load_model as load_keras_model
+from torch import save as torch_save
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.datasets.pet_dataset import PetDataset
-from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.coco_dataset import COCODataset2017
+from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
-from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
+from kenning.datasets.pet_dataset import PetDataset
+from kenning.datasets.random_dataset import (  # noqa: E501
+    RandomizedDetectionSegmentationDataset,
+)
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
-from kenning.datasets.random_dataset import RandomizedDetectionSegmentationDataset  # noqa: E501
-from kenning.modelwrappers.classification.tflite_magic_wand import MagicWandModelWrapper    # noqa: E501
-from kenning.modelwrappers.classification.pytorch_pet_dataset import PyTorchPetDatasetMobileNetV2   # noqa: E501
-from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2    # noqa: E501
-from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
-from kenning.modelwrappers.object_detection.darknet_coco import TVMDarknetCOCOYOLOV3  # noqa: E501
+from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
+from kenning.modelwrappers.classification.tflite_magic_wand import (  # noqa: E501
+    MagicWandModelWrapper,
+)
+from kenning.modelwrappers.object_detection.darknet_coco import (  # noqa: E501
+    TVMDarknetCOCOYOLOV3,
+)
 from kenning.optimizers.iree import IREECompiler
+from kenning.optimizers.onnx import ONNXCompiler
 from kenning.optimizers.tvm import TVMCompiler
 from kenning.tests.conftest import get_tmp_path
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -86,11 +93,11 @@ def get_default_dataset_model(
         Tuple with dataset and model for given framework.
     """
     if framework == 'keras':
-        dataset = get_dataset_random_mock(PetDataset)
+        dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = copy_model_to_tmp(
-            ResourceURI(TensorFlowPetDatasetMobileNetV2.pretrained_model_uri)
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
-        model = TensorFlowPetDatasetMobileNetV2(
+        model = MagicWandModelWrapper(
             model_path,
             dataset,
             from_file=True
@@ -99,7 +106,7 @@ def get_default_dataset_model(
     elif framework == 'tensorflow':
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = get_tmp_path()
-        keras_model = load_model(
+        keras_model = load_keras_model(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
             compile=False
         )
@@ -115,28 +122,28 @@ def get_default_dataset_model(
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'onnx':
-        dataset = get_dataset_random_mock(COCODataset2017)
-        model_path = copy_model_to_tmp(
-            ResourceURI(ONNXYOLOV4.pretrained_model_uri)
+        dataset = get_dataset_random_mock(MagicWandDataset)
+        model_path = get_tmp_path(suffix='.onnx')
+        onnx_compiler = ONNXCompiler(dataset, model_path)
+        onnx_compiler.compile(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
-        shutil.copy(
-            ResourceURI(ONNXYOLOV4.pretrained_model_uri).with_suffix('.cfg'),
-            model_path.with_suffix('.cfg')
-        )
-        model = ONNXYOLOV4(model_path, dataset)
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'torch':
-        dataset = get_dataset_random_mock(PetDataset)
-        model_path = copy_model_to_tmp(
-            ResourceURI(PyTorchPetDatasetMobileNetV2.pretrained_model_uri)
+        dataset = get_dataset_random_mock(MagicWandDataset)
+        onnx_model_path = get_tmp_path(suffix='.onnx')
+        onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
+        onnx_compiler.compile(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
-        model = PyTorchPetDatasetMobileNetV2(
-            model_path,
-            dataset=dataset,
-            from_file=True
-        )
-        # save whole model instead of state dict
-        model.save_model(model_path, export_dict=False)
+
+        torch_model = onnx2torch.convert(onnx_model_path)
+
+        model_path = get_tmp_path(suffix='.pth')
+        torch_save(torch_model.state_dict(), model_path)
+
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'darknet':
         dataset = get_dataset_random_mock(COCODataset2017)

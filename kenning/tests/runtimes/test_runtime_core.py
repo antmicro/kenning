@@ -11,7 +11,6 @@ from unittest.mock import patch
 
 
 @patch.multiple(Runtime, __abstractmethods__=set())
-@pytest.mark.xdist_group(name='use_resources')
 class TestCoreRuntime(RuntimeTests):
     runtimecls = Runtime
     runtimeprotocolcls = RuntimeProtocol
@@ -28,6 +27,7 @@ class TestCoreRuntime(RuntimeTests):
         with pytest.raises(NotImplementedError):
             runtime.prepare_input(b'')
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_prepare_model(self):
         """
         Tests the `Runtime.prepare_input()` method.
@@ -39,6 +39,7 @@ class TestCoreRuntime(RuntimeTests):
         with pytest.raises(NotImplementedError):
             runtime.prepare_model(None)
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_run(self):
         """
         Tests the `Runtime.run()` method.
@@ -47,6 +48,7 @@ class TestCoreRuntime(RuntimeTests):
         with pytest.raises(NotImplementedError):
             runtime.run()
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_upload_output(self):
         """
         Tests the `Runtime.upload_output()` method.
@@ -55,6 +57,7 @@ class TestCoreRuntime(RuntimeTests):
         with pytest.raises(NotImplementedError):
             runtime.upload_output(b'')
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_prepare_local(self):
         """
         Tests the `Runtime.prepare_local()` method.
@@ -69,7 +72,6 @@ class TestCoreRuntime(RuntimeTests):
 
 # FIXME: Implement tests for IREECompiler
 @pytest.mark.xfail
-@pytest.mark.xdist_group(name='use_resources')
 class TestIREERuntime(RuntimeTests):
     runtimecls = IREERuntime
     runtimeprotocolcls = RuntimeProtocol

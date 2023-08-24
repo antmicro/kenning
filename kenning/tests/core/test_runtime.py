@@ -49,9 +49,9 @@ def prepare_objects(
     return runtime, dataset, model
 
 
-@pytest.mark.xdist_group(name='use_resources')
 class TestRuntime:
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('runtime_cls,inputtype', [
         pytest.param(runtime_cls, inputtype, marks=[
             pytest.mark.dependency(
@@ -67,6 +67,7 @@ class TestRuntime:
         """
         _ = prepare_objects(runtime_cls, inputtype)
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('runtime_cls,inputtype', [
         pytest.param(runtime_cls, inputtype, marks=[
             pytest.mark.dependency(
@@ -88,6 +89,7 @@ class TestRuntime:
         except NotImplementedError:
             pytest.xfail(f'{runtime_cls.__name__} does not support local run')
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('runtime_cls,inputtype', [
         pytest.param(runtime_cls, inputtype, marks=[
             pytest.mark.dependency(

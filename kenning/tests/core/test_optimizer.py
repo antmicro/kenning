@@ -41,8 +41,8 @@ def prepare_objects(
     return optimizer, model
 
 
-@pytest.mark.xdist_group(name='use_resources')
 class TestOptimizer:
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
             pytest.mark.dependency(
@@ -58,6 +58,7 @@ class TestOptimizer:
         """
         _ = prepare_objects(opt_cls, inputtype)
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
             pytest.mark.dependency(
@@ -86,6 +87,7 @@ class TestOptimizer:
         except ConversionError as e:
             pytest.xfail(f'conversion error {e}')
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('opt_cls,inputtype', [
         pytest.param(opt_cls, inputtype, marks=[
             pytest.mark.dependency(

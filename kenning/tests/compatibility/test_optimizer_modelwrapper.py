@@ -10,8 +10,8 @@ from pathlib import Path
 
 
 @pytest.mark.slow
-@pytest.mark.xdist_group(name='use_resources')
 class TestOptimizerModelWrapper:
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('optimizername', [('TFLiteCompiler_keras'),
                                                ('TVMCompiler_keras'),
                                                ('TVMCompiler_torch')]
@@ -55,6 +55,7 @@ class TestOptimizerModelWrapper:
         assert os.path.exists(filepath)
         os.remove(filepath)
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_onnx_model_optimization(self,
                                      tmpfolder: Path,
                                      modelwrappersamples: Samples,

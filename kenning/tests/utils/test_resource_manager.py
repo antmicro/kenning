@@ -35,7 +35,6 @@ def clear_cache():
 
 
 @pytest.mark.xdist_group(name='cache_test')
-@pytest.mark.xdist_group(name='use_resources')
 class TestResourceManager:
     def test_download_resource(self):
         """

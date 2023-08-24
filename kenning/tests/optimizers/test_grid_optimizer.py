@@ -86,6 +86,7 @@ class TestOrderedPowerset:
 
 
 class TestGridSearch:
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize(
         'optimization_config_path',
         OPTIMIZATION_CONFIGS_PATHS,
@@ -152,6 +153,7 @@ class TestReplacePaths:
 
 
 class TestFilterInvalidPipelines:
+    @pytest.mark.xdist_group(name='use_resources')
     def test_filter_invalid_pipelines_does_not_filter_valid_pipeline(self):
         """
         Test if filter_invalid_pipelines function does not filter valid
@@ -163,6 +165,7 @@ class TestFilterInvalidPipelines:
         assert len(filtered_pipelines) == 1
         assert EXAMPLE_PIPELINE in filtered_pipelines
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_filter_invalid_pipelines_filters_invalid_pipeline(self):
         """
         Test if filter_invalid_pipelines function does filters invalid

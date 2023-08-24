@@ -147,6 +147,7 @@ class HandlerTests(ABC):
         status, _ = handler.parse_dataflow(dataflow_json)
         assert status
 
+    @pytest.mark.xdist_group(name='use_resources')
     def test_validate_dataflow(self, dataflow_json, handler):
         """
         Test whether the output of `parse_dataflow` can be successfully parsed

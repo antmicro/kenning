@@ -274,9 +274,9 @@ def mock_dear_py_gui():
     BaseRealTimeVisualizer.should_close = lambda self: False
 
 
-@pytest.mark.xdist_group(name='use_resources')
 class TestKenningFlowScenarios:
 
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize(
         'json_scenario,expectation',
         [
@@ -307,6 +307,7 @@ class TestKenningFlowScenarios:
     @pytest.mark.usefixtures(
         'mock_dear_py_gui'
     )
+    @pytest.mark.xdist_group(name='use_resources')
     @pytest.mark.parametrize('json_scenario', [
             FLOW_SCENARIO_RT_DETECTION,
             FLOW_SCENARIO_RT_SEGMENTATION,
@@ -337,6 +338,7 @@ class TestKenningFlowScenarios:
     @pytest.mark.usefixtures(
         'set_should_close_after_3_calls'
     )
+    @pytest.mark.xdist_group(name='use_resources')
     def test_kenning_flow_close_when_runner_should_close(self):
         """
         Tests closing flow when some runner got exit indicator.

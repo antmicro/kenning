@@ -18,7 +18,8 @@ from argparse import ArgumentParser
 
 from kenning.utils.resource_manager import (
     PathOrURI,
-    ResourceURI
+    ResourceURI,
+    ResourceManager
 )
 
 

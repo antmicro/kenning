@@ -8,12 +8,12 @@ A script helping to configure autocompletion for Kenning CLI.
 
 import sys
 import argparse
-from typing import Dict, Optional, List, Tuple
+from typing import Optional, List, Tuple
 import subprocess
 from pathlib import Path
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, COMPLETION
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, COMPLETION
 )
 
 BASH = "bash"
@@ -67,14 +67,15 @@ class ConfigureCompletion(CommandTemplate):
     parse_all = True
     description = __doc__.strip('\n')
 
+    @staticmethod
     def configure_parser(
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
+        groups: Optional[ArgumentsGroups] = None,
         resolve_conflict: bool = False,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
-        parser, group = super(
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
+        parser, groups = super(
             ConfigureCompletion, ConfigureCompletion
         ).configure_parser(
             parser, command, types, groups
@@ -91,6 +92,7 @@ class ConfigureCompletion(CommandTemplate):
 
         return parser, groups
 
+    @staticmethod
     def run(
         args: argparse.Namespace,
         **kwargs

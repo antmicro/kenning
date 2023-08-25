@@ -251,8 +251,8 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     if dataset_cls is ImageNetDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=8,
-            numclasses=1000,
+            samplescount=8*5,
+            numclasses=8,
             inputdims=(224, 224, 3)
         )
     if dataset_cls is MagicWandDataset:

@@ -39,7 +39,7 @@ import argparse
 import sys
 import json
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Tuple
 from argcomplete.completers import FilesCompleter
 
 from jsonschema.exceptions import ValidationError
@@ -49,7 +49,7 @@ from kenning.cli.completers import (
     RUNTIMES, RUNTIME_PROTOCOLS, DATASETS,
 )
 from kenning.cli.command_template import (
-    CommandTemplate, TRAIN, TEST, OPTIMIZE,
+    ArgumentsGroups, CommandTemplate, TRAIN, TEST, OPTIMIZE,
     REPORT, DEFAULT_GROUP, GROUP_SCHEMA,
     ParserHelpException
 )
@@ -78,8 +78,8 @@ class InferenceTester(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             InferenceTester, InferenceTester
         ).configure_parser(
@@ -91,14 +91,9 @@ class InferenceTester(CommandTemplate):
         required_prefix = ''
         if TRAIN not in types:
             # 'train' is not used, JSON and flag configuration available
-            for group_name in (JSON_CONFIG, FLAG_CONFIG):
-                if group_name not in groups:
-                    groups[group_name] = parser.add_argument_group(
-                        group_name, ARGS_GROUPS[group_name]
-                    )
+            groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
             required_prefix = '* '
-            json_group = groups[JSON_CONFIG]
-            json_group.add_argument(
+            groups[JSON_CONFIG].add_argument(
                 '--json-cfg',
                 help=f'{required_prefix}The path to the input JSON file with configuration of the inference',  # noqa: E501
             ).completer = FilesCompleter(allowednames=("*.json",))

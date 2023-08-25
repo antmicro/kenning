@@ -7,6 +7,7 @@ Runtime implementation for PyTorch models
 """
 from typing import Optional, List
 from pathlib import Path
+import gc
 
 from kenning.core.runtime import (
     InputNotPreparedError,
@@ -65,6 +66,9 @@ class PyTorchRuntime(Runtime):
         self.log.info("Loading model")
         import torch
         from torch.jit.frontend import UnsupportedNodeError
+        # Make sure GPU doesn't store redundant data
+        gc.collect()
+        torch.cuda.empty_cache()
 
         if input_data:
             with open(self.model_path, "wb") as fd:

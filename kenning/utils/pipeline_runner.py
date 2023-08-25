@@ -359,10 +359,12 @@ def run_pipeline(
                     prev_block.get_io_specification())
             else:
                 next_block.compile(model_path)
+            del prev_block
 
             prev_block = next_block
             model_path = prev_block.compiled_model_path
 
+        del next_block
         if not optimizers:
             model.save_io_specification(model_path)
     else:

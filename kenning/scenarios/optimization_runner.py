@@ -328,9 +328,8 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
     for pipeline in pipelines:
         try:
-            _, model_wrapper, optimizers, runtime, _ = parse_json_pipeline(
-                pipeline
-            )
+            _, model_wrapper, optimizers, runtime, _, _, _ = \
+                parse_json_pipeline(pipeline)
             assert_io_formats(
                 model_wrapper,
                 optimizers,

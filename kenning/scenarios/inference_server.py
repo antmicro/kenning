@@ -20,10 +20,12 @@ import sys
 import argparse
 import signal
 import json
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Tuple
 from argcomplete.completers import FilesCompleter
 
-from kenning.cli.command_template import CommandTemplate, ParserHelpException
+from kenning.cli.command_template import (
+    ArgumentsGroups, CommandTemplate, ParserHelpException
+)
 from kenning.cli.completers import (
     ClassPathCompleter, RUNTIMES, RUNTIME_PROTOCOLS
 )
@@ -48,17 +50,13 @@ class InferenceServer(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             InferenceServer, InferenceServer
         ).configure_parser(parser, command, types, groups)
 
-        for group_name in (JSON_CONFIG, FLAG_CONFIG):
-            if group_name not in groups:
-                groups[group_name] = parser.add_argument_group(
-                    group_name, ARGS_GROUPS[group_name]
-                )
+        groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
         groups[JSON_CONFIG].add_argument(
             '--json-cfg',

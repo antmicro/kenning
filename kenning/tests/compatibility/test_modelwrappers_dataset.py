@@ -75,4 +75,5 @@ class TestModelWrapperAndDatasetCompatibility:
 
         measurements = wrapper.test_inference()
         assert isinstance(measurements, Measurements)
-        assert measurements.get_values('total') == datasetimages.amount
+        assert measurements.get_values('total') == int(
+            datasetimages.amount * wrapper.dataset.split_fraction_test)

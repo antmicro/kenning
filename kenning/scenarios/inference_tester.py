@@ -209,6 +209,7 @@ class InferenceTester(CommandTemplate):
         return InferenceTester._run_from_flags(
             args, command, log, not_parsed=not_parsed, **kwargs)
 
+    @staticmethod
     def _run_from_json(
         args: argparse.Namespace,
         command: List[str],
@@ -247,6 +248,7 @@ class InferenceTester(CommandTemplate):
             return 1
         return ret
 
+    @staticmethod
     def _run_from_flags(
         args: argparse.Namespace,
         command: List[str],

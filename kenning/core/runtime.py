@@ -933,7 +933,7 @@ class Runtime(ArgumentsHandler, ABC):
             return
 
         self.shouldwork = True
-        self.log.debug('Server started')
+        self.log.info('Server started')
 
         while self.shouldwork:
             server_status, message = self.protocol.receive_message(timeout=1)

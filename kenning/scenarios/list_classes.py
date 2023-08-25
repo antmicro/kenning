@@ -11,7 +11,7 @@ import argparse
 import os
 import sys
 import errno
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Tuple
 from argcomplete.completers import ChoicesCompleter
 
 from kenning.utils.class_info import generate_class_info
@@ -30,7 +30,7 @@ from kenning.utils.class_loader import (
 )
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, LIST)
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, LIST)
 
 from kenning.utils import logger
 
@@ -59,7 +59,8 @@ def list_classes(
 
     Returns
     -------
-    List[str] : List of formatted strings to be printed out later
+    List[str] :
+        List of formatted strings to be printed out later
     """
 
     kenning_base_classes = get_base_classes_dict()
@@ -169,8 +170,8 @@ class ListClassesRunner(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             ListClassesRunner, ListClassesRunner
         ).configure_parser(

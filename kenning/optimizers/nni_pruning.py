@@ -374,6 +374,7 @@ class NNIPruningOptimizer(Optimizer):
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
         model = self.inputtypes[self.inputtype](input_model_path, self.device)
+        params_before = self.get_number_of_parameters(model)
 
         if self.exclude_last_layer:
             self.add_exclude_to_config(model)
@@ -420,7 +421,12 @@ class NNIPruningOptimizer(Optimizer):
             ).speedup_model()
         except Exception as ex:
             raise CompilationError from ex
+
         self.log.info(f"Model after pruning\n{model}\n")
+        self.log.info(
+            f"Parameters: {params_before:,} -> "
+            f"{self.get_number_of_parameters(model):,}\n"
+        )
 
         model.to(self.device)
         optimizer = optimizer_cls(model.parameters(),
@@ -428,7 +434,7 @@ class NNIPruningOptimizer(Optimizer):
         if self.log.level == logging.INFO and self.finetuning_epochs > 0:
             mean_loss = self.evaluate_model(model)
             self.log.info("Fine-tuning model starting with mean loss "
-                          f"{mean_loss if mean_loss else None}")
+                          f"{mean_loss if mean_loss else None}\n")
         for finetuning_epoch in range(self.finetuning_epochs):
             self.train_model(
                 model,
@@ -437,9 +443,10 @@ class NNIPruningOptimizer(Optimizer):
                 max_epochs=1)
             if self.log.level == logging.INFO:
                 mean_loss = self.evaluate_model(model)
-                self.log.info(f"Epoch {finetuning_epoch+1} from "
-                              f"{self.finetuning_epochs}"
-                              f" ended with mean loss: {mean_loss}")
+                self.log.info(
+                    f"Epoch {finetuning_epoch+1} from {self.finetuning_epochs}"
+                    f", validation data mean loss: {mean_loss}\n"
+                )
 
         try:
             torch.save(model, self.compiled_model_path, pickle_module=dill)
@@ -591,11 +598,6 @@ class NNIPruningOptimizer(Optimizer):
         ]
         label = self.dataset.prepare_output_samples(batch_y)
 
-        if list(data.shape[1:]) != list(self.io_spec['input'][0]['shape'][1:]):
-            data = np.reshape(
-                data,
-                (-1, *self.io_spec['input'][0]['shape'][1:])
-            )
         assert list(data.shape[1:]) == \
             list(self.io_spec['input'][0]['shape'][1:]), \
             f"Input data in shape {data.shape[1:]}, but only " \
@@ -655,6 +657,22 @@ class NNIPruningOptimizer(Optimizer):
             dummy_input=dummy_input,
         )
 
+    def get_number_of_parameters(self, model: torch.nn.Module) -> int:
+        """
+        Get number of parameters in model
+
+        Parameters
+        ----------
+        model : torch.nn.Module
+            Model to get number of parameters
+
+        Returns
+        -------
+        int :
+            Number of parameters of model
+        """
+        return sum(p.numel() for p in model.parameters())
+
     def generate_dummy_input(
         self, io_spec: Dict[str, List[Dict]]
     ) -> torch.Tensor:
@@ -678,8 +696,10 @@ class NNIPruningOptimizer(Optimizer):
             "At least one"
             " input shape have to be specified to provide dummy input"
         )
+
+        shape = inputs[0]["shape"]
         return torch.rand(
-            inputs[0]["shape"],
+            [self.confidence, *shape[1:]],
             dtype=self.str_to_dtype[inputs[0]["dtype"]],
             device=self.device,
         )

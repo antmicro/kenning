@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Tuple, Dict, Optional, List
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, VISUAL_EDITOR)
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, VISUAL_EDITOR)
 from kenning.core.measurements import MeasurementsCollector
 from kenning.pipeline_manager.core import BaseDataflowHandler
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
@@ -33,8 +33,8 @@ class PipelineManagerClient(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             PipelineManagerClient,
             PipelineManagerClient

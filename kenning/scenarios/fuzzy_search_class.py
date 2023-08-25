@@ -11,10 +11,10 @@ import argparse
 import os
 import sys
 import shutil
-from typing import List, Optional, Dict, Tuple
+from typing import List, Optional, Tuple
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, SEARCH)
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, SEARCH)
 
 from kenning.utils import logger
 from kenning.scenarios.list_classes import list_classes, ListClassesRunner
@@ -36,9 +36,9 @@ class FuzzySearchClass(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
-        parser, group = super(
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
+        parser, groups = super(
             FuzzySearchClass,
             FuzzySearchClass
         ).configure_parser(

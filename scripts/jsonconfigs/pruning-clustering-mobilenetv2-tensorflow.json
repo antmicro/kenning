@@ -1,0 +1,35 @@
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+    "parameters": {
+      "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/PetDataset"
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer",
+      "parameters": {
+        "compiled_model_path": "./build/tf-pruning-0_15.h5",
+        "target_sparsity": 0.15,
+        "batch_size": 128,
+        "epochs": 5,
+        "pruning_frequency": 10
+      }
+    },
+    {
+      "type": "kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer",
+      "parameters": {
+        "compiled_model_path": "./build/tf-pruning-clustering.h5",
+        "cluster_dense": false,
+        "preserve_sparsity": true,
+        "clusters_number": 60
+      }
+    }
+  ]
+}

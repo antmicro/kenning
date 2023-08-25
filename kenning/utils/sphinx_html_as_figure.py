@@ -60,9 +60,8 @@ def extend_default_translator(app: Sphinx):
             the original state of node is restored during departure - method
             ``depart_image``.
             """
-            if 'candidates' not in image or len(image['candidates']) == 1:
-                return super().visit_image(image)
-            if 'image/x-html' not in image['candidates']:
+            if 'candidates' not in image or \
+                    'image/x-html' not in image['candidates']:
                 return super().visit_image(image)
             # Backup image
             self.BACKUP_IMAGE = copy.deepcopy(image)

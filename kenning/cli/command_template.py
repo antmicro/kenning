@@ -38,6 +38,9 @@ DEFAULT_GROUP = "common arguments"
 GROUP_SCHEMA = "'{}' arguments"
 
 
+ArgumentsGroups = Dict[str, argparse._ArgumentGroup]
+
+
 class CommandTemplate(ABC):
     """
     A template which make scenarios compatible with Kenning CLI
@@ -51,9 +54,9 @@ class CommandTemplate(ABC):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
+        groups: Optional[ArgumentsGroups] = None,
         resolve_conflict: bool = False,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         """
         Configures parser to accept needed arguments and flags
         for the scenario.
@@ -66,7 +69,7 @@ class CommandTemplate(ABC):
             Name of the command or script used by parser.
         types : List[str]
             Used subcommands with current run.
-        groups : Dict[str, argparse._ArgumentGroup]
+        groups : Optional[ArgumentsGroups]
             Groups of arguments used by parser.
         resolve_conflict : bool
             Indicates if parser should try to resolve conflicts instead of
@@ -74,7 +77,8 @@ class CommandTemplate(ABC):
 
         Returns
         -------
-        argparse.ArgumentParser : Configured parser
+        Tuple[argparse.ArgumentParser, ArgumentsGroups] :
+            Tuple of configured parser and argument groups
         """
         if parser is None:
             parser = Parser(
@@ -83,10 +87,7 @@ class CommandTemplate(ABC):
                 add_help=False,
             )
 
-        if groups is None:
-            groups = dict()
-        if DEFAULT_GROUP not in groups:
-            groups[DEFAULT_GROUP] = parser.add_argument_group(DEFAULT_GROUP)
+        groups = CommandTemplate.add_groups(parser, groups, [DEFAULT_GROUP])
 
         groups[DEFAULT_GROUP].add_argument(
             *HELP["flags"],
@@ -101,6 +102,48 @@ class CommandTemplate(ABC):
         )
 
         return parser, groups
+
+    @staticmethod
+    def add_groups(
+        parser: argparse.ArgumentParser,
+        groups: Optional[ArgumentsGroups],
+        new_groups: Union[List[str], Dict[str, str]],
+    ) -> ArgumentsGroups:
+        """
+        Add empty argument groups with provided titles.
+
+        Parameters
+        ----------
+        parser : argparse.ArgumentParser
+            Parser to which flags and arguments should be added.
+        groups : Optional[ArgumentsGroups]
+            Groups of arguments used by parser.
+        new_groups : Union[List[str], Dict[str, str]]
+            List of groups titles to be added or dictionary with titles as keys
+            and descriptions as values.
+
+        Returns
+        -------
+        ArgumentsGroups :
+            Argument groups with new groups added.
+        """
+        if groups is None:
+            groups = dict()
+
+        if isinstance(new_groups, dict):
+            for title, description in new_groups.items():
+                if title not in groups:
+                    groups[title] = parser.add_argument_group(
+                        title, description
+                    )
+        elif isinstance(new_groups, list):
+            for title in new_groups:
+                if title not in groups:
+                    groups[title] = parser.add_argument_group(title)
+        else:
+            raise TypeError(f'Invalid type of new_groups: {type(new_groups)}')
+
+        return groups
 
     @abstractstaticmethod
     def run(

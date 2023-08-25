@@ -87,11 +87,11 @@ class InferenceServer(CommandTemplate):
         flag_config_names = ('runtime_cls', 'protocol_cls')
         flag_config_not_none = [getattr(args, name, None) is not None
                                 for name in flag_config_names]
-        if (args.json_cfg is None and not any(flag_config_not_none)):
+        if args.json_cfg is None and not any(flag_config_not_none):
             raise argparse.ArgumentError(
                 None, "JSON or flag configuration is required."
             )
-        if (args.json_cfg is not None and any(flag_config_not_none)):
+        if args.json_cfg is not None and any(flag_config_not_none):
             raise argparse.ArgumentError(
                 None, "JSON and flag configurations are mutually exclusive. "
                 "Please use only one method of configuration.")
@@ -99,15 +99,19 @@ class InferenceServer(CommandTemplate):
         if args.json_cfg is not None:
             InferenceServer._run_from_json(args, log, not_parsed)
 
-        missing_args = [
-            f"'{n}'" for i, n in enumerate(flag_config_names)
-            if not flag_config_not_none[i]
-        ]
-        if missing_args and not args.help:
-            raise argparse.ArgumentError(
-                None, f"the following arguments are required: {', '.join(missing_args)}")  # noqa: E501
+        else:
+            missing_args = [
+                f"'{n}'" for i, n in enumerate(flag_config_names)
+                if not flag_config_not_none[i]
+            ]
+            if missing_args and not args.help:
+                raise argparse.ArgumentError(
+                    None,
+                    'the following arguments are required: '
+                    f'{", ".join(missing_args)}'
+                )
 
-        InferenceServer._run_from_flags(args, log, not_parsed)
+            InferenceServer._run_from_flags(args, log, not_parsed)
 
     @staticmethod
     def _run_from_flags(

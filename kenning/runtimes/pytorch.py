@@ -29,6 +29,12 @@ class PyTorchRuntime(Runtime):
             "description": "Path where the model will be uploaded",
             "type": Path,
             "default": "model.pth",
+        },
+        "skip_jit": {
+            "argparse_name": "--skip-jit",
+            "description": "Do not execute Just-In-Time compilation of the model",   # noqa: E501
+            "type": bool,
+            "default": False,
         }
     }
 
@@ -36,6 +42,7 @@ class PyTorchRuntime(Runtime):
         self,
         model_path: PathOrURI,
         disable_performance_measurements: bool = True,
+        skip_jit: bool = False,
     ):
         """
         Constructs PyTorch runtime
@@ -46,6 +53,8 @@ class PyTorchRuntime(Runtime):
             Path or URI to the model file.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics
+        skip_jit : bool
+            Do not execute Just-In-Time compilation of the model
         """
         import torch
 
@@ -54,6 +63,7 @@ class PyTorchRuntime(Runtime):
         )
         self.model_path = model_path
         self.model = None
+        self.skip_jit = skip_jit
         self.input: Optional[List] = None
         self.output: Optional[List] = None
         super().__init__(
@@ -89,24 +99,28 @@ class PyTorchRuntime(Runtime):
                 with open(self.model_path, 'rb') as fd:
                     self.model = dill.load(fd)
 
-        if isinstance(self.model, torch.nn.Module):
-            try:
-                self.model = torch.jit.script(self.model.eval())
-                self.model = torch.jit.freeze(self.model)
-            except UnsupportedNodeError or RuntimeError:
-                self.log.error("Model contains unsupported nodes,"
-                               " conversion to TorchScript aborted")
-            except Exception:
-                pass
-        elif isinstance(self.model, torch.jit.ScriptModule):
-            self.model = torch.jit.freeze(self.model)
-        else:
+        if not isinstance(self.model,
+                          (torch.nn.Module, torch.jit.ScriptModule)):
             self.log.error(
                 f"Loaded model is type {type(self.model).__name__}"
                 ", only torch.nn.Module and torch.jit.ScriptModule"
                 " supported"
             )
             return False
+        if isinstance(self.model, torch.nn.Module):
+            self.model.eval()
+            if not self.skip_jit:
+                try:
+                    self.model = torch.jit.script(self.model)
+                    self.model = torch.jit.freeze(self.model)
+                except (UnsupportedNodeError, RuntimeError):
+                    self.log.error("Model contains unsupported nodes,"
+                                   " conversion to TorchScript aborted")
+                except Exception:
+                    self.log.error("Model cannot be converted to TorchScript")
+        elif (isinstance(self.model, torch.jit.ScriptModule)
+                and not self.skip_jit):
+            self.model = torch.jit.freeze(self.model)
         self.log.info("Model loading ended successfully")
         return True
 
@@ -146,3 +160,5 @@ class PyTorchRuntime(Runtime):
                 results.extend([out.detach().cpu().numpy() for out in output])
             else:
                 results.append(output)
+
+        return self.postprocess_output(results)

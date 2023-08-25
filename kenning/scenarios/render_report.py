@@ -624,7 +624,6 @@ def comparison_classification_report(
             model_sizes.append(
                 performance_metrics['session_utilization_mem_percent_mean']
             )
-        names.append(data['model_name'])
 
         # Accuracy, precision, sensitivity
         metric_visualization[data['model_name']] = [

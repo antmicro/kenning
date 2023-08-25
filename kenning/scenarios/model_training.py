@@ -12,12 +12,20 @@ in Dataset object.
 import sys
 import argparse
 from pathlib import Path
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Tuple
 
 from kenning.utils.class_loader import load_class, get_command
-from kenning.cli.completers import ClassPathCompleter, MODEL_WRAPPERS, DATASETS
+from kenning.cli.completers import (
+    ClassPathCompleter, MODEL_WRAPPERS, DATASETS
+)
 from kenning.cli.command_template import (
-    CommandTemplate, TRAIN, TEST, GROUP_SCHEMA, ParserHelpException)
+    ArgumentsGroups,
+    CommandTemplate,
+    TRAIN,
+    TEST,
+    GROUP_SCHEMA,
+    ParserHelpException
+)
 
 
 class TrainModel(CommandTemplate):
@@ -29,8 +37,8 @@ class TrainModel(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(TrainModel, TrainModel).configure_parser(
             parser, command, types, groups, TEST in types
         )

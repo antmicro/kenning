@@ -71,9 +71,15 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         if np.ndim(X) == 3:
             X = np.array([X])
         import torch
-        return torch.Tensor(
-            np.array(X, dtype=np.float32)
-        ).to(self.device).permute(0, 3, 1, 2)
+        if self.dataset and \
+                getattr(self.dataset, 'image_memory_layout', None) == 'NCHW':
+            return torch.Tensor(
+                np.array(X, dtype=np.float32)
+            ).to(self.device)
+        else:
+            return torch.Tensor(
+                np.array(X, dtype=np.float32)
+            ).to(self.device).permute(0, 3, 1, 2)
 
     def create_model_structure(self):
         from torchvision import models

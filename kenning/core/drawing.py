@@ -47,16 +47,16 @@ IMMATERIAL_COLORS = [
     "#ef5552",  # red
     # "#e92063",  # pink
     "#ab47bd",  # purple
-    "#7e56c2",  # deep-purple
     "#4051b5",  # indigo
-    "#2094f3",  # blue
     "#00bdd6",  # cyan
-    "#009485",  # teal
     "#4cae4f",  # green
-    "#cbdc38",  # lime
     # "#ffec3d",  # yellow
     "#ffa724",  # orange
     "#795649",  # brown
+    "#2094f3",  # blue
+    "#009485",  # teal
+    "#cbdc38",  # lime
+    "#7e56c2",  # deep-purple
     "#546d78",  # deep-blue
 ]
 

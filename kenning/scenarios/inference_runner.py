@@ -39,7 +39,7 @@ def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:
     Returns
     -------
     bool :
-        True any OutputCollector.should_close() method returned True.
+        True if any OutputCollector.should_close() method returned True.
     """
     if any(i.should_close() for i in outputcollectors):
         return True

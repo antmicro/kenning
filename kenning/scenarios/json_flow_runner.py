@@ -9,11 +9,11 @@ A script for running Kenning Flows.
 import sys
 import argparse
 import json
-from typing import Optional, List, Dict, Tuple
+from typing import Optional, List, Tuple
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, FLOW)
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, FLOW)
 from kenning.core.flow import KenningFlow
 from kenning.utils import logger
 
@@ -27,8 +27,8 @@ class FlowRunner(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(FlowRunner, FlowRunner).configure_parser(
             parser, command, types, groups)
 

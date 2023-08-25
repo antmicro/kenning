@@ -118,6 +118,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             batch_size: int = 32,
             optimizer: str = 'adam',
             disable_from_logits: bool = False,
+            save_to_zip: bool = False,
             model_framework: str = 'onnx',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
@@ -148,6 +149,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
+        save_to_zip : bool
+            Detemines whether optimized model should additionaly be saved in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         inferenceinputtype : str
@@ -164,7 +167,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         use_tf_select_ops : bool
             Enables adding SELECT_TF_OPS to the set of converter
             supported ops.
-        """
+        """  # noqa: E501
         self.target = target
         self.model_framework = model_framework
         self.inferenceinputtype = inferenceinputtype
@@ -179,7 +182,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
-            disable_from_logits=disable_from_logits
+            disable_from_logits=disable_from_logits,
+            save_to_zip=save_to_zip,
         )
 
     def compile(
@@ -256,6 +260,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         with open(self.compiled_model_path, 'wb') as f:
             f.write(tflite_model)
+        if self.save_to_zip:
+            self.compress_model_to_zip()
 
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         signature = interpreter.get_signature_runner()

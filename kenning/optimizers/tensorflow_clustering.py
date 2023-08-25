@@ -12,6 +12,9 @@ import tensorflow_model_optimization as tfmot
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.logger import get_logger
+
+LOGGER = get_logger()
 
 
 def kerasconversion(model_path: PathOrURI):
@@ -68,6 +71,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             batch_size: int = 32,
             optimizer: str = 'adam',
             disable_from_logits: bool = False,
+            save_to_zip: bool = False,
             model_framework: str = 'keras',
             cluster_dense: bool = False,
             clusters_number: int = 10,
@@ -92,6 +96,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
+        save_to_zip : bool
+            Detemines whether optimized model should be saved in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         cluster_dense : bool
@@ -115,7 +121,8 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
-            disable_from_logits=disable_from_logits
+            disable_from_logits=disable_from_logits,
+            save_to_zip=save_to_zip
         )
 
     def compile(
@@ -133,6 +140,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             'preserve_sparsity': self.preserve_sparsity
         }
 
+        LOGGER.info("Clustering model...")
         if self.cluster_dense:
             def apply_clustering_to_dense(layer):
                 if isinstance(layer, tf.keras.layers.Dense):
@@ -158,10 +166,6 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         optimized_model = tfmot.clustering.keras.strip_clustering(
             clustered_model
         )
-        optimized_model.save(
-            self.compiled_model_path,
-            include_optimizer=False,
-            save_format='h5'
-        )
+        self.save_model(optimized_model)
 
         self.save_io_specification(input_model_path, io_spec)

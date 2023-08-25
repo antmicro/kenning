@@ -7,11 +7,15 @@ Wrapper for TensorFlow optimizers.
 """
 
 from typing import List, Tuple, Optional
-from kenning.utils.resource_manager import PathOrURI
 import tensorflow as tf
+import zipfile
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
+from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.logger import get_logger
+
+LOGGER = get_logger()
 
 
 class TensorFlowOptimizer(Optimizer):
@@ -39,17 +43,24 @@ class TensorFlowOptimizer(Optimizer):
             'description': 'Determines whether output of the model is normalized',  # noqa: E501
             'type': bool,
             'default': False
-        }
+        },
+        'save_to_zip': {
+            'description': 'Detemines whether optimized model should additionaly be saved in ZIP format',  # noqa: E501
+            'type': bool,
+            'default': False,
+        },
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            epochs: int = 10,
-            batch_size: int = 32,
-            optimizer: str = 'adam',
-            disable_from_logits: bool = False):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        epochs: int = 10,
+        batch_size: int = 32,
+        optimizer: str = 'adam',
+        disable_from_logits: bool = False,
+        save_to_zip: bool = False,
+    ):
         """
         TensorFlowOptimizer framework.
 
@@ -71,12 +82,16 @@ class TensorFlowOptimizer(Optimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
-        """
+        save_to_zip : bool
+            Detemines whether optimized model should additionaly be saved in ZIP format.
+        """  # noqa: E501
         self.epochs = epochs
         self.batch_size = batch_size
         self.optimizer = optimizer
         self.disable_from_logits = disable_from_logits
+        self.save_to_zip = save_to_zip
         super().__init__(dataset, compiled_model_path)
+        assert not self.save_to_zip or self.compiled_model_path.suffix != '.zip', 'Please use different extension than `.zip`, it will be used by archived model'  # noqa: E501
 
     def prepare_train_validation(self) -> Tuple:
         """
@@ -127,6 +142,7 @@ class TensorFlowOptimizer(Optimizer):
             Trained keras model.
         """
         traindataset, validdataset = self.prepare_train_validation()
+        LOGGER.info("Dataset prepared")
 
         if len(traindataset.element_spec[1].shape) == 1:
             loss = tf.keras.losses.SparseCategoricalCrossentropy(
@@ -158,6 +174,35 @@ class TensorFlowOptimizer(Optimizer):
         )
 
         return model
+
+    def compress_model_to_zip(self):
+        """
+        Compress saved model to ZIP archive.
+        """
+        with zipfile.ZipFile(
+            self.compiled_model_path.with_suffix('.zip'),
+            'w', compression=zipfile.ZIP_DEFLATED
+        ) as zfd:
+            zfd.write(self.compiled_model_path)
+
+    def save_model(self, model: tf.keras.Model):
+        """
+        Save Keras model to compiled_model_path
+        and optionaly archive it into ZIP.
+
+        Parameters
+        ----------
+        model : tf.keras.Model
+            Model that will be saved.
+        """
+        model.save(
+            self.compiled_model_path,
+            include_optimizer=False,
+            save_format='h5'
+        )
+
+        if self.save_to_zip:
+            self.compress_model_to_zip()
 
     def get_framework_and_version(self):
         return ('tensorflow', tf.__version__)

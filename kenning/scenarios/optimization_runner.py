@@ -28,6 +28,7 @@ import kenning.utils.logger as logger
 from kenning.cli.command_template import (
     FINE_TUNE,
     GROUP_SCHEMA,
+    ArgumentsGroups,
     CommandTemplate,
 )
 from kenning.core.measurements import MeasurementsCollector
@@ -351,8 +352,8 @@ class OptimizationRunner(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Optional[Dict[str, argparse._ArgumentGroup]] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             OptimizationRunner, OptimizationRunner
         ).configure_parser(parser, command, types, groups)

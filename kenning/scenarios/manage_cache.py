@@ -8,9 +8,11 @@ and print cache settings.
 """
 import argparse
 import sys
-from typing import Dict, List, Optional, Tuple
+from typing import List, Optional, Tuple
 
-from kenning.cli.command_template import CACHE, GROUP_SCHEMA, CommandTemplate
+from kenning.cli.command_template import (
+    CACHE, GROUP_SCHEMA, ArgumentsGroups, CommandTemplate
+)
 from kenning.utils import logger
 from kenning.utils.resource_manager import ResourceManager
 
@@ -54,8 +56,8 @@ class ManageCacheRunner(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             ManageCacheRunner, ManageCacheRunner
         ).configure_parser(parser, command, types, groups)
@@ -91,7 +93,7 @@ class ManageCacheRunner(CommandTemplate):
                     path = str(file.resolve())
                 else:
                     path = file.name
-                print(f'\t{format_size(size)} {path}')
+                print(f'\t{format_size(size):>8} {path}')
             print(
                 f'\nTotal size: {format_size(total_size)} / '
                 f'{format_size(resource_manager.max_cache_size)}'

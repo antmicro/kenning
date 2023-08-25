@@ -27,7 +27,13 @@ else:
     from importlib.resources import path
 
 from kenning.cli.command_template import (
-    CommandTemplate, DEFAULT_GROUP, REPORT, GROUP_SCHEMA, TEST)
+    ArgumentsGroups,
+    CommandTemplate,
+    DEFAULT_GROUP,
+    REPORT,
+    GROUP_SCHEMA,
+    TEST
+)
 from kenning.resources import reports
 from kenning.core.drawing import (
     draw_confusion_matrix,
@@ -1727,7 +1733,8 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
 
     Returns
     -------
-    List[str] : List with types of report
+    List[str] :
+        List with types of report
     """
     report_types = []
 
@@ -1769,7 +1776,8 @@ def deduce_report_name(
 
     Returns
     -------
-    str : Report name
+    str :
+        Report name
     """
     if len(measurements_data) > 1:
         report_name = "Comparison of " \
@@ -1851,8 +1859,8 @@ class RenderReport(CommandTemplate):
         parser: Optional[argparse.ArgumentParser] = None,
         command: Optional[str] = None,
         types: List[str] = [],
-        groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+        groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(RenderReport, RenderReport).configure_parser(
             parser, command, types, groups)
 

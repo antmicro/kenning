@@ -125,9 +125,6 @@ nni = [
     "tensorboard~=2.11.1",
     "dill~=0.3.6",
 ]
-fuzzy = [
-    "rapidfuzz",
-]
 
 [project.scripts]
 kenning = "kenning.cli.cli:main"

@@ -454,7 +454,7 @@ def datasetimages(tmpfolder: Path) -> DataFolder:
     DataFolder :
         A DataFolder object that stores path to data and images amount.
     """
-    images_amount = 148
+    images_amount = 185
     (tmpfolder / 'images').mkdir()
     (tmpfolder / 'img').symlink_to(tmpfolder / 'images')
     (tmpfolder / 'annotations').mkdir()

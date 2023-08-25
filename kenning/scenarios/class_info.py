@@ -16,10 +16,10 @@ More precisely, it displays:
 import sys
 import argparse
 import os.path
-from typing import List, Dict, Tuple, Optional
+from typing import List, Tuple, Optional
 
 from kenning.cli.command_template import (
-    CommandTemplate, GROUP_SCHEMA, INFO)
+    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, INFO)
 from kenning.cli.completers import ClassPathCompleter
 from kenning.utils import logger
 from kenning.utils.class_info import generate_class_info
@@ -34,8 +34,8 @@ class ClassInfoRunner(CommandTemplate):
             parser: Optional[argparse.ArgumentParser] = None,
             command: Optional[str] = None,
             types: List[str] = [],
-            groups: Dict[str, argparse._ArgumentGroup] = None,
-    ) -> Tuple[argparse.ArgumentParser, Dict]:
+            groups: Optional[ArgumentsGroups] = None,
+    ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             ClassInfoRunner, ClassInfoRunner
         ).configure_parser(

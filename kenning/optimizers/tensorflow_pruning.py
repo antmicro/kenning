@@ -13,6 +13,9 @@ import tensorflow_model_optimization as tfmot
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.logger import get_logger
+
+LOGGER = get_logger()
 
 
 def kerasconversion(model_path: PathOrURI):
@@ -48,20 +51,34 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             'description': 'Target weights sparsity of the model after pruning',  # noqa: E501
             'type': float,
             'default': 0.1
+        },
+        'pruning_frequency': {
+            'description': 'Defines number of steps between prunings',
+            'type': int,
+            'default': 100,
+        },
+        'pruning_end': {
+            'description': 'Last steps for which model can be pruned, -1 means no end',  # noqa: E501
+            'type': int,
+            'default': -1,
         }
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            epochs: int = 10,
-            batch_size: int = 32,
-            optimizer: str = 'adam',
-            disable_from_logits: bool = False,
-            model_framework: str = 'keras',
-            prune_dense: bool = False,
-            target_sparsity: float = 0.1):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        epochs: int = 10,
+        batch_size: int = 32,
+        optimizer: str = 'adam',
+        disable_from_logits: bool = False,
+        save_to_zip: bool = False,
+        model_framework: str = 'keras',
+        prune_dense: bool = False,
+        target_sparsity: float = 0.1,
+        pruning_frequency: int = 100,
+        pruning_end: int = -1,
+    ):
         """
         The TensorFlowPruning optimizer.
 
@@ -81,16 +98,24 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
+        save_to_zip : bool
+            Detemines whether optimized model should be saved in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         prune_dense : bool
             Determines if only dense layers should be pruned.
         target_sparsity : float
             Target weights sparsity of the model after pruning.
+        pruning_frequency : int
+            Number of steps between prunings.
+        pruning_end : int
+            Last steps for which model can be pruned, -1 means no end.
         """
         self.model_framework = model_framework
         self.prune_dense = prune_dense
         self.target_sparsity = target_sparsity
+        self.pruning_frequency = pruning_frequency
+        self.pruning_end = pruning_end
         self.set_input_type(model_framework)
         super().__init__(
             dataset=dataset,
@@ -98,7 +123,8 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,
-            disable_from_logits=disable_from_logits
+            disable_from_logits=disable_from_logits,
+            save_to_zip=save_to_zip,
         )
 
     def compile(
@@ -110,7 +136,8 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         pruning_params = {
             'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(
                 target_sparsity=self.target_sparsity,
-                begin_step=0
+                begin_step=0, frequency=self.pruning_frequency,
+                end_step=self.pruning_end,
             )
         }
 
@@ -133,16 +160,13 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
                 **pruning_params
             )
 
+        LOGGER.info("Pruning will start after dataset is perpared")
         pruned_model = self.train_model(
             pruned_model,
             [tfmot.sparsity.keras.UpdatePruningStep()]
         )
 
         optimized_model = tfmot.sparsity.keras.strip_pruning(pruned_model)
-        optimized_model.save(
-            self.compiled_model_path,
-            include_optimizer=False,
-            save_format='h5'
-        )
+        self.save_model(optimized_model)
 
         self.save_io_specification(input_model_path, io_spec)

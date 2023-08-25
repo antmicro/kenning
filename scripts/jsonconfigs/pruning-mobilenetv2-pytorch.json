@@ -2,40 +2,42 @@
   "model_wrapper": {
     "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
     "parameters": {
-      "model_path": "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
+      "model_path": "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",
+      "model_name": "nni-pruning-0_05"
     }
   },
   "dataset": {
     "type": "kenning.datasets.pet_dataset.PetDataset",
     "parameters": {
-      "dataset_root": "./build/PetDataset"
+      "dataset_root": "./build/PetDataset",
+      "image_memory_layout": "NCHW"
     }
   },
   "optimizers": [
     {
       "type": "kenning.optimizers.nni_pruning.NNIPruningOptimizer",
       "parameters": {
-        "pruner_type": "apoz",
+        "pruner_type": "mean_rank",
         "config_list": [
           {
-            "sparsity_per_layer": 0.15,
+            "total_sparsity": 0.05,
             "op_types": [
               "Conv2d",
               "Linear"
             ]
           }
         ],
-        "training_steps": 174,
+        "training_steps": 16,
         "activation": "relu",
-        "compiled_model_path": "./build/model.pth",
+        "compiled_model_path": "build/nni-pruning-0_05.pth",
         "mode": "dependency_aware",
-        "finetuning_epochs": 5,
-        "finetuning_batch_size": 32,
+        "finetuning_epochs": 3,
+        "finetuning_batch_size": 64,
         "confidence": 8,
         "criterion": "torch.nn.CrossEntropyLoss",
-        "optimizer": "torch.optim.SGD",
+        "optimizer": "torch.optim.Adam",
         "pruning_on_cuda": true,
-        "finetuning_learning_rate": 0.001,
+        "finetuning_learning_rate": 5e-05,
         "exclude_last_layer": true
       }
     }
@@ -43,7 +45,7 @@
   "runtime": {
     "type": "kenning.runtimes.pytorch.PyTorchRuntime",
     "parameters": {
-      "save_model_path": "./build/model.pth"
+      "save_model_path": "./build/nni-pruning-0_05.pth"
     }
   }
 }

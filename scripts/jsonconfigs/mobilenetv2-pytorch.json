@@ -1,0 +1,23 @@
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2",
+    "parameters": {
+      "model_path": "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth",
+      "model_name": "torch-native"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/PetDataset",
+      "image_memory_layout": "NCHW"
+    }
+  },
+  "optimizers": [],
+  "runtime": {
+    "type": "kenning.runtimes.pytorch.PyTorchRuntime",
+    "parameters": {
+      "save_model_path": "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
+    }
+  }
+}

@@ -88,9 +88,10 @@ class PipelineHandler(BaseDataflowHandler):
             for opt_id in node_ids['optimizer']:
                 self.pm_graph.create_connection(previous_id, opt_id)
                 previous_id = opt_id
-            self.pm_graph.create_connection(
-                node_ids['optimizer'][-1], node_ids['runtime']
-            )
+            if 'runtime' in node_ids:
+                self.pm_graph.create_connection(
+                    node_ids['optimizer'][-1], node_ids['runtime']
+                )
 
         return self.pm_graph.flush_graph()
 

@@ -272,7 +272,7 @@ class ResourceManager(metaclass=Singleton):
         Remove all cached files
         """
         rmtree(self.cache_dir, ignore_errors=True)
-        self.cache_dir.mkdir()
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _resolve_uri(self, parsed_uri: ParseResult) -> Union[str, Path]:
         """

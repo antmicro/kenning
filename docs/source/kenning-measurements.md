@@ -2,7 +2,7 @@
 
 Kenning measurements are a set of information describing the compilation and evaluation process happening in Kenning.
 
-They contains such information as:
+They contain such information as:
 
 * classes used to construct the optimization/runtime pipeline, along with their parameters,
 * the JSON scenario used in the run,
@@ -20,7 +20,7 @@ While quality measurements are problem-specific (collected in the `evaluate` met
 Metrics are collected with a certain prefix `<prefix>`, indicating the scope of computations.
 There are:
 
-* `<prefix>_timestamp` - gives a timestamp for measurement collection in `ns`.
+* `<prefix>_timestamp` - gives a timestamp for measurement collection in seconds.
 * `<prefix>_cpus_percent` - gives per-core CPU utilization in % in a form of a list of lists.
   They are % of per-CPU usages for every timestamp.
 * `<prefix>_mem_percent` - gives overall memory usage in %.

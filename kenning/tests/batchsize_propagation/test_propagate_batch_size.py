@@ -23,6 +23,7 @@ from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.utils.resource_manager import ResourceURI, ResourceManager
 
 
+@pytest.mark.xdist_group(name='use_resources')
 @pytest.mark.parametrize(
     'batch_sizes,expectation',
     [
@@ -91,6 +92,7 @@ def test_scenario_pet_dataset_tflite(
                 assert runtime_input_spec['shape'][0] == batch_size
 
 
+@pytest.mark.xdist_group(name='use_resources')
 @pytest.mark.parametrize(
     'batch_sizes,expectation',
     [
@@ -176,6 +178,7 @@ def test_scenario_tflite_tvm_magic_wand(
 
 
 @pytest.mark.slow
+@pytest.mark.xdist_group(name='use_resources')
 @pytest.mark.parametrize(
     'batch_sizes,expectation',
     [

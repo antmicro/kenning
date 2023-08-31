@@ -17,9 +17,11 @@ from tuttest import get_snippets, Snippet
 from typing import Generator, Tuple, Dict, Optional
 from collections import defaultdict
 
-# regex for changing Kenning installtion to local version
+# Regex for extracting arguments from snippets
+ARGS_RE = re.compile(r'([^ =]+)(=([^ ]+))?')
+# Regex for changing Kenning installtion to local version
 KENNING_LINK_RE = r'(kenning(\[[^\]]+\]) @ )?git\+https.*\.git'
-# regex for detecting Kenning installation
+# Regex for detecting Kenning installation
 PIP_INSTALL_KENNING_RE = r'pip (.* )?install .*' + KENNING_LINK_RE
 # Patterns of markdown files
 DOCS_DIR = Path(__file__).parent / "source"
@@ -36,7 +38,7 @@ SHELLS: Dict[str, Dict[int, pexpect.spawn]] = defaultdict(dict)
 COMMAND_CHECK = "if [[ $? == 0 ]] ; then echo '{}'; else echo '{}'; fi"
 # Template of regex detecting status of previous command
 EXPECT_RE = "(?<!echo '){}"
-# regex for splitting multiline scripts
+# Regex for splitting multiline scripts
 NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 # Default timeout of command execution
 DEFAULT_TIMEOUT = 60 * 10  # 10 min
@@ -71,6 +73,13 @@ def get_all_snippets(
         python_snippet = None
         last_snippet_name = None
         for name, snippet in get_snippets(str(markdown)).items():
+            # Parse args from language
+            args = snippet.lang.split(' ', 1)
+            snippet.lang = args[0]
+            args = ARGS_RE.findall(args[1]) if len(args) == 2 else []
+            for arg in args:
+                snippet.meta[arg[0]] = arg[2] if arg[2] else True
+
             snippet.meta['depends'] = []
             snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))
 
@@ -388,7 +397,10 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool):
             marks=[
                 pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
                 pytest.mark.order(-1),
-            ] + [pytest.mark.docs_gallery] if docs_gallery else []
+            ] + (
+                [pytest.mark.docs_gallery] if docs_gallery
+                else [pytest.mark.docs]
+            )
         ) for markdown in map(
             lambda p: Path(p).with_suffix('').name, glob(markdown_pattern))
     ])

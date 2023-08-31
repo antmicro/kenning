@@ -40,8 +40,7 @@ In the `type` field, we specify the full "path" to the class by specifying the m
 In `parameters`, arguments specific to `TensorFlowPetDatasetMobileNetV2` are provided.
 The following parameters are available based on the argument specification:
 
-<!-- skip=True -->
-```python
+```python skip
 # this argument structure is taken from kenning.core.model - it is inherited by child classes
 arguments_structure = {
     'modelpath': {
@@ -58,8 +57,7 @@ It is a required argument.
 
 The `dataset` used here, is `PetDataset`. Like previously, it is provided in a module-like format (`kenning.datasets.pet_dataset.PetDataset`). The parameters here are specified in `kenning.core.dataset.Dataset` (inherited) and `kenning.core.dataset.PetDataset`:
 
-<!-- skip=True -->
-```python
+```python skip
 arguments_structure = {
     # coming from kenning.core.dataset.Dataset
     'root': {
@@ -111,8 +109,7 @@ The dataset test data is passed through the model and evaluation metrics are col
 
 To run the defined pipeline (assuming that the JSON file is under `pipeline.json`), run:
 
-<!-- timeout=10 -->
-```bash
+```bash timeout=10
 kenning test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json --measurements measurements.json --verbosity INFO
 ```
 
@@ -212,8 +209,7 @@ The server also sends measurements from its sensors in JSON format as long as it
 
 First, run the server, so that it is available for the client:
 
-<!-- timeout=10 -->
-```bash
+```bash timeout=10
 kenning server \
     --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
     --verbosity INFO
@@ -221,8 +217,7 @@ kenning server \
 
 Then, run the client:
 
-<!-- timeout=10 -->
-```bash
+```bash timeout=10
 kenning optimize test \
     --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
     --measurements ./build/tflite-tvm-classificationjson.json \

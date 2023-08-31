@@ -19,8 +19,7 @@ In Kenning, available models and resources can be downloaded using URIs with the
 
 The training of the above model can be performed using the following command:
 
-<!-- timeout=30 -->
-```bash
+```bash timeout=30
 kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -56,8 +55,7 @@ The `PetDataset` class can download the dataset (if necessary), load it, read th
 
 With the above config saved in the `native.json` file, run the `inference_tester` scenario:
 
-<!-- skip=True -->
-```bash
+```bash skip
 kenning test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json --measurements build/native.json
 ```
 
@@ -66,22 +64,19 @@ All other JSONs in this example use case can be executed with this command.
 
 To visualize the evaluation and benchmark results, run the `render_report` module:
 
-<!-- skip=True -->
-```bash
+```bash skip
 kenning report --report-path build/benchmarks/native.md --measurements build/native.json --root-dir build/benchmarks --img-dir build/benchmarks/img --report-types performance classification --report-name 'native'
 ```
 
 Or use the simplified command:
 
-<!-- skip=True -->
-```bash
+```bash skip
 kenning report --report-path build/benchmarks/native.md --measurements build/native.json
 ```
 
 Moreover, all these commands can be reduced to a single `kenning` run:
 
-<!-- name="native" -->
-```bash
+```bash name=native
 kenning test report --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json --measurements build/native.json --report-path build/benchmarks/native.md
 ```
 
@@ -125,8 +120,7 @@ The second thing that is added to the previous flow is the `runtime` block - it 
 
 To compile the scenario (called `tflite-fp32.json`), run:
 
-<!-- name="tflite-fp32" -->
-```bash
+```bash name=tflite-fp32
 kenning optimize test report --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json --measurements build/tflite-fp32.json --report-path build/benchmarks/tflite-fp32.md
 ```
 
@@ -153,8 +147,7 @@ Then, in the background, `TFLiteCompiler` fetches a subset of images from the `P
 
 Let's run the above scenario (`tflite-int8.json`):
 
-<!-- name="tflite-int8" -->
-```bash
+```bash name=tflite-int8
 kenning optimize test report --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json --measurements build/tflite-int8.json --report-path build/benchmarks/tflite-int8.md
 ```
 
@@ -177,8 +170,7 @@ The `TVMCompiler`, with `llvm -mcpu=core-avx2` as the target, optimizes and comp
 
 Let's compile the scenario (`tvm-avx2-int8.json`):
 
-<!-- name="tvm-avx2-int8" -->
-```bash
+```bash name=tvm-avx2-int8
 kenning optimize test report --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json --measurements build/tvm-avx2-int8.json --report-path build/benchmarks/tvm-avx2-int8.md
 ```
 

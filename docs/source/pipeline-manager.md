@@ -7,8 +7,7 @@
 ## Installing Pipeline Manager
 
 Kenning requires extra dependencies to run integration with Pipeline Manager. To install them run:
-<!-- skip=True -->
-```bash
+```bash skip
 pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
 ```
 
@@ -32,9 +31,8 @@ pip install -r requirements.txt
 
 Start the Pipeline Manager client with
 
-<!-- timeout=10 -->
-```bash
-kenning visual-editor [OPTIONS]
+```bash timeout=10
+./run
 ```
 
 This command will build the frontend, start a backend server in the background,

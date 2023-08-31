@@ -87,8 +87,7 @@ The conversion can be:
 
 The above default scheme conversions can be defined as:
 
-<!-- skip=True -->
-```python
+```python skip
 BASE_URL_SCHEMES = {
     'http': None,
     'https': None,

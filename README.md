@@ -49,8 +49,7 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 
 To install Kenning with its basic dependencies with `pip`, run:
 
-<!-- skip=True -->
-```bash
+```bash skip
 pip install -U git+https://github.com/antmicro/kenning.git
 ```
 
@@ -78,15 +77,13 @@ We can distinguish the following groups of extra requirements:
 
 To install the extra requirements, e.g. `tensorflow`, run:
 
-<!-- skip=True -->
-```bash
+```bash skip
 sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorflow]
 ```
 
 or, in newer `pip` releases:
 
-<!-- skip=True -->
-```bash
+```bash skip
 pip install "kenning[tensorflow,tflite,tvm,reports] @ git+https://github.com/antmicro/kenning.git"
 ```
 
@@ -94,16 +91,14 @@ pip install "kenning[tensorflow,tflite,tvm,reports] @ git+https://github.com/ant
 
 For development purposes, and to use additional resources (such as sample scripts), clone the repository with:
 
-<!-- skip=True -->
-```bash
+```bash skip
 git clone https://github.com/antmicro/kenning.git
 cd kenning/
 ```
 
 Then install using:
 
-<!-- skip=True -->
-```bash
+```bash skip
 pip install -e ".[tensorflow,reports,tvm]"
 ```
 
@@ -201,8 +196,7 @@ Moreover, sample Kenning use cases can be found in [gallery](https://antmicro.gi
 Kenning is also a regular Python module - after pip installation it can be used in Python scripts.
 The example compilation of the model can look as follows:
 
-<!-- timeout=10 -->
-```python
+```python skip
 from pathlib import Path
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.classification.tensorflow_pet_dataset import TensorFlowPetDatasetMobileNetV2
@@ -236,7 +230,7 @@ The above script downloads the dataset and compiles the model with FP32 inputs a
 
 To get a quantized model, replace `target`, `inferenceinputtype` and `inferenceoutputtype` to `int8`:
 
-```python
+```python skip
 compiler = TFLiteCompiler(
     dataset=dataset,
     compiled_model_path=Path('./build/compiled-model.tflite'),
@@ -253,7 +247,7 @@ compiler.compile(
 
 To check how the compiled model is performing, create `TFLiteRuntime` object and run local model evaluation:
 
-```python
+```python skip
 runtime = TFLiteRuntime(
     protocol=None,
     model_path=Path('./build/compiled-model.tflite')

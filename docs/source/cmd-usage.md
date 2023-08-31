@@ -35,8 +35,7 @@ kenning train \
 This will list the possible parameters that can be used to configure the dataset, the model, and the training parameters.
 For the above call, the output is as follows:
 
-<!-- skip=True -->
-```bash
+```bash skip
 common arguments:
   -h, --help            show this help message and exit
   --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
@@ -90,8 +89,7 @@ The list of options depends on [](modelwrapper-api) and [](dataset-api).
 
 At the end, the training can be configured as follows:
 
-<!-- timeout=5 -->
-```bash
+```bash timeout=5
 kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -117,8 +115,7 @@ It requires you to provide:
 
 The example call for the method is as follows:
 
-<!-- timeout=10 -->
-```bash
+```bash timeout=10
 kenning test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -139,8 +136,7 @@ The example report with the command call is available in [](./onnx-conversion-su
 `kenning.scenarios.onnx_conversion` requires a list of [](onnxconversion-api) classes that implement model providers and a conversion method.
 For the below, call:
 
-<!-- skip=True -->
-```bash
+```bash skip
 python -m kenning.scenarios.onnx_conversion \
     build/models-directory \
     build/onnx-support.rst \
@@ -191,8 +187,7 @@ kenning optimize test \
 
 With the above classes, the help can look as follows:
 
-<!-- skip=True -->
-```bash
+```bash skip
 common arguments:
   -h, --help            show this help message and exit
   --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
@@ -309,8 +304,7 @@ Both classes may require some additional arguments that can be listed with the `
 
 An example script for the `inference_tester` is:
 
-<!-- timeout=5 -->
-```bash
+```bash timeout=5
 kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
@@ -335,8 +329,7 @@ kenning optimize test \
 
 The above runs with the following `inference_server` setup:
 
-<!-- timeout=5 -->
-```bash
+```bash timeout=5
 kenning server \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
@@ -355,8 +348,7 @@ This run was tested on a Google Coral Devboard device.
 `kenning.scenarios.inference_tester` can be also executed locally - in this case, the `--protocol-cls` argument can be skipped.
 The example call is as follows:
 
-<!-- timeout=5 -->
-```bash
+```bash timeout=5
 kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
@@ -404,8 +396,7 @@ python3 -m kenning.scenarios.inference_runner \
 
 With the above classes, the help can look as follows:
 
-<!-- skip=True -->
-```bash
+```bash skip
 positional arguments:
   modelwrappercls       ModelWrapper-based class with inference implementation to import
   runtimecls            Runtime-based class with the implementation of model runtime
@@ -450,9 +441,8 @@ OutputCollector arguments:
 
 An example script for `inference_runner`:
 
-<!-- TODO: update argparser -->
-<!-- skip=True -->
-```bash
+<!-- TODO=update argparser -->
+```bash skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \

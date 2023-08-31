@@ -4,8 +4,6 @@
 
 import shutil
 import tempfile
-import os
-from glob import glob
 from pathlib import Path
 from pytest import Metafunc
 from typing import Optional
@@ -116,6 +114,12 @@ def pytest_addoption(parser: ArgumentParser):
         default='./build',
         help='Directory used to store files used during test execution'
     )
+    parser.addoption(
+        '--test-docs-log-dir',
+        type=Path,
+        default=None,
+        help='If defined saves additional logs of docs tests to specified folder',  # noqa: E501
+    )
 
 
 def pytest_sessionstart(session: pytest.Session):
@@ -147,15 +151,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
         return
     test_directory_tmp = pytest.test_directory / 'tmp'
     if test_directory_tmp.exists():
-        # Remove all symlink from tmp test directory
-        for path in glob(str(test_directory_tmp / "**" / "*"), recursive=True):
-            if os.path.islink(path):
-                os.remove(path)
-        try:
-            shutil.rmtree(test_directory_tmp)
-        except OSError as er:
-            print(er)
-            shutil.rmtree(test_directory_tmp, ignore_errors=True)
+        shutil.rmtree(test_directory_tmp)
 
 
 def pytest_generate_tests(metafunc: Metafunc):

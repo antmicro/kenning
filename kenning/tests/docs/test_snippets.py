@@ -44,6 +44,8 @@ NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Path to the environment for testing snippets from documentation
 DOCS_VENV = os.environ.get("KENNING_DOCS_VENV")
+# Possible arguments for snippet
+SNIPPET_ARGUMENTS = ('skip', 'timeout', 'name', 'terminal')
 
 
 def get_all_snippets(
@@ -76,9 +78,14 @@ def get_all_snippets(
             # Parse args from language
             args = snippet.lang.split(' ', 1)
             snippet.lang = args[0]
+            if snippet.lang not in EXECUTABLE_TYPES + ('python',):
+                continue
             args = ARGS_RE.findall(args[1]) if len(args) == 2 else []
             for arg in args:
-                snippet.meta[arg[0]] = arg[2] if arg[2] else True
+                if arg[0] in SNIPPET_ARGUMENTS:
+                    snippet.meta[arg[0]] = arg[2] if arg[2] else True
+                else:
+                    raise KeyError(f"Snippet cannot have {arg[0]} argument")
 
             snippet.meta['depends'] = []
             snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))

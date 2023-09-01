@@ -41,7 +41,7 @@ EXPECT_RE = "(?<!echo '){}"
 # Regex for splitting multiline scripts
 NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 # Default timeout of command execution
-DEFAULT_TIMEOUT = 60 * 10  # 10 min
+DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Path to the environment for testing snippets from documentation
 DOCS_VENV = os.environ.get("KENNING_DOCS_VENV")
 

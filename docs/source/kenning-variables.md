@@ -19,3 +19,7 @@ For instance, if `gluoncv` is not available, Kenning will suggest installing `ke
 
 Kenning CLI does not require custom `sys.excepthook`, so it will not be affected by `USE_DEFAULT_EXCEPTHOOK` variable.
 
+## `KENNING_DOCS_VENV`
+
+`KENNING_DOCS_VENV` defines path to the virtual environment used for tests marked as `docs`. If is not defined, system's default environment will be used.
+

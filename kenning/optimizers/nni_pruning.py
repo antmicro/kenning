@@ -436,7 +436,7 @@ class NNIPruningOptimizer(Optimizer):
                               f" ended with mean loss: {mean_loss}")
 
         try:
-            torch.save(model, self.compiled_model_path)
+            torch.save(model, self.compiled_model_path, pickle_module=dill)
         except Exception:
             self.log.error(
                 "torch.save can't pickle full model, model parameters will be"

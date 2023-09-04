@@ -23,6 +23,8 @@ class PyTorchRuntime(Runtime):
     for testing inference on PyTorch models.
     """
 
+    inputtypes = ['torch']
+
     arguments_structure = {
         "model_path": {
             "argparse_name": "--save-model-path",

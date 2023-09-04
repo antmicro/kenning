@@ -6,6 +6,7 @@
 Module with pipelines running helper functions.
 """
 
+import os
 import tempfile
 from pathlib import Path
 
@@ -14,10 +15,18 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
 
-from kenning.utils.class_loader import load_class
+from kenning.utils.class_loader import load_class, get_all_subclasses
 from kenning.utils.args_manager import serialize_inference
 import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
+
+UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
+RUNTIME_CLASSES = get_all_subclasses(
+    'kenning.runtimes',
+    Runtime,
+    raise_exception=False,
+    import_classes=True,
+)
 
 
 def assert_io_formats(
@@ -182,6 +191,7 @@ def run_pipeline_json(
         command: List = ['Run in a different environment'],
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
+        evaluate_unoptimized: bool = False,
 ) -> int:
     """
     Simple wrapper for `run_pipeline` method that parses `json_cfg` argument,
@@ -205,6 +215,8 @@ def run_pipeline_json(
         If False, optimizations will not be executed.
     run_benchmarks : bool
         If False, model will not be tested.
+    evaluate_unoptimized : bool
+        Defines if unoptimized model should be tested.
 
     Returns
     -------
@@ -239,7 +251,111 @@ def run_pipeline_json(
         run_optimizations and optimizers,
         run_benchmarks and dataset,
         model_name,
+        evaluate_unoptimized,
     )
+
+
+def mark_measurements_unoptimized():
+    """
+    Marks current measurements as unoptimized
+    """
+    unoptimized = MeasurementsCollector.measurements.copy()
+    MeasurementsCollector.clear()
+    MeasurementsCollector.measurements += {
+        UNOPTIMIZED_MEASUREMENTS: unoptimized
+    }
+
+
+def test_unoptimized(
+    dataset,
+    model,
+    protocol,
+    log: logger.logging.Logger,
+    verbosity: str = 'INFO',
+    model_name: Optional[str] = None,
+):
+    """
+    Evaluates unoptimized model.
+
+    If model's framework does not have dedicated runtime class
+    default test_inference is used, otherwise runtime is created.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset to use in inference.
+    model : ModelWrapper
+        ModelWrapper to use in inference.
+    protocol : RuntimeProtocol
+        RuntimeProtocol to use in inference.
+    log : logging.Logger
+        Logger for printing messages.
+    verbosity : str
+        Verbosity of the evaluation process.
+    model_name: Optional[str]:
+        Custom name of the model.
+    """
+    try:
+        run_pipeline(
+            dataset,
+            model,
+            [],
+            None,
+            protocol,
+            last_compiled_model_path=None,
+            output=os.devnull,
+            verbosity=verbosity,
+            convert_to_onnx=None,
+            command=[],
+            run_optimizations=False,
+            run_benchmarks=True,
+            model_name='unoptimized_' + model_name if model_name else None,
+            evaluate_unoptimized=False,
+        )
+    except NotImplementedError:
+        log.warn("Model's run_inference is not implemented")
+        MeasurementsCollector.clear()
+    else:
+        mark_measurements_unoptimized()
+        return True
+
+    framework = model.get_framework_and_version()[0]
+    runtime = None
+    # Get first available Runtime with matching inputtype
+    runtime_cls = next(
+        filter(lambda _cls: framework in _cls.inputtypes, RUNTIME_CLASSES),
+        None
+    )
+    # Initialize Runtime
+    if runtime_cls:
+        with tempfile.TemporaryFile() as tmpfile:
+            runtime = runtime_cls(
+                protocol,
+                model.get_path() if not protocol else tmpfile,
+                disable_performance_measurements=False,
+            )
+    if not runtime:
+        log.error(f'Unoptimized {model.__class__.__name__} cannot be tested, there is no Runtime for used framework')  # noqa: E501
+        return False
+    if 0 != run_pipeline(
+        dataset,
+        model,
+        [],
+        runtime,
+        protocol,
+        last_compiled_model_path=None,
+        output=os.devnull,
+        verbosity=verbosity,
+        convert_to_onnx=None,
+        command=[],
+        run_optimizations=False,
+        run_benchmarks=True,
+        model_name='unoptimized_' + model_name if model_name else None,
+        evaluate_unoptimized=False,
+    ):
+        log.error('Testing unoptimized model failed')
+    mark_measurements_unoptimized()
+    return True
 
 
 def run_pipeline(
@@ -256,6 +372,7 @@ def run_pipeline(
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
         model_name: Optional[str] = None,
+        evaluate_unoptimized: bool = False,
 ) -> int:
     """
     Wrapper function that runs a pipeline using given parameters.
@@ -290,6 +407,8 @@ def run_pipeline(
         If False, model will not be tested.
     model_name : Optional[str]
         Custom name of the model.
+    evaluate_unoptimized : bool
+        Defines if unoptimized model should be tested.
 
     Returns
     -------
@@ -311,6 +430,18 @@ def run_pipeline(
     log = logger.get_logger()
 
     assert_io_formats(model, optimizers, runtime)
+
+    if evaluate_unoptimized and optimizers:
+        log.info("Evaluating unoptimized model")
+        if not test_unoptimized(
+            dataset,
+            model,
+            protocol,
+            log,
+            verbosity,
+            model_name
+        ):
+            return 1
 
     modelframeworktuple = model.get_framework_and_version()
 

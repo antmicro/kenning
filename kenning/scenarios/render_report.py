@@ -48,6 +48,7 @@ from kenning.core.drawing import (
     IMMATERIAL_COLORS, RED_GREEN_CMAP)
 from kenning.utils import logger
 from kenning.utils.class_loader import get_command
+from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 from kenning.core.metrics import (
     compute_performance_metrics,
     compute_classification_metrics,
@@ -1999,6 +2000,14 @@ class RenderReport(CommandTemplate):
                 measurements['model_name'] = get_model_name(measurementspath)
             measurements['model_name'] = \
                 measurements['model_name'].replace(' ', '_')
+            # Append measurements of unoptimized data separately
+            if UNOPTIMIZED_MEASUREMENTS in measurements:
+                unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
+                del measurements[UNOPTIMIZED_MEASUREMENTS]
+                if 'model_name' not in unoptimized:
+                    unoptimized['model_name'] = \
+                        f"unoptimized_{measurements['model_name']}"
+                measurementsdata.append(unoptimized)
             measurementsdata.append(measurements)
 
         report_types = args.report_types

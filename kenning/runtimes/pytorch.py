@@ -82,8 +82,15 @@ class PyTorchRuntime(Runtime):
             )
         except Exception:
             import dill
-            with open(self.model_path, 'rb') as fd:
-                self.model = dill.load(fd)
+            try:
+                self.model = torch.load(
+                    self.model_path,
+                    map_location=self.device,
+                    pickle_module=dill
+                )
+            except Exception:
+                with open(self.model_path, 'rb') as fd:
+                    self.model = dill.load(fd)
 
         if isinstance(self.model, torch.nn.Module):
             try:

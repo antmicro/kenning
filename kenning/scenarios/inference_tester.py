@@ -136,6 +136,11 @@ class InferenceTester(CommandTemplate):
                 default=[None],
                 required=bool(types),
             )
+            other_group.add_argument(
+                '--evaluate-unoptimized',
+                help='Test model before optimization and append measurements',
+                action="store_true",
+            )
             dataset_flag.help = f"{required_prefix}{dataset_flag.help}"
             flag_group.add_argument(
                 '--runtime-cls',
@@ -231,6 +236,7 @@ class InferenceTester(CommandTemplate):
                 run_optimizations="compiler_cls" in args and not getattr(
                     args, "run_benchmarks_only", False),
                 run_benchmarks=bool(args.measurements[0]),
+                evaluate_unoptimized=args.evaluate_unoptimized,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')
@@ -308,6 +314,7 @@ class InferenceTester(CommandTemplate):
                 run_optimizations="compiler_cls" in args and not getattr(
                     args, "run_benchmarks_only", False) and compiler,
                 run_benchmarks=bool(args.measurements[0]) and dataset,
+                evaluate_unoptimized=args.evaluate_unoptimized,
             )
         except ValidationError as ex:
             log.error(f'Validation error: {ex}')

@@ -131,6 +131,7 @@ def get_default_dataset_model(
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     elif framework == 'torch':
+        import dill
         dataset = get_dataset_random_mock(MagicWandDataset)
         onnx_model_path = get_tmp_path(suffix='.onnx')
         onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
@@ -141,7 +142,7 @@ def get_default_dataset_model(
         torch_model = onnx2torch.convert(onnx_model_path)
 
         model_path = get_tmp_path(suffix='.pth')
-        torch_save(torch_model.state_dict(), model_path)
+        torch_save(torch_model, model_path, pickle_module=dill)
 
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 

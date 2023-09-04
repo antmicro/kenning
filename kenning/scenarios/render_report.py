@@ -1947,6 +1947,11 @@ class RenderReport(CommandTemplate):
             help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
             action='store_true'
         )
+        report_group.add_argument(
+            '--skip-unoptimized-model',
+            help='Do not use measurements of unoptimized model',
+            action='store_true',
+        )
         return parser, groups
 
     @staticmethod
@@ -2001,7 +2006,8 @@ class RenderReport(CommandTemplate):
             measurements['model_name'] = \
                 measurements['model_name'].replace(' ', '_')
             # Append measurements of unoptimized data separately
-            if UNOPTIMIZED_MEASUREMENTS in measurements:
+            if not args.skip_unoptimized_model and \
+                    UNOPTIMIZED_MEASUREMENTS in measurements:
                 unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
                 del measurements[UNOPTIMIZED_MEASUREMENTS]
                 if 'model_name' not in unoptimized:

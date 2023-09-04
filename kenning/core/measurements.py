@@ -189,6 +189,12 @@ class Measurements(object):
             self.data[measurementtype] = initvaluefunc()
         self.data[measurementtype] += valuetoadd
 
+    def copy(self):
+        """
+        Makes copy of deasurements data.
+        """
+        return self.data.copy()
+
     def clear(self):
         """
         Clears measurement data.

@@ -9,13 +9,21 @@ Requires 'rclpy' and 'kenning_computer_vision_msgs' packages to be sourced
 in the environment.
 """
 
-from kenning.core.runtimeprotocol import RuntimeProtocol, Message, \
-        MessageType, ServerStatus
-
-from kenning_computer_vision_msgs.srv import RuntimeProtocolSrv
+import json
+from pathlib import Path
+from time import perf_counter
+from typing import Callable, Optional, Tuple, TypeVar
 
 import rclpy
+from rclpy.action import ActionClient
+from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
+
+from kenning.core.measurements import Measurements, MeasurementsCollector
+from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.utils.class_loader import load_class
+
+GoalHandle = TypeVar('GoalHandle', bound=_rclpy.ActionGoalHandle)
 
 
 class ROS2Protocol(RuntimeProtocol):
@@ -23,7 +31,7 @@ class ROS2Protocol(RuntimeProtocol):
     A ROS2-based runtime protocol for communication.
     It supports only a client side of the runtime protocol.
 
-    Protocol is implemented using ROS2 services.
+    Protocol is implemented using ROS2 services and action.
     """
 
     arguments_structure = {
@@ -32,40 +40,111 @@ class ROS2Protocol(RuntimeProtocol):
                 'type': str,
                 'required': True,
             },
-            'service_name': {
-                'description': 'Name of the service to communicate via',
+            'process_action_type_str': {
+                'description': 'Import path to the action class to use',
                 'type': str,
                 'required': True,
+            },
+            'process_action_name': {
+                'description': 'Name of the action to process via',
+                'type': str,
+                'required': True,
+            },
+            'model_service_type_str': {
+                'description': 'Import path to the service class for MODEL request to use',  # noqa: E501
+                'type': str,
+                'required': False,
+                'default': 'std_srvs.srv.Trigger',
+            },
+            'model_service_name': {
+                'description': 'Name of the service to upload the model and prepare node',  # noqa: E501
+                'type': str,
+                'required': False,
+                'default': 'cvnode_prepare',
+            },
+            'measurements_service_type_str': {
+                'description': 'Import path to the service class for MEASUREMENTS request to use',  # noqa: E501
+                'type': str,
+                'required': False,
+                'default': 'std_srvs.srv.Trigger',
+            },
+            'measurements_service_name': {
+                'description': 'Name of the service to get measurements',
+                'type': str,
+                'required': False,
+                'default': 'cvnode_measurements',
             },
     }
 
     def __init__(self,
                  node_name: str,
-                 service_name: str,
+                 process_action_type_str: str,
+                 process_action_name: str,
+                 model_service_type_str: str = 'std_srvs.srv.Trigger',
+                 model_service_name: str = 'cvnode_prepare',
+                 measurements_service_type_str: str = 'std_srvs.srv.Trigger',
+                 measurements_service_name: str = 'cvnode_measurements',
                  ):
         """
-        Initialize the ROS2Protocol.
+        Initializes ROS2Protocol object.
 
         Parameters
         ----------
         node_name : str
             Name of the ROS2 node.
-        service_name : str
-            Name of the service for communication using RuntimeProtocolSrv.
+        process_action_type_str : str
+            Import path to the action class to use.
+        process_action_name : str
+            Name of the action to process via.
+        model_service_type_str : str
+            Import path to the service class for MODEL request to use.
+        model_service_name : str
+            Name of the service to upload the model and prepare node.
+        measurements_service_type_str: str
+            Import path to the service class for MEASUREMENTS request to use.
+        measurements_service_name: str
+            Name of the service to get measurements.
         """
 
         # ROS2 node
         self.node = None
         self.node_name = node_name
 
+        # Action for data processing routine
+        self.process_action = None
+        self.process_action_name = process_action_name
+        self.process_action_type_str = process_action_type_str
+        self._process_action_type = load_class(process_action_type_str)
+
+        # Node prepare service
+        self.model_service = None
+        self.model_service_name = model_service_name
+        self.model_service_type_str = model_service_type_str
+        self._model_service_type = load_class(model_service_type_str)
+
+        # Measurements service
+        self.measurements_service = None
+        self.measurements_service_name = measurements_service_name
+        self.measurements_service_type_str = measurements_service_type_str
+        self._measurements_service_type = load_class(measurements_service_type_str)  # noqa: E501
+
         # Last message's future
         self.future = None
 
-        # Communication service
-        self.communication_client = None
-        self.service_name = service_name
-
         RuntimeProtocol.__init__(self)
+
+    def log_info(self, message: str):
+        """
+        Sends the info message to loggers.
+
+        Parameters
+        ----------
+        message : str
+            Message to be sent.
+        """
+        self.log.info(message)
+        if self.node is not None:
+            self.node.get_logger().info(message)
 
     def log_debug(self, message: str):
         """
@@ -80,6 +159,19 @@ class ROS2Protocol(RuntimeProtocol):
         if self.node is not None:
             self.node.get_logger().debug(message)
 
+    def log_warning(self, message: str):
+        """
+        Sends the warning message to loggers.
+
+        Parameters
+        ----------
+        message : str
+            Message to be sent.
+        """
+        self.log.warning(message)
+        if self.node is not None:
+            self.node.get_logger().warn(message)
+
     def log_error(self, message: str):
         """
         Sends the error message to loggers.
@@ -93,112 +185,152 @@ class ROS2Protocol(RuntimeProtocol):
         if self.node is not None:
             self.node.get_logger().error(message)
 
-    def convert_to_srv(self, message: Message) -> RuntimeProtocolSrv.Request:
-        """
-        Converts the runtime protocol message to a ROS2 service request.
-
-        Parameters
-        ----------
-        message : Message
-            Runtime protocol message to be converted.
-
-        Returns
-        -------
-        RuntimeProtocolSrv.Request :
-            Converted service request.
-        """
-        request = RuntimeProtocolSrv.Request()
-        request.message_type = message.message_type.value
-        request._data = bytearray(message.payload)
-
-        return request
-
-    def convert_from_srv(self, srv: RuntimeProtocolSrv.Response) -> Message:
-        """
-        Converts the ROS2 service response to a runtime protocol message.
-
-        Parameters
-        ----------
-        srv : RuntimeProtocolSrv.Response
-            Service response to be converted.
-
-        Returns
-        -------
-        Message :
-            Converted message according to the runtime protocol specification.
-        """
-        runtime_message = Message(MessageType(srv.message_type),
-                                  b''.join(srv.data))
-        return runtime_message
-
     def initialize_client(self):
-        self.log_debug(f'Initializing service client node {self.node_name}')
+        self.log_debug(f'Initializing action client node {self.node_name}')
 
-        # Create node
         if not rclpy.ok():
             rclpy.init()
         self.node = Node(self.node_name)
-
-        # Create service client
-        self.communication_client = self.node.create_client(
-                RuntimeProtocolSrv,
-                self.service_name
+        self.process_action = ActionClient(
+                self.node,
+                self._process_action_type,
+                self.process_action_name,
+                callback_group=None,
         )
 
-        if not self.communication_client.wait_for_service(timeout_sec=1.0):
-            self.log_error('Communication service is not available')
-            return False
+        self.model_service = self.node.create_client(
+                self._model_service_type,
+                self.model_service_name,
+        )
 
-        # Send initialization request
-        if not self.send_message(Message(MessageType.OK)):
-            self.log_error('Failed to send initialization request')
-            return False
-
-        status, message = self.receive_message()
-        if status != ServerStatus.DATA_READY:
-            self.log_error('Failed to receive initialization response')
-            return False
-        elif message.message_type != MessageType.OK:
-            self.log_error(f'Initialization failed: {message.message_type}')
-            return False
+        self.measurements_service = self.node.create_client(
+                self._measurements_service_type,
+                self.measurements_service_name,
+        )
 
         self.log_debug('Successfully initialized client')
         return True
 
-    def send_message(self, message):
-        request = self.convert_to_srv(message)
-        if not self.communication_client.wait_for_service(timeout_sec=1.0):
-            self.log_error('Communication service is not available')
-            return False
-        self.future = self.communication_client.call_async(request)
+    def upload_io_specification(self, path: Path) -> bool:
+        self.log_warning('IO specification is not supported in ROS2 protocol. Skipping.')  # noqa: E501
         return True
 
-    def receive_message(self, timeout=None):
-        if not self.communication_client.wait_for_service(timeout_sec=1.0):
-            self.log_error('Communication service is not available')
-            return ServerStatus.DISCONNECTED, None
-        elif self.future is None:
-            self.log_error('No future to wait for')
-            return ServerStatus.ERROR, None
+    def upload_model(self, path: Path) -> bool:
+        self.log_debug('Uploading model')
+        assert self.model_service is not None, \
+               'Model service is not initialized'
 
-        if timeout is None or timeout > 0:
-            rclpy.spin_until_future_complete(self.node, self.future,
-                                             timeout_sec=timeout)
-        else:
-            rclpy.spin_once(self.node, timeout_sec=0)
+        if not self.model_service.wait_for_service(timeout_sec=1.0):
+            self.log_error('Model service not available')
+            return False
+        request = self._model_service_type.Request()
+        future = self.model_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is None:
+            self.log_error('Model service call failed')
+            return False
+        self.log_debug('Model uploaded successfully')
+        return True
 
-        # Process the response
-        response = self.future.result()
-        if not response:
-            self.log_debug('No response from communication service')
-            return ServerStatus.NOTHING, None
+    def upload_input(self, data: GoalHandle) -> bool:
+        """
+        Initializes processing goal and sends it to the action server.
 
+        Parameters
+        ----------
+        data : GoalHandle
+            Goal to be sent to the action server containing the input data.
+            Should be a ROS2 action goal compatible with the action server.
+
+        Returns
+        -------
+        bool :
+            True if the message was sent successfully, False otherwise.
+        """
+        assert self.process_action is not None, \
+               'Process action is not initialized'
+        if not self.process_action.wait_for_server(timeout_sec=1.0):
+            self.log_error('Action server not available')
+            return False
+
+        self.log_debug('Uploading input')
+        self.future = self.process_action.send_goal_async(data)
+        rclpy.spin_until_future_complete(self.node, self.future)
+        result = self.future.result()
+        if result is None:
+            self.log_error('Input upload failed')
+            return False
+        if not result.accepted:
+            self.log_error('Input upload rejected')
+            return False
+        self.log_debug('Input uploaded successfully')
+        return True
+
+    def request_processing(
+            self,
+            get_time_func: Callable[[], float] = perf_counter) -> bool:
+        if self.future is None:
+            self.log_error('No input uploaded')
+            return False
+
+        start = get_time_func()
+        self.future = self.future.result().get_result_async()
+        rclpy.spin_until_future_complete(self.node, self.future)
+        duration = get_time_func() - start
+        measurementname = 'protocol_inference_step'
+        MeasurementsCollector.measurements += {
+            measurementname: [duration],
+            f'{measurementname}_timestamp': [start]
+        }
+        return True
+
+    def download_statistics(self) -> Measurements:
+        assert self.measurements_service is not None, \
+               'Measurements service is not initialized'
+
+        self.log_debug('Downloading statistics')
+        measurements = Measurements()
+        if not self.measurements_service.wait_for_service(timeout_sec=1.0):
+            self.log_error('Measurements service not available')
+            return measurements
+
+        request = self._measurements_service_type.Request()
+        future = self.measurements_service.call_async(request)
+        rclpy.spin_until_future_complete(self.node, future)
+        result = future.result()
+        if result is None:
+            self.log_error('Measurements service call failed')
+            return measurements
+
+        jsondata = json.loads(result.message)
+        measurements += jsondata
+        return measurements
+
+    def download_output(self) -> Tuple[bool, Optional[GoalHandle]]:
+        """
+        Gets result from processing goal from the target ROS2 node.
+
+        Returns
+        -------
+        Tuple[bool, Optional[GoalHandle]] :
+            Tuple with status (True if successful)
+            and received processing goal handle result.
+        """
+        if self.future is None:
+            self.log_error('No input uploaded')
+            return False, None
+
+        self.log.debug('Downloading output')
+        result = self.future.result()
         self.future = None
-        message = self.convert_from_srv(response)
-        return ServerStatus.DATA_READY, message
+        if result is None:
+            self.log_error('Output download failed')
+            return False, None
+        self.log_debug('Output downloaded successfully')
+        return True, result.result
 
     def disconnect(self):
         self.log_debug('Disconnecting node')
         self.node.destroy_node()
         self.log_debug('Successfully disconnected')
-        pass

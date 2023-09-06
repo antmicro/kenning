@@ -7,7 +7,6 @@ import shutil
 from pathlib import Path
 from typing import Tuple, Type, Union
 
-import onnx2torch
 import pytest
 from tensorflow.keras.models import load_model as load_keras_model
 from torch import save as torch_save
@@ -29,6 +28,7 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (  # noqa: E5
 from kenning.modelwrappers.object_detection.darknet_coco import (  # noqa: E501
     TVMDarknetCOCOYOLOV3,
 )
+from kenning.onnxconverters import onnx2torch
 from kenning.optimizers.iree import IREECompiler
 from kenning.optimizers.onnx import ONNXCompiler
 from kenning.optimizers.tvm import TVMCompiler

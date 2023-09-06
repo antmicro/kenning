@@ -408,13 +408,16 @@ class NNIPruningOptimizer(Optimizer):
                 for w_name, w_mask in m_masks.items():
                     mask[m_name][w_name] = w_mask.to('cpu')
 
-        ModelSpeedup(
-            model,
-            dummy_input=dummy_input,
-            masks_file=mask,
-            confidence=self.confidence,
-        ).speedup_model()
-        self.log.info(f"Model after pruning\n{model}")
+        try:
+            ModelSpeedup(
+                model,
+                dummy_input=dummy_input,
+                masks_file=mask,
+                confidence=self.confidence,
+            ).speedup_model()
+        except Exception as ex:
+            raise CompilationError from ex
+        self.log.info(f"Model after pruning\n{model}\n")
 
         model.to(self.device)
         optimizer = optimizer_cls(model.parameters(),

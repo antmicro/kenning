@@ -140,7 +140,12 @@ def main():
             continue
         try:
             try:
-                run(args, not_parsed=rem)
+                result = run(args, not_parsed=rem)
+                if result:
+                    parser.error(
+                        f"`{subcommand}` subcommand did not end sucessfully",
+                        print_usage=False
+                    )
             except ModuleNotFoundError as er:
                 extras = find_missing_optional_dependency(er.name)
                 if not extras:

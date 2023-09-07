@@ -121,7 +121,7 @@ class Parser(argparse.ArgumentParser):
                 self.error(msg.format(' '.join(argv)))
         return args
 
-    def error(self, message: str, early_exit=False):
+    def error(self, message: str, early_exit=False, print_usage=True):
         args = {'prog': self.prog, 'message': message}
         error = gettext('%(prog)s: error: %(message)s\n') % args
         # new: end program when early_exit is True
@@ -130,6 +130,6 @@ class Parser(argparse.ArgumentParser):
             self.exit(2, error)
         if any(help in sys.argv[1:] for help in HELP_FLAGS):
             raise ParserHelpException(self, message)
-        self.print_usage(sys.stderr)
-        # self._print_message(error, sys.stderr)
+        if print_usage:
+            self.print_usage(sys.stderr)
         self.exit(2, error)

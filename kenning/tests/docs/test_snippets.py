@@ -20,7 +20,7 @@ from collections import defaultdict
 # Regex for extracting arguments from snippets
 ARGS_RE = re.compile(r'([^ =]+)(=([^ ]+))?')
 # Regex for changing Kenning installtion to local version
-KENNING_LINK_RE = r'(kenning(\[[^\]]+\]) @ )?git\+https.*\.git'
+KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
 # Regex for detecting Kenning installation
 PIP_INSTALL_KENNING_RE = r'pip (.* )?install .*' + KENNING_LINK_RE
 # Patterns of markdown files

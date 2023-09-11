@@ -1,8 +1,12 @@
 # Displaying information about available classes
 
-Kenning provides several scripts for providing information about classes 
+Kenning provides several scripts for assessing information about classes 
 (such as [](dataset-api), [](modelwrapper-api), [](optimizer-api)) that are available in the project.
 
+Firstly, make sure that Kenning is installed:
+```bash
+pip install "kenning @ git+https://github.com/antmicro/kenning.git"
+```
 
 ## Kenning list
 
@@ -15,41 +19,47 @@ kenning list
 ```
 
 ```
-Optimizers (in kenning.compilers):
+Optimizers (in kenning.optimizers):
 
-    kenning.compilers.nni_pruning.NNIPruningOptimizer
-    kenning.compilers.onnx.ONNXCompiler
-    kenning.compilers.tensorflow_pruning.TensorFlowPruningOptimizer
-    kenning.compilers.model_inserter.ModelInserter
-    kenning.compilers.tvm.TVMCompiler
-    kenning.compilers.iree.IREECompiler
-    kenning.compilers.tensorflow_clustering.TensorFlowClusteringOptimizer
-    kenning.compilers.tflite.TFLiteCompiler
+    kenning.optimizers.onnx.ONNXCompiler
+    kenning.optimizers.tensorflow_optimizers.TensorFlowOptimizer
+    kenning.optimizers.tvm.TVMCompiler
+    kenning.optimizers.iree.IREECompiler
+    kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer
+    kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
+    kenning.optimizers.nni_pruning.NNIPruningOptimizer
+    kenning.optimizers.tflite.TFLiteCompiler
+    kenning.optimizers.model_inserter.ModelInserter
 
 Datasets (in kenning.datasets):
 
-    kenning.datasets.pet_dataset.PetDataset
-    kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset
-    kenning.datasets.random_dataset.RandomizedDetectionSegmentationDataset
-    kenning.datasets.open_images_dataset.OpenImagesDatasetV6
     kenning.datasets.random_dataset.RandomizedClassificationDataset
-    kenning.datasets.common_voice_dataset.CommonVoiceDataset
-    kenning.datasets.magic_wand_dataset.MagicWandDataset
     kenning.datasets.coco_dataset.COCODataset2017
+    kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+    kenning.datasets.helpers.detection_and_segmentation.ObjectDetectionSegmentationDataset
+    kenning.datasets.magic_wand_dataset.MagicWandDataset
+    kenning.datasets.common_voice_dataset.CommonVoiceDataset
+    kenning.datasets.pet_dataset.PetDataset
+    kenning.datasets.random_dataset.RandomizedDetectionSegmentationDataset
     kenning.datasets.imagenet_dataset.ImageNetDataset
+    kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset
 
 Modelwrappers (in kenning.modelwrappers):
 
-    kenning.modelwrappers.instance_segmentation.yolact.YOLACT
-    kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
-    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
-    kenning.modelwrappers.detectors.darknet_coco.TVMDarknetCOCOYOLOV3
+    kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
+    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3
     kenning.modelwrappers.instance_segmentation.yolact.YOLACTWithPostprocessing
     kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACTWrapper
+    kenning.modelwrappers.object_detection.yolo_wrapper.YOLOWrapper
+    kenning.modelwrappers.frameworks.tensorflow.TensorFlowWrapper
+    kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
     kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+    kenning.modelwrappers.frameworks.pytorch.PyTorchWrapper
     kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2
-    kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
-    kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+    kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
+    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
 
 ...
 
@@ -96,7 +106,7 @@ YOLOv4 ModelWrapper.
 This will display all the necessary information about the class:
 
 ```bash
-kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4
+kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
 ```
 
 ```
@@ -159,7 +169,7 @@ All dependencies are available as there is no warning message.
 To load a class with arguments, run this command:
 
 ```bash
-kenning info kenning.modelwrappers.detectors.yolov4.ONNXYOLOV4 \
+kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4 \
         --load-class-with-args \
         --model-path kenning:///models/detection/yolov4.onnx
 ```

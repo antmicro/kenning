@@ -16,23 +16,23 @@ allowing for running and saving these configurations directly from the editor.
 ## Installing Pipeline Manager
 
 Kenning requires extra dependencies to run integration with Pipeline Manager. To install them run:
-<!-- append_after="--target build/tmp/pip" -->
+
 ```bash
 pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
 ```
 
-To use Pipeline Manager, clone the repository:
+To use Pipeline Manager, clone the repository and install its dependencies:
 
 ```bash
 git clone https://github.com/antmicro/kenning-pipeline-manager.git
 cd kenning-pipeline-manager
+pip install -r requirements.txt
 ```
 
 And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager).
 
 After this, build the server application for Pipeline Manager with:
 
-<!-- append_before="cd kenning-pipeline-manager &&" -->
 ```bash
 ./build server-app
 ```
@@ -41,8 +41,7 @@ After this, build the server application for Pipeline Manager with:
 
 Firstly, in the Pipeline Manager project start the server with:
 
-<!-- append_before="cd kenning-pipeline-manager &&"; timeout=10 -->
-```bash
+```bash timeout=10
 ./run
 ```
 
@@ -82,7 +81,7 @@ This can be an example workflow when using Pipeline Manager:
 * `Load File` - Menu option available in the top left, loads a JSON configuration describing a Kenning scenario. 
 
   For instance, `scripts/jsonconfigs/sample-tflite-pipeline.json` available in 
-  Kenning is a basic configuration shown as an [Example use case of Kenning - benchmarking using a native framework](https://antmicro.github.io/kenning/project-readme.html#benchmarking-a-model-using-a-native-framework)
+  Kenning is a basic configuration shown as an [Example use case of Kenning - benchmarking using a native framework](tflite_tvm.md#benchmarking-a-model-using-a-native-framework)
 
 * Making changes - adding or removing nodes, editing connections, node options, etc.
 * `Validate` -  Validates and returns the information whether the scenario is valid (for example it will return error when two optimizers in the chain are incompatible with each other)

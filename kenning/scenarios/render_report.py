@@ -116,6 +116,8 @@ def performance_report(
         How many colors from default color list should be skipped.
     draw_titles : bool
         Should titles be drawn on the plot.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -307,6 +309,8 @@ def comparison_performance_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -486,6 +490,8 @@ def classification_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -579,6 +585,8 @@ def comparison_classification_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -885,6 +893,8 @@ def comparison_detection_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -966,6 +976,8 @@ def renode_stats_report(
         Colors used for plots.
     color_offset : int
         How many colors from default color list should be skipped.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------
@@ -1277,6 +1289,8 @@ def comparison_renode_stats_report(
         Should titles be drawn on the plot.
     colors : Optional[List]
         Colors used for plots.
+    kwargs : Any
+        Additional keyword arguments.
 
     Returns
     -------

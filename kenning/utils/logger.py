@@ -185,6 +185,10 @@ class TqdmCallback(tqdm):
         ----------
         tag : str
             Tag of the class.
+        args : Any
+            Arguments passed to tqdm constructor.
+        kwargs : Any
+            Keyword arguments passed to tqdm constructor.
         """
         super().__init__(*args, **kwargs)
         self.tag = tag

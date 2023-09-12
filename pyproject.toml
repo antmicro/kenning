@@ -133,9 +133,7 @@ kenning = "kenning.cli.cli:main"
 homepage = "https://antmicro.github.io/kenning"
 repository = "https://github.com/antmicro/kenning"
 
-
-[tool.pydocstyle]
-inherit = false
+[tool.ruff]
 select = [
     "D201", # No blank lines allowed before function docstring
     "D206", # Docstring should be indented with spaces, not tabs

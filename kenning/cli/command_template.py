@@ -157,14 +157,16 @@ class CommandTemplate(ABC):
         Parameters
         ----------
         args : argparse.Namespace
-            Parsed and validated arguments used for this scenario
+            Parsed and validated arguments used for this scenario.
         not_parsed : List[str]
-            Additional arguments which haven't been parsed yet
+            Additional arguments which haven't been parsed yet.
+        **kwargs : Any
+            Additional keyword arguments.
 
         Returns
         -------
         Optional[int] :
-            Status of executed scenario
+            Status of executed scenario.
         """
         raise NotImplementedError
 

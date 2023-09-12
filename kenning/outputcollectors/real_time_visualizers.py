@@ -450,6 +450,10 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         ----------
         score_threshold : float
             Score threshold for presenting class.
+        args : Any
+            Additional arguments passed to base class constructor.
+        kwargs : Any
+            Additional keyword arguments passed to base class constructor.
         """
         self.layer = None
         self.score_threshold = score_threshold
@@ -564,6 +568,10 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         ----------
         top_n : int
             Number of classes to be listed.
+        args : Any
+            Additional arguments passed to base class constructor.
+        kwargs : Any
+            Additional keyword arguments passed to base class constructor.
         """
         super().__init__('Real time classification visualizer',
                          *args, **kwargs)

@@ -330,6 +330,8 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 during compilation stage.
             compiled_model_path : PathOrURI
                 Path or URI where compiled model will be saved.
+            **kwargs : Any
+                Optimizer parameters.
             """
             optimizer = load_class(import_path)
             optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework
@@ -386,6 +388,8 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
                 The dataset to verify inference.
             from_file : bool
                 True if model should be loaded from file.
+            **kwargs : Any
+                Modelwrapper parameters.
             """
             wrapper = load_class(import_path)
             wrapper_name = import_path.rsplit('.')[-1]
@@ -421,6 +425,8 @@ def datasetsamples(datasetimages: DataFolder):
                 The dataset batch size.
             download_dataset : bool
                 True if dataset should be downloaded first.
+            **kwargs : Any
+                Dataset parameters.
 
             Returns
             -------

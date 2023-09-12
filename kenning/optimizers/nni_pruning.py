@@ -488,6 +488,10 @@ class NNIPruningOptimizer(Optimizer):
             one batch of data
         max_epochs : int | None
             The number of maximum epochs
+        args : Any
+            Additional arguments.
+        kwargs : Any
+            Additional keyword arguments.
         """
         if max_steps is None and max_epochs is None:
             max_epochs = 5

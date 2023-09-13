@@ -7,23 +7,21 @@ Provides a wrapper for deep learning models.
 """
 
 import json
-from typing import List, Any, Tuple, Dict, Type, Optional, Union
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 from urllib.request import HTTPError
 
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.measurements import Measurements
-from kenning.core.measurements import MeasurementsCollector
-from kenning.core.measurements import timemeasurements
-from kenning.core.measurements import systemstatsmeasurements
+from kenning.core.measurements import (Measurements, MeasurementsCollector,
+                                       systemstatsmeasurements,
+                                       timemeasurements)
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.utils.args_manager import (ArgumentsHandler, get_parsed_args_dict,
+                                        get_parsed_json_dict)
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -32,9 +30,10 @@ class VariableBatchSizeNotSupportedError(Exception):
     Exception raised when trying to create a model which is not fitted to
     handle variable batch sizes yet
     """
+
     def __init__(
             self,
-            msg=f"Inference batch size greater than one not supported for this model.", # noqa E501
+            msg="Inference batch size greater than one not supported for this model.",  # noqa: E501
             *args, **kwargs):
         super().__init__(msg, *args, **kwargs)
 

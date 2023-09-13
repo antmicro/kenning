@@ -8,8 +8,8 @@ from kenning.core.model import ModelWrapper
 from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
-from kenning.utils.class_loader import get_all_subclasses, \
-    get_base_classes_dict  # noqa: E501
+from kenning.utils.class_loader import (get_all_subclasses,
+                                        get_base_classes_dict)
 from kenning.utils.pipeline_runner import parse_json_pipeline, run_pipeline
 
 
@@ -18,6 +18,7 @@ class PipelineHandler(BaseDataflowHandler):
     Defines interpretation of graphs coming from Pipeline manager as Kenning
     optimization pipelines.
     """
+
     def __init__(self, **kwargs):
         nodes, io_mapping = PipelineHandler.get_nodes()
         super().__init__(nodes, io_mapping, PipelineGraphCreator(), **kwargs)

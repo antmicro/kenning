@@ -10,7 +10,6 @@ json-scenarios
 cmd-usage
 kenning-gallery
 kenning-variables
-pipeline-manager
 kenning-measurements
 pipeline-optimizer
 sample-report

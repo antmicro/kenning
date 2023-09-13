@@ -87,10 +87,10 @@ tvm = [
     "apache-tvm",
 ]
 iree = [
-    "iree-compiler>=20220415.108",
-    "iree-runtime>=20220415.108",
-    "iree-tools-tf>=20220415.108",
-    "iree-tools-tflite>=20220415.108",
+    "iree-compiler==20220415.108",
+    "iree-runtime==20220415.108",
+    "iree-tools-tf==20220415.108",
+    "iree-tools-tflite==20220415.108",
 ]
 onnxruntime = [
     "onnxruntime",

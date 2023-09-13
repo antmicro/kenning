@@ -47,7 +47,7 @@
         "parameters":
         {
             "save_model_path": "./build/mobilenetv3-fp16.tar",
-	    "target_device_context": "cuda"
+            "target_device_context": "cuda"
         }
     }
 }

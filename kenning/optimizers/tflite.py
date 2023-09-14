@@ -150,7 +150,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         disable_from_logits : bool
             Determines whether output of the model is normalized.
         save_to_zip : bool
-            Detemines whether optimized model should additionaly be saved in ZIP format.
+            Detemines whether optimized model should additionaly be saved
+            in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         inferenceinputtype : str
@@ -167,7 +168,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         use_tf_select_ops : bool
             Enables adding SELECT_TF_OPS to the set of converter
             supported ops.
-        """  # noqa: E501
+        """
         self.target = target
         self.model_framework = model_framework
         self.inferenceinputtype = inferenceinputtype

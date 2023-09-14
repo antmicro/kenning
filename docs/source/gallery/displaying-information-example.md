@@ -1,7 +1,6 @@
 # Displaying information about available classes
 
-Kenning provides several scripts for assessing information about classes 
-(such as [](dataset-api), [](modelwrapper-api), [](optimizer-api)) that are available in the project.
+Kenning provides several scripts for assessing information about classes (such as [](dataset-api), [](modelwrapper-api), [](optimizer-api)) that are available in the project.
 
 Firstly, make sure that Kenning is installed:
 ```bash
@@ -65,9 +64,7 @@ Modelwrappers (in kenning.modelwrappers):
 
 ```
 
-The output of the command can be limited by proving one or more positional arguments representing the 
-groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`,
-`modelwrappers`, `onnxconversions`, `outputcollectors`, `runtimes`.
+The output of the command can be limited by providing one or more positional arguments representing the groups of modules: `optimizers`, `runners`, `dataproviders`, `datasets`, `modelwrappers`, `onnxconversions`, `outputcollectors`, `runtimes`.
 
 The command can be used to only list the available runtimes:
 
@@ -86,23 +83,18 @@ Runtimes (in kenning.runtimes):
     kenning.runtimes.renode.RenodeRuntime
 ```
 
-More verbose information is available by using `-v`, `-vv` flags - dependencies,
-descriptions and other information will be displayed for each class.
+More verbose information is available by using `-v`, `-vv` flags - dependencies, descriptions and other information will be displayed for each class.
 
 ## Kenning info
 
-`kenning info` can be used to display more detailed information about a 
-particular class. This information is especially useful when creating JSON scenario 
-configurations. The command displays the following:
+`kenning info` can be used to display more detailed information about a particular class. This information is especially useful when creating JSON scenario configurations. The command displays the following:
 
 * docstrings
-* dependencies, along with the information whether they are available in the 
-  current Python environment
+* dependencies, along with the information whether they are available in the current Python environment
 * supported input and output formats
 * arguments structure used in JSON
 
-Let's consider a scenario where we want to compose a Kenning flow utilizing a 
-YOLOv4 ModelWrapper. 
+Let's consider a scenario where we want to compose a Kenning flow utilizing a YOLOv4 ModelWrapper.
 This will display all the necessary information about the class:
 
 ```bash
@@ -152,26 +144,25 @@ Arguments specification:
 ```
 
 ```{note}
-By default, the command only performs static code analysis. 
-For example, some values in the input/output specification are expressions, because 
-the command did not import or evaluate any values. 
+By default, the command only performs static code analysis.
+For example, some values in the input/output specification are expressions, because
+the command did not import or evaluate any values.
 This is done to allow for missing dependencies.
 ```
 
 ### Loading a class with arguments
 
-To gain access to more detailed information, the `--load-class-with-args` 
-argument can be used. Provided that all dependencies are satisfied and the required.
+To gain access to more detailed information, the `--load-class-with-args` argument can be used. Provided that all dependencies are satisfied and the required.
 
-From the example above, the ONNXYOLOV4 configuration specifies that the `model_path` argument is required. 
+From the example above, the ONNXYOLOV4 configuration specifies that the `model_path` argument is required.
 All dependencies are available as there is no warning message.
 
 To load a class with arguments, run this command:
 
 ```bash
 kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4 \
-        --load-class-with-args \
-        --model-path kenning:///models/detection/yolov4.onnx
+  --load-class-with-args \
+  --model-path kenning:///models/detection/yolov4.onnx
 ```
 
 ```

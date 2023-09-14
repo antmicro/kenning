@@ -25,7 +25,9 @@ At the beginning, we would like to know a performance of the original model, whi
 To test it, run:
 
 ```bash
-kenning test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow.json --measurements build/tf.json
+kenning test \
+  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow.json \
+  --measurements build/tf.json
 ```
 
 `TensorflowPruningOptimizer` has two main parameters for adjusting pruning process:
@@ -45,8 +47,11 @@ Apart from that, there is also possibility to chose `optimizer` (one of `adam`, 
 To prune model, run:
 
 ```bash
-kenning optimize --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json
-kenning test --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json --measurements build/tf-pruning.json
+kenning optimize \
+  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json
+kenning test \
+  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json \
+  --measurements build/tf-pruning.json
 ```
 
 Despite the fact, that Kenning CLI is capable of running commands in sequence (like `kenning optimize test [FLAGS]`), we suggest separating them to make sure performance measurements are more precise.
@@ -114,7 +119,11 @@ It can be used by adding optimizer:
 To run it, use:
 
 ```bash
-kenning optimize test report --json-cfg scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json --measurements build/tf-all.json --report-path build/tf-pruning-clustering.md --to-html
+kenning optimize test report \
+  --json-cfg scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json \
+  --measurements build/tf-all.json \
+  --report-path build/tf-pruning-clustering.md \
+  --to-html
 ```
 
 Clustering allows to greatly reduce size of the model without reducing performance or resources usage.

@@ -115,7 +115,7 @@ It requires you to provide:
 
 The example call for the method is as follows:
 
-```bash timeout=10
+```bash timeout=5
 kenning test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
@@ -441,7 +441,6 @@ OutputCollector arguments:
 
 An example script for `inference_runner`:
 
-<!-- TODO=update argparser -->
 ```bash skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \

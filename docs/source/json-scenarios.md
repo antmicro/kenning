@@ -110,7 +110,10 @@ The dataset test data is passed through the model and evaluation metrics are col
 To run the defined pipeline (assuming that the JSON file is under `pipeline.json`), run:
 
 ```bash timeout=10
-kenning test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json --measurements measurements.json --verbosity INFO
+kenning test \
+    --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json \
+    --measurements measurements.json \
+    --verbosity INFO
 ```
 
 The `measurements.json` file is the output of the {{json_compilation_script}} providing measurement data.
@@ -145,7 +148,7 @@ Such case will result is the following scenario:
 
 ```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json
 :language: json
-:emphasize-lines: 14-39
+:emphasize-lines: 15-40
 ```
 
 As emphasized above, the `optimizers` list is added, with two entries:

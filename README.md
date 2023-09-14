@@ -84,7 +84,7 @@ sudo pip install git+https://github.com/antmicro/kenning.git#egg=kenning[tensorf
 or, in newer `pip` releases:
 
 ```bash skip
-pip install "kenning[tensorflow,tflite,tvm,reports] @ git+https://github.com/antmicro/kenning.git"
+pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
 ```
 
 ### Working directly with the repository
@@ -157,7 +157,7 @@ Kenning scenarios are executable scripts for:
 You can access these scenarios directly using e.g.:
 
 ```bash
-kenning optimize test -h
+python -m kenning.scenarios.inference_tester -h
 ```
 
 You can also access them through the `kenning` executable as subcommands.
@@ -209,7 +209,7 @@ dataset = PetDataset(
     root=Path('./build/pet-dataset/')
 )
 model = TensorFlowPetDatasetMobileNetV2(
-    model_path=ResourceURI("kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"),
+    model_path=ResourceURI('kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'),
     dataset=dataset
 )
 model.save_io_specification(model.model_path)
@@ -222,7 +222,7 @@ compiler = TFLiteCompiler(
     inferenceoutputtype='float32'
 )
 compiler.compile(
-    input_model_path=ResourceURI("kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5")
+    input_model_path=ResourceURI('kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5')
 )
 ```
 

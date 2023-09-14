@@ -14,20 +14,20 @@ import shutil
 from glob import glob
 from pathlib import Path
 from tuttest import get_snippets, Snippet
-from typing import Generator, Tuple, Dict, Optional
+from typing import Generator, Tuple, Dict, Optional, Callable
 from collections import defaultdict
 
 # Regex for extracting arguments from snippets
-ARGS_RE = re.compile(r'([^ =]+)(=([^ ]+))?')
+ARGS_RE = re.compile(r'([^ =]+)(:?=([^ ]+))?')
 # Regex for changing Kenning installtion to local version
 KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
 # Regex for detecting Kenning installation
 PIP_INSTALL_KENNING_RE = r'pip (.* )?install .*' + KENNING_LINK_RE
 # Patterns of markdown files
-DOCS_DIR = Path(__file__).parent / "source"
-DOCS_MARKDOWNS = str(DOCS_DIR / "*.md")
-GALLERY_DIR = DOCS_DIR / "gallery"
-GALLERY_MARKDOWNS = str(GALLERY_DIR / "*.md")
+DOCS_DIR = Path(__file__).parent / 'source'
+DOCS_MARKDOWNS = str(DOCS_DIR / '*.md')
+GALLERY_DIR = DOCS_DIR / 'gallery'
+GALLERY_MARKDOWNS = str(GALLERY_DIR / '*.md')
 # List of snippet executables types
 EXECUTABLE_TYPES = ('bash',)
 # Mapping of markdown files to separate virtual environment
@@ -43,7 +43,7 @@ NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 # Default timeout of command execution
 DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Path to the environment for testing snippets from documentation
-DOCS_VENV = os.environ.get("KENNING_DOCS_VENV")
+DOCS_VENV = os.environ.get('KENNING_DOCS_VENV')
 # Possible arguments for snippet
 SNIPPET_ARGUMENTS = ('skip', 'timeout', 'name', 'terminal')
 
@@ -58,16 +58,16 @@ def get_all_snippets(
     Parameters
     ----------
     markdown_pattern : str
-        Pattern with markdowns, has to be supported by `glob`
+        Pattern with markdowns, has to be supported by `glob`.
 
     Yields
     ------
     Path :
-        Name of the markdown file with snippets
+        Name of the markdown file with snippets.
     str :
-        Name of the found snippet
+        Name of the found snippet.
     Snippet :
-        Found snippet
+        Found snippet.
     """
     for markdown in glob(markdown_pattern):
         markdown = Path(markdown)
@@ -85,7 +85,7 @@ def get_all_snippets(
                 if arg[0] in SNIPPET_ARGUMENTS:
                     snippet.meta[arg[0]] = arg[2] if arg[2] else True
                 else:
-                    raise KeyError(f"Snippet cannot have {arg[0]} argument")
+                    raise KeyError(f'Snippet cannot have {arg[0]} argument')
 
             snippet.meta['depends'] = []
             snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))
@@ -94,7 +94,7 @@ def get_all_snippets(
             if snippet.meta.get('skip', False):
                 continue
 
-            # Append values to snippet's conntent
+            # Append values to snippet's content
             if 'append_before' in snippet.meta:
                 snippet.text = \
                     f"{snippet.meta['append_before']} {snippet.text}"
@@ -111,11 +111,11 @@ def get_all_snippets(
                     # Set previous snippet as dependency
                     if last_snippet_name:
                         line_snippet.meta['depends'].append(last_snippet_name)
-                    last_snippet_name = f"{name}_{id}"
+                    last_snippet_name = f'{name}_{id}'
                     yield (markdown.with_suffix('').name,
                            last_snippet_name, line_snippet)
-            # Python snippet -- combain and yield at the end of function
-            elif snippet.lang == "python":
+            # Python snippet -- combine and yield at the end of function
+            elif snippet.lang == 'python':
                 if python_snippet:
                     python_snippet.text += snippet.text + '\n'
                 else:
@@ -138,16 +138,16 @@ def execute_script_and_wait(
     Parameters
     ----------
     shell : pexpect.spawn
-        Interface for communication with subshell
+        Interface for communication with subshell.
     script : str
-        Script that should be executed
+        Script that should be executed.
     timeout : Optional[float]
-        How long process can run
+        How long process can run.
 
     Returns
     -------
     bool :
-        Succesfulness of the script
+        Succesfulness of the script.
     """
     success, failure = uuid.uuid4(), uuid.uuid4()
     check_cmd = COMMAND_CHECK.format(success, failure)
@@ -157,7 +157,7 @@ def execute_script_and_wait(
     ]
     try:
         # Use check command twice to make sure it used
-        shell.sendline(f"{script} && {check_cmd}")
+        shell.sendline(f'{script} && {check_cmd}')
         shell.sendline(check_cmd)
         # Wait for end of script
         index = shell.expect_list(
@@ -183,24 +183,24 @@ def get_venv(markdown: str, tmpfolder: Path) -> Path:
     Parameters
     ----------
     markdown : str
-        Name of the markdown file
+        Name of the markdown file.
     tmpfolder : Path
-        Path to the temporary folder
+        Path to the temporary folder.
 
     Returns
     -------
     Path :
-        Path to the virtual environment
+        Path to the virtual environment.
     """
     if markdown not in VENVS:
-        VENVS[markdown] = tmpfolder / f"venv_{markdown}"
+        VENVS[markdown] = tmpfolder / f'venv_{markdown}'
         venv.create(VENVS[markdown], with_pip=True, upgrade_deps=True)
     return VENVS[markdown]
 
 
 def get_subshell(
     markdown: str,
-    id: int,
+    _id: int,
     separate_venv: bool,
     tmpfolder: Path,
     log_dir: Optional[str] = None,
@@ -212,25 +212,25 @@ def get_subshell(
     Parameters
     ----------
     markdown : str
-        Name of the markdown file
+        Name of the markdown file.
     id : int
-        ID of the subshell
+        ID of the subshell.
     separate_venv : bool
-        Should subshell use separate virtual environment
+        Should subshell use separate virtual environment.
     tmpfolder : Path
-        Path to the temporary folder
+        Path to the temporary folder.
     log_dir : Optional[Path]
-        Path to folder where subshell logs will be saved
+        Path to folder where subshell logs will be saved.
 
     Returns
     -------
     pexpect.spawn :
-        Interface for communication with subshell
+        Interface for communication with subshell.
     """
-    if id in SHELLS[markdown]:
-        return SHELLS[markdown][id]
+    if _id in SHELLS[markdown]:
+        return SHELLS[markdown][_id]
 
-    SHELLS[markdown][id] = pexpect.spawn(
+    SHELLS[markdown][_id] = pexpect.spawn(
         shutil.which('bash'),
         timeout=DEFAULT_TIMEOUT,
         encoding='utf-8',
@@ -238,8 +238,8 @@ def get_subshell(
         use_poll=True,
     )
     if log_dir:
-        tmp_file = open(f'{log_dir}/{markdown}_{id}.log', 'w')
-        SHELLS[markdown][id].logfile_read = tmp_file
+        tmp_file = open(f'{log_dir}/{markdown}_{_id}.log', 'w')
+        SHELLS[markdown][_id].logfile_read = tmp_file
 
     # Activate virtual environment
     if separate_venv:
@@ -247,18 +247,18 @@ def get_subshell(
     elif DOCS_VENV:
         _venv = Path(DOCS_VENV)
     if _venv and not execute_script_and_wait(
-            SHELLS[markdown][id], f"source {_venv / 'bin' / 'activate'}"):
+            SHELLS[markdown][_id], f"source {_venv / 'bin' / 'activate'}"):
         raise Exception('Virtual environment cannot be activated')
 
     # Create copy of the repo and change working directory
-    repo_copy = tmpfolder / f"{markdown}_kenning"
+    repo_copy = tmpfolder / f'{markdown}_kenning'
     if not (
         repo_copy.exists() or execute_script_and_wait(
-            SHELLS[markdown][id], f"git clone . {repo_copy}")
-    ) or not execute_script_and_wait(SHELLS[markdown][id], f"cd {repo_copy}"):
+            SHELLS[markdown][_id], f'git clone . {repo_copy}')
+    ) or not execute_script_and_wait(SHELLS[markdown][_id], f'cd {repo_copy}'):
         raise Exception('Copy of the repository cannot be created')
 
-    return SHELLS[markdown][id]
+    return SHELLS[markdown][_id]
 
 
 def create_script(snippet: Snippet) -> str:
@@ -270,16 +270,21 @@ def create_script(snippet: Snippet) -> str:
     Parameters
     ----------
     snippet : Snippet
-        Snippet with script information
+        Snippet with script information.
+
+    Returns
+    -------
+    str :
+        Prepared script
     """
     script = None
-    if snippet.lang == "bash":
+    if snippet.lang == 'bash':
         # If `pip install` change it to intall local Kenning version
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
             snippet.text = re.sub(KENNING_LINK_RE, r'.\2', snippet.text)
         script = snippet.text
-    elif snippet.lang == "python":
+    elif snippet.lang == 'python':
         # Dump python script to file and change script to run it
         _, tmpfile = tempfile.mkstemp()
         with open(tmpfile, 'w') as fd:
@@ -289,7 +294,10 @@ def create_script(snippet: Snippet) -> str:
     return script
 
 
-def factory_test_snippet(markdown_pattern: str, docs_gallery: bool):
+def factory_test_snippet(
+    markdown_pattern: str,
+    docs_gallery: bool,
+) -> Callable:
     """
     Factory creating tests for snippets from documentation.
 
@@ -299,7 +307,7 @@ def factory_test_snippet(markdown_pattern: str, docs_gallery: bool):
         Defines from which files snippets should be extracted.
     docs_gallery : bool
         Defines if markdowns are part of gallery, marks tests as `docs_gallery`
-        and run then in separate environment
+        and run then in separate environment.
 
     Returns
     -------
@@ -312,14 +320,14 @@ def factory_test_snippet(markdown_pattern: str, docs_gallery: bool):
         pytest.param(
             create_script(snippet),
             snippet, markdown, docs_gallery,
-            id=f"{markdown}_{snippet_name}",
+            id=f'{markdown}_{snippet_name}',
             marks=[
-                pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
+                pytest.mark.xdist_group(f'TestDocsGallery_{markdown}'),
                 pytest.mark.dependency(
-                    name=f"_{markdown}_{snippet_name}",
+                    name=f'_{markdown}_{snippet_name}',
                     depends=[
-                        f"_{markdown}_{dep}"
-                        for dep in snippet.meta["depends"]
+                        f'_{markdown}_{dep}'
+                        for dep in snippet.meta['depends']
                     ]
                 ),
             ] + (
@@ -345,18 +353,18 @@ def factory_test_snippet(markdown_pattern: str, docs_gallery: bool):
         Parameters
         ----------
         script : str
-            Script that should be tested
+            Script that should be tested.
         snippet : Snippet
-            Snippet from which script was extracted
+            Snippet from which script was extracted.
         markdown : str
-            Name of the markdown file containing snippet
+            Name of the markdown file containing snippet.
         separate_venv : bool
-            Should test use separate environment
+            Should test use separate environment.
 
         Fixtures
         --------
         docs_log_dir : Optional[Path]
-            Path to folder where subshell logs will be saved
+            Path to folder where subshell logs will be saved.
         """
         subshell = get_subshell(
             markdown, snippet.meta['terminal'],
@@ -380,7 +388,7 @@ def factory_test_snippet(markdown_pattern: str, docs_gallery: bool):
     return _test_snippet
 
 
-def factory_cleanup(markdown_pattern: str, docs_gallery: bool):
+def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
     """
     Factory creating tests for releasing resources.
 
@@ -390,7 +398,7 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool):
         Defines for which files cleanup should be created.
     docs_gallery : bool
         Defines if markdowns are part of gallery
-        and marks tests as `docs_gallery`
+        and marks tests as `docs_gallery`.
 
     Returns
     -------
@@ -402,7 +410,7 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool):
         pytest.param(
             markdown,
             marks=[
-                pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
+                pytest.mark.xdist_group(f'TestDocsGallery_{markdown}'),
                 pytest.mark.order(-1),
             ] + (
                 [pytest.mark.docs_gallery] if docs_gallery

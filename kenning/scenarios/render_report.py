@@ -1697,7 +1697,7 @@ def generate_report(
         'report_name': report_name,
         'model_names': [],
         'command': [],
-        'bigger_title': not smaller_header,
+        'smaller_header': smaller_header,
     }
 
     for model_data in data:

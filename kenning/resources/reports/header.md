@@ -1,7 +1,7 @@
-{% if data['bigger_title'] %}
-# {{data['report_name']}}
-{% else %}
+{% if data['smaller_header'] %}
 ## {{data['report_name']}}
+{% else %}
+# {{data['report_name']}}
 {% endif %}
 
 ### Commands used

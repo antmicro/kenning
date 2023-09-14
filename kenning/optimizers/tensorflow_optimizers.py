@@ -180,7 +180,7 @@ class TensorFlowOptimizer(Optimizer):
         Compress saved model to ZIP archive.
         """
         with zipfile.ZipFile(
-            self.compiled_model_path.with_suffix('.zip'),
+            str(self.compiled_model_path) + '.zip',
             'w', compression=zipfile.ZIP_DEFLATED
         ) as zfd:
             zfd.write(self.compiled_model_path)

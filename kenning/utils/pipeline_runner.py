@@ -55,7 +55,7 @@ class PipelineRunner(object):
         assert_integrity: bool = True,
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
-    )-> 'PipelineRunner':
+    ) -> 'PipelineRunner':
         """
         Method that parses a json configuration of an inference pipeline.
 
@@ -257,8 +257,8 @@ class PipelineRunner(object):
             model_path = Path(model_path)
             # If model compressed in ZIP exists use its size
             # It is more accurate for Keras models
-            if model_path.with_suffix('.zip').exists():
-                model_path = model_path.with_suffix('.zip')
+            if model_path.with_suffix(model_path.suffix + '.zip').exists():
+                model_path = model_path.with_suffix(model_path.suffix + '.zip')
 
             MeasurementsCollector.measurements += {
                 'compiled_model_size': model_path.stat().st_size

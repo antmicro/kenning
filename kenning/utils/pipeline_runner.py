@@ -21,12 +21,6 @@ import kenning.utils.logger as logger
 from kenning.core.measurements import MeasurementsCollector
 
 UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
-RUNTIME_CLASSES = get_all_subclasses(
-    'kenning.runtimes',
-    Runtime,
-    raise_exception=False,
-    import_classes=True,
-)
 
 
 def assert_io_formats(
@@ -321,9 +315,16 @@ def test_unoptimized(
 
     framework = model.get_framework_and_version()[0]
     runtime = None
+    runtime_classes = get_all_subclasses(
+        'kenning.runtimes',
+        Runtime,
+        raise_exception=False,
+        import_classes=True,
+        show_warnings=False
+    )
     # Get first available Runtime with matching inputtype
     runtime_cls = next(
-        filter(lambda _cls: framework in _cls.inputtypes, RUNTIME_CLASSES),
+        filter(lambda _cls: framework in _cls.inputtypes, runtime_classes),
         None
     )
     # Initialize Runtime

@@ -63,7 +63,8 @@ def get_all_subclasses(
         module_path: str,
         cls: Type,
         raise_exception: bool = False,
-        import_classes: bool = True) -> Union[List[Type], List[Tuple[str, str]]]:  # noqa: E501
+        import_classes: bool = True,
+        show_warnings: bool = True) -> Union[List[Type], List[Tuple[str, str]]]:  # noqa: E501
     """
     Retrieves all subclasses of given class. Filters classes that are not
     final.
@@ -79,6 +80,9 @@ def get_all_subclasses(
         imported.
     import_classes: bool
         Whether to import classes into memory or just return a list of modules
+    show_warnings: bool
+        Tells whether method should print warnings if modules could not be
+        imported.
 
     Returns
     -------
@@ -185,11 +189,12 @@ def get_all_subclasses(
                     abc.ABC not in subclass.__bases__):
                 result.append(subclass)
         except (ModuleNotFoundError, ImportError, Exception) as e:
-            msg = f'Could not add {subclass_name}. Reason:'
-            logger.warn('-' * len(msg))
-            logger.warn(msg)
-            logger.warn(e)
-            logger.warn('-' * len(msg))
+            if show_warnings:
+                msg = f'Could not add {subclass_name}. Reason:'
+                logger.warn('-' * len(msg))
+                logger.warn(msg)
+                logger.warn(e)
+                logger.warn('-' * len(msg))
             if raise_exception:
                 raise
 

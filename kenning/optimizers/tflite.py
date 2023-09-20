@@ -69,7 +69,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
     }
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'onnx',
@@ -118,7 +118,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             batch_size: int = 32,
             optimizer: str = 'adam',
             disable_from_logits: bool = False,
-            modelframework: str = 'onnx',
+            model_framework: str = 'onnx',
             inferenceinputtype: str = 'float32',
             inferenceoutputtype: str = 'float32',
             dataset_percentage: float = 0.25,
@@ -148,7 +148,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
-        modelframework : str
+        model_framework : str
             Framework of the input model, used to select a proper backend.
         inferenceinputtype : str
             Data type of the input layer.
@@ -166,14 +166,21 @@ class TFLiteCompiler(TensorFlowOptimizer):
             supported ops.
         """
         self.target = target
-        self.modelframework = modelframework
+        self.model_framework = model_framework
         self.inferenceinputtype = inferenceinputtype
         self.inferenceoutputtype = inferenceoutputtype
-        self.set_input_type(modelframework)
+        self.set_input_type(model_framework)
         self.dataset_percentage = dataset_percentage
         self.quantization_aware_training = quantization_aware_training
         self.use_tf_select_ops = use_tf_select_ops
-        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            epochs=epochs,
+            batch_size=batch_size,
+            optimizer=optimizer,
+            disable_from_logits=disable_from_logits
+        )
 
     def compile(
             self,

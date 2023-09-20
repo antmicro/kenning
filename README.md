@@ -114,7 +114,7 @@ The `kenning` module consists of the following submodules:
 * `optimizers` - provides implementations for compilers and optimizers for deep learning models,
 * `runtimes` - provides implementations of runtime on target devices,
 * `interfaces` - provides interface classes to group related methods used in Kenning `core` classes,
-* `runtimeprotocols` - provides implementations for communication protocols between host and tested target,
+* `protocols` - provides implementations for communication protocols between host and tested target,
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
@@ -133,7 +133,7 @@ The `kenning` module consists of the following submodules:
 * `ModelWrapper` class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using native framework,
 * `Optimizer` class - optimizes and compiles the model,
 * `Runtime` class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
-* `RuntimeProtocol` class - implements the communication protocol between the host and the target,
+* `Protocol` class - implements the communication protocol between the host and the target,
 * `DataProvider` class - implements data provision from such sources as camera, TCP connection or others for inference,
 * `OutputCollector` class - implements parsing and utilization of data from inference (such as displaying the visualizations, sending the results to via TCP),
 * `Runner` class - represents single runtime processing block.
@@ -818,7 +818,7 @@ Arguments specification:
 
 ## Adding new implementations
 
-`Dataset`, `ModelWrapper`, `Optimizer`, `RuntimeProtocol`, `Runtime` and other classes from the `kenning.core` module have dedicated directories for their implementations.
+`Dataset`, `ModelWrapper`, `Optimizer`, `Protocol`, `Runtime` and other classes from the `kenning.core` module have dedicated directories for their implementations.
 Each method in the base classes that requires implementation raises an `NotImplementedError` exception.
 They can be easily implemented or extended, but they need to conform to certain rules, usually described in the source documentation.
 

@@ -6,7 +6,7 @@
 UART-based inference communication protocol.
 """
 
-from typing import Tuple, Optional, Dict, Any, List
+from typing import Literal, Tuple, Optional, Dict, Any, List
 from pathlib import Path
 import re
 import json
@@ -14,11 +14,11 @@ import numpy as np
 import selectors
 import serial
 
-from kenning.core.runtimeprotocol import ServerStatus
-from kenning.core.runtimeprotocol import Message
-from kenning.core.runtimeprotocol import MessageType
+from kenning.core.protocol import ServerStatus
+from kenning.core.protocol import Message
+from kenning.core.protocol import MessageType
 from kenning.core.measurements import Measurements
-from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
 
 
 # model constraints
@@ -37,7 +37,7 @@ def _io_spec_to_struct(
         io_spec: Dict[str, Any],
         entry_func: str = 'module.main',
         model_name: str = 'module',
-        byteorder: str = 'little') -> bytes:
+        byteorder: Literal['little', 'big'] = 'little') -> bytes:
     """
     Method used to convert IO spec in JSON form into struct that can be easily
     parsed by runtime.
@@ -50,7 +50,7 @@ def _io_spec_to_struct(
         Name of the entry function of the module.
     model_name : str
         Name of the model.
-    byteorder : str
+    byteorder : Literal['little', 'big']
         Byteorder of the struct (either 'little' or 'big').
 
     Returns
@@ -106,7 +106,7 @@ def _io_spec_to_struct(
     def int_to_bytes(num: int) -> bytes:
         return num.to_bytes(4, byteorder=byteorder, signed=False)
 
-    def array_to_bytes(a: List, shape: Tuple) -> np.ndarray:
+    def array_to_bytes(a: List, shape: Tuple) -> bytes:
         a_np = np.array(a, dtype=np.uint32)
         a_pad = np.pad(
             a_np,
@@ -232,7 +232,7 @@ class UARTProtocol(BytesBasedProtocol):
     def send_data(self, data: bytes) -> bool:
         if self.connection is None or not self.connection.is_open:
             return False
-        self.connection.write(data)
+        return len(data) == self.connection.write(data)
 
     def receive_data(
             self,
@@ -256,7 +256,7 @@ class UARTProtocol(BytesBasedProtocol):
 
         data = _io_spec_to_struct(io_spec)
 
-        message = Message(MessageType.IOSPEC, data)
+        message = Message(MessageType.IO_SPEC, data)
 
         self.send_message(message)
         return self.receive_confirmation()[0]

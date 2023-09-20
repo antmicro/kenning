@@ -6,14 +6,13 @@
 Runtime implementation for ONNX models.
 """
 
-from typing import List
+from typing import List, Optional
 import onnxruntime as ort
 import numpy as np
 
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -40,7 +39,6 @@ class ONNXRuntime(Runtime):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
             model_path: PathOrURI,
             execution_providers: List[str] = ['CPUExecutionProvider'],
             disable_performance_measurements: bool = False):
@@ -49,8 +47,6 @@ class ONNXRuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication protocol.
         model_path : PathOrURI
             URI for the model file.
         execution_providers : List[str]
@@ -63,8 +59,7 @@ class ONNXRuntime(Runtime):
         self.input = None
         self.execution_providers = execution_providers
         super().__init__(
-            protocol,
-            disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements
         )
 
     def prepare_input(self, input_data):

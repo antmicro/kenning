@@ -13,15 +13,15 @@ It requires implementations of two classes as input:
 * Optimizer - wraps the compiling routines for the deep learning model
 
 Three classes are optional. Not every combination is a valid configuration:
-* RuntimeProtocol - describes the protocol over which the communication is
+* Protocol - describes the protocol over which the communication is
   performed
 * Dataset - provides data for benchmarking
 * Runtime - provides a runtime to run the model
 
-If Runtime is not provided then providing either Optimizer or RuntimeProtocol
+If Runtime is not provided then providing either Optimizer or Protocol
 raises an Exception, as this is not a valid scenario.
 
-If RuntimeProtocol is specified then it is expected that an instance of an
+If Protocol is specified then it is expected that an instance of an
 inference server is running. Otherwise the inference is run locally.
 
 If Runtime is not specified then a native framework of the model is used to
@@ -54,7 +54,7 @@ from kenning.cli.command_template import (
     ParserHelpException
 )
 from kenning.utils.class_loader import get_command, load_class
-from kenning.utils.pipeline_runner import run_pipeline, run_pipeline_json
+from kenning.utils.pipeline_runner import PipelineRunner
 import kenning.utils.logger as logger
 
 
@@ -148,7 +148,7 @@ class InferenceTester(CommandTemplate):
             ).completer = ClassPathCompleter(RUNTIMES)
             flag_group.add_argument(
                 '--protocol-cls',
-                help='RuntimeProtocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
+                help='Protocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
             ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         # Only when scenario is used outside of Kenning CLI
         if not types:
@@ -168,7 +168,6 @@ class InferenceTester(CommandTemplate):
         command = get_command()
 
         logger.set_verbosity(args.verbosity)
-        log = logger.get_logger()
 
         flag_config_names = ('modelwrapper_cls', 'dataset_cls', 'compiler_cls',
                              'runtime_cls', 'protocol_cls')
@@ -195,7 +194,7 @@ class InferenceTester(CommandTemplate):
             if args.help:
                 raise ParserHelpException
             return InferenceTester._run_from_json(
-                args, command, log, not_parsed=not_parsed, **kwargs)
+                args, command, not_parsed=not_parsed, **kwargs)
 
         required_args = [0] + [1] if args.measurements[0] is not None else [] \
             + [2] if 'compiler_cls' in args else []
@@ -209,13 +208,12 @@ class InferenceTester(CommandTemplate):
                 None, f"missing required arguments: {', '.join(missing_args)}")
 
         return InferenceTester._run_from_flags(
-            args, command, log, not_parsed=not_parsed, **kwargs)
+            args, command, not_parsed=not_parsed, **kwargs)
 
     @staticmethod
     def _run_from_json(
         args: argparse.Namespace,
         command: List[str],
-        log,
         not_parsed: List[str] = [],
         **kwargs
     ):
@@ -229,22 +227,21 @@ class InferenceTester(CommandTemplate):
             json_cfg = json.load(f)
 
         try:
-            ret = run_pipeline_json(
-                json_cfg,
-                args.measurements[0] if args.measurements[0] else None,
-                args.verbosity,
-                getattr(args, "convert_to_onnx", False),
-                command,
-                run_optimizations="compiler_cls" in args and not getattr(
-                    args, "run_benchmarks_only", False),
+            pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
+            ret = pipeline_runner.run(
+                output=args.measurements[0] if args.measurements[0] else None,
+                verbosity=args.verbosity,
+                convert_to_onnx=getattr(args, 'convert_to_onnx', None),
+                command=command,
+                run_optimizations='compiler_cls' in args and not getattr(
+                    args, 'run_benchmarks_only', False),
                 run_benchmarks=bool(args.measurements[0]),
-                evaluate_unoptimized=args.evaluate_unoptimized,
             )
         except ValidationError as ex:
-            log.error(f'Validation error: {ex}')
+            logger.get_logger().error(f'Validation error: {ex}')
             raise
         except Exception as ex:
-            log.error(ex)
+            logger.get_logger().error(ex)
             raise
 
         if ret is None:
@@ -255,7 +252,6 @@ class InferenceTester(CommandTemplate):
     def _run_from_flags(
         args: argparse.Namespace,
         command: List[str],
-        log,
         not_parsed: List[str] = [],
         **kwargs
     ):
@@ -297,32 +293,34 @@ class InferenceTester(CommandTemplate):
             dataset, args) if modelwrappercls else None
         compiler = [compilercls.from_argparse(dataset, args)] if compilercls else []  # noqa: E501
         protocol = protocolcls.from_argparse(args) if protocolcls else None
-        runtime = runtimecls.from_argparse(
-            protocol, args) if runtimecls else None
+        runtime = runtimecls.from_argparse(args) if runtimecls else None
 
         try:
-            ret = run_pipeline(
+            pipeline_runner = PipelineRunner(
                 dataset,
                 model,
                 compiler,
                 runtime,
                 protocol,
-                compiler[-1].compiled_model_path if len(
-                    compiler) > 0 else None,
-                args.measurements[0] if args.measurements[0] else None,
-                args.verbosity,
-                getattr(args, "convert_to_onnx", False),
-                command,
-                run_optimizations="compiler_cls" in args and not getattr(
-                    args, "run_benchmarks_only", False) and compiler,
+            )
+
+            ret = pipeline_runner.run(
+                output=args.measurements[0] if args.measurements[0] else None,
+                verbosity=args.verbosity,
+                convert_to_onnx=getattr(args, 'convert_to_onnx', False),
+                command=command,
+                run_optimizations=(
+                    'compiler_cls' in args
+                    and not getattr(args, 'run_benchmarks_only', False)
+                    and compiler
+                ),
                 run_benchmarks=bool(args.measurements[0]) and dataset,
-                evaluate_unoptimized=args.evaluate_unoptimized,
             )
         except ValidationError as ex:
-            log.error(f'Validation error: {ex}')
+            logger.get_logger().error(f'Validation error: {ex}')
             raise
         except Exception as ex:
-            log.error(ex)
+            logger.get_logger().error(ex)
             raise
 
         if ret is None:

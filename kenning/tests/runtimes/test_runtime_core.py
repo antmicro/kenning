@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.protocol import Protocol
 from kenning.runtimes.iree import IREERuntime
 from runtimetests import RuntimeTests
 import pytest
@@ -13,10 +13,9 @@ from unittest.mock import patch
 @patch.multiple(Runtime, __abstractmethods__=set())
 class TestCoreRuntime(RuntimeTests):
     runtimecls = Runtime
-    runtimeprotocolcls = RuntimeProtocol
 
     def initruntime(self, *args, **kwargs):
-        runtime = self.runtimecls(self.runtimeprotocolcls(), *args, **kwargs)
+        runtime = self.runtimecls(*args, **kwargs)
         return runtime
 
     def test_prepare_input(self):
@@ -74,9 +73,7 @@ class TestCoreRuntime(RuntimeTests):
 @pytest.mark.xfail
 class TestIREERuntime(RuntimeTests):
     runtimecls = IREERuntime
-    runtimeprotocolcls = RuntimeProtocol
 
     def initruntime(self, *args, **kwargs):
-        runtime = self.runtimecls(self.runtimeprotocolcls(),
-                                  self.model_path, *args, **kwargs)
+        runtime = self.runtimecls(self.model_path, *args, **kwargs)
         return runtime

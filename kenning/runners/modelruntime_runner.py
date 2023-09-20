@@ -15,7 +15,7 @@ from kenning.core.runtime import Runtime
 from kenning.core.runner import Runner
 from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.utils.args_manager import get_parsed_args_dict
-from kenning.utils.class_loader import load_class
+from kenning.utils.class_loader import any_from_json, load_class
 
 
 class ModelRuntimeRunner(Runner):
@@ -86,58 +86,58 @@ class ModelRuntimeRunner(Runner):
 
     @classmethod
     def from_argparse(
-            cls,
-            args: Namespace,
-            inputs_sources: Dict[str, Tuple[int, str]],
-            inputs_specs: Dict[str, Dict],
-            outputs: Dict[str, str]):
-
+        cls,
+        args: Namespace,
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str]
+    ) -> 'ModelRuntimeRunner':
         parsed_json_dict = get_parsed_args_dict(cls, args)
 
-        model_json_dict = parsed_json_dict['model_wrapper']
-        runtime_json_dict = parsed_json_dict['runtime']
-
-        if 'dataset' in parsed_json_dict.keys() \
-                and parsed_json_dict['dataset']:
-            dataset = cls._create_dataset(parsed_json_dict['dataset'])
-        else:
-            dataset = None
-
-        model: ModelWrapper = cls._create_model(dataset, model_json_dict)
-        model.prepare_model()
-        runtime: Runtime = cls._create_runtime(runtime_json_dict)
-
-        return cls(
-            model,
-            runtime,
+        return cls._from_parsed_json_dict(
+            parsed_json_dict=parsed_json_dict,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
+
 
     @classmethod
     def from_json(
-            cls,
-            json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]],
-            inputs_specs: Dict[str, Dict],
-            outputs: Dict[str, str]):
+        cls,
+        json_dict: Dict,
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str]
+    ) -> 'ModelRuntimeRunner':
 
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
-        model_json_dict = parsed_json_dict['model_wrapper']
-        runtime_json_dict = parsed_json_dict['runtime']
+        return cls._from_parsed_json_dict(
+            parsed_json_dict=parsed_json_dict,
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs,
+        )
 
-        if 'dataset' in parsed_json_dict.keys() \
-                and parsed_json_dict['dataset']:
+    @classmethod
+    def _from_parsed_json_dict(
+        cls,
+        parsed_json_dict: Dict[str, Any],
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str]
+    ) -> 'ModelRuntimeRunner':
+        if parsed_json_dict.get('dataset', None):
             dataset = cls._create_dataset(parsed_json_dict['dataset'])
         else:
             dataset = None
 
-        model: ModelWrapper = cls._create_model(dataset, model_json_dict)
+        model = cls._create_model(dataset, parsed_json_dict['model_wrapper'])
         model.prepare_model()
-        runtime: Runtime = cls._create_runtime(runtime_json_dict)
+
+        runtime = cls._create_runtime(parsed_json_dict['runtime'])
 
         return cls(
             model,
@@ -148,7 +148,7 @@ class ModelRuntimeRunner(Runner):
         )
 
     @staticmethod
-    def _create_dataset(json_dict: Dict):
+    def _create_dataset(json_dict: Dict) -> Dataset:
         """
         Method used to create dataset based on json dict.
 
@@ -162,13 +162,10 @@ class ModelRuntimeRunner(Runner):
         Dataset :
             Created dataset.
         """
-        cls = load_class(json_dict['type'])
-        return cls.from_json(
-            json_dict=json_dict['parameters'])
+        return any_from_json(json_dict)
 
-    # TODO: make dataset/protocol an optional parameter for model/runtime
     @staticmethod
-    def _create_model(dataset: Dataset, json_dict: Dict):
+    def _create_model(dataset: Dataset, json_dict: Dict) -> ModelWrapper:
         """
         Method used to create model based on json dict.
 
@@ -184,13 +181,10 @@ class ModelRuntimeRunner(Runner):
         ModelWrapper :
             Created model.
         """
-        cls = load_class(json_dict['type'])
-        return cls.from_json(
-            dataset=dataset,
-            json_dict=json_dict['parameters'])
+        return any_from_json(json_dict, dataset=dataset)
 
     @staticmethod
-    def _create_runtime(json_dict):
+    def _create_runtime(json_dict) -> Runtime:
         """
         Method used to create runtime based on json dict.
 
@@ -204,10 +198,7 @@ class ModelRuntimeRunner(Runner):
         Runtime :
             Created runtime.
         """
-        cls = load_class(json_dict['type'])
-        return cls.from_json(
-            protocol=None,
-            json_dict=json_dict['parameters'])
+        return any_from_json(json_dict)
 
     @classmethod
     def _get_io_specification(cls, model_io_spec: Dict[str, List[Dict]]):

@@ -20,7 +20,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.protocol import Protocol
 from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
     from_argparse_name
 from kenning.utils.excepthook import MissingKenningDependencies, \
@@ -689,7 +689,7 @@ def instantiate_object_based_on_base_class(
         if issubclass(imported_class, Runtime):
             return imported_class.from_json(
                 json_dict=parsed_args,
-                protocol=RuntimeProtocol())
+                protocol=Protocol())
 
         if issubclass(imported_class, ModelWrapper):
             return imported_class.from_json(

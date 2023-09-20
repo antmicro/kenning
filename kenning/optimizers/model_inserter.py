@@ -26,7 +26,7 @@ class ModelInserter(Optimizer):
     """
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'type': str,
@@ -44,7 +44,7 @@ class ModelInserter(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: PathOrURI,
-            modelframework: str,
+            model_framework: str,
             input_model_path: PathOrURI):
         """
         A mock Optimizer for model injection.
@@ -55,15 +55,18 @@ class ModelInserter(Optimizer):
             Dataset object.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
-        modelframework : str
+        model_framework : str
             Framework of the input model to be inserted.
         input_model_path : PathOrURI
             URI to the input model to be inserted.
         """
-        self.modelframework = modelframework
+        self.model_framework = model_framework
         self.input_model_path = input_model_path
-        self.outputtypes = [self.modelframework]
-        super().__init__(dataset, compiled_model_path)
+        self.outputtypes = [self.model_framework]
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path
+        )
 
     def compile(
             self,
@@ -101,7 +104,7 @@ class ModelInserter(Optimizer):
         """
         possible_outputs = previous_block.get_output_formats()
 
-        if force_onnx and self.modelframework != 'onnx':
+        if force_onnx and self.model_framework != 'onnx':
             raise ValueError(
                 '"onnx" format is not supported by ModelInserter'
             )

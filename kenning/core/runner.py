@@ -13,8 +13,6 @@ from argparse import Namespace
 from kenning.interfaces.io_interface import IOInterface
 from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
 
 
 class Runner(IOInterface, ArgumentsHandler, ABC):
@@ -84,11 +82,12 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
     @classmethod
     def from_argparse(
-            cls,
-            args: Namespace,
-            inputs_sources: Dict[str, Tuple[int, str]],
-            inputs_specs: Dict[str, Dict],
-            outputs: Dict[str, str]):
+        cls,
+        args: Namespace,
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str],
+    ) -> 'Runner':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -111,22 +110,21 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         OutputCollector :
             Object of class Runner.
         """
-
-        parsed_json_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
-            **parsed_json_dict,
+        return super().from_argparse(
+            args,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs)
+            outputs=outputs
+        )
 
     @classmethod
     def from_json(
-            cls,
-            json_dict: Dict,
-            inputs_sources: Dict[str, Tuple[int, str]],
-            inputs_specs: Dict[str, Dict],
-            outputs: Dict[str, str]):
+        cls,
+        json_dict: Dict,
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str],
+    ) -> 'Runner':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -150,15 +148,12 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         Runner :
             Object of class Runner.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **parsed_json_dict,
+        return super().from_json(
+            json_dict,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs)
+            outputs=outputs
+        )
 
     def _run(
             self,

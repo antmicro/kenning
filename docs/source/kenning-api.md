@@ -21,7 +21,7 @@ The grey blocks represent the inference results and metrics flow.
 * a [](modelwrapper-api) class - trains the model, prepares the model, performs model-specific input preprocessing and output postprocessing, runs inference on host using a native framework,
 * a [](optimizer-api) class - optimizes and compiles the model,
 * a [](runtime-api) class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
-* a [](runtimeprotocol-api) class - implements the communication protocol between the host and the target,
+* a [](protocol-api) class - implements the communication protocol between the host and the target,
 * a [](dataprovider-api) class - implements providing data for inference from such sources as camera, TCP connection, or others,
 * a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying visualizations or sending results via TCP).
 
@@ -34,7 +34,7 @@ The orange blocks and arrows in {numref}`class-flow` represent a model's life cy
   This is an optional step - an already trained model can also be wrapped and used.
   ```
 * the model is passed to the [](optimizer-api) where it is optimized for given hardware and later compiled,
-* during inference testing, the model is sent to the target using [](runtimeprotocol-api),
+* during inference testing, the model is sent to the target using [](protocol-api),
 * the model is loaded on target side and used for inference using [](runtime-api).
 
 Once the development of the model is complete, the optimized and compiled model can be used directly on target device using [](runtime-api).
@@ -46,7 +46,7 @@ The input data flow is depicted using green arrows, and the output data flow is 
 
 Firstly, the input and output data is loaded from dataset files and processed.
 Later, since every model has its specific input preprocessing and output postprocessing routines, the data is passed to the [](modelwrapper-api) methods in order to apply modifications.
-During inference testing, the data is sent to and from the target using [](runtimeprotocol-api).
+During inference testing, the data is sent to and from the target using [](protocol-api).
 
 Lastly, since [](runtime-api)s also have their specific representations of data, proper I/O processing is applied.
 
@@ -55,7 +55,7 @@ Lastly, since [](runtime-api)s also have their specific representations of data,
 Report rendering requires performance metrics and quality metrics.
 The flow for this is presented with grey lines and blocks in {numref}`class-flow`.
 
-On target side, performance metrics are computed and sent back to the host using the [](runtimeprotocol-api), and later passed to report rendering.
+On target side, performance metrics are computed and sent back to the host using the [](protocol-api), and later passed to report rendering.
 After the output data goes through processing in the [](runtime-api) and [](modelwrapper-api), it is compared to the ground truth in the [](dataset-api) during model evaluation.
 In the end, the results of model evaluation are passed to report rendering.
 
@@ -130,7 +130,7 @@ Example implementations:
 * providing metadata (framework name and version),
 * model training,
 * input format specification,
-* conversion of model inputs and outputs to bytes for the `kenning.core.runtimeprotocol.RuntimeProtocol` objects.
+* conversion of model inputs and outputs to bytes for the `kenning.core.protocol.Protocol` objects.
 
 The `ModelWrapper` provides methods for running inference in a loop for data from a dataset and measuring the model's quality and inference performance.
 
@@ -176,7 +176,7 @@ Example model optimizers:
 The `kenning.core.runtime.Runtime` class provides interfaces for methods for running compiled models locally or remotely on a target device.
 Runtimes are usually compiler-specific (frameworks for deep learning compilers provide runtime libraries to run compiled models on particular hardware).
 
-The client (host) side of the `Runtime` class utilizes the methods from [](dataset-api), [](modelwrapper-api) and [](runtimeprotocol-api) classes to run inference on a target device.
+The client (host) side of the `Runtime` class utilizes the methods from [](dataset-api), [](modelwrapper-api) and [](protocol-api) classes to run inference on a target device.
 The server (target) side of the `Runtime` class requires method implementation for:
 
 * loading a model delivered by the client,
@@ -195,13 +195,13 @@ Runtime examples:
    :members:
 ```
 
-(runtimeprotocol-api)=
+(protocol-api)=
 
-## RuntimeProtocol
+## Protocol
 
-The `kenning.core.runtimeprotocol.RuntimeProtocol` class conducts communication between the client (host) and the server (target).
+The `kenning.core.protocol.Protocol` class conducts communication between the client (host) and the server (target).
 
-The RuntimeProtocol class requires method implementation for:
+The Protocol class requires method implementation for:
 
 * initializing the server and the client (communication-wise),
 * waiting for the incoming data,
@@ -217,9 +217,9 @@ The RuntimeProtocol class requires method implementation for:
 
 Based on the above-mentioned methods, the `kenning.core.runtime.Runtime` connects the host with the target.
 
-RuntimeProtocol examples:
+Protocol examples:
 
-* [NetworkProtocol](https://github.com/antmicro/kenning/blob/main/kenning/runtimeprotocols/network.py) - implements a TCP-based communication between the host and the client.
+* [NetworkProtocol](https://github.com/antmicro/kenning/blob/main/kenning/protocols/network.py) - implements a TCP-based communication between the host and the client.
 
 (runtime-protocol-spec)=
 
@@ -236,7 +236,7 @@ Possible messages are:
 * `OUTPUT` messages - request processing results,
 * `STATS` messages - request statistics from the target device.
 
-The message types and enclosed data are encoded in a format implemented in the `kenning.core.runtimeprotocol.RuntimeProtocol`-based class.
+The message types and enclosed data are encoded in a format implemented in the `kenning.core.protocol.Protocol`-based class.
 
 Communication during an inference benchmark session goes as follows:
 
@@ -255,12 +255,12 @@ Communication during an inference benchmark session goes as follows:
 * If the server provides any statistics, it sends an `OK` message with the data,
 * The same process applies to the rest of input samples.
 
-The way the message type is determined and the data between the server and the client is sent depends on the implementation of the `kenning.core.runtimeprotocol.RuntimeProtocol` class.
+The way the message type is determined and the data between the server and the client is sent depends on the implementation of the `kenning.core.protocol.Protocol` class.
 The implementation of running inference on the given target is contained within the `kenning.core.runtime.Runtime` class.
 
-### RuntimeProtocol API
+### Protocol API
 
-`kenning.core.runtimeprotocol.RuntimeProtocol`-based classes implement the [](runtime-protocol-spec) in a given means of transport, e.g. TCP connection or UART.
+`kenning.core.protocol.Protocol`-based classes implement the [](runtime-protocol-spec) in a given means of transport, e.g. TCP connection or UART.
 It requires method implementation for:
 
 * server (target hardware) and client (compiling host) initialization,
@@ -270,7 +270,7 @@ It requires method implementation for:
 * message parsing and creation.
 
 ```{eval-rst}
-.. autoclass:: kenning.core.runtimeprotocol.RuntimeProtocol
+.. autoclass:: kenning.core.protocol.Protocol
    :members:
 ```
 

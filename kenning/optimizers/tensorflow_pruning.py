@@ -33,7 +33,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     ]
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'keras',
@@ -59,7 +59,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             batch_size: int = 32,
             optimizer: str = 'adam',
             disable_from_logits: bool = False,
-            modelframework: str = 'keras',
+            model_framework: str = 'keras',
             prune_dense: bool = False,
             target_sparsity: float = 0.1):
         """
@@ -81,18 +81,25 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
-        modelframework : str
+        model_framework : str
             Framework of the input model, used to select a proper backend.
         prune_dense : bool
             Determines if only dense layers should be pruned.
         target_sparsity : float
             Target weights sparsity of the model after pruning.
         """
-        self.modelframework = modelframework
+        self.model_framework = model_framework
         self.prune_dense = prune_dense
         self.target_sparsity = target_sparsity
-        self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
+        self.set_input_type(model_framework)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            epochs=epochs,
+            batch_size=batch_size,
+            optimizer=optimizer,
+            disable_from_logits=disable_from_logits
+        )
 
     def compile(
             self,

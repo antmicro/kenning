@@ -6,7 +6,7 @@
 Provides methods for importing classes and modules at runtime based on string.
 """
 
-from typing import Type, Union, Dict, Tuple
+from typing import Any, Optional, Type, Union, Dict, Tuple
 import inspect
 import importlib
 from typing import List
@@ -23,7 +23,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
-from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.protocol import Protocol
 from kenning.utils.logger import get_logger
 
 
@@ -34,7 +34,7 @@ DATASETS = 'datasets'
 MODEL_WRAPPERS = 'modelwrappers'
 ONNX_CONVERSIONS = 'onnxconversions'
 OUTPUT_COLLECTORS = 'outputcollectors'
-RUNTIME_PROTOCOLS = 'runtimeprotocols'
+RUNTIME_PROTOCOLS = 'protocols'
 RUNTIMES = 'runtimes'
 
 
@@ -55,7 +55,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         MODEL_WRAPPERS: ('kenning.modelwrappers', ModelWrapper),
         ONNX_CONVERSIONS: ('kenning.onnxconverters', ONNXConversion),
         OUTPUT_COLLECTORS: ('kenning.outputcollectors', OutputCollector),
-        RUNTIME_PROTOCOLS: ('kenning.runtimeprotocols', RuntimeProtocol),
+        RUNTIME_PROTOCOLS: ('kenning.protocols', Protocol),
         RUNTIMES: ('kenning.runtimes', Runtime)}
 
 
@@ -202,6 +202,18 @@ def get_all_subclasses(
         result.sort(key=lambda c: c.__name__)
 
     return result
+
+
+def any_from_json(
+    json_cfg: Dict[str, Any],
+    **kwargs
+) -> Optional[Any]:
+    if 'type' not in json_cfg or 'parameters' not in json_cfg:
+        return None
+    cls = load_class(json_cfg['type'])
+    if not hasattr(cls, 'from_json'):
+        return None
+    return cls.from_json(json_cfg['parameters'], **kwargs)
 
 
 def load_class(module_path: str) -> Type:

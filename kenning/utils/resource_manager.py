@@ -63,6 +63,30 @@ def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
     )
 
 
+def _get_cache_dir(env_var: str) -> Path:
+    """
+    Return cache directory.
+
+    Parameters
+    ----------
+    env_var : str
+        Name of the environment variable with cache dir.
+
+    Returns
+    -------
+    Path :
+        Path to the cache.
+    """
+    cache_dir = os.environ.get(env_var, '')
+
+    if cache_dir:
+        cache_dir = Path(cache_dir)
+    else:
+        cache_dir = Path.home() / '.kenning'
+
+    return cache_dir.expanduser().resolve()
+
+
 class ResourceManager(metaclass=Singleton):
     """
     Download and cache resources used by Kenning.
@@ -71,11 +95,7 @@ class ResourceManager(metaclass=Singleton):
     CACHE_DIR_ENV_VAR = 'KENNING_CACHE_DIR'
     MAX_CACHE_SIZE_ENV_VAR = 'KENNING_MAX_CACHE_SIZE'
 
-    CACHE_DIR = (
-        Path(os.environ.get(CACHE_DIR_ENV_VAR, Path.home() / '.kenning'))
-        .expanduser()
-        .resolve()
-    )
+    CACHE_DIR = _get_cache_dir(CACHE_DIR_ENV_VAR)
 
     # 50 GB by default
     MAX_CACHE_SIZE = int(
@@ -283,9 +303,9 @@ class ResourceManager(metaclass=Singleton):
         parsed_uri : ParseResult
             Parsed URI.
 
-        Union[str, Path]
+        Returns
         -------
-        str :
+        Union[str, Path] :
             Resolved path to resource.
 
         Raises

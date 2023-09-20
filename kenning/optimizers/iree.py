@@ -121,7 +121,7 @@ class IREECompiler(Optimizer):
     outputtypes = ['iree']
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'keras',
@@ -147,7 +147,7 @@ class IREECompiler(Optimizer):
             dataset: Dataset,
             compiled_model_path: PathOrURI,
             backend: str = 'vmvx',
-            modelframework: str = 'keras',
+            model_framework: str = 'keras',
             compiler_args: Optional[List[str]] = None):
         """
         Wrapper for IREE compiler.
@@ -161,7 +161,7 @@ class IREECompiler(Optimizer):
             Path or URI where compiled model will be saved.
         backend : str
             Backend on which the model will be executed.
-        modelframework : str
+        model_framework : str
             Framework of the input model.
         compiler_args : List[str]
             Additional arguments for the compiler. Every options should be in a
@@ -171,8 +171,8 @@ class IREECompiler(Optimizer):
             listed by running 'iree-compile -h'.
         """
 
-        self.modelframework = modelframework
-        self.set_input_type(modelframework)
+        self.model_framework = model_framework
+        self.set_input_type(model_framework)
         self.backend = backend
         self.compiler_args = compiler_args
 
@@ -184,12 +184,15 @@ class IREECompiler(Optimizer):
         else:
             self.parsed_compiler_args = []
 
-        if modelframework in ("keras", "tf"):
-            self.compiler_input_type = "mhlo"
-        elif modelframework == "tflite":
-            self.compiler_input_type = "tosa"
+        if model_framework in ('keras', 'tf'):
+            self.compiler_input_type = 'mhlo'
+        elif model_framework == 'tflite':
+            self.compiler_input_type = 'tosa'
 
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path
+        )
 
     def compile(
             self,

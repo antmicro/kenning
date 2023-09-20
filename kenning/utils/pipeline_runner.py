@@ -6,366 +6,127 @@
 Module with pipelines running helper functions.
 """
 
-import os
-import tempfile
 from pathlib import Path
+import tempfile
 
-from typing import Optional, Dict, Tuple, List, Union
+from typing import Optional, Dict, List, Union
+
+from tqdm import tqdm
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
+from kenning.core.protocol import RequestFailure, Protocol, check_request
+from kenning.runtimes.renode import RenodeRuntime
 
-from kenning.utils.class_loader import load_class, get_all_subclasses
+from kenning.utils.class_loader import any_from_json
 from kenning.utils.args_manager import serialize_inference
 import kenning.utils.logger as logger
-from kenning.core.measurements import MeasurementsCollector
+from kenning.core.measurements import (
+    Measurements,
+    MeasurementsCollector,
+    systemstatsmeasurements,
+    tagmeasurements
+)
+from kenning.utils.resource_manager import PathOrURI
 
 UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
 
 
-def assert_io_formats(
-        model: Optional[ModelWrapper],
-        optimizers: Union[List[Optimizer], Optimizer],
-        runtime: Optional[Runtime]):
-    """
-    Asserts that given blocks can be put together in a pipeline.
-
-    Parameters
-    ----------
-    model : Optional[ModelWrapper]
-        ModelWrapper of the pipeline.
-    optimizers : Union[List[Optimizer], Optimizer]
-        Optimizers of the pipeline.
-    runtime : Optional[Runtime]
-        Runtime of the pipeline.
-
-    Raises
-    ------
-    ValueError :
-        Raised if blocks are incompatible.
-    """
-    if isinstance(optimizers, Optimizer):
-        optimizers = [optimizers]
-
-    chain = [model] + optimizers + [runtime]
-    chain = [block for block in chain if block is not None]
-
-    for previous_block, next_block in zip(chain, chain[1:]):
-        check_model_type = getattr(next_block, 'consult_model_type', None)
-        if callable(check_model_type):
-            check_model_type(previous_block)
-            continue
-        elif (set(next_block.get_input_formats()) &
-                set(previous_block.get_output_formats())):
-            continue
-
-        if next_block == runtime:
-            log = logger.get_logger()
-            log.warning(
-                f'Runtime {next_block} has no matching format with the '
-                f'previous block: {previous_block}\nModel may not run '
-                'correctly'
-            )
-            continue
-
-        output_formats_str = ', '.join(previous_block.get_output_formats())
-        input_formats_str = ', '.join(previous_block.get_output_formats())
-        raise ValueError(
-            f'No matching formats between two objects: {previous_block} and '
-            f'{next_block}\n'
-            f'Output block supported formats: {output_formats_str}\n'
-            f'Input block supported formats: {input_formats_str}'
-        )
-
-
-def parse_json_pipeline(
-    json_cfg: Dict,
-    assert_integrity: bool = True,
-    skip_optimizers: bool = False,
-    skip_runtime: bool = False,
-) -> Tuple:
-    """
-    Method that parses a json configuration of an inference pipeline.
-
-    It also checks whether the pipeline is correct in terms of connected
-    blocks if `assert_integrity` is set to true.
-
-    Can be used to check whether blocks' parameters
-    and the order of the blocks are correct.
-
-    Parameters
-    ----------
-    json_cfg : Dict
-        Configuration of the inference pipeline.
-    assert_integrity : bool
-        States whether integrity of connected blocks should be checked.
-    skip_optimizers : bool
-        States whether optimizers should be created
-    skip_runtime : bool
-        States whether runtime should be created
-
-    Returns
-    -------
-    Tuple :
-        Tuple that consists of (Dataset, Model, List[Optimizer],
-        Optional[Runtime], Optional[RuntimeProtocol], Optional[str])
-        It can be used to run a pipeline using `run_pipeline` function.
-
-    Raises
-    ------
-    ValueError :
-        Raised if blocks are connected incorrectly.
-    jsonschema.exceptions.ValidationError :
-        Raised if parameters are incorrect.
-    """
-    modelwrappercfg = json_cfg['model_wrapper']
-    datasetcfg = json_cfg['dataset'] if 'dataset' in json_cfg else None
-    runtimecfg = (
-        json_cfg['runtime']
-        if 'runtime' in json_cfg and not skip_runtime else None
-    )
-    optimizerscfg = (
-        json_cfg['optimizers']
-        if 'optimizers' in json_cfg and not skip_optimizers else []
-    )
-    protocolcfg = (
-        json_cfg['runtime_protocol']
-        if 'runtime_protocol' in json_cfg else None
-    )
-    try:
-        last_compiled_model_path = \
-            json_cfg['optimizers'][-1]['parameters']['compiled_model_path']
-    except (KeyError, IndexError):
-        last_compiled_model_path = None
-
-    modelwrappercls = load_class(modelwrappercfg['type'])
-    datasetcls = load_class(datasetcfg['type']) if datasetcfg else None
-    optimizerscls = [load_class(cfg['type']) for cfg in optimizerscfg]
-    protocolcls = (
-        load_class(protocolcfg['type'])
-        if protocolcfg else None
-    )
-    runtimecls = (
-        load_class(runtimecfg['type'])
-        if runtimecfg else None
-    )
-    dataset = (
-        datasetcls.from_json(datasetcfg['parameters'])
-        if datasetcls else None
-    )
-    model = modelwrappercls.from_json(dataset, modelwrappercfg['parameters'])
-    optimizers = [
-        cls.from_json(dataset, cfg['parameters'])
-        for cfg, cls in zip(optimizerscfg, optimizerscls)
-    ]
-    protocol = (
-        protocolcls.from_json(protocolcfg['parameters'])
-        if protocolcls else None
-    )
-    runtime = (
-        runtimecls.from_json(protocol, runtimecfg['parameters'])
-        if runtimecls else None
-    )
-    model_name = modelwrappercfg['parameters']['model_name'] \
-        if 'model_name' in modelwrappercfg['parameters'] else None
-
-    if assert_integrity:
-        assert_io_formats(model, optimizers, runtime)
-    return (
-        dataset, model, optimizers, runtime, protocol,
-        model_name, last_compiled_model_path
-    )
-
-
-def run_pipeline_json(
-        json_cfg: Dict,
-        output: Optional[Path],
-        verbosity: str = 'INFO',
-        convert_to_onnx: Optional[Path] = None,
-        command: List = ['Run in a different environment'],
-        run_optimizations: bool = True,
-        run_benchmarks: bool = True,
-        evaluate_unoptimized: bool = False,
-) -> int:
-    """
-    Simple wrapper for `run_pipeline` method that parses `json_cfg` argument,
-    asserts its integrity and then runs the pipeline with given parameters.
-
-    Parameters
-    ----------
-    json_cfg : dict
-        Configuration of the inference pipeline.
-    output : Optional[Path]
-        Path to the output JSON file with measurements.
-    verbosity : Optional[str]
-        Verbosity level.
-    convert_to_onnx : Optional[Path]
-        Before compiling the model, convert it to ONNX and use in the inference
-        (provide a path to save here).
-    command : Optional[List]
-        Command used to run this inference pipeline. It is put in
-        the output JSON file.
-    run_optimizations : bool
-        If False, optimizations will not be executed.
-    run_benchmarks : bool
-        If False, model will not be tested.
-    evaluate_unoptimized : bool
-        Defines if unoptimized model should be tested.
-
-    Returns
-    -------
-    int :
-        The 0 value if the inference was successful, 1 otherwise.
-
-    Raises
-    ------
-    ValueError :
-        Raised if blocks are connected incorrectly.
-    jsonschema.exceptions.ValidationError :
-        Raised if parameters are incorrect.
-    """
-    (
-        dataset, model, optimizers, runtime, protocol,
-        model_name, last_compiled_model_path
-    ) = parse_json_pipeline(
-            json_cfg, skip_optimizers=not run_optimizations,
-            skip_runtime=not run_benchmarks
-        )
-    return run_pipeline(
-        dataset,
-        model,
-        optimizers,
-        runtime,
-        protocol,
-        last_compiled_model_path,
-        output,
-        verbosity,
-        convert_to_onnx,
-        command,
-        run_optimizations and optimizers,
-        run_benchmarks and dataset,
-        model_name,
-        evaluate_unoptimized,
-    )
-
-
-def mark_measurements_unoptimized():
-    """
-    Marks current measurements as unoptimized
-    """
-    unoptimized = MeasurementsCollector.measurements.copy()
-    MeasurementsCollector.clear()
-    MeasurementsCollector.measurements += {
-        UNOPTIMIZED_MEASUREMENTS: unoptimized
-    }
-
-
-def test_unoptimized(
-    dataset,
-    model,
-    protocol,
-    log: logger.logging.Logger,
-    verbosity: str = 'INFO',
-    model_name: Optional[str] = None,
-):
-    """
-    Evaluates unoptimized model.
-
-    If model's framework does not have dedicated runtime class
-    default test_inference is used, otherwise runtime is created.
-
-    Parameters
-    ----------
-    dataset : Dataset
-        Dataset to use in inference.
-    model : ModelWrapper
-        ModelWrapper to use in inference.
-    protocol : RuntimeProtocol
-        RuntimeProtocol to use in inference.
-    log : logging.Logger
-        Logger for printing messages.
-    verbosity : str
-        Verbosity of the evaluation process.
-    model_name: Optional[str]:
-        Custom name of the model.
-    """
-    try:
-        run_pipeline(
-            dataset,
-            model,
-            [],
-            None,
-            protocol,
-            last_compiled_model_path=None,
-            output=os.devnull,
-            verbosity=verbosity,
-            convert_to_onnx=None,
-            command=[],
-            run_optimizations=False,
-            run_benchmarks=True,
-            model_name='unoptimized_' + model_name if model_name else None,
-            evaluate_unoptimized=False,
-        )
-    except NotImplementedError:
-        log.warn("Model's run_inference is not implemented")
-        MeasurementsCollector.clear()
-    else:
-        mark_measurements_unoptimized()
-        return True
-
-    framework = model.get_framework_and_version()[0]
-    runtime = None
-    runtime_classes = get_all_subclasses(
-        'kenning.runtimes',
-        Runtime,
-        raise_exception=False,
-        import_classes=True,
-        show_warnings=False
-    )
-    # Get first available Runtime with matching inputtype
-    runtime_cls = next(
-        filter(lambda _cls: framework in _cls.inputtypes, runtime_classes),
-        None
-    )
-    # Initialize Runtime
-    if runtime_cls:
-        with tempfile.TemporaryFile() as tmpfile:
-            runtime = runtime_cls(
-                protocol,
-                model.get_path() if not protocol else tmpfile,
-                disable_performance_measurements=False,
-            )
-    if not runtime:
-        log.error(f'Unoptimized {model.__class__.__name__} cannot be tested, there is no Runtime for used framework')  # noqa: E501
-        return False
-    if 0 != run_pipeline(
-        dataset,
-        model,
-        [],
-        runtime,
-        protocol,
-        last_compiled_model_path=None,
-        output=os.devnull,
-        verbosity=verbosity,
-        convert_to_onnx=None,
-        command=[],
-        run_optimizations=False,
-        run_benchmarks=True,
-        model_name='unoptimized_' + model_name if model_name else None,
-        evaluate_unoptimized=False,
+class PipelineRunner(object):
+    def __init__(
+        self,
+        dataset: Dataset,
+        model_wrapper: ModelWrapper,
+        optimizers: List[Optimizer],
+        runtime: Runtime,
+        protocol: Optional[Protocol] = None,
     ):
-        log.error('Testing unoptimized model failed')
-    mark_measurements_unoptimized()
-    return True
+        self.dataset = dataset
+        self.model_wrapper = model_wrapper
+        self.optimizers = optimizers
+        self.runtime = runtime
+        self.protocol = protocol
 
+    @classmethod
+    def from_json_cfg(
+        cls,
+        json_cfg: Dict,
+        assert_integrity: bool = True,
+        skip_optimizers: bool = False,
+        skip_runtime: bool = False,
+    )-> 'PipelineRunner':
+        """
+        Method that parses a json configuration of an inference pipeline.
 
-def run_pipeline(
-        dataset,
-        model,
-        optimizers,
-        runtime,
-        protocol,
-        last_compiled_model_path: Optional[Path] = None,
+        It also checks whether the pipeline is correct in terms of connected
+        blocks if `assert_integrity` is set to true.
+
+        Can be used to check whether blocks' parameters and the order of the
+        blocks are correct.
+
+        Parameters
+        ----------
+        json_cfg : Dict
+            Configuration of the inference pipeline.
+        assert_integrity : bool
+            States whether integrity of connected blocks should be checked.
+        skip_optimizers : bool
+            States whether optimizers should be created.
+        skip_runtime : bool
+            States whether runtime should be created.
+
+        Returns
+        -------
+        PipelineRunner :
+            PipelineRunner created from provided JSON config.
+
+        Raises
+        ------
+        ValueError :
+            Raised if blocks are connected incorrectly.
+        jsonschema.exceptions.ValidationError :
+            Raised if parameters are incorrect.
+        """
+        assert 'model_wrapper' in json_cfg, 'ModelWrapper not provided'
+        assert 'runtime' in json_cfg, 'Runtime not provided'
+
+        dataset = (
+            any_from_json(json_cfg['dataset'])
+            if 'dataset' in json_cfg else None
+        )
+        model_wrapper = (
+            any_from_json(json_cfg['model_wrapper'], dataset=dataset)
+        )
+        optimizers = (
+            [
+                any_from_json(optimizer_cfg, dataset=dataset)
+                for optimizer_cfg in json_cfg.get('optimizers', [])
+            ]
+            if not skip_optimizers else None
+        )
+        runtime = (
+            any_from_json(json_cfg['runtime'])
+            if not skip_runtime else None
+        )
+        protocol = (
+            any_from_json(json_cfg['protocol'])
+            if 'protocol' in json_cfg else None
+        )
+
+        if assert_integrity:
+            cls.assert_io_formats(model_wrapper, optimizers, runtime)
+
+        return cls(
+            dataset=dataset,
+            model_wrapper=model_wrapper,
+            optimizers=optimizers,
+            runtime=runtime,
+            protocol=protocol
+        )
+
+    def run(
+        self,
         output: Optional[Path] = None,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
@@ -373,187 +134,422 @@ def run_pipeline(
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
         model_name: Optional[str] = None,
-        evaluate_unoptimized: bool = False,
-) -> int:
-    """
-    Wrapper function that runs a pipeline using given parameters.
+    ) -> int:
+        """
+        Wrapper function that runs a pipeline using given parameters.
 
-    Parameters
-    ----------
-    dataset : Dataset
-        Dataset to use in inference.
-    model : ModelWrapper
-        ModelWrapper to use in inference.
-    optimizers : List[Optimizer]
-        Optimizers to use in inference.
-    runtime : Runtime
-        Runtime to use in inference.
-    protocol : RuntimeProtocol
-        RuntimeProtocol to use in inference.
-    last_compiled_model_path : Optional[Path]
-        Model path from last optimizer
-    output : Optional[Path]
-        Path to the output JSON file with measurements.
-    verbosity : Optional[str]
-        Verbosity level.
-    convert_to_onnx : Optional[Path]
-        Before compiling the model, convert it to ONNX and use
-        in the inference (provide a path to save here).
-    command : Optional[List]
-        Command used to run this inference pipeline. It is put in
-        the output JSON file.
-    run_optimizations : bool
-        If False, optimizations will not be executed.
-    run_benchmarks : bool
-        If False, model will not be tested.
-    model_name : Optional[str]
-        Custom name of the model.
-    evaluate_unoptimized : bool
-        Defines if unoptimized model should be tested.
+        Parameters
+        ----------
+        output : Optional[Path]
+            Path to the output JSON file with measurements.
+        verbosity : Optional[str]
+            Verbosity level.
+        convert_to_onnx : Optional[Path]
+            Before compiling the model, convert it to ONNX and use
+            in the inference (provide a path to save here).
+        command : Optional[List]
+            Command used to run this inference pipeline. It is put in
+            the output JSON file.
+        run_optimizations : bool
+            If False, optimizations will not be executed.
+        run_benchmarks : bool
+            If False, model will not be tested.
+        model_name : Optional[str]
+            Custom name of the model.
 
-    Returns
-    -------
-    int :
-        The 0 value if the inference was successful, 1 otherwise.
+        Returns
+        -------
+        int :
+            The 0 value if the inference was successful, 1 otherwise.
 
-    Raises
-    ------
-    ValueError :
-        Raised if blocks are connected incorrectly.
-    jsonschema.exceptions.ValidationError :
-        Raised if parameters are incorrect.
-    """
-    assert run_optimizations or run_benchmarks, (
-        'If both optimizations and benchmarks are skipped, pipeline will not '
-        'be executed'
-    )
-    logger.set_verbosity(verbosity)
-    log = logger.get_logger()
+        Raises
+        ------
+        ValueError :
+            Raised if blocks are connected incorrectly.
+        jsonschema.exceptions.ValidationError :
+            Raised if parameters are incorrect.
+        """
+        assert run_optimizations or run_benchmarks, (
+            'If both optimizations and benchmarks are skipped, pipeline will '
+            'not be executed'
+        )
+        logger.set_verbosity(verbosity)
+        log = logger.get_logger()
 
-    assert_io_formats(model, optimizers, runtime)
-
-    if evaluate_unoptimized and optimizers:
-        log.info("Evaluating unoptimized model")
-        if not test_unoptimized(
-            dataset,
-            model,
-            protocol,
-            log,
-            verbosity,
-            model_name
-        ):
-            return 1
-
-    modelframeworktuple = model.get_framework_and_version()
-
-    if run_benchmarks and not output:
-        log.warning(
-            'Running benchmarks without defined output -- measurements will '
-            'not be saved'
+        self.assert_io_formats(
+            self.model_wrapper,
+            self.optimizers,
+            self.runtime
         )
 
-    if output:
-        MeasurementsCollector.measurements += {
-            'model_framework': modelframeworktuple[0],
-            'model_version': modelframeworktuple[1],
-            'optimizers': [
-                {
-                    'compiler_framework':
-                        optimizer.get_framework_and_version()[0],
-                    'compiler_version':
-                        optimizer.get_framework_and_version()[1],
-                }
-                for optimizer in optimizers
-            ],
-            'command': command,
-            'build_cfg': serialize_inference(
-                dataset,
-                model,
-                optimizers,
-                protocol,
-                runtime
-            ),
-        }
-        if model_name is not None:
-            MeasurementsCollector.measurements += {"model_name": model_name}
+        model_framework_tuple = self.model_wrapper.get_framework_and_version()
 
-        # TODO add method for providing metadata to dataset
-        if hasattr(dataset, 'classnames'):
+        if run_benchmarks and not output:
+            log.warning(
+                'Running benchmarks without defined output -- measurements '
+                'will not be saved'
+            )
+
+        if output:
             MeasurementsCollector.measurements += {
-                'class_names': [val for val in dataset.get_class_names()]
+                'model_framework': model_framework_tuple[0],
+                'model_version': model_framework_tuple[1],
+                'optimizers': [
+                    dict(zip(
+                        ('compiler_framework', 'compiler_version'),
+                        optimizer.get_framework_and_version()
+                    ))
+                    for optimizer in self.optimizers
+                ],
+                'command': command,
+                'build_cfg': serialize_inference(
+                    self.dataset,
+                    self.model_wrapper,
+                    self.optimizers,
+                    self.protocol,
+                    self.runtime
+                ),
+            }
+            if model_name is not None:
+                MeasurementsCollector.measurements += {
+                    'model_name': model_name
+                }
+
+            # TODO add method for providing metadata to dataset
+            if hasattr(self.dataset, 'classnames'):
+                MeasurementsCollector.measurements += {
+                    'class_names': self.dataset.get_class_names()
+                }
+
+        if len(self.optimizers) > 0:
+            model_path = self.optimizers[-1].compiled_model_path
+        else:
+            model_path = self.model_wrapper.get_path()
+
+        ret = True
+        if isinstance(self.runtime, RenodeRuntime):
+            compiled_model_path = self.handle_optimizations(convert_to_onnx)
+            self.runtime.run_client(
+                dataset=self.dataset,
+                modelwrapper=self.model_wrapper,
+                protocol=self.protocol,
+                compiled_model_path=compiled_model_path
+            )
+        elif run_benchmarks and self.runtime:
+            if not self.dataset:
+                log.error(
+                    'The benchmarks cannot be performed without a dataset'
+                )
+                ret = False
+            elif self.protocol:
+                ret = self._run_client(convert_to_onnx)
+            else:
+                ret = self._run_locally(convert_to_onnx)
+        elif run_benchmarks:
+            self.model_wrapper.model_path = model_path
+            self.model_wrapper.test_inference()
+            ret = True
+
+        if not ret:
+            return 1
+
+        if output:
+            model_path = Path(model_path)
+            # If model compressed in ZIP exists use its size
+            # It is more accurate for Keras models
+            if model_path.with_suffix('.zip').exists():
+                model_path = model_path.with_suffix('.zip')
+
+            MeasurementsCollector.measurements += {
+                'compiled_model_size': model_path.stat().st_size
             }
 
-    model_path = model.get_path()
+            MeasurementsCollector.save_measurements(output)
+        return 0
 
-    if run_optimizations:
-        prev_block = model
+    def upload_essentials(self, compiled_model_path: PathOrURI) -> bool:
+        """
+        Wrapper for uploading data to the server.
+        Uploads model by default.
+
+        Parameters
+        ----------
+        compiled_model_path : PathOrURI
+            Path or URI to the file with a compiled model.
+
+        Returns
+        -------
+        bool :
+            True if succeeded.
+        """
+        spec_path = self.runtime.get_io_spec_path(compiled_model_path)
+        if spec_path.exists():
+            self.protocol.upload_io_specification(spec_path)
+        else:
+            logger.get_logger().info('No Input/Output specification found')
+        return self.protocol.upload_model(compiled_model_path)
+
+    def handle_optimizations(
+        self,
+        convert_to_onnx: Optional[Path] = None
+    ) -> Path:
+        """
+        Handle model optimization.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset to be used by optimizers.
+        model_wrapper : ModelWrapper
+            Model for optimizations.
+        optimizers : List[Optimizer]
+            List of optimizer for model optimization.
+        convert_to_onnx : Optional[Path]
+            Before compiling the model, convert it to ONNX and use in the
+            inference (provide a path to save here).
+
+        Returns
+        -------
+        Path :
+            Path to compiled model.
+
+        Raises
+        ------
+        RuntimeError :
+            When any of the server request fails.
+        """
+        model_path = self.model_wrapper.get_path()
+
+        prev_block = self.model_wrapper
         if convert_to_onnx:
-            log.warning(
+            logger.get_logger().warning(
                 'Force conversion of the input model to the ONNX format'
             )
             model_path = convert_to_onnx
             prev_block.save_to_onnx(model_path)
 
-        for i in range(len(optimizers)):
-            next_block = optimizers[i]
+        optimizer_idx = 0
+        while optimizer_idx < len(self.optimizers):
+            next_block = self.optimizers[optimizer_idx]
 
-            log.info(f'Processing block:  {type(next_block).__name__}')
-
-            format = next_block.consult_model_type(
+            model_type = next_block.consult_model_type(
                 prev_block,
-                force_onnx=(convert_to_onnx and prev_block == model)
+                force_onnx=(
+                    convert_to_onnx is not None and
+                    isinstance(prev_block, ModelWrapper)
+                )
             )
 
-            if (format == 'onnx' and prev_block == model) and \
-                    not convert_to_onnx:
+            if (
+                model_type == 'onnx' and
+                isinstance(prev_block, ModelWrapper) and
+                not convert_to_onnx
+            ):
                 model_path = Path(tempfile.NamedTemporaryFile().name)
                 prev_block.save_to_onnx(model_path)
 
             prev_block.save_io_specification(model_path)
-            next_block.set_input_type(format)
-            next_block.compile(model_path)
-            del prev_block
+
+            logger.get_logger().info(
+                f'Processing block: {type(next_block).__name__}'
+            )
+
+            next_block.set_input_type(model_type)
+            if hasattr(prev_block, 'get_io_specification'):
+                next_block.compile(
+                    model_path,
+                    prev_block.get_io_specification()
+                )
+            else:
+                next_block.compile(model_path)
 
             prev_block = next_block
+            optimizer_idx += 1
+
             model_path = prev_block.compiled_model_path
 
-        del next_block
-        if not optimizers:
-            model.save_io_specification(model_path)
-    else:
-        if last_compiled_model_path:
-            model_path = last_compiled_model_path
-        elif runtime:
-            model_path = runtime.model_path
-            model.save_io_specification(model_path)
+        if not self.optimizers:
+            self.model_wrapper.save_io_specification(model_path)
 
-    ret = True
-    if run_benchmarks and runtime:
-        if not dataset:
-            log.error('The benchmarks cannot be performed without a dataset')
-            ret = False
-        elif protocol:
-            ret = runtime.run_client(dataset, model, model_path)
+        logger.get_logger().info(f'Compiled model path: {model_path}')
+        return model_path
+
+    def _run_client(self, convert_to_onnx: Optional[Path] = None) -> bool:
+        """
+        Main runtime client program.
+
+        The client performance procedure is as follows:
+
+        * connect with the server
+        * run model optimizations
+        * upload the model
+        * send dataset data in a loop to the server:
+
+            * upload input
+            * request processing of inputs
+            * request predictions for inputs
+            * evaluate the response
+        * collect performance statistics
+        * end connection
+
+        Parameters
+        ----------
+        convert_to_onnx : Optional[Path]
+            Before compiling the model, convert it to ONNX and use in the
+            inference (provide a path to save here).
+
+        Returns
+        -------
+        bool :
+            True if executed successfully.
+        """
+
+        check_request(self.protocol.initialize_client(), 'prepare client')
+
+        compiled_model_path = self.handle_optimizations(convert_to_onnx)
+
+        if self.protocol is None:
+            raise RequestFailure('Protocol is not provided')
+        try:
+            check_request(
+                self.upload_essentials(compiled_model_path),
+                'upload essentials',
+            )
+            measurements = Measurements()
+            for X, y in tqdm(self.dataset.iter_test()):
+                prepX = tagmeasurements("preprocessing")(
+                    self.model_wrapper._preprocess_input
+                )(
+                    X
+                )  # noqa: 501
+                prepX = self.model_wrapper.convert_input_to_bytes(prepX)
+                check_request(self.protocol.upload_input(prepX), 'send input')
+                check_request(
+                    self.protocol.request_processing(self.runtime.get_time),
+                    'inference',
+                )
+                _, preds = check_request(
+                    self.protocol.download_output(), 'receive output'
+                )
+                logger.get_logger().debug(
+                    f'Received output ({len(preds)} bytes)'
+                )
+                preds = self.model_wrapper.convert_output_from_bytes(preds)
+                posty = tagmeasurements("postprocessing")(
+                    self.model_wrapper._postprocess_outputs
+                )(
+                    preds
+                )  # noqa: 501
+                measurements += self.dataset.evaluate(posty, y)
+
+            measurements += self.protocol.download_statistics()
+        except RequestFailure as ex:
+            logger.get_logger().fatal(ex)
+            return False
         else:
-            ret = runtime.run_locally(dataset, model, model_path)
-    elif run_benchmarks:
-        model.model_path = model_path
-        model.test_inference()
-        ret = True
+            MeasurementsCollector.measurements += measurements
 
-    if not ret:
-        return 1
+        self.protocol.disconnect()
+        return True
 
-    if output:
-        model_path = Path(model_path)
-        # If model compressed in ZIP exists use its size
-        # It is more accurate for Keras models
-        if model_path.with_suffix('.zip').exists():
-            model_path = model_path.with_suffix('.zip')
+    @systemstatsmeasurements('full_run_statistics')
+    def _run_locally(self, convert_to_onnx: Optional[Path] = None) -> bool:
+        """
+        Runs inference locally.
 
-        MeasurementsCollector.measurements += {
-            'compiled_model_size': model_path.stat().st_size
-        }
+        Parameters
+        ----------
+        convert_to_onnx : Optional[Path]
+            Before compiling the model, convert it to ONNX and use in the
+            inference (provide a path to save here).
 
-        MeasurementsCollector.save_measurements(output)
-    return 0
+        Returns
+        -------
+        bool :
+            True if executed successfully.
+        """
+        self.model_path = self.handle_optimizations(convert_to_onnx)
+
+        measurements = Measurements()
+        try:
+            self.runtime.inference_session_start()
+            self.runtime.prepare_local()
+            for X, y in logger.TqdmCallback(
+                'runtime', self.dataset.iter_test()
+            ):
+                prepX = tagmeasurements("preprocessing")(
+                    self.model_wrapper._preprocess_input
+                )(X)
+                prepX = self.model_wrapper.convert_input_to_bytes(prepX)
+                succeed = self.runtime.prepare_input(prepX)
+                if not succeed:
+                    return False
+                self.runtime._run()
+                preds = self.runtime.extract_output()
+                posty = tagmeasurements("postprocessing")(
+                    self.model_wrapper._postprocess_outputs
+                )(preds)
+                measurements += self.dataset.evaluate(posty, y)
+        except KeyboardInterrupt:
+            logger.get_logger().info("Stopping benchmark...")
+            return False
+        finally:
+            self.runtime.inference_session_end()
+            MeasurementsCollector.measurements += measurements
+
+        return True
+
+    @staticmethod
+    def assert_io_formats(
+            model_wrapper: Optional[ModelWrapper],
+            optimizers: Union[List[Optimizer], Optimizer],
+            runtime: Optional[Runtime]):
+        """
+        Asserts that given blocks can be put together in a pipeline.
+
+        Parameters
+        ----------
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper of the pipeline.
+        optimizers : Union[List[Optimizer], Optimizer]
+            Optimizers of the pipeline.
+        runtime : Optional[Runtime]
+            Runtime of the pipeline.
+
+        Raises
+        ------
+        ValueError :
+            Raised if blocks are incompatible.
+        """
+        if isinstance(optimizers, Optimizer):
+            optimizers = [optimizers]
+
+        chain = [model_wrapper] + optimizers + [runtime]
+        chain = [block for block in chain if block is not None]
+
+        for previous_block, next_block in zip(chain, chain[1:]):
+            check_model_type = getattr(next_block, 'consult_model_type', None)
+            if callable(check_model_type):
+                check_model_type(previous_block)
+                continue
+            elif (set(next_block.get_input_formats()) &
+                    set(previous_block.get_output_formats())):
+                continue
+
+            if next_block == runtime:
+                log = logger.get_logger()
+                log.warning(
+                    f'Runtime {next_block} has no matching format with the '
+                    f'previous block: {previous_block}\nModel may not run '
+                    'correctly'
+                )
+                continue
+
+            output_formats_str = ', '.join(previous_block.get_output_formats())
+            input_formats_str = ', '.join(previous_block.get_output_formats())
+            raise ValueError(
+                f'No matching formats between two objects: {previous_block} '
+                f'and {next_block}\n'
+                f'Output block supported formats: {output_formats_str}\n'
+                f'Input block supported formats: {input_formats_str}'
+            )

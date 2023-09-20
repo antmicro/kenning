@@ -38,8 +38,8 @@
             "driver": "local-task"
         }
     },
-    "runtime_protocol": {
-        "type": "kenning.runtimeprotocols.uart.UARTProtocol",
+    "protocol": {
+        "type": "kenning.protocols.uart.UARTProtocol",
         "parameters": {
             "port": "/tmp/uart",
             "baudrate": 115200,

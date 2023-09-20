@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/jetson-agx-xavier-tvm-tensorflow.json \
     --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "nvidia/jetson-agx-xavier" \

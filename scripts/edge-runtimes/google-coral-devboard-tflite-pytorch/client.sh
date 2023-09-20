@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/google-coral-devboard-tflite-pytorch.json \
     --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \
     --model-framework onnx \

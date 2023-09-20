@@ -10,7 +10,7 @@ python -m kenning.scenarios.inference_tester \
     --measurements ./build/jetson-agx-xavier-tvm-pytorch.json \
     --compiler-cls kenning.optimizers.tvm.TVMCompiler \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth \
     --convert-to-onnx ./build/pytorch_pet_dataset_mobilenetv2.onnx \
     --target "cuda -keys=cuda,gpu -libs=cudnn,cublas -arch=sm_72 -max_num_threads=1024 -max_threads_per_block=1024 -registers_per_block=65536 -shared_memory_per_block=49152 -thread_warp_size=32" \

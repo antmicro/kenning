@@ -288,45 +288,48 @@ class NNIPruningOptimizer(Optimizer):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used to prune and fie-tune model
+            Dataset used to prune and fine-tune model.
         compiled_model_path: PathOrURI
-            Path or URI where compiled model will be saved
+            Path or URI where compiled model will be saved.
         pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
-            or ActivationMeanRankPruner
+            or ActivationMeanRankPruner.
         config_list : List[Dict]
             List of objects in JSON format, containing
             pruning specification, for more information please see
-            NNI documentation - Compression Config Specification
+            NNI documentation - Compression Config Specification.
         training_steps : int
-            The step number used to collect activation
+            The step number used to collect activation.
         mode : str
-            'normal' or 'dependency_aware' - to select pruner mode
+            'normal' or 'dependency_aware' - to select pruner mode.
         criterion : str
-            Path to class calculating loss
+            Path to class calculating loss.
         optimizer : str
-            Path to optimizer class
+            Path to optimizer class.
         finetuning_learning_rate : float
-            Learning rate for fine-tuning
+            Learning rate for fine-tuning.
         finetuning_batch_size : int
-            Batch size for fine-tuning
+            Batch size for fine-tuning.
         activation : str
             'relu', 'gelu' or 'relu6' - to select activation function
-            used by pruner
+            used by pruner.
         model_framework : str
-            Framework of the input model, used to select proper backend
+            Framework of the input model, used to select proper backend.
         finetuning_epochs: int
-            Number of epoch used for fine-tuning model
+            Number of epoch used for fine-tuning model.
         confidence : int | None
             The confidence coefficient of the sparsity inference, actually
             used as batch size for NNI model speedup. If not specified, equals
-            finetuning_batch_size
+            finetuning_batch_size.
         pruning_on_cuda : bool
-            Allow using GPU CUDA for pruning
+            Allow using GPU CUDA for pruning.
         exclude_last_layer : bool
-            Condition for excluding last linear layer from pruning
+            Condition for excluding last linear layer from pruning.
         """
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path
+        )
 
         self.criterion_modulepath = criterion
         self.optimizer_modulepath = optimizer
@@ -753,24 +756,3 @@ class NNIPruningOptimizer(Optimizer):
 
     def get_framework_and_version(self):
         return ("torch", torch.__version__)
-
-    @classmethod
-    def from_argparse(cls, dataset, args):
-        return cls(
-            dataset,
-            args.compiled_model_path,
-            args.pruner_type,
-            args.config_list,
-            args.training_steps,
-            args.mode,
-            args.criterion,
-            args.optimizer,
-            args.finetuning_learning_rate,
-            args.finetuning_batch_size,
-            args.activation,
-            args.model_framework,
-            args.finetuning_epochs,
-            args.confidence,
-            args.pruning_on_cuda,
-            args.exclude_last_layer,
-        )

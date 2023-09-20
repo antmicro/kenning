@@ -15,7 +15,7 @@ The root element of the JSON file is a dictionary that can have the following ke
 * `model_wrapper` - **mandatory field**, accepts dictionary as a value that defines the [](modelwrapper-api) object for the deployed model (provides I/O processing, optionally model).
 * `dataset` - **mandatory field**, accepts dictionary as a value that defines the [](dataset-api) object for model optimization and evaluation.
 * `optimizers` - *optional field*, accepts a list of dictionaries specifying the sequence of [](optimizer-api)-based optimizations applied to the model.
-* `runtime_protocol` - *optional field*, defines the [](runtimeprotocol-api) object used to communicate with a remote target platform.
+* `protocol` - *optional field*, defines the [](protocol-api) object used to communicate with a remote target platform.
 * `runtime` - *optional field* (**required** when `optimizers` are provided), defines the [](runtime-api)-based object that will infer the model on target device.
 
 Each dictionary in the fields above consists of:
@@ -243,14 +243,14 @@ python -m kenning.scenarios.inference_tester --json-cfg scenario.json --measurem
 
 For some platforms, we cannot run a Python script to evaluate or run the model to check its quality - the dataset is too large to fit in the storage, no libraries or compilation tools are available for the target platform, or the device does not have an operating system to run Python on.
 
-In such cases, it is possible to evaluate the system remotely using the [](runtimeprotocol-api) and the ``kenning.scenarios.inference_server`` scenario.
+In such cases, it is possible to evaluate the system remotely using the [](protocol-api) and the ``kenning.scenarios.inference_server`` scenario.
 
 For this use case, we need two JSON files - one for inference server configuration, and another one for the ``kenning.scenarios.inference_tester`` configuration, which acts as a runtime client.
 
 The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication or other.
-It depends on the [](runtimeprotocol-api) used.
+It depends on the [](protocol-api) used.
 
-Let's start with client configuration by adding a `runtime_protocol` entry:
+Let's start with client configuration by adding a `protocol` entry:
 
 { emphasize-lines="48-57" }
 ```json
@@ -301,9 +301,9 @@ Let's start with client configuration by adding a `runtime_protocol` entry:
             "save_model_path": "./build/int8_tvm.tar"
         }
     },
-    "runtime_protocol":
+    "protocol":
     {
-        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "type": "kenning.protocols.network.NetworkProtocol",
         "parameters":
         {
             "host": "10.9.8.7",
@@ -314,7 +314,7 @@ Let's start with client configuration by adding a `runtime_protocol` entry:
 }
 ```
 
-In the `runtime_protocol` entry, we specify a `kenning.runtimeprotocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
+In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
 The `runtime` block is still needed to perform runtime-specific data preprocessing and postprocessing in the client application (the server only infers data).
 
 The server configuration looks as follows:
@@ -329,9 +329,9 @@ The server configuration looks as follows:
             "save_model_path": "./build/compiled_model_server.tar"
         }
     },
-    "runtime_protocol":
+    "protocol":
     {
-        "type": "kenning.runtimeprotocols.network.NetworkProtocol",
+        "type": "kenning.protocols.network.NetworkProtocol",
         "parameters":
         {
             "host": "0.0.0.0",
@@ -342,8 +342,8 @@ The server configuration looks as follows:
 }
 ```
 
-Here, only `runtime` and `runtime_protocol` need to be specified.
-The server uses `runtime_protocol` to receive requests from clients and `runtime` to run the tested models.
+Here, only `runtime` and `protocol` need to be specified.
+The server uses `protocol` to receive requests from clients and `runtime` to run the tested models.
 
 The remaining things are provided by the client - input data and model.
 Direct outputs from the model are sent as is to the client, so it can postprocess them and evaluate the model using the dataset.

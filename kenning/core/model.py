@@ -16,12 +16,14 @@ from urllib.request import HTTPError
 import numpy as np
 
 from kenning.core.dataset import Dataset
-from kenning.core.measurements import (Measurements, MeasurementsCollector,
-                                       systemstatsmeasurements,
-                                       timemeasurements)
+from kenning.core.measurements import (
+    Measurements,
+    MeasurementsCollector,
+    systemstatsmeasurements,
+    timemeasurements,
+)
 from kenning.interfaces.io_interface import IOInterface
-from kenning.utils.args_manager import (ArgumentsHandler, get_parsed_args_dict,
-                                        get_parsed_json_dict)
+from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -88,10 +90,11 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
     @classmethod
     def from_argparse(
-            cls,
-            dataset: Optional[Dataset],
-            args: Namespace,
-            from_file: bool = True):
+        cls,
+        dataset: Optional[Dataset],
+        args: Namespace,
+        from_file: bool = True,
+    ) -> 'ModelWrapper':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -109,21 +112,19 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         ModelWrapper :
             Object of class ModelWrapper.
         """
-
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
+        return super().from_argparse(
+            args,
             dataset=dataset,
-            **parsed_args_dict,
             from_file=from_file
         )
 
     @classmethod
     def from_json(
-            cls,
-            dataset: Optional[Dataset],
-            json_dict: Dict,
-            from_file: bool = True):
+        cls,
+        json_dict: Dict,
+        dataset: Optional[Dataset] = None,
+        from_file: bool = True,
+    ) -> 'ModelWrapper':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -145,13 +146,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         ModelWrapper :
             Object of class ModelWrapper.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
+        return super().from_json(
+            json_dict,
             dataset=dataset,
-            **parsed_json_dict,
             from_file=from_file
         )
 

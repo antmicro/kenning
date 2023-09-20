@@ -8,31 +8,25 @@ Module providing a Runtime wrapper.
 Runtimes implement running and testing deployed models on target devices.
 """
 
-from pathlib import Path
-from typing import Optional, Dict, List, Any
+import json
+import time
 from abc import ABC
 from argparse import Namespace
-import time
-import json
+from enum import Enum
+from pathlib import Path
+from typing import Any, Dict, List, Optional
+
 import numpy as np
 
-from kenning.core.dataset import Dataset
+from kenning.core.measurements import (
+    MeasurementsCollector,
+    SystemStatsCollector,
+    tagmeasurements,
+    timemeasurements,
+)
 from kenning.core.model import ModelWrapper
-from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.core.runtimeprotocol import MessageType
-from kenning.core.runtimeprotocol import RequestFailure
-from kenning.core.runtimeprotocol import check_request
-from kenning.core.measurements import Measurements
-from kenning.core.measurements import MeasurementsCollector
-from kenning.core.runtimeprotocol import ServerStatus
-from kenning.core.measurements import timemeasurements
-from kenning.core.measurements import tagmeasurements
-from kenning.core.measurements import SystemStatsCollector
-from kenning.utils.logger import get_logger
-from kenning.core.measurements import systemstatsmeasurements
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -42,9 +36,9 @@ class ModelNotPreparedError(Exception):
     """
 
     def __init__(
-            self,
-            msg="Make sure to run `prepare_model` method before running it.",
-            *args, **kwargs
+        self,
+        msg='Make sure to run prepare_model method before running it.',
+        *args, **kwargs
     ):
         super().__init__(msg, *args, **kwargs)
 
@@ -56,19 +50,16 @@ class InputNotPreparedError(Exception):
     """
 
     def __init__(
-            self,
-            msg="Make sure to run `prepare_input` method before running the model.",  # noqa: E501
-            *args, **kwargs):
+        self,
+        msg='Make sure to run prepare_input method before running the model.',
+        *args, **kwargs
+    ):
         super().__init__(msg, *args, **kwargs)
 
 
 class Runtime(ArgumentsHandler, ABC):
     """
     Runtime object provides an API for testing inference on target devices.
-
-    Using a provided RuntimeProtocol it sets up a client (host) and server
-    (target) communication, during which the inference metrics are being
-    analyzed.
     """
 
     inputtypes = []
@@ -76,7 +67,8 @@ class Runtime(ArgumentsHandler, ABC):
     arguments_structure = {
         'disable_performance_measurements': {
             'argparse_name': '--disable-performance-measurements',
-            'description': 'Disable collection and processing of performance metrics',  # noqa: E501
+            'description': 'Disable collection and processing of performance '
+                           'metrics',
             'type': bool,
             'default': False
         }
@@ -84,41 +76,25 @@ class Runtime(ArgumentsHandler, ABC):
 
     def __init__(
             self,
-            protocol: Optional[RuntimeProtocol],
             disable_performance_measurements: bool = False):
         """
         Creates Runtime object.
 
         Parameters
         ----------
-        protocol : Optional[RuntimeProtocol]
-            The implementation of the host-target communication  protocol.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
-        self.protocol = protocol
-        self.shouldwork = True
-        self.callbacks = {
-            MessageType.DATA: self._prepare_input,
-            MessageType.MODEL: self._prepare_model,
-            MessageType.PROCESS: self.process_input,
-            MessageType.OUTPUT: self._upload_output,
-            MessageType.STATS: self._upload_stats,
-            MessageType.IOSPEC: self._prepare_io_specification
-        }
         self.statsmeasurements = None
         self.log = get_logger()
-        self.disable_performance_measurements = \
+        self.disable_performance_measurements = (
             disable_performance_measurements
-
+        )
         self.input_spec = None
         self.output_spec = None
 
     @classmethod
-    def from_argparse(
-            cls,
-            protocol: Optional[RuntimeProtocol],
-            args: Namespace):
+    def from_argparse(cls, args: Namespace) -> 'Runtime':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -134,19 +110,10 @@ class Runtime(ArgumentsHandler, ABC):
         RuntimeProtocol :
             Object of class RuntimeProtocol.
         """
-
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
-            protocol,
-            **parsed_args_dict
-        )
+        return super().from_argparse(args)
 
     @classmethod
-    def from_json(
-            cls,
-            protocol: Optional[RuntimeProtocol],
-            json_dict: Dict):
+    def from_json(cls, json_dict: Dict) -> 'Runtime':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -166,14 +133,7 @@ class Runtime(ArgumentsHandler, ABC):
         Runtime :
             Object of class Runtime.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            protocol,
-            **parsed_json_dict
-        )
+        return super().from_json(json_dict)
 
     def get_input_formats(self) -> List[str]:
         """
@@ -215,37 +175,10 @@ class Runtime(ArgumentsHandler, ABC):
         if self.statsmeasurements:
             self.statsmeasurements.stop()
             self.statsmeasurements.join()
-            MeasurementsCollector.measurements += \
+            MeasurementsCollector.measurements += (
                 self.statsmeasurements.get_measurements()
+            )
             self.statsmeasurements = None
-
-    def close_server(self):
-        """
-        Indicates that the server should be closed.
-        """
-        self.shouldwork = False
-
-    def prepare_server(self) -> bool:
-        """
-        Runs initialization of the server.
-
-        Returns
-        -------
-        bool :
-            True if succeeded.
-        """
-        return self.protocol.initialize_server()
-
-    def prepare_client(self) -> bool:
-        """
-        Runs initialization for the client.
-
-        Returns
-        -------
-        bool :
-            True if succeeded.
-        """
-        return self.protocol.initialize_client()
 
     def prepare_input(self, input_data: bytes) -> bool:
         """
@@ -271,35 +204,6 @@ class Runtime(ArgumentsHandler, ABC):
         """
         raise NotImplementedError
 
-    def _prepare_input(self, input_data: bytes):
-        if self.prepare_input(input_data):
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
-
-    def _prepare_model(self, input_data: Optional[bytes]) -> bool:
-        """
-        Internal call for preparing a model for inference task.
-
-        Parameters
-        ----------
-        input_data : Optional[bytes]
-            Model data or None, if the model should be loaded from another
-            source.
-
-        Returns
-        -------
-        bool :
-            True if succeeded.
-        """
-        self.inference_session_start()
-        ret = self.prepare_model(input_data)
-        if ret:
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
-        return ret
-
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
         """
         Receives the model to infer from the client in bytes.
@@ -323,30 +227,6 @@ class Runtime(ArgumentsHandler, ABC):
             True if succeeded.
         """
         raise NotImplementedError
-
-    def _prepare_io_specification(
-            self,
-            input_data: Optional[bytes]) -> bool:
-        """
-        Wrapper for preparing input/output specification.
-
-        Parameters
-        ----------
-        input_data : Optional[bytes]
-            Input/output specification data or None, if the data
-            should be loaded from another source.
-
-        Returns
-        -------
-        bool :
-            True if there is no data to send or if succeeded.
-        """
-        ret = self.prepare_io_specification(input_data)
-        if ret:
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
-        return ret
 
     def preprocess_input(self, input_data: bytes) -> List[np.ndarray]:
         """
@@ -379,7 +259,9 @@ class Runtime(ArgumentsHandler, ABC):
             Raised if size of input doesn't match the input specification.
         """
         if self.input_spec is None:
-            raise AttributeError("You must load the input specification first.")  # noqa: E501
+            raise AttributeError(
+                'You must load the input specification first.'
+            )
 
         is_reordered = any(['order' in spec for spec in self.input_spec])
         if is_reordered:
@@ -390,7 +272,7 @@ class Runtime(ArgumentsHandler, ABC):
             reordered_input_spec = self.input_spec
 
         if not input_data:
-            self.log.error("Received empty data payload")
+            self.log.error('Received empty data payload')
             raise ValueError('Received empty data payload')
 
         # reading input
@@ -398,18 +280,19 @@ class Runtime(ArgumentsHandler, ABC):
         for spec in reordered_input_spec:
             shape = spec['shape']
             # get original model dtype
-            dtype = (
-                spec['prequantized_dtype'] if 'prequantized_dtype' in spec
-                else spec['dtype']
-            )
+            dtype = spec.get('prequantized_dtype', spec['dtype'])
 
             expected_size = np.abs(np.prod(shape) * np.dtype(dtype).itemsize)
 
             if len(input_data) % (expected_size / shape[0]) != 0:
-                self.log.error("Received input data that is not a multiple of "
-                               "the sample size")
-                raise ValueError('Received input data that is not a multiple of ' # noqa E501
-                                 'the sample size')
+                self.log.error(
+                    'Received input data that is not a multiple of the sample '
+                    'size'
+                )
+                raise ValueError(
+                    'Received input data that is not a multiple of the sample '
+                    'size'
+                )
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
 
@@ -443,8 +326,9 @@ class Runtime(ArgumentsHandler, ABC):
 
         return reordered_inputs
 
-    def postprocess_output(self, results: List[np.ndarray]
-                           ) -> List[np.ndarray]:
+    def postprocess_output(
+        self, results: List[np.ndarray]
+    ) -> List[np.ndarray]:
         """
         The method accepts output of the model and postprocesses it.
 
@@ -470,7 +354,9 @@ class Runtime(ArgumentsHandler, ABC):
             Raised if output specification is not loaded.
         """
         if self.output_spec is None:
-            raise AttributeError("You must load the output specification first.")  # noqa: E501
+            raise AttributeError(
+                'You must load the output specification first.'
+            )
         is_reordered = any(['order' in spec for spec in self.output_spec])
 
         # dequantization/precision conversion
@@ -479,9 +365,12 @@ class Runtime(ArgumentsHandler, ABC):
                 if ('scale' not in spec) and ('zero_point' not in spec):
                     results[i] = results[i].astype(spec['prequantized_dtype'])
                 else:
-                    scale = 1.0 if 'scale' not in spec else spec['scale']
-                    zero_point = 0 if 'zero_point' not in spec else spec['zero_point']  # noqa: E501
-                    results[i] = (results[i].astype(spec['prequantized_dtype']) - zero_point) * scale  # noqa: E501
+                    scale = spec.get('scale', 1.)
+                    zero_point = spec.get('zero_point', 0.)
+                    results[i] = (
+                        results[i].astype(spec['prequantized_dtype'])
+                        - zero_point
+                    ) * scale
 
         # retrieving original order
         reordered_results = [None] * len(results)
@@ -563,9 +452,7 @@ class Runtime(ArgumentsHandler, ABC):
         self.log.info('Input/Output specification loaded')
         return True
 
-    def get_io_spec_path(
-            self,
-            model_path: PathOrURI) -> Path:
+    def get_io_spec_path(self, model_path: PathOrURI) -> Path:
         """
         Gets path to a input/output specification file which is
         `model_path` and `.json` concatenated.
@@ -583,20 +470,6 @@ class Runtime(ArgumentsHandler, ABC):
         spec_path = model_path.with_suffix(model_path.suffix + '.json')
 
         return Path(str(spec_path))
-
-    def process_input(self, input_data):
-        """
-        Processes received input and measures the performance quality.
-
-        Parameters
-        ----------
-        input_data : bytes
-            Not used here.
-        """
-        self.log.debug('Processing input')
-        self._run()
-        self.protocol.request_success()
-        self.log.debug('Input processed')
 
     @timemeasurements('target_inference_step')
     @tagmeasurements('inference')
@@ -663,36 +536,6 @@ class Runtime(ArgumentsHandler, ABC):
             output_bytes += result.tobytes()
         return output_bytes
 
-    def _upload_output(self, input_data: bytes):
-        """
-        Wrapper for uploading output.
-
-        Parameters
-        ----------
-        input_data : bytes
-            Not used here.
-        """
-        out = self.upload_output(input_data)
-        if out:
-            self.protocol.request_success(out)
-        else:
-            self.protocol.request_failure()
-
-    def _upload_stats(self, input_data: bytes):
-        """
-        Wrapper for uploading stats.
-
-        Stops measurements and uploads stats.
-
-        Parameters
-        ----------
-        input_data : bytes
-            Not used here.
-        """
-        self.inference_session_end()
-        out = self.upload_stats(input_data)
-        self.protocol.request_success(out)
-
     def upload_stats(self, input_data: bytes) -> bytes:
         """
         Returns statistics of inference passes to the client.
@@ -714,29 +557,6 @@ class Runtime(ArgumentsHandler, ABC):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
-    def upload_essentials(
-            self,
-            compiled_model_path: PathOrURI) -> bool:
-        """
-        Wrapper for uploading data to the server.
-        Uploads model by default.
-
-        Parameters
-        ----------
-        compiled_model_path : PathOrURI
-            Path or URI to the file with a compiled model.
-
-        Returns
-        -------
-        bool :
-            True if succeeded.
-        """
-        spec_path = self.get_io_spec_path(compiled_model_path)
-        if spec_path.exists():
-            self.protocol.upload_io_specification(spec_path)
-        else:
-            self.log.info("No Input/Output specification found")
-        return self.protocol.upload_model(compiled_model_path)
 
     def prepare_local(self) -> bool:
         """
@@ -747,61 +567,13 @@ class Runtime(ArgumentsHandler, ABC):
         bool :
             True if initialized successfully.
         """
-        return (self.prepare_model(None) and
-                self.prepare_io_specification(None))
+        return self.prepare_model(None) and self.prepare_io_specification(None)
 
-    @systemstatsmeasurements('full_run_statistics')
-    def run_locally(
-            self,
-            dataset: Dataset,
-            modelwrapper: ModelWrapper,
-            compiled_model_path: PathOrURI) -> bool:
-        """
-        Runs inference locally using a given runtime.
-
-        Parameters
-        ----------
-        dataset : Dataset
-            Dataset to verify the inference on.
-        modelwrapper : ModelWrapper
-            Model that is executed on target hardware.
-        compiled_model_path : PathOrURI
-            Path or URI to the file with a compiled model.
-
-        Returns
-        -------
-        bool :
-            True if executed successfully.
-        """
-        self.model_path = Path(compiled_model_path)
-        from kenning.utils.logger import TqdmCallback
-        measurements = Measurements()
-        try:
-            self.inference_session_start()
-            self.prepare_local()
-            for X, y in TqdmCallback('runtime', dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: E501
-                prepX = modelwrapper.convert_input_to_bytes(prepX)
-                succeed = self.prepare_input(prepX)
-                if not succeed:
-                    return False
-                self._run()
-                preds = self.extract_output()
-                posty = tagmeasurements("postprocessing")(
-                        modelwrapper._postprocess_outputs)(preds)
-                measurements += dataset.evaluate(posty, y)
-        except KeyboardInterrupt:
-            self.log.info("Stopping benchmark...")
-            return False
-        finally:
-            self.inference_session_end()
-            MeasurementsCollector.measurements += measurements
-        return True
 
     def infer(
             self,
             X: np.ndarray,
-            modelwrapper: ModelWrapper,
+            model_wrapper: ModelWrapper,
             postprocess: bool = True) -> Any:
         """
         Runs inference on single batch locally using a given runtime.
@@ -810,7 +582,7 @@ class Runtime(ArgumentsHandler, ABC):
         ----------
         X : np.ndarray
             Batch of data provided for inference.
-        modelwrapper : ModelWrapper
+        model_wrapper : ModelWrapper
             Model that is executed on target hardware.
         postprocess : bool
             Indicates if model output should be postprocessed.
@@ -820,90 +592,18 @@ class Runtime(ArgumentsHandler, ABC):
         Any :
             Obtained values.
         """
-        prepX = modelwrapper._preprocess_input(X)
-        prepX = modelwrapper.convert_input_to_bytes(prepX)
+        prepX = model_wrapper._preprocess_input(X)
+        prepX = model_wrapper.convert_input_to_bytes(prepX)
         succeed = self.prepare_input(prepX)
         if not succeed:
             return False
         self._run()
         preds = self.extract_output()
         if postprocess:
-            return modelwrapper._postprocess_outputs(preds)
+            return model_wrapper._postprocess_outputs(preds)
 
         return preds
 
-    def run_client(
-            self,
-            dataset: Dataset,
-            modelwrapper: ModelWrapper,
-            compiled_model_path: PathOrURI) -> bool:
-        """
-        Main runtime client program.
-
-        The client performance procedure is as follows:
-
-        * connect with the server
-        * upload the model
-        * send dataset data in a loop to the server:
-
-            * upload input
-            * request processing of inputs
-            * request predictions for inputs
-            * evaluate the response
-        * collect performance statistics
-        * end connection
-
-        Parameters
-        ----------
-        dataset : Dataset
-            Dataset to verify the inference on.
-        modelwrapper : ModelWrapper
-            Model that is executed on target hardware.
-        compiled_model_path : PathOrURI
-            Path or URI to the file with a compiled model.
-
-        Returns
-        -------
-        bool :
-            True if executed successfully.
-        """
-        from tqdm import tqdm
-        if self.protocol is None:
-            raise RequestFailure('Protocol is not provided')
-        try:
-            check_request(self.prepare_client(), 'prepare client')
-            check_request(
-                    self.upload_essentials(compiled_model_path),
-                    'upload essentials'
-            )
-            measurements = Measurements()
-            for X, y in tqdm(dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(modelwrapper._preprocess_input)(X)  # noqa: E501
-                prepX = modelwrapper.convert_input_to_bytes(prepX)
-                check_request(self.protocol.upload_input(prepX), 'send input')
-                check_request(
-                    self.protocol.request_processing(self.get_time),
-                    'inference'
-                )
-                _, preds = check_request(
-                    self.protocol.download_output(),
-                    'receive output'
-                )
-                self.log.debug(
-                    f'Received output ({len(preds)} bytes)'
-                )
-                preds = modelwrapper.convert_output_from_bytes(preds)
-                posty = tagmeasurements("postprocessing")(modelwrapper._postprocess_outputs)(preds)  # noqa: E501
-                measurements += dataset.evaluate(posty, y)
-
-            measurements += self.protocol.download_statistics()
-        except RequestFailure as ex:
-            self.log.fatal(ex)
-            return False
-        else:
-            MeasurementsCollector.measurements += measurements
-        self.protocol.disconnect()
-        return True
 
     def get_time(self) -> float:
         """
@@ -915,32 +615,3 @@ class Runtime(ArgumentsHandler, ABC):
             Current timestamp.
         """
         return time.perf_counter()
-
-    def run_server(self):
-        """
-        Main runtime server program.
-
-        It waits for requests from a single client.
-
-        Based on requests, it loads the model, runs inference and provides
-        statistics.
-        """
-        if self.protocol is None:
-            raise RequestFailure('Protocol is not provided')
-        status = self.prepare_server()
-        if not status:
-            self.log.error('Server prepare failed')
-            return
-
-        self.shouldwork = True
-        self.log.info('Server started')
-
-        while self.shouldwork:
-            server_status, message = self.protocol.receive_message(timeout=1)
-            if server_status == ServerStatus.DATA_READY:
-                self.callbacks[message.message_type](message.payload)
-            elif server_status == ServerStatus.DATA_INVALID:
-                self.log.error('Invalid message received')
-                self.log.error('Client will be disconnected')
-
-        self.protocol.disconnect()

@@ -5,14 +5,14 @@
 """
 Module for preparing and serializing class arguments.
 """
+import argparse
 import json
 import os.path
+from abc import ABC
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
 import jsonschema
-import argparse
-from abc import ABC
-from typing import Dict, Tuple
-from pathlib import Path
 import numpy as np
 
 from kenning.utils.resource_manager import ResourceURI
@@ -88,8 +88,12 @@ def to_argparse_name(s):
     return '--' + s.replace('_', '-')
 
 
-def convert_to_jsontype(v):
-    if isinstance(v, Path):
+def convert_to_jsontype(v: Any) -> Any:
+    if isinstance(v, list):
+        return [convert_to_jsontype(e) for e in v]
+    if isinstance(v, dict):
+        return {key: convert_to_jsontype(e) for key, e in v.items()}
+    if isinstance(v, (Path, ResourceURI)):
         return str(v)
     if isinstance(v, np.ndarray):
         return v.tolist()
@@ -115,55 +119,13 @@ jsontype_to_type = {
 }
 
 
-def serialize(obj: object, normalize: bool = True) -> Dict:
-    """
-    Serializes the given object into a dictionary.
-
-    It serializes all variables mentioned in the dictionary
-    returned by a `form_parameterschema` function.
-
-    Note that object has to implement `form_parameterschema`
-    which uses `add_parameterschema_argument` function
-    to be serializable.
-
-    Parameters
-    ----------
-    obj : object
-        Object to serialize.
-    normalize : bool
-        Determines whether to convert value to JSON type.
-
-    Returns
-    -------
-    str :
-        Serialized object.
-    """
-    if hasattr(obj, 'form_parameterschema'):
-        properties = obj.form_parameterschema()['properties']
-        to_serialize = {
-            keywords['real_name']: name
-            for name, keywords in properties.items()
-        }
-    else:
-        return {}
-
-    serialized_dict = {}
-
-    for name, value in vars(obj).items():
-        if name in to_serialize:
-            serialized_dict[to_serialize[name]] = (
-                convert_to_jsontype(value) if normalize else value
-            )
-
-    return serialized_dict
-
-
 def serialize_inference(
-        dataset,
-        model,
-        optimizers,
-        runtimeprotocol,
-        runtime) -> Dict:
+    dataset: 'Dataset',
+    model: 'ModelWrapper',
+    optimizers: List['Optimizer'],
+    protocol: 'Protocol',
+    runtime: 'Runtime'
+) -> Dict:
     """
     Serializes the given objects into a dictionary which
     is a valid input for `inference_tester.py`.
@@ -176,8 +138,8 @@ def serialize_inference(
         ModelWrapper to serialize.
     optimizers : Union[List[Optimizer], Optimizer]
         Optimizers to serialize.
-    runtimeprotocol : RuntimeProtocol
-        RuntimeProtocol to serialize.
+    protocol : Protocol
+        Protocol to serialize.
     runtime : Runtime
         Runtime to serialize.
 
@@ -192,29 +154,19 @@ def serialize_inference(
     serialized_dict = {}
 
     for obj, name in zip(
-        [dataset, model, runtimeprotocol, runtime],
-        ['dataset', 'model_wrapper', 'runtime_protocol', 'runtime']
+        [dataset, model, protocol, runtime],
+        ['dataset', 'model_wrapper', 'protocol', 'runtime']
     ):
         if obj:
-            serialized_dict[name] = {}
-            serialized_dict[name]['type'] = object_to_module(obj)
-
-            serialized_obj = serialize(obj)
-            serialized_dict[name]['parameters'] = serialized_obj
+            serialized_dict[name] = obj.to_json()
 
     if optimizers:
         if not isinstance(optimizers, list):
             optimizers = [optimizers]
 
-        serialized_dict['optimizers'] = []
-        for optimizer in optimizers:
-            optimizer_dict = {}
-            optimizer_dict['type'] = object_to_module(optimizer)
-
-            serialized_obj = serialize(optimizer)
-            optimizer_dict['parameters'] = serialized_obj
-
-            serialized_dict['optimizers'].append(optimizer_dict)
+        serialized_dict['optimizers'] = [
+            optimizer.to_json() for optimizer in optimizers
+        ]
 
     return serialized_dict
 
@@ -587,7 +539,8 @@ class ArgumentsHandler(ABC):
 
     @classmethod
     def form_argparse(
-            cls) -> Tuple[argparse.ArgumentParser, argparse._ArgumentGroup]:
+        cls
+    ) -> Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]:
         """
         Creates argparse parser based on `arguments_structure` of class and its
         all parent classes.
@@ -620,3 +573,91 @@ class ArgumentsHandler(ABC):
             )
 
         return parser, group
+
+    @classmethod
+    def from_argparse(cls, args: argparse.Namespace, **kwargs) -> Any:
+        """
+        Constructor wrapper that takes the parameters from argparse args.
+
+        Parameters
+        ----------
+        args : Namespace
+            Arguments from ArgumentParser object.
+        **kwargs : Dict[str, Any]
+            Additional class-dependent arguments.
+
+        Returns
+        -------
+        Any :
+            Instance created from provided args.
+        """
+
+        parsed_args_dict = get_parsed_args_dict(cls, args)
+
+        return cls(
+            **kwargs,
+            **parsed_args_dict
+        )
+
+    @classmethod
+    def from_json(cls, json_dict, **kwargs) -> Any:
+        """
+        Constructor wrapper that takes the parameters from json dict.
+
+        This function checks if the given dictionary is valid according to the
+        ``arguments_structure`` defined. If it is then it invokes the
+        constructor.
+
+        Parameters
+        ----------
+        json_dict : Dict
+            Arguments for the constructor.
+        **kwargs : Dict[str, Any]
+            Additional class-dependent arguments.
+
+        Returns
+        -------
+        Any :
+            Instance created from provided JSON.
+        """
+
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        return cls(
+            **kwargs,
+            **parsed_json_dict
+        )
+
+    def to_json(self) -> Dict[str, Any]:
+        """
+        Convert object to JSON that contains its type and all parameters.
+
+        Returns
+        -------
+        Dict[str, Any] :
+            JSON config of given object.
+        """
+        cls = self.__class__
+
+        classes = [cls]
+        cls_parameters = {}
+        while len(classes):
+            curr_cls = classes.pop(0)
+            classes.extend(curr_cls.__bases__)
+            if not hasattr(curr_cls, 'arguments_structure'):
+                continue
+            for arg_name, arg_opts in curr_cls.arguments_structure.items():
+                if not hasattr(self, arg_name):
+                    continue
+                if 'argparse_name' in arg_opts:
+                    name = from_argparse_name(arg_opts['argparse_name'])
+                else:
+                    name = arg_name
+
+                cls_parameters[name] = getattr(self, arg_name)
+
+        return {
+            'type': f'{cls.__module__}.{cls.__name__}',
+            'parameters': convert_to_jsontype(cls_parameters)
+        }

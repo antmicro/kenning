@@ -17,15 +17,15 @@ from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
-from kenning.datasets.random_dataset import (  # noqa: E501
+from kenning.datasets.random_dataset import (
     RandomizedDetectionSegmentationDataset,
 )
 from kenning.datasets.random_dataset import RandomizedClassificationDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
-from kenning.modelwrappers.classification.tflite_magic_wand import (  # noqa: E501
+from kenning.modelwrappers.classification.tflite_magic_wand import (
     MagicWandModelWrapper,
 )
-from kenning.modelwrappers.object_detection.darknet_coco import (  # noqa: E501
+from kenning.modelwrappers.object_detection.darknet_coco import (
     TVMDarknetCOCOYOLOV3,
 )
 from kenning.onnxconverters import onnx2torch
@@ -77,7 +77,7 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
 
 
 def get_default_dataset_model(
-        framework: str) -> Tuple[Type[Dataset], Type[ModelWrapper]]:
+        framework: str) -> Tuple[Dataset, ModelWrapper]:
     """
     Returns default model and dataset for given framework. Returned dataset is
     a mock of default dataset of returned model.
@@ -165,7 +165,9 @@ def get_default_dataset_model(
     elif framework == 'tvm':
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = get_tmp_path(suffix='.tar')
-        tvm_compiler = TVMCompiler(dataset, model_path, modelframework='keras')
+        tvm_compiler = TVMCompiler(
+            dataset, model_path, model_framework='keras'
+        )
         tvm_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )

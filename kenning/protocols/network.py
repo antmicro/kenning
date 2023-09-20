@@ -11,8 +11,8 @@ import selectors
 from typing import Tuple
 from typing import Optional
 
-from kenning.core.runtimeprotocol import ServerStatus
-from kenning.runtimeprotocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.core.protocol import ServerStatus
+from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
 
 
 class NetworkProtocol(BytesBasedProtocol):

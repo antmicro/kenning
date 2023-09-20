@@ -91,7 +91,7 @@ class ONNXCompiler(Optimizer):
     outputtypes = ['onnx']
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'keras',
@@ -103,7 +103,7 @@ class ONNXCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: PathOrURI,
-            modelframework: str = 'keras'):
+            model_framework: str = 'keras'):
         """
         The ONNX compiler.
 
@@ -113,12 +113,15 @@ class ONNXCompiler(Optimizer):
             Dataset used to train the model.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
-        modelframework : str
+        model_framework : str
             Framework of the input model, used to select a proper backend.
         """
-        self.modelframework = modelframework
-        self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path)
+        self.model_framework = model_framework
+        self.set_input_type(model_framework)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path
+        )
 
     def compile(
             self,

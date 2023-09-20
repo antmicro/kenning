@@ -2,16 +2,19 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from typing import Type, List
-import numpy as np
 from pathlib import Path
 from random import shuffle
+from typing import Any, List, Type
+
 import cv2
+import numpy as np
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.datasets.helpers.detection_and_segmentation import ObjectDetectionSegmentationDataset  # noqa: E501
-from kenning.datasets.helpers.detection_and_segmentation import DetectObject
+from kenning.datasets.helpers.detection_and_segmentation import (
+    ObjectDetectionSegmentationDataset,
+    DetectObject,
+)
 
 
 class RandomizedClassificationDataset(Dataset):
@@ -46,16 +49,18 @@ class RandomizedClassificationDataset(Dataset):
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = False,
-            force_download_dataset: bool = False,
-            samplescount: int = 100,
-            numclasses: int = 3,
-            integer_classes: bool = False,
-            inputdims: List = [224, 224, 3],
-            dtype: Type = np.float32):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        force_download_dataset: bool = False,
+        samplescount: int = 100,
+        numclasses: int = 3,
+        integer_classes: bool = False,
+        inputdims: List = [224, 224, 3],
+        dtype: Type = np.float32,
+        **kwargs: Any
+    ):
         """
         Creates randomized dataset.
 
@@ -81,6 +86,8 @@ class RandomizedClassificationDataset(Dataset):
             The dimensionality of the inputs.
         dtype : Type
             Type of the data.
+        **kwargs : Any
+            Optional keyword arguments.
         """
         self.samplescount = samplescount
         self.inputdims = inputdims
@@ -171,14 +178,16 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = False,
-            samplescount: int = 100,
-            numclasses: int = 3,
-            inputdims: List = [224, 224, 3],
-            dtype: Type = np.float32):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        samplescount: int = 100,
+        numclasses: int = 3,
+        inputdims: List = [224, 224, 3],
+        dtype: Type = np.float32,
+        **kwargs: Any
+    ):
         """
         Creates randomized dataset.
 
@@ -198,6 +207,8 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
             The dimensionality of the inputs.
         dtype : Type
             Type of the data.
+        **kwargs : Any
+            Optional keyword arguments.
         """
         self.samplescount = samplescount
         self.inputdims = inputdims

@@ -11,7 +11,6 @@ from iree import runtime as ireert
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -40,7 +39,6 @@ class IREERuntime(Runtime):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
             model_path: PathOrURI,
             driver: str = 'local-sync',
             disable_performance_measurements: bool = False):
@@ -49,8 +47,6 @@ class IREERuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication protocol.
         model_path : PathOrURI
             Path or URI to the model file.
         driver : str
@@ -63,8 +59,7 @@ class IREERuntime(Runtime):
         self.input = None
         self.driver = driver
         super().__init__(
-            protocol,
-            disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements
         )
 
     def prepare_input(self, input_data):

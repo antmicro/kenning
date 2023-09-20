@@ -11,7 +11,6 @@ from typing import Optional, List
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -46,7 +45,6 @@ class TFLiteRuntime(Runtime):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
             model_path: PathOrURI,
             delegates: Optional[List] = None,
             num_threads: int = 4,
@@ -56,8 +54,6 @@ class TFLiteRuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol.
         model_path : PathOrURI
             Path or URI to the model file.
         delegates : Optional[List]
@@ -73,8 +69,7 @@ class TFLiteRuntime(Runtime):
         self.num_threads = num_threads
         self.delegates = delegates
         super().__init__(
-            protocol,
-            disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements
         )
 
     def prepare_model(self, input_data):

@@ -126,7 +126,7 @@ TFLITE_RUNTIME_DATAFLOW_NODE = {
             "side": "left"
         },
         {
-            "name": "RuntimeProtocol",
+            "name": "Protocol",
             "id": "12",
             "direction": "input",
             "side": "left"

@@ -21,8 +21,6 @@ from tqdm import tqdm
 
 from .measurements import Measurements
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.resource_manager import Resources
 
 
@@ -199,7 +197,7 @@ class Dataset(ArgumentsHandler, ABC):
         self.prepare()
 
     @classmethod
-    def from_argparse(cls, args: Namespace):
+    def from_argparse(cls, args: Namespace) -> 'Dataset':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -216,15 +214,10 @@ class Dataset(ArgumentsHandler, ABC):
         Dataset :
             Object of class Dataset.
         """
-
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
-            **parsed_args_dict
-        )
+        return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict):
+    def from_json(cls, json_dict: Dict) -> 'Dataset':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -242,13 +235,7 @@ class Dataset(ArgumentsHandler, ABC):
         Dataset :
             Object of class Dataset.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **parsed_json_dict
-        )
+        return super().from_json(json_dict)
 
     def __iter__(self) -> 'Dataset':
         """

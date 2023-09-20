@@ -6,6 +6,7 @@
 Runtime implementation for TVM-compiled models.
 """
 
+from typing import Optional
 import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import VirtualMachine, Executable
@@ -13,7 +14,6 @@ from tvm.runtime.vm import VirtualMachine, Executable
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -54,7 +54,6 @@ class TVMRuntime(Runtime):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
             model_path: PathOrURI,
             contextname: str = 'cpu',
             contextid: int = 0,
@@ -65,8 +64,6 @@ class TVMRuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication  protocol.
         model_path : PathOrURI
             Path or URI to the model file.
         contextname : str
@@ -87,8 +84,7 @@ class TVMRuntime(Runtime):
         self._input_prepared = False
         self.use_tvm_vm = use_tvm_vm
         super().__init__(
-            protocol,
-            disable_performance_measurements
+            disable_performance_measurements=disable_performance_measurements
         )
 
     def prepare_input(self, input_data):

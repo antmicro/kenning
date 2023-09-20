@@ -11,16 +11,17 @@ from time import time
 from typing import Optional, Tuple
 import selectors
 
-from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.core.runtimeprotocol import ServerStatus
-from kenning.core.runtimeprotocol import Message
+from kenning.core.protocol import Protocol
+from kenning.core.protocol import ServerStatus
+from kenning.core.protocol import Message
 
 
-class BytesBasedProtocol(RuntimeProtocol, ABC):
+class BytesBasedProtocol(Protocol, ABC):
 
     arguments_structure = {
         'packet_size': {
-            'description': 'The maximum size of the received packets, in bytes.',  # noqa: E501
+            'description': 'The maximum size of the received packets, in '
+                           'bytes.',
             'type': int,
             'default': 4096
         },
@@ -43,7 +44,10 @@ class BytesBasedProtocol(RuntimeProtocol, ABC):
 
     def send_message(self, message: Message) -> bool:
         self.log.debug(f'Sending message {message}')
-        return self.send_data(message.to_bytes())
+        ret = self.send_data(message.to_bytes())
+        if not ret:
+            self.log.error(f'Error sending message {message}')
+        return ret
 
     def receive_message(
             self,

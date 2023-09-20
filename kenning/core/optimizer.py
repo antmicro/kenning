@@ -15,8 +15,6 @@ import json
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
 from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -79,7 +77,11 @@ class Optimizer(ArgumentsHandler, ABC):
         self.log = get_logger()
 
     @classmethod
-    def from_argparse(cls, dataset: Dataset, args: Namespace):
+    def from_argparse(
+        cls,
+        dataset: Optional[Dataset],
+        args: Namespace,
+    ) -> 'Optimizer':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -95,16 +97,14 @@ class Optimizer(ArgumentsHandler, ABC):
         Optimizer :
             Object of class Optimizer.
         """
-
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
-            dataset,
-            **parsed_args_dict
-        )
+        return super().from_argparse(args, dataset=dataset)
 
     @classmethod
-    def from_json(cls, dataset: Optional[Dataset], json_dict: Dict):
+    def from_json(
+        cls,
+        json_dict: Dict,
+        dataset: Optional[Dataset] = None,
+    ) -> 'Optimizer':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -124,14 +124,7 @@ class Optimizer(ArgumentsHandler, ABC):
         Optimizer :
             Object of class Optimizer.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            dataset=dataset,
-            **parsed_json_dict
-        )
+        return super().from_json(json_dict, dataset=dataset)
 
     def set_compiled_model_path(self, compiled_model_path: Path):
         """
@@ -149,9 +142,10 @@ class Optimizer(ArgumentsHandler, ABC):
         inputtype : str
             Path to be set.
         """
-        assert inputtype in self.inputtypes.keys(), \
-            f'Unsupported input type {inputtype}, only ' \
+        assert inputtype in self.inputtypes.keys(), (
+            f'Unsupported input type {inputtype}, only '
             f'{", ".join(self.inputtypes.keys())} are supported'
+        )
         self.inputtype = inputtype
 
     @abstractmethod
@@ -249,13 +243,15 @@ class Optimizer(ArgumentsHandler, ABC):
 
         if force_onnx:
             self.log.warn('Forcing ONNX conversion')
-            if (('onnx' in self.get_input_formats())
-                    and ('onnx' in possible_outputs)):
+            if (
+                'onnx' in self.get_input_formats()
+                and 'onnx' in possible_outputs
+            ):
                 return 'onnx'
             else:
                 raise ValueError(
-                    '"onnx" format is not supported by at least one block\n' +
-                    f'Input block supported formats: {", ".join(possible_outputs)}\n' +  # noqa: E501
+                    '"onnx" format is not supported by at least one block\n'
+                    f'Input block supported formats: {", ".join(possible_outputs)}\n'  # noqa: E501
                     f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
                 )
 
@@ -264,15 +260,14 @@ class Optimizer(ArgumentsHandler, ABC):
                 return input
 
         raise ValueError(
-            f'No matching formats between two objects: {self} and ' +
-            f'{previous_block}\n' +
-            f'Input block supported formats: {", ".join(possible_outputs)}\n' +  # noqa: E501
+            f'No matching formats between two objects: {self} and '
+            f'{previous_block}\n'
+            f'Input block supported formats: {", ".join(possible_outputs)}\n'  # noqa: E501
             f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
         )
 
-    def get_spec_path(
-            self,
-            model_path: PathOrURI) -> ResourceURI:
+    @staticmethod
+    def get_spec_path(model_path: PathOrURI) -> PathOrURI:
         """
         Returns input/output specification path for the model
         saved in `model_path`. It concatenates `model_path` and `.json`.
@@ -284,7 +279,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        ResourceURI :
+        PathOrURI :
             Path to the input/output specification of a given model.
         """
         spec_path = model_path.with_suffix(model_path.suffix + '.json')

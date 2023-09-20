@@ -13,21 +13,20 @@ from typing import Optional, Tuple
 import pytest
 
 from kenning.core.measurements import Measurements
-from kenning.core.runtimeprotocol import (
+from kenning.core.protocol import (
     Message,
     MessageType,
-    RuntimeProtocol,
+    Protocol,
     ServerStatus,
 )
-from kenning.runtimeprotocols.network import NetworkProtocol
-from kenning.tests.runtimeprotocols.conftest import random_network_port
-from kenning.tests.runtimeprotocols.test_core_protocol import (
-    TestCoreRuntimeProtocol,
+from kenning.protocols.network import NetworkProtocol
+from kenning.tests.protocols.conftest import random_network_port
+from kenning.tests.protocols.test_core_protocol import (
+    TestCoreProtocol,
 )
 
 
-@pytest.mark.xdist_group(name='use_socket')
-class TestNetworkProtocol(TestCoreRuntimeProtocol):
+class TestNetworkProtocol(TestCoreProtocol):
     host = 'localhost'
     port = random_network_port()
 
@@ -36,6 +35,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             pytest.fail('Cannot find free port')
         return NetworkProtocol(self.host, self.port)
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_initialize_server(self):
         """
         Tests the `initialize_server()` method.
@@ -47,6 +47,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert second_server.serversocket is None
         server.disconnect()
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_initialize_client(self):
         """
         Tests the `initialize_client()` method.
@@ -60,16 +61,12 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         client.disconnect()
         server.disconnect()
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_message(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
         """
         Tests client status using `receive_message()` method.
-
-        Parameters
-        ----------
-        server_and_client : Tuple[NetworkProtocol, NetworkProtocol]
-            Fixture to get initialized server and client
         """
         server, client = server_and_client
 
@@ -88,6 +85,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.NOTHING and message is None
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_message_send_data(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -110,6 +108,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message.message_type == MessageType.OK
         )
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_message_send_error(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -132,6 +131,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message.message_type == MessageType.ERROR
         )
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_message_send_empty(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -153,6 +153,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert message is None
         assert status == ServerStatus.NOTHING, status
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_send_data(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -164,6 +165,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         server, client = server_and_client
         assert client.send_data(random_byte_data)
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_data(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -174,6 +176,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with pytest.raises(AttributeError):
             server.receive_data(None, None)
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_data_data_sent(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -190,6 +193,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status is ServerStatus.DATA_READY
         assert random_byte_data == received_data
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_receive_client_disconnect(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -204,6 +208,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status == ServerStatus.CLIENT_DISCONNECTED
         assert received_data is None
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_accept_client(self):
         """
         Tests the `accept_client()` method.
@@ -217,14 +222,14 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             s.connect((self.host, self.port))
             s.close()
 
-        def run_test(protocol: RuntimeProtocol):
+        def run_test(protocol: Protocol):
             """
             Initializes socket and conncets to it.
 
             Parameters
             ----------
-            protocol : RuntimeProtocol
-                Initialized RuntimeProtocol object
+            protocol : Protocol
+                Initialized Protocol object
 
             Returns
             -------
@@ -250,6 +255,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         protocol = self.init_protocol()
         assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_wait_send(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -273,6 +279,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
                 server_data == random_byte_data
             ), f'{server_data}!={random_byte_data}'
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_send_message(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -291,6 +298,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with pytest.raises(ConnectionResetError):
             server.send_message(Message(MessageType.OK))
 
+    @pytest.mark.xdist_group(name='use_socket')
     @pytest.mark.parametrize(
         'message,expected',
         [
@@ -301,7 +309,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             (Message(MessageType.PROCESS), (False, None)),
             (Message(MessageType.OUTPUT), (False, None)),
             (Message(MessageType.STATS), (False, None)),
-            (Message(MessageType.IOSPEC), (False, None)),
+            (Message(MessageType.IO_SPEC), (False, None)),
         ],
     )
     def test_receive_confirmation(
@@ -323,6 +331,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         output = server.receive_confirmation()
         assert output == (False, None)
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_upload_input(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -367,6 +376,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert message.payload == random_byte_data
         assert queue.get()
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_upload_model(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -415,6 +425,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         parsed_message = client.parse_message(received_data)
         assert parsed_message == answer, f'{parsed_message}!={answer}'
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_upload_io_specification(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -462,10 +473,11 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert send_message_status
         assert receive_status == ServerStatus.DATA_READY
         encoded_data = (json.dumps(io_specification)).encode()
-        answer = Message(MessageType.IOSPEC, encoded_data)
+        answer = Message(MessageType.IO_SPEC, encoded_data)
         parsed_message = client.parse_message(received_data)
         assert parsed_message == answer, f'{parsed_message}!={answer}'
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_download_output(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -482,6 +494,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert status
         assert downloaded_data == random_byte_data
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_download_statistics(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -536,6 +549,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert isinstance(downloaded_stats, Measurements)
         assert downloaded_stats.data == data
 
+    @pytest.mark.xdist_group(name='use_socket')
     @pytest.mark.parametrize(
         'message_type',
         [
@@ -546,7 +560,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             MessageType.PROCESS,
             MessageType.STATS,
             MessageType.OUTPUT,
-            MessageType.IOSPEC,
+            MessageType.IO_SPEC,
         ],
     )
     def test_parse_message(
@@ -569,6 +583,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message_type == message.message_type
         )
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_disconnect(self, server_and_client):
         """
         Tests the `disconnect()` method.
@@ -586,6 +601,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         with pytest.raises(OSError):
             server.send_message(Message(MessageType.OK))
 
+    @pytest.mark.xdist_group(name='use_socket')
     @pytest.mark.parametrize(
         'client_response,expected',
         [(Message(MessageType.OK), True), (Message(MessageType.ERROR), False)],
@@ -610,6 +626,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
         assert response is expected, f'{response}!={expected}'
         thread_send.join()
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_request_failure(self, server_and_client):
         """
         Tests the `request_failure()` method.
@@ -625,6 +642,7 @@ class TestNetworkProtocol(TestCoreRuntimeProtocol):
             and message.payload == b''
         )
 
+    @pytest.mark.xdist_group(name='use_socket')
     def test_request_success(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],

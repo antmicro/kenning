@@ -15,8 +15,8 @@ import pytest
 import serial
 
 from kenning.core.model import ModelWrapper
-from kenning.core.runtimeprotocol import Message, MessageType, ServerStatus
-from kenning.runtimeprotocols.uart import (
+from kenning.core.protocol import Message, MessageType, ServerStatus
+from kenning.protocols.uart import (
     ALLOCATION_STATS_SIZE,
     MAX_LENGTH_ENTRY_FUNC_NAME,
     MAX_LENGTH_MODEL_NAME,
@@ -29,8 +29,8 @@ from kenning.runtimeprotocols.uart import (
     _parse_allocation_stats,
 )
 from kenning.tests.conftest import get_tmp_path
-from kenning.tests.runtimeprotocols.test_core_protocol import (
-    TestCoreRuntimeProtocol,
+from kenning.tests.protocols.test_core_protocol import (
+    TestCoreProtocol,
 )
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.utils.logger import get_logger
@@ -284,7 +284,7 @@ class TestParseAllocationStats:
             _ = _parse_allocation_stats(invalid_stats)
 
 
-class TestUARTProtocol(TestCoreRuntimeProtocol):
+class TestUARTProtocol(TestCoreProtocol):
     port = mock_serial()
     port_in = port[0]
     port_out = port[1]
@@ -582,7 +582,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
 
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
-            target=self.mock_recv_message(MessageType.IOSPEC),
+            target=self.mock_recv_message(MessageType.IO_SPEC),
             args=(queue,),
         )
         thread_recv.start()
@@ -598,7 +598,7 @@ class TestUARTProtocol(TestCoreRuntimeProtocol):
         assert queue.qsize() == 1
         message = queue.get()
         assert isinstance(message, Message)
-        assert message.message_type == MessageType.IOSPEC
+        assert message.message_type == MessageType.IO_SPEC
         assert message.payload == _io_spec_to_struct(valid_io_spec)
 
     def test_request_processing(self, client: UARTProtocol):

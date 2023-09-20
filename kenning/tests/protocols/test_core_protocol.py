@@ -4,7 +4,7 @@
 
 import pytest
 
-from kenning.core.runtimeprotocol import MessageType, RuntimeProtocol
+from kenning.core.protocol import MessageType, Protocol
 
 
 @pytest.mark.fast
@@ -25,17 +25,17 @@ class TestMessageType:
 
 
 @pytest.mark.fast
-class TestCoreRuntimeProtocol:
-    def init_protocol(self) -> RuntimeProtocol:
+class TestCoreProtocol:
+    def init_protocol(self) -> Protocol:
         """
         Initializes protocol object.
 
         Returns
         -------
-        RuntimeProtocol:
+        Protocol:
             Initialized protocol object
         """
-        return RuntimeProtocol()
+        return Protocol()
 
     @pytest.fixture
     def server_and_client(self):
@@ -44,7 +44,7 @@ class TestCoreRuntimeProtocol:
 
         Returns
         -------
-        Tuple[RuntimeProtocol, RuntimeProtocol] :
+        Tuple[Protocol, Protocol] :
             A tuple containing initialized server and client objects
         """
         server = self.init_protocol()
@@ -61,7 +61,7 @@ class TestCoreRuntimeProtocol:
 
     def test_download_statistics(self):
         """
-        Tests the `RuntimeProtocol.download_statistics()` method.
+        Tests the `Protocol.download_statistics()` method.
         """
         client = self.init_protocol()
         with pytest.raises(NotImplementedError):

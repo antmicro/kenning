@@ -32,7 +32,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     }
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'keras',
@@ -68,7 +68,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             batch_size: int = 32,
             optimizer: str = 'adam',
             disable_from_logits: bool = False,
-            modelframework: str = 'keras',
+            model_framework: str = 'keras',
             cluster_dense: bool = False,
             clusters_number: int = 10,
             preserve_sparsity: bool = False,
@@ -92,7 +92,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             Optimizer used during the training.
         disable_from_logits : bool
             Determines whether output of the model is normalized.
-        modelframework : str
+        model_framework : str
             Framework of the input model, used to select a proper backend.
         cluster_dense : bool
             Determines if only dense layers should be clustered.
@@ -103,13 +103,20 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         fine_tune : bool
             Determines whether to fine-tune the model after clustering.
         """
-        self.modelframework = modelframework
+        self.model_framework = model_framework
         self.cluster_dense = cluster_dense
         self.clusters_number = clusters_number
         self.preserve_sparsity = preserve_sparsity
         self.fine_tune = fine_tune
-        self.set_input_type(modelframework)
-        super().__init__(dataset, compiled_model_path, epochs, batch_size, optimizer, disable_from_logits)  # noqa: E501
+        self.set_input_type(model_framework)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            epochs=epochs,
+            batch_size=batch_size,
+            optimizer=optimizer,
+            disable_from_logits=disable_from_logits
+        )
 
     def compile(
             self,

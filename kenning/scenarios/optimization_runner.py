@@ -37,11 +37,7 @@ from kenning.core.metrics import (
     compute_detection_metrics,
     compute_performance_metrics,
 )
-from kenning.utils.pipeline_runner import (
-    assert_io_formats,
-    parse_json_pipeline,
-    run_pipeline_json,
-)
+from kenning.utils.pipeline_runner import PipelineRunner
 
 log = logger.get_logger()
 
@@ -229,7 +225,7 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
         'dataset',
         'optimizers',
         'runtime',
-        'runtime_protocol',
+        'protocol',
     }
     remaining_blocks = all_blocks & (set(json_cfg.keys()) - blocks_to_optimize)
 
@@ -329,12 +325,9 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
     for pipeline in pipelines:
         try:
-            _, model_wrapper, optimizers, runtime, _, _, _ = \
-                parse_json_pipeline(pipeline)
-            assert_io_formats(
-                model_wrapper,
-                optimizers,
-                runtime,
+            PipelineRunner.from_json_cfg(
+                pipeline,
+                assert_integrity=True
             )
             filtered_pipelines.append(pipeline)
         except ValueError:
@@ -415,8 +408,10 @@ class OptimizationRunner(CommandTemplate):
                     f'{args.output.stem}_{pipeline_idx}'
                 )
 
-                run_pipeline_json(
-                    pipeline, Path(measurements_path), args.verbosity
+                pipeline_runner = PipelineRunner.from_json_cfg(pipeline)
+                pipeline_runner.run(
+                    output=Path(measurements_path),
+                    verbosity=args.verbosity
                 )
 
                 # Consider using MeasurementsCollector.measurements

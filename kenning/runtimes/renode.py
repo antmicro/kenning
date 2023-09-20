@@ -13,17 +13,16 @@ import tempfile
 import struct
 import re
 import tqdm
+from kenning.core.protocol import Protocol
 from pyrenode import Pyrenode
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.runtime import Runtime
-from kenning.core.runtime import RequestFailure
-from kenning.core.runtime import check_request
-from kenning.core.runtimeprotocol import RuntimeProtocol
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import tagmeasurements
+from kenning.core.protocol import RequestFailure, check_request
 from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -90,7 +89,6 @@ class RenodeRuntime(Runtime):
 
     def __init__(
             self,
-            protocol: RuntimeProtocol,
             runtime_binary_path: PathOrURI,
             platform_resc_path: PathOrURI,
             resc_dependencies: List[ResourceURI] = [],
@@ -105,9 +103,6 @@ class RenodeRuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication protocol used
-            to communicate with simulated platform.
         runtime_binary_path : PathOrURI
             Path to the runtime binary.
         platform_resc_path : PathOrURI
@@ -147,7 +142,6 @@ class RenodeRuntime(Runtime):
         )
         self.log = get_logger()
         super().__init__(
-            protocol,
             disable_performance_measurements=disable_performance_measurements
         )
 
@@ -155,19 +149,20 @@ class RenodeRuntime(Runtime):
             self,
             dataset: Dataset,
             modelwrapper: ModelWrapper,
+            protocol: Protocol,
             compiled_model_path: PathOrURI):
-        if self.protocol is None:
-            raise RequestFailure('Protocol is not provided')
+
         with Pyrenode() as renode_handler:
             self.renode_handler = renode_handler
             self.init_renode()
 
             try:
-                check_request(self.prepare_client(), 'prepare client')
-                check_request(
-                    self.upload_essentials(compiled_model_path),
-                    'upload essentials'
-                )
+                check_request(protocol.initialize_client(), 'prepare client')
+                spec_path = self.get_io_spec_path(compiled_model_path)
+                if spec_path.exists():
+                    protocol.upload_io_specification(spec_path)
+                protocol.upload_model(compiled_model_path)
+
                 measurements = Measurements()
 
                 # get opcode stats before inference
@@ -190,17 +185,17 @@ class RenodeRuntime(Runtime):
                         )(X)
                         prepX = modelwrapper.convert_input_to_bytes(prepX)
                         check_request(
-                            self.protocol.upload_input(prepX),
+                            protocol.upload_input(prepX),
                             'send input'
                         )
                         check_request(
-                            self.protocol.request_processing(self.get_time),
+                            protocol.request_processing(self.get_time),
                             'inference'
                         )
 
                     # get inference output
                     _, preds = check_request(
-                        self.protocol.download_output(),
+                        protocol.download_output(),
                         'receive output'
                     )
 
@@ -230,6 +225,7 @@ class RenodeRuntime(Runtime):
             else:
                 MeasurementsCollector.measurements += measurements
             finally:
+                get_logger().info(self.renode_handler.read_from_renode())
                 self.renode_handler = None
 
         if (not self.disable_performance_measurements

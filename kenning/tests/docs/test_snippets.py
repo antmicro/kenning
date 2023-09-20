@@ -156,9 +156,13 @@ def execute_script_and_wait(
         re.compile(EXPECT_RE.format(failure)),
     ]
     try:
-        # Use check command twice to make sure it used
-        shell.sendline(f'{script} && {check_cmd}')
-        shell.sendline(check_cmd)
+        if not script.rstrip().endswith(' &'):
+            # Use check command twice to make sure it used
+            shell.sendline(f'{script} && {check_cmd}')
+            shell.sendline(check_cmd)
+        else:
+            # Running command in background
+            shell.sendline(f'{script} {check_cmd}')
         # Wait for end of script
         index = shell.expect_list(
             expect_list, timeout=timeout if timeout else -1
@@ -352,6 +356,8 @@ def factory_test_snippet(
 
         Parameters
         ----------
+        self : TestDocsSnippets
+            Instance of TestDocsSnippets class
         script : str
             Script that should be tested.
         snippet : Snippet
@@ -425,6 +431,8 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
 
         Parameters
         ----------
+        self : TestDocsSnippets
+            Instance of TestDocsSnippets class
         markdown : str
             Name of markdown file
         """

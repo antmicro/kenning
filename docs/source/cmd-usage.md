@@ -159,7 +159,7 @@ The `inference_tester` loads the dataset and the model, compiles the model and r
 The `inference_server` receives the model and input data, and sends output data and statistics.
 
 Both `inference_tester` and `inference_server` require [](runtime-api) to determine the model execution flow.
-Both scripts communicate using the communication protocol implemented in the [](runtimeprotocol-api).
+Both scripts communicate using the communication protocol implemented in the [](protocol-api).
 
 At the end, the `inference_tester` returns the benchmark data in the form of a JSON file extracted from the [](measurements-api) object.
 
@@ -172,7 +172,7 @@ The `kenning.scenarios.inference_tester` requires:
 
 An [](optimizer-api)-based class can be provided to compile the model for a given target if needed.
 
-Optionally, it requires a [](runtimeprotocol-api)-based class when running remotely to communicate with the `kenning.scenarios.inference_server`.
+Optionally, it requires a [](protocol-api)-based class when running remotely to communicate with the `kenning.scenarios.inference_server`.
 
 To print the list of required arguments, run:
 
@@ -182,7 +182,7 @@ python3 -m kenning.scenarios.inference_tester \
     --runtime-cls kenning.runtimes.tvm.TVMRuntime \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --modelcompiler-cls kenning.optimizers.tvm.TVMCompiler \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     -h
 ```
 
@@ -220,7 +220,7 @@ Inference configuration with flags:
   --runtime-cls RUNTIME_CLS
                         Runtime-based class with the implementation of model runtime
   --protocol-cls PROTOCOL_CLS
-                        RuntimeProtocol-based class with the implementation of communication between inference
+                        Protocol-based class with the implementation of communication between inference
                         tester and inference runner
 
 ModelWrapper arguments:
@@ -277,7 +277,7 @@ BytesBasedProtocol arguments:
 
 The `kenning.scenarios.inference_server` requires only:
 
-* a [](runtimeprotocol-api)-based class for the implementation of the communication,
+* a [](protocol-api)-based class for the implementation of the communication,
 * a [](runtime-api)-based class for the implementation of runtime routines on device.
 
 Both classes may require some additional arguments that can be listed with the `-h` flag.
@@ -291,7 +291,7 @@ python -m kenning.scenarios.inference_tester \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
     --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \
@@ -311,7 +311,7 @@ The above runs with the following `inference_server` setup:
 
 ```bash
 python -m kenning.scenarios.inference_server \
-    --protocol-cls kenning.runtimeprotocols.network.NetworkProtocol \
+    --protocol-cls kenning.protocols.network.NetworkProtocol \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
     --host 0.0.0.0 \
     --port 12345 \

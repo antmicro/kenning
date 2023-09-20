@@ -17,7 +17,7 @@ from kenning.scenarios.optimization_runner import (
     ordered_powerset,
     replace_paths,
 )
-from kenning.utils.pipeline_runner import parse_json_pipeline
+from kenning.utils.pipeline_runner import PipelineRunner
 
 OPTIMIZATION_CONFIGS_PATHS = list(
     Path('./scripts/optimizationconfigs').glob('*.json')
@@ -103,7 +103,7 @@ class TestGridSearch:
 
         for pipeline in pipelines:
             # check if pipeline is valid
-            _ = parse_json_pipeline(pipeline)
+            _ = PipelineRunner.from_json_cfg(pipeline)
 
 
 class TestReplacePaths:

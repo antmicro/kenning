@@ -2,24 +2,26 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-import kenning
-import tempfile
 import shutil
-from pathlib import Path
-from pytest import Metafunc
-from typing import Optional
-from random import randint, random
-from PIL import Image
-from kenning.utils.class_loader import load_class
-from kenning.core.dataset import Dataset
-from dataclasses import dataclass
+import tempfile
 from argparse import ArgumentParser
+from dataclasses import dataclass
+from pathlib import Path
+from random import randint, random
+from typing import Optional
 
+import pytest
+from PIL import Image
+from pytest import Metafunc
+
+import kenning
+from kenning.core.dataset import Dataset
+from kenning.core.measurements import MeasurementsCollector
+from kenning.utils.class_loader import load_class
 from kenning.utils.resource_manager import (
     PathOrURI,
+    ResourceManager,
     ResourceURI,
-    ResourceManager
 )
 
 
@@ -182,6 +184,11 @@ def get_tmp_path(suffix: str = '') -> Path:
     return Path(candidate)
 
 
+@pytest.fixture(scope='function', autouse=True)
+def clear_measurements():
+    MeasurementsCollector.clear()
+
+
 @pytest.fixture(scope='class')
 def tmpfolder(test_directory: Optional[Path]) -> Path:
     """
@@ -243,7 +250,7 @@ def modelsamples():
         def add(
                 self,
                 model_path: PathOrURI,
-                modelframework: str,
+                model_framework: str,
                 modelwrapper: str):
             """
             Adds path to model with associated framework
@@ -253,13 +260,13 @@ def modelsamples():
             ----------
             model_path : PathOrURI
                 Path or URI to the model file.
-            modelframework : str
+            model_framework : str
                 The framework model is compatible with.
             modelwrapper : str
                 The name of ModelWrapper that is compatible with model.
             """
             model_path = model_path
-            self.samples[modelframework] = (model_path, modelwrapper)
+            self.samples[model_framework] = (model_path, modelwrapper)
 
         def get(self, model_name: str):
             """
@@ -307,7 +314,7 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
         def add(self,
                 import_path: str,
                 target: str,
-                modelframework: str,
+                model_framework: str,
                 filesuffix: str,
                 dataset: Optional[str] = None,
                 compiled_model_path: PathOrURI = datasetimages.path,
@@ -321,7 +328,7 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 The import path optimizer will be imported with.
             target : str
                 Target accelerator on which the model will be executed.
-            modelframework : str
+            model_framework : str
                 Framework of the input model, used to select a proper backend.
             filesuffix : str
                 The suffix compiled model should be saved with.
@@ -334,14 +341,14 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
                 Optimizer parameters.
             """
             optimizer = load_class(import_path)
-            optimizer_name = import_path.rsplit('.')[-1] + '_' + modelframework
+            optimizer_name = f'{import_path.rsplit(".")[-1]}_{model_framework}'
             file_name = optimizer_name + '.' + filesuffix
             compiled_model_path = compiled_model_path / file_name
             self._params[optimizer_name] = (
                 (dataset, compiled_model_path),
                 {
                     'target': target,
-                    'modelframework': modelframework,
+                    'model_framework': model_framework,
                     **kwargs
                 }
             )

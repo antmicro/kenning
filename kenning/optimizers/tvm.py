@@ -18,7 +18,7 @@ from kenning.core.optimizer import CompilationError
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
 from kenning.utils.logger import get_logger
-from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.resource_manager import PathOrURI
 
 
 def onnxconversion(
@@ -165,14 +165,14 @@ def darknetconversion(
         raise IndexError('No dtype in the input specification')
 
     from tvm.relay.testing.darknet import __darknetffi__
-    if not compiler.libdarknetpath:
+    if not compiler.libdarknet_path:
         log = get_logger()
         log.fatal(
             'The darknet converter requires libdarknet.so library. ' +
             'Provide the path to it using --libdarknet-path flag')
         raise ConversionError('Provide libdarknet.so library')
     try:
-        lib = __darknetffi__.dlopen(str(compiler.libdarknetpath))
+        lib = __darknetffi__.dlopen(str(compiler.libdarknet_path))
     except OSError as e:
         raise ConversionError(e)
     net = lib.load_network(
@@ -226,7 +226,7 @@ class TVMCompiler(Optimizer):
     outputtypes = ['tvm']
 
     arguments_structure = {
-        'modelframework': {
+        'model_framework': {
             'argparse_name': '--model-framework',
             'description': 'The input type of the model, framework-wise',
             'default': 'onnx',
@@ -247,7 +247,7 @@ class TVMCompiler(Optimizer):
             'default': 2,
             'type': int
         },
-        'libdarknetpath': {
+        'libdarknet_path': {
             'argparse_name': '--libdarknet-path',
             'description': 'Path to the libdarknet.so library, for darknet models',  # noqa: E501
             'default': '/usr/local/lib/libdarknet.so',
@@ -305,11 +305,11 @@ class TVMCompiler(Optimizer):
             self,
             dataset: Dataset,
             compiled_model_path: Path,
-            modelframework: str = 'onnx',
+            model_framework: str = 'onnx',
             target: str = 'llvm',
             target_host: Optional[str] = None,
             opt_level: int = 2,
-            libdarknetpath: str = '/usr/local/lib/libdarknet.so',
+            libdarknet_path: str = '/usr/local/lib/libdarknet.so',
             use_tvm_vm: bool = False,
             conversion_func: str = 'default',
             conv2d_data_layout: str = '',
@@ -327,7 +327,7 @@ class TVMCompiler(Optimizer):
             Dataset object.
         compiled_model_path : PathOrURI
             Path where compiled model will be saved.
-        modelframework : str
+        model_framework : str
             Framework of the input model, used to select a proper backend.
         target : str
             Target accelerator on which the model will be executed.
@@ -335,7 +335,7 @@ class TVMCompiler(Optimizer):
             CPU architecture of the target (used when target has a host).
         opt_level : int
             Optimization level of compilation.
-        libdarknetpath : str
+        libdarknet_path : str
             Path to the libdarknet.so library, used only during conversion
             of darknet model.
         use_tvm_vm : bool
@@ -364,7 +364,7 @@ class TVMCompiler(Optimizer):
         assert not (use_fp16_precision and use_int8_precision), 'Compilation cannot use both FP16 and INT8 conversion'  # noqa: E501
         assert not (use_tensorrt and (use_fp16_precision or use_int8_precision)), 'TensorRT usage with FP16 or INT8 passes is not supported'  # noqa: E501
         assert not (use_tensorrt and ('cuda' not in target)), 'TensorRT is only supported with CUDA target'  # noqa: E501
-        self.modelframework = modelframework
+        self.model_framework = model_framework
 
         self.target = target
         self.target_obj = tvm.target.Target(target)
@@ -375,17 +375,20 @@ class TVMCompiler(Optimizer):
         )
 
         self.opt_level = opt_level
-        self.libdarknetpath = libdarknetpath
+        self.libdarknet_path = libdarknet_path
         self.use_tvm_vm = use_tvm_vm
         self.conversion_func = conversion_func
-        self.set_input_type(modelframework)
+        self.set_input_type(model_framework)
         self.conv2d_data_layout = conv2d_data_layout
         self.conv2d_kernel_layout = conv2d_kernel_layout
         self.use_fp16_precision = use_fp16_precision
         self.use_int8_precision = use_int8_precision
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path
+        )
 
     def compile_model(self, mod, params, outputpath, io_spec):
         # additional regular optimizations applied to models
@@ -478,8 +481,6 @@ class TVMCompiler(Optimizer):
             self,
             input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
-        input_model_path = ResourceURI(input_model_path)
-
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 

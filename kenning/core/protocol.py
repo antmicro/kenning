@@ -11,14 +11,12 @@ from enum import Enum
 from pathlib import Path
 import json
 import time
-from typing import Any, Tuple, Optional, Union, Dict, Callable
+from typing import Any, Literal, Tuple, Optional, Union, Dict, Callable
 from argparse import Namespace
 
 from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
 import kenning.utils.logger as logger
 
 
@@ -34,8 +32,9 @@ class RequestFailure(Exception):
 
 
 def check_request(
-        request: Union[bool, Tuple[bool, Optional[bytes]]],
-        msg: str):
+    request: Union[bool, Tuple[bool, Optional[bytes]]],
+    msg: str
+) -> Tuple[bool, Optional[bytes]]:
     """
     Checks if the request finished successfully.
 
@@ -51,7 +50,7 @@ def check_request(
 
     Returns
     -------
-    Union[bool, Tuple[bool, Optional[bytes]]] :
+    Tuple[bool, Optional[bytes]] :
         The request given in the input.
 
     Raises
@@ -60,11 +59,10 @@ def check_request(
         Raised when the request did not finish successfully.
     """
     if isinstance(request, bool):
-        if not request:
-            raise RequestFailure(f'Failed to handle request: {msg}')
-    else:
-        if not request[0]:
-            raise RequestFailure(f'Failed to handle request: {msg}')
+        request = request, None
+    if not request[0]:
+        raise RequestFailure(f'Failed to handle request: {msg}')
+
     return request
 
 
@@ -80,10 +78,10 @@ class MessageType(Enum):
     ERROR - message indicating failure of previous command.
     DATA - message contains inference input/output/statistics.
     MODEL - message contains model to load.
-    PROCESS - message means the data is being processed.
+    PROCESS - message means the data should be processed.
     OUTPUT - host requests the output from the target.
     STATS - host requests the inference statistics from the target.
-    IOSPEC - message contains io specification to load.
+    IO_SPEC - message contains io specification to load.
     """
 
     OK = 0
@@ -93,9 +91,12 @@ class MessageType(Enum):
     PROCESS = 4
     OUTPUT = 5
     STATS = 6
-    IOSPEC = 7
+    IO_SPEC = 7
 
-    def to_bytes(self, endianness: str = 'little') -> bytes:
+    def to_bytes(
+        self,
+        endianness: Literal['little', 'big'] = 'little'
+    ) -> bytes:
         """
         Converts MessageType enum to bytes.
 
@@ -113,9 +114,10 @@ class MessageType(Enum):
 
     @classmethod
     def from_bytes(
-            cls,
-            value: bytes,
-            endianness: str = 'little') -> 'MessageType':
+        cls,
+        value: bytes,
+        endianness: Literal['little', 'big'] = 'little',
+    ) -> 'MessageType':
         """
         Converts bytes to MessageType enum.
 
@@ -150,13 +152,17 @@ class Message(object):
     * num-bytes - tells the size of <msg-type>[<data>] part of the message,
       in bytes.
     * msg-type - the type of the message. For message types check the
-      MessageType enum from kenning.core.runtimeprotocol.
+      MessageType enum from kenning.core.protocol.
     * data - optional data that comes with the message of MessageType.
     """
 
-    def __init__(self, message_type: MessageType, payload: bytes = b''):
+    def __init__(
+        self,
+        message_type: MessageType,
+        payload: Optional[bytes] = None
+    ):
         self.message_type = message_type
-        self.payload = payload
+        self.payload = payload if payload is not None else b''
 
     @property
     def message_size(self) -> int:
@@ -164,9 +170,10 @@ class Message(object):
 
     @classmethod
     def from_bytes(
-            cls,
-            data: bytes,
-            endianness: str = 'little') -> Tuple[Optional['Message'], int]:
+        cls,
+        data: bytes,
+        endianness: Literal['little', 'big'] = 'little',
+    ) -> Tuple[Optional['Message'], int]:
         """
         Converts bytes to Message.
 
@@ -201,7 +208,10 @@ class Message(object):
 
         return cls(message_type, message_payload), MSG_SIZE_LEN + message_size
 
-    def to_bytes(self, endianness: str = 'little') -> bytes:
+    def to_bytes(
+        self,
+        endianness: Literal['little', 'big'] = 'little',
+    ) -> bytes:
         """
         Converts Message to bytes.
 
@@ -256,7 +266,7 @@ class ServerStatus(Enum):
     DATA_INVALID = 5
 
 
-class RuntimeProtocol(ArgumentsHandler):
+class Protocol(ArgumentsHandler):
     """
     The interface for the communication protocol with the target devices.
 
@@ -275,7 +285,7 @@ class RuntimeProtocol(ArgumentsHandler):
         self.log = logger.get_logger()
 
     @classmethod
-    def from_argparse(cls, args: Namespace):
+    def from_argparse(cls, args: Namespace) -> 'Protocol':
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -289,15 +299,10 @@ class RuntimeProtocol(ArgumentsHandler):
         RuntimeProtocol :
             Object of class RuntimeProtocol.
         """
-
-        parsed_args_dict = get_parsed_args_dict(cls, args)
-
-        return cls(
-            **parsed_args_dict
-        )
+        return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict):
+    def from_json(cls, json_dict: Dict) -> 'Protocol':
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -315,13 +320,7 @@ class RuntimeProtocol(ArgumentsHandler):
         RuntimeProtocol :
             Object of class RuntimeProtocol.
         """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **parsed_json_dict
-        )
+        return super().from_json(json_dict)
 
     def initialize_server(self) -> bool:
         """
@@ -513,7 +512,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         message = Message(MessageType.DATA, data)
 
-        self.send_message(message)
+        if not self.send_message(message):
+            return False
         return self.receive_confirmation()[0]
 
     def upload_model(self, path: Path) -> bool:
@@ -542,7 +542,8 @@ class RuntimeProtocol(ArgumentsHandler):
 
         message = Message(MessageType.MODEL, data)
 
-        self.send_message(message)
+        if not self.send_message(message):
+            return False
         return self.receive_confirmation()[0]
 
     def upload_io_specification(self, path: Path) -> bool:
@@ -569,9 +570,10 @@ class RuntimeProtocol(ArgumentsHandler):
         with open(path, 'rb') as detfile:
             data = detfile.read()
 
-        message = Message(MessageType.IOSPEC, data)
+        message = Message(MessageType.IO_SPEC, data)
 
-        self.send_message(message)
+        if not self.send_message(message):
+            return False
         return self.receive_confirmation()[0]
 
     def request_processing(
@@ -599,7 +601,9 @@ class RuntimeProtocol(ArgumentsHandler):
             True if inference finished successfully.
         """
         self.log.debug('Requesting processing')
-        self.send_message(Message(MessageType.PROCESS))
+        if not self.send_message(Message(MessageType.PROCESS)):
+            return False
+
         start = get_time_func()
         ret = self.receive_confirmation()[0]
         if not ret:
@@ -627,10 +631,11 @@ class RuntimeProtocol(ArgumentsHandler):
             and downloaded data.
         """
         self.log.debug('Downloading output')
-        self.send_message(Message(MessageType.OUTPUT))
+        if not self.send_message(Message(MessageType.OUTPUT)):
+            return False, b''
         return self.receive_confirmation()
 
-    def download_statistics(self) -> 'Measurements':
+    def download_statistics(self) -> Measurements:
         """
         Downloads inference statistics from the target device.
 
@@ -641,10 +646,13 @@ class RuntimeProtocol(ArgumentsHandler):
         Measurements :
             Inference statistics on target device.
         """
-        self.log.debug('Downloading statistics')
-        self.send_message(Message(MessageType.STATS))
-        status, dat = self.receive_confirmation()
         measurements = Measurements()
+
+        self.log.debug('Downloading statistics')
+        if not self.send_message(Message(MessageType.STATS)):
+            return measurements
+
+        status, dat = self.receive_confirmation()
         if status and isinstance(dat, bytes) and len(dat) > 0:
             jsonstr = dat.decode('utf8')
             jsondata = json.loads(jsonstr)

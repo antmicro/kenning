@@ -6,6 +6,7 @@
 Runtime implementation for PyTorch models
 """
 from typing import Optional, List
+from pathlib import Path
 import gc
 
 from kenning.core.runtime import (
@@ -13,8 +14,7 @@ from kenning.core.runtime import (
     ModelNotPreparedError,
     Runtime,
 )
-from kenning.core.runtimeprotocol import RuntimeProtocol
-from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchRuntime(Runtime):
@@ -23,20 +23,17 @@ class PyTorchRuntime(Runtime):
     for testing inference on PyTorch models.
     """
 
-    inputtypes = ['torch']
-
     arguments_structure = {
         "model_path": {
             "argparse_name": "--save-model-path",
             "description": "Path where the model will be uploaded",
-            "type": ResourceURI,
+            "type": Path,
             "default": "model.pth",
         }
     }
 
     def __init__(
         self,
-        protocol: RuntimeProtocol,
         model_path: PathOrURI,
         disable_performance_measurements: bool = True,
     ):
@@ -45,8 +42,6 @@ class PyTorchRuntime(Runtime):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            The implementation of the host-target communication protocol
         model_path : PathOrURI
             Path or URI to the model file.
         disable_performance_measurements : bool
@@ -61,7 +56,9 @@ class PyTorchRuntime(Runtime):
         self.model = None
         self.input: Optional[List] = None
         self.output: Optional[List] = None
-        super().__init__(protocol, disable_performance_measurements)
+        super().__init__(
+            disable_performance_measurements=disable_performance_measurements
+        )
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
         self.log.info("Loading model")
@@ -149,9 +146,3 @@ class PyTorchRuntime(Runtime):
                 results.extend([out.detach().cpu().numpy() for out in output])
             else:
                 results.append(output)
-
-        return self.postprocess_output(results)
-
-    @classmethod
-    def from_argparse(cls, protocol, args):
-        return cls(protocol, args.save_model_path)

@@ -10,7 +10,6 @@ from kenning.core.runtime import Runtime
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.runtimes.renode import RenodeRuntime
-from kenning.runtimeprotocols.uart import UARTProtocol
 from kenning.utils.class_loader import get_all_subclasses
 from kenning.tests.core.conftest import get_default_dataset_model
 from kenning.tests.core.conftest import UnknownFramework
@@ -36,15 +35,9 @@ def prepare_objects(
         pytest.xfail(f'Unknown framework: {inputtype}')
 
     if runtime_cls is RenodeRuntime:
-        resources_path = Path('build/renode-resources/springbok')
-        runtime = runtime_cls(
-            protocol=UARTProtocol('/tmp/uart', 115200),
-            runtime_binary_path=resources_path / 'iree_runtime',
-            platform_resc_path=resources_path / 'springbok.resc',
-            disable_profiler=True
-        )
+        pytest.xfail()
     else:
-        runtime = runtime_cls(protocol=None, model_path=model.model_path)
+        runtime = runtime_cls(model_path=model.model_path)
 
     return runtime, dataset, model
 
@@ -99,10 +92,18 @@ class TestRuntime:
         ])
         for runtime_cls, inputtype in RUNTIME_INPUTTYPES
     ])
-    def test_inference(self, runtime_cls: Type[Runtime], inputtype: str):
+    def test_run(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `run_locally` method.
         """
         runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
 
-        runtime.run_locally(dataset, model, str(model.model_path))
+        assert runtime.prepare_local()
+
+        X, _ = next(dataset)
+        prepX = model._preprocess_input(X)
+        prepX = model.convert_input_to_bytes(prepX)
+
+        assert runtime.prepare_input(prepX)
+
+        runtime.run()

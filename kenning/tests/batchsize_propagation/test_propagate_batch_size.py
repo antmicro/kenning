@@ -1,5 +1,6 @@
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
+from kenning.utils.pipeline_runner import PipelineRunner
 
 import pytest
 
@@ -21,11 +22,6 @@ from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
 from kenning.tests.core.conftest import get_reduced_dataset_path
 from kenning.utils.resource_manager import ResourceURI, ResourceManager
-
-
-@pytest.fixture(scope='function', autouse=True)
-def clear_measurements():
-    MeasurementsCollector.clear()
 
 
 @pytest.mark.xdist_group(name='use_resources')
@@ -66,7 +62,7 @@ def test_scenario_pet_dataset_tflite(
         compiler = TFLiteCompiler(
             dataset=dataset,
             compiled_model_path=tmp_model_path,
-            modelframework='keras',
+            model_framework='keras',
             target='default',
             inferenceinputtype='float32',
             inferenceoutputtype='float32'
@@ -76,15 +72,17 @@ def test_scenario_pet_dataset_tflite(
         )
 
         runtime = TFLiteRuntime(
-            protocol=None,
             model_path=tmp_model_path
         )
 
-        runtime.run_locally(
-            dataset,
-            model,
-            tmp_model_path
+        pipeline_runner = PipelineRunner(
+            dataset=dataset,
+            model_wrapper=model,
+            optimizers=[compiler],
+            runtime=runtime
         )
+
+        pipeline_runner.run()
 
         assert compiler.dataset.batch_size == batch_size
 
@@ -113,8 +111,6 @@ def test_scenario_tflite_tvm_magic_wand(
         tmpfolder):
 
     with expectation:
-        ResourceManager().clear_cache()
-
         compiled_model_path_tflite = tmpfolder / f'model-magicwand-{batch_size}.tflite' # noqa E501
         compiled_model_path_tvm = tmpfolder / f'model-magicwand-{batch_size}.tar' # noqa E501
 
@@ -137,7 +133,7 @@ def test_scenario_tflite_tvm_magic_wand(
         compiler_tflite = TFLiteCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path_tflite,
-            modelframework='keras',
+            model_framework='keras',
             target='default',
             inferenceinputtype='float32',
             inferenceoutputtype='float32'
@@ -149,22 +145,24 @@ def test_scenario_tflite_tvm_magic_wand(
         compiler_tvm = TVMCompiler(
             dataset=dataset,
             compiled_model_path=compiled_model_path_tvm,
-            modelframework='tflite'
+            model_framework='tflite'
         )
         compiler_tvm.compile(
             input_model_path=Path(compiled_model_path_tflite)
         )
 
         runtime = TVMRuntime(
-            protocol=None,
             model_path=compiled_model_path_tvm
         )
 
-        runtime.run_locally(
-            dataset,
-            model,
-            compiled_model_path_tvm
+        pipeline_runner = PipelineRunner(
+            dataset=dataset,
+            model_wrapper=model,
+            optimizers=[compiler_tvm],
+            runtime=runtime
         )
+
+        pipeline_runner.run()
 
         assert compiler_tflite.dataset.batch_size == batch_size
         assert compiler_tvm.dataset.batch_size == batch_size
@@ -215,22 +213,22 @@ def test_scenario_tflite_person_detection(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             backend='llvm-cpu',
-            modelframework='tflite',
+            model_framework='tflite',
             compiler_args=[
-                "iree-llvm-debug-symbols=false",
-                "iree-vm-bytecode-module-strip-source-map=true",
-                "iree-vm-emit-polyglot-zip=false",
-                "iree-llvm-target-triple=riscv32-pc-linux-elf",
-                "iree-llvm-target-cpu=generic-rv32",
-                "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f", # noqa E501
-                "iree-llvm-target-abi=ilp32"]
+                'iree-llvm-debug-symbols=false',
+                'iree-vm-bytecode-module-strip-source-map=true',
+                'iree-vm-emit-polyglot-zip=false',
+                'iree-llvm-target-triple=riscv32-pc-linux-elf',
+                'iree-llvm-target-cpu=generic-rv32',
+                'iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f',
+                'iree-llvm-target-abi=ilp32',
+            ]
         )
         compiler.compile(
             input_model_path=Path(model_path),
         )
 
         runtime = RenodeRuntime(
-            protocol=None,
             runtime_binary_path=None,
             platform_resc_path=None,
         )

@@ -9,6 +9,7 @@ A script for connecting Kenning with Pipeline Manager server.
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List
@@ -64,6 +65,12 @@ class PipelineManagerClient(CommandTemplate):
             required=True
         )
         ve_group.add_argument(
+            '--workspace-dir',
+            type=Path,
+            help='Directory where the frontend sources should be stored',
+            required=True
+        )
+        ve_group.add_argument(
             '--spec-type',
             type=str,
             help='Type of graph that should be represented in a Pipeline Manager - can choose between optimization pipeline or Kenningflow',  # noqa: E501
@@ -83,6 +90,9 @@ class PipelineManagerClient(CommandTemplate):
     def run(args: argparse.Namespace, **kwargs):
         from pipeline_manager_backend_communication.communication_backend import CommunicationBackend  # noqa: E501
         from pipeline_manager_backend_communication.misc_structures import MessageType, Status  # noqa: E501
+        from pipeline_manager.backend.run_in_parallel import \
+            start_server_in_parallel, stop_parallel_server
+        from pipeline_manager import frontend_builder
 
         def parse_message(
             dataflow_handler: BaseDataflowHandler,
@@ -181,7 +191,16 @@ class PipelineManagerClient(CommandTemplate):
         logger.set_verbosity(args.verbosity)
         log = logger.get_logger()
 
+        build_status = frontend_builder.build_frontend(
+            'server-app',
+            workspace_directory=args.workspace_dir,
+        )
+        if build_status != 0:
+            raise RuntimeError('Build error')
+
         client = CommunicationBackend(args.host, args.port)
+        start_server_in_parallel(frontend_path=args.workspace_dir / 'frontend/dist')
+
         try:
             if args.spec_type == "pipeline":
                 dataflow_handler = PipelineHandler(layout_algorithm=args.layout) # noqa E501
@@ -243,6 +262,8 @@ class PipelineManagerClient(CommandTemplate):
                 MessageType.ERROR,
                 bytes(f'Unexpected exception:\n{ex}', 'utf-8'))
             raise
+        finally:
+            stop_parallel_server()
         return 0
 
 

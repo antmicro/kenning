@@ -187,9 +187,9 @@ For this use case, we need two JSON files - one for inference server configurati
 The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication or other.
 It depends on the [](protocol-api) used.
 
-Let's start with client configuration by adding a `protocol` entry:
+Let's start with client and server configuration by adding a `runtime_protocol` entry:
 
-```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client.json
+```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client-server.json
 :language: json
 :emphasize-lines: 48-57
 ```
@@ -197,14 +197,7 @@ Let's start with client configuration by adding a `protocol` entry:
 In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
 The `runtime` block is still needed to perform runtime-specific data preprocessing and postprocessing in the client application (the server only infers data).
 
-The server configuration looks as follows:
-
-```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-server.json
-:language: json
-```
-
-Here, only `runtime` and `protocol` need to be specified.
-The server uses `protocol` to receive requests from clients and `runtime` to run the tested models.
+The server uses `runtime_protocol` to receive requests from clients and `runtime` to run the tested models.
 
 The remaining things are provided by the client - input data and model.
 Direct outputs from the model are sent as is to the client, so it can postprocess them and evaluate the model using the dataset.
@@ -212,17 +205,17 @@ The server also sends measurements from its sensors in JSON format as long as it
 
 First, run the server, so that it is available for the client:
 
-```bash timeout=10
+```bash terminal=1
 kenning server \
-    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-server.json \
-    --verbosity INFO
+    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json \
+    --verbosity INFO &
 ```
 
 Then, run the client:
 
-```bash timeout=10
+```bash timeout=60
 kenning optimize test \
-    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client.json \
+    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json \
     --measurements ./build/tflite-tvm-classificationjson.json \
     --verbosity INFO
 ```

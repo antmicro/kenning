@@ -188,6 +188,8 @@ class InferenceTester(CommandTemplate):
                 "Please use only one method of configuration.")
         if "measurements" not in args:
             args.measurements = [None]
+        if "evaluate_unoptimized" not in args:
+            args.evaluate_unoptimized = False
 
         if args.json_cfg is not None:
             if args.help:

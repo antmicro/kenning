@@ -191,7 +191,7 @@ class Measurements(object):
 
     def copy(self):
         """
-        Makes copy of deasurements data.
+        Makes copy of measurements data.
         """
         return self.data.copy()
 
@@ -349,7 +349,7 @@ class SystemStatsCollector(Thread):
         self.join()
         return False
 
-    def get_measurements(self):
+    def get_measurements(self) -> Measurements:
         """
         Returns measurements from the thread.
 

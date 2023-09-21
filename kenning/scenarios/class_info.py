@@ -93,14 +93,16 @@ class ClassInfoRunner(CommandTemplate):
     def run(args: argparse.Namespace, **kwargs):
         logger.set_verbosity(args.verbosity)
 
-        args = {k: v for k, v in vars(args).items() if v is not None
-                and k != 'help' and k != 'verbosity' and k != '__seq_0'}
+        args_dict = {
+            k: v for k, v in vars(args).items()
+            if v is not None and k not in ('help', 'verbosity', '__seq_0')
+        }
 
         # if no flags are given, set all of them to True (display everything)
         if not any([v for v in args.values() if isinstance(v, bool)]):
             for k, v in args.items():
-                args[k] = True if isinstance(v, bool) else v
-        resulting_output = generate_class_info(**args)
+                args_dict[k] = True if isinstance(v, bool) else v
+        resulting_output = generate_class_info(**args_dict)
 
         for result_line in resulting_output:
             print(result_line, end='')

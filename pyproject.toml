@@ -105,6 +105,7 @@ real_time_visualization = [
     "dearpygui>=1.6.2",
 ]
 pipeline_manager = [
+    "pipeline_manager @ git+https://github.com/antmicro/kenning-pipeline-manager.git",
     "pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git",
 ]
 reports = [

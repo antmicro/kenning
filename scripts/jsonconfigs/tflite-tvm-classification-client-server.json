@@ -50,7 +50,7 @@
         "type": "kenning.protocols.network.NetworkProtocol",
         "parameters":
         {
-            "host": "10.9.8.7",
+            "host": "127.0.0.1",
             "port": 12345,
             "packet_size": 32768
         }

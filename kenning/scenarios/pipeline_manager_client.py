@@ -29,6 +29,7 @@ from jsonschema.exceptions import ValidationError
 class PipelineManagerClient(CommandTemplate):
     parse_all = True
     description = __doc__.split('\n\n')[0]
+    specification = None
 
     @staticmethod
     def configure_parser(
@@ -82,6 +83,12 @@ class PipelineManagerClient(CommandTemplate):
             type=str,
             default='CytoscapeEngine - breadthfirst'
         )
+        ve_group.add_argument(
+            '--workspace-dir',
+            type=Path,
+            help='Directory where the frontend sources should be stored',
+            required=True
+        )
 
         return parser, groups
 
@@ -123,8 +130,11 @@ class PipelineManagerClient(CommandTemplate):
             from pipeline_manager_backend_communication.misc_structures import MessageType  # noqa: E501
 
             if message_type == MessageType.SPECIFICATION:
-                specification = dataflow_handler.get_specification()
-                feedback_msg = json.dumps(specification)
+                if not PipelineManagerClient.specification:
+                    PipelineManagerClient.specification = dataflow_handler.get_specification(  # noqa: E501
+                        workspace_dir=args.workspace_dir)
+
+                feedback_msg = json.dumps(PipelineManagerClient.specification)
 
             elif (
                 message_type == MessageType.VALIDATE

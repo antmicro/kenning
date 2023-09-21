@@ -3,15 +3,19 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import itertools
+from pathlib import Path
 from typing import Any, Dict, NamedTuple, List, Tuple, Union
+
+from pipeline_manager.specification_builder import SpecificationBuilder
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
 
+from pipeline_manager import specification_builder
 
 _LOGGER = get_logger()
 
-VERSION = '20230619.3'
+VERSION = '20230830.11'
 
 
 class Node(NamedTuple):
@@ -162,6 +166,7 @@ class BaseDataflowHandler:
             nodes: Dict[str, Node],
             io_mapping: Dict[str, Dict],
             graph_creator: GraphCreator,
+            spec_builder: SpecificationBuilder,
             layout_algorithm: str
     ):
         """
@@ -179,6 +184,9 @@ class BaseDataflowHandler:
         graph_creator : GraphCreator
             Creator used for parsing Pipeline manager dataflows into specific
             JSON format
+        spec_builder : SpecificationBuilder
+            SpecificationBuilder object responsible for handling various
+            specification operations, like adding node types
         layout_algorithm : str
             Chooses autolayout algorithm to send in metadata specification
         """
@@ -186,20 +194,28 @@ class BaseDataflowHandler:
         self.io_mapping = io_mapping
         self.pm_graph = PipelineManagerGraphCreator(io_mapping)
         self.dataflow_graph = graph_creator
+        self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
 
-    def get_specification(self) -> Dict:
+    def get_specification(self, workspace_dir: Path) -> Dict:
         """
         Prepares core-based Kenning classes to be sent to Pipeline Manager.
 
         For every class in `nodes` it uses its parameterschema to create
         a corresponding dataflow specification.
 
+        Parameters
+        ----------
+        workspace_dir : Path
+            Pipeline Manager's workspace directory
+
         Returns
         -------
         Dict :
             Specification ready to be send to Pipeline Manager.
         """
+        from kenning.pipeline_manager.node_utils import property_value_to_dtype
+
         specification = {
             'version': VERSION,
             'metadata': {
@@ -208,6 +224,13 @@ class BaseDataflowHandler:
             },
             'nodes': []
         }
+
+        self.spec_builder.metadata_add_param(
+            'twoColumn', True
+        )
+        self.spec_builder.metadata_add_param(
+            'layout', self.autolayout
+        )
 
         def strip_io(io_list: list, direction) -> list:
             """
@@ -222,6 +245,11 @@ class BaseDataflowHandler:
                 }
                 for io in io_list
             ]
+
+        print('=====\n' * 3, end='')
+        print('generate spec')
+        print(len(self.nodes))
+        print('=====\n' * 3, end='')
 
         toremove = set()
         for key, node in self.nodes.items():
@@ -265,7 +293,7 @@ class BaseDataflowHandler:
                             new_property['dtype'] = dtype
                         add_default([])
                     elif 'boolean' in props['type']:
-                        new_property['type'] = 'checkbox'
+                        new_property['type'] = 'bool'
                         add_default(False)
                     elif 'string' in props['type']:
                         new_property['type'] = 'text'
@@ -291,19 +319,36 @@ class BaseDataflowHandler:
                 if new_property is not None:
                     properties.append(new_property)
 
-            specification['nodes'].append({
-                'name': node.name,
-                'type': node.type,
-                'category': node.category,
-                'properties': properties,
-                'interfaces': strip_io(
-                    self.io_mapping[node.type]['inputs'],
-                    'input'
-                ) + strip_io(
-                    self.io_mapping[node.type]['outputs'],
-                    'output'
+                self.spec_builder.add_node_type_property(
+                    node.name,
+                    propname=new_property['name'],
+                    proptype=new_property['type'],
+                    default=new_property.get('default'),
+                    description=new_property.get('description'),
+                    min=new_property.get('min'),
+                    max=new_property.get('max'),
+                    values=new_property.get('values'),
+                    dtype=property_value_to_dtype(new_property.get('default')),
                 )
-            })
+
+            # specification['nodes'].append({
+            #     'name': node.name,
+            #     'type': node.type,
+            #     'category': node.category,
+            #     'properties': properties,
+            #     'interfaces': strip_io(
+            #         self.io_mapping[node.type]['inputs'],
+            #         'input'
+            #     ) + strip_io(
+            #         self.io_mapping[node.type]['outputs'],
+            #         'output'
+            #     )
+            # })
+
+        specification = self.spec_builder.create_and_validate_spec(
+            workspacedir=workspace_dir,
+            dump_spec='/home/pcichowski/kenning/build/pipeline-spec.json'
+        )
 
         for key in toremove:
             del self.nodes[key]
@@ -420,6 +465,7 @@ class BaseDataflowHandler:
 
     @staticmethod
     def get_nodes(
+            spec_builder: SpecificationBuilder,
             nodes: Dict[str, Node] = None,
             io_mapping: Dict[str, Dict] = None
     ) -> Tuple[Dict[str, Node], Dict[str, Dict]]:
@@ -429,6 +475,9 @@ class BaseDataflowHandler:
 
         Parameters
         ----------
+        spec_builder : SpecificationBuilder
+            SpecificationBuilder object that will be used to form the
+            specification programmatically
         nodes : Dict[str, Node], optional
             If None, new nodes list is created, otherwise all items are
             added to the provided argument.

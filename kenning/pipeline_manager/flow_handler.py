@@ -114,7 +114,7 @@ class KenningFlowHandler(BaseDataflowHandler):
         return self.pm_graph.flush_graph()
 
     @staticmethod
-    def get_nodes(nodes=None, io_mapping=None):
+    def get_nodes(spec_builder, nodes=None, io_mapping=None):
         if nodes is None:
             nodes = {}
         if io_mapping is None:
@@ -132,11 +132,11 @@ class KenningFlowHandler(BaseDataflowHandler):
         for base_module, base_type in base_modules:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
-                add_node(
-                    nodes,
-                    f"{kenning_class.__module__}.{kenning_class.__name__}",
-                    get_category_name(kenning_class),
-                    base_module.split(".")[-1]
+                spec_builder.add_node_type(
+                    name=f"{kenning_class.__module__}."
+                         f"{kenning_class.__name__}".split(".")[-1],
+                    category=get_category_name(kenning_class),
+                    layer=base_module.split(".")[-1]
                 )
 
         io_mapping = {
@@ -224,6 +224,8 @@ class FlowGraphCreator(GraphCreator):
         self.connections = []
 
     def create_node(self, node, parameters):
+
+
         node_id = self.gen_id()
         if node.name in self.primitive_modules:
             self.nodes[node_id] = node.type, {

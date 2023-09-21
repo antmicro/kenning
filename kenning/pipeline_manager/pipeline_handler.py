@@ -5,9 +5,12 @@
 from pathlib import Path
 from typing import Dict, Tuple
 
+from pipeline_manager import specification_builder
+
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol
-from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator
+from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator, \
+    VERSION
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.utils.class_loader import (
     get_all_subclasses,
@@ -21,9 +24,16 @@ class PipelineHandler(BaseDataflowHandler):
     Defines interpretation of graphs coming from Pipeline manager as Kenning
     optimization pipelines.
     """
+
     def __init__(self, **kwargs):
-        nodes, io_mapping = PipelineHandler.get_nodes()
-        super().__init__(nodes, io_mapping, PipelineGraphCreator(), **kwargs)
+        self.spec_builder = specification_builder.SpecificationBuilder(VERSION)
+        nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
+        super().__init__(
+            nodes,
+            io_mapping,
+            PipelineGraphCreator(),
+            self.spec_builder,
+            **kwargs)
 
     def parse_json(self, json_cfg) -> PipelineRunner:
         return PipelineRunner.from_json_cfg(json_cfg)
@@ -121,7 +131,8 @@ class PipelineHandler(BaseDataflowHandler):
         base_type_names[ModelWrapper] = 'model_wrapper'
         base_type_names[Protocol] = 'protocol'
         for base_module, base_type in base_classes:
-            for kenning_class in get_all_subclasses(base_module, base_type):
+            classes = get_all_subclasses(base_module, base_type)
+            for kenning_class in classes:
                 add_node(
                     nodes,
                     f'{kenning_class.__module__}.{kenning_class.__name__}',

@@ -10,7 +10,7 @@ from pipeline_manager import specification_builder
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol
 from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator, \
-    VERSION
+    SPECIFICATION_VERSION
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.utils.class_loader import (
     get_all_subclasses,
@@ -26,7 +26,7 @@ class PipelineHandler(BaseDataflowHandler):
     """
 
     def __init__(self, **kwargs):
-        self.spec_builder = specification_builder.SpecificationBuilder(VERSION)
+        self.spec_builder = specification_builder.SpecificationBuilder(SPECIFICATION_VERSION)  # noqa: E501
         nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
         super().__init__(
             nodes,

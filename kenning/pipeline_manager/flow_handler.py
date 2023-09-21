@@ -8,8 +8,8 @@ from typing import Any, Dict, Iterable, List
 
 from kenning.core.flow import KenningFlow
 from kenning.pipeline_manager.core import BaseDataflowHandler, \
-    GraphCreator  # noqa: E501
-from kenning.pipeline_manager.node_utils import add_node, get_category_name
+    GraphCreator
+from kenning.pipeline_manager.node_utils import get_category_name
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 from kenning.utils.class_loader import get_all_subclasses, load_class, \
     get_base_classes_dict
@@ -224,8 +224,6 @@ class FlowGraphCreator(GraphCreator):
         self.connections = []
 
     def create_node(self, node, parameters):
-
-
         node_id = self.gen_id()
         if node.name in self.primitive_modules:
             self.nodes[node_id] = node.type, {

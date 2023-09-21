@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 import re
-from typing import Dict, Optional, Any
+from typing import Dict
 
 from kenning.pipeline_manager.core import Node
 
@@ -45,19 +45,3 @@ def get_category_name(kenning_class):
     # Remove last class name
     names = names.split(".")[:-1]
     return '/'.join(names)
-
-
-def property_value_to_dtype(value: Any) -> Optional[str]:
-    if value is None:
-        return None
-    property_type = str(type(value).__name__)
-
-    if property_type == 'str':
-        return 'string'
-    if property_type == 'int':
-        return 'integer'
-    if property_type == 'float':
-        return 'number'
-    if property_type == 'bool':
-        return 'boolean'
-    return None

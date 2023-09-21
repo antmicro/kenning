@@ -4,18 +4,16 @@
 
 import itertools
 from pathlib import Path
-from typing import Any, Dict, NamedTuple, List, Tuple, Union
+from typing import Any, Dict, NamedTuple, List, Tuple, Union, Optional
 
 from pipeline_manager.specification_builder import SpecificationBuilder
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
 
-from pipeline_manager import specification_builder
-
 _LOGGER = get_logger()
 
-VERSION = '20230830.11'
+SPECIFICATION_VERSION = '20230830.11'
 
 
 class Node(NamedTuple):
@@ -214,16 +212,6 @@ class BaseDataflowHandler:
         Dict :
             Specification ready to be send to Pipeline Manager.
         """
-        from kenning.pipeline_manager.node_utils import property_value_to_dtype
-
-        specification = {
-            'version': VERSION,
-            'metadata': {
-                'twoColumn': True,
-                'layout': self.autolayout
-            },
-            'nodes': []
-        }
 
         self.spec_builder.metadata_add_param(
             'twoColumn', True
@@ -246,10 +234,20 @@ class BaseDataflowHandler:
                 for io in io_list
             ]
 
-        print('=====\n' * 3, end='')
-        print('generate spec')
-        print(len(self.nodes))
-        print('=====\n' * 3, end='')
+        def property_value_to_dtype(value: Any) -> Optional[str]:
+            if value is None:
+                return None
+            property_type = str(type(value).__name__)
+
+            if property_type == 'str':
+                return 'string'
+            if property_type == 'int':
+                return 'integer'
+            if property_type == 'float':
+                return 'number'
+            if property_type == 'bool':
+                return 'boolean'
+            return None
 
         toremove = set()
         for key, node in self.nodes.items():
@@ -331,19 +329,16 @@ class BaseDataflowHandler:
                     dtype=property_value_to_dtype(new_property.get('default')),
                 )
 
-            # specification['nodes'].append({
-            #     'name': node.name,
-            #     'type': node.type,
-            #     'category': node.category,
-            #     'properties': properties,
-            #     'interfaces': strip_io(
-            #         self.io_mapping[node.type]['inputs'],
-            #         'input'
-            #     ) + strip_io(
-            #         self.io_mapping[node.type]['outputs'],
-            #         'output'
-            #     )
-            # })
+            stripped_interfaces = \
+                strip_io(self.io_mapping[node.type]['inputs'], 'input') + \
+                strip_io(self.io_mapping[node.type]['outputs'], 'output')
+            for interface in stripped_interfaces:
+                self.spec_builder.add_node_type_interface(
+                    node.name,
+                    interfacename=interface['name'],
+                    interfacetype=interface['type'],
+                    direction=interface['direction']
+                )
 
         specification = self.spec_builder.create_and_validate_spec(
             workspacedir=workspace_dir,
@@ -626,7 +621,7 @@ class PipelineManagerGraphCreator(GraphCreator):
 
     def flush_graph(self):
         finished_graph = {
-            'version': VERSION,
+            'version': SPECIFICATION_VERSION,
             'graph': {
                 'id': self.gen_id(),
                 'nodes': list(self.nodes.values()),

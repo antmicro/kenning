@@ -171,7 +171,6 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
             )
 
             if find_missing_optional_dependency(e.name) is None:
-                breakpoint()
                 return f'* {dependency_path} - Not available (Reason: {e})\n'
 
             return f'* {dependency_path} - Not available (Reason: {e})\n    {err}'  # noqa E501

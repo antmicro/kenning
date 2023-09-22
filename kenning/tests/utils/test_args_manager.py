@@ -38,7 +38,7 @@ class TestArgsManagerWrapper:
                 'real_name': 'disable_performance_measurements',
                 'convert-type': bool,
                 'type': ['boolean'],
-                'description': 'Disable collection and processing of performance metrics', # noqa E501
+                'description': 'Disable collection and processing of performance metrics',  # noqa: E501
                 'default': False}},
         'required': ['driver']}
     VALID_JSON_DICT_PYTHON_TYPES_IREERUNTIME = {
@@ -132,7 +132,7 @@ class TestArgsManagerWrapper:
              {},
              pytest.raises(jsonschema.exceptions.ValidationError)),
             (JSON_SCHEMA_OBJECT_TYPE_MODELRUNTIME_RUNNER,
-             INVALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER_MISSING_REQUIRED, # noqa E501
+             INVALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER_MISSING_REQUIRED,  # noqa: E501
              {},
              pytest.raises(jsonschema.exceptions.ValidationError))
         ],
@@ -226,7 +226,7 @@ class TestArgsManagerWrapper:
              VALID_RESULT_PYTHON_TYPES_ONNXRUNTIME_DEFAULT_MODELPATH,
              does_not_raise()),
             (ModelRuntimeRunner,
-             INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME,  # noqa E501
+             INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME,  # noqa: E501
              VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER,
              pytest.raises(AssertionError)),
         ],
@@ -259,7 +259,7 @@ class TestArgsManagerWrapper:
         if args == TestArgsManagerWrapper.\
                 VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER \
                 or args == TestArgsManagerWrapper.\
-                INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME: # noqa E501
+                INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME:  # noqa: E501
             args = argparse.Namespace(
                 runtime=tmp_path / 'dir/' / args.runtime,
                 model_wrapper=tmp_path / 'dir/' / args.model_wrapper,

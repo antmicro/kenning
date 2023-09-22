@@ -16,6 +16,12 @@ import jsonschema
 import numpy as np
 
 from kenning.utils.resource_manager import ResourceURI
+from kenning.core.model import ModelWrapper
+from kenning.core.dataset import Dataset
+from kenning.core.runtime import Runtime
+from kenning.core.protocol import Protocol
+from kenning.core.optimizer import Optimizer
+from kenning.core.dataconverter import DataConverter
 
 """
 arguments_structure is a mapping (argument_name -> keywords)

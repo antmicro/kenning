@@ -6,7 +6,7 @@
 Runtime implementation for ONNX models.
 """
 
-from typing import List, Optional
+from typing import List
 import onnxruntime as ort
 import numpy as np
 

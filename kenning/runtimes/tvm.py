@@ -6,7 +6,6 @@
 Runtime implementation for TVM-compiled models.
 """
 
-from typing import Optional
 import tvm
 from tvm.contrib import graph_executor
 from tvm.runtime.vm import VirtualMachine, Executable

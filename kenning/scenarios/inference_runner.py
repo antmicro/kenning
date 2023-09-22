@@ -131,7 +131,7 @@ def main(argv):
             for i in outputcollectors:
                 i.process_output(unconverted_inp, res)
     except KeyboardInterrupt:
-        log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa E501
+        log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa: E501
         dataprovider.detach_from_source()
         for o in outputcollectors:
             o.detach_from_output()

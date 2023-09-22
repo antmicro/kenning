@@ -173,7 +173,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
             if find_missing_optional_dependency(e.name) is None:
                 return f'* {dependency_path} - Not available (Reason: {e})\n'
 
-            return f'* {dependency_path} - Not available (Reason: {e})\n    {err}'  # noqa E501
+            return f'* {dependency_path} - Not available (Reason: {e})\n    {err}'  # noqa: E501
 
 
 def get_input_specification(syntax_node: ast.Assign) -> str:
@@ -637,7 +637,7 @@ def instantiate_object(imported_class: Type,
     # create a dict of arguments that will be used to create an instance
     parsed_args: Dict = {}
 
-    # split the arguments into lists with two elements, i.e. argparse_name and value # noqa E501
+    # split the arguments into lists with two elements, i.e. argparse_name and value # noqa: E501
     arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
 
     for arg_tuple in arg_tuples:
@@ -874,7 +874,7 @@ def generate_class_info(
             resulting_lines.append(get_class_module_name(node))
 
         if input_formats or output_formats:
-            if imported_class and hasattr(class_object, 'get_io_specification'):  # noqa E501
+            if imported_class and hasattr(class_object, 'get_io_specification'):  # noqa: E501
                 # object has been created - detailed i/o specification found
                 found_io_specification = True
                 resulting_lines.append('Input/output specification:\n')

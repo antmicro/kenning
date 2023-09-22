@@ -8,31 +8,34 @@ Module containing completer for class paths.
 
 import argparse
 from typing import Dict, Optional
+
 from argcomplete.completers import BaseCompleter
 
 from kenning.scenarios.list_classes import list_classes
 from kenning.utils.class_loader import (
-    OPTIMIZERS,
-    RUNNERS,
-    DATA_PROVIDERS,
     DATASETS,
+    DATA_CONVERTERS,
+    DATA_PROVIDERS,
     MODEL_WRAPPERS,
     ONNX_CONVERSIONS,
+    OPTIMIZERS,
     OUTPUT_COLLECTORS,
-    RUNTIME_PROTOCOLS,
+    RUNNERS,
     RUNTIMES,
+    RUNTIME_PROTOCOLS,
 )
 
 ALL_TYPES = (
-    OPTIMIZERS,
-    RUNNERS,
-    DATA_PROVIDERS,
     DATASETS,
+    DATA_CONVERTERS,
+    DATA_PROVIDERS,
     MODEL_WRAPPERS,
     ONNX_CONVERSIONS,
+    OPTIMIZERS,
     OUTPUT_COLLECTORS,
-    RUNTIME_PROTOCOLS,
+    RUNNERS,
     RUNTIMES,
+    RUNTIME_PROTOCOLS,
 )
 
 

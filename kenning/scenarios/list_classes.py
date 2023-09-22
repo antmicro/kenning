@@ -8,31 +8,35 @@ Script collects and lists available subclasses in Kenning, based on the
 provided base class.
 """
 import argparse
+import errno
 import os
 import sys
-import errno
 from typing import List, Optional, Tuple
+
 from argcomplete.completers import ChoicesCompleter
 
+from kenning.cli.command_template import (
+    ArgumentsGroups,
+    CommandTemplate,
+    GROUP_SCHEMA,
+    LIST,
+)
+from kenning.utils import logger
 from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
-    get_all_subclasses,
-    get_base_classes_dict,
-    OPTIMIZERS,
-    RUNNERS,
-    DATA_PROVIDERS,
     DATASETS,
+    DATA_CONVERTERS,
+    DATA_PROVIDERS,
     MODEL_WRAPPERS,
     ONNX_CONVERSIONS,
+    OPTIMIZERS,
     OUTPUT_COLLECTORS,
-    RUNTIME_PROTOCOLS,
+    RUNNERS,
     RUNTIMES,
+    RUNTIME_PROTOCOLS,
+    get_all_subclasses,
+    get_base_classes_dict,
 )
-
-from kenning.cli.command_template import (
-    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, LIST)
-
-from kenning.utils import logger
 
 
 def list_classes(
@@ -157,6 +161,7 @@ class ListClassesRunner(CommandTemplate):
         OPTIMIZERS,
         RUNNERS,
         DATA_PROVIDERS,
+        DATA_CONVERTERS,
         DATASETS,
         MODEL_WRAPPERS,
         ONNX_CONVERSIONS,

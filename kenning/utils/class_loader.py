@@ -6,30 +6,30 @@
 Provides methods for importing classes and modules at runtime based on string.
 """
 
-from typing import Any, Optional, Type, Union, Dict, Tuple
-import inspect
-import importlib
-from typing import List
-from pathlib import Path
-import ast
 import abc
+import ast
+import importlib
+import inspect
 import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
+from kenning.core.dataconverter import DataConverter
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
+from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
-from kenning.core.protocol import Protocol
 from kenning.utils.logger import get_logger
-
 
 OPTIMIZERS = 'optimizers'
 RUNNERS = 'runners'
 DATA_PROVIDERS = 'dataproviders'
+DATA_CONVERTERS = 'dataconverters'
 DATASETS = 'datasets'
 MODEL_WRAPPERS = 'modelwrappers'
 ONNX_CONVERSIONS = 'onnxconversions'
@@ -51,6 +51,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         OPTIMIZERS: ('kenning.optimizers', Optimizer),
         RUNNERS: ('kenning.runners', Runner),
         DATA_PROVIDERS: ('kenning.dataproviders', DataProvider),
+        DATA_CONVERTERS: ('kenning.dataconverters', DataConverter),
         DATASETS: ('kenning.datasets', Dataset),
         MODEL_WRAPPERS: ('kenning.modelwrappers', ModelWrapper),
         ONNX_CONVERSIONS: ('kenning.onnxconverters', ONNXConversion),

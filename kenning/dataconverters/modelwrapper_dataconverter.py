@@ -8,31 +8,28 @@ during runtime.
 """
 
 from kenning.core.dataconverter import DataConverter
+from kenning.core.model import ModelWrapper
 from kenning.utils.class_loader import load_class
 from typing import Any, Dict
 
+from kenning.utils.args_manager import get_parsed_json_dict
+
 
 class ModelWrapperDataConverter(DataConverter):
+    """
+    A DataConverter based on the ModelWrapper object.
+    """
 
-    arguments_structure: Dict[str, str] = {
-        'model_wrapper': {
-            'argparse_name': '--model-wrapper',
-            'description': 'Import path to the model wrapper class',
-            'type': str,
-            'required': True,
-        },
-    }
-
-    def __init__(self, model_wrapper: str):
+    def __init__(self, model_wrapper: ModelWrapper):
         """
         Initializes the ModelWrapperDataConverter object.
 
         Parameters
         ----------
-        model_wrapper : str
-            The import path to the ModelWrapper class.
+        model_wrapper : ModelWrapper
+            The ModelWrapper object used to convert the data.
         """
-        self.model_wrapper_cls = load_class(model_wrapper)
+        self.model_wrapper = model_wrapper
         super().__init__()
 
     def to_message(self, data: Any) -> bytes:
@@ -49,8 +46,8 @@ class ModelWrapperDataConverter(DataConverter):
         bytes :
             The converted data.
         """
-        prepX = self.model_wrapper_cls._preprocess_input(data)
-        return self.model_wrapper_cls.convert_input_to_bytes(prepX)
+        prepX = self.model_wrapper._preprocess_input(data)
+        return self.model_wrapper.convert_input_to_bytes(prepX)
 
     def from_message(self, data: bytes) -> Any:
         """
@@ -66,5 +63,32 @@ class ModelWrapperDataConverter(DataConverter):
         Any :
             The converted data.
         """
-        preds = self.model_wrapper_cls.convert_output_from_bytes(data)
-        return self.model_wrapper_cls._postprocess_outputs(preds)
+        preds = self.model_wrapper.convert_output_from_bytes(data)
+        return self.model_wrapper._postprocess_outputs(preds)
+
+    @classmethod
+    def from_json(cls,
+                  json_dict: Dict[str, str]) -> "ModelWrapperDataConverter":
+        """
+        Creates the ModelWrapperDataConverter object from the JSON
+        configuration.
+
+        Parameters
+        ----------
+        json_dict : Dict[str, str]
+            The JSON dictionary containing the configuration.
+
+        Returns
+        -------
+        ModelWrapperDataConverter :
+            The created ModelWrapperDataConverter object.
+        """
+        parameterschema = cls.form_parameterschema()
+        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
+
+        modelwrapper_cfg = parsed_json_dict['model_wrapper']
+        modelwrapper_cls = load_class(modelwrapper_cfg['type'])
+        modelwrapper = modelwrapper_cls.from_json(
+                None,
+                modelwrapper_cfg['parameters'])
+        return cls(modelwrapper)

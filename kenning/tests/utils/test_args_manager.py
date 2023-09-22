@@ -97,7 +97,7 @@ class TestArgsManagerWrapper:
         'runtime': {
             'type': 'kenning.runtimes.onnx.ONNXRuntime',
             'parameters': {
-                'save_model_path': 'build/yolov4.onnx'} # noqa E501
+                'save_model_path': 'build/yolov4.onnx'}
         }
     }
 

@@ -56,7 +56,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         },
         'dataset_type': {
             'argparse_name': '--dataset-type',
-            'description': 'Type of dataset to download and use',  # noqa: E501
+            'description': 'Type of dataset to download and use',
             'default': 'val2017',
             'enum': list(set([key[0] for key in resources.keys()])),
         }

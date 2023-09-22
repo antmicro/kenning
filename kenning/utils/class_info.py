@@ -94,7 +94,7 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
 
 
 def get_class_module_docstrings(
-        syntax_node: Union[ast.ClassDef, ast.Module]) -> str:  # noqa: E501
+        syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
     """
     Displays docstrings of provided class or module
 
@@ -513,8 +513,7 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     return enum_elements, argument_type
 
 
-def get_args_structure_from_parameterschema(parameterschema: Dict) -> List[
-    str]:  # noqa E501
+def get_args_structure_from_parameterschema(parameterschema: Dict) -> List[str]:  # noqa: E501
     """
     Returns argument structure in the form of Markdown-like strings based on
     the provided parameterschema.

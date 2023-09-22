@@ -19,7 +19,7 @@ from kenning.core.measurements import Measurements
 
 class ImageNetDataset(Dataset):
     """
-    The ImageNet Larget Scale Visual Recognition Challenge 2012.
+    The ImageNet Largest Scale Visual Recognition Challenge 2012.
 
     This is a classification dataset used in ImageNet competition.
     The purpose of the competition is to estimate the content of photographs
@@ -136,7 +136,7 @@ class ImageNetDataset(Dataset):
         )
 
     def prepare(self):
-        with open(self.root / 'labels.json', 'r') as groundtruthdesc:  # noqa: E501
+        with open(self.root / 'labels.json', 'r') as groundtruthdesc:
             groundtruth = json.load(groundtruthdesc)
             for imagename, label in groundtruth.items():
                 self.dataX.append(str(self.root / 'images' / imagename))

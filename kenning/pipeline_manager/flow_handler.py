@@ -6,10 +6,12 @@ import itertools
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List
 
+from pipeline_manager import specification_builder
+
 from kenning.core.flow import KenningFlow
 from kenning.pipeline_manager.core import BaseDataflowHandler, \
-    GraphCreator
-from kenning.pipeline_manager.node_utils import get_category_name
+    GraphCreator, SPECIFICATION_VERSION
+from kenning.pipeline_manager.node_utils import get_category_name, add_node
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 from kenning.utils.class_loader import get_all_subclasses, load_class, \
     get_base_classes_dict
@@ -20,7 +22,8 @@ class KenningFlowHandler(BaseDataflowHandler):
     Defines the Kenningflow specification to use with Pipeline Manager.
     """
     def __init__(self, **kwargs):
-        pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes()
+        self.spec_builder = specification_builder.SpecificationBuilder(SPECIFICATION_VERSION)  # noqa: E501
+        pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(self.spec_builder)  # noqa: E501
 
         # Nodes from PipelineHandler are used only as arguments for
         # different runners. Therefore they should have no inputs and
@@ -45,11 +48,12 @@ class KenningFlowHandler(BaseDataflowHandler):
         }
 
         nodes, io_mapping = KenningFlowHandler.get_nodes(
-            pipeline_nodes, io_mapping)
+            self.spec_builder, pipeline_nodes, io_mapping)
         super().__init__(
             nodes,
             io_mapping,
             FlowGraphCreator(primitive_modules),
+            self.spec_builder,
             **kwargs
         )
 
@@ -133,10 +137,16 @@ class KenningFlowHandler(BaseDataflowHandler):
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
                 spec_builder.add_node_type(
-                    name=f"{kenning_class.__module__}."
-                         f"{kenning_class.__name__}".split(".")[-1],
-                    category=get_category_name(kenning_class),
-                    layer=base_module.split(".")[-1]
+                    f"{kenning_class.__module__}."
+                    f"{kenning_class.__name__}".split('.')[-1],
+                    get_category_name(kenning_class),
+                    base_module.split(".")[-1]
+                )
+                add_node(
+                    nodes,
+                    f"{kenning_class.__module__}.{kenning_class.__name__}",
+                    get_category_name(kenning_class),
+                    base_module.split(".")[-1]
                 )
 
         io_mapping = {

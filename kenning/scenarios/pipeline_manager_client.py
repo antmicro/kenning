@@ -16,9 +16,6 @@ from typing import Tuple, Dict, Optional, List
 from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, VISUAL_EDITOR)
 from kenning.core.measurements import MeasurementsCollector
-from kenning.pipeline_manager.core import BaseDataflowHandler
-from kenning.pipeline_manager.flow_handler import KenningFlowHandler
-from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 import kenning.utils.logger as logger
 from kenning.utils.excepthook import find_missing_optional_dependency, \
     MissingKenningDependencies
@@ -99,6 +96,9 @@ class PipelineManagerClient(CommandTemplate):
         from pipeline_manager.backend.run_in_parallel import \
             start_server_in_parallel, stop_parallel_server
         from pipeline_manager import frontend_builder
+        from kenning.pipeline_manager.core import BaseDataflowHandler
+        from kenning.pipeline_manager.flow_handler import KenningFlowHandler
+        from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
         def parse_message(
             dataflow_handler: BaseDataflowHandler,
@@ -131,6 +131,7 @@ class PipelineManagerClient(CommandTemplate):
 
             if message_type == MessageType.SPECIFICATION:
                 if not PipelineManagerClient.specification:
+                    log.info('SpecificationBuilder: Generate nodes specification')  # noqa: E501
                     PipelineManagerClient.specification = dataflow_handler.get_specification(  # noqa: E501
                         workspace_dir=args.workspace_dir)
 

@@ -6,8 +6,6 @@ import itertools
 from pathlib import Path
 from typing import Any, Dict, NamedTuple, List, Tuple, Union, Optional
 
-from pipeline_manager.specification_builder import SpecificationBuilder
-
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
 
@@ -159,6 +157,8 @@ class BaseDataflowHandler:
     running incoming dataflows with Kenning.
     """
 
+    from pipeline_manager.specification_builder import SpecificationBuilder
+
     def __init__(
             self,
             nodes: Dict[str, Node],
@@ -249,7 +249,7 @@ class BaseDataflowHandler:
                 return 'boolean'
             return None
 
-        toremove = set()
+        nodes_to_remove = set()
         for key, node in self.nodes.items():
             try:
                 node_cls = load_class(node.cls_name)
@@ -259,11 +259,10 @@ class BaseDataflowHandler:
                 _LOGGER.warn(msg)
                 _LOGGER.warn(err)
                 _LOGGER.warn('-' * len(msg))
-                toremove.add(key)
+                nodes_to_remove.add(key)
                 continue
             parameterschema = node_cls.form_parameterschema()
 
-            properties = []
             for name, props in parameterschema['properties'].items():
                 new_property = {'name': name}
 
@@ -314,8 +313,8 @@ class BaseDataflowHandler:
                     new_property['type'] = 'text'
                     add_default('')
 
-                if new_property is not None:
-                    properties.append(new_property)
+                if new_property is None:
+                    continue
 
                 self.spec_builder.add_node_type_property(
                     node.name,
@@ -342,10 +341,9 @@ class BaseDataflowHandler:
 
         specification = self.spec_builder.create_and_validate_spec(
             workspacedir=workspace_dir,
-            dump_spec='/home/pcichowski/kenning/build/pipeline-spec.json'
         )
 
-        for key in toremove:
+        for key in nodes_to_remove:
             del self.nodes[key]
         return specification
 

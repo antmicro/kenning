@@ -188,18 +188,40 @@ class PipelineManagerClient(CommandTemplate):
             client.send_message(MessageType.PROGRESS,
                                 str(progress).encode('UTF-8'))
 
+        def build_frontend(frontend_path: Path) -> None:
+            """
+            Builds the Pipeline Manager frontend in the selected directory.
+            If some files already exist there, building will be skipped.
+
+            Parameters
+            ----------
+            frontend_path : Path
+                The path where the built frontend files should be stored.
+            """
+
+            # provided these files exist, do not build the frontend again
+            if os.path.exists(frontend_path) and \
+                    os.path.exists(frontend_path / 'index.html') and \
+                    os.path.exists(frontend_path / 'js') and \
+                    os.path.exists(frontend_path / 'css'):
+                return
+
+            build_status = frontend_builder.build_frontend(
+                'server-app',
+                workspace_directory=args.workspace_dir,
+            )
+            if build_status != 0:
+                raise RuntimeError('Build error')
+
         logger.set_verbosity(args.verbosity)
         log = logger.get_logger()
 
-        build_status = frontend_builder.build_frontend(
-            'server-app',
-            workspace_directory=args.workspace_dir,
-        )
-        if build_status != 0:
-            raise RuntimeError('Build error')
+        frontend_files_path = args.workspace_dir / 'frontend/dist'
+
+        build_frontend(frontend_path=frontend_files_path)
 
         client = CommunicationBackend(args.host, args.port)
-        start_server_in_parallel(frontend_path=args.workspace_dir / 'frontend/dist')
+        start_server_in_parallel(frontend_path=frontend_files_path)
 
         try:
             if args.spec_type == "pipeline":

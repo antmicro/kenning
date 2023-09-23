@@ -28,6 +28,7 @@ class ROS2SegmentationDataConverter(DataConverter):
     def to_message(self, data: List[np.ndarray]) -> SegmentationAction.Goal:
         """
         Converts input frames to segmentation action goal.
+        Assumes that input data has BGR8 encoding.
 
         Parameters
         ----------
@@ -38,16 +39,24 @@ class ROS2SegmentationDataConverter(DataConverter):
         -------
         SegmentationAction.Goal :
             The converted segmentation action goal.
+
+        Raises
+        ------
+        AssertionError :
+            If the input data is not 3-dimensional.
         """
         goal = SegmentationAction.Goal()
         for frame in data:
-            item_shape = frame.shape
-            if (len(item_shape) > 2) and (item_shape[-1] > item_shape[-3]):
-                frame = np.moveaxis(frame, -3, -1)
+            assert len(frame.shape) == 3, \
+                'Input data must be 3-dimensional and have BGR8 encoding'
+
+            if (frame.shape[2] > frame.shape[0]):
+                frame = np.transpose(frame, (1, 2, 0))
             if frame.dtype != np.uint8:
                 if frame.max() <= 1.0:
                     frame *= 255
                 frame = frame.astype(np.uint8)
+
             img = Image()
             img._height = frame.shape[0]
             img._width = frame.shape[1]

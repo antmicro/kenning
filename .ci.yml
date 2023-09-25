@@ -81,6 +81,25 @@ sample-pipeline-optimization:
             - build/
     allow_failure: false
 
+sample-client-server-scenario:
+    <<: *ace
+    <<: *common_only
+    stage: tests
+    script:
+        - apt-get update && apt-get install -y procps
+        - mkdir -p build
+        - ln -s /data/PetDataset build/PetDataset
+        - sed -i 's/10.9.8.7/localhost/g' ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json
+        - ./scripts/json-tflite-tvm-classification-server.sh &
+        - PID=$!
+        - ./scripts/json-tflite-tvm-classification-client.sh || CLIENT_RET=$?
+        - kill -SIGINT $(pgrep -f "kenning server") && wait $PID || SERVER_RET=$?
+        - exit $((CLIENT_RET | SERVER_RET))
+    artifacts:
+        paths:
+            - build/
+    allow_failure: false
+
 docs:
     <<: *ace
     <<: *common_only

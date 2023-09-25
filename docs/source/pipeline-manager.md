@@ -11,44 +11,25 @@ Kenning requires extra dependencies to run integration with Pipeline Manager. To
 pip install "kenning[pipeline_manager] @ git+https://github.com/antmicro/kenning.git"
 ```
 
-To use Pipeline Manager, clone the repository:
-
-```bash
-git clone https://github.com/antmicro/kenning-pipeline-manager.git
-cd kenning-pipeline-manager
-```
-
-And follow installation requirements present in [Pipeline Manager README](https://github.com/antmicro/kenning-pipeline-manager).
-
-After this, build the server application for Pipeline Manager with:
-
-```bash
-./build server-app
-```
-
 ## Running Pipeline Manager with Kenning
 
-Firstly, in the Pipeline Manager project start the server with:
+Start the Pipeline Manager client with
 
 ```bash
-./run
+kenning visual-editor [OPTIONS]
 ```
 
-The server now waits for Kenning application to connect.
+This command will build the frontend, start a backend server in the background,
+generate Kenning nodes specification and finally run the client.
 
-Secondly, start the Kenning pipeline manager with:
-
-```bash
-python3 -m kenning.scenarios.pipeline_manager_client [OPTIONS]
-```
-
-Where possible options are:
+The possible options are:
 
 * `--spec-type` - the type of Kenning scenarios to run, can be either `pipeline` (for [optimization and deployment pipeline](json-scenarios)) or `flow` (for creating [runtime scenarios](kenning-flow)).
   By default it is `pipeline`
 * `--file-path` - the file to either store pipeline optimization measurements, or flow's runtime data.
 * `--host` - the address of the Pipeline Manager server, default `127.0.0.1`
 * `--port` - the port of the Pipeline Manager server, default `9000`
+* `--workspace-dir` - workspace directory path, specifies where the built frontend should be stored
 * `--verbosity` - verbosity of the logs
 
 When the Pipeline Manager is started, the editing of graph can begin - adding or removing nodes and connections, editing node options, etc. The following commands are available when working with the manager:

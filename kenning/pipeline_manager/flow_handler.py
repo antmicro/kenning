@@ -136,12 +136,18 @@ class KenningFlowHandler(BaseDataflowHandler):
         for base_module, base_type in base_modules:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
+                node_name = f"{kenning_class.__module__}." \
+                            f"{kenning_class.__name__}".split('.')[-1]
                 spec_builder.add_node_type(
-                    f"{kenning_class.__module__}."
-                    f"{kenning_class.__name__}".split('.')[-1],
-                    get_category_name(kenning_class),
-                    base_module.split(".")[-1]
+                    name=node_name,
+                    category=get_category_name(kenning_class),
+                    layer=base_module.split(".")[-1]
                 )
+                if kenning_class.__doc__ is not None:
+                    spec_builder.add_node_description(
+                        node_name,
+                        str(kenning_class.__doc__)
+                    )
                 add_node(
                     nodes,
                     f"{kenning_class.__module__}.{kenning_class.__name__}",

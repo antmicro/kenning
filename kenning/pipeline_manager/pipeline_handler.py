@@ -106,7 +106,9 @@ class PipelineHandler(BaseDataflowHandler):
         return self.pm_graph.flush_graph()
 
     @staticmethod
-    def get_nodes(nodes=None, io_mapping=None) -> Tuple[Dict, Dict]:
+    def get_nodes(
+        spec_builder, nodes=None, io_mapping=None
+    ) -> Tuple[Dict, Dict]:
         if nodes is None:
             nodes = {}
         if io_mapping is None:
@@ -133,6 +135,18 @@ class PipelineHandler(BaseDataflowHandler):
         for base_module, base_type in base_classes:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
+                node_name = f"{kenning_class.__module__}." \
+                            f"{kenning_class.__name__}".split('.')[-1]
+                spec_builder.add_node_type(
+                    name=node_name,
+                    category=get_category_name(kenning_class),
+                    layer=base_type_names[base_type]
+                )
+                if kenning_class.__doc__ is not None:
+                    spec_builder.add_node_description(
+                        name=node_name,
+                        description=str(kenning_class.__doc__)
+                    )
                 add_node(
                     nodes,
                     f'{kenning_class.__module__}.{kenning_class.__name__}',

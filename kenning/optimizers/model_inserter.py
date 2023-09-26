@@ -10,7 +10,7 @@ in specified format to an existing flow.
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
-from typing import Optional, Dict, List, Union
+from typing import Literal, Optional, Dict, List, Union
 import shutil
 from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -41,11 +41,13 @@ class ModelInserter(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            model_framework: str,
-            input_model_path: PathOrURI):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        model_framework: str,
+        input_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+    ):
         """
         A mock Optimizer for model injection.
 
@@ -59,13 +61,17 @@ class ModelInserter(Optimizer):
             Framework of the input model to be inserted.
         input_model_path : PathOrURI
             URI to the input model to be inserted.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         """
         self.model_framework = model_framework
         self.input_model_path = input_model_path
         self.outputtypes = [self.model_framework]
         super().__init__(
             dataset=dataset,
-            compiled_model_path=compiled_model_path
+            compiled_model_path=compiled_model_path,
+            location=location,
         )
 
     def compile(

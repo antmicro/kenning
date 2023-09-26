@@ -50,7 +50,9 @@ pytest:
 
 pytest-gallery:
     <<: *ace
-    <<: *common_only
+    only:
+        - main
+        - dev
     stage: tests
     before_script:
         # Prepare Docker

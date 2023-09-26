@@ -6,7 +6,7 @@
 Wrapper for TensorFlowClustering optimizer.
 """
 import tensorflow as tf
-from typing import Optional, Dict, List
+from typing import Literal, Optional, Dict, List
 import tensorflow_model_optimization as tfmot
 
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
@@ -64,19 +64,21 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            epochs: int = 10,
-            batch_size: int = 32,
-            optimizer: str = 'adam',
-            disable_from_logits: bool = False,
-            save_to_zip: bool = False,
-            model_framework: str = 'keras',
-            cluster_dense: bool = False,
-            clusters_number: int = 10,
-            preserve_sparsity: bool = False,
-            fine_tune: bool = False):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+        epochs: int = 10,
+        batch_size: int = 32,
+        optimizer: str = 'adam',
+        disable_from_logits: bool = False,
+        save_to_zip: bool = False,
+        model_framework: str = 'keras',
+        cluster_dense: bool = False,
+        clusters_number: int = 10,
+        preserve_sparsity: bool = False,
+        fine_tune: bool = False,
+    ):
         """
         The TensorFlowClustering optimizer.
 
@@ -88,6 +90,9 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             Dataset used to train the model - may be used for fine-tuning.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         epochs : int
             Number of epochs used for fine-tuning.
         batch_size : int
@@ -118,6 +123,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
+            location=location,
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,

@@ -46,11 +46,7 @@ pytest:
             - log_docs/*.log
         when: always
 
-pytest-gallery:
-    <<: *ace
-    only:
-        - main
-        - dev
+.pytest-docs: &pytest-docs
     stage: tests
     before_script:
         # Prepare Docker
@@ -68,7 +64,23 @@ pytest-gallery:
         paths:
             - log_gallery/*.log
         when: always
-    allow_failure: false
+
+docs-tests:
+    <<: *ace
+    only:
+        variables:
+            - $CI_COMMIT_BRANCH == "main"
+            - $CI_COMMIT_BRANCH == "dev"
+    <<: *pytest-docs
+
+docs-tests-manual:
+    <<: *ace
+    except:
+        variables:
+            - $CI_COMMIT_BRANCH == "main"
+            - $CI_COMMIT_BRANCH == "dev"
+    <<: *pytest-docs
+    when: manual
 
 sample-compilation:
     <<: *ace

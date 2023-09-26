@@ -45,7 +45,7 @@ DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Path to the environment for testing snippets from documentation
 DOCS_VENV = os.environ.get('KENNING_DOCS_VENV')
 # Possible arguments for snippet
-SNIPPET_ARGUMENTS = ('skip', 'timeout', 'name', 'terminal')
+SNIPPET_ARGUMENTS = ('test-skip', 'timeout', 'name', 'terminal')
 
 
 def get_all_snippets(
@@ -91,7 +91,7 @@ def get_all_snippets(
             snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))
 
             # Snippet should not be executed
-            if snippet.meta.get('skip', False):
+            if snippet.meta.get('test-skip', False):
                 continue
 
             # Append values to snippet's content

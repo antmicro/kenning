@@ -21,7 +21,7 @@ from nni.compression.pytorch.speedup.compress_modules import (
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from nni.common.graph_utils import _logger as nni_graph_logger
 import numpy as np
-from typing import Callable, Dict, Optional, List, Type, Tuple
+from typing import Callable, Dict, Literal, Optional, List, Type, Tuple
 from enum import Enum
 import copy
 import dill
@@ -264,6 +264,7 @@ class NNIPruningOptimizer(Optimizer):
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
         pruner_type: str = list(prunertypes.keys())[0],
         config_list: List[Dict] = [{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}],  # noqa: E501
         training_steps: int = 1,
@@ -291,6 +292,9 @@ class NNIPruningOptimizer(Optimizer):
             Dataset used to prune and fine-tune model.
         compiled_model_path: PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         pruner_type : str
             'apoz' or 'mean_rank' - to select ActivationAPoZRankPruner
             or ActivationMeanRankPruner.
@@ -328,7 +332,8 @@ class NNIPruningOptimizer(Optimizer):
         """
         super().__init__(
             dataset=dataset,
-            compiled_model_path=compiled_model_path
+            compiled_model_path=compiled_model_path,
+            location=location,
         )
 
         self.criterion_modulepath = criterion

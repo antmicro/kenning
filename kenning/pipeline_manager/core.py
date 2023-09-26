@@ -195,7 +195,10 @@ class BaseDataflowHandler:
         self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
 
-    def get_specification(self, workspace_dir: Path) -> Dict:
+    def get_specification(
+            self,
+            workspace_dir: Path,
+            spec_save_path: Optional[Path] = None) -> Dict:
         """
         Prepares core-based Kenning classes to be sent to Pipeline Manager.
 
@@ -206,6 +209,8 @@ class BaseDataflowHandler:
         ----------
         workspace_dir : Path
             Pipeline Manager's workspace directory
+        spec_save_path : Path
+            Path where the generated specification JSON will be saved.
 
         Returns
         -------
@@ -341,6 +346,7 @@ class BaseDataflowHandler:
 
         specification = self.spec_builder.create_and_validate_spec(
             workspacedir=workspace_dir,
+            dump_spec=spec_save_path,
         )
 
         for key in nodes_to_remove:

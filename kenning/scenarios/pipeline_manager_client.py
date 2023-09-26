@@ -86,6 +86,11 @@ class PipelineManagerClient(CommandTemplate):
             help='Directory where the frontend sources should be stored',
             required=True
         )
+        ve_group.add_argument(
+            '--save-specification-path',
+            type=Path,
+            help='Path to save the specification JSON after it has been generated',  # noqa: E501
+        )
 
         return parser, groups
 
@@ -133,7 +138,8 @@ class PipelineManagerClient(CommandTemplate):
                 if not PipelineManagerClient.specification:
                     log.info('SpecificationBuilder: Generate nodes specification')  # noqa: E501
                     PipelineManagerClient.specification = dataflow_handler.get_specification(  # noqa: E501
-                        workspace_dir=args.workspace_dir)
+                        workspace_dir=args.workspace_dir,
+                        spec_save_path=args.save_specification_path)
 
                 feedback_msg = json.dumps(PipelineManagerClient.specification)
 

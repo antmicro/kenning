@@ -270,7 +270,7 @@ Usually, each class can accept multiple model input formats and provides at leas
 
 The list of supported output formats is represented in a class with an `outputtypes` list:
 
-```python skip
+```python test-skip
     outputtypes = [
         'tflite'
     ]
@@ -278,7 +278,7 @@ The list of supported output formats is represented in a class with an `outputty
 
 The supported input formats are delivered in a form of a dictionary, mapping the supported input type name to the function used to load a model:
 
-```python skip
+```python test-skip
     inputtypes = {
         'keras': kerasconversion,
         'tensorflow': tensorflowconversion

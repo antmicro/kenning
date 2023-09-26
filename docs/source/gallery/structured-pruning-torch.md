@@ -58,7 +58,7 @@ kenning optimize test \
 
 To ensure better quality of performance measurements, we suggest running optimization and tests separately, like:
 
-```bash skip
+```bash test-skip
 kenning optimize --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json
 kenning test \
   --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json \

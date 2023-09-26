@@ -35,7 +35,7 @@ kenning train \
 This will list the possible parameters that can be used to configure the dataset, the model, and the training parameters.
 For the above call, the output is as follows:
 
-```bash skip
+```bash test-skip
 common arguments:
   -h, --help            show this help message and exit
   --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
@@ -136,7 +136,7 @@ The example report with the command call is available in [](./onnx-conversion-su
 `kenning.scenarios.onnx_conversion` requires a list of [](onnxconversion-api) classes that implement model providers and a conversion method.
 For the below, call:
 
-```bash skip
+```bash test-skip
 python -m kenning.scenarios.onnx_conversion \
     build/models-directory \
     build/onnx-support.rst \
@@ -187,7 +187,7 @@ kenning optimize test \
 
 With the above classes, the help can look as follows:
 
-```bash skip
+```bash test-skip
 common arguments:
   -h, --help            show this help message and exit
   --verbosity {DEBUG,INFO,WARNING,ERROR,CRITICAL}
@@ -396,7 +396,7 @@ python3 -m kenning.scenarios.inference_runner \
 
 With the above classes, the help can look as follows:
 
-```bash skip
+```bash test-skip
 positional arguments:
   modelwrappercls       ModelWrapper-based class with inference implementation to import
   runtimecls            Runtime-based class with the implementation of model runtime
@@ -441,7 +441,7 @@ OutputCollector arguments:
 
 An example script for `inference_runner`:
 
-```bash skip
+```bash test-skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \

@@ -143,7 +143,7 @@ Now, you can execute KenningFlow using the above configuration.
 
 With the config saved in the `flow_scenario_detection.json` file, run the {{json_flow_runner_script}} as follows:
 
-```bash skip
+```bash test-skip
 kenning flow --json-cfg flow_scenario_detection.json
 ```
 

@@ -40,7 +40,7 @@ In the `type` field, we specify the full "path" to the class by specifying the m
 In `parameters`, arguments specific to `TensorFlowPetDatasetMobileNetV2` are provided.
 The following parameters are available based on the argument specification:
 
-```python skip
+```python test-skip
 # this argument structure is taken from kenning.core.model - it is inherited by child classes
 arguments_structure = {
     'modelpath': {
@@ -57,7 +57,7 @@ It is a required argument.
 
 The `dataset` used here, is `PetDataset`. Like previously, it is provided in a module-like format (`kenning.datasets.pet_dataset.PetDataset`). The parameters here are specified in `kenning.core.dataset.Dataset` (inherited) and `kenning.core.dataset.PetDataset`:
 
-```python skip
+```python test-skip
 arguments_structure = {
     # coming from kenning.core.dataset.Dataset
     'root': {

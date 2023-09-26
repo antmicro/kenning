@@ -56,7 +56,7 @@ The `PetDataset` class can download the dataset (if necessary), load it, read th
 
 With the above config saved in the `native.json` file, run the `inference_tester` scenario:
 
-```bash skip
+```bash test-skip
 kenning test \
   --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json \
   --measurements build/native.json
@@ -67,7 +67,7 @@ All other JSONs in this example use case can be executed with this command.
 
 To visualize the evaluation and benchmark results, run the `render_report` module:
 
-```bash skip
+```bash test-skip
 kenning report \
   --report-path build/benchmarks/native.md \
   --measurements build/native.json \
@@ -79,7 +79,7 @@ kenning report \
 
 Or use the simplified command:
 
-```bash skip
+```bash test-skip
 kenning report \
   --report-path build/benchmarks/native.md \
   --measurements build/native.json

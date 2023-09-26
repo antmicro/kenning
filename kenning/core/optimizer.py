@@ -7,7 +7,7 @@ Provides an API for model compilers.
 """
 
 from pathlib import Path
-from typing import List, Dict, Tuple, Optional, Union
+from typing import List, Dict, Literal, Tuple, Optional, Union
 from abc import ABC, abstractmethod
 from argparse import Namespace
 import json
@@ -49,18 +49,28 @@ class Optimizer(ArgumentsHandler, ABC):
 
     inputtypes = {}
 
+    locations = ['host', 'target']
+
     arguments_structure = {
         'compiled_model_path': {
             'description': 'The path to the compiled model output',
             'type': ResourceURI,
             'required': True
+        },
+        'location': {
+            'description': 'Specifies where optimization should be performed '
+                           'in client-server scenario',
+            'default': 'host',
+            'enum': locations
         }
     }
 
     def __init__(
-            self,
-            dataset: Optional[Dataset],
-            compiled_model_path: Path):
+        self,
+        dataset: Optional[Dataset],
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+    ):
         """
         Prepares the Optimizer object.
 
@@ -71,9 +81,14 @@ class Optimizer(ArgumentsHandler, ABC):
             during compilation stage.
         compiled_model_path : PathOrURI
             Path to file where the compiled model should be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         """
+        assert location in Optimizer.locations, f'Invalid location: {location}'
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
+        self.location = location
         self.log = get_logger()
 
     @classmethod
@@ -150,9 +165,10 @@ class Optimizer(ArgumentsHandler, ABC):
 
     @abstractmethod
     def compile(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None
+    ):
         """
         Compiles the given model to a target format.
 
@@ -214,9 +230,10 @@ class Optimizer(ArgumentsHandler, ABC):
         return self.outputtypes
 
     def consult_model_type(
-            self,
-            previous_block: Union['ModelWrapper', 'Optimizer'],
-            force_onnx: bool = False) -> str:
+        self,
+        previous_block: Union['ModelWrapper', 'Optimizer'],
+        force_onnx: bool = False
+    ) -> str:
         """
         Finds output format of the previous block in the chain
         matching with an input format of the current block.
@@ -287,9 +304,10 @@ class Optimizer(ArgumentsHandler, ABC):
         return spec_path
 
     def save_io_specification(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None
+    ):
         """
         Internal function that saves input/output model specification
         which is used during both inference and compilation. If `io_spec`
@@ -325,8 +343,8 @@ class Optimizer(ArgumentsHandler, ABC):
             )
 
     def load_io_specification(
-            self,
-            model_path: PathOrURI,
+        self,
+        model_path: PathOrURI,
     ) -> Optional[Dict[str, List[Dict]]]:
         """
         Returns saved input and output specification of a model

@@ -25,7 +25,6 @@ pre-commit:
     stage: lint
     script:
         - pre-commit run --all-files
-    allow_failure: false
 
 pytest:
     <<: *ace
@@ -46,7 +45,6 @@ pytest:
             - log.json
             - log_docs/*.log
         when: always
-    allow_failure: false
 
 pytest-gallery:
     <<: *ace
@@ -85,7 +83,6 @@ sample-compilation:
         paths:
             - build/local-cpu-tvm-tensorflow-classification.json
             - docs/source/generated
-    allow_failure: false
 
 sample-pipeline-optimization:
     <<: *ace
@@ -98,7 +95,6 @@ sample-pipeline-optimization:
     artifacts:
         paths:
             - build/
-    allow_failure: false
 
 sample-client-server-scenario:
     <<: *ace
@@ -139,7 +135,6 @@ docs:
             - $DOCS_DIR/build/html
             - $DOCS_DIR/build/latex/*.pdf
             - $CI_DOCS_ARCHIVE
-    allow_failure: false
 
 linkcheck:
     <<: *ace
@@ -169,4 +164,3 @@ docs-deploy:
     artifacts:
         paths:
             - $CI_DOCS_ARCHIVE
-    allow_failure: false

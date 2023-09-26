@@ -90,6 +90,8 @@ class MessageType(Enum):
     OUTPUT = 5
     STATS = 6
     IO_SPEC = 7
+    OPTIMIZERS = 8
+    OPTIMIZE_MODEL = 9
 
     def to_bytes(
         self,
@@ -650,12 +652,76 @@ class Protocol(ArgumentsHandler):
         if not self.send_message(Message(MessageType.STATS)):
             return measurements
 
-        status, dat = self.receive_confirmation()
-        if status and isinstance(dat, bytes) and len(dat) > 0:
-            jsonstr = dat.decode('utf8')
-            jsondata = json.loads(jsonstr)
-            measurements += jsondata
+        status, data = self.receive_confirmation()
+        if status and isinstance(data, bytes) and len(data) > 0:
+            measurements += json.loads(data.decode('utf8'))
         return measurements
+
+    def upload_optimizers(self, optimizers_cfg: Dict[str, Any]) -> bool:
+        """
+        Upload optimizers config to the target device.
+
+        Parameters
+        ----------
+        optimizers_cfg : Dict[str, Any]
+            Config JSON of optimizers.
+
+        Returns
+        -------
+        bool :
+            True if data upload finished successfully.
+        """
+        self.log.debug('Uploading optimizers config')
+
+        message = Message(
+            MessageType.OPTIMIZERS,
+            json.dumps(optimizers_cfg, default=str).encode()
+        )
+
+        if not self.send_message(message):
+            return False
+        return self.receive_confirmation()[0]
+
+    def request_optimization(
+        self,
+        model_path: Path,
+        get_time_func: Callable[[], float] = time.perf_counter,
+    ) -> Tuple[bool, Optional[bytes]]:
+        """
+        Request optimization of model.
+
+        Parameters
+        ----------
+        model_path : Path
+            Path to the model for optimization.
+        get_time_func : Callable[[], float]
+            Function that returns current timestamp.
+
+        Returns
+        -------
+        Tuple[bool, Optional[bytes]] :
+            First element is equal to True if optimization finished
+            successfully and the second element contains compiled model.
+        """
+        self.log.debug('Requesting model optimization')
+        with open(model_path, 'rb') as model_f:
+            model = model_f.read()
+
+        if not self.send_message(Message(MessageType.OPTIMIZE_MODEL, model)):
+            return False, None
+
+        start = get_time_func()
+        ret, compiled_model_data = self.receive_confirmation()
+        if not ret:
+            return False, None
+
+        duration = get_time_func() - start
+        measurement_name = 'protocol_model_optimization'
+        MeasurementsCollector.measurements += {
+            measurement_name: [duration],
+            f'{measurement_name}_timestamp': [start]
+        }
+        return ret, compiled_model_data
 
     def request_success(self, data: Optional[bytes] = bytes()) -> bool:
         """

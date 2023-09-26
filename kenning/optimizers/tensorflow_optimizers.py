@@ -6,7 +6,8 @@
 Wrapper for TensorFlow optimizers.
 """
 
-from typing import List, Tuple, Optional
+from typing import List, Literal, Tuple, Optional
+from kenning.utils.resource_manager import PathOrURI
 import tensorflow as tf
 import zipfile
 
@@ -40,12 +41,14 @@ class TensorFlowOptimizer(Optimizer):
             'enum': ['adam', 'SGD', 'RMSprop']
         },
         'disable_from_logits': {
-            'description': 'Determines whether output of the model is normalized',  # noqa: E501
+            'description': 'Determines whether output of the model is '
+                           'normalized',
             'type': bool,
             'default': False
         },
         'save_to_zip': {
-            'description': 'Detemines whether optimized model should additionaly be saved in ZIP format',  # noqa: E501
+            'description': 'Detemines whether optimized model should '
+                           'additionally be saved in ZIP format',
             'type': bool,
             'default': False,
         },
@@ -55,6 +58,7 @@ class TensorFlowOptimizer(Optimizer):
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
         epochs: int = 10,
         batch_size: int = 32,
         optimizer: str = 'adam',
@@ -74,6 +78,9 @@ class TensorFlowOptimizer(Optimizer):
             fine-tuning.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         epochs : int
             Number of epochs used to fine-tune the model.
         batch_size : int
@@ -83,14 +90,19 @@ class TensorFlowOptimizer(Optimizer):
         disable_from_logits : bool
             Determines whether output of the model is normalized.
         save_to_zip : bool
-            Detemines whether optimized model should additionaly be saved in ZIP format.
-        """  # noqa: E501
+            Determines whether optimized model should additionally be saved in
+            ZIP format.
+        """
         self.epochs = epochs
         self.batch_size = batch_size
         self.optimizer = optimizer
         self.disable_from_logits = disable_from_logits
         self.save_to_zip = save_to_zip
-        super().__init__(dataset, compiled_model_path)
+        super().__init__(
+            dataset=dataset,
+            compiled_model_path=compiled_model_path,
+            location=location,
+        )
         assert not self.save_to_zip or self.compiled_model_path.suffix != '.zip', 'Please use different extension than `.zip`, it will be used by archived model'  # noqa: E501
 
     def prepare_train_validation(self) -> Tuple:

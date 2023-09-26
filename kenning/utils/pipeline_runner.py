@@ -232,6 +232,10 @@ class PipelineRunner(object):
             model_path = self.model_wrapper.get_path()
 
         ret = True
+
+        if self.protocol:
+            check_request(self.protocol.initialize_client(), 'prepare client')
+
         compiled_model_path = self.handle_optimizations(
             convert_to_onnx,
             run_optimizations
@@ -362,21 +366,67 @@ class PipelineRunner(object):
 
             prev_block.save_io_specification(model_path)
 
-            logger.get_logger().info(
-                f'Processing block: {type(next_block).__name__}'
-            )
+            if 'target' == next_block.location:
+                server_optimizers = []
+                while (
+                    optimizer_idx < len(self.optimizers) and
+                    'target' == self.optimizers[optimizer_idx].location
+                ):
+                    server_optimizers.append(self.optimizers[optimizer_idx])
+                    optimizer_idx += 1
 
-            next_block.set_input_type(model_type)
-            if hasattr(prev_block, 'get_io_specification'):
-                next_block.compile(
-                    model_path,
-                    prev_block.get_io_specification()
+                optimizers_cfg = {
+                    'prev_block': {
+                        'model_path': model_path,
+                        'model_type': model_type,
+                        'io_spec': prev_block.load_io_specification(model_path)
+                    },
+                    'optimizers': [
+                        optimizer.to_json() for optimizer in server_optimizers
+                    ]
+                }
+                optimizers_str = ', '.join(
+                    optimizer.__class__.__name__
+                    for optimizer in server_optimizers
                 )
-            else:
-                next_block.compile(model_path)
+                logger.get_logger().info(
+                    f'Processing blocks: {optimizers_str} on server'
+                )
 
-            prev_block = next_block
-            optimizer_idx += 1
+                ret, _ = check_request(
+                    self.protocol.upload_optimizers(optimizers_cfg),
+                    'upload optimizers config'
+                )
+                if not ret:
+                    raise RuntimeError('Optimizers config upload failed')
+
+                ret, compiled_model = check_request(
+                    self.protocol.request_optimization(model_path),
+                    'request optimization'
+                )
+                if not ret or compiled_model is None:
+                    raise RuntimeError('Model compilation failed')
+
+                prev_block = server_optimizers[-1]
+                with open(prev_block.compiled_model_path, 'wb') as model_f:
+                    model_f.write(compiled_model)
+
+            else:
+                logger.get_logger().info(
+                    f'Processing block: {type(next_block).__name__} on client'
+                )
+
+                next_block.set_input_type(model_type)
+                if hasattr(prev_block, 'get_io_specification'):
+                    next_block.compile(
+                        model_path,
+                        prev_block.get_io_specification()
+                    )
+                else:
+                    next_block.compile(model_path)
+
+                prev_block = next_block
+                optimizer_idx += 1
 
             model_path = prev_block.compiled_model_path
 
@@ -413,8 +463,6 @@ class PipelineRunner(object):
         bool :
             True if executed successfully.
         """
-
-        check_request(self.protocol.initialize_client(), 'prepare client')
 
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')

@@ -71,6 +71,8 @@ class InferenceServer(object):
             MessageType.OUTPUT: self._output_callback,
             MessageType.STATS: self._stats_callback,
             MessageType.IO_SPEC: self._io_spec_callback,
+            MessageType.OPTIMIZERS: self._optimizers_callback,
+            MessageType.OPTIMIZE_MODEL: self._optimize_model_callback,
         }
 
     def close(self):
@@ -96,6 +98,7 @@ class InferenceServer(object):
         while self.should_work:
             server_status, message = self.protocol.receive_message(timeout=1)
             if server_status == ServerStatus.DATA_READY:
+                logger.get_logger().debug(f'Received message {message}')
                 self.callbacks[message.message_type](message.payload)
             elif server_status == ServerStatus.DATA_INVALID:
                 logger.get_logger().error('Invalid message received')
@@ -189,6 +192,96 @@ class InferenceServer(object):
             self.protocol.request_success()
         else:
             self.protocol.request_failure()
+
+    def _optimizers_callback(self, input_data: bytes) -> bool:
+        """
+        Server callback for loading model optimizers.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here.
+        """
+        from kenning.utils.class_loader import load_class
+
+        json_cfg = json.loads(input_data.decode())
+
+        optimizers_cfg = (
+            json_cfg['optimizers']
+            if 'optimizers' in json_cfg else []
+        )
+        optimizers_cls = [load_class(cfg['type']) for cfg in optimizers_cfg]
+        self.optimizers = [
+            cls.from_json(cfg['parameters'], dataset=None)
+            for cls, cfg in zip(optimizers_cls, optimizers_cfg)
+        ]
+
+        prev_block_cfg = json_cfg['prev_block']
+
+        class PrevBlockStub(object):
+            def __init__(self):
+                self.compiled_model_path = Path(prev_block_cfg['model_path'])
+
+            def get_output_formats(self):
+                return prev_block_cfg['model_type']
+
+            def save_io_specification(self, model_path: Path):
+                with open(Optimizer.get_spec_path(model_path), 'w') as spec_f:
+                    spec_f.write(json.dumps(prev_block_cfg['io_spec']))
+
+            def get_io_specification(self) -> Dict[str, Any]:
+                return prev_block_cfg['io_spec']
+
+        self.prev_block = PrevBlockStub()
+
+        optimizers_str = ', '.join(
+            optimizer.__class__.__name__ for optimizer in self.optimizers
+        )
+        logger.get_logger().info(f'Loaded optimizers: {optimizers_str}')
+
+        return self.protocol.request_success()
+
+    def _optimize_model_callback(self, input_data: bytes) -> bool:
+        """
+        Server callback for optimizing model.
+
+        Parameters
+        ----------
+        input_data : bytes
+            Not used here.
+        """
+        prev_block = self.prev_block
+        model_path = prev_block.compiled_model_path
+
+        with open(model_path, 'wb') as model_f:
+            model_f.write(input_data)
+
+        for optimizer in self.optimizers:
+            logger.get_logger().info(
+                f'Processing block: {type(optimizer).__name__}'
+            )
+
+            model_type = optimizer.consult_model_type(prev_block)
+
+            prev_block.save_io_specification(model_path)
+            optimizer.set_input_type(model_type)
+            if hasattr(prev_block, 'get_io_specification'):
+                optimizer.compile(
+                    model_path,
+                    prev_block.get_io_specification()
+                )
+            else:
+                optimizer.compile(model_path)
+
+            prev_block = optimizer
+            model_path = prev_block.compiled_model_path
+
+        model_path = self.optimizers[-1].compiled_model_path
+
+        with open(model_path, 'rb') as model_f:
+            model_data = model_f.read()
+
+        return self.protocol.request_success(model_data)
 
 
 class InferenceServerRunner(CommandTemplate):

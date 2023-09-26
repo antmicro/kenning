@@ -10,7 +10,7 @@ from shutil import which
 import subprocess
 from pathlib import Path
 import numpy as np
-from typing import Optional, Dict, List
+from typing import Literal, Optional, Dict, List
 
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
@@ -110,21 +110,23 @@ class TFLiteCompiler(TensorFlowOptimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            target: str = 'default',
-            epochs: int = 10,
-            batch_size: int = 32,
-            optimizer: str = 'adam',
-            disable_from_logits: bool = False,
-            save_to_zip: bool = False,
-            model_framework: str = 'onnx',
-            inferenceinputtype: str = 'float32',
-            inferenceoutputtype: str = 'float32',
-            dataset_percentage: float = 0.25,
-            quantization_aware_training: bool = False,
-            use_tf_select_ops: bool = False):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+        target: str = 'default',
+        epochs: int = 10,
+        batch_size: int = 32,
+        optimizer: str = 'adam',
+        disable_from_logits: bool = False,
+        save_to_zip: bool = False,
+        model_framework: str = 'onnx',
+        inferenceinputtype: str = 'float32',
+        inferenceoutputtype: str = 'float32',
+        dataset_percentage: float = 0.25,
+        quantization_aware_training: bool = False,
+        use_tf_select_ops: bool = False,
+    ):
         """
         The TFLite and EdgeTPU compiler.
 
@@ -139,6 +141,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             during compilation stage.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         target : str
             Target accelerator on which the model will be executed.
         epochs : int
@@ -180,6 +185,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
+            location=location,
             epochs=epochs,
             batch_size=batch_size,
             optimizer=optimizer,

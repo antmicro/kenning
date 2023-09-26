@@ -6,7 +6,7 @@
 Wrapper for IREE compiler.
 """
 
-from typing import List, Optional, Dict
+from typing import List, Literal, Optional, Dict
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
@@ -143,12 +143,14 @@ class IREECompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            backend: str = 'vmvx',
-            model_framework: str = 'keras',
-            compiler_args: Optional[List[str]] = None):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+        backend: str = 'vmvx',
+        model_framework: str = 'keras',
+        compiler_args: Optional[List[str]] = None,
+    ):
         """
         Wrapper for IREE compiler.
 
@@ -159,6 +161,9 @@ class IREECompiler(Optimizer):
             during compilation stage.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         backend : str
             Backend on which the model will be executed.
         model_framework : str
@@ -191,7 +196,8 @@ class IREECompiler(Optimizer):
 
         super().__init__(
             dataset=dataset,
-            compiled_model_path=compiled_model_path
+            compiled_model_path=compiled_model_path,
+            location=location,
         )
 
     def compile(

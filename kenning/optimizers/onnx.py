@@ -7,7 +7,7 @@ Wrapper for ONNX deep learning compiler.
 """
 
 import onnx
-from typing import Optional, Dict, List
+from typing import Literal, Optional, Dict, List
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer
@@ -100,10 +100,12 @@ class ONNXCompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: PathOrURI,
-            model_framework: str = 'keras'):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+        model_framework: str = 'keras',
+    ):
         """
         The ONNX compiler.
 
@@ -113,6 +115,9 @@ class ONNXCompiler(Optimizer):
             Dataset used to train the model.
         compiled_model_path : PathOrURI
             Path or URI where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         """
@@ -120,7 +125,8 @@ class ONNXCompiler(Optimizer):
         self.set_input_type(model_framework)
         super().__init__(
             dataset=dataset,
-            compiled_model_path=compiled_model_path
+            compiled_model_path=compiled_model_path,
+            location=location,
         )
 
     def compile(

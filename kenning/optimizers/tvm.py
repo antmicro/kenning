@@ -10,7 +10,7 @@ from pathlib import Path
 import tvm
 import onnx
 import tvm.relay as relay
-from typing import Optional, Dict, List
+from typing import Literal, Optional, Dict, List
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
@@ -302,22 +302,24 @@ class TVMCompiler(Optimizer):
     }
 
     def __init__(
-            self,
-            dataset: Dataset,
-            compiled_model_path: Path,
-            model_framework: str = 'onnx',
-            target: str = 'llvm',
-            target_host: Optional[str] = None,
-            opt_level: int = 2,
-            libdarknet_path: str = '/usr/local/lib/libdarknet.so',
-            use_tvm_vm: bool = False,
-            conversion_func: str = 'default',
-            conv2d_data_layout: str = '',
-            conv2d_kernel_layout: str = '',
-            use_fp16_precision: bool = False,
-            use_int8_precision: bool = False,
-            use_tensorrt: bool = False,
-            dataset_percentage: float = 0.25):
+        self,
+        dataset: Dataset,
+        compiled_model_path: PathOrURI,
+        location: Literal['host', 'target'] = 'host',
+        model_framework: str = 'onnx',
+        target: str = 'llvm',
+        target_host: Optional[str] = None,
+        opt_level: int = 2,
+        libdarknet_path: str = '/usr/local/lib/libdarknet.so',
+        use_tvm_vm: bool = False,
+        conversion_func: str = 'default',
+        conv2d_data_layout: str = '',
+        conv2d_kernel_layout: str = '',
+        use_fp16_precision: bool = False,
+        use_int8_precision: bool = False,
+        use_tensorrt: bool = False,
+        dataset_percentage: float = 0.25,
+    ):
         """
         A TVM Compiler wrapper.
 
@@ -327,6 +329,9 @@ class TVMCompiler(Optimizer):
             Dataset object.
         compiled_model_path : PathOrURI
             Path where compiled model will be saved.
+        location : Literal['host', 'target']
+            Specifies where optimization should be performed in client-server
+            scenario.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         target : str
@@ -387,7 +392,8 @@ class TVMCompiler(Optimizer):
         self.dataset_percentage = dataset_percentage
         super().__init__(
             dataset=dataset,
-            compiled_model_path=compiled_model_path
+            compiled_model_path=compiled_model_path,
+            location=location,
         )
 
     def compile_model(self, mod, params, outputpath, io_spec):

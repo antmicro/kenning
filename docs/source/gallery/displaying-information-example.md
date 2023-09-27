@@ -87,7 +87,9 @@ More verbose information is available by using `-v`, `-vv` flags - dependencies,
 
 ## Kenning info
 
-`kenning info` can be used to display more detailed information about a particular class. This information is especially useful when creating JSON scenario configurations. The command displays the following:
+`kenning info` can be used to display more detailed information about a particular class.
+This information is especially useful when creating JSON scenario configurations.
+The command displays the following:
 
 * docstrings
 * dependencies, along with the information whether they are available in the current Python environment
@@ -145,14 +147,14 @@ Arguments specification:
 
 ```{note}
 By default, the command only performs static code analysis.
-For example, some values in the input/output specification are expressions, because
-the command did not import or evaluate any values.
+For example, some values in the input/output specification are expressions, because the command did not import or evaluate any values.
 This is done to allow for missing dependencies.
 ```
 
 ### Loading a class with arguments
 
-To gain access to more detailed information, the `--load-class-with-args` argument can be used. Provided that all dependencies are satisfied and the required.
+To gain access to more detailed information, the `--load-class-with-args` argument can be used.
+Provided that all dependencies are satisfied and the required.
 
 From the example above, the ONNXYOLOV4 configuration specifies that the `model_path` argument is required.
 All dependencies are available as there is no warning message.

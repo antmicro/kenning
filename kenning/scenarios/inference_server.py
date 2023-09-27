@@ -16,33 +16,35 @@ Each of those classes require specific set or arguments to configure the
 compilation and benchmark process.
 """
 
-import sys
 import argparse
-import signal
 import json
-from argcomplete.completers import FilesCompleter
-from typing import Optional, List, Tuple
+import signal
+import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple
 
+from argcomplete.completers import FilesCompleter
+
+import kenning.utils.logger as logger
 from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
 )
 from kenning.cli.completers import (
-    ClassPathCompleter,
-    RUNTIMES,
     RUNTIME_PROTOCOLS,
+    RUNTIMES,
+    ClassPathCompleter,
 )
-from kenning.core.runtime import Runtime
+from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import (
     MessageType,
-    RequestFailure,
     Protocol,
+    RequestFailure,
     ServerStatus,
 )
-from kenning.utils.class_loader import load_class, get_command
-import kenning.utils.logger as logger
-
+from kenning.core.runtime import Runtime
+from kenning.utils.class_loader import get_command, load_class
 
 JSON_CONFIG = 'Server configuration with JSON'
 FLAG_CONFIG = 'Server configuration with flags'
@@ -256,32 +258,36 @@ class InferenceServer(object):
         with open(model_path, 'wb') as model_f:
             model_f.write(input_data)
 
-        for optimizer in self.optimizers:
-            logger.get_logger().info(
-                f'Processing block: {type(optimizer).__name__}'
-            )
-
-            model_type = optimizer.consult_model_type(prev_block)
-
-            prev_block.save_io_specification(model_path)
-            optimizer.set_input_type(model_type)
-            if hasattr(prev_block, 'get_io_specification'):
-                optimizer.compile(
-                    model_path,
-                    prev_block.get_io_specification()
+        try:
+            for optimizer in self.optimizers:
+                logger.get_logger().info(
+                    f'Processing block: {type(optimizer).__name__}'
                 )
-            else:
-                optimizer.compile(model_path)
 
-            prev_block = optimizer
-            model_path = prev_block.compiled_model_path
+                model_type = optimizer.consult_model_type(prev_block)
 
-        model_path = self.optimizers[-1].compiled_model_path
+                prev_block.save_io_specification(model_path)
+                optimizer.set_input_type(model_type)
+                if hasattr(prev_block, 'get_io_specification'):
+                    optimizer.compile(
+                        model_path,
+                        prev_block.get_io_specification()
+                    )
+                else:
+                    optimizer.compile(model_path)
 
-        with open(model_path, 'rb') as model_f:
-            model_data = model_f.read()
+                prev_block = optimizer
+                model_path = prev_block.compiled_model_path
 
-        return self.protocol.request_success(model_data)
+            model_path = self.optimizers[-1].compiled_model_path
+
+            with open(model_path, 'rb') as model_f:
+                model_data = model_f.read()
+
+            return self.protocol.request_success(model_data)
+        except Exception as e:
+            logger.get_logger().error(f'Compilation error: {e}')
+            return self.protocol.request_failure()
 
 
 class InferenceServerRunner(CommandTemplate):

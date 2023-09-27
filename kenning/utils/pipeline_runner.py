@@ -134,6 +134,7 @@ class PipelineRunner(object):
         output: Optional[Path] = None,
         verbosity: str = 'INFO',
         convert_to_onnx: Optional[Path] = None,
+        max_target_side_optimizers: int = -1,
         command: List = ['Run in a different environment'],
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
@@ -151,6 +152,8 @@ class PipelineRunner(object):
         convert_to_onnx : Optional[Path]
             Before compiling the model, convert it to ONNX and use
             in the inference (provide a path to save here).
+        max_target_side_optimizers : int
+            Max number of consecutive target-side optimizers.
         command : Optional[List]
             Command used to run this inference pipeline. It is put in
             the output JSON file.
@@ -305,6 +308,7 @@ class PipelineRunner(object):
         self,
         convert_to_onnx: Optional[Path] = None,
         run_optimization: bool = True,
+        max_target_side_optimizers: int = -1,
     ) -> Path:
         """
         Handle model optimization.
@@ -317,6 +321,8 @@ class PipelineRunner(object):
         run_optimization : bool
             Determines if optimizations should be executed, otherwise last
             compiled model path is returned.
+        max_target_side_optimizers : int
+            Max number of consecutive target-side optimizers.
 
         Returns
         -------
@@ -366,11 +372,15 @@ class PipelineRunner(object):
 
             prev_block.save_io_specification(model_path)
 
-            if 'target' == next_block.location:
+            if 'target' == next_block.location and self.protocol is not None:
                 server_optimizers = []
                 while (
                     optimizer_idx < len(self.optimizers) and
-                    'target' == self.optimizers[optimizer_idx].location
+                    'target' == self.optimizers[optimizer_idx].location and
+                    (
+                        len(server_optimizers) < max_target_side_optimizers
+                        or max_target_side_optimizers == -1
+                    )
                 ):
                     server_optimizers.append(self.optimizers[optimizer_idx])
                     optimizer_idx += 1
@@ -412,6 +422,12 @@ class PipelineRunner(object):
                     model_f.write(compiled_model)
 
             else:
+                if 'target' == next_block.location:
+                    logger.get_logger().warning(
+                        'Ignoring target location parameter for '
+                        f'{type(next_block).__name__} as the protocol is not '
+                        'provided'
+                    )
                 logger.get_logger().info(
                     f'Processing block: {type(next_block).__name__} on client'
                 )

@@ -4,8 +4,7 @@ The {{optimization_runner_script}} script allows to optimize over multiple pipel
 
 The script can be run as follows:
 
-<!-- skip=True -->
-```bash
+```bash test-skip
 kenning fine-tune-optimizers --json-cfg <CONFIG_JSON>.json --output <OUTPUT_PATH>.json
 ```
 

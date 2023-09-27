@@ -37,7 +37,7 @@ SHELLS: Dict[str, Dict[int, pexpect.spawn]] = defaultdict(dict)
 # Template for command checking if previous process was successful
 COMMAND_CHECK = "if [[ $? == 0 ]] ; then echo '{}'; else echo '{}'; fi"
 # Template of regex detecting status of previous command
-EXPECT_RE = "(?<!echo '){}"
+EXPECT_RE = "(?<!'){}(?!')"
 # Regex for splitting multiline scripts
 NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 # Default timeout of command execution
@@ -106,6 +106,9 @@ def get_all_snippets(
             if snippet.lang in EXECUTABLE_TYPES:
                 # Split multiline snippet
                 for id, line in enumerate(NEW_LINE_RE.split(snippet.text)):
+                    # Skip empty and commented lines
+                    if line.strip() == '' or line.lstrip().startswith('#'):
+                        continue
                     line_snippet = copy.deepcopy(snippet)
                     line_snippet.text = line
                     # Set previous snippet as dependency
@@ -158,7 +161,7 @@ def execute_script_and_wait(
     try:
         if not script.rstrip().endswith(' &'):
             # Use check command twice to make sure it used
-            shell.sendline(f'{script} && {check_cmd}')
+            shell.sendline(f'{script} && \\\n {check_cmd}')
             shell.sendline(check_cmd)
         else:
             # Running command in background

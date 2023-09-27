@@ -156,6 +156,8 @@ Model wrapper examples:
 
 `kenning.core.optimizer.Optimizer` objects wrap the deep learning compilation process.
 They can perform the model optimization (operation fusion, quantization) as well.
+Kenning supports executing optimizations also on the target device.
+To do so you can use `location` parameter which specifies where given [](optimizer-api) would be executed (either `'host'` or `'target'`).
 
 All Optimizer objects should provide methods for compiling models in ONNX format, but they can also provide support for other formats (like Keras .h5 files, or PyTorch .th files).
 

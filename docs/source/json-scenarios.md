@@ -187,17 +187,20 @@ For this use case, we need two JSON files - one for inference server configurati
 The client and the server may communicate via different means, protocols and interfaces - we can use TCP communication, UART communication or other.
 It depends on the [](protocol-api) used.
 
-Let's start with client and server configuration by adding a `runtime_protocol` entry:
+In addition, in such scenario optimizers can be executed either on host (which is default behavior) or on target device.
+To specify it, you can use `location` parameter of the [](optimizer-api).
+
+To create client/server scenario configuration it is required to add a `protocol` entry:
 
 ```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client-server.json save-as=tflite-tvm-classification-client-server.json
 :language: json
 :emphasize-lines: 48-57
 ```
 
-In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`).
-The `runtime` block is still needed to perform runtime-specific data preprocessing and postprocessing in the client application (the server only infers data).
+In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`)
 
-The server uses `runtime_protocol` to receive requests from clients and `runtime` to run the tested models.
+The server parses only `runtime` and `protocol` from the configuration, so any changes to the other of the blocks does not require server restart.
+The server uses `protocol` to receive requests from clients and `runtime` to run the tested models.
 
 The remaining things are provided by the client - input data and model.
 Direct outputs from the model are sent as is to the client, so it can postprocess them and evaluate the model using the dataset.
@@ -221,3 +224,34 @@ kenning optimize test \
 ```
 
 The rest of the flow is automated.
+
+To execute one of the optimizers on the target-side, simply add the `location` parameter as follows:
+
+{ emphasize-lines="20" }
+```json
+"optimizers":
+[
+    {
+        "type": "kenning.optimizers.tflite.TFLiteCompiler",
+        "parameters":
+        {
+            "target": "int8",
+            "compiled_model_path": "./build/int8.tflite",
+            "inference_input_type": "int8",
+            "inference_output_type": "int8"
+        }
+    },
+    {
+        "type": "kenning.optimizers.tvm.TVMCompiler",
+        "parameters": {
+            "target": "llvm -mcpu=core-avx2",
+            "opt_level": 3,
+            "conv2d_data_layout": "NCHW",
+            "compiled_model_path": "./build/int8_tvm.tar",
+            "location": "target"
+        }
+    }
+],
+```
+
+and start the client the same as above (it is not required to restart server).

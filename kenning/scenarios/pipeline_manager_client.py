@@ -9,7 +9,6 @@ A script for connecting Kenning with Pipeline Manager server.
 
 import argparse
 import json
-import os
 import sys
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List
@@ -200,10 +199,10 @@ class PipelineManagerClient(CommandTemplate):
             """
 
             # provided these files exist, do not build the frontend again
-            if os.path.exists(frontend_path) and \
-                    os.path.exists(frontend_path / 'index.html') and \
-                    os.path.exists(frontend_path / 'js') and \
-                    os.path.exists(frontend_path / 'css'):
+            if frontend_path.exists() and \
+                    (frontend_path / 'index.html').exists() and \
+                    (frontend_path / 'js').exists() and \
+                    (frontend_path / 'css').exists():
                 return
 
             build_status = frontend_builder.build_frontend(
@@ -225,9 +224,9 @@ class PipelineManagerClient(CommandTemplate):
 
         try:
             if args.spec_type == "pipeline":
-                dataflow_handler = PipelineHandler(layout_algorithm=args.layout) # noqa E501
+                dataflow_handler = PipelineHandler(layout_algorithm=args.layout)  # noqa: E501
             elif args.spec_type == "flow":
-                dataflow_handler = KenningFlowHandler(layout_algorithm=args.layout) # noqa E501
+                dataflow_handler = KenningFlowHandler(layout_algorithm=args.layout)  # noqa: E501
             else:
                 raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 
@@ -276,7 +275,7 @@ class PipelineManagerClient(CommandTemplate):
                 f'Could not connect to the Pipeline Manager server: {ex}')
             client.send_message(
                 MessageType.ERROR,
-                bytes(f'Could not connect to the Pipeline Manager server: {ex}', 'utf-8')) # noqa E501
+                bytes(f'Could not connect to the Pipeline Manager server: {ex}', 'utf-8'))  # noqa: E501
             return ex.errno
         except Exception as ex:
             log.error(f'Unexpected exception:\n{ex}')

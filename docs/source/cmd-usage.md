@@ -127,29 +127,6 @@ kenning test \
 The script downloads the dataset to the `build/pet-dataset` directory, loads the `tensorflow_pet_dataset_mobilenetv2.h5` model, runs inference on all images from the dataset and collects performance and quality metrics throughout the run.
 The performance data stored in the JSON file can be later rendered using [](report-generation).
 
-## ONNX conversion
-
-`kenning.scenarios.onnx_conversion` empirically tests the ONNX conversion for various frameworks and generates a report containing a support matrix.
-The matrix tells us if model export to ONNX and model import from ONNX for a given framework and model are supported or not.
-The example report with the command call is available in [](./onnx-conversion-support).
-
-`kenning.scenarios.onnx_conversion` requires a list of [](onnxconversion-api) classes that implement model providers and a conversion method.
-For the below, call:
-
-```bash test-skip
-python -m kenning.scenarios.onnx_conversion \
-    build/models-directory \
-    build/onnx-support.rst \
-    --converters-list \
-        kenning.onnxconverters.pytorch.PyTorchONNXConversion \
-        kenning.onnxconverters.tensorflow.TensorFlowONNXConversion \
-        kenning.onnxconverters.mxnet.MXNetONNXConversion
-```
-
-The conversion is tested for three frameworks - PyTorch, TensorFlow and MXNet.
-The successfully converted ONNX models are stored in the `build/models-directory`.
-The final RST file with the report is stored in the `build/onnx-support.rst` directory.
-
 ## Testing inference on target hardware
 
 The `kenning.scenarios.inference_tester` and `kenning.scenarios.inference_server` are used for inference testing on target hardware.

@@ -126,6 +126,12 @@ class InferenceTester(CommandTemplate):
                 help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
                 type=Path
             )
+            other_group.add_argument(
+                '--max-target-side-optimizers',
+                help='Max number of consecutive target-side optimizers',
+                type=int,
+                default=-1,
+            )
         # 'test' specific arguments
         if not types or TEST in types:
             other_group.add_argument(
@@ -226,27 +232,13 @@ class InferenceTester(CommandTemplate):
         with open(args.json_cfg, 'r') as f:
             json_cfg = json.load(f)
 
-        try:
-            pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
-            ret = pipeline_runner.run(
-                output=args.measurements[0] if args.measurements[0] else None,
-                verbosity=args.verbosity,
-                convert_to_onnx=getattr(args, 'convert_to_onnx', None),
-                command=command,
-                run_optimizations='compiler_cls' in args and not getattr(
-                    args, 'run_benchmarks_only', False),
-                run_benchmarks=bool(args.measurements[0]),
-            )
-        except ValidationError as ex:
-            logger.get_logger().error(f'Validation error: {ex}')
-            raise
-        except Exception as ex:
-            logger.get_logger().error(ex)
-            raise
+        pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
 
-        if ret is None:
-            return 1
-        return ret
+        return InferenceTester._run_pipeline(
+            args=args,
+            command=command,
+            pipeline_runner=pipeline_runner
+        )
 
     @staticmethod
     def _run_from_flags(
@@ -291,30 +283,48 @@ class InferenceTester(CommandTemplate):
         dataset = datasetcls.from_argparse(args) if datasetcls else None
         model = modelwrappercls.from_argparse(
             dataset, args) if modelwrappercls else None
-        compiler = [compilercls.from_argparse(dataset, args)] if compilercls else []  # noqa: E501
+        optimizers = [compilercls.from_argparse(dataset, args)] if compilercls else []  # noqa: E501
         protocol = protocolcls.from_argparse(args) if protocolcls else None
         runtime = runtimecls.from_argparse(args) if runtimecls else None
 
-        try:
-            pipeline_runner = PipelineRunner(
-                dataset,
-                model,
-                compiler,
-                runtime,
-                protocol,
-            )
+        pipeline_runner = PipelineRunner(
+            dataset,
+            model,
+            optimizers,
+            runtime,
+            protocol,
+        )
 
+        return InferenceTester._run_pipeline(
+            args=args,
+            command=command,
+            pipeline_runner=pipeline_runner
+        )
+
+    @staticmethod
+    def _run_pipeline(
+        args: argparse.Namespace,
+        command: List[str],
+        pipeline_runner: PipelineRunner
+    ):
+        try:
             ret = pipeline_runner.run(
                 output=args.measurements[0] if args.measurements[0] else None,
                 verbosity=args.verbosity,
                 convert_to_onnx=getattr(args, 'convert_to_onnx', False),
+                max_target_side_optimizers=(
+                    getattr(args, 'max_target_side_optimizers', -1)
+                ),
                 command=command,
                 run_optimizations=(
                     'compiler_cls' in args
                     and not getattr(args, 'run_benchmarks_only', False)
-                    and compiler
+                    and len(pipeline_runner.optimizers) > 0
                 ),
-                run_benchmarks=bool(args.measurements[0]) and dataset,
+                run_benchmarks=(
+                    bool(args.measurements[0])
+                    and pipeline_runner.dataset is not None
+                ),
             )
         except ValidationError as ex:
             logger.get_logger().error(f'Validation error: {ex}')

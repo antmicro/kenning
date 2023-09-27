@@ -6,8 +6,7 @@ Copyright (c) 2020-2023 [Antmicro](https://www.antmicro.com)
 
 Kenning is a framework for creating deployment flows and runtimes for Deep Neural Network applications on various target hardware.
 
-[Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning)
-
+[Kenning documentation](https://antmicro.github.io/kenning/) | [Core API](https://antmicro.github.io/kenning/kenning-api.html) | [kenning.ai](https://opensource.antmicro.com/projects/kenning) | [Tutorials](https://antmicro.github.io/kenning/kenning-gallery.html)
 ![](img/report-mosaic.png)
 
 Contents:
@@ -98,8 +97,8 @@ cd kenning/
 
 Then install using:
 
-```bash test-skip
-pip install -e ".[tensorflow,reports,tvm]"
+```bash
+pip install -e ".[tensorflow,tflite,tvm,reports]"
 ```
 
 ## Kenning structure
@@ -146,7 +145,7 @@ There are several ways to use Kenning:
 * Using executable scripts from the `scenarios` submodule, configurable via command-line arguments;
 * Using Kenning as a Python module.
 
-Kenning scenarios are executable scripts for:
+Kenning scenarios are executable scripts that can be used for:
 
 * Model training and benchmarking using its native framework ([`kenning.scenarios.model_training`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/model_training.py)),
 * Model optimization and compilation for target hardware ([`kenning.scenarios.inference_tester`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/inference_tester.py)),
@@ -154,13 +153,7 @@ Kenning scenarios are executable scripts for:
 * Rendering performance and quality reports from benchmark data ([`kenning.scenarios.render_report`](https://github.com/antmicro/kenning/blob/main/kenning/scenarios/render_report.py)),
 * and more.
 
-You can access these scenarios directly using e.g.:
-
-```bash
-python -m kenning.scenarios.inference_tester -h
-```
-
-You can also access them through the `kenning` executable as subcommands.
+They are available through the `kenning` executable as subcommands.
 To get the current list of subcommands, run:
 
 ```bash
@@ -183,13 +176,204 @@ The available subcommands are:
 * `cache` - manages Kenning cache used for models and datasets.
 * `completion` - configures autocompletion feature for Kenning CLI.
 
-Kenning also provides autocompletion for the CLI, which has to be configured separately with `kenning completion`.
+### Running Kenning
 
-For more details on each of the above scenarios, see the [Kenning documentation](https://antmicro.github.io/kenning/).
+Let's start off with installing the module and its necessary dependencies:
 
-### Kenning gallery
+```bash test-skip
+pip install "kenning[tensorflow,tflite,tvm,pipeline_manager,reports] @ git+https://github.com/antmicro/kenning.git"
+```
 
-Moreover, sample Kenning use cases can be found in [gallery](https://antmicro.github.io/kenning/kenning-gallery.html).
+Kenning provides two tools for displaying information about available classes: `kenning list` and `kenning info`.
+
+The `kenning list` tool lists all available modules used to form optimization and runtime pipelines in Kenning.
+Running:
+
+```bash
+kenning list
+```
+
+Should list:
+
+```
+Optimizers (in kenning.optimizers):
+
+    kenning.optimizers.nni_pruning.NNIPruningOptimizer
+    kenning.optimizers.onnx.ONNXCompiler
+    kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer
+    kenning.optimizers.model_inserter.ModelInserter
+    kenning.optimizers.tvm.TVMCompiler
+    kenning.optimizers.iree.IREECompiler
+    kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
+    kenning.optimizers.tflite.TFLiteCompiler
+
+Datasets (in kenning.datasets):
+
+    kenning.datasets.pet_dataset.PetDataset
+    kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset
+    kenning.datasets.random_dataset.RandomizedDetectionSegmentationDataset
+    kenning.datasets.open_images_dataset.OpenImagesDatasetV6
+    kenning.datasets.random_dataset.RandomizedClassificationDataset
+    kenning.datasets.common_voice_dataset.CommonVoiceDataset
+    kenning.datasets.magic_wand_dataset.MagicWandDataset
+    kenning.datasets.coco_dataset.COCODataset2017
+    kenning.datasets.imagenet_dataset.ImageNetDataset
+
+Modelwrappers (in kenning.modelwrappers):
+
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACT
+    kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
+    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
+    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3
+    kenning.modelwrappers.instance_segmentation.yolact.YOLACTWithPostprocessing
+    kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet
+    kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper
+    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2
+    kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
+    kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
+
+...
+```
+
+To list available compilers, run:
+
+```bash
+kenning list optimizers
+```
+
+For more verbose information, use the `-v` and `-vv` flags (module dependencies, description, supported formats and more)
+
+The `kenning info` tool provides more detailed information on a given class, e.g. for:
+
+```bash
+kenning info kenning.optimizers.tflite.TFLiteCompiler
+```
+
+We should get something like:
+
+```
+Class: TFLiteCompiler
+
+    The TFLite and EdgeTPU compiler.
+
+Dependencies:
+* onnx_tf.backend.prepare
+* tensorflow
+* numpy
+* onnx
+* tensorflow_model_optimization
+
+Input formats:
+* keras
+* tensorflow
+* onnx
+
+
+Output formats:
+* tflite
+
+
+Arguments specification:
+* model_framework
+  * argparse_name: --model-framework
+  * description: The input type of the model, framework-wise
+  * default: onnx
+  * enum
+    * keras
+    * tensorflow
+    * onnx
+* target
+  * argparse_name: --target
+  * description: The TFLite target device scenario
+  * default: default
+  * enum
+    * default
+    * int8
+    * float16
+    * edgetpu
+* inference_input_type
+  * argparse_name: --inference-input-type
+  * description: Data type of the input layer
+  * default: float32
+  * enum
+    * float32
+    * int8
+    * uint8
+...
+```
+
+If a certain class does not have necessary dependencies installed, Kenning suggests what modules need to be installed, e.g.:
+
+```
+This method requires additional dependencies, please use `pip install "kenning[tensorflow]"` to install them.
+```
+
+The classes described above are used to form optimization and evaluation scenarios in Kenning.
+Some of them can also be used to quickly prototype simple applications.
+
+With Kenning, we can combine multiple compilers and optimizers to create a fast and small model, including embedded devices.
+The optimization flow can be defined in JSON format, as follows:
+
+```json test-skip
+{
+  "model_wrapper": {
+    "type": "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",
+    "parameters": {
+      "model_name": "tvm-avx2-int8",
+      "model_path": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
+    }
+  },
+  "dataset": {
+    "type": "kenning.datasets.pet_dataset.PetDataset",
+    "parameters": {
+      "dataset_root": "./build/PetDataset"
+    }
+  },
+  "optimizers": [
+    {
+      "type": "kenning.optimizers.tflite.TFLiteCompiler",
+      "parameters": {
+        "target": "int8",
+        "compiled_model_path": "./build/int8.tflite",
+        "inference_input_type": "int8",
+        "inference_output_type": "int8",
+        "dataset_percentage": 0.01
+      }
+    },
+    {
+      "type": "kenning.optimizers.tvm.TVMCompiler",
+      "parameters": {
+        "target": "llvm -mcpu=core-avx2",
+        "conv2d_data_layout": "NCHW",
+        "compiled_model_path": "./build/int8_tvm.tar"
+      }
+    }
+  ],
+  "runtime": {
+    "type": "kenning.runtimes.tvm.TVMRuntime",
+    "parameters": {
+      "save_model_path": "./build/int8_tvm.tar"
+    }
+  }
+}
+```
+
+The above scenario takes the MobileNetV2 model trained for classification of cat and dog breeds, and passes it to:
+
+* `kenning.optimizers.tflite.TFLiteCompiler` to quantize the weights of the model
+* `kenning.optimizers.tvm.TVMCompiler` to create an optimized runtime of the model, utilizing AVX2 vector instructions.
+
+The optimization of the model, its evaluation and report generation can be run with one command:
+
+```bash test-skip
+kenning optimize test report --json-cfg sample.json --measurements out.json --report-path report.md --to-html report-html
+```
+
+The generated report can be found in the `report-html` directory.
+
+### Kenning tutorials
+
+For more examples on Kenning usage, check [Kenning tutorials](https://antmicro.github.io/kenning/kenning-gallery.html).
 
 ## Using Kenning as a library in Python scripts
 
@@ -266,212 +450,6 @@ The `runtime.run_locally` method runs benchmarks of the model on the current dev
 The `MeasurementsCollector` class collects all benchmarks' data for model inference and saves it in JSON format that can be later used to render reports with the `kenning.scenarios.render_report` script.
 
 As it can be observed, all classes accessible from JSON files in these scenarios share their configuration a with the classes in the Python scripts mentioned above.
-
-## Inspecting Kenning modules from CLI
-
-Kenning provides two tools for displaying information about available classes: `kenning.scenarios.list_classes` and `kenning.scenarios.class_info`.
-
-The first script can be executed as follows:
-
-```bash
-kenning list
-```
-
-It will list all of the available modules used to form optimization and runtime pipelines in Kenning:
-
-```
-Optimizers (in kenning.optimizers):
-
-    kenning.optimizers.nni_pruning.NNIPruningOptimizer
-    kenning.optimizers.onnx.ONNXCompiler
-    kenning.optimizers.tensorflow_pruning.TensorFlowPruningOptimizer
-    kenning.optimizers.model_inserter.ModelInserter
-    kenning.optimizers.tvm.TVMCompiler
-    kenning.optimizers.iree.IREECompiler
-    kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer
-    kenning.optimizers.tflite.TFLiteCompiler
-
-Datasets (in kenning.datasets):
-
-    kenning.datasets.pet_dataset.PetDataset
-    kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset
-    kenning.datasets.random_dataset.RandomizedDetectionSegmentationDataset
-    kenning.datasets.open_images_dataset.OpenImagesDatasetV6
-    kenning.datasets.random_dataset.RandomizedClassificationDataset
-    kenning.datasets.common_voice_dataset.CommonVoiceDataset
-    kenning.datasets.magic_wand_dataset.MagicWandDataset
-    kenning.datasets.coco_dataset.COCODataset2017
-    kenning.datasets.imagenet_dataset.ImageNetDataset
-
-Modelwrappers (in kenning.modelwrappers):
-
-    kenning.modelwrappers.instance_segmentation.yolact.YOLACT
-    kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper
-    kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2
-    kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3
-    kenning.modelwrappers.instance_segmentation.yolact.YOLACTWithPostprocessing
-    kenning.modelwrappers.classification.tensorflow_imagenet.TensorFlowImageNet
-    kenning.modelwrappers.classification.tflite_person_detection.PersonDetectionModelWrapper
-    kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2
-    kenning.modelwrappers.instance_segmentation.pytorch_coco.PyTorchCOCOMaskRCNN
-    kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
-
-...
-```
-
-To list available runtimes for the workflow, run:
-
-```bash
-kenning list runtimes
-```
-
-For more verbose information, use the `-v` and `-vv` flags (module dependencies, description, supported formats and more)
-
-To display more specific information about a particular class, use `kenning.scenarios.class_info`:
-
-```bash
-kenning info kenning.runtimes.tflite.TFLiteRuntime
-```
-
-```
-Class: TFLiteRuntime
-
-	Runtime subclass that provides an API
-	for testing inference on TFLite models.
-
-Dependencies:
-* tflite_runtime.interpreter - Not available (Reason: No module named 'tflite_runtime')
-* tensorflow.lite
-
-Input formats:
-* tflite
-
-Output formats:
-
-Arguments specification:
-* modelpath
-  * argparse name: --save-model-path
-  * type: Path
-  * description: Path where the model will be uploaded
-  * default: model.tar
-* delegates
-  * argparse name: --delegates-list
-  * description: List of runtime delegates for the TFLite runtime
-  * default: None
-  * nullable: True
-* num_threads
-  * type: int
-  * description: Number of threads to use for inference
-  * default: 4
-```
-
-The script displays information that can be helpful while creating a JSON scenario, e.g. listing the specification of possible arguments.
-It also displays required dependencies along with the information about their availability in the current Python environment.
-In the example above, the TFLiteRuntime configuration accepts TensorFlow Lite Flatbuffer models as input.
-We can also see that some of the dependencies are missing.
-
-Provided the dependencies are satisfied, the script can gain access to more detailed and parameterized information by using the `--load-class-with-args` argument.
-Here is a comparison between the regular and more descriptive outputs:
-
-```bash
-kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4
-```
-
-```
-Class: ONNXYOLOV4
-
-Input/output specification:
-* input
-  * shape: (1, 3, keyparams['width'], keyparams['height'])
-  * dtype: float32
-* output
-  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 0))), (keyparams['height'] // (8 * (2 ** 0))))
-  * dtype: float32
-* output.3
-  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 1))), (keyparams['height'] // (8 * (2 ** 1))))
-  * dtype: float32
-* output.7
-  * shape: (1, 255, (keyparams['width'] // (8 * (2 ** 2))), (keyparams['height'] // (8 * (2 ** 2))))
-  * dtype: float32
-* detection_output
-  * type: List[DetectObject]
-
-Dependencies:
-* onnx
-* numpy
-* torch.nn.functional
-* importlib_resources.files
-* torch
-
-Arguments specification:
-* classes
-  * argparse_name: --classes
-  * convert-type: builtins.str
-  * type
-    * string
-  * description: File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type
-  * default: coco
-* model_path
-  * argparse_name: --model-path
-  * convert-type: pathlib.Path
-  * type
-    * string
-  * description: Path to the model
-  * required: True
-```
-
-To load a class with arguments, all required arguments must be provided.
-In the case of `ONNXYOLOV4`, only `--model-path` is needed:
-
-```bash
-kenning info kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4 \
-        --load-class-with-args \
-        --model-path \
-            kenning:///models/object_detection/yolov4.onnx
-```
-
-```
-Class: ONNXYOLOV4
-
-Input/output specification:
-* input
-  * shape: (1, 3, 608, 608)
-  * dtype: float32
-* output
-  * shape: (1, 255, 76, 76)
-  * dtype: float32
-* output.3
-  * shape: (1, 255, 38, 38)
-  * dtype: float32
-* output.7
-  * shape: (1, 255, 19, 19)
-  * dtype: float32
-* detection_output
-  * type: List[DetectObject]
-
-Dependencies:
-* torch.nn.functional
-* numpy
-* importlib_resources.files
-* onnx
-* torch
-
-Arguments specification:
-* classes
-  * argparse_name: --classes
-  * convert-type: builtins.str
-  * type
-    * string
-  * description: File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type
-  * default: coco
-* model_path
-  * argparse_name: --model-path
-  * convert-type: pathlib.Path
-  * type
-    * string
-  * description: Path to the model
-  * required: True
-```
 
 ## Adding new implementations
 

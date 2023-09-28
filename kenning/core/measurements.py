@@ -397,19 +397,26 @@ class SystemStatsCollector(Thread):
                     gpu = self.nvidia_smi.DeviceQuery(
                         'memory.free, memory.total, utilization.gpu'
                     )
-                    memtot = float(gpu['gpu'][0]['fb_memory_usage']['total'])
-                    memfree = float(gpu['gpu'][0]['fb_memory_usage']['free'])
-                    gpumemutilization = (memtot - memfree) / memtot * 100.0
-                    gpuutilization = float(
-                        gpu['gpu'][0]['utilization']['gpu_util']
-                    )
-                    self.measurements += {
-                        f'{self.prefix}_gpu_utilization': [gpuutilization],
-                        f'{self.prefix}_gpu_mem_utilization': [
-                            gpumemutilization
-                        ],
-                        f'{self.prefix}_gpu_timestamp': [time.perf_counter()],
-                    }
+                    if gpu and 'gpu' in gpu:
+                        memtot = float(
+                            gpu['gpu'][0]['fb_memory_usage']['total']
+                        )
+                        memfree = float(
+                            gpu['gpu'][0]['fb_memory_usage']['free']
+                        )
+                        gpumemutilization = (memtot - memfree) / memtot * 100.0
+                        gpuutilization = float(
+                            gpu['gpu'][0]['utilization']['gpu_util']
+                        )
+                        self.measurements += {
+                            f'{self.prefix}_gpu_utilization': [gpuutilization],
+                            f'{self.prefix}_gpu_mem_utilization': [
+                                gpumemutilization
+                            ],
+                            f'{self.prefix}_gpu_timestamp': [
+                                time.perf_counter()
+                            ],
+                        }
                 with self.runningcondition:
                     self.runningcondition.wait(timeout=self.step)
             if tegrastats:

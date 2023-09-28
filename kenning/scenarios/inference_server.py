@@ -45,6 +45,9 @@ from kenning.core.protocol import (
 )
 from kenning.core.runtime import Runtime
 from kenning.utils.class_loader import get_command, load_class
+from kenning.utils.resource_manager import ResourceURI
+import kenning.utils.logger as logger
+
 
 JSON_CONFIG = 'Server configuration with JSON'
 FLAG_CONFIG = 'Server configuration with flags'
@@ -310,6 +313,7 @@ class InferenceServerRunner(CommandTemplate):
         groups[JSON_CONFIG].add_argument(
             '--json-cfg',
             help='* The path to the input JSON file with configuration',
+            type=ResourceURI,
         ).completer = FilesCompleter("*.json")
         groups[FLAG_CONFIG].add_argument(
             '--protocol-cls',

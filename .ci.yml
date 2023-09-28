@@ -37,7 +37,7 @@ pytest:
         - mkdir -p build
         - ln -s /data/* build/
         - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
-        - pip install --no-deps -e .
+        - pip install -e ".[test]"
         - python -m venv --system-site-packages $KENNING_DOCS_VENV
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -k "not docs_gallery" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl

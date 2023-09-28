@@ -87,10 +87,10 @@ tvm = [
     "apache-tvm",
 ]
 iree = [
-    "iree-compiler==20220415.108",
-    "iree-runtime==20220415.108",
-    "iree-tools-tf==20220415.108",
-    "iree-tools-tflite==20220415.108",
+    "iree-compiler==20230209.425",
+    "iree-runtime==20230209.425",
+    "iree-tools-tf==20230209.425",
+    "iree-tools-tflite==20230209.425",
 ]
 onnxruntime = [
     "onnxruntime",
@@ -135,6 +135,7 @@ homepage = "https://antmicro.github.io/kenning"
 repository = "https://github.com/antmicro/kenning"
 
 [tool.ruff]
+line-length = 79
 select = [
     "D201", # No blank lines allowed before function docstring
     "D206", # Docstring should be indented with spaces, not tabs
@@ -157,6 +158,7 @@ select = [
     "D414", # Section has no content
     "D417", # Missing argument descriptions in the docstring
     "D419", # Docstring is empty
+    "E",
 ]
 
 [tool.pytest.ini_options]

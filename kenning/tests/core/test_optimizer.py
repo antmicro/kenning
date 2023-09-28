@@ -35,7 +35,11 @@ def prepare_objects(
     except UnknownFramework:
         pytest.xfail(f'Unknown framework: {inputtype}')
 
-    optimizer = opt_cls(dataset, compiled_model_path)
+    optimizer = opt_cls(
+        dataset,
+        compiled_model_path,
+        model_framework=inputtype,
+    )
     optimizer.set_input_type(inputtype)
 
     return optimizer, model

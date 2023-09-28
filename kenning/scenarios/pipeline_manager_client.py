@@ -9,6 +9,7 @@ A script for connecting Kenning with Pipeline Manager server.
 
 import argparse
 import json
+import signal
 import sys
 from pathlib import Path
 from typing import Tuple, Dict, Optional, List
@@ -198,6 +199,13 @@ class PipelineManagerClient(CommandTemplate):
             client.send_message(MessageType.PROGRESS,
                                 str(progress).encode('UTF-8'))
 
+        def exit_handler(*args) -> None:
+            log.info('Closing connection')
+            client.disconnect()
+            stop_parallel_server()
+            signal.signal(signal.SIGINT, default_sigint_handler)
+            sys.exit(0)
+
         def build_frontend(frontend_path: Path) -> None:
             """
             Builds the Pipeline Manager frontend in the selected directory.
@@ -232,6 +240,9 @@ class PipelineManagerClient(CommandTemplate):
 
         client = CommunicationBackend(args.host, args.port)
         start_server_in_parallel(frontend_path=frontend_files_path)
+
+        default_sigint_handler = signal.getsignal(signal.SIGINT)
+        signal.signal(signal.SIGINT, exit_handler)
 
         try:
             if args.spec_type == "pipeline":
@@ -269,6 +280,7 @@ class PipelineManagerClient(CommandTemplate):
                     client.send_message(return_status, return_message)
 
             TqdmCallback.unregister_callback(callback_percent)
+
         except ValidationError as ex:
             log.error(f'Failed to load JSON file:\n{ex}')
             client.send_message(
@@ -295,7 +307,9 @@ class PipelineManagerClient(CommandTemplate):
                 bytes(f'Unexpected exception:\n{ex}', 'utf-8'))
             raise
         finally:
+            client.disconnect()
             stop_parallel_server()
+            signal.signal(signal.SIGINT, default_sigint_handler)
         return 0
 
 

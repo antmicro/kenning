@@ -1,7 +1,7 @@
 # Structured pruning for PyTorch models
 
-One of the methods of reducing model's size is pruning, which decreases number of neurons in layers by removing the least meaningful ones.
-In this example, we present scenarios for pruning [`PyTorchPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/pytorch_pet_dataset.py) using [Neural Network Intelligence](https://github.com/microsoft/nni).
+One of the methods of reducing model's size is structured pruning, which removes least contributing neurons, filters and/or convolution kernels.
+In this example, we present scenarios for structured pruning of [`PyTorchPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/pytorch_pet_dataset.py) using [Neural Network Intelligence](https://github.com/microsoft/nni).
 
 ## Setup
 
@@ -31,14 +31,17 @@ kenning test \
 * `apoz` - [`ActivationAPoZRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-apoz-rank-pruner) based on Average Percentage of Zeros in activations,
 * `mean_rank` - [`ActivationMeanRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-mean-rank-pruner) based on metric that calculates the smallest mean value of activations.
 
-These activations are collected during dataset inference and its number can be influenced by `training_steps`.
-Moreover, pruning have two modes, `dependency_aware` which makes pruner aware of channels' and groups' dependencies.
-On the other hand, in `normal` model, this information is ignored.
+These activations are collected during dataset inference and the number of samples collected for statistics can be modified with `training_steps`.
+Moreover, pruning has two modes:
+
+* `dependency_aware` which makes pruner aware of channels' and groups' dependencies
+* `normal`, where dependencies are ignored.
+
 Also, there is a possibility to chose which `activation` pruner will use - `relu`, `relu6` or `gelu`.
-Additional configuration can be specified in `config_list`, which follows the format defined in [NNI specification](https://nni.readthedocs.io/en/stable/compression/config_list.html#pruning-specific-configuration-keys).
-Furthermore, if `exclude_last_layer` is positive, {{project}} will try to append configuration excluding last layer to the `config_list`, in order to prevent changing size of the output.
+Additional configuration can be specified in `config_list`, which follows the format defined in the [NNI specification](https://nni.readthedocs.io/en/stable/compression/config_list.html#pruning-specific-configuration-keys).
+Furthermore, if `exclude_last_layer` is positive, the optimizer will be configured to exclude the last layer from the pruning process, to prevent changing size of the output.
 Apart from that, `confidence` defines coefficient for the sparsity inference and also the batch size of the dummy input for this process.
-If GPU is available, it will be used by default, but as pruning can be memory-consuming, there is a `pruning_on_cuda` option for restricting GPU usage during this process.
+If GPU is available, it will be used by default, but as pruning can be memory-consuming, there is a `pruning_on_cuda` option for manual configuration of the GPU usage during this process.
 
 Other arguments influence fine-tuning of the pruned model, e.g. `criterion` and `optimizer` accepts paths to the class respectively calculating criterion and optimizing neural network.
 Also, number of `finetuning_epochs` can be changed, as well as `finetuning_batch_size` and `finetuning_learning_rate`.
@@ -48,7 +51,7 @@ Also, number of `finetuning_epochs` can be changed, as well as `finetuning_batch
 :emphasize-lines: 16-44
 ```
 
-Run pruning with:
+Run the above scenario with:
 
 ```bash
 kenning optimize test \
@@ -100,7 +103,7 @@ For greater size reduction, we can use larger sparsity with adjusted parameters,
 
 ## Results
 
-Models can be compared with generated report:
+Models can be compared with the generated report:
 
 ```bash
 kenning report \

@@ -40,7 +40,7 @@ pytest:
         - pip install -e ".[test,pipeline_manager]"
         - python -m venv --system-site-packages $KENNING_DOCS_VENV
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -k "not docs_gallery" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -m "not docs_gallery" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl
     artifacts:
         paths:
             - log.json
@@ -60,7 +60,7 @@ pytest:
         # Do not use installed TVM
         - rm /usr/lib/libtvm.so /usr/lib/libtvm_runtime.so
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -k docs_gallery -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_gallery -vvl
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m docs_gallery -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_gallery -vvl
     artifacts:
         paths:
             - log_gallery/*.log

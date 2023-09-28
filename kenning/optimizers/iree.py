@@ -179,12 +179,12 @@ class IREECompiler(Optimizer):
         self.converted_backend = backend_convert.get(backend, backend)
         if compiler_args is not None:
             self.parsed_compiler_args = [
-                f"--{option}" for option in compiler_args
+                f'--{option}' for option in compiler_args
             ]
         else:
             self.parsed_compiler_args = []
 
-        if model_framework in ('keras', 'tf'):
+        if model_framework in ('keras', 'tensorflow'):
             self.compiler_input_type = 'mhlo'
         elif model_framework == 'tflite':
             self.compiler_input_type = 'tosa'

@@ -109,6 +109,10 @@ class ResourceManager(metaclass=Singleton):
         'https': None,
         'kenning': 'https://dl.antmicro.com/kenning/{path}',
         'gh': _gh_converter,
+        'demo-scenario': (
+            'https://raw.githubusercontent.com/'
+            'antmicro/kenning/main/scripts/{path}'
+        ),
         'file': lambda uri: Path(uri.path).expanduser().resolve(),
     }
 

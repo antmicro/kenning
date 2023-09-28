@@ -1,4 +1,4 @@
-image: $CI_IMAGE
+image: $CI_BASE_IMAGE
 
 .ace: &ace
     tags: ['ace-x86_64']
@@ -20,6 +20,7 @@ stages:
     - docs-deploy
 
 pre-commit:
+    image: $CI_LINT_IMAGE
     <<: *ace
     <<: *common_only
     stage: lint
@@ -128,6 +129,7 @@ sample-client-server-scenario:
     allow_failure: false
 
 docs:
+    image: $CI_DOCS_IMAGE
     <<: *ace
     <<: *common_only
     stage: docs
@@ -149,6 +151,7 @@ docs:
             - $CI_DOCS_ARCHIVE
 
 linkcheck:
+    image: $CI_DOCS_IMAGE
     <<: *ace
     <<: *common_only
     stage: docs

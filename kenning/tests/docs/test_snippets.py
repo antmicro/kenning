@@ -150,7 +150,7 @@ def execute_script_and_wait(
     Returns
     -------
     bool :
-        Succesfulness of the script.
+        True if the script ended successfully
     """
     success, failure = uuid.uuid4(), uuid.uuid4()
     check_cmd = COMMAND_CHECK.format(success, failure)

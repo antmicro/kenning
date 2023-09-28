@@ -62,12 +62,6 @@ class PipelineManagerClient(CommandTemplate):
             required=True
         )
         ve_group.add_argument(
-            '--workspace-dir',
-            type=Path,
-            help='Directory where the frontend sources should be stored',
-            required=True
-        )
-        ve_group.add_argument(
             '--spec-type',
             type=str,
             help='Type of graph that should be represented in a Pipeline Manager - can choose between optimization pipeline or Kenningflow',  # noqa: E501

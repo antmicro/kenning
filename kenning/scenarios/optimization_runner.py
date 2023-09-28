@@ -38,6 +38,7 @@ from kenning.core.metrics import (
     compute_performance_metrics,
 )
 from kenning.utils.pipeline_runner import PipelineRunner
+from kenning.utils.resource_manager import ResourceURI
 
 log = logger.get_logger()
 
@@ -358,7 +359,7 @@ class OptimizationRunner(CommandTemplate):
         command_group.add_argument(
             '--json-cfg',
             help='The path to the input JSON file with configuration',
-            type=Path,
+            type=ResourceURI,
             required=True,
         ).completer = FilesCompleter("*.json")
         command_group.add_argument(

@@ -97,9 +97,9 @@ class ClassInfoRunner(CommandTemplate):
                 and k != 'help' and k != 'verbosity' and k != '__seq_0'}
 
         # if no flags are given, set all of them to True (display everything)
-        if not any([v for v in args.values() if type(v) is bool]):
+        if not any([v for v in args.values() if isinstance(v, bool)]):
             for k, v in args.items():
-                args[k] = True if type(v) is bool else v
+                args[k] = True if isinstance(v, bool) else v
         resulting_output = generate_class_info(**args)
 
         for result_line in resulting_output:

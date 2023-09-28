@@ -55,6 +55,7 @@ from kenning.cli.command_template import (
 )
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.pipeline_runner import PipelineRunner
+from kenning.utils.resource_manager import ResourceURI
 import kenning.utils.logger as logger
 
 
@@ -96,7 +97,8 @@ class InferenceTester(CommandTemplate):
             groups[JSON_CONFIG].add_argument(
                 '--json-cfg',
                 help=f'{required_prefix}The path to the input JSON file with configuration of the inference',  # noqa: E501
-            ).completer = FilesCompleter(allowednames=("*.json",))
+                type=ResourceURI,
+            ).completer = FilesCompleter(allowednames=('*.json',))
             flag_group = groups[FLAG_CONFIG]
             shared_flags_group = flag_group
         else:

@@ -16,6 +16,7 @@ from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, FLOW)
 from kenning.core.flow import KenningFlow
 from kenning.utils import logger
+from kenning.utils.resource_manager import ResourceURI
 
 
 class FlowRunner(CommandTemplate):
@@ -37,6 +38,7 @@ class FlowRunner(CommandTemplate):
         flow_group.add_argument(
             '--json-cfg',
             help='The path to the input JSON file with configuration of the graph',  # noqa: E501
+            type=ResourceURI,
             required=True,
         ).completer = FilesCompleter('*.json')
         return parser, groups

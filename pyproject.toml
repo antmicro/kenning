@@ -114,14 +114,14 @@ pipeline_manager = [
 reports = [
     "kenning[docs]",
     "Jinja2>=2.11.2",
-    "servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis",
+    "servis[bokeh,matplotlib] @ git+https://github.com/antmicro/servis.git",
 ]
 uart = [
     "pyserial",
 ]
 renode = [
-    "pyrenode @ git+https://github.com/antmicro/pyrenode",
-    "renode-run @ git+https://github.com/antmicro/renode-run",
+    "pyrenode @ git+https://github.com/antmicro/pyrenode.git",
+    "renode-run @ git+https://github.com/antmicro/renode-run.git",
 ]
 nni = [
     "kenning[torch]",

@@ -103,7 +103,7 @@ class TestGridSearch:
 
         for pipeline in pipelines:
             # check if pipeline is valid
-            _ = PipelineRunner.from_json_cfg(pipeline)
+            PipelineRunner.from_json_cfg(pipeline, assert_integrity=True)
 
 
 class TestReplacePaths:

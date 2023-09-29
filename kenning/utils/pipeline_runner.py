@@ -17,7 +17,10 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
 from kenning.core.protocol import RequestFailure, Protocol, check_request
-from kenning.runtimes.renode import RenodeRuntime
+try:
+    from kenning.runtimes.renode import RenodeRuntime
+except ImportError:
+    RenodeRuntime = None
 
 from kenning.utils.class_loader import any_from_json
 from kenning.utils.args_manager import serialize_inference
@@ -89,7 +92,8 @@ class PipelineRunner(object):
             Raised if parameters are incorrect.
         """
         assert 'model_wrapper' in json_cfg, 'ModelWrapper not provided'
-        assert 'runtime' in json_cfg, 'Runtime not provided'
+        if 'runtime' not in json_cfg:
+            skip_runtime = True
 
         dataset = (
             any_from_json(json_cfg['dataset'])
@@ -227,7 +231,7 @@ class PipelineRunner(object):
             model_path = self.model_wrapper.get_path()
 
         ret = True
-        if isinstance(self.runtime, RenodeRuntime):
+        if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
             compiled_model_path = self.handle_optimizations(convert_to_onnx)
             self.runtime.run_client(
                 dataset=self.dataset,
@@ -421,7 +425,7 @@ class PipelineRunner(object):
                     self.model_wrapper._preprocess_input
                 )(
                     X
-                )  # noqa: 501
+                )  # noqa: E501
                 prepX = self.model_wrapper.convert_input_to_bytes(prepX)
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(
@@ -439,7 +443,7 @@ class PipelineRunner(object):
                     self.model_wrapper._postprocess_outputs
                 )(
                     preds
-                )  # noqa: 501
+                )  # noqa: E501
                 measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()

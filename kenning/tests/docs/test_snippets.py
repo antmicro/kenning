@@ -44,6 +44,8 @@ NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Path to the environment for testing snippets from documentation
 DOCS_VENV = os.environ.get('KENNING_DOCS_VENV')
+# Directory with datasets (relative to Kenning)
+DATASET_DIR = 'build'
 # Possible arguments for snippet
 SNIPPET_ARGUMENTS = ('test-skip', 'timeout', 'name', 'terminal')
 
@@ -253,6 +255,8 @@ def get_subshell(
         _venv = get_venv(markdown, tmpfolder)
     elif DOCS_VENV:
         _venv = Path(DOCS_VENV)
+    else:
+        _venv = None
     if _venv and not execute_script_and_wait(
             SHELLS[markdown][_id], f"source {_venv / 'bin' / 'activate'}"):
         raise Exception('Virtual environment cannot be activated')
@@ -264,6 +268,16 @@ def get_subshell(
             SHELLS[markdown][_id], f'git clone . {repo_copy}')
     ) or not execute_script_and_wait(SHELLS[markdown][_id], f'cd {repo_copy}'):
         raise Exception('Copy of the repository cannot be created')
+
+    # Link directories with datasets
+    os.makedirs(f"{repo_copy}/{DATASET_DIR}", exist_ok=True)
+    for checksum_path in glob(f'{DATASET_DIR}/**/DATASET_CHECKSUM'):
+        checksum_path = Path(checksum_path)
+        target_path = Path(
+            f"{repo_copy}/{DATASET_DIR}/{checksum_path.parent.name}")
+        if target_path.exists():
+            continue
+        os.symlink(checksum_path.parent.absolute(), target_path)
 
     return SHELLS[markdown][_id]
 

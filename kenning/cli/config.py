@@ -73,7 +73,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     LIST: list_classes.ListClassesRunner,
     OPTIMIZE: inference_tester.InferenceTester,
     REPORT: render_report.RenderReport,
-    SERVER: inference_server.InferenceServer,
+    SERVER: inference_server.InferenceServerRunner,
     TEST: inference_tester.InferenceTester,
     TRAIN: model_training.TrainModel,
     CACHE: manage_cache.ManageCacheRunner,

@@ -30,7 +30,6 @@ try:
 except ImportError:
     RenodeRuntime = type(None)
 
-from kenning.utils.args_manager import serialize_inference
 from kenning.utils.class_loader import any_from_json
 from kenning.utils.resource_manager import PathOrURI
 
@@ -173,6 +172,61 @@ class PipelineRunner(object):
             model_wrapper=model_wrapper,
         )
 
+    def serialize_inference(
+        self,
+        dataset: Dataset,
+        model: ModelWrapper,
+        optimizers: List[Optimizer],
+        protocol: Protocol,
+        runtime: Runtime,
+        dataconverter: DataConverter,
+    ) -> Dict:
+        """
+        Serializes the given objects into a dictionary which
+        is a valid input for `inference_tester.py`.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset to serialize.
+        model : ModelWrapper
+            ModelWrapper to serialize.
+        optimizers : Union[List[Optimizer], Optimizer]
+            Optimizers to serialize.
+        protocol : Protocol
+            Protocol to serialize.
+        runtime : Runtime
+            Runtime to serialize.
+        dataconverter : DataConverter
+            DataConverter to serialize.
+
+        Returns
+        -------
+        Dict :
+            Serialized inference.
+        """
+        def object_to_module(obj):
+            return type(obj).__module__ + '.' + type(obj).__name__
+
+        serialized_dict = {}
+
+        for obj, name in zip(
+            [dataset, model, protocol, runtime, dataconverter,],
+            ['dataset', 'model_wrapper', 'protocol', 'runtime', 'data_converter',]  # noqa: E501
+        ):
+            if obj:
+                serialized_dict[name] = obj.to_json()
+
+        if optimizers:
+            if not isinstance(optimizers, list):
+                optimizers = [optimizers]
+
+            serialized_dict['optimizers'] = [
+                optimizer.to_json() for optimizer in optimizers
+            ]
+
+        return serialized_dict
+
     def add_scenario_configuration_to_measurements(
             self,
             command: List,
@@ -196,7 +250,7 @@ class PipelineRunner(object):
                 for optimizer in self.optimizers
             ],
             'command': command,
-            'build_cfg': serialize_inference(
+            'build_cfg': self.serialize_inference(
                 dataset=self.dataset,
                 model=self.model_wrapper,
                 optimizers=self.optimizers,

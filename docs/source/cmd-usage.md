@@ -281,7 +281,7 @@ Both classes may require some additional arguments that can be listed with the `
 
 An example script for the `inference_tester` is:
 
-```bash timeout=5
+```bash test-skip
 kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
@@ -306,7 +306,7 @@ kenning optimize test \
 
 The above runs with the following `inference_server` setup:
 
-```bash timeout=5
+```bash test-skip
 kenning server \
     --protocol-cls kenning.protocols.network.NetworkProtocol \
     --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
@@ -362,7 +362,7 @@ Directories with scripts for client and server calls for various target devices,
 
 To print the list of required arguments, run:
 
-```bash
+```bash test-skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
     kenning.runtimes.tvm.TVMRuntime \

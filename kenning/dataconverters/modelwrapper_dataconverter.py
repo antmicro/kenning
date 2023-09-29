@@ -7,12 +7,12 @@ ModelWrapper object for compatibility between RuntimeProtocol and Dataset
 during runtime.
 """
 
-from kenning.core.dataconverter import DataConverter
-from kenning.core.model import ModelWrapper
-from kenning.utils.class_loader import load_class
 from typing import Any, Dict
 
+from kenning.core.dataconverter import DataConverter
+from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import get_parsed_json_dict
+from kenning.utils.class_loader import load_class
 
 
 class ModelWrapperDataConverter(DataConverter):

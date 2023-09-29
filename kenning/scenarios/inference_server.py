@@ -249,7 +249,7 @@ class InferenceServerRunner(CommandTemplate):
             )
 
         if args.json_cfg is not None:
-            return InferenceServer._run_from_json(args, not_parsed)
+            return InferenceServerRunner._run_from_json(args, not_parsed)
 
         else:
             missing_args = [
@@ -264,7 +264,7 @@ class InferenceServerRunner(CommandTemplate):
                     f'{", ".join(missing_args)}',
                 )
 
-        return InferenceServer._run_from_flags(args, not_parsed)
+        return InferenceServerRunner._run_from_flags(args, not_parsed)
 
     @staticmethod
     def _run_from_flags(

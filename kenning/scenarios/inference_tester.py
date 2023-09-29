@@ -36,28 +36,25 @@ compilation and benchmark process.
 """
 
 import argparse
-import sys
 import json
+import sys
 from pathlib import Path
-from typing import Optional, List, Tuple
-from argcomplete.completers import FilesCompleter
+from typing import List, Optional, Tuple
 
+from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
-from kenning.cli.completers import (
-    ClassPathCompleter, MODEL_WRAPPERS, OPTIMIZERS,
-    RUNTIMES, RUNTIME_PROTOCOLS, DATASETS,
-)
-from kenning.cli.command_template import (
-    ArgumentsGroups, CommandTemplate, TRAIN, TEST, OPTIMIZE,
-    REPORT, DEFAULT_GROUP, GROUP_SCHEMA,
-    ParserHelpException
-)
+import kenning.utils.logger as logger
+from kenning.cli.command_template import (DEFAULT_GROUP, GROUP_SCHEMA,
+                                          OPTIMIZE, REPORT, TEST, TRAIN,
+                                          ArgumentsGroups, CommandTemplate,
+                                          ParserHelpException)
+from kenning.cli.completers import (DATASETS, MODEL_WRAPPERS, OPTIMIZERS,
+                                    RUNTIME_PROTOCOLS, RUNTIMES,
+                                    ClassPathCompleter)
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
-import kenning.utils.logger as logger
-
 
 JSON_CONFIG = "Inference configuration with JSON"
 FLAG_CONFIG = "Inference configuration with flags"

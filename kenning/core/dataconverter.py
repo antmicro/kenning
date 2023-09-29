@@ -10,7 +10,7 @@ during inference execution.
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
-from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.args_manager import ArgumentsHandler
 
 
 class DataConverter(ArgumentsHandler, ABC):
@@ -69,33 +69,3 @@ class DataConverter(ArgumentsHandler, ABC):
             Converted data.
         """
         raise NotImplementedError
-
-    @classmethod
-    def from_json(cls, json_dict: Dict[str, str], **kwargs) -> "DataConverter":
-        """
-        Constructor wrapper that takes the parameters from json dict.
-
-        This function checks if the given dictionary is valid according
-        to the ``arguments_structure`` defined.
-        If it is then it invokes the constructor.
-
-        Parameters
-        ----------
-        json_dict : Dict[str, str]
-            Arguments for the constructor.
-        **kwargs : Dict[str, Any]
-            Additional class-dependent arguments.
-
-        Returns
-        -------
-        DataConverter :
-            Instance created from provided JSON.
-        """
-
-        parameterschema = cls.form_parameterschema()
-        parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-
-        return cls(
-            **kwargs,
-            **parsed_json_dict
-        )

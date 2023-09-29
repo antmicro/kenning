@@ -99,8 +99,8 @@ class ClassInfoRunner(CommandTemplate):
         }
 
         # if no flags are given, set all of them to True (display everything)
-        if not any([v for v in args.values() if isinstance(v, bool)]):
-            for k, v in args.items():
+        if not any([v for v in args_dict.values() if isinstance(v, bool)]):
+            for k, v in args_dict.items():
                 args_dict[k] = True if isinstance(v, bool) else v
         resulting_output = generate_class_info(**args_dict)
 

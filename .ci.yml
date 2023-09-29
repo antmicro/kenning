@@ -101,7 +101,6 @@ sample-compilation:
     script:
         - mkdir build
         - ln -s /data/PetDataset build/PetDataset
-        - sed -i '/download-dataset/d' ./scripts/tvm-tensorflow-classification-cpu.sh
         - ./scripts/tvm-tensorflow-classification-cpu.sh
     artifacts:
         paths:

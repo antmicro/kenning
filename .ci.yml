@@ -37,6 +37,7 @@ pytest:
         - mkdir -p build
         - ln -s /data/* build/
         - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
+        - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
         - python -m venv --system-site-packages --upgrade-deps $KENNING_DOCS_VENV
     script:

@@ -20,13 +20,13 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
 from kenning.core.measurements import Measurements, MeasurementsCollector
-from kenning.core.runtimeprotocol import RuntimeProtocol
+from kenning.core.protocol import Protocol
 from kenning.utils.class_loader import load_class
 
 GoalHandle = TypeVar('GoalHandle', bound=_rclpy.ActionGoalHandle)
 
 
-class ROS2Protocol(RuntimeProtocol):
+class ROS2Protocol(Protocol):
     """
     A ROS2-based runtime protocol for communication.
     It supports only a client side of the runtime protocol.
@@ -131,7 +131,7 @@ class ROS2Protocol(RuntimeProtocol):
         # Last message's future
         self.future = None
 
-        RuntimeProtocol.__init__(self)
+        super().__init__()
 
     def log_info(self, message: str):
         """

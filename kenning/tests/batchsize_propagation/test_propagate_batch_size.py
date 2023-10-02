@@ -1,13 +1,10 @@
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
-from kenning.utils.pipeline_runner import PipelineRunner
 
 import pytest
 
-from kenning.optimizers.iree import IREECompiler
-from kenning.optimizers.tflite import TFLiteCompiler
-from kenning.optimizers.tvm import TVMCompiler
-from kenning.core.measurements import MeasurementsCollector
+from kenning.dataconverters.modelwrapper_dataconverter import \
+    ModelWrapperDataConverter
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
@@ -17,11 +14,15 @@ from kenning.modelwrappers.classification.tflite_magic_wand import \
     MagicWandModelWrapper
 from kenning.modelwrappers.classification.tflite_person_detection import \
     PersonDetectionModelWrapper
+from kenning.optimizers.iree import IREECompiler
+from kenning.optimizers.tflite import TFLiteCompiler
+from kenning.optimizers.tvm import TVMCompiler
 from kenning.runtimes.renode import RenodeRuntime
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
 from kenning.tests.core.conftest import get_reduced_dataset_path
-from kenning.utils.resource_manager import ResourceURI, ResourceManager
+from kenning.utils.pipeline_runner import PipelineRunner
+from kenning.utils.resource_manager import ResourceURI
 
 
 @pytest.mark.xdist_group(name='use_resources')
@@ -75,11 +76,14 @@ def test_scenario_pet_dataset_tflite(
             model_path=tmp_model_path
         )
 
+        dataconverter = ModelWrapperDataConverter(model)
+
         pipeline_runner = PipelineRunner(
             dataset=dataset,
-            model_wrapper=model,
+            dataconverter=dataconverter,
             optimizers=[compiler],
-            runtime=runtime
+            runtime=runtime,
+            model_wrapper=model,
         )
 
         pipeline_runner.run()
@@ -111,8 +115,8 @@ def test_scenario_tflite_tvm_magic_wand(
         tmpfolder):
 
     with expectation:
-        compiled_model_path_tflite = tmpfolder / f'model-magicwand-{batch_size}.tflite' # noqa E501
-        compiled_model_path_tvm = tmpfolder / f'model-magicwand-{batch_size}.tar' # noqa E501
+        compiled_model_path_tflite = tmpfolder / f'model-magicwand-{batch_size}.tflite'  # noqa: E501
+        compiled_model_path_tvm = tmpfolder / f'model-magicwand-{batch_size}.tar'  # noqa: E501
 
         dataset = MagicWandDataset(
             root=get_reduced_dataset_path(MagicWandDataset),
@@ -155,11 +159,14 @@ def test_scenario_tflite_tvm_magic_wand(
             model_path=compiled_model_path_tvm
         )
 
+        dataconverter = ModelWrapperDataConverter(model)
+
         pipeline_runner = PipelineRunner(
-            dataset=dataset,
+            dataset,
+            dataconverter,
+            [compiler_tvm],
+            runtime,
             model_wrapper=model,
-            optimizers=[compiler_tvm],
-            runtime=runtime
         )
 
         pipeline_runner.run()

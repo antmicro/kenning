@@ -12,18 +12,14 @@ import json
 import time
 from abc import ABC
 from argparse import Namespace
-from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from kenning.core.measurements import (
-    MeasurementsCollector,
-    SystemStatsCollector,
-    tagmeasurements,
-    timemeasurements,
-)
+from kenning.core.measurements import (MeasurementsCollector,
+                                       SystemStatsCollector, tagmeasurements,
+                                       timemeasurements)
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import get_logger
@@ -100,15 +96,13 @@ class Runtime(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        protocol : Optional[RuntimeProtocol]
-            RuntimeProtocol object.
         args : Namespace
             Arguments from ArgumentParser object.
 
         Returns
         -------
-        RuntimeProtocol :
-            Object of class RuntimeProtocol.
+        Runtime :
+            Object of class Runtime.
         """
         return super().from_argparse(args)
 
@@ -123,8 +117,6 @@ class Runtime(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        protocol : RuntimeProtocol
-            RuntimeProtocol object.
         json_dict : Dict
             Arguments for the constructor.
 
@@ -557,7 +549,6 @@ class Runtime(ArgumentsHandler, ABC):
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 
-
     def prepare_local(self) -> bool:
         """
         Runs initialization for the local inference.
@@ -568,7 +559,6 @@ class Runtime(ArgumentsHandler, ABC):
             True if initialized successfully.
         """
         return self.prepare_model(None) and self.prepare_io_specification(None)
-
 
     def infer(
             self,
@@ -603,7 +593,6 @@ class Runtime(ArgumentsHandler, ABC):
             return model_wrapper._postprocess_outputs(preds)
 
         return preds
-
 
     def get_time(self) -> float:
         """

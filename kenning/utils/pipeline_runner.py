@@ -38,6 +38,10 @@ UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
 
 
 class PipelineRunner(object):
+    """
+    Class responsible for running inference pipelines.
+    """
+
     def __init__(
         self,
         dataset: Dataset,
@@ -47,6 +51,24 @@ class PipelineRunner(object):
         protocol: Optional[Protocol] = None,
         model_wrapper: Optional[ModelWrapper] = None,
     ):
+        """
+        Initializes the PipelineRunner object.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset object that provides data for inference.
+        dataconverter : DataConverter
+            DataConverter object that converts data from/to Protocol format.
+        optimizers : List[Optimizer]
+            List of Optimizer objects that optimize the model.
+        runtime : Runtime
+            Runtime object that runs the inference.
+        protocol : Optional[Protocol]
+            Protocol object that provides the communication protocol.
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper object that wraps the model.
+        """
         self.dataset = dataset
         self.dataconverter = dataconverter
         self.model_wrapper = model_wrapper

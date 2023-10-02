@@ -49,9 +49,11 @@ from kenning.cli.command_template import (DEFAULT_GROUP, GROUP_SCHEMA,
                                           OPTIMIZE, REPORT, TEST, TRAIN,
                                           ArgumentsGroups, CommandTemplate,
                                           ParserHelpException)
-from kenning.cli.completers import (DATASETS, MODEL_WRAPPERS, OPTIMIZERS,
-                                    RUNTIME_PROTOCOLS, RUNTIMES,
+from kenning.cli.completers import (DATA_CONVERTERS, DATASETS, MODEL_WRAPPERS,
+                                    OPTIMIZERS, RUNTIME_PROTOCOLS, RUNTIMES,
                                     ClassPathCompleter)
+from kenning.dataconverters.modelwrapper_dataconverter import \
+    ModelWrapperDataConverter
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
@@ -103,6 +105,11 @@ class InferenceTester(CommandTemplate):
             flag_group = parser.add_argument_group(GROUP_SCHEMA.format(TEST))
             shared_flags_group = other_group
 
+        shared_flags_group.add_argument(
+                '--dataconverter-cls',
+                help='DataConverter-based class responsible for converting data to and from format required by the protocol',  # noqa: E501
+                required=False,
+        ).completer = ClassPathCompleter(DATA_CONVERTERS)
         shared_flags_group.add_argument(
             '--modelwrapper-cls',
             help=f'{required_prefix}ModelWrapper-based class with inference implementation to import',  # noqa: E501
@@ -174,8 +181,9 @@ class InferenceTester(CommandTemplate):
 
         logger.set_verbosity(args.verbosity)
 
-        flag_config_names = ('modelwrapper_cls', 'dataset_cls', 'compiler_cls',
-                             'runtime_cls', 'protocol_cls')
+        flag_config_names = ('modelwrapper_cls',
+                             'dataset_cls', 'compiler_cls', 'runtime_cls',
+                             'protocol_cls')
         flag_config_not_none = [getattr(args, name, None) is not None
                                 for name in flag_config_names]
         if "json_cfg" not in args:
@@ -246,6 +254,8 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs
     ):
+        dataconvertercls = load_class(args.dataconverter_cls) \
+            if args.dataconverter_cls else None
         modelwrappercls = load_class(args.modelwrapper_cls) \
             if args.modelwrapper_cls else None
         datasetcls = load_class(args.dataset_cls) \
@@ -267,6 +277,7 @@ class InferenceTester(CommandTemplate):
             ' '.join(map(lambda x: x.strip(),
                      get_command(with_slash=False))) + '\n',
             parents=[]
+            + ([dataconvertercls.form_argparse()[0]] if dataconvertercls else [])   # noqa: E501
             + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
             + ([datasetcls.form_argparse()[0]] if datasetcls else [])
             + ([runtimecls.form_argparse()[0]] if runtimecls else [])
@@ -279,6 +290,8 @@ class InferenceTester(CommandTemplate):
             raise ParserHelpException(parser)
         args = parser.parse_args(not_parsed, namespace=args)
 
+        dataconverter = dataconvertercls.from_argparse(args) \
+            if dataconvertercls else None
         dataset = datasetcls.from_argparse(args) if datasetcls else None
         model = modelwrappercls.from_argparse(
             dataset, args) if modelwrappercls else None
@@ -286,12 +299,20 @@ class InferenceTester(CommandTemplate):
         protocol = protocolcls.from_argparse(args) if protocolcls else None
         runtime = runtimecls.from_argparse(args) if runtimecls else None
 
+        if dataconverter is None:
+            logger.get_logger().warning(
+                "No data converter specified. Using the ModelWrapper's "
+                "default data converter.")
+
+            dataconverter = ModelWrapperDataConverter(model)
+
         pipeline_runner = PipelineRunner(
             dataset,
-            model,
+            dataconverter,
             optimizers,
             runtime,
             protocol,
+            model,
         )
 
         return InferenceTester._run_pipeline(

@@ -54,6 +54,7 @@ pytest:
         # Prepare Docker
         - apt-get update --allow-releaseinfo-change -y > /dev/null 2> /dev/null
         - apt-get -qqy --no-install-recommends install docker.io cgroupfs-mount crun fuse-overlayfs pigz ca-certificates > /dev/null
+        - pip install -e ".[test,pipeline_manager]"
         - cgroupfs-mount
         - dockerd -s fuse-overlayfs --add-runtime=crun=/usr/bin/crun --default-runtime=crun --config-file="" > /dev/null 2> /dev/null &
         - while ! test -S /var/run/docker.sock; do echo "Waiting for Docker..." && sleep 1; done; docker info

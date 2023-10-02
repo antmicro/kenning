@@ -121,10 +121,11 @@ jsontype_to_type = {
 
 def serialize_inference(
     dataset: 'Dataset',
-    model: 'ModelWrapper',
+    dataconverter: 'DataConverter',
     optimizers: List['Optimizer'],
     protocol: 'Protocol',
-    runtime: 'Runtime'
+    runtime: 'Runtime',
+    model: 'ModelWrapper',
 ) -> Dict:
     """
     Serializes the given objects into a dictionary which
@@ -134,14 +135,16 @@ def serialize_inference(
     ----------
     dataset : Dataset
         Dataset to serialize.
-    model : ModelWrapper
-        ModelWrapper to serialize.
+    dataconverter : DataConverter
+        DataConverter to serialize.
     optimizers : Union[List[Optimizer], Optimizer]
         Optimizers to serialize.
     protocol : Protocol
         Protocol to serialize.
     runtime : Runtime
         Runtime to serialize.
+    model : ModelWrapper
+        ModelWrapper to serialize.
 
     Returns
     -------
@@ -154,8 +157,8 @@ def serialize_inference(
     serialized_dict = {}
 
     for obj, name in zip(
-        [dataset, model, protocol, runtime],
-        ['dataset', 'model_wrapper', 'protocol', 'runtime']
+        [dataset, dataconverter, protocol, runtime, model],
+        ['dataset', 'dataconverter', 'protocol', 'runtime', 'model_wrapper']
     ):
         if obj:
             serialized_dict[name] = obj.to_json()

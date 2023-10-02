@@ -6,31 +6,32 @@
 Module with pipelines running helper functions.
 """
 
-from pathlib import Path
 import tempfile
-
-from typing import Optional, Dict, List, Union
+from pathlib import Path
+from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
+
+import kenning.utils.logger as logger
+from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
+from kenning.core.measurements import (Measurements, MeasurementsCollector,
+                                       systemstatsmeasurements,
+                                       tagmeasurements)
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
+from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
-from kenning.core.protocol import RequestFailure, Protocol, check_request
+from kenning.dataconverters.modelwrapper_dataconverter import \
+    ModelWrapperDataConverter
+
 try:
     from kenning.runtimes.renode import RenodeRuntime
 except ImportError:
     RenodeRuntime = None
 
-from kenning.utils.class_loader import any_from_json
 from kenning.utils.args_manager import serialize_inference
-import kenning.utils.logger as logger
-from kenning.core.measurements import (
-    Measurements,
-    MeasurementsCollector,
-    systemstatsmeasurements,
-    tagmeasurements
-)
+from kenning.utils.class_loader import any_from_json
 from kenning.utils.resource_manager import PathOrURI
 
 UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
@@ -40,12 +41,14 @@ class PipelineRunner(object):
     def __init__(
         self,
         dataset: Dataset,
-        model_wrapper: ModelWrapper,
+        dataconverter: DataConverter,
         optimizers: List[Optimizer],
         runtime: Runtime,
         protocol: Optional[Protocol] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.dataset = dataset
+        self.dataconverter = dataconverter
         self.model_wrapper = model_wrapper
         self.optimizers = optimizers
         self.runtime = runtime
@@ -86,12 +89,13 @@ class PipelineRunner(object):
 
         Raises
         ------
+        AssertionError :
+            Raised if required blocks are not provided.
         ValueError :
             Raised if blocks are connected incorrectly.
         jsonschema.exceptions.ValidationError :
             Raised if parameters are incorrect.
         """
-        assert 'model_wrapper' in json_cfg, 'ModelWrapper not provided'
         if 'runtime' not in json_cfg:
             skip_runtime = True
 
@@ -99,9 +103,24 @@ class PipelineRunner(object):
             any_from_json(json_cfg['dataset'])
             if 'dataset' in json_cfg else None
         )
+
         model_wrapper = (
-            any_from_json(json_cfg['model_wrapper'], dataset=dataset)
+                any_from_json(json_cfg['model_wrapper'], dataset=dataset)
+                if 'model_wrapper' in json_cfg else None
         )
+
+        dataconverter = (
+            any_from_json(json_cfg['dataconverter'])
+            if 'dataconverter' in json_cfg else None
+        )
+
+        assert model_wrapper or dataconverter, (
+            'Provide either dataconverter or model_wrapper.'
+        )
+
+        if not dataconverter:
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+
         optimizers = (
             [
                 any_from_json(optimizer_cfg, dataset=dataset)
@@ -109,10 +128,12 @@ class PipelineRunner(object):
             ]
             if not skip_optimizers else None
         )
+
         runtime = (
             any_from_json(json_cfg['runtime'])
             if not skip_runtime else None
         )
+
         protocol = (
             any_from_json(json_cfg['protocol'])
             if 'protocol' in json_cfg else None
@@ -123,11 +144,71 @@ class PipelineRunner(object):
 
         return cls(
             dataset=dataset,
-            model_wrapper=model_wrapper,
+            dataconverter=dataconverter,
             optimizers=optimizers,
             runtime=runtime,
-            protocol=protocol
+            protocol=protocol,
+            model_wrapper=model_wrapper,
         )
+
+    def enhance_measurements(self,
+                             command: List,
+                             model_path: Optional[PathOrURI]):
+        """
+        Method that adds additional measurements to the measurements dict.
+
+        Parameters
+        ----------
+        command : List
+            Command that was used to run the pipeline.
+        model_path : Optional[PathOrURI]
+            Path to the compiled model.
+        """
+        MeasurementsCollector.measurements += {
+            'optimizers': [
+                dict(zip(
+                    ('compiler_framework', 'compiler_version'),
+                    optimizer.get_framework_and_version()
+                ))
+                for optimizer in self.optimizers
+            ],
+            'command': command,
+            'build_cfg': serialize_inference(
+                self.dataset,
+                self.dataconverter,
+                self.optimizers,
+                self.protocol,
+                self.runtime,
+                self.model_wrapper
+            ),
+        }
+
+        if self.model_wrapper:
+            framework, version = (
+                    self.model_wrapper.get_framework_and_version()
+            )
+            MeasurementsCollector.measurements += {
+                    'model_framework': framework,
+                    'model_version': version
+            }
+
+        # TODO: add method for providing metadata to dataset
+        if hasattr(self.dataset, 'classnames'):
+            MeasurementsCollector.measurements += {
+                'class_names': self.dataset.get_class_names()
+            }
+
+        if model_path:
+            model_path = Path(model_path)
+            # If model compressed in ZIP exists use its size
+            # It is more accurate for Keras models
+            if model_path.with_suffix('.zip').exists():
+                model_path = model_path.with_suffix('.zip')
+
+            MeasurementsCollector.measurements += {
+                'compiled_model_size': model_path.stat().st_size
+            }
+        return
 
     def run(
         self,
@@ -138,7 +219,6 @@ class PipelineRunner(object):
         command: List = ['Run in a different environment'],
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
-        model_name: Optional[str] = None,
     ) -> int:
         """
         Wrapper function that runs a pipeline using given parameters.
@@ -161,8 +241,6 @@ class PipelineRunner(object):
             If False, optimizations will not be executed.
         run_benchmarks : bool
             If False, model will not be tested.
-        model_name : Optional[str]
-            Custom name of the model.
 
         Returns
         -------
@@ -171,6 +249,8 @@ class PipelineRunner(object):
 
         Raises
         ------
+        AssertionError :
+            Raised if required blocks are not provided.
         ValueError :
             Raised if blocks are connected incorrectly.
         jsonschema.exceptions.ValidationError :
@@ -189,49 +269,16 @@ class PipelineRunner(object):
             self.runtime
         )
 
-        model_framework_tuple = self.model_wrapper.get_framework_and_version()
-        self.model_wrapper.get_io_specification()
-
         if run_benchmarks and not output:
             log.warning(
                 'Running benchmarks without defined output -- measurements '
                 'will not be saved'
             )
 
-        if output:
-            MeasurementsCollector.measurements += {
-                'model_framework': model_framework_tuple[0],
-                'model_version': model_framework_tuple[1],
-                'optimizers': [
-                    dict(zip(
-                        ('compiler_framework', 'compiler_version'),
-                        optimizer.get_framework_and_version()
-                    ))
-                    for optimizer in self.optimizers
-                ],
-                'command': command,
-                'build_cfg': serialize_inference(
-                    self.dataset,
-                    self.model_wrapper,
-                    self.optimizers,
-                    self.protocol,
-                    self.runtime
-                ),
-            }
-            if model_name is not None:
-                MeasurementsCollector.measurements += {
-                    'model_name': model_name
-                }
-
-            # TODO add method for providing metadata to dataset
-            if hasattr(self.dataset, 'classnames'):
-                MeasurementsCollector.measurements += {
-                    'class_names': self.dataset.get_class_names()
-                }
-
-        if len(self.optimizers) > 0:
+        model_path = None
+        if self.optimizers:
             model_path = self.optimizers[-1].compiled_model_path
-        else:
+        elif self.model_wrapper:
             model_path = self.model_wrapper.get_path()
 
         ret = True
@@ -244,6 +291,7 @@ class PipelineRunner(object):
             run_optimizations
         )
         if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
+            compiled_model_path = self.handle_optimizations(convert_to_onnx)
             self.runtime.run_client(
                 dataset=self.dataset,
                 modelwrapper=self.model_wrapper,
@@ -261,35 +309,27 @@ class PipelineRunner(object):
             else:
                 ret = self._run_locally(compiled_model_path)
         elif run_benchmarks:
+            assert self.model_wrapper, (
+                'Model wrapper is required to run benchmarks'
+            )
             self.model_wrapper.model_path = model_path
             self.model_wrapper.test_inference()
             ret = True
 
-        if not ret:
-            return 1
-
         if output:
-            model_path = Path(model_path)
-            # If model compressed in ZIP exists use its size
-            # It is more accurate for Keras models
-            if model_path.with_suffix(model_path.suffix + '.zip').exists():
-                model_path = model_path.with_suffix(model_path.suffix + '.zip')
-
-            MeasurementsCollector.measurements += {
-                'compiled_model_size': model_path.stat().st_size
-            }
-
+            self.enhance_measurements(command, model_path)
             MeasurementsCollector.save_measurements(output)
-        return 0
+        return not ret
 
-    def upload_essentials(self, compiled_model_path: PathOrURI) -> bool:
+    def upload_essentials(self,
+                          compiled_model_path: Optional[PathOrURI]) -> bool:
         """
         Wrapper for uploading data to the server.
         Uploads model by default.
 
         Parameters
         ----------
-        compiled_model_path : PathOrURI
+        compiled_model_path : Optional[PathOrURI]
             Path or URI to the file with a compiled model.
 
         Returns
@@ -297,11 +337,16 @@ class PipelineRunner(object):
         bool :
             True if succeeded.
         """
-        spec_path = self.runtime.get_io_spec_path(compiled_model_path)
-        if spec_path.exists():
-            self.protocol.upload_io_specification(spec_path)
+        if not compiled_model_path:
+            logger.get_logger().warning(
+                'No compiled model provided, skipping uploading IO spec'
+            )
         else:
-            logger.get_logger().info('No Input/Output specification found')
+            spec_path = self.runtime.get_io_spec_path(compiled_model_path)
+            if spec_path.exists():
+                self.protocol.upload_io_specification(spec_path)
+            else:
+                logger.get_logger().info('No Input/Output specification found')
         return self.protocol.upload_model(compiled_model_path)
 
     def handle_optimizations(
@@ -309,7 +354,7 @@ class PipelineRunner(object):
         convert_to_onnx: Optional[Path] = None,
         run_optimization: bool = True,
         max_target_side_optimizers: int = -1,
-    ) -> Path:
+    ) -> Optional[Path]:
         """
         Handle model optimization.
 
@@ -326,7 +371,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        Path :
+        Optional[Path] :
             Path to compiled model.
 
         Raises
@@ -334,6 +379,12 @@ class PipelineRunner(object):
         RuntimeError :
             When any of the server request fails.
         """
+        if not self.optimizers:
+            return None
+
+        assert self.model_wrapper, (
+            'Model wrapper is required to run optimizations'
+        )
         model_path = self.model_wrapper.get_path()
         if not run_optimization:
             if self.optimizers:
@@ -490,11 +541,7 @@ class PipelineRunner(object):
             measurements = Measurements()
             for X, y in tqdm(self.dataset.iter_test()):
                 prepX = tagmeasurements("preprocessing")(
-                    self.model_wrapper._preprocess_input
-                )(
-                    X
-                )  # noqa: E501
-                prepX = self.model_wrapper.convert_input_to_bytes(prepX)
+                    self.dataconverter.to_message)(X)
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(
                     self.protocol.request_processing(self.runtime.get_time),
@@ -503,15 +550,9 @@ class PipelineRunner(object):
                 _, preds = check_request(
                     self.protocol.download_output(), 'receive output'
                 )
-                logger.get_logger().debug(
-                    f'Received output ({len(preds)} bytes)'
-                )
-                preds = self.model_wrapper.convert_output_from_bytes(preds)
+                logger.get_logger().debug('Received output')
                 posty = tagmeasurements("postprocessing")(
-                    self.model_wrapper._postprocess_outputs
-                )(
-                    preds
-                )  # noqa: E501
+                    self.dataconverter.from_message)(preds)
                 measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -549,9 +590,8 @@ class PipelineRunner(object):
                 'runtime', self.dataset.iter_test()
             ):
                 prepX = tagmeasurements("preprocessing")(
-                    self.model_wrapper._preprocess_input
+                        self.dataconverter.to_message
                 )(X)
-                prepX = self.model_wrapper.convert_input_to_bytes(prepX)
                 succeed = self.runtime.prepare_input(prepX)
                 if not succeed:
                     return False

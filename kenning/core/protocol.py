@@ -7,18 +7,16 @@ Module providing a communication protocol for communication between host and
 the client.
 """
 
-from enum import Enum
-from pathlib import Path
 import json
 import time
-from typing import Any, Literal, Tuple, Optional, Union, Dict, Callable
 from argparse import Namespace
+from enum import Enum
+from pathlib import Path
+from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 
-from kenning.core.measurements import Measurements
-from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.args_manager import ArgumentsHandler
 import kenning.utils.logger as logger
-
+from kenning.core.measurements import Measurements, MeasurementsCollector
+from kenning.utils.args_manager import ArgumentsHandler
 
 MSG_SIZE_LEN = 4
 MSG_TYPE_LEN = 2
@@ -292,12 +290,12 @@ class Protocol(ArgumentsHandler):
         Parameters
         ----------
         args : Namespace
-            Arguments from RuntimeProtocol object.
+            Arguments from Protocol object.
 
         Returns
         -------
-        RuntimeProtocol :
-            Object of class RuntimeProtocol.
+        Protocol :
+            Object of class Protocol.
         """
         return super().from_argparse(args)
 
@@ -317,8 +315,8 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        RuntimeProtocol :
-            Object of class RuntimeProtocol.
+        Protocol :
+            Object of class Protocol.
         """
         return super().from_json(json_dict)
 

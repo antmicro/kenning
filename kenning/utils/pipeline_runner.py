@@ -187,6 +187,7 @@ class PipelineRunner(object):
         )
 
         model_framework_tuple = self.model_wrapper.get_framework_and_version()
+        self.model_wrapper.get_io_specification()
 
         if run_benchmarks and not output:
             log.warning(
@@ -231,8 +232,11 @@ class PipelineRunner(object):
             model_path = self.model_wrapper.get_path()
 
         ret = True
+        compiled_model_path = self.handle_optimizations(
+            convert_to_onnx,
+            run_optimizations
+        )
         if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
-            compiled_model_path = self.handle_optimizations(convert_to_onnx)
             self.runtime.run_client(
                 dataset=self.dataset,
                 modelwrapper=self.model_wrapper,
@@ -246,9 +250,9 @@ class PipelineRunner(object):
                 )
                 ret = False
             elif self.protocol:
-                ret = self._run_client(convert_to_onnx)
+                ret = self._run_client(compiled_model_path)
             else:
-                ret = self._run_locally(convert_to_onnx)
+                ret = self._run_locally(compiled_model_path)
         elif run_benchmarks:
             self.model_wrapper.model_path = model_path
             self.model_wrapper.test_inference()
@@ -295,22 +299,20 @@ class PipelineRunner(object):
 
     def handle_optimizations(
         self,
-        convert_to_onnx: Optional[Path] = None
+        convert_to_onnx: Optional[Path] = None,
+        run_optimization: bool = True,
     ) -> Path:
         """
         Handle model optimization.
 
         Parameters
         ----------
-        dataset : Dataset
-            Dataset to be used by optimizers.
-        model_wrapper : ModelWrapper
-            Model for optimizations.
-        optimizers : List[Optimizer]
-            List of optimizer for model optimization.
         convert_to_onnx : Optional[Path]
             Before compiling the model, convert it to ONNX and use in the
             inference (provide a path to save here).
+        run_optimization : bool
+            Determines if optimizations should be executed, otherwise last
+            compiled model path is returned.
 
         Returns
         -------
@@ -323,6 +325,12 @@ class PipelineRunner(object):
             When any of the server request fails.
         """
         model_path = self.model_wrapper.get_path()
+        if not run_optimization:
+            if self.optimizers:
+                return self.optimizers[-1].compiled_model_path
+            else:
+                self.model_wrapper.save_io_specification(model_path)
+                return model_path
 
         prev_block = self.model_wrapper
         if convert_to_onnx:
@@ -372,20 +380,18 @@ class PipelineRunner(object):
 
             model_path = prev_block.compiled_model_path
 
-        if not self.optimizers:
-            self.model_wrapper.save_io_specification(model_path)
+        self.optimizers[-1].save_io_specification(model_path)
 
         logger.get_logger().info(f'Compiled model path: {model_path}')
         return model_path
 
-    def _run_client(self, convert_to_onnx: Optional[Path] = None) -> bool:
+    def _run_client(self, compiled_model_path: Path) -> bool:
         """
         Main runtime client program.
 
         The client performance procedure is as follows:
 
         * connect with the server
-        * run model optimizations
         * upload the model
         * send dataset data in a loop to the server:
 
@@ -398,9 +404,8 @@ class PipelineRunner(object):
 
         Parameters
         ----------
-        convert_to_onnx : Optional[Path]
-            Before compiling the model, convert it to ONNX and use in the
-            inference (provide a path to save here).
+        compiled_model_path : Path
+            Path to the model that should be tested.
 
         Returns
         -------
@@ -409,8 +414,6 @@ class PipelineRunner(object):
         """
 
         check_request(self.protocol.initialize_client(), 'prepare client')
-
-        compiled_model_path = self.handle_optimizations(convert_to_onnx)
 
         if self.protocol is None:
             raise RequestFailure('Protocol is not provided')
@@ -457,27 +460,26 @@ class PipelineRunner(object):
         return True
 
     @systemstatsmeasurements('full_run_statistics')
-    def _run_locally(self, convert_to_onnx: Optional[Path] = None) -> bool:
+    def _run_locally(self, compiled_model_path: Path) -> bool:
         """
         Runs inference locally.
 
         Parameters
         ----------
-        convert_to_onnx : Optional[Path]
-            Before compiling the model, convert it to ONNX and use in the
-            inference (provide a path to save here).
+        compiled_model_path : Path
+            Path to the model that should be tested.
 
         Returns
         -------
         bool :
             True if executed successfully.
         """
-        self.model_path = self.handle_optimizations(convert_to_onnx)
+        self.model_path = compiled_model_path
 
         measurements = Measurements()
         try:
             self.runtime.inference_session_start()
-            self.runtime.prepare_local()
+            assert self.runtime.prepare_local(), "Cannot prepare local environment"  # noqa: E501
             for X, y in logger.TqdmCallback(
                 'runtime', self.dataset.iter_test()
             ):

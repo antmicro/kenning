@@ -61,6 +61,9 @@ pytest:
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         # Do not use installed TVM
         - rm /usr/lib/libtvm.so /usr/lib/libtvm_runtime.so
+        - mkdir -p build
+        - ln -s /data/* build/
+        - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m docs_gallery -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_gallery -vvl
     artifacts:

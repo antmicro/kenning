@@ -165,8 +165,8 @@ class NNIPruningOptimizer(Optimizer):
     }
 
     arguments_structure = {
-        "modelframework": {
-            "argparse_name": "--modelframework",
+        "model_framework": {
+            "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
             "default": "torch",
             "enum": list(inputtypes.keys()),

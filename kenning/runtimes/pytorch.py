@@ -6,7 +6,6 @@
 Runtime implementation for PyTorch models
 """
 from typing import Optional, List
-from pathlib import Path
 import gc
 
 from kenning.core.runtime import (
@@ -14,7 +13,7 @@ from kenning.core.runtime import (
     ModelNotPreparedError,
     Runtime,
 )
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class PyTorchRuntime(Runtime):
@@ -27,7 +26,7 @@ class PyTorchRuntime(Runtime):
         "model_path": {
             "argparse_name": "--save-model-path",
             "description": "Path where the model will be uploaded",
-            "type": Path,
+            "type": ResourceURI,
             "default": "model.pth",
         },
         "skip_jit": {

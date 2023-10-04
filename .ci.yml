@@ -74,17 +74,23 @@ pytest:
 docs-tests:
     <<: *ace
     only:
-        variables:
-            - $CI_COMMIT_BRANCH == "main"
-            - $CI_COMMIT_BRANCH == "dev"
+        refs:
+            - main
+            - dev
+    except:
+        refs:
+            - merge_requests
     <<: *pytest-docs
 
 docs-tests-manual:
     <<: *ace
     except:
-        variables:
-            - $CI_COMMIT_BRANCH == "main"
-            - $CI_COMMIT_BRANCH == "dev"
+        refs:
+            - main
+            - dev
+    only:
+        refs:
+            - merge_requests
     <<: *pytest-docs
     when: manual
 

@@ -304,7 +304,6 @@ class PipelineRunner(object):
             model_path = self.model_wrapper.get_path()
 
         ret = True
-
         if self.protocol:
             check_request(self.protocol.initialize_client(), 'prepare client')
 
@@ -313,7 +312,6 @@ class PipelineRunner(object):
             run_optimizations
         )
         if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
-            compiled_model_path = self.handle_optimizations(convert_to_onnx)
             self.runtime.run_client(
                 dataset=self.dataset,
                 modelwrapper=self.model_wrapper,
@@ -525,7 +523,7 @@ class PipelineRunner(object):
         logger.get_logger().info(f'Compiled model path: {model_path}')
         return model_path
 
-    def _run_client(self, compiled_model_path: Path) -> bool:
+    def _run_client(self, compiled_model_path: Optional[Path]) -> bool:
         """
         Main runtime client program.
 
@@ -544,7 +542,7 @@ class PipelineRunner(object):
 
         Parameters
         ----------
-        compiled_model_path : Path
+        compiled_model_path : Optional[Path]
             Path to the model that should be tested.
 
         Returns

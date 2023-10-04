@@ -157,7 +157,6 @@ class RenodeRuntime(Runtime):
             self.init_renode()
 
             try:
-                check_request(protocol.initialize_client(), 'prepare client')
                 spec_path = self.get_io_spec_path(compiled_model_path)
                 if spec_path.exists():
                     protocol.upload_io_specification(spec_path)

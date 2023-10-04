@@ -13,6 +13,7 @@ import venv
 from collections import defaultdict
 from glob import glob
 from pathlib import Path
+from time import sleep
 from typing import Callable, Dict, Generator, Optional, Tuple
 
 import pexpect
@@ -20,9 +21,13 @@ import pytest
 from tuttest import Snippet, get_snippets
 
 # Regex for changing Kenning installation to local version
+
+# Regex for changing Kenning installtion to local version
 KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
 # Regex for detecting Kenning installation
-PIP_INSTALL_KENNING_RE = r'pip (.* )?install .*' + KENNING_LINK_RE
+PIP_INSTALL_RE = r'pip (?:.* )?install'
+PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + r' .*' + KENNING_LINK_RE
+PIP_INSTALL_KENNING_LOCAL_RE = r'(' + PIP_INSTALL_RE + r' [^\.]*)\.'
 # Patterns of markdown files
 DOCS_DIR = Path(__file__).parent / 'source'
 DOCS_MARKDOWNS = str(DOCS_DIR / '*.md')
@@ -30,8 +35,12 @@ GALLERY_DIR = DOCS_DIR / 'gallery'
 GALLERY_MARKDOWNS = str(GALLERY_DIR / '*.md')
 # List of snippet executables types
 EXECUTABLE_TYPES = ('bash',)
-# Mapping of markdown files to separate virtual environment
-VENVS: Dict[str, Path] = {}
+# Kenning repo root path
+KENNING_ROOT_PATH = Path(os.getcwd()).resolve()
+# Pip install lockfile
+PIP_LOCK_FILE = KENNING_ROOT_PATH / '.PIP_LOCK'
+# Mapping of markdown files to separate working directories
+WORKING_DIRS: Dict[str, Path] = {}
 # Mapping of markdown files to subshells
 SHELLS: Dict[str, Dict[int, pexpect.spawn]] = defaultdict(dict)
 # Template for command checking if previous process was successful
@@ -42,8 +51,6 @@ EXPECT_RE = "(?<!'){}(?!')"
 NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
 # Default timeout of command execution
 DEFAULT_TIMEOUT = 60 * 15  # 15 min
-# Path to the environment for testing snippets from documentation
-DOCS_VENV = os.environ.get('KENNING_DOCS_VENV')
 # Directory with datasets (relative to Kenning)
 DATASET_DIR = 'build'
 # Possible arguments for snippet
@@ -84,7 +91,7 @@ def extract_snippet_args(snippet: Snippet):
 
 def get_all_snippets(
     markdown_pattern: str,
-) -> Generator[Tuple[Path, str, Snippet, Path], None, None]:
+) -> Generator[Tuple[str, str, Snippet], None, None]:
     """
     Finds all executable snippets from gallery of examples
     and dumps named JSON snippets to files.
@@ -96,7 +103,7 @@ def get_all_snippets(
 
     Yields
     ------
-    Path :
+    str :
         Name of the markdown file with snippets.
     str :
         Name of the found snippet.
@@ -151,8 +158,7 @@ def get_all_snippets(
                     if last_snippet_name:
                         line_snippet.meta['depends'].append(last_snippet_name)
                     last_snippet_name = f'{name}_{id}'
-                    yield (markdown.with_suffix('').name,
-                           last_snippet_name, line_snippet)
+                    yield markdown.stem, last_snippet_name, line_snippet
             # Python snippet -- combine and yield at the end of function
             elif snippet.lang == 'python':
                 if python_snippet:
@@ -163,7 +169,7 @@ def get_all_snippets(
 
         # Yield combined python snippets
         if python_snippet:
-            yield markdown.with_suffix('').name, name, python_snippet
+            yield markdown.stem, name, python_snippet
 
 
 def execute_script_and_wait(
@@ -194,6 +200,7 @@ def execute_script_and_wait(
         re.compile(EXPECT_RE.format(success)),
         re.compile(EXPECT_RE.format(failure)),
     ]
+    lock_pip = re.match(PIP_INSTALL_RE, script) is not None
     try:
         script = script.split('\n', 1)
         content = None
@@ -202,6 +209,19 @@ def execute_script_and_wait(
             script = script[0]
         else:
             script = '\n'.join(script)
+
+        if lock_pip:
+            retry_count = 1000
+            while True:
+                try:
+                    PIP_LOCK_FILE.touch(exist_ok=False)
+                    break
+                except FileExistsError:
+                    retry_count -= 1
+                    if retry_count <= 0:
+                        pytest.fail('Failed to lock pip install')
+                    sleep(1)
+
         if not script.rstrip().endswith(' &'):
             # Use check command twice to make sure it used
             shell.sendline(f'{script} && \\\n {check_cmd}')
@@ -223,14 +243,19 @@ def execute_script_and_wait(
         shell.sendline(check_cmd)
         shell.expect_list(expect_list)
         raise
+    finally:
+        if lock_pip:
+            PIP_LOCK_FILE.unlink()
 
 
-def get_venv(markdown: str, tmpfolder: Path) -> Path:
+def get_working_directory(
+    markdown: str,
+    tmpfolder: Path
+) -> Path:
     """
     Returns path to the virtual environment.
 
-    Returns path for existing virtual environment associated with markdown
-    file or create a new one.
+    Prepares working directory and returns path to it.
 
     Parameters
     ----------
@@ -242,20 +267,28 @@ def get_venv(markdown: str, tmpfolder: Path) -> Path:
     Returns
     -------
     Path :
-        Path to the virtual environment.
+        Path to the working directory.
     """
-    if markdown not in VENVS:
-        VENVS[markdown] = tmpfolder / f'venv_{markdown}'
-        venv.create(VENVS[markdown], with_pip=True, upgrade_deps=True)
-    return VENVS[markdown]
+    if markdown in WORKING_DIRS:
+        return WORKING_DIRS[markdown]
+
+    working_dir_path = tmpfolder / f'{markdown}_wd'
+    venv_path = working_dir_path / 'venv'
+    if not venv_path.exists():
+        venv.create(
+            venv_path,
+            with_pip=True,
+            upgrade_deps=True
+        )
+    WORKING_DIRS[markdown] = working_dir_path
+    return working_dir_path
 
 
 def get_subshell(
     markdown: str,
     _id: int,
-    separate_venv: bool,
     tmpfolder: Path,
-    log_dir: Optional[str] = None,
+    log_dir: Optional[Path] = None,
 ) -> pexpect.spawn:
     """
     Returns existing subshell associated with markdown file and ID
@@ -267,8 +300,6 @@ def get_subshell(
         Name of the markdown file.
     id : int
         ID of the subshell.
-    separate_venv : bool
-        Should subshell use separate virtual environment.
     tmpfolder : Path
         Path to the temporary folder.
     log_dir : Optional[Path]
@@ -282,8 +313,11 @@ def get_subshell(
     if _id in SHELLS[markdown]:
         return SHELLS[markdown][_id]
 
+    working_directory = get_working_directory(markdown, tmpfolder)
+
     SHELLS[markdown][_id] = pexpect.spawn(
         shutil.which('bash'),
+        cwd=str(working_directory),
         timeout=DEFAULT_TIMEOUT,
         encoding='utf-8',
         echo=False,
@@ -294,30 +328,19 @@ def get_subshell(
         SHELLS[markdown][_id].logfile_read = tmp_file
 
     # Activate virtual environment
-    if separate_venv:
-        _venv = get_venv(markdown, tmpfolder)
-    elif DOCS_VENV:
-        _venv = Path(DOCS_VENV)
-    else:
-        _venv = None
-    if _venv and not execute_script_and_wait(
-            SHELLS[markdown][_id], f"source {_venv / 'bin' / 'activate'}"):
+    venv_path = working_directory / 'venv'
+    if not execute_script_and_wait(
+        SHELLS[markdown][_id], f'source {venv_path / "bin" / "activate"}'
+    ):
         raise Exception('Virtual environment cannot be activated')
 
-    # Create copy of the repo and change working directory
-    repo_copy = tmpfolder / f'{markdown}_kenning'
-    if not (
-        repo_copy.exists() or execute_script_and_wait(
-            SHELLS[markdown][_id], f'git clone . {repo_copy}')
-    ) or not execute_script_and_wait(SHELLS[markdown][_id], f'cd {repo_copy}'):
-        raise Exception('Copy of the repository cannot be created')
-
     # Link directories with datasets
-    os.makedirs(f"{repo_copy}/{DATASET_DIR}", exist_ok=True)
+    os.makedirs(working_directory / DATASET_DIR, exist_ok=True)
     for checksum_path in glob(f'{DATASET_DIR}/**/DATASET_CHECKSUM'):
         checksum_path = Path(checksum_path)
-        target_path = Path(
-            f"{repo_copy}/{DATASET_DIR}/{checksum_path.parent.name}")
+        target_path = (
+            working_directory / DATASET_DIR / checksum_path.parent.name
+        )
         if target_path.exists():
             continue
         os.symlink(checksum_path.parent.absolute(), target_path)
@@ -325,7 +348,7 @@ def get_subshell(
     return SHELLS[markdown][_id]
 
 
-def create_script(snippet: Snippet) -> str:
+def create_script(snippet: Snippet, gallery_snippet: bool) -> str:
     """
     Extract script from snippet and prepare it to be executed.
 
@@ -335,6 +358,8 @@ def create_script(snippet: Snippet) -> str:
     ----------
     snippet : Snippet
         Snippet with script information.
+    gallery_snippet : bool
+        Whether snippet is from gallery.
 
     Returns
     -------
@@ -346,7 +371,15 @@ def create_script(snippet: Snippet) -> str:
         # If `pip install` change it to install local Kenning version
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
-            snippet.text = re.sub(KENNING_LINK_RE, r'.\2', snippet.text)
+            snippet.text = re.sub(
+                KENNING_LINK_RE, fr'{KENNING_ROOT_PATH}\2', snippet.text
+            )
+        else:
+            snippet.text = re.sub(
+                PIP_INSTALL_KENNING_LOCAL_RE,
+                fr'\1{KENNING_ROOT_PATH}',
+                snippet.text
+            )
         script = snippet.text
     elif snippet.lang == 'python':
         # Dump python script to file and change script to run it
@@ -355,7 +388,7 @@ def create_script(snippet: Snippet) -> str:
             fd.write(snippet.text)
         script = f'python {tmpfile}'
     elif 'save-as' in snippet.meta:
-        save_as = Path(snippet.meta["save-as"])
+        save_as = Path(snippet.meta['save-as'])
         script = f'mkdir -p {save_as.parent}'
         if SNIPPET_POSITIONAL_ARG in snippet.meta and \
                 isinstance(snippet.meta[SNIPPET_POSITIONAL_ARG], Path):
@@ -391,10 +424,10 @@ def factory_test_snippet(
     """
     tmpfolder = pytest.test_directory / 'tmp'
 
-    @pytest.mark.parametrize('script,snippet,markdown,separate_venv', [
+    @pytest.mark.parametrize('script,snippet,markdown', [
         pytest.param(
-            create_script(snippet),
-            snippet, markdown, docs_gallery,
+            create_script(snippet, docs_gallery),
+            snippet, markdown,
             id=f'{markdown}_{snippet_name}',
             marks=[
                 pytest.mark.xdist_group(f'TestDocsGallery_{markdown}'),
@@ -417,7 +450,6 @@ def factory_test_snippet(
         script: str,
         snippet: Snippet,
         markdown: str,
-        separate_venv: bool,
         docs_log_dir: Optional[Path],
     ):
         """
@@ -435,8 +467,6 @@ def factory_test_snippet(
             Snippet from which script was extracted.
         markdown : str
             Name of the markdown file containing snippet.
-        separate_venv : bool
-            Should test use separate environment.
 
         Fixtures
         --------
@@ -444,13 +474,16 @@ def factory_test_snippet(
             Path to folder where subshell logs will be saved.
         """
         subshell = get_subshell(
-            markdown, snippet.meta['terminal'],
-            separate_venv, tmpfolder, docs_log_dir
+            markdown, snippet.meta['terminal'], tmpfolder, docs_log_dir
         )
 
         timeout = float(snippet.meta['timeout']) \
             if 'timeout' in snippet.meta else None
         try:
+            if subshell.logfile_read:
+                subshell.logfile_read.write(
+                    f'\n\n{"-"*32}\n\n{script}\n\n{"-"*32}\n\n'
+                )
             success = execute_script_and_wait(subshell, script, timeout)
             if not success:
                 pytest.fail(reason=f"'{script}' returned non-zero code")

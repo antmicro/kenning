@@ -11,14 +11,13 @@ import re
 import uuid
 import copy
 import shutil
+import shlex
 from glob import glob
 from pathlib import Path
 from tuttest import get_snippets, Snippet
 from typing import Generator, Tuple, Dict, Optional, Callable
 from collections import defaultdict
 
-# Regex for extracting arguments from snippets
-ARGS_RE = re.compile(r'([^ =]+)(:?=([^ ]+))?')
 # Regex for changing Kenning installtion to local version
 KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
 # Regex for detecting Kenning installation
@@ -47,7 +46,39 @@ DOCS_VENV = os.environ.get('KENNING_DOCS_VENV')
 # Directory with datasets (relative to Kenning)
 DATASET_DIR = 'build'
 # Possible arguments for snippet
-SNIPPET_ARGUMENTS = ('test-skip', 'timeout', 'name', 'terminal')
+SNIPPET_ARGUMENTS = ('test-skip', 'timeout', 'name', 'terminal', 'save-as')
+# Key of the snippet's positional arguments
+SNIPPET_POSITIONAL_ARG = '__arg'
+
+
+def extract_snippet_args(snippet: Snippet):
+    """
+    Extracts all arguments specified after the language definition
+    and save them to metadata.
+
+    If language is wrapped in curly brackets, first argument will be stored
+    in separate argument `SNIPPET_POSITIONAL_ARG`.
+
+    Parameters
+    ----------
+    snippet : Snippet
+        Snippet object
+    """
+    args = snippet.lang.split(' ', 1)
+    snippet.lang = args[0]
+    args = shlex.split(args[1]) if len(args) == 2 else []
+    for i, arg in enumerate(args):
+        if '=' in arg:
+            arg = arg.split('=', 1)
+        else:
+            arg = (arg, True)
+        if arg[0] in SNIPPET_ARGUMENTS:
+            snippet.meta[arg[0]] = arg[1]
+        elif i == 0 and snippet.lang.startswith('{') \
+                and snippet.lang.endswith('}'):
+            snippet.meta[SNIPPET_POSITIONAL_ARG] = arg[0]
+        else:
+            raise KeyError(f'Snippet cannot have {arg[0]} argument')
 
 
 def get_all_snippets(
@@ -77,20 +108,22 @@ def get_all_snippets(
         python_snippet = None
         last_snippet_name = None
         for name, snippet in get_snippets(str(markdown)).items():
-            # Parse args from language
-            args = snippet.lang.split(' ', 1)
-            snippet.lang = args[0]
-            if snippet.lang not in EXECUTABLE_TYPES + ('python',):
-                continue
-            args = ARGS_RE.findall(args[1]) if len(args) == 2 else []
-            for arg in args:
-                if arg[0] in SNIPPET_ARGUMENTS:
-                    snippet.meta[arg[0]] = arg[2] if arg[2] else True
-                else:
-                    raise KeyError(f'Snippet cannot have {arg[0]} argument')
-
             snippet.meta['depends'] = []
             snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))
+
+            # Parse args from language
+            extract_snippet_args(snippet)
+            if 'save-as' in snippet.meta:
+                if snippet.lang == '{literalinclude}':
+                    file_path = \
+                        markdown.parent / snippet.meta[SNIPPET_POSITIONAL_ARG]
+                    snippet.meta[SNIPPET_POSITIONAL_ARG] = file_path.resolve()
+                if last_snippet_name:
+                    snippet.meta['depends'].append(last_snippet_name)
+                last_snippet_name = name
+                yield markdown.with_suffix('').name, name, snippet
+            if snippet.lang not in EXECUTABLE_TYPES + ('python',):
+                continue
 
             # Snippet should not be executed
             if snippet.meta.get('test-skip', False):
@@ -161,9 +194,18 @@ def execute_script_and_wait(
         re.compile(EXPECT_RE.format(failure)),
     ]
     try:
+        script = script.split('\n', 1)
+        content = None
+        if not script[0].endswith('\\') and len(script) > 1:
+            content = script[1]
+            script = script[0]
+        else:
+            script = '\n'.join(script)
         if not script.rstrip().endswith(' &'):
             # Use check command twice to make sure it used
             shell.sendline(f'{script} && \\\n {check_cmd}')
+            if content:
+                shell.sendline(content)
             shell.sendline(check_cmd)
         else:
             # Running command in background
@@ -311,6 +353,17 @@ def create_script(snippet: Snippet) -> str:
         with open(tmpfile, 'w') as fd:
             fd.write(snippet.text)
         script = f'python {tmpfile}'
+    elif 'save-as' in snippet.meta:
+        save_as = Path(snippet.meta["save-as"])
+        script = f'mkdir -p {save_as.parent}'
+        if SNIPPET_POSITIONAL_ARG in snippet.meta and \
+                isinstance(snippet.meta[SNIPPET_POSITIONAL_ARG], Path):
+            script += \
+                f' && cp {snippet.meta[SNIPPET_POSITIONAL_ARG]} {save_as}'
+        else:
+            script += f' && cat <<EOF > "{save_as}"\n'
+            script += snippet.text
+            script += '\nEOF\n'
 
     return script
 

@@ -40,7 +40,7 @@ The work of the tool is configured with JSON files (scenarios).
 
 In our case, the JSON file (named `native.json`) will look like this:
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-native.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-native.json save-as=mobilenetv2-tensorflow-native.json
 :language: json
 ```
 
@@ -59,7 +59,7 @@ With the above config saved in the `native.json` file, run the `kenning test` sc
 
 ```bash
 kenning test \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json \
+  --json-cfg mobilenetv2-tensorflow-native.json \
   --measurements build/native.json
 ```
 
@@ -100,7 +100,7 @@ Moreover, `kenning test` and `kenning report` commands can be reduced to a singl
 
 ```bash name=native
 kenning test report \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json \
+  --json-cfg mobilenetv2-tensorflow-native.json \
   --measurements build/native.json \
   --report-path build/benchmarks/native.md
 ```
@@ -116,7 +116,7 @@ Before the TensorFlow Lite Interpreter (runtime for the TensorFlow Lite library)
 Let's add a TensorFlow Lite Optimizer that will convert our MobileNetV2 model to a FlatBuffer format, as well as TensorFlow Lite Runtime that will execute the model:
 
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json save-as=mobilenetv2-tensorflow-tflite-f32.json
 :language: json
 :lines: 15-24
 ```
@@ -142,7 +142,7 @@ To compile the scenario (called `tflite-fp32.json`), run:
 
 ```bash name=tflite-fp32
 kenning optimize test report \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-f32.json \
+  --json-cfg mobilenetv2-tensorflow-tflite-f32.json \
   --measurements build/tflite-fp32.json \
   --report-path build/benchmarks/tflite-fp32.md
 ```
@@ -160,7 +160,7 @@ While it may severely harm the quality of the predictions, the quality reduction
 The model can be quantized during the compilation process in TensorFlow Lite.
 With Kenning, it can be achieved with the following simple additions:
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-int8.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-int8.json save-as=mobilenetv2-tensorflow-tflite-int8.json
 :language: json
 :lines: 15-24
 ```
@@ -172,7 +172,7 @@ Let's run the above scenario (`tflite-int8.json`):
 
 ```bash name=tflite-int8
 kenning optimize test report \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tflite-int8.json \
+  --json-cfg mobilenetv2-tensorflow-tflite-int8.json \
   --measurements build/tflite-int8.json \
   --report-path build/benchmarks/tflite-int8.md
 ```
@@ -185,7 +185,7 @@ To speed up inference of a quantized model, we can utilize vector extensions in 
 For this, let's use the Apache TVM framework to compile efficient runtimes for various hardware platforms.
 The scenario looks like this:
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json save-as=mobilenetv2-tensorflow-tvm-avx-int8.json
 :language: json
 :lines: 15-33
 ```
@@ -199,7 +199,7 @@ Let's compile the scenario (`tvm-avx2-int8.json`):
 
 ```bash name=tvm-avx2-int8
 kenning optimize test report \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json \
+  --json-cfg mobilenetv2-tensorflow-tvm-avx-int8.json \
   --measurements build/tvm-avx2-int8.json \
   --report-path build/benchmarks/tvm-avx2-int8.md
 ```

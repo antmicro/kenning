@@ -15,7 +15,7 @@ pip install "kenning[nni,reports] @ git+https://github.com/antmicro/kenning.git"
 
 In order to compare original model, we have to execute the scenario:
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-pytorch.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-pytorch.json save-as=mobilenetv2-pytorch.json
 :language: json
 ```
 
@@ -23,7 +23,7 @@ To run it, use this command:
 
 ```bash
 kenning test \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-pytorch.json \
+  --json-cfg mobilenetv2-pytorch.json \
   --measurements build/torch.json
 ```
 
@@ -46,7 +46,7 @@ If GPU is available, it will be used by default, but as pruning can be memory-co
 Other arguments influence fine-tuning of the pruned model, e.g. `criterion` and `optimizer` accepts paths to the class respectively calculating criterion and optimizing neural network.
 Also, number of `finetuning_epochs` can be changed, as well as `finetuning_batch_size` and `finetuning_learning_rate`.
 
-```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json
+```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json save-as=pruning-mobilenetv2-pytorch.json
 :language: json
 :emphasize-lines: 16-44
 ```
@@ -55,16 +55,16 @@ Run the above scenario with:
 
 ```bash
 kenning optimize test \
-  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json \
+  --json-cfg pruning-mobilenetv2-pytorch.json \
   --measurements build/nni-pruning.json
 ```
 
 To ensure better quality of performance measurements, we suggest running optimization and tests separately, like:
 
 ```bash test-skip
-kenning optimize --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json
+kenning optimize --json-cfg pruning-mobilenetv2-pytorch.json
 kenning test \
-  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json \
+  --json-cfg pruning-mobilenetv2-pytorch.json \
   --measurements build/nni-pruning.json
 ```
 

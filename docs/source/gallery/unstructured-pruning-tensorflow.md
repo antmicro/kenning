@@ -18,7 +18,7 @@ pip install "kenning[tensorflow,reports] @ git+https://github.com/antmicro/kenni
 
 At the beginning, we would like to know a performance of the original model, which can be achieved by running the following pipeline:
 
-```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow.json
+```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow.json save-as=mobilenetv2-tensorflow.json
 :language: json
 ```
 
@@ -26,7 +26,7 @@ To test it, run:
 
 ```bash
 kenning test \
-  --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow.json \
+  --json-cfg mobilenetv2-tensorflow.json \
   --measurements build/tf.json
 ```
 
@@ -40,7 +40,7 @@ There is also possibility to adjust how often model will be pruned (with `prunin
 In this example we decided to fine-tune the model for three epochs with size of the batch equal to 128.
 Apart from that, there is also possibility to chose `optimizer` (one of `adam`, `RMSprop` or `SGD`) and specify if network's output is normalized with `disable_from_logits`.
 
-```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json
+```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json save-as=pruning-mobilenetv2-tensorflow.json
 :language: json
 :emphasize-lines: 15-26
 ```
@@ -49,9 +49,9 @@ To prune model, run:
 
 ```bash
 kenning optimize \
-  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json
+  --json-cfg pruning-mobilenetv2-tensorflow.json
 kenning test \
-  --json-cfg scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json \
+  --json-cfg pruning-mobilenetv2-tensorflow.json \
   --measurements build/tf-pruning.json
 ```
 
@@ -117,7 +117,7 @@ The indices can be stored as integers with very small number of bits necessary t
 
 It can be used by adding `kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer`:
 
-```{literalinclude} ../scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json
+```{literalinclude} ../scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json save-as=pruning-clustering-mobilenetv2-tensorflow.json
 :language: json
 :lines: 14-34
 :emphasize-lines: 12-20
@@ -127,7 +127,7 @@ To run it, use:
 
 ```bash
 kenning optimize test report \
-  --json-cfg scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json \
+  --json-cfg pruning-clustering-mobilenetv2-tensorflow.json \
   --measurements build/tf-all.json \
   --report-path build/tf-pruning-clustering.md \
   --to-html

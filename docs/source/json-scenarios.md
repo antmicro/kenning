@@ -27,7 +27,7 @@ Each dictionary in the fields above consists of:
 
 The simplest JSON configuration looks as follows:
 
-```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-native.json
+```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-native.json save-as=mobilenetv2-tensorflow-native.json
 :language: json
 ```
 
@@ -111,7 +111,7 @@ To run the defined pipeline (assuming that the JSON file is under `pipeline.json
 
 ```bash timeout=10
 kenning test \
-    --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-native.json \
+    --json-cfg mobilenetv2-tensorflow-native.json \
     --measurements measurements.json \
     --verbosity INFO
 ```
@@ -146,7 +146,7 @@ For example, a model can be subjected to the following optimizations:
 
 Such case will result is the following scenario:
 
-```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json
+```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json save-as=mobilenetv2-tensorflow-tvm-avx-int8.json
 :language: json
 :emphasize-lines: 15-40
 ```
@@ -173,7 +173,7 @@ More details on input/output formats between [](optimizer-api) objects can be fo
 The scenario can be executed as follows:
 
 ```bash timeout=20
-kenning optimize test --json-cfg scripts/jsonconfigs/mobilenetv2-tensorflow-tvm-avx-int8.json --measurements output.json
+kenning optimize test --json-cfg mobilenetv2-tensorflow-tvm-avx-int8.json --measurements output.json
 ```
 
 ## Compiling a model and running it remotely
@@ -189,7 +189,7 @@ It depends on the [](protocol-api) used.
 
 Let's start with client and server configuration by adding a `runtime_protocol` entry:
 
-```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client-server.json
+```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client-server.json save-as=tflite-tvm-classification-client-server.json
 :language: json
 :emphasize-lines: 48-57
 ```
@@ -207,7 +207,7 @@ First, run the server, so that it is available for the client:
 
 ```bash terminal=1
 kenning server \
-    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json \
+    --json-cfg tflite-tvm-classification-client-server.json \
     --verbosity INFO &
 ```
 
@@ -215,7 +215,7 @@ Then, run the client:
 
 ```bash timeout=60
 kenning optimize test \
-    --json-cfg ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json \
+    --json-cfg tflite-tvm-classification-client-server.json \
     --measurements ./build/tflite-tvm-classification.json \
     --verbosity INFO
 ```

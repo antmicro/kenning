@@ -55,6 +55,7 @@ extensions = list(set(default_extensions + [
     'sphinx.ext.napoleon',
     'sphinx.ext.extlinks',
     'kenning.utils.sphinx_html_as_figure',
+    'kenning.utils.sphinx_literalinclude',
 ]))
 
 myst_enable_extensions = default_myst_enable_extensions + ["attrs_block"]

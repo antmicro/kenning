@@ -31,6 +31,7 @@ model_path = ResourceURI('kenning:///models/classification/magic_wand.h5')
 
 The provided path can be URL to remote resource, path to local file or URI which scheme is defined in `ResourceManager` conversions dictionary.
 
+(kenning-cache-dir)=
 ## Caching
 
 If the resource was not accessed before, the cached file was modified or the remote resource was updated, then it will be downloaded to local cache directory.

@@ -25,6 +25,10 @@ from kenning.utils.logger import Callback, TqdmCallback
 from jsonschema.exceptions import ValidationError
 
 
+class PipelineManagerShutdownException(Exception):
+    pass
+
+
 class PipelineManagerClient(CommandTemplate):
     parse_all = True
     description = __doc__.split('\n\n')[0]
@@ -205,12 +209,14 @@ class PipelineManagerClient(CommandTemplate):
             client.send_message(MessageType.PROGRESS,
                                 str(progress).encode('UTF-8'))
 
+        default_sigint_handler = signal.getsignal(signal.SIGINT)
+
         def exit_handler(*args) -> None:
             log.info('Closing connection')
-            client.disconnect()
-            stop_parallel_server()
             signal.signal(signal.SIGINT, default_sigint_handler)
-            sys.exit(0)
+            raise PipelineManagerShutdownException()
+
+        signal.signal(signal.SIGINT, exit_handler)
 
         def build_frontend(frontend_path: Path) -> None:
             """
@@ -231,8 +237,9 @@ class PipelineManagerClient(CommandTemplate):
                 return
 
             build_status = frontend_builder.build_frontend(
-                'server-app',
+                build_type='server-app',
                 workspace_directory=args.workspace_dir,
+                editor_title='Kenning Visual Editor'
             )
             if build_status != 0:
                 raise RuntimeError('Build error')
@@ -246,9 +253,6 @@ class PipelineManagerClient(CommandTemplate):
 
         client = CommunicationBackend(args.host, args.port)
         start_server_in_parallel(frontend_path=frontend_files_path)
-
-        default_sigint_handler = signal.getsignal(signal.SIGINT)
-        signal.signal(signal.SIGINT, exit_handler)
 
         try:
             if args.spec_type == "pipeline":
@@ -284,9 +288,6 @@ class PipelineManagerClient(CommandTemplate):
                         continue
 
                     client.send_message(return_status, return_message)
-
-            TqdmCallback.unregister_callback(callback_percent)
-
         except ValidationError as ex:
             log.error(f'Failed to load JSON file:\n{ex}')
             client.send_message(
@@ -306,6 +307,8 @@ class PipelineManagerClient(CommandTemplate):
                 MessageType.ERROR,
                 bytes(f'Could not connect to the Pipeline Manager server: {ex}', 'utf-8'))  # noqa: E501
             return ex.errno
+        except PipelineManagerShutdownException:
+            log.info("Closing the Visual Editor...")
         except Exception as ex:
             log.error(f'Unexpected exception:\n{ex}')
             client.send_message(
@@ -315,7 +318,9 @@ class PipelineManagerClient(CommandTemplate):
         finally:
             client.disconnect()
             stop_parallel_server()
+            TqdmCallback.unregister_callback(callback_percent)
             signal.signal(signal.SIGINT, default_sigint_handler)
+            log.info("Closed the Visual Editor")
         return 0
 
 

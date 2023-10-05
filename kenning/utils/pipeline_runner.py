@@ -380,7 +380,8 @@ class PipelineRunner(object):
 
             model_path = prev_block.compiled_model_path
 
-        self.optimizers[-1].save_io_specification(model_path)
+        if len(self.optimizers) > 0:
+            self.optimizers[-1].save_io_specification(model_path)
 
         logger.get_logger().info(f'Compiled model path: {model_path}')
         return model_path

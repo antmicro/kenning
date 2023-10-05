@@ -12,6 +12,7 @@ import json
 import signal
 import sys
 from pathlib import Path
+import traceback
 from typing import Tuple, Dict, Optional, List
 
 from kenning.cli.command_template import (
@@ -165,6 +166,7 @@ class PipelineManagerClient(CommandTemplate):
                         # 'run_dataflow', it should be destroyed manually.
                         dataflow_handler.destroy_dataflow(prepared_runner)
                 except Exception as ex:
+                    log.error(traceback.format_exc())
                     return MessageType.ERROR, str(ex).encode()
 
                 if message_type == MessageType.VALIDATE:
@@ -175,9 +177,13 @@ class PipelineManagerClient(CommandTemplate):
                     feedback_msg = f'Successfully exported. Output saved in {output_file_path}'  # noqa: E501
 
             elif message_type == MessageType.IMPORT:
-                pipeline = json.loads(data)
-                dataflow = dataflow_handler.create_dataflow(pipeline)
-                feedback_msg = json.dumps(dataflow)
+                try:
+                    pipeline = json.loads(data)
+                    dataflow = dataflow_handler.create_dataflow(pipeline)
+                    feedback_msg = json.dumps(dataflow)
+                except Exception as ex:
+                    log.error(traceback.format_exc())
+                    return MessageType.ERROR, str(ex).encode()
 
             return MessageType.OK, feedback_msg.encode(encoding='UTF-8')
 

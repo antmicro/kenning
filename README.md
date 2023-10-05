@@ -15,9 +15,7 @@ Contents:
 * [Kenning installation](#kenning-installation)
 * [Kenning structure](#kenning-structure)
 * [Kenning usage](#kenning-usage)
-* [Example use case of Kenning](#example-use-case-of-kenning)
 * [Using Kenning as a library in Python scripts](#using-kenning-as-a-library-in-python-scripts)
-* [Inspecting Kenning modules from CLI](#inspecting-kenning-modules-from-cli)
 * [Adding new implementations](#adding-new-implementations)
 
 ## Introduction
@@ -40,7 +38,7 @@ Kenning addresses this issue by providing a unified API that focuses on deployme
 This way, switching to another target platform results, in most cases, in a very small change in the code, instead of reimplementing larger parts of a project.
 This is how Kenning can get the most out of the existing Deep Neural Network training and compilation frameworks.
 
-Seamless nature of Kenning also allows developers to quickly evaluate the model on various stages of optimizations and compare them as shown in [Example use case of Kenning](#example-use-case-of-kenning).
+Seamless nature of Kenning also allows developers to quickly evaluate the model on various stages of optimizations and compare them as shown in [Kenning usage](#kenning-usage).
 
 ## Kenning installation
 

@@ -266,8 +266,7 @@ class PipelineGraphCreator(GraphCreator):
         self.optimizer_order = {}
         self.first_optimizer = None
         self.necessary_conn = {
-            ('dataset', 'model_wrapper'): False,
-            ('model_wrapper', 'runtime'): False
+            ('dataset', 'model_wrapper'): False
         }
 
     def create_node(self, node, parameters) -> str:

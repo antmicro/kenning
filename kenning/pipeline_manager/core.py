@@ -377,7 +377,7 @@ class BaseDataflowHandler:
             interface_to_id = {}
             graph = dataflow['graph']
             for dataflow_node in graph['nodes']:
-                kenning_node = self.nodes[dataflow_node['type']]
+                kenning_node = self.nodes[dataflow_node['name']]
                 parameters = dataflow_node['properties']
                 parameters = {
                     parameter['name']: parameter['value']
@@ -578,7 +578,7 @@ class PipelineManagerGraphCreator(GraphCreator):
             self.out_interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
-            'type': node.name,
+            'name': node.name,
             'id': node_id,
             'properties': [
                 {**param, 'id': self.gen_id()} for param in parameters
@@ -631,7 +631,7 @@ class PipelineManagerGraphCreator(GraphCreator):
                 'nodes': list(self.nodes.values()),
                 'connections': self.connections
             },
-            'graphTemplateInstances': []
+            'subgraphs': []
         }
         self.start_new_graph()
         return finished_graph

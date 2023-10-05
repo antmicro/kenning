@@ -508,11 +508,11 @@ class Dataset(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        test_fraction : float
+        test_fraction : Optional[float]
             The fraction of data to leave for model testing.
-        val_fraction : float
+        val_fraction : Optional[float]
             The fraction of data to leave for model validation.
-        seed : int
+        seed : Optional[int]
             The seed for random state.
         stratify : bool
             Whether to stratify the split.
@@ -551,7 +551,7 @@ class Dataset(ArgumentsHandler, ABC):
                 stratify=stratify_arg
             )
 
-        if val_fraction is not None:
+        if val_fraction is not None and val_fraction != 0:
             if stratify:
                 stratify_arg = self.dataYtrain
             else:
@@ -593,13 +593,12 @@ class Dataset(ArgumentsHandler, ABC):
             The seed for random state.
         """
         if self.external_calibration_dataset is None:
-            _, X, _, _ = self.train_test_split_representations(
+            X = self.train_test_split_representations(
                 percentage,
                 seed=seed
-            )
+            )[1]
         else:
             X = self.prepare_external_calibration_dataset(percentage, seed)
-
         for x in tqdm(X):
             yield self.prepare_input_samples([x])
 

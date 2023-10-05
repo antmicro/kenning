@@ -19,6 +19,14 @@ from kenning.utils.class_loader import (
 from kenning.utils.pipeline_runner import PipelineRunner
 
 
+class VisualEditorGraphParserError(Exception):
+    """
+    Exception occuring when conversion from scenario to graph and vice versa
+    fails.
+    """
+    pass
+
+
 class PipelineHandler(BaseDataflowHandler):
     """
     Defines interpretation of graphs coming from Pipeline manager as Kenning
@@ -63,6 +71,12 @@ class PipelineHandler(BaseDataflowHandler):
                 of the pipeline.
             """
             _, kenning_name = kenning_block['type'].rsplit(".", 1)
+            if kenning_name not in self.nodes:
+                raise VisualEditorGraphParserError(
+                    f"The node type {kenning_name} is not available in the "
+                    "Visual Editor.\n\nMake sure all dependencies are "
+                    "installed for this class with 'kenning info'"
+                )
             spec_node = self.nodes[kenning_name]
             return self.pm_graph.create_node(
                 spec_node,

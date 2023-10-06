@@ -8,6 +8,11 @@ It handles:
 * Managing directory with files, including quota checking, old files removal and full cleanup,
 * Providing actual path to the resources in the filesystem.
 
+To run below examples it is required to install Kenning as follows:
+```bash
+pip install "kenning @ git+https://github.com/antmicro/kenning.git"
+```
+
 ## Accessing resources
 
 To download a resource you can use [`ResourceManager.get_resource`](resourcemanager-api) method.
@@ -124,4 +129,4 @@ The available commands are:
 * `kenning cache list_files` - list cached files, their size and total cache size.
   To see full paths add `-v` argument,
 * `kenning cache clear` - removes all cached files,
-* `kenning cache options` - prints default cache directory path and default max cache size.
+* `kenning cache settings` - prints default cache directory path and default max cache size.

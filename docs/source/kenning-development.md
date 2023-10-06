@@ -2,6 +2,11 @@
 
 This chapter describes the development process of Kenning components.
 
+To run below examples it is required to install Kenning with dependencies as follows:
+```bash
+pip install "kenning[tensorflow] @ git+https://github.com/antmicro/kenning.git"
+```
+
 (model-io-metadata)=
 ## Model and I/O metadata
 

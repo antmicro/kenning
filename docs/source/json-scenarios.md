@@ -7,6 +7,11 @@ Most notably, various optimizers available through Kenning can be chained to uti
 One of the scenarios most commonly used in Kenning is model optimization and compilation.
 It can be done using {{json_compilation_script}}.
 
+To run below examples it is required to install Kenning with dependencies as follows:
+```bash
+pip install "kenning[tensorflow,tflite,tvm] @ git+https://github.com/antmicro/kenning.git"
+```
+
 ## JSON specification
 
 The {{json_compilation_script}} takes the specification of optimization and the testing flow in a JSON format.

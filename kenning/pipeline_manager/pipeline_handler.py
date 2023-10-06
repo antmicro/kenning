@@ -331,7 +331,10 @@ class PipelineGraphCreator(GraphCreator):
         opt_node = self.first_optimizer
         while opt_node is not None:
             optimizers.append(self.nodes[opt_node])
-            opt_node = self.optimizer_order[opt_node]
+            if opt_node not in self.optimizer_order:
+                opt_node = None
+            else:
+                opt_node = self.optimizer_order[opt_node]
         pipeline['optimizers'] = optimizers
         self.start_new_graph()
         return pipeline

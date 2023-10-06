@@ -12,7 +12,7 @@ from kenning.tests.pipeline_manager.handler_tests import (
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 PET_DATASET_DATAFLOW_NODE = {
-    "type": "PetDataset",
+    "name": "PetDataset",
     "id": "0",
     "position": {"x": 50, "y": 50},
     "width": 300,
@@ -66,12 +66,11 @@ PET_DATASET_DATAFLOW_NODE = {
             "id": "2910e9c3-a385-4eb0-909a-ecf03e28b2d7",
             "value": 1234
         }
-    ],
-    "name": ""
+    ]
 }
 
 TENSORFLOW_MOBILE_NET_DATAFLOW_NODE = {
-    "type": "TensorFlowPetDatasetMobileNetV2",
+    "name": "TensorFlowPetDatasetMobileNetV2",
     "id": "4",
     "position": {"x": 400, "y": 50},
     "width": 300,
@@ -102,12 +101,11 @@ TENSORFLOW_MOBILE_NET_DATAFLOW_NODE = {
             "id": "8",
             "value": "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
         }
-    ],
-    "name": ""
+    ]
 }
 
 TFLITE_RUNTIME_DATAFLOW_NODE = {
-    "type": "TFLiteRuntime",
+    "name": "TFLiteRuntime",
     "id": "9",
     "position": {"x": 750, "y": 50},
     "width": 300,
@@ -153,13 +151,12 @@ TFLITE_RUNTIME_DATAFLOW_NODE = {
             "id": "37e8fa07-4142-414a-9796-20c523c81310",
             "value": False
         }
-    ],
-    "name": ""
+    ]
 }
 
 
 TFLITE_COMPILER_DATAFLOW_NODE = {
-    "type": "TFLiteCompiler",
+    "name": "TFLiteCompiler",
     "id": "14",
     "position": {"x": 1100, "y": 50},
     "width": 300,
@@ -239,8 +236,7 @@ TFLITE_COMPILER_DATAFLOW_NODE = {
             "id": "18",
             "value": "./build/fp32.tflite"
         }
-    ],
-    "name": ""
+    ]
 }
 
 

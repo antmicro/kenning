@@ -10,7 +10,7 @@ from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.utils.class_loader import load_class
 
 CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
-    "type": "CameraDataProvider",
+    "name": "CameraDataProvider",
     "id": "0",
     "position": {"x": 50, "y": 50},
     "width": 300,
@@ -50,11 +50,10 @@ CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
             "value": 608
         }
     ],
-    "name": ""
 }
 
 ONNXYOLO_DATAFLOW_NODE = {
-    "type": "ONNXYOLOV4",
+    "name": "ONNXYOLOV4",
     "id": "6",
     "position": {"x": 400, "y": 50},
     "width": 300,
@@ -79,11 +78,10 @@ ONNXYOLO_DATAFLOW_NODE = {
             "value": "kenning:///models/object_detection/yolov4.onnx"
         }
     ],
-    "name": ""
 }
 
 ONNXRUNTIME_DATAFLOW_NODE = {
-    "type": "ONNXRuntime",
+    "name": "ONNXRuntime",
     "id": "9",
     "position": {"x": 750, "y": 50},
     "width": 300,
@@ -115,11 +113,10 @@ ONNXRUNTIME_DATAFLOW_NODE = {
             "value": False
         }
     ],
-    "name": ""
 }
 
 MODELRUNTIMERUNNER_DATAFLOW_NODE = {
-    "type": "ModelRuntimeRunner",
+    "name": "ModelRuntimeRunner",
     "id": "13",
     "position": {"x": 1100, "y": 50},
     "width": 300,
@@ -157,11 +154,10 @@ MODELRUNTIMERUNNER_DATAFLOW_NODE = {
         }
     ],
     "properties": [],
-    "name": ""
 }
 
 DETECTIONVISUALIZER_DATAFLOW_NODE = {
-    "type": "RealTimeDetectionVisualizer",
+    "name": "RealTimeDetectionVisualizer",
     "id": "21",
     "position": {"x": 1450, "y": 50},
     "width": 300,
@@ -202,7 +198,6 @@ DETECTIONVISUALIZER_DATAFLOW_NODE = {
             "value": "NCHW"
         }
     ],
-    "name": ""
 }
 
 

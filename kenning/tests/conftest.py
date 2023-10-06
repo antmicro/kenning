@@ -6,11 +6,10 @@ import shutil
 import tempfile
 from pathlib import Path
 from pytest import Metafunc
-from typing import Optional
+from typing import Generator, Optional
 from random import randint, random
 from PIL import Image
 from dataclasses import dataclass
-from argparse import ArgumentParser
 
 import pytest
 
@@ -104,7 +103,7 @@ class Samples:
         raise StopIteration
 
 
-def pytest_addoption(parser: ArgumentParser):
+def pytest_addoption(parser: pytest.Parser):
     """
     Adds argparse options to parser.
     """
@@ -117,8 +116,9 @@ def pytest_addoption(parser: ArgumentParser):
     parser.addoption(
         '--test-docs-log-dir',
         type=Path,
-        default=None,
-        help='If defined saves additional logs of docs tests to specified folder',  # noqa: E501
+        default='./log_docs',
+        help='If defined saves additional logs of docs tests to specified '
+             'folder',
     )
 
 
@@ -196,7 +196,7 @@ def clear_measurements():
 
 
 @pytest.fixture(scope='class')
-def tmpfolder(test_directory: Optional[Path]) -> Path:
+def tmpfolder(test_directory: Optional[Path]) -> Generator[Path, None, None]:
     """
     Creates a temporary directory.
     If `--test-directory` directory is set, temporary folders
@@ -207,8 +207,8 @@ def tmpfolder(test_directory: Optional[Path]) -> Path:
     test_directory : Optional[Path]
         Path where files produced by tests should be located at.
 
-    Returns
-    -------
+    Yields
+    ------
     Path :
         A Path object to temporary directory.
     """

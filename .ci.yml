@@ -31,15 +31,10 @@ pytest:
     <<: *ace
     <<: *common_only
     stage: tests
-    variables:
-        KENNING_DOCS_VENV: .docs_venv
     before_script:
-        - mkdir -p build
-        - ln -s /data/* build/
-        - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
+        - /scripts/prepare_environment.sh .
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
-        - python -m venv --system-site-packages --upgrade-deps $KENNING_DOCS_VENV
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -m "not docs_gallery" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl
     artifacts:
@@ -61,13 +56,12 @@ pytest:
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         # Do not use installed TVM
         - rm /usr/lib/libtvm.so /usr/lib/libtvm_runtime.so
-        - mkdir -p build
-        - ln -s /data/* build/
-        - ln -s /data/COCODataset2017 build/VisualWakeWordsDataset
+        - /scripts/prepare_environment.sh .
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m docs_gallery -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_gallery -vvl
     artifacts:
         paths:
+            - log.json
             - log_gallery/*.log
         when: always
 
@@ -96,8 +90,7 @@ sample-compilation:
     <<: *common_only
     stage: tests
     script:
-        - mkdir build
-        - ln -s /data/PetDataset build/PetDataset
+        - /scripts/prepare_environment.sh .
         - ./scripts/tvm-tensorflow-classification-cpu.sh
     artifacts:
         paths:
@@ -109,8 +102,7 @@ sample-pipeline-optimization:
     <<: *common_only
     stage: tests
     script:
-        - mkdir -p build
-        - ln -s /data/MagicWandDataset build/MagicWandDataset
+        - /scripts/prepare_environment.sh .
         - ./scripts/optimization-tflite-tvm-tensorflow-magic-wand.sh
     artifacts:
         paths:
@@ -122,8 +114,7 @@ sample-client-server-scenario:
     stage: tests
     script:
         - apt-get update && apt-get install -y procps
-        - mkdir -p build
-        - ln -s /data/PetDataset build/PetDataset
+        - /scripts/prepare_environment.sh .
         - sed -i 's/10.9.8.7/localhost/g' ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json
         - ./scripts/json-tflite-tvm-classification-server.sh &
         - PID=$!

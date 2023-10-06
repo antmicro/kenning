@@ -15,6 +15,7 @@ tqdm instances of the same tags are going to use those callbacks.
 import io
 import logging
 import urllib.request
+import coloredlogs
 from dataclasses import dataclass
 from types import TracebackType
 from typing import Any, Callable, Optional, Type, Union
@@ -50,7 +51,9 @@ def get_logger():
     """
     logger = logging.getLogger('root')
     FORMAT = '[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s'  # noqa: E501
-    logging.basicConfig(format=FORMAT)
+    coloredlogs.install(
+        fmt=FORMAT
+    )
     return logger
 
 # ----------------

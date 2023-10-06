@@ -43,18 +43,18 @@ docs = [
     "antmicro-sphinx-utils @ git+https://github.com/antmicro/antmicro-sphinx-utils.git",
     "docutils",
     "myst-parser @ git+https://github.com/executablebooks/MyST-Parser.git",
+    "sphinx_tabs",
+    "sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl",
     "sphinx>=5.1.0,<7.1.0",
     "sphinxcontrib-mermaid",
     "sphinxcontrib-napoleon",
-    "sphinx-immaterial @ https://github.com/antmicro/sphinx-immaterial/releases/download/tip/sphinx_immaterial-0.0.post1.tip-py3-none-any.whl",
-    "sphinx_tabs",
 ]
 tensorflow = [
     "onnx_tf~=1.10.0",
-    "tensorflow~=2.9.1",
     "tensorflow_addons~=0.17.1",
     "tensorflow_model_optimization~=0.7.3",
     "tensorflow_probability~=0.17.0",
+    "tensorflow~=2.9.1",
     "tf2onnx~=1.11.1",
 ]
 torch = [
@@ -78,8 +78,8 @@ object_detection = [
     "pycocotools",
 ]
 speech_to_text = [
-    "pydub",
     "librosa",
+    "pydub",
 ]
 tflite = [
     "tflite",
@@ -97,12 +97,12 @@ onnxruntime = [
     "onnxruntime",
 ]
 test = [
-    "pytest",
     "pytest-dependency",
     "pytest-mock",
     "pytest-order",
     "pytest-reportlog",
     "pytest-xdist",
+    "pytest",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
 ]
 real_time_visualization = [
@@ -126,9 +126,9 @@ renode = [
 ]
 nni = [
     "kenning[torch]",
+    "dill~=0.3.6",
     "nni~=2.10.0",
     "tensorboard~=2.11.1",
-    "dill~=0.3.6",
 ]
 
 [project.scripts]

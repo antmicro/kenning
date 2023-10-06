@@ -6,6 +6,11 @@ Sample bash scripts using the scenarios are located in the [scripts directory in
 
 Runnable scripts in scenarios require implemented classes to be provided from the `kenning.core` module to perform such actions as in-framework inference, model training, model compilation and model benchmarking on target.
 
+To run below examples it is required to install Kenning with dependencies as follows:
+```bash
+pip install "kenning[tensorflow,tvm] @ git+https://github.com/antmicro/kenning.git"
+```
+
 ## Command-line arguments for classes
 
 Each class ([](dataset-api), [](modelwrapper-api), [](optimizer-api) and other) provided to the runnable scripts in scenarios can provide command-line arguments that configure the work of an object of the given class.

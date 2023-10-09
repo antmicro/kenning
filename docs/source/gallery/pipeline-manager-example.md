@@ -45,7 +45,7 @@ This can be an example workflow when using Pipeline Manager:
 
 * `Load File` - Menu option available in the top left, loads a JSON configuration describing a Kenning scenario.
 
-  For instance, `scripts/jsonconfigs/sample-tflite-pipeline.json` available in Kenning is a basic configuration shown as an [Example use case of Kenning - benchmarking using a native framework](tflite_tvm.md#benchmarking-a-model-using-a-native-framework).
+  For instance, `scripts/jsonconfigs/sample-tflite-pipeline.json` available in Kenning is a basic configuration shown as an [Example use case of Kenning - benchmarking using a native framework](./tflite_tvm.md#benchmarking-a-model-using-a-native-framework).
 
 * Making changes - adding or removing nodes, editing connections, node options, etc.
 * `Validate` -  Validates and returns the information whether the scenario is valid (for example it will return error when two optimizers in the chain are incompatible with each other)

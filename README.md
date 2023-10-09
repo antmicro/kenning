@@ -105,14 +105,15 @@ pip install -e ".[tensorflow,tflite,tvm,reports]"
 
 The `kenning` module consists of the following submodules:
 
-* `core` - provides interface APIs for datasets, models, optimizers, runtimes and runtime protocols,
-* `datasets` - provides implementations for datasets,
+* `core` - provides interface APIs for datasets, models, optimizers, runtimes, protocols, and data converters
+* `datasets` - provides implementations for datasets
 * `modelwrappers` - provides implementations for models for various problems implemented in various frameworks,
 * `optimizers` - provides implementations for compilers and optimizers for deep learning models,
 * `runtimes` - provides implementations of runtime on target devices,
 * `interfaces` - provides interface classes to group related methods used in Kenning `core` classes,
 * `protocols` - provides implementations for communication protocols between host and tested target,
 * `dataproviders` - provides implementations for reading input data from various sources, such as camera, directories or TCP connections,
+* `dataconverters` - provides implementations for data converters for various data types
 * `outputcollectors` - provides implementations for processing outputs from models, i.e. saving results to file, or displaying predictions on screen.
 * `onnxconverters` - provides ONNX conversions for a given framework along with a list of models to test the conversion on,
 * `runners` - provide implementations for runners that can be used in runtime,
@@ -133,6 +134,7 @@ The `kenning` module consists of the following submodules:
 * `Protocol` class - implements the communication protocol between the host and the target,
 * `DataProvider` class - implements data provision from such sources as camera, TCP connection or others for inference,
 * `OutputCollector` class - implements parsing and utilization of data from inference (such as displaying the visualizations, sending the results to via TCP),
+* `DataConverter` class - performs data conversion from dataset-specific format to protocol-specific format and vice versa,
 * `Runner` class - represents single runtime processing block.
 
 ## Kenning usage

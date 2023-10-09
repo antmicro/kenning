@@ -324,7 +324,7 @@ class Protocol(ArgumentsHandler):
 
     def initialize_server(self) -> bool:
         """
-        Initializes server side of the runtime protocol.
+        Initializes server side of the protocol.
 
         The server side is supposed to run on target hardware.
 
@@ -339,7 +339,7 @@ class Protocol(ArgumentsHandler):
 
     def initialize_client(self) -> bool:
         """
-        Initializes client side of the runtime protocol.
+        Initializes client side of the protocol.
 
         The client side is supposed to run on host testing the target hardware.
 

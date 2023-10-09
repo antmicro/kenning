@@ -6,10 +6,9 @@
 TCP-based inference communication protocol.
 """
 
-import socket
 import selectors
-from typing import Tuple
-from typing import Optional
+import socket
+from typing import Optional, Tuple
 
 from kenning.core.protocol import ServerStatus
 from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
@@ -17,7 +16,7 @@ from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
 
 class NetworkProtocol(BytesBasedProtocol):
     """
-    A TCP-based runtime protocol.
+    A TCP-based protocol.
 
     Protocol is implemented using BSD sockets and selectors-based pooling.
     """

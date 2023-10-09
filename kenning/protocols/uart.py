@@ -6,20 +6,18 @@
 UART-based inference communication protocol.
 """
 
-from typing import Literal, Tuple, Optional, Dict, Any, List
-from pathlib import Path
-import re
 import json
-import numpy as np
+import re
 import selectors
+from pathlib import Path
+from typing import Any, Dict, List, Literal, Optional, Tuple
+
+import numpy as np
 import serial
 
-from kenning.core.protocol import ServerStatus
-from kenning.core.protocol import Message
-from kenning.core.protocol import MessageType
 from kenning.core.measurements import Measurements
+from kenning.core.protocol import Message, MessageType, ServerStatus
 from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
-
 
 # model constraints
 MAX_MODEL_INPUT_NUM = 2
@@ -175,7 +173,7 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
 
 class UARTProtocol(BytesBasedProtocol):
     """
-    An UART-base runtime protocol. It supports only client-side as a server is
+    An UART-base protocol. It supports only client-side as a server is
     expected to be bare-metal platform.
 
     It is implemented using pyserial.

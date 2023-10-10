@@ -15,7 +15,7 @@ import json
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -89,7 +89,6 @@ class Optimizer(ArgumentsHandler, ABC):
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.location = location
-        self.log = get_logger()
 
     @classmethod
     def from_argparse(
@@ -259,7 +258,7 @@ class Optimizer(ArgumentsHandler, ABC):
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx:
-            self.log.warn('Forcing ONNX conversion')
+            KLogger.warning('Forcing ONNX conversion')
             if (
                 'onnx' in self.get_input_formats()
                 and 'onnx' in possible_outputs
@@ -338,9 +337,7 @@ class Optimizer(ArgumentsHandler, ABC):
                     f
                 )
         else:
-            self.log.warning(
-                f'{self} did not save io_specification.'
-            )
+            KLogger.warning(f'{self} did not save io_specification')
 
     def load_io_specification(
         self,
@@ -367,7 +364,7 @@ class Optimizer(ArgumentsHandler, ABC):
                 spec = json.load(f)
             return spec
 
-        self.log.warning(
+        KLogger.warning(
             f'{self} did not find io_specification in path: {spec_path}'
         )
         return None

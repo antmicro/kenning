@@ -5,13 +5,12 @@
 """
 Module for ONNX related functions.
 """
-__all__ = ["try_extracting_input_shape_from_onnx"]
-from kenning.utils.logger import get_logger
+__all__ = ['try_extracting_input_shape_from_onnx']
 from typing import Optional, List
+
 import onnx
 
-
-_LOGGER = get_logger()
+from kenning.utils.logger import KLogger
 
 
 def try_extracting_input_shape_from_onnx(
@@ -37,7 +36,7 @@ def try_extracting_input_shape_from_onnx(
             if input_.name in initializers:
                 continue
             if input_.type.tensor_type.elem_type != 1:
-                _LOGGER.error("Input type differ from Tensor")
+                KLogger.error('Input type differ from Tensor')
                 return None
             dims = []
             for dim in input_.type.tensor_type.shape.dim:
@@ -46,12 +45,17 @@ def try_extracting_input_shape_from_onnx(
                 elif dim.dim_value > 0:  # normal dimension
                     dims.append(dim.dim_value)
                 else:
-                    _LOGGER.error("Input's dimension not known, missing "
-                                  "dim_value or dim_param attribute")
+                    KLogger.error(
+                        "Input's dimension not known, missing dim_value or "
+                        "dim_param attribute"
+                    )
                     return None
             shapes.append(dims)
     except AttributeError:
-        _LOGGER.error("ONNX model's graph don't have necessary attributes"
-                      " to extract input shape")
+        KLogger.error(
+            "ONNX model's graph don't have necessary attributes to extract "
+            "input shape",
+            stack_info=True
+        )
         return None
     return shapes

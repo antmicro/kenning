@@ -10,7 +10,7 @@ from typing import Dict, Any, List
 import jsonschema
 
 from kenning.core.runner import Runner
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 from kenning.utils.class_loader import load_class
 
 
@@ -51,8 +51,6 @@ class KenningFlow:
         runners : List[Runner]
             List of specifications of runners in the flow.
         """
-
-        self.log = logger.get_logger()
 
         self.runners = runners
         self.flow_state = None
@@ -116,14 +114,13 @@ class KenningFlow:
         KenningFlow :
             Object of class KenningFlow.
         """
-        log = logger.get_logger()
 
         try:
             jsonschema.validate(
                 runners_specifications,
                 cls.form_parameterschema())
         except jsonschema.ValidationError as e:
-            log.error(f'JSON description is invalid: {e.message}')
+            KLogger.error(f'JSON description is invalid: {e.message}')
             raise
 
         output_variables = {}
@@ -137,19 +134,21 @@ class KenningFlow:
                 inputs = runner_spec.get('inputs', {})
                 outputs = runner_spec.get('outputs', {})
 
-                log.info(f'Loading runner: {runner_cls.__name__}')
+                KLogger.info(f'Loading runner: {runner_cls.__name__}')
 
                 # validate output variables and add them to dict
                 for local_name, global_name in outputs.items():
                     if global_name in output_variables.keys():
-                        log.error(
-                            f'Error loading runner {runner_idx}:'
-                            f'{runner_cls}. Redefined output variable '
-                            f'{local_name}:{global_name}.'
+                        KLogger.error(
+                            f'Error loading runner {runner_idx}: {runner_cls}'
+                        )
+                        KLogger.error(
+                            f'Redefined output variable {local_name}:'
+                            f'{global_name}'
                         )
                         raise Exception(
                             f'Redefined output variable {global_name}'
-                         )
+                        )
 
                     output_variables[global_name] = runner_idx
 
@@ -158,7 +157,7 @@ class KenningFlow:
 
                 for local_name, global_name in inputs.items():
                     if global_name not in output_variables:
-                        log.error(
+                        KLogger.error(
                             f'Error loading runner {runner_idx}:'
                             f'{runner_cls}. Undefined input variable '
                             f'{local_name}:{global_name}.'
@@ -199,7 +198,7 @@ class KenningFlow:
                 runners.append(runner)
 
             except Exception as e:
-                log.error(f'Error during flow json parsing: {e}')
+                KLogger.error(f'Error during flow json parsing: {e}')
                 for runner in runners:
                     runner.cleanup()
                 raise
@@ -239,23 +238,31 @@ class KenningFlow:
                 self.run_single_step()
 
             except KeyboardInterrupt:
-                self.log.warn('Processing interrupted due to keyboard '
-                              'interrupt. Aborting.')
+                KLogger.warning(
+                    'Processing interrupted due to keyboard interrupt'
+                )
+                KLogger.warning('Aborting')
                 break
 
             except StopIteration:
-                self.log.warn('Processing interrupted due to an empty stream.')
+                KLogger.warning(
+                    'Processing interrupted due to an empty stream'
+                )
                 break
 
             except NotImplementedError:
-                self.log.error('Missing implementation of action from module')
+                KLogger.error(
+                    'Missing implementation of action from module'
+                )
                 break
 
             except RuntimeError as e:
-                self.log.warn('Processing interrupted from inside of module. '
-                              f'{(str(e))}')
+                KLogger.error(
+                    'Processing interrupted from inside of module'
+                )
+                KLogger.error(e)
                 break
 
         self.cleanup()
 
-        self.log.debug(f'Final {self.flow_state=}')
+        KLogger.debug(f'Final {self.flow_state=}')

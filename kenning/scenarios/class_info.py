@@ -21,7 +21,7 @@ from typing import List, Tuple, Optional
 from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, INFO)
 from kenning.cli.completers import ClassPathCompleter
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 from kenning.utils.class_info import generate_class_info
 
 
@@ -91,7 +91,7 @@ class ClassInfoRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         args_dict = {
             k: v for k, v in vars(args).items()

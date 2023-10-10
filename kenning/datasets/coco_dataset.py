@@ -8,7 +8,6 @@ from pathlib import Path
 from collections import defaultdict
 from typing import Optional
 
-from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import Resources, extract_zip
 
 from pycocotools.coco import COCO
@@ -80,7 +79,6 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             image_height: int = 416):
         assert image_memory_layout in ['NHWC', 'NCHW']
         self.numclasses = 80
-        self.log = get_logger()
         self.dataset_type = dataset_type
         super().__init__(
             root,

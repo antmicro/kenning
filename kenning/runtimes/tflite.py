@@ -11,6 +11,7 @@ from typing import Optional, List
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -77,7 +78,7 @@ class TFLiteRuntime(Runtime):
             import tflite_runtime.interpreter as tflite
         except ModuleNotFoundError:
             from tensorflow import lite as tflite
-        self.log.info('Loading model')
+        KLogger.info('Loading model')
         if input_data:
             with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
@@ -85,18 +86,20 @@ class TFLiteRuntime(Runtime):
             self.model_path
         delegates = None
         if self.delegates:
-            delegates = [tflite.load_delegate(delegate) for delegate in self.delegates]  # noqa: E501
+            delegates = [
+                tflite.load_delegate(delegate) for delegate in self.delegates
+            ]
         self.interpreter = tflite.Interpreter(
             str(self.model_path),
             experimental_delegates=delegates,
             num_threads=self.num_threads
         )
         self.interpreter.allocate_tensors()
-        self.log.info('Model loading ended successfully')
+        KLogger.info('Model loading ended successfully')
         return True
 
     def prepare_input(self, input_data):
-        self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
         if self.interpreter is None:
             raise ModelNotPreparedError
 
@@ -108,10 +111,12 @@ class TFLiteRuntime(Runtime):
                 self.interpreter.resize_tensor_input(i, spec['shape'])
             self.interpreter.allocate_tensors()
 
-            for det, inp in zip(self.interpreter.get_input_details(), ordered_input):  # noqa: E501
+            for det, inp in zip(
+                self.interpreter.get_input_details(), ordered_input
+            ):
                 self.interpreter.set_tensor(det['index'], inp)
         except ValueError as ex:
-            self.log.error(f'Failed to load input: {ex}')
+            KLogger.error(f'Failed to load input: {ex}', stack_info=True)
             return False
         self._input_prepared = True
         return True

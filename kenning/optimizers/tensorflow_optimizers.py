@@ -13,10 +13,8 @@ from typing import List, Literal, Tuple, Optional
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-LOGGER = get_logger()
 
 
 class TensorFlowOptimizer(Optimizer):
@@ -154,7 +152,7 @@ class TensorFlowOptimizer(Optimizer):
             Trained keras model.
         """
         traindataset, validdataset = self.prepare_train_validation()
-        LOGGER.info("Dataset prepared")
+        KLogger.info('Dataset prepared')
 
         if len(traindataset.element_spec[1].shape) == 1:
             loss = tf.keras.losses.SparseCategoricalCrossentropy(

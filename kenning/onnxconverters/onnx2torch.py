@@ -38,10 +38,8 @@ from onnx2torch.utils.common import (
     OperationConverterResult,
     OnnxMapping,
 )
+from kenning.utils.logger import KLogger
 
-from kenning.utils.logger import get_logger
-
-_LOGGER = get_logger()
 CONST_NODES = dict()
 
 # Backing up default converters
@@ -311,7 +309,7 @@ def batch_norm_converter(
         Scheme for converting BatchNormalization
     """
     if len(node.output_values) > 1:
-        _LOGGER.warning(
+        KLogger.warning(
             "Number of BatchNormalization outputs reduced to one"
         )
         node._output_values = (node.output_values[0],)
@@ -341,10 +339,10 @@ def dropout_converter(
         Scheme for converting Dropout
     """
     if len(node.input_values) > 1:
-        _LOGGER.warning("Number of Dropout inputs reduced to one")
+        KLogger.warning('Number of Dropout inputs reduced to one')
         node._input_values = (node.input_values[0],)
     if len(node.output_values) > 1:
-        _LOGGER.warning("Number of Dropout outputs reduced to one")
+        KLogger.warning('Number of Dropout outputs reduced to one')
         node._output_values = (node.output_values[0],)
     ratio = extract_value_from_graph(node, graph, "ratio", 0.5)
     seed = extract_value_from_graph(node, graph, "seed")
@@ -467,7 +465,7 @@ def max_pool_converter(
     """
     padding = extract_value_from_graph(node, graph, "pads")
     if padding is not None:
-        _LOGGER.warning("Forcing symmetric paddings")
+        KLogger.warning('Forcing symmetric paddings')
         half_len = len(padding) // 2
         begin_pads, end_pads = padding[:half_len], padding[half_len:]
         new_padding = []

@@ -12,13 +12,22 @@ import sys
 from typing import Dict
 
 from kenning.cli.autocompletion import configure_autocomplete
-from kenning.cli.config import (AVAILABLE_COMMANDS, MAP_COMMAND_TO_SCENARIO,
-                                SUB_DEST_FORM, setup_base_parser)
-from kenning.cli.parser import (Parser, ParserHelpException,
-                                print_help_from_parsers)
-from kenning.utils.excepthook import (MissingKenningDependencies,
-                                      find_missing_optional_dependency)
-
+from kenning.cli.parser import (
+    Parser,
+    ParserHelpException,
+    print_help_from_parsers,
+)
+from kenning.cli.config import (
+    AVAILABLE_COMMANDS,
+    MAP_COMMAND_TO_SCENARIO,
+    SUB_DEST_FORM,
+    setup_base_parser,
+)
+from kenning.utils.excepthook import (
+    MissingKenningDependencies,
+    find_missing_optional_dependency
+)
+from kenning.utils.logger import KLogger
 
 def main():
     """
@@ -26,6 +35,14 @@ def main():
 
     Creates and manages parsers, runs subcommands, and handle errors.
     """
+    verbosity = 'WARNING'
+    if (
+        '--verbosity' in sys.argv and
+        len(sys.argv) > sys.argv.index('--verbosity') + 1
+    ):
+        verbosity = sys.argv[sys.argv.index('--verbosity') + 1]
+    KLogger.configure()
+    KLogger.set_verbosity(level=verbosity)
     configure_autocomplete()
     parser, parsers = setup_base_parser()
 

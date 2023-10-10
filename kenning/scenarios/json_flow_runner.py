@@ -15,7 +15,7 @@ from argcomplete.completers import FilesCompleter
 from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, FLOW)
 from kenning.core.flow import KenningFlow
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 
@@ -45,8 +45,7 @@ class FlowRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        logger.set_verbosity(args.verbosity)
-        log = logger.get_logger()
+        KLogger.set_verbosity(args.verbosity)
 
         with open(args.json_cfg, 'r') as f:
             json_cfg = json.load(f)
@@ -54,7 +53,7 @@ class FlowRunner(CommandTemplate):
         flow: KenningFlow = KenningFlow.from_json(json_cfg)
         _ = flow.run()
 
-        log.info('Processing has finished')
+        KLogger.info('Processing has finished')
         return 0
 
 

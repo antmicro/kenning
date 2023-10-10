@@ -14,7 +14,7 @@ import tensorflow as tf
 from kenning.core.dataset import Dataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -142,7 +142,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
                 (np.array(self.dataset.prepare_input_samples(features)),
                  np.array(self.dataset.prepare_output_samples(labels)))
             )
-        log = get_logger()
         self.model.compile(
             optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
             loss='categorical_crossentropy',
@@ -181,6 +180,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             predictions=tf.constant(pred),
             num_classes=4
         )
-        log.info(confusion)
-        log.info(f'loss: {loss}, accuracy: {acc}')
+        KLogger.info(confusion)
+        KLogger.info(f'loss: {loss}, accuracy: {acc}')
         self.model.save(self.model_path)

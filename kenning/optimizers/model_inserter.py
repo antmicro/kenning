@@ -12,7 +12,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.dataset import Dataset
 from typing import Literal, Optional, Dict, List, Union
 import shutil
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -78,10 +78,9 @@ class ModelInserter(Optimizer):
             self,
             input_model_path: PathOrURI,
             io_spec: Optional[Dict[str, List[Dict]]] = None):
-        log = get_logger()
-        log.warn('Inserting the model into pipeline')
-        log.warn('The input model from previous block is ignored')
-        log.warn(f'The used model is from {self.input_model_path}')
+        KLogger.warning('Inserting the model into pipeline')
+        KLogger.warning('The input model from previous block is ignored')
+        KLogger.warning(f'The used model is from {self.input_model_path}')
 
         shutil.copy(self.input_model_path, self.compiled_model_path)
         self.save_io_specification(self.input_model_path, None)

@@ -15,7 +15,6 @@ from pycocotools.coco import COCO
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
-from kenning.utils.logger import get_logger
 from kenning.utils.resource_manager import Resources, extract_zip
 
 
@@ -113,7 +112,6 @@ class VisualWakeWordsDataset(Dataset):
         self.image_height = image_height
         self.numclasses = 2
         self.classnames = ['not-person', 'person']
-        self.log = get_logger()
         super().__init__(
             root,
             batch_size,

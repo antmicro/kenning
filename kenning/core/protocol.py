@@ -14,9 +14,9 @@ from enum import Enum
 from pathlib import Path
 from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 
-import kenning.utils.logger as logger
 from kenning.core.measurements import Measurements, timemeasurements
 from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.logger import KLogger
 
 MSG_SIZE_LEN = 4
 MSG_TYPE_LEN = 2
@@ -281,8 +281,6 @@ class Protocol(ArgumentsHandler):
 
     arguments_structure = {}
 
-    def __init__(self):
-        self.log = logger.get_logger()
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> 'Protocol':
@@ -475,20 +473,20 @@ class Protocol(ArgumentsHandler):
 
             if status == ServerStatus.DATA_READY:
                 if message.message_type == MessageType.ERROR:
-                    self.log.error('Error during uploading input')
+                    KLogger.error('Error during uploading input')
                     return False, None
                 if message.message_type != MessageType.OK:
-                    self.log.error(f'Unexpected message {message}')
+                    KLogger.error(f'Unexpected message {message}')
                     return False, None
-                self.log.debug('Upload finished successfully')
+                KLogger.debug('Upload finished successfully')
                 return True, message.payload
 
             elif status == ServerStatus.CLIENT_DISCONNECTED:
-                self.log.error('Client is disconnected')
+                KLogger.error('Client is disconnected')
                 return False, None
 
             elif status == ServerStatus.DATA_INVALID:
-                self.log.error('Received invalid packet')
+                KLogger.error('Received invalid packet')
                 return False, None
 
     def upload_input(self, data: bytes) -> bool:
@@ -508,7 +506,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if ready for inference.
         """
-        self.log.debug('Uploading input')
+        KLogger.debug('Uploading input')
 
         message = Message(MessageType.DATA, data)
 
@@ -536,7 +534,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if model upload finished successfully.
         """
-        self.log.debug('Uploading model')
+        KLogger.debug('Uploading model')
         with open(path, 'rb') as modfile:
             data = modfile.read()
 
@@ -566,7 +564,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if data upload finished successfully.
         """
-        self.log.debug('Uploading io specification')
+        KLogger.debug('Uploading io specification')
         with open(path, 'rb') as detfile:
             data = detfile.read()
 
@@ -600,7 +598,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if inference finished successfully.
         """
-        self.log.debug('Requesting processing')
+        KLogger.debug('Requesting processing')
         if not self.send_message(Message(MessageType.PROCESS)):
             return False
 
@@ -623,7 +621,7 @@ class Protocol(ArgumentsHandler):
             Tuple with download status (True if successful)
             and downloaded data.
         """
-        self.log.debug('Downloading output')
+        KLogger.debug('Downloading output')
         if not self.send_message(Message(MessageType.OUTPUT)):
             return False, b''
         return self.receive_confirmation()
@@ -641,7 +639,7 @@ class Protocol(ArgumentsHandler):
         """
         measurements = Measurements()
 
-        self.log.debug('Downloading statistics')
+        KLogger.debug('Downloading statistics')
         if not self.send_message(Message(MessageType.STATS)):
             return measurements
 
@@ -664,7 +662,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if data upload finished successfully.
         """
-        self.log.debug('Uploading optimizers config')
+        KLogger.debug('Uploading optimizers config')
 
         message = Message(
             MessageType.OPTIMIZERS,
@@ -696,7 +694,7 @@ class Protocol(ArgumentsHandler):
             First element is equal to True if optimization finished
             successfully and the second element contains compiled model.
         """
-        self.log.debug('Requesting model optimization')
+        KLogger.debug('Requesting model optimization')
         with open(model_path, 'rb') as model_f:
             model = model_f.read()
 
@@ -723,7 +721,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if sent successfully.
         """
-        self.log.debug('Sending OK')
+        KLogger.debug('Sending OK')
 
         message = Message(MessageType.OK, data)
 
@@ -738,7 +736,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if sent successfully.
         """
-        self.log.debug('Sending ERROR')
+        KLogger.debug('Sending ERROR')
 
         return self.send_message(Message(MessageType.ERROR))
 

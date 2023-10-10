@@ -12,6 +12,7 @@ import onnx
 
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.onnxconversion import SupportStatus
+from kenning.utils.logger import KLogger
 from kenning.utils.onnx import try_extracting_input_shape_from_onnx
 
 
@@ -72,9 +73,10 @@ class PyTorchONNXConversion(ONNXConversion):
         device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
         model_onnx = onnx.load(str(importpath))
         if model_onnx.ir_version <= 3:
-            self.logger.error("Model unsupported due to the not sufficient "
-                              f"ir_version {model_onnx.ir_version}, have to be"
-                              " greater than 3")
+            KLogger.error(
+                'Model unsupported due to the not sufficient ir_version '
+                f'{model_onnx.ir_version}, have to be greater than 3'
+            )
             return SupportStatus.UNSUPPORTED
 
         # Preparing dummy input for testing model
@@ -89,7 +91,7 @@ class PyTorchONNXConversion(ONNXConversion):
             )
 
         if input_tensor is None:
-            self.logger.error("Cannot get properties of input tensor")
+            KLogger.error('Cannot get properties of input tensor')
             return SupportStatus.UNSUPPORTED
 
         # Converting model
@@ -97,7 +99,7 @@ class PyTorchONNXConversion(ONNXConversion):
             from kenning.onnxconverters import onnx2torch
             model_torch = onnx2torch.convert(model_onnx)
         except RuntimeError or NotImplementedError as e:
-            self.logger.error(f"Conversion: {e}")
+            KLogger.error(f'Conversion: {e}', stack_info=True)
             del model_onnx
             return SupportStatus.UNSUPPORTED
 

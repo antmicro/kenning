@@ -22,7 +22,7 @@ from importlib.resources import path
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.resources import reports
 from kenning.utils.class_loader import load_class, get_command
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 
 
 def generate_onnx_support_grid(
@@ -109,13 +109,13 @@ def main(argv):
     parser.add_argument(
         '--verbosity',
         help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        choices=['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         default='INFO'
     )
 
     args = parser.parse_args(argv[1:])
 
-    logger.set_verbosity(args.verbosity)
+    KLogger.set_verbosity(args.verbosity)
 
     args.modelsdir.mkdir(parents=True, exist_ok=True)
 

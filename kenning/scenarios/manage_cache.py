@@ -13,7 +13,7 @@ from typing import List, Optional, Tuple
 from kenning.cli.command_template import (
     CACHE, GROUP_SCHEMA, ArgumentsGroups, CommandTemplate
 )
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceManager
 
 
@@ -77,7 +77,7 @@ class ManageCacheRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         resource_manager = ResourceManager()
 

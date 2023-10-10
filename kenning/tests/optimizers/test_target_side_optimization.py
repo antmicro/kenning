@@ -12,6 +12,8 @@ import pytest
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import RequestFailure
+from kenning.dataconverters.modelwrapper_dataconverter import \
+    ModelWrapperDataConverter
 from kenning.protocols.network import NetworkProtocol
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.scenarios.inference_server import InferenceServer
@@ -80,9 +82,11 @@ class TestServerSideOptimization:
         )
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime_host,
@@ -142,6 +146,7 @@ class TestServerSideOptimization:
         )
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
             model_path=Path('./build/compiled_model.tflite'),
         )
@@ -149,6 +154,7 @@ class TestServerSideOptimization:
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime_host,
@@ -191,6 +197,7 @@ class TestServerSideOptimization:
         ]
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime = TFLiteRuntime(
             model_path=Path('./build/compiled_model.tflite'),
         )
@@ -198,6 +205,7 @@ class TestServerSideOptimization:
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime,
@@ -215,17 +223,17 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_0.h5'),
+                compiled_model_path=Path('./build/compiled_model_0.h5'),
                 location='host',
             ),
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_1.h5'),
+                compiled_model_path=Path('./build/compiled_model_1.h5'),
                 location='target',
             ),
             OptimizerFailMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_0.h5'),
+                compiled_model_path=Path('./build/compiled_model_0.h5'),
                 location='target',
             ),
         ]
@@ -239,6 +247,7 @@ class TestServerSideOptimization:
         )
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
             model_path=Path('./build/compiled_model.tflite'),
         )
@@ -246,6 +255,7 @@ class TestServerSideOptimization:
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime_host,
@@ -284,12 +294,14 @@ class TestServerSideOptimization:
         ]
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime = TFLiteRuntime(
             model_path=Path('./build/compiled_model.tflite'),
         )
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime,
@@ -339,6 +351,7 @@ class TestServerSideOptimization:
         )
 
         dataset, model_wrapper = get_default_dataset_model('keras')
+        dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
             model_path=Path('./build/compiled_model.tflite'),
         )
@@ -346,6 +359,7 @@ class TestServerSideOptimization:
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
+            dataconverter=dataconverter,
             model_wrapper=model_wrapper,
             optimizers=optimizers,
             runtime=runtime_host,

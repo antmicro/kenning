@@ -104,12 +104,10 @@ def factory_test_equivalence(path_to_json_files: Union[str, Path]) -> Callable:
                 f'Source scenario:\n{json.dumps(pipeline_json, indent=4)}\n\n'
                 f'Status:  {status}\n\n'
             )
-        assert(
-            self.equivalence_check(result_json, pipeline_json),
-            'Equivalence test failed.\n\n'
-            f'Source JSON:\n{json.dumps(pipeline_json, indent=4)}\n\n'
+        assert self.equivalence_check(result_json, pipeline_json), \
+            'Equivalence test failed.\n\n' \
+            f'Source JSON:\n{json.dumps(pipeline_json, indent=4)}\n\n' \
             f'Result JSON:\n{json.dumps(result_json, indent=4)}\n\n'
-        )
 
     return test_equivalence
 

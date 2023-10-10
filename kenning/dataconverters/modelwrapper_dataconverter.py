@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 """
 A DataConverter-derived class used to manipulate the data using the
-ModelWrapper object for compatibility between RuntimeProtocol and Dataset
+ModelWrapper object for compatibility with surrounding block
 during runtime.
 """
 

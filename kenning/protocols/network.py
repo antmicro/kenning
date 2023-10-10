@@ -12,6 +12,7 @@ from typing import Optional, Tuple
 
 from kenning.core.protocol import ServerStatus
 from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.utils.logger import KLogger
 
 
 class NetworkProtocol(BytesBasedProtocol):
@@ -80,12 +81,14 @@ class NetworkProtocol(BytesBasedProtocol):
         """
         sock, addr = socket.accept()
         if self.socket is not None:
-            self.log.debug(f'Connection already established, rejecting {addr}')
+            KLogger.debug(
+                f'Connection already established, rejecting {addr}'
+            )
             sock.close()
             return ServerStatus.CLIENT_IGNORED, None
         else:
             self.socket = sock
-            self.log.info(f'Connected client {addr}')
+            KLogger.info(f'Connected client {addr}')
             self.socket.setblocking(False)
             self.selector.register(
                 self.socket,
@@ -95,7 +98,7 @@ class NetworkProtocol(BytesBasedProtocol):
             return ServerStatus.CLIENT_CONNECTED, None
 
     def initialize_server(self) -> bool:
-        self.log.debug(f'Initializing server at {self.host}:{self.port}')
+        KLogger.debug(f'Initializing server at {self.host}:{self.port}')
         self.serversocket = socket.socket(
             socket.AF_INET,
             socket.SOCK_STREAM
@@ -105,7 +108,7 @@ class NetworkProtocol(BytesBasedProtocol):
         try:
             self.serversocket.bind((self.host, self.port))
         except OSError as execinfo:
-            self.log.error(f'{execinfo}')
+            KLogger.error(f'{execinfo}', stack_info=True)
             self.serversocket = None
             return False
         self.serversocket.listen(1)
@@ -117,7 +120,7 @@ class NetworkProtocol(BytesBasedProtocol):
         return True
 
     def initialize_client(self) -> bool:
-        self.log.debug(f'Initializing client at {self.host}:{self.port}')
+        KLogger.debug(f'Initializing client at {self.host}:{self.port}')
         self.socket = socket.socket(
             socket.AF_INET,
             socket.SOCK_STREAM
@@ -136,7 +139,7 @@ class NetworkProtocol(BytesBasedProtocol):
             mask: int) -> Tuple[ServerStatus, Optional[bytes]]:
         data = self.socket.recv(self.packet_size)
         if not data:
-            self.log.info('Client disconnected from the server')
+            KLogger.info('Client disconnected from the server')
             self.selector.unregister(self.socket)
             self.socket.close()
             self.socket = None

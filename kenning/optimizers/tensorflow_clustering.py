@@ -13,10 +13,8 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-LOGGER = get_logger()
 
 
 def kerasconversion(model_path: PathOrURI):
@@ -148,7 +146,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             'preserve_sparsity': self.preserve_sparsity
         }
 
-        LOGGER.info("Clustering model...")
+        KLogger.info('Clustering model...')
         if self.cluster_dense:
             def apply_clustering_to_dense(layer):
                 if isinstance(layer, tf.keras.layers.Dense):

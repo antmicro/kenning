@@ -8,7 +8,7 @@ from kenning.tests.pipeline_manager.handler_tests import (
     HandlerTests,
     factory_test_create_dataflow,
     factory_test_equivalence,
-)  # noqa: E501
+)
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
 PET_DATASET_DATAFLOW_NODE = {
@@ -259,6 +259,10 @@ class TestPipelineHandler(HandlerTests):
         return PipelineHandler(layout_algorithm="NoLayout")
 
     def equivalence_check(self, dataflow1, dataflow2):
+        if 'optimizers' not in dataflow1:
+            dataflow1['optimizers'] = []
+        if 'optimizers' not in dataflow2:
+            dataflow2['optimizers'] = []
         return dataflow1 == dataflow2
 
     PATH_TO_JSON_SCRIPTS = "./scripts/jsonconfigs"

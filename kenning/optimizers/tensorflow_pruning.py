@@ -14,10 +14,8 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
-
-LOGGER = get_logger()
 
 
 def kerasconversion(model_path: PathOrURI):
@@ -167,7 +165,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
                 **pruning_params
             )
 
-        LOGGER.info("Pruning will start after dataset is perpared")
+        KLogger.info('Pruning will start after dataset is prepared')
         pruned_model = self.train_model(
             pruned_model,
             [tfmot.sparsity.keras.UpdatePruningStep()]

@@ -10,9 +10,9 @@ import cv2
 from matplotlib import pyplot as plt
 from matplotlib import patches as patches
 
-from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
+from kenning.utils.logger import KLogger
 
 
 DetectObject = namedtuple(
@@ -412,9 +412,8 @@ class ObjectDetectionSegmentationDataset(Dataset):
         truth : List
             The ground truth for given batch.
         """
-        log = get_logger()
-        log.info(f'\ntruth\n{truth}')
-        log.info(f'\npredictions\n{predictions}')
+        KLogger.info(f'\ntruth\n{truth}')
+        KLogger.info(f'\npredictions\n{predictions}')
         for pred, gt in zip(predictions, truth):
             img = self.prepare_input_samples([self.dataX[self._dataindex - 1]])[0]  # noqa: E501
             fig, ax = plt.subplots()
@@ -457,9 +456,8 @@ class ObjectDetectionSegmentationDataset(Dataset):
         truth : List
             The ground truth for given batch.
         """
-        log = get_logger()
-        log.info(f'\ntruth\n{truth}')
-        log.info(f'\npredictions\n{predictions}')
+        KLogger.info(f'\ntruth\n{truth}')
+        KLogger.info(f'\npredictions\n{predictions}')
         evaldir = self.root / 'eval'
         evaldir.mkdir(parents=True, exist_ok=True)
         for pred, gt in zip(predictions, truth):

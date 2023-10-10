@@ -13,6 +13,7 @@ import numpy as np
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -63,14 +64,14 @@ class ONNXRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
         if self.session is None:
             raise ModelNotPreparedError
 
         try:
             ordered_input = self.preprocess_input(input_data)
         except ValueError as ex:
-            self.log.error(f'Failed to load input: {ex}')
+            KLogger.error(f'Failed to load input: {ex}', stack_info=True)
             return False
 
         self.input = {}
@@ -79,7 +80,7 @@ class ONNXRuntime(Runtime):
         return True
 
     def prepare_model(self, input_data):
-        self.log.info('Loading model')
+        KLogger.info('Loading model')
         if input_data:
             with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
@@ -129,7 +130,7 @@ class ONNXRuntime(Runtime):
             self.session.get_outputs()
         )
 
-        self.log.info('Model loading ended successfully')
+        KLogger.info('Model loading ended successfully')
         return True
 
     def run(self):

@@ -158,7 +158,7 @@ def serialize_inference(
 
     for obj, name in zip(
         [dataset, dataconverter, protocol, runtime, model],
-        ['dataset', 'dataconverter', 'protocol', 'runtime', 'model_wrapper']
+        ['dataset', 'data_converter', 'protocol', 'runtime', 'model_wrapper']
     ):
         if obj:
             serialized_dict[name] = obj.to_json()

@@ -132,8 +132,8 @@ class PipelineRunner(object):
         )
 
         dataconverter = (
-            any_from_json(json_cfg['dataconverter'])
-            if 'dataconverter' in json_cfg else None
+            any_from_json(json_cfg['data_converter'])
+            if 'data_converter' in json_cfg else None
         )
 
         assert model_wrapper or dataconverter, (

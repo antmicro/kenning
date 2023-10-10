@@ -34,7 +34,6 @@ from kenning.cli.command_template import (
     GROUP_SCHEMA,
     TEST
 )
-from kenning.resources import reports
 from kenning.core.drawing import (
     draw_confusion_matrix,
     recall_precision_curves,
@@ -46,16 +45,16 @@ from kenning.core.drawing import (
     draw_bubble_plot, choose_theme,
     draw_barplot,
     IMMATERIAL_COLORS, RED_GREEN_CMAP)
-from kenning.utils import logger
-from kenning.utils.class_loader import get_command
-from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 from kenning.core.metrics import (
     compute_performance_metrics,
     compute_classification_metrics,
     compute_detection_metrics,
     compute_renode_metrics)
+from kenning.resources import reports
+from kenning.utils.class_loader import get_command
+from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
+from kenning.utils.logger import KLogger
 
-log = logger.get_logger()
 
 SERVIS_PLOT_OPTIONS = {
     'figsize': (900, 500),
@@ -128,8 +127,9 @@ def performance_report(
     from servis import render_time_series_plot_with_histogram
     from kenning.core.report import create_report_from_measurements
 
-    log.info(
-        f'Running performance_report for {measurementsdata["model_name"]}')
+    KLogger.info(
+        f'Running performance_report for {measurementsdata["model_name"]}'
+    )
     metrics = compute_performance_metrics(measurementsdata)
     measurementsdata |= metrics
 
@@ -139,13 +139,13 @@ def performance_report(
 
     inference_step = None
     if 'target_inference_step' in measurementsdata:
-        log.info('Using target measurements for inference time')
+        KLogger.info('Using target measurements for inference time')
         inference_step = 'target_inference_step'
     elif 'protocol_inference_step' in measurementsdata:
-        log.info('Using protocol measurements for inference time')
+        KLogger.info('Using protocol measurements for inference time')
         inference_step = 'protocol_inference_step'
     else:
-        log.warning('No inference time measurements in the report')
+        KLogger.warning('No inference time measurements in the report')
 
     if inference_step:
         usepath = imgdir / f'{imgprefix}inference_time'
@@ -171,7 +171,7 @@ def performance_report(
         measurementsdata['inferencetime'] = measurementsdata[inference_step]
 
     if 'session_utilization_mem_percent' in measurementsdata:
-        log.info('Using target measurements memory usage percentage')
+        KLogger.info('Using target measurements memory usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_memory_usage'
         render_time_series_plot_with_histogram(
             ydata=measurementsdata['session_utilization_mem_percent'],
@@ -192,10 +192,10 @@ def performance_report(
             usepath_asterisk.relative_to(rootdir)
         )
     else:
-        log.warning('No memory usage measurements in the report')
+        KLogger.warning('No memory usage measurements in the report')
 
     if 'session_utilization_cpus_percent' in measurementsdata:
-        log.info('Using target measurements CPU usage percentage')
+        KLogger.info('Using target measurements CPU usage percentage')
         usepath = imgdir / f'{imgprefix}cpu_usage'
         render_time_series_plot_with_histogram(
             ydata=measurementsdata['session_utilization_cpus_percent_avg'],
@@ -216,14 +216,14 @@ def performance_report(
             usepath_asterisk.relative_to(rootdir)
         )
     else:
-        log.warning('No memory usage measurements in the report')
+        KLogger.warning('No memory usage measurements in the report')
 
     if 'session_utilization_gpu_mem_utilization' in measurementsdata:
-        log.info('Using target measurements GPU memory usage percentage')
+        KLogger.info('Using target measurements GPU memory usage percentage')
         usepath = imgdir / f'{imgprefix}gpu_memory_usage'
         gpumemmetric = 'session_utilization_gpu_mem_utilization'
         if len(measurementsdata[gpumemmetric]) == 0:
-            log.warning(
+            KLogger.warning(
                 'Incorrectly collected data for GPU memory utilization'
             )
         else:
@@ -247,13 +247,13 @@ def performance_report(
                 usepath_asterisk.relative_to(rootdir)
             )
     else:
-        log.warning('No GPU memory usage measurements in the report')
+        KLogger.warning('No GPU memory usage measurements in the report')
 
     if 'session_utilization_gpu_utilization' in measurementsdata:
-        log.info('Using target measurements GPU utilization')
+        KLogger.info('Using target measurements GPU utilization')
         usepath = imgdir / f'{imgprefix}gpu_usage'
         if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
-            log.warning('Incorrectly collected data for GPU utilization')
+            KLogger.warning('Incorrectly collected data for GPU utilization')
         else:
             render_time_series_plot_with_histogram(
                 ydata=measurementsdata[
@@ -276,7 +276,7 @@ def performance_report(
                 usepath_asterisk.relative_to(rootdir)
             )
     else:
-        log.warning('No GPU utilization measurements in the report')
+        KLogger.warning('No GPU utilization measurements in the report')
 
     with path(reports, 'performance.md') as reporttemplate:
         return create_report_from_measurements(
@@ -321,7 +321,7 @@ def comparison_performance_report(
     from servis import render_multiple_time_series_plot
     from kenning.core.report import create_report_from_measurements
 
-    log.info('Running comparison_performance_report')
+    KLogger.info('Running comparison_performance_report')
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
 
@@ -374,8 +374,8 @@ def comparison_performance_report(
         else:
             timestamp_key = 'session_utilization_timestamp'
         if timestamp_key not in data:
-            log.warning(
-                f'Missing measurement "{timestamp_key}" in the measurements ' +
+            KLogger.warning(
+                f'Missing measurement "{timestamp_key}" in the measurements '
                 f"file. Can't provide benchmarks for {metric_name}"
             )
             continue
@@ -501,14 +501,14 @@ def classification_report(
     """
     from kenning.core.report import create_report_from_measurements
 
-    log.info(
+    KLogger.info(
         f'Running classification report for {measurementsdata["model_name"]}'
     )
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
 
     if 'eval_confusion_matrix' in measurementsdata:
-        log.info('Using confusion matrix')
+        KLogger.info('Using confusion matrix')
         confusionpath = imgdir / f'{imgprefix}confusion_matrix'
         draw_confusion_matrix(
             measurementsdata['eval_confusion_matrix'],
@@ -522,7 +522,7 @@ def classification_report(
             str(confusionpath.relative_to(rootdir)) + '.*'
         )
     elif 'predictions' in measurementsdata:
-        log.info('Using predictions')
+        KLogger.info('Using predictions')
 
         predictions = list(zip(
             measurementsdata['predictions'],
@@ -549,7 +549,7 @@ def classification_report(
             str(predictions_path.relative_to(rootdir)) + '.*'
         )
     else:
-        log.error(
+        KLogger.error(
             'Confusion matrix and predictions not present for classification '
             'report'
         )
@@ -596,7 +596,7 @@ def comparison_classification_report(
     """
     from kenning.core.report import create_report_from_measurements
 
-    log.info('Running comparison_classification_report')
+    KLogger.info('Running comparison_classification_report')
     # HTML plots format unsupported, removing html
     _image_formats = image_formats - {'html'}
 
@@ -632,7 +632,7 @@ def comparison_classification_report(
         if 'compiled_model_size' in data:
             model_sizes.append(data['compiled_model_size'])
         else:
-            log.warning(
+            KLogger.warning(
                 'Missing information about model size in measurements'
                 ' - computing size based on average RAM usage'
             )
@@ -710,7 +710,7 @@ def comparison_classification_report(
         ] = f'{predictions_batplot_path.relative_to(rootdir)}.*'
 
     elif skip_inference_metrics:
-        log.warning(
+        KLogger.warning(
             'No inference measurements available, skipping report generation'
         )
         return ''
@@ -766,7 +766,9 @@ def detection_report(
         compute_ap, \
         compute_map_per_threshold
 
-    log.info(f'Running detection report for {measurementsdata["model_name"]}')
+    KLogger.info(
+        f'Running detection report for {measurementsdata["model_name"]}'
+    )
     metrics = compute_detection_metrics(measurementsdata)
     measurementsdata |= metrics
 
@@ -902,7 +904,7 @@ def comparison_detection_report(
     str :
         Content of the report in MyST format.
     """
-    log.info('Running comparison_detection_report')
+    KLogger.info('Running comparison_detection_report')
 
     from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import \
@@ -988,7 +990,7 @@ def renode_stats_report(
     from servis import render_time_series_plot_with_histogram
     from kenning.core.report import create_report_from_measurements
 
-    log.info(
+    KLogger.info(
         f'Running renode_stats_report for {measurementsdata["model_name"]}'
     )
 
@@ -1327,7 +1329,7 @@ def comparison_renode_stats_report(
 
         return xdata, ydata, labels
 
-    log.info('Running comparison_renode_stats_report')
+    KLogger.info('Running comparison_renode_stats_report')
 
     report_variables = {
         'report_name': measurementsdata[0]['report_name'],
@@ -1771,11 +1773,12 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
     _append_type_if(RENODE, lambda data: "opcode_counters" in data)
 
     if len(report_types) == 0:
-        log.error(
-            "There is no report type which is suitable for all measurements. ")
-        return
+        KLogger.error(
+            'There is no report type which is suitable for all measurements'
+        )
+        return []
 
-    log.info(f"Following report types were deduced: {report_types}")
+    KLogger.info(f'Following report types were deduced: {report_types}')
     return report_types
 
 
@@ -1812,7 +1815,7 @@ def deduce_report_name(
             f"{measurements_data[0]['model_name']}"
     report_name = report_name[0].upper() + report_name[1:]
 
-    log.info(f"Report name: {report_name}")
+    KLogger.info(f'Report name: {report_name}')
     return report_name
 
 
@@ -1865,8 +1868,11 @@ def generate_html_report(
                 "MockArgs", ('pdb', 'verbosity', 'traceback')
             )(pdb=debug, verbosity=debug, traceback=debug)
             handle_exception(app, mock_args, ex)
-            log.error("Error occurred, HTML report won't be generated",
-                      ex.args)
+            KLogger.error(
+                "Error occurred, HTML report won't be generated",
+                ex.args,
+                stack_info=True
+            )
 
 
 class RenderReport(CommandTemplate):
@@ -1967,7 +1973,7 @@ class RenderReport(CommandTemplate):
     def run(args, **kwargs):
         command = get_command()
 
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         if args.to_html:
             if not isinstance(args.to_html, (str, Path)):
@@ -1980,10 +1986,21 @@ class RenderReport(CommandTemplate):
                 )
                 return
             elif not args.measurements:
-                raise argparse.ArgumentError(None, "HTML report cannot be generated, file from '--report-path' does not exist. Please, make sure the path is correct or use '--measurements' to generate new report.")  # noqa: E501
+                raise argparse.ArgumentError(
+                    None,
+                    "HTML report cannot be generated, file from "
+                    "'--report-path' does not exist. Please, make sure the "
+                    "path is correct or use '--measurements' to generate new "
+                    "report."
+                )
 
         if not args.measurements:
-            raise argparse.ArgumentError(None, "'--measurements' have to be defined to generate new report. If only HTML version from existing report has to be rendered, please use '--to-html' flag")  # noqa: E501
+            raise argparse.ArgumentError(
+                None,
+                "'--measurements' have to be defined to generate new report. "
+                "If only HTML version from existing report has to be "
+                "rendered, please use '--to-html' flag"
+            )
 
         root_dir = args.root_dir
         if root_dir is None:
@@ -1997,7 +2014,10 @@ class RenderReport(CommandTemplate):
 
         if args.model_names is not None and \
                 len(args.measurements) != len(args.model_names):
-            log.warning("Number of model names differ from number of measurements! Ignoring --model-names argument")  # noqa: E501
+            KLogger.warning(
+                'Number of model names differ from number of measurements! '
+                'Ignoring --model-names argument'
+            )
             args.model_names = None
 
         image_formats = {'png'}
@@ -2029,7 +2049,12 @@ class RenderReport(CommandTemplate):
         if not report_types:
             report_types = deduce_report_types(measurementsdata)
         if report_types is None:
-            raise argparse.ArgumentError(None, "Report types cannot be deduced. Please specify '--report-types' or make sure the path is correct measurements were chosen.")  # noqa: E501
+            raise argparse.ArgumentError(
+                None,
+                "Report types cannot be deduced. Please specify "
+                "'--report-types' or make sure the path is correct "
+                "measurements were chosen."
+            )
 
         report_name = args.report_name
         if report_name is None:

@@ -22,7 +22,7 @@ from kenning.core.measurements import (MeasurementsCollector,
                                        timemeasurements)
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -82,7 +82,6 @@ class Runtime(ArgumentsHandler, ABC):
             Disable collection and processing of performance metrics.
         """
         self.statsmeasurements = None
-        self.log = get_logger()
         self.disable_performance_measurements = (
             disable_performance_measurements
         )
@@ -264,7 +263,7 @@ class Runtime(ArgumentsHandler, ABC):
             reordered_input_spec = self.input_spec
 
         if not input_data:
-            self.log.error('Received empty data payload')
+            KLogger.error('Received empty data payload')
             raise ValueError('Received empty data payload')
 
         # reading input
@@ -277,7 +276,7 @@ class Runtime(ArgumentsHandler, ABC):
             expected_size = np.abs(np.prod(shape) * np.dtype(dtype).itemsize)
 
             if len(input_data) % (expected_size / shape[0]) != 0:
-                self.log.error(
+                KLogger.error(
                     'Received input data that is not a multiple of the sample '
                     'size'
                 )
@@ -305,8 +304,8 @@ class Runtime(ArgumentsHandler, ABC):
             input_data = input_data[expected_size:]
 
         if input_data:
-            self.log.error("Received more data than model expected.")
-            raise ValueError("Received more data than model expected.")
+            KLogger.error('Received more data than model expected')
+            raise ValueError('Received more data than model expected')
 
         # retrieving original order
         reordered_inputs = [None] * len(inputs)
@@ -426,22 +425,22 @@ class Runtime(ArgumentsHandler, ABC):
         if input_data is None:
             path = self.get_io_spec_path(self.model_path)
             if not path.exists():
-                self.log.info("No Input/Output specification found")
+                KLogger.info('No Input/Output specification found')
                 return False
 
             with open(path, 'rb') as f:
                 try:
                     io_spec = json.load(f)
                 except json.JSONDecodeError as e:
-                    self.log.warning(
-                        f"Error while parsing IO specification: {e}"
+                    KLogger.warning(
+                        f'Error while parsing IO specification: {e}'
                     )
                     return False
         else:
             io_spec = json.loads(input_data)
 
         self.read_io_specification(io_spec)
-        self.log.info('Input/Output specification loaded')
+        KLogger.info('Input/Output specification loaded')
         return True
 
     def get_io_spec_path(self, model_path: PathOrURI) -> Path:
@@ -521,7 +520,7 @@ class Runtime(ArgumentsHandler, ABC):
         ModelNotLoadedError :
             Raised if model is not loaded.
         """
-        self.log.debug('Uploading output')
+        KLogger.debug('Uploading output')
         results = self.extract_output()
         output_bytes = bytes()
         for result in results:
@@ -545,7 +544,7 @@ class Runtime(ArgumentsHandler, ABC):
         bytes :
             Statistics to be sent to the client.
         """
-        self.log.debug('Uploading stats')
+        KLogger.debug('Uploading stats')
         stats = json.dumps(MeasurementsCollector.measurements.data)
         return stats.encode('utf-8')
 

@@ -33,7 +33,7 @@ from kenning.tests.protocols.test_core_protocol import (
     TestCoreProtocol,
 )
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 MODEL_WRAPPER_SUBCLASSES = get_all_subclasses(
@@ -74,15 +74,14 @@ def mock_serial() -> Tuple[Path, Path]:
             os.set_blocking(self.fifo_in.fileno(), False)
             os.set_blocking(self.fifo_out.fileno(), False)
             self.is_open = True
-            self.log = get_logger()
 
         def read(self, size: int = -1):
             data = self.fifo_in.read(size)
-            self.log.debug(f'SerialMock read {data}')
+            KLogger.debug(f'SerialMock read {data}')
             return data
 
         def write(self, data: bytes):
-            self.log.debug(f'SerialMock write {bytes}')
+            KLogger.debug(f'SerialMock write {bytes}')
             return self.fifo_out.write(data)
 
         def fileno(self):

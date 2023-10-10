@@ -232,6 +232,43 @@ class PipelineRunner(object):
                 'compiled_model_size': model_path.stat().st_size
             }
 
+    def execute_benchmarks(self, model_path: PathOrURI) -> bool:
+        """
+        Executes appropriate inference method for benchmarking.
+
+        Parameters
+        ----------
+        model_path : PathOrURI
+            Path to the compiled model.
+
+        Returns
+        -------
+        bool :
+            True if the benchmarks were performed successfully,
+            False otherwise.
+        """
+        if not self.dataset or not (self.runtime or self.model_wrapper):
+            logger.get_logger().error(
+                    'The benchmarks cannot be performed without a dataset ' +
+                    'and a runtime or model wrapper'
+                    )
+            return False
+        elif self.runtime and self.protocol:
+            if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
+                return self.runtime.run_client(
+                        dataset=self.dataset,
+                        modelwrapper=self.model_wrapper,
+                        protocol=self.protocol,
+                        compiled_model_path=model_path)
+            else:
+                return self._run_client(model_path)
+        elif self.runtime:
+            return self._run_locally(model_path)
+        else:
+            self.model_wrapper.model_path = model_path
+            self.model_wrapper.test_inference()
+            return True
+
     def run(
         self,
         output: Optional[Path] = None,
@@ -275,15 +312,12 @@ class PipelineRunner(object):
             Raised if required blocks are not provided.
         ValueError :
             Raised if blocks are connected incorrectly.
-        jsonschema.exceptions.ValidationError :
-            Raised if parameters are incorrect.
         """
         assert run_optimizations or run_benchmarks, (
             'If both optimizations and benchmarks are skipped, pipeline will '
             'not be executed'
         )
         logger.set_verbosity(verbosity)
-        log = logger.get_logger()
 
         self.assert_io_formats(
             self.model_wrapper,
@@ -291,55 +325,28 @@ class PipelineRunner(object):
             self.runtime
         )
 
-        if run_benchmarks and not output:
-            log.warning(
-                'Running benchmarks without defined output -- measurements '
-                'will not be saved'
-            )
-
-        model_path = None
-        if self.optimizers:
-            model_path = self.optimizers[-1].compiled_model_path
-        elif self.model_wrapper:
-            model_path = self.model_wrapper.get_path()
-
         ret = True
         if self.protocol:
             check_request(self.protocol.initialize_client(), 'prepare client')
-
-        compiled_model_path = self.handle_optimizations(
+        model_path = self.handle_optimizations(
             convert_to_onnx,
             run_optimizations
         )
-        if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
-            self.runtime.run_client(
-                dataset=self.dataset,
-                modelwrapper=self.model_wrapper,
-                protocol=self.protocol,
-                compiled_model_path=compiled_model_path
+        if output:
+            self.add_scenario_configuration_to_measurements(
+                    command, model_path
             )
-        elif run_benchmarks and self.runtime:
-            if not self.dataset:
-                log.error(
-                    'The benchmarks cannot be performed without a dataset'
+        if run_benchmarks:
+            if not output:
+                logger.get_logger().warning(
+                    'Running benchmarks without defined output -- '
+                    'measurements will not be saved'
                 )
-                ret = False
-            elif self.protocol:
-                ret = self._run_client(compiled_model_path)
-            else:
-                ret = self._run_locally(compiled_model_path)
-        elif run_benchmarks:
-            assert self.model_wrapper, (
-                'Model wrapper is required to run benchmarks'
-            )
-            self.model_wrapper.model_path = model_path
-            self.model_wrapper.test_inference()
-            ret = True
+            ret = self.execute_benchmarks(model_path)
 
         if output:
-            self.add_scenario_configuration_to_measurements(command,
-                                                            model_path)
             MeasurementsCollector.save_measurements(output)
+
         if ret:
             return 0
         return 1
@@ -402,20 +409,18 @@ class PipelineRunner(object):
         RuntimeError :
             When any of the server request fails.
         """
-        if not self.optimizers:
-            return None
-
-        assert self.model_wrapper, (
-            'Model wrapper is required to run optimizations'
-        )
-        model_path = self.model_wrapper.get_path()
         if not run_optimization:
             if self.optimizers:
                 return self.optimizers[-1].compiled_model_path
-            else:
+            elif self.model_wrapper:
+                model_path = self.model_wrapper.get_path()
                 self.model_wrapper.save_io_specification(model_path)
                 return model_path
+            else:
+                return None
 
+        assert self.model_wrapper, 'Model wrapper is required for optimizations'    # noqa: E501
+        model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
             logger.get_logger().warning(
@@ -520,7 +525,7 @@ class PipelineRunner(object):
 
             model_path = prev_block.compiled_model_path
 
-        if len(self.optimizers) > 0:
+        if self.optimizers:
             self.optimizers[-1].save_io_specification(model_path)
 
         logger.get_logger().info(f'Compiled model path: {model_path}')

@@ -20,7 +20,7 @@ from zipfile import ZipFile
 
 import requests
 
-from kenning.utils.logger import download_url, get_logger
+from kenning.utils.logger import download_url, KLogger, LoggerProgressBar
 from kenning.utils.singleton import Singleton
 
 
@@ -50,8 +50,15 @@ def extract_zip(target_dir: Path, src_path: Path):
     src_path : Path
         Path to the ZIP file.
     """
-    with ZipFile(src_path, 'r') as zip:
-        for f in tqdm(iterable=zip.namelist(), total=len(zip.namelist())):
+    with (
+        LoggerProgressBar() as logger_progress_bar,
+        ZipFile(src_path, 'r') as zip
+    ):
+        for f in tqdm(
+            iterable=zip.namelist(),
+            total=len(zip.namelist()),
+            file=logger_progress_bar
+        ):
             zip.extract(member=f, path=target_dir)
 
 
@@ -143,7 +150,6 @@ class ResourceManager(metaclass=Singleton):
         self.params_any_index_pattern = re.compile(
             r'(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})'
         )
-        self.log = get_logger()
 
     def get_resource(
         self, uri: str, output_path: Optional[Path] = None
@@ -214,7 +220,7 @@ class ResourceManager(metaclass=Singleton):
                 if local_hash_valid is not True:
                     self._save_file_checksum(output_path)
 
-                self.log.info(f'Using cached: {output_path}')
+                KLogger.info(f'Using cached: {output_path}')
                 return output_path
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -509,14 +515,14 @@ class ResourceManager(metaclass=Singleton):
 
         response = requests.get(checksum_url, allow_redirects=True)
         if 200 != response.status_code:
-            self.log.warning(f'Cannot verify {file_path} checksum')
+            KLogger.warning(f'Cannot verify {file_path} checksum')
             return None
 
         remote_hash = response.content.decode().strip().lower()
-        self.log.debug(f'{url} {remote_hash=}')
+        KLogger.debug(f'{url} {remote_hash=}')
 
         file_hash = self._compute_file_checksum(file_path)
-        self.log.debug(f'{file_path} {file_hash=}')
+        KLogger.debug(f'{file_path} {file_hash=}')
 
         return file_hash == remote_hash
 
@@ -544,10 +550,10 @@ class ResourceManager(metaclass=Singleton):
 
         with open(hash_file_path, 'r') as checksum_file:
             local_hash = checksum_file.read().strip().lower()
-        self.log.debug(f'{file_path} {local_hash=}')
+        KLogger.debug(f'{file_path} {local_hash=}')
 
         file_hash = self._compute_file_checksum(file_path)
-        self.log.debug(f'{file_path} {file_hash=}')
+        KLogger.debug(f'{file_path} {file_hash=}')
 
         return file_hash == local_hash
 
@@ -588,9 +594,9 @@ class ResourceManager(metaclass=Singleton):
             ):
                 self._free_cache(int(response.headers['Content-Length']))
             else:
-                self.log.warning('Cannot read file size before downloading')
+                KLogger.warning('Cannot read file size before downloading')
 
-        self.log.debug(f'Downloading {url} to {output_path}')
+        KLogger.debug(f'Downloading {url} to {output_path}')
         download_url(url, output_path)
 
         if self.cache_dir in output_path.parents:

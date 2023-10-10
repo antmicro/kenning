@@ -13,6 +13,7 @@ from kenning.core.runtime import (
     ModelNotPreparedError,
     Runtime,
 )
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -70,7 +71,7 @@ class PyTorchRuntime(Runtime):
         )
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
-        self.log.info("Loading model")
+        KLogger.info('Loading model')
         import torch
         from torch.jit.frontend import UnsupportedNodeError
         # Make sure GPU doesn't store redundant data
@@ -100,10 +101,9 @@ class PyTorchRuntime(Runtime):
 
         if not isinstance(self.model,
                           (torch.nn.Module, torch.jit.ScriptModule)):
-            self.log.error(
-                f"Loaded model is type {type(self.model).__name__}"
-                ", only torch.nn.Module and torch.jit.ScriptModule"
-                " supported"
+            KLogger.error(
+                f'Loaded model is type {type(self.model).__name__}, only '
+                'torch.nn.Module and torch.jit.ScriptModule supported'
             )
             return False
         if isinstance(self.model, torch.nn.Module):
@@ -113,24 +113,30 @@ class PyTorchRuntime(Runtime):
                     self.model = torch.jit.script(self.model)
                     self.model = torch.jit.freeze(self.model)
                 except (UnsupportedNodeError, RuntimeError):
-                    self.log.error("Model contains unsupported nodes,"
-                                   " conversion to TorchScript aborted")
+                    KLogger.error(
+                        'Model contains unsupported nodes, conversion to '
+                        'TorchScript aborted',
+                        stack_info=True
+                    )
                 except Exception:
-                    self.log.error("Model cannot be converted to TorchScript")
+                    KLogger.error(
+                        'Model cannot be converted to TorchScript',
+                        stack_info=True
+                    )
         elif (isinstance(self.model, torch.jit.ScriptModule)
                 and not self.skip_jit):
             self.model = torch.jit.freeze(self.model)
-        self.log.info("Model loading ended successfully")
+        KLogger.info('Model loading ended successfully')
         return True
 
     def prepare_input(self, input_data: bytes):
-        self.log.debug(f"Preparing inputs of size {len(input_data)}")
+        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
         import torch
 
         try:
             self.input = self.preprocess_input(input_data)
         except ValueError as ex:
-            self.log.error(f"Failed to load input: {ex}")
+            KLogger.error(f'Failed to load input: {ex}', stack_info=True)
             return False
 
         for id, input in enumerate(self.input):

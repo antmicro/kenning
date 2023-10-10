@@ -24,7 +24,7 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 
 OPTIMIZERS = 'optimizers'
 RUNNERS = 'runners'
@@ -92,7 +92,6 @@ def get_all_subclasses(
         When not importing classes: list of tuples with name and module path
         of the class
     """
-    logger = get_logger()
 
     root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]
@@ -192,10 +191,10 @@ def get_all_subclasses(
         except (ModuleNotFoundError, ImportError, Exception) as e:
             if show_warnings:
                 msg = f'Could not add {subclass_name}. Reason:'
-                logger.warn('-' * len(msg))
-                logger.warn(msg)
-                logger.warn(e)
-                logger.warn('-' * len(msg))
+                KLogger.warn('-' * len(msg))
+                KLogger.warn(msg)
+                KLogger.warn(e)
+                KLogger.warn('-' * len(msg))
             if raise_exception:
                 raise
 

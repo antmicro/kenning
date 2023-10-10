@@ -21,7 +21,6 @@ from kenning.cli.command_template import (
     GROUP_SCHEMA,
     LIST,
 )
-from kenning.utils import logger
 from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
     DATASETS,
@@ -37,6 +36,7 @@ from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
 )
+from kenning.utils.logger import KLogger
 
 
 def list_classes(
@@ -221,7 +221,7 @@ class ListClassesRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         for base_class in args.base_classes:
             if base_class not in ListClassesRunner.base_class_arguments:

@@ -44,7 +44,6 @@ from typing import List, Optional, Tuple
 from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
-import kenning.utils.logger as logger
 from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
@@ -67,8 +66,10 @@ from kenning.cli.completers import (
 from kenning.dataconverters.modelwrapper_dataconverter import \
     ModelWrapperDataConverter
 from kenning.utils.class_loader import get_command, load_class
+from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
+
 
 JSON_CONFIG = "Inference configuration with JSON"
 FLAG_CONFIG = "Inference configuration with flags"
@@ -186,7 +187,7 @@ class InferenceTester(CommandTemplate):
     ):
         command = get_command()
 
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         flag_config_names = ('modelwrapper_cls',
                              'dataset_cls', 'compiler_cls', 'runtime_cls',
@@ -346,10 +347,10 @@ class InferenceTester(CommandTemplate):
                 ),
             )
         except ValidationError as ex:
-            logger.get_logger().error(f'Validation error: {ex}')
+            KLogger.error(f'Validation error: {ex}', stack_info=True)
             raise
         except Exception as ex:
-            logger.get_logger().error(ex)
+            KLogger.error(ex, stack_info=True)
             raise
 
         if ret is None:

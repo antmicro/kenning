@@ -28,7 +28,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import \
 try:
     from kenning.runtimes.renode import RenodeRuntime
 except ImportError:
-    RenodeRuntime = None
+    RenodeRuntime = type(None)
 
 from kenning.utils.args_manager import serialize_inference
 from kenning.utils.class_loader import any_from_json
@@ -247,27 +247,27 @@ class PipelineRunner(object):
             True if the benchmarks were performed successfully,
             False otherwise.
         """
-        if not self.dataset or not (self.runtime or self.model_wrapper):
-            logger.get_logger().error(
-                    'The benchmarks cannot be performed without a dataset ' +
-                    'and a runtime or model wrapper'
+        if self.runtime:
+            if not self.dataset:
+                logger.get_logger().error(
+                        'The benchmarks cannot be performed without a dataset '
+                        'and a runtime or model wrapper'
+                        )
+                return False
+            elif self.protocol:
+                if isinstance(self.runtime, RenodeRuntime):
+                    return self.runtime.run_client(
+                            dataset=self.dataset,
+                            modelwrapper=self.model_wrapper,
+                            protocol=self.protocol,
+                            compiled_model_path=model_path
                     )
-            return False
-        elif self.runtime and self.protocol:
-            if RenodeRuntime is not None and isinstance(self.runtime, RenodeRuntime):  # noqa: E501
-                return self.runtime.run_client(
-                        dataset=self.dataset,
-                        modelwrapper=self.model_wrapper,
-                        protocol=self.protocol,
-                        compiled_model_path=model_path)
-            else:
                 return self._run_client(model_path)
-        elif self.runtime:
-            return self._run_locally(model_path)
-        else:
-            self.model_wrapper.model_path = model_path
-            self.model_wrapper.test_inference()
-            return True
+            else:
+                return self._run_locally(model_path)
+        self.model_wrapper.model_path = model_path
+        self.model_wrapper.test_inference()
+        return True
 
     def run(
         self,

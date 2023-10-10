@@ -24,7 +24,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from jsonschema.exceptions import ValidationError
 
-import kenning.utils.logger as logger
 from kenning.cli.command_template import (
     FINE_TUNE,
     GROUP_SCHEMA,
@@ -37,10 +36,9 @@ from kenning.core.metrics import (
     compute_detection_metrics,
     compute_performance_metrics,
 )
+from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
-
-log = logger.get_logger()
 
 
 def get_block_product(block: Dict[str, Any]) -> List:
@@ -373,7 +371,7 @@ class OptimizationRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         with open(args.json_cfg, 'r') as f:
             json_cfg = json.load(f)
@@ -395,16 +393,16 @@ class OptimizationRunner(CommandTemplate):
         pipelines_num = len(pipelines)
         pipelines_scores = []
 
-        log.info(f'Finding {policy} for {metric}')
+        KLogger.info(f'Finding {policy} for {metric}')
         for pipeline_idx, pipeline in enumerate(pipelines):
             module_error = None
             pipeline = replace_paths(pipeline, pipeline_idx)
             MeasurementsCollector.clear()
             try:
-                log.info(
+                KLogger.info(
                     f'Running pipeline {pipeline_idx + 1} / {pipelines_num}'
                 )
-                log.info(f'Configuration {pformat(pipeline)}')
+                KLogger.info(f'Configuration {pformat(pipeline)}')
                 measurements_path = args.output.with_stem(
                     f'{args.output.stem}_{pipeline_idx}'
                 )
@@ -433,17 +431,17 @@ class OptimizationRunner(CommandTemplate):
                         {'pipeline': pipeline, 'metrics': computed_metrics}
                     )
                 except KeyError:
-                    log.error(f'{metric} not found in the metrics')
+                    KLogger.error(f'{metric} not found in the metrics')
                     raise
             except ValidationError as ex:
-                log.error('Incorrect parameters passed')
-                log.error(ex)
+                KLogger.error('Incorrect parameters passed')
+                KLogger.error(ex, stack_info=True)
                 raise
             except ModuleNotFoundError as missing_module_error:
                 module_error = missing_module_error
             except Exception as ex:
-                log.warning('Pipeline was invalid')
-                log.warning(ex)
+                KLogger.warning('Pipeline was invalid')
+                KLogger.warning(ex)
 
             if module_error:
                 raise module_error
@@ -456,19 +454,21 @@ class OptimizationRunner(CommandTemplate):
             )
 
             best_score = best_pipeline['metrics'][metric]
-            log.info(f'Best score for {metric} is {best_score}')
+            KLogger.info(f'Best score for {metric} is {best_score}')
             with open(args.output, 'w') as f:
                 json.dump(best_pipeline, f, indent=4)
-            log.info(f'Pipeline stored in {args.output}')
+            KLogger.info(f'Pipeline stored in {args.output}')
 
             path_all_results = args.output.with_stem(
                 f'{args.output.stem}_all_results'
             )
             with open(path_all_results, 'w') as f:
                 json.dump(pipelines_scores, f, indent=4)
-            log.info(f'All results stored in {path_all_results}')
+            KLogger.info(f'All results stored in {path_all_results}')
         else:
-            log.info('No pipeline was found for the optimization problem')
+            KLogger.info(
+                'No pipeline was found for the optimization problem'
+            )
 
 
 if __name__ == '__main__':

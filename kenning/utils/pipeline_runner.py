@@ -12,7 +12,6 @@ from typing import Dict, List, Optional, Union
 
 from tqdm import tqdm
 
-import kenning.utils.logger as logger
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import (Measurements, MeasurementsCollector,
@@ -31,6 +30,7 @@ except ImportError:
     RenodeRuntime = type(None)
 
 from kenning.utils.class_loader import any_from_json
+from kenning.utils.logger import KLogger, LoggerProgressBar, TqdmCallback
 from kenning.utils.resource_manager import PathOrURI
 
 UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
@@ -303,10 +303,10 @@ class PipelineRunner(object):
         """
         if self.runtime:
             if not self.dataset:
-                logger.get_logger().error(
-                        'The benchmarks cannot be performed without a dataset '
-                        'and a runtime or model wrapper'
-                        )
+                KLogger.error(
+                    'The benchmarks cannot be performed without a dataset and '
+                    'a runtime or model wrapper'
+                )
                 return False
             elif self.protocol:
                 if isinstance(self.runtime, RenodeRuntime):
@@ -371,7 +371,7 @@ class PipelineRunner(object):
             'If both optimizations and benchmarks are skipped, pipeline will '
             'not be executed'
         )
-        logger.set_verbosity(verbosity)
+        KLogger.set_verbosity(verbosity)
 
         self.assert_io_formats(
             self.model_wrapper,
@@ -392,7 +392,7 @@ class PipelineRunner(object):
             )
         if run_benchmarks:
             if not output:
-                logger.get_logger().warning(
+                KLogger.warning(
                     'Running benchmarks without defined output -- '
                     'measurements will not be saved'
                 )
@@ -422,7 +422,7 @@ class PipelineRunner(object):
             True if succeeded.
         """
         if not compiled_model_path:
-            logger.get_logger().warning(
+            KLogger.warning(
                 'No compiled model provided, skipping uploading IO spec'
             )
         else:
@@ -430,7 +430,7 @@ class PipelineRunner(object):
             if spec_path.exists():
                 self.protocol.upload_io_specification(spec_path)
             else:
-                logger.get_logger().info('No Input/Output specification found')
+                KLogger.info('No Input/Output specification found')
         return self.protocol.upload_model(compiled_model_path)
 
     def handle_optimizations(
@@ -477,7 +477,7 @@ class PipelineRunner(object):
         model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
-            logger.get_logger().warning(
+            KLogger.warning(
                 'Force conversion of the input model to the ONNX format'
             )
             model_path = convert_to_onnx
@@ -532,7 +532,7 @@ class PipelineRunner(object):
                     optimizer.__class__.__name__
                     for optimizer in server_optimizers
                 )
-                logger.get_logger().info(
+                KLogger.info(
                     f'Processing blocks: {optimizers_str} on server'
                 )
 
@@ -556,12 +556,12 @@ class PipelineRunner(object):
 
             else:
                 if 'target' == next_block.location:
-                    logger.get_logger().warning(
+                    KLogger.warning(
                         'Ignoring target location parameter for '
                         f'{type(next_block).__name__} as the protocol is not '
                         'provided'
                     )
-                logger.get_logger().info(
+                KLogger.info(
                     f'Processing block: {type(next_block).__name__} on client'
                 )
 
@@ -582,7 +582,7 @@ class PipelineRunner(object):
         if self.optimizers:
             self.optimizers[-1].save_io_specification(model_path)
 
-        logger.get_logger().info(f'Compiled model path: {model_path}')
+        KLogger.info(f'Compiled model path: {model_path}')
         return model_path
 
     def _run_client(self, compiled_model_path: Optional[Path]) -> bool:
@@ -621,23 +621,29 @@ class PipelineRunner(object):
                 'upload essentials',
             )
             measurements = Measurements()
-            for X, y in tqdm(self.dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
-                check_request(self.protocol.upload_input(prepX), 'send input')
-                check_request(
-                    self.protocol.request_processing(self.runtime.get_time),
-                    'inference',
-                )
-                _, preds = check_request(
-                    self.protocol.download_output(), 'receive output'
-                )
-                logger.get_logger().debug('Received output')
-                posty = tagmeasurements("postprocessing")(self.dataconverter.to_previous_block)(preds)  # noqa: E501
-                measurements += self.dataset.evaluate(posty, y)
+            with LoggerProgressBar() as logger_progress_bar:
+                for X, y in tqdm(
+                    self.dataset.iter_test(), file=logger_progress_bar
+                ):
+                    prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
+                    check_request(
+                        self.protocol.upload_input(prepX),
+                        'send input'
+                    )
+                    check_request(
+                        self.protocol.request_processing(self.runtime.get_time),
+                        'inference',
+                    )
+                    _, preds = check_request(
+                        self.protocol.download_output(), 'receive output'
+                    )
+                    KLogger.debug('Received output')
+                    posty = tagmeasurements("postprocessing")(self.dataconverter.to_previous_block)(preds)  # noqa: E501
+                    measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
-            logger.get_logger().fatal(ex)
+            KLogger.fatal(ex)
             return False
         else:
             MeasurementsCollector.measurements += measurements
@@ -666,19 +672,21 @@ class PipelineRunner(object):
         try:
             self.runtime.inference_session_start()
             assert self.runtime.prepare_local(), "Cannot prepare local environment"  # noqa: E501
-            for X, y in logger.TqdmCallback(
-                'runtime', self.dataset.iter_test()
-            ):
-                prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
-                succeed = self.runtime.prepare_input(prepX)
-                if not succeed:
-                    return False
-                self.runtime._run()
-                preds = self.runtime.extract_output()
-                posty = tagmeasurements("postprocessing")(self.model_wrapper._postprocess_outputs)(preds)   # noqa: E501
-                measurements += self.dataset.evaluate(posty, y)
+            with LoggerProgressBar() as logger_progress_bar:
+                for X, y in TqdmCallback(
+                    'runtime', self.dataset.iter_test(),
+                    file=logger_progress_bar
+                ):
+                    prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
+                    succeed = self.runtime.prepare_input(prepX)
+                    if not succeed:
+                        return False
+                    self.runtime._run()
+                    preds = self.runtime.extract_output()
+                    posty = tagmeasurements("postprocessing")(self.model_wrapper._postprocess_outputs)(preds)   # noqa: E501
+                    measurements += self.dataset.evaluate(posty, y)
         except KeyboardInterrupt:
-            logger.get_logger().info("Stopping benchmark...")
+            KLogger.info('Stopping benchmark...')
             return False
         finally:
             self.runtime.inference_session_end()
@@ -724,8 +732,7 @@ class PipelineRunner(object):
                 continue
 
             if next_block == runtime:
-                log = logger.get_logger()
-                log.warning(
+                KLogger.warning(
                     f'Runtime {next_block} has no matching format with the '
                     f'previous block: {previous_block}\nModel may not run '
                     'correctly'

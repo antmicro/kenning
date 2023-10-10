@@ -21,7 +21,7 @@ import sys
 import argparse
 
 from kenning.utils.class_loader import load_class
-import kenning.utils.logger as logger
+from kenning.utils.logger import KLogger
 
 from typing import List
 from kenning.core.outputcollector import OutputCollector
@@ -70,14 +70,13 @@ def main(argv):
     parser.add_argument(
         '--verbosity',
         help='Verbosity level',
-        choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+        choices=['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
         default='INFO'
     )
 
     args, _ = parser.parse_known_args(argv[1:])
 
-    log = logger.set_verbosity(args.verbosity)
-    log = logger.get_logger()
+    KLogger.set_verbosity(args.verbosity)
 
     modelwrappercls = load_class(args.modelwrappercls)
     runtimecls = load_class(args.runtimecls)
@@ -104,34 +103,37 @@ def main(argv):
     ]
 
     runtime.prepare_model(None)
-    log.info("Starting inference session")
+    KLogger.info('Starting inference session')
     try:
         # check against the output collectors
         # if an exit condition was reached in any of them
         while not check_closing_conditions(outputcollectors):
-            log.debug("Fetching data")
+            KLogger.debug('Fetching data')
             unconverted_inp = dataprovider.fetch_input()
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)
 
-            log.debug("Converting to bytes and setting up model input")
+            KLogger.debug('Converting to bytes and setting up model input')
             inp = model.convert_input_to_bytes(
                 model.preprocess_input(preprocessed_input)
             )
             runtime.prepare_input(inp)
 
-            log.debug("Running inference")
+            KLogger.debug('Running inference')
             runtime.run()
 
-            log.debug("Converting output from bytes")
+            KLogger.debug('Converting output from bytes')
             res = model.postprocess_outputs(
                 model.convert_output_from_bytes(runtime.upload_output(inp))
             )
 
-            log.debug("Sending data to collectors")
+            KLogger.debug('Sending data to collectors')
             for i in outputcollectors:
                 i.process_output(unconverted_inp, res)
     except KeyboardInterrupt:
-        log.info("Interrupt signal caught, shutting down (press CTRL-C again to force quit)")  # noqa: E501
+        KLogger.info(
+            'Interrupt signal caught, shutting down (press CTRL-C again to '
+            'force quit)'
+        )
         dataprovider.detach_from_source()
         for o in outputcollectors:
             o.detach_from_output()

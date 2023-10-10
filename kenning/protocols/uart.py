@@ -18,6 +18,7 @@ import serial
 from kenning.core.measurements import Measurements
 from kenning.core.protocol import Message, MessageType, ServerStatus
 from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.utils.logger import KLogger
 
 # model constraints
 MAX_MODEL_INPUT_NUM = 2
@@ -248,7 +249,7 @@ class UARTProtocol(BytesBasedProtocol):
             self.connection.close()
 
     def upload_io_specification(self, path: Path) -> bool:
-        self.log.debug('Uploading io specification')
+        KLogger.debug('Uploading io specification')
         with open(path, 'rb') as io_spec_file:
             io_spec = json.load(io_spec_file)
 
@@ -260,7 +261,7 @@ class UARTProtocol(BytesBasedProtocol):
         return self.receive_confirmation()[0]
 
     def download_statistics(self) -> 'Measurements':
-        self.log.debug('Downloading statistics')
+        KLogger.debug('Downloading statistics')
         self.send_message(Message(MessageType.STATS))
         status, data = self.receive_confirmation()
         measurements = Measurements()

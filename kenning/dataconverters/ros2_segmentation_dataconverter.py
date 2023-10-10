@@ -25,7 +25,7 @@ class ROS2SegmentationDataConverter(DataConverter):
         """
         super().__init__()
 
-    def to_message(self, data: List[np.ndarray]) -> SegmentationAction.Goal:
+    def to_next_block(self, data: List[np.ndarray]) -> SegmentationAction.Goal:
         """
         Converts input frames to segmentation action goal.
         Assumes that input data has BGR8 encoding.
@@ -66,8 +66,8 @@ class ROS2SegmentationDataConverter(DataConverter):
             goal._input.append(img)
         return goal
 
-    def from_message(self, data: SegmentationAction.Result
-                     ) -> List[List[SegmObject]]:
+    def to_previous_block(self, data: SegmentationAction.Result
+                          ) -> List[List[SegmObject]]:
         """
         Converts segmentation action result to SegmObject list.
 

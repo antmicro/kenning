@@ -32,7 +32,7 @@ class ModelWrapperDataConverter(DataConverter):
         self.model_wrapper = model_wrapper
         super().__init__()
 
-    def to_message(self, data: Any) -> bytes:
+    def to_next_block(self, data: Any) -> bytes:
         """
         Converts the data to bytes using the ModelWrapper.
 
@@ -49,7 +49,7 @@ class ModelWrapperDataConverter(DataConverter):
         prepX = self.model_wrapper._preprocess_input(data)
         return self.model_wrapper.convert_input_to_bytes(prepX)
 
-    def from_message(self, data: bytes) -> Any:
+    def to_previous_block(self, data: bytes) -> Any:
         """
         Converts the data from bytes using the ModelWrapper.
 

@@ -36,7 +36,7 @@ class DataConverter(ArgumentsHandler, ABC):
         super().__init__()
 
     @abstractmethod
-    def to_message(self, data: Any) -> Any:
+    def to_next_block(self, data: Any) -> Any:
         """
         Converts data to the format used by the surrounding block.
 
@@ -53,7 +53,7 @@ class DataConverter(ArgumentsHandler, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def from_message(self, data: Any) -> Any:
+    def to_previous_block(self, data: Any) -> Any:
         """
         Converts data from the format used by the surrounding block
         to one previous block expects.

@@ -561,7 +561,7 @@ class PipelineRunner(object):
             measurements = Measurements()
             for X, y in tqdm(self.dataset.iter_test()):
                 prepX = tagmeasurements("preprocessing")(
-                    self.dataconverter.to_message)(X)
+                    self.dataconverter.to_next_block)(X)
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(
                     self.protocol.request_processing(self.runtime.get_time),
@@ -572,7 +572,7 @@ class PipelineRunner(object):
                 )
                 logger.get_logger().debug('Received output')
                 posty = tagmeasurements("postprocessing")(
-                    self.dataconverter.from_message)(preds)
+                    self.dataconverter.to_previous_block)(preds)
                 measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -610,7 +610,7 @@ class PipelineRunner(object):
                 'runtime', self.dataset.iter_test()
             ):
                 prepX = tagmeasurements("preprocessing")(
-                        self.dataconverter.to_message
+                        self.dataconverter.to_next_block
                 )(X)
                 succeed = self.runtime.prepare_input(prepX)
                 if not succeed:

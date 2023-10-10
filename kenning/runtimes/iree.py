@@ -11,6 +11,7 @@ from iree import runtime as ireert
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -63,19 +64,19 @@ class IREERuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
         if self.model is None:
             raise ModelNotPreparedError
 
         try:
             self.input = self.preprocess_input(input_data)
         except ValueError as ex:
-            self.log.error(f'Failed to load input: {ex}')
+            KLogger.error(f'Failed to load input: {ex}', stack_info=True)
             return False
         return True
 
     def prepare_model(self, input_data):
-        self.log.info("loading model")
+        KLogger.info("loading model")
         if input_data:
             with open(self.model_path, 'wb') as outmodel:
                 outmodel.write(input_data)
@@ -87,7 +88,7 @@ class IREERuntime(Runtime):
             compiled_buffer, driver=self.driver
         )
 
-        self.log.info('Model loading ended successfully')
+        KLogger.info('Model loading ended successfully')
         return True
 
     def run(self):

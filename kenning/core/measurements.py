@@ -21,12 +21,12 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 import numpy as np
 import psutil
 
-from kenning.utils import logger
+from kenning.utils.logger import KLogger
 
-try:
-    from pynvml.smi import nvidia_smi
-except ImportError:
-    nvidia_smi = None
+# try:
+#     from pynvml.smi import nvidia_smi
+# except ImportError:
+nvidia_smi = None
 
 
 class Measurements(object):
@@ -251,13 +251,16 @@ def tagmeasurements(tagname: str):
             starttimestamp = time.perf_counter()
             returnvalue = function(*args)
             endtimestamp = time.perf_counter()
-            logger.get_logger().debug(
-                f'{function.__name__} start: {starttimestamp * 1000} ms end: {endtimestamp * 1000} ms'  # noqa: E501
+            KLogger.debug(
+                f'{function.__name__} start: {starttimestamp * 1000} ms end: '
+                f'{endtimestamp * 1000} ms'
             )
             MeasurementsCollector.measurements += {
-                'tags': [
-                    {'name': tagname, 'start': starttimestamp, 'end': endtimestamp}  # noqa: E501
-                ]
+                'tags': [{
+                    'name': tagname,
+                    'start': starttimestamp,
+                    'end': endtimestamp
+                }]
             }
             return returnvalue
         return statistics_wrapper
@@ -289,10 +292,8 @@ def timemeasurements(
         def statistics_wrapper(*args, **kwargs):
             start = get_time_func()
             returnvalue = function(*args, **kwargs)
-            duration = get_time_func() - start
-            logger.get_logger().debug(
-                f'{function.__name__} time:  {duration * 1000} ms'
-            )
+            duration = time.perf_counter() - start
+            KLogger.debug(f'{function.__name__} time:  {duration * 1000} ms')
             MeasurementsCollector.measurements += {
                 measurementname: [duration],
                 f'{measurementname}_timestamp': [get_time_func()]
@@ -336,9 +337,7 @@ class SystemStatsCollector(Thread):
             try:
                 self.nvidia_smi = nvidia_smi.getInstance()
             except Exception as ex:
-                logger.get_logger().warning(
-                    f'No NVML support due to error {ex}'
-                )
+                KLogger.warning(f'No NVML support due to error {ex}')
                 self.nvidia_smi = None
         else:
             self.nvidia_smi = None

@@ -7,9 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from kenning.utils.class_loader import load_class
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 
-_LOGGER = get_logger()
 
 SPECIFICATION_VERSION = '20230830.11'
 
@@ -268,10 +267,10 @@ class BaseDataflowHandler:
                 node_cls = load_class(node.cls_name)
             except (ModuleNotFoundError, ImportError, Exception) as err:
                 msg = f'Could not add {node_cls}. Reason:'
-                _LOGGER.warn('-' * len(msg))
-                _LOGGER.warn(msg)
-                _LOGGER.warn(err)
-                _LOGGER.warn('-' * len(msg))
+                KLogger.warn('-' * len(msg))
+                KLogger.warn(msg)
+                KLogger.warn(err)
+                KLogger.warn('-' * len(msg))
                 nodes_to_remove.add(key)
                 continue
             parameterschema = node_cls.form_parameterschema()
@@ -617,7 +616,7 @@ class PipelineManagerGraphCreator(GraphCreator):
                 from_io_spec = self.out_interface_map[from_interface_id]
                 to_io_spec = self.inp_interface_map[to_interface_id]
             except KeyError:
-                _LOGGER.debug(
+                KLogger.debug(
                     f'The connection from {from_interface_id} to '
                     f'{to_interface_id} could not be established.'
                 )

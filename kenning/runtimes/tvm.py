@@ -13,6 +13,7 @@ from tvm.runtime.vm import VirtualMachine, Executable
 from kenning.core.runtime import Runtime
 from kenning.core.runtime import ModelNotPreparedError
 from kenning.core.runtime import InputNotPreparedError
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -87,7 +88,7 @@ class TVMRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        self.log.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
         if self.model is None:
             raise ModelNotPreparedError
 
@@ -106,15 +107,15 @@ class TVMRuntime(Runtime):
                 self.model.set_input(
                     **input
                 )
-            self.log.debug('Inputs are ready')
+            KLogger.debug('Inputs are ready')
             self._input_prepared = True
             return True
         except (TypeError, ValueError, tvm.TVMError) as ex:
-            self.log.error(f'Failed to load input:  {ex}')
+            KLogger.error(f'Failed to load input: {ex}', stack_info = True)
             return False
 
     def prepare_model(self, input_data):
-        self.log.info('Loading model')
+        KLogger.info('Loading model')
         ctx = tvm.runtime.device(self.contextname, self.contextid)
         if self.use_tvm_vm:
             self.module = tvm.runtime.load_module(str(
@@ -136,7 +137,7 @@ class TVMRuntime(Runtime):
             self.module = tvm.runtime.load_module(str(self.model_path))
             self.func = self.module.get_function('default')
             self.model = graph_executor.GraphModule(self.func(ctx))
-        self.log.info('Model loading ended successfully')
+        KLogger.info('Model loading ended successfully')
         return True
 
     def run(self):

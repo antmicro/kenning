@@ -39,7 +39,7 @@ UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
 
 class PipelineRunner(object):
     """
-    Class responsible for running inference pipelines.
+    Class responsible for running model optimization pipelines.
     """
 
     def __init__(
@@ -173,11 +173,12 @@ class PipelineRunner(object):
             model_wrapper=model_wrapper,
         )
 
-    def enhance_measurements(self,
-                             command: List,
-                             model_path: Optional[PathOrURI]):
+    def add_scenario_configuration_to_measurements(
+            self,
+            command: List,
+            model_path: Optional[PathOrURI]):
         """
-        Method that adds additional measurements to the measurements dict.
+        Adds scenario configuration to measurements.
 
         Parameters
         ----------
@@ -230,7 +231,6 @@ class PipelineRunner(object):
             MeasurementsCollector.measurements += {
                 'compiled_model_size': model_path.stat().st_size
             }
-        return
 
     def run(
         self,
@@ -337,9 +337,12 @@ class PipelineRunner(object):
             ret = True
 
         if output:
-            self.enhance_measurements(command, model_path)
+            self.add_scenario_configuration_to_measurements(command,
+                                                            model_path)
             MeasurementsCollector.save_measurements(output)
-        return not ret
+        if ret:
+            return 0
+        return 1
 
     def upload_essentials(self,
                           compiled_model_path: Optional[PathOrURI]) -> bool:
@@ -560,8 +563,7 @@ class PipelineRunner(object):
             )
             measurements = Measurements()
             for X, y in tqdm(self.dataset.iter_test()):
-                prepX = tagmeasurements("preprocessing")(
-                    self.dataconverter.to_next_block)(X)
+                prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
                 check_request(self.protocol.upload_input(prepX), 'send input')
                 check_request(
                     self.protocol.request_processing(self.runtime.get_time),
@@ -571,8 +573,7 @@ class PipelineRunner(object):
                     self.protocol.download_output(), 'receive output'
                 )
                 logger.get_logger().debug('Received output')
-                posty = tagmeasurements("postprocessing")(
-                    self.dataconverter.to_previous_block)(preds)
+                posty = tagmeasurements("postprocessing")(self.dataconverter.to_previous_block)(preds)  # noqa: E501
                 measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -609,17 +610,13 @@ class PipelineRunner(object):
             for X, y in logger.TqdmCallback(
                 'runtime', self.dataset.iter_test()
             ):
-                prepX = tagmeasurements("preprocessing")(
-                        self.dataconverter.to_next_block
-                )(X)
+                prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
                 succeed = self.runtime.prepare_input(prepX)
                 if not succeed:
                     return False
                 self.runtime._run()
                 preds = self.runtime.extract_output()
-                posty = tagmeasurements("postprocessing")(
-                    self.model_wrapper._postprocess_outputs
-                )(preds)
+                posty = tagmeasurements("postprocessing")(self.model_wrapper._postprocess_outputs)(preds)   # noqa: E501
                 measurements += self.dataset.evaluate(posty, y)
         except KeyboardInterrupt:
             logger.get_logger().info("Stopping benchmark...")

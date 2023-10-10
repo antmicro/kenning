@@ -14,6 +14,7 @@ import selectors
 from kenning.core.protocol import Protocol
 from kenning.core.protocol import ServerStatus
 from kenning.core.protocol import Message
+from kenning.utils.logger import KLogger
 
 
 class BytesBasedProtocol(Protocol, ABC):
@@ -43,10 +44,10 @@ class BytesBasedProtocol(Protocol, ABC):
         super().__init__()
 
     def send_message(self, message: Message) -> bool:
-        self.log.debug(f'Sending message {message}')
+        KLogger.debug(f'Sending message {message}')
         ret = self.send_data(message.to_bytes())
         if not ret:
-            self.log.error(f'Error sending message {message}')
+            KLogger.error(f'Error sending message {message}')
         return ret
 
     def receive_message(
@@ -65,7 +66,7 @@ class BytesBasedProtocol(Protocol, ABC):
             return ServerStatus.NOTHING, None
 
         self.input_buffer = self.input_buffer[data_parsed:]
-        self.log.debug(f'Received message {message}')
+        KLogger.debug(f'Received message {message}')
 
         return ServerStatus.DATA_READY, message
 

@@ -12,16 +12,14 @@ import json
 import signal
 import sys
 from pathlib import Path
-import traceback
 from typing import Tuple, Dict, Optional, List
 
 from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, VISUAL_EDITOR)
 from kenning.core.measurements import MeasurementsCollector
-import kenning.utils.logger as logger
 from kenning.utils.excepthook import find_missing_optional_dependency, \
     MissingKenningDependencies
-from kenning.utils.logger import Callback, TqdmCallback
+from kenning.utils.logger import Callback, KLogger, TqdmCallback
 from jsonschema.exceptions import ValidationError
 
 
@@ -136,10 +134,15 @@ class PipelineManagerClient(CommandTemplate):
 
             if message_type == MessageType.SPECIFICATION:
                 if not PipelineManagerClient.specification:
-                    log.info('SpecificationBuilder: Generate nodes specification')  # noqa: E501
-                    PipelineManagerClient.specification = dataflow_handler.get_specification(  # noqa: E501
-                        workspace_dir=args.workspace_dir,
-                        spec_save_path=args.save_specification_path)
+                    KLogger.info(
+                        'SpecificationBuilder: Generate nodes specification'
+                    )
+                    PipelineManagerClient.specification = (
+                        dataflow_handler.get_specification(
+                            workspace_dir=args.workspace_dir,
+                            spec_save_path=args.save_specification_path
+                        )
+                    )
 
                 feedback_msg = json.dumps(PipelineManagerClient.specification)
 
@@ -170,7 +173,7 @@ class PipelineManagerClient(CommandTemplate):
                         # 'run_dataflow', it should be destroyed manually.
                         dataflow_handler.destroy_dataflow(prepared_runner)
                 except Exception as ex:
-                    log.error(traceback.format_exc())
+                    KLogger.error(ex, stack_info=True)
                     return MessageType.ERROR, str(ex).encode()
 
                 if message_type == MessageType.VALIDATE:
@@ -186,7 +189,7 @@ class PipelineManagerClient(CommandTemplate):
                     dataflow = dataflow_handler.create_dataflow(pipeline)
                     feedback_msg = json.dumps(dataflow)
                 except Exception as ex:
-                    log.error(traceback.format_exc())
+                    KLogger.error(ex, stack_info=True)
                     return MessageType.ERROR, str(ex).encode()
 
             return MessageType.OK, feedback_msg.encode(encoding='UTF-8')
@@ -212,7 +215,7 @@ class PipelineManagerClient(CommandTemplate):
         default_sigint_handler = signal.getsignal(signal.SIGINT)
 
         def exit_handler(*args) -> None:
-            log.info('Closing connection')
+            KLogger.info('Closing connection')
             signal.signal(signal.SIGINT, default_sigint_handler)
             raise PipelineManagerShutdownException()
 
@@ -244,8 +247,7 @@ class PipelineManagerClient(CommandTemplate):
             if build_status != 0:
                 raise RuntimeError('Build error')
 
-        logger.set_verbosity(args.verbosity)
-        log = logger.get_logger()
+        KLogger.set_verbosity(args.verbosity)
 
         frontend_files_path = args.workspace_dir / 'frontend/dist'
 
@@ -256,9 +258,13 @@ class PipelineManagerClient(CommandTemplate):
 
         try:
             if args.spec_type == "pipeline":
-                dataflow_handler = PipelineHandler(layout_algorithm=args.layout)  # noqa: E501
+                dataflow_handler = PipelineHandler(
+                    layout_algorithm=args.layout
+                )
             elif args.spec_type == "flow":
-                dataflow_handler = KenningFlowHandler(layout_algorithm=args.layout)  # noqa: E501
+                dataflow_handler = KenningFlowHandler(
+                    layout_algorithm=args.layout
+                )
             else:
                 raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
 
@@ -289,28 +295,32 @@ class PipelineManagerClient(CommandTemplate):
 
                     client.send_message(return_status, return_message)
         except ValidationError as ex:
-            log.error(f'Failed to load JSON file:\n{ex}')
+            KLogger.error(f'Failed to load JSON file:\n{ex}')
             client.send_message(
                 MessageType.ERROR,
                 bytes(f'Failed to load JSON file:\n{ex}', 'utf-8'))
             return 1
         except RuntimeError as ex:
-            log.error(f'Server runtime error:\n{ex}')
+            KLogger.error(f'Server runtime error:\n{ex}')
             client.send_message(
                 MessageType.ERROR,
                 bytes(f'Server runtime error:\n{ex}', 'utf-8'))
             return 1
         except ConnectionRefusedError as ex:
-            log.error(
+            KLogger.error(
                 f'Could not connect to the Pipeline Manager server: {ex}')
             client.send_message(
                 MessageType.ERROR,
-                bytes(f'Could not connect to the Pipeline Manager server: {ex}', 'utf-8'))  # noqa: E501
+                bytes(
+                    f'Could not connect to the Pipeline Manager server: {ex}',
+                    'utf-8'
+                )
+            )
             return ex.errno
         except PipelineManagerShutdownException:
-            log.info("Closing the Visual Editor...")
+            KLogger.info('Closing the Visual Editor...')
         except Exception as ex:
-            log.error(f'Unexpected exception:\n{ex}')
+            KLogger.error(f'Unexpected exception:\n{ex}')
             client.send_message(
                 MessageType.ERROR,
                 bytes(f'Unexpected exception:\n{ex}', 'utf-8'))
@@ -320,7 +330,7 @@ class PipelineManagerClient(CommandTemplate):
             stop_parallel_server()
             TqdmCallback.unregister_callback(callback_percent)
             signal.signal(signal.SIGINT, default_sigint_handler)
-            log.info("Closed the Visual Editor")
+            KLogger.info('Closed the Visual Editor')
         return 0
 
 

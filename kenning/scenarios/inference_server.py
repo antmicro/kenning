@@ -25,7 +25,6 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from argcomplete.completers import FilesCompleter
 
-import kenning.utils.logger as logger
 from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
@@ -45,7 +44,9 @@ from kenning.core.protocol import (
 )
 from kenning.core.runtime import Runtime
 from kenning.utils.class_loader import get_command, load_class
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
+
 
 JSON_CONFIG = 'Server configuration with JSON'
 FLAG_CONFIG = 'Server configuration with flags'
@@ -92,19 +93,19 @@ class InferenceServer(object):
         """
         status = self.protocol.initialize_server()
         if not status:
-            logger.get_logger().error('Server prepare failed')
+            KLogger.error('Server prepare failed')
             return
 
         self.should_work = True
-        logger.get_logger().info('Server started')
+        KLogger.info('Server started')
 
         while self.should_work:
             server_status, message = self.protocol.receive_message(timeout=1)
             if server_status == ServerStatus.DATA_READY:
-                logger.get_logger().debug(f'Received message {message}')
+                KLogger.debug(f'Received message {message}')
                 self.callbacks[message.message_type](message.payload)
             elif server_status == ServerStatus.DATA_INVALID:
-                logger.get_logger().error('Invalid message received')
+                KLogger.error('Invalid message received')
 
         self.protocol.disconnect()
 
@@ -148,10 +149,10 @@ class InferenceServer(object):
         input_data : bytes
             Not used here.
         """
-        logger.get_logger().debug('Processing input')
+        KLogger.debug('Processing input')
         self.runtime.run()
         self.protocol.request_success()
-        logger.get_logger().debug('Input processed')
+        KLogger.debug('Input processed')
 
     def _output_callback(self, input_data: bytes):
         """
@@ -240,7 +241,7 @@ class InferenceServer(object):
         optimizers_str = ', '.join(
             optimizer.__class__.__name__ for optimizer in self.optimizers
         )
-        logger.get_logger().info(f'Loaded optimizers: {optimizers_str}')
+        KLogger.info(f'Loaded optimizers: {optimizers_str}')
 
         return self.protocol.request_success()
 
@@ -261,7 +262,7 @@ class InferenceServer(object):
 
         try:
             for optimizer in self.optimizers:
-                logger.get_logger().info(
+                KLogger.info(
                     f'Processing block: {type(optimizer).__name__}'
                 )
 
@@ -287,7 +288,7 @@ class InferenceServer(object):
 
             return self.protocol.request_success(model_data)
         except Exception as e:
-            logger.get_logger().error(f'Compilation error: {e}')
+            KLogger.error(f'Compilation error: {e}', stack_info=True)
             return self.protocol.request_failure()
 
 
@@ -332,7 +333,7 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        logger.set_verbosity(args.verbosity)
+        KLogger.set_verbosity(args.verbosity)
 
         flag_config_names = ('runtime_cls', 'protocol_cls')
         flag_config_not_none = [
@@ -430,14 +431,14 @@ class InferenceServerRunner(CommandTemplate):
 
         def sigint_handler(sig, frame):
             server.close()
-            logger.get_logger().info(
+            KLogger.info(
                 'Closing application (press Ctrl-C again for force closing)...'
             )
             signal.signal(signal.SIGINT, formersighandler)
 
         signal.signal(signal.SIGINT, sigint_handler)
 
-        logger.get_logger().info('Starting server...')
+        KLogger.info('Starting server...')
         server.run()
 
 

@@ -23,7 +23,7 @@ from kenning.core.measurements import Measurements
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.measurements import tagmeasurements
 from kenning.core.protocol import RequestFailure, check_request
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -140,7 +140,6 @@ class RenodeRuntime(Runtime):
         self.virtual_time_regex = re.compile(
             r'Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)'
         )
-        self.log = get_logger()
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )
@@ -169,45 +168,49 @@ class RenodeRuntime(Runtime):
                     pre_opcode_stats = self.get_opcode_stats()
 
                 # prepare iterator for inference
-                if self.sensor is not None:
-                    data = tqdm.tqdm(range(self.batches_count))
-                else:
-                    data = tqdm.tqdm(dataset.iter_test())
+                iterable = (
+                    range(self.batches_count) if self.sensor is None
+                    else dataset.iter_test()
+                )
 
                 # inference loop
-                for sample in data:
-                    if self.sensor is None:
-                        # provide data to runtime
-                        X, _ = sample
-                        prepX = tagmeasurements("preprocessing")(
-                            modelwrapper._preprocess_input
-                        )(X)
-                        prepX = modelwrapper.convert_input_to_bytes(prepX)
-                        check_request(
-                            protocol.upload_input(prepX),
-                            'send input'
+                with LoggerProgressBar() as logger_progress_bar:
+                    for sample in tqdm.tqdm(
+                            iterable,
+                            file=logger_progress_bar
+                        ):
+                        if self.sensor is None:
+                            # provide data to runtime
+                            X, _ = sample
+                            prepX = tagmeasurements("preprocessing")(
+                                modelwrapper._preprocess_input
+                            )(X)
+                            prepX = modelwrapper.convert_input_to_bytes(prepX)
+                            check_request(
+                                protocol.upload_input(prepX),
+                                'send input'
+                            )
+                            check_request(
+                                protocol.request_processing(self.get_time),
+                                'inference'
+                            )
+
+                        # get inference output
+                        _, preds = check_request(
+                            protocol.download_output(),
+                            'receive output'
                         )
-                        check_request(
-                            protocol.request_processing(self.get_time),
-                            'inference'
-                        )
 
-                    # get inference output
-                    _, preds = check_request(
-                        protocol.download_output(),
-                        'receive output'
-                    )
+                        preds = modelwrapper.convert_output_from_bytes(preds)
+                        posty = tagmeasurements("postprocessing")(
+                            modelwrapper._postprocess_outputs
+                        )(preds)
 
-                    preds = modelwrapper.convert_output_from_bytes(preds)
-                    posty = tagmeasurements("postprocessing")(
-                        modelwrapper._postprocess_outputs
-                    )(preds)
-
-                    if self.sensor is not None:
-                        measurements += dataset.evaluate(posty, None)
-                    else:
-                        _, y = sample
-                        measurements += dataset.evaluate(posty, y)
+                        if self.sensor is not None:
+                            measurements += dataset.evaluate(posty, None)
+                        else:
+                            _, y = sample
+                            measurements += dataset.evaluate(posty, y)
 
                 # get opcode stats after inference
                 if not self.disable_performance_measurements:
@@ -219,12 +222,12 @@ class RenodeRuntime(Runtime):
                         )
                     }
             except RequestFailure as ex:
-                self.log.fatal(ex)
+                KLogger.fatal(ex)
                 return False
             else:
                 MeasurementsCollector.measurements += measurements
             finally:
-                get_logger().info(self.renode_handler.read_from_renode())
+                KLogger.info(self.renode_handler.read_from_renode())
                 self.renode_handler = None
 
         if (not self.disable_performance_measurements
@@ -289,7 +292,7 @@ class RenodeRuntime(Runtime):
                 'ExecuteCommand',
                 f'machine EnableProfiler @{self.profiler_dump_path}'
             )
-            self.log.info(f'Profiler dump path: {self.profiler_dump_path}')
+            KLogger.info(f'Profiler dump path: {self.profiler_dump_path}')
         self.renode_handler.run_robot_keyword(
             'ExecuteCommand', 'sysbus.vec_controlblock WriteDoubleWord 0xc 0'
         )
@@ -306,7 +309,7 @@ class RenodeRuntime(Runtime):
         Dict[str, int] :
             Dict where the keys are opcodes and the values are counters.
         """
-        self.log.info('Retrieving opcode counters')
+        KLogger.info('Retrieving opcode counters')
 
         # retrieve opcode counters
         stats_raw = self.renode_handler.run_robot_keyword(
@@ -336,10 +339,10 @@ class RenodeRuntime(Runtime):
         Dict[str, List[float]] :
             Stats retrieved from Renode profiler dump.
         """
-        self.log.info('Parsing Renode profiler dump')
+        KLogger.info('Parsing Renode profiler dump')
         if (self.profiler_dump_path is None or
                 not self.profiler_dump_path.exists()):
-            self.log.error('Missing profiler dump file')
+            KLogger.error('Missing profiler dump file')
             raise FileNotFoundError
 
         try:
@@ -421,7 +424,6 @@ class _ProfilerDumpParser(object):
         self.interval_step = interval_step
         self.start_timestamp = start_timestamp
         self.end_timestamp = end_timestamp
-        self.log = get_logger()
 
     def parse(self) -> Dict[str, Any]:
         """
@@ -440,11 +442,15 @@ class _ProfilerDumpParser(object):
             'exceptions': []
         }
 
-        with (tqdm.tqdm(
-                    total=self.dump_path.stat().st_size,
-                    unit='B', unit_scale=True, unit_divisor=1024
-                ) as progress_bar,
-                open(self.dump_path, 'rb') as dump_file):
+        with (
+            LoggerProgressBar() as logger_progress_bar,
+            tqdm.tqdm(
+                total=self.dump_path.stat().st_size,
+                unit='B', unit_scale=True, unit_divisor=1024,
+                file=logger_progress_bar
+            ) as progress_bar,
+            open(self.dump_path, 'rb') as dump_file
+        ):
             # parse header
             cpus, peripherals = self._parse_header(dump_file)
 
@@ -599,7 +605,7 @@ class _ProfilerDumpParser(object):
             progress_bar.update(dump_file.tell() - progress_bar.n)
 
             if invalid_entries > 0:
-                self.log.warning(
+                KLogger.warning(
                     f'Found {invalid_entries} invalid entries in profiler '
                     'dump file'
                 )

@@ -16,10 +16,8 @@ from typing import List, Optional, Tuple
 from kenning.cli.command_template import (
     ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, SEARCH)
 
-from kenning.utils import logger
 from kenning.scenarios.list_classes import list_classes, ListClassesRunner
-
-LOGGER = logger.get_logger()
+from kenning.utils.logger import KLogger
 
 
 class FuzzySearchClass(CommandTemplate):
@@ -75,9 +73,8 @@ class FuzzySearchClass(CommandTemplate):
         **kwargs
     ):
         if not shutil.which('fzf'):
-            LOGGER.error(
-                "'fzf' cannot be found, please make sure "
-                "it is installed"
+            KLogger.error(
+                "'fzf' cannot be found, please make sure it is installed"
             )
             return 1
         # Get all Kenning classes

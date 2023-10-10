@@ -16,7 +16,7 @@ from kenning.core.optimizer import ConversionError
 from kenning.core.optimizer import CompilationError
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
-from kenning.utils.logger import get_logger
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -165,10 +165,10 @@ def darknetconversion(
 
     from tvm.relay.testing.darknet import __darknetffi__
     if not compiler.libdarknet_path:
-        log = get_logger()
-        log.fatal(
-            'The darknet converter requires libdarknet.so library. ' +
-            'Provide the path to it using --libdarknet-path flag')
+        KLogger.fatal(
+            'The darknet converter requires libdarknet.so library. Provide '
+            'the path to it using --libdarknet-path flag'
+        )
         raise ConversionError('Provide libdarknet.so library')
     try:
         lib = __darknetffi__.dlopen(str(compiler.libdarknet_path))
@@ -427,10 +427,9 @@ class TVMCompiler(Optimizer):
         if self.conv2d_data_layout != '' or self.conv2d_kernel_layout != '':
             if self.conv2d_kernel_layout == '':
                 self.conv2d_kernel_layout = 'default'
-            log = get_logger()
-            log.info(
-                'Applying ConvertLayout transform:\n' +
-                f'DATA LAYOUT   : "{self.conv2d_data_layout}"\n' +
+            KLogger.info(
+                'Applying ConvertLayout transform:\n'
+                f'DATA LAYOUT   : "{self.conv2d_data_layout}"\n'
                 f'KERNEL LAYOUT : "{self.conv2d_kernel_layout}"'
             )
 

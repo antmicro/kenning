@@ -10,11 +10,11 @@ Pretrained on ImageNet dataset.
 
 from typing import List, Optional
 
-from kenning.utils.logger import get_logger
 from kenning.core.dataset import Dataset
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
 from kenning.utils.class_loader import load_class
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -115,10 +115,11 @@ class TensorFlowImageNet(TensorFlowWrapper):
         self.disablebuiltinpreprocessing = disablebuiltinpreprocessing
 
         if dataset and dataset.batch_size != self.inputshape[0]:
-            logger = get_logger()
-            logger.error('Dataset batch size and ModelWrapper inputshape '
-                         f'mismatch: batch size: {dataset.batch_size} '
-                         f'input shape[0]: {self.inputshape[0]}')
+            KLogger.error(
+                'Dataset batch size and ModelWrapper inputshape mismatch'
+            )
+            KLogger.error(f'batch size: {dataset.batch_size}')
+            KLogger.error(f'input shape[0]: {self.inputshape[0]}')
             raise ValueError
 
     @classmethod

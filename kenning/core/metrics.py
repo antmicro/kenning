@@ -6,9 +6,7 @@ from typing import Dict, List, Optional, Union
 
 import numpy as np
 
-from kenning.utils import logger
 
-log = logger.get_logger()
 EPS = 1e-8
 
 

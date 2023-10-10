@@ -28,13 +28,13 @@ import dill
 import logging
 from tqdm import tqdm
 
+from kenning.core.dataset import Dataset
 from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import Optimizer, CompilationError
-from kenning.core.dataset import Dataset
+from kenning.onnxconverters.onnx2torch import convert
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
-from kenning.utils.logger import LoggerProgressBar
-from kenning.onnxconverters.onnx2torch import convert
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -364,8 +364,8 @@ class NNIPruningOptimizer(Optimizer):
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu")
 
-        nni_logger.setLevel(self.log.level)
-        nni_graph_logger.setLevel(self.log.level)
+        nni_logger.setLevel(KLogger.level)
+        nni_graph_logger.setLevel(KLogger.level)
 
         replace_module.update({
             'Add': add_replacer,
@@ -387,7 +387,7 @@ class NNIPruningOptimizer(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(input_model_path)
         self.io_spec = io_spec
-        self.log.info(f"Model before pruning\n{model}")
+        KLogger.info(f'Model before pruning\n{model}')
 
         dummy_input = self.generate_dummy_input(io_spec)
         criterion = load_class(self.criterion_modulepath)()
@@ -406,7 +406,7 @@ class NNIPruningOptimizer(Optimizer):
             dummy_input=dummy_input,
         )
 
-        self.log.info("Pruning model")
+        KLogger.info('Pruning model')
         _, mask = pruner.compress()
         pruner._unwrap_model()
 
@@ -427,52 +427,59 @@ class NNIPruningOptimizer(Optimizer):
         except Exception as ex:
             raise CompilationError from ex
 
-        self.log.info(f"Model after pruning\n{model}\n")
-        self.log.info(
-            f"Parameters: {params_before:,} -> "
-            f"{self.get_number_of_parameters(model):,}\n"
+        KLogger.info(f'Model after pruning \n{model}\n')
+        KLogger.info(
+            f'Parameters: {params_before:,} -> '
+            f'{self.get_number_of_parameters(model):,}\n'
         )
 
         model.to(self.device)
         optimizer = optimizer_cls(model.parameters(),
                                   lr=self.finetuning_learning_rate)
-        if self.log.level == logging.INFO and self.finetuning_epochs > 0:
+        if KLogger.level == logging.INFO and self.finetuning_epochs > 0:
             mean_loss = self.evaluate_model(model)
-            self.log.info("Fine-tuning model starting with mean loss "
-                          f"{mean_loss if mean_loss else None}\n")
+            KLogger.info(
+                'Fine-tuning model starting with mean loss '
+                f'{mean_loss if mean_loss else None}\n'
+            )
         for finetuning_epoch in range(self.finetuning_epochs):
             self.train_model(
                 model,
                 optimizer,
                 criterion,
                 max_epochs=1)
-            if self.log.level == logging.INFO:
+            if KLogger.level == logging.INFO:
                 mean_loss = self.evaluate_model(model)
-                self.log.info(
-                    f"Epoch {finetuning_epoch+1} from {self.finetuning_epochs}"
-                    f", validation data mean loss: {mean_loss}\n"
+                KLogger.info(
+                    f'Epoch {finetuning_epoch+1} from {self.finetuning_epochs}'
+                    f', validation data mean loss: {mean_loss}\n'
                 )
 
         try:
             torch.save(model, self.compiled_model_path, pickle_module=dill)
         except Exception:
-            self.log.error(
-                "torch.save can't pickle full model, model parameters will be"
-                " saved and dill will try to save full model")
+            KLogger.error(
+                "torch.save can't pickle full model, model parameters will be "
+                "saved and dill will try to save full model",
+                stack_info=True
+            )
             try:
                 with open(self.compiled_model_path, 'wb') as fd:
                     dill.dump(model, fd)
             except Exception:
                 torch.save(model.state_dict(), self.compiled_model_path)
-                self.log.info("Only model's state dict saved "
-                              f"to {self.compiled_model_path}")
+                KLogger.info(
+                    "Only model's state dict saved to "
+                    f"{self.compiled_model_path}"
+                )
             else:
                 torch.save(model.state_dict(),
                            str(self.compiled_model_path)+'.state_dict')
-                self.log.info(
+                KLogger.info(
                     f"Full model was saved to {self.compiled_model_path} "
                     "by `dill` and state dict was saved to "
-                    f"{self.compiled_model_path}.state_dict")
+                    f"{self.compiled_model_path}.state_dict"
+                )
         self.save_io_specification(input_model_path, io_spec)
 
     def train_model(
@@ -514,23 +521,24 @@ class NNIPruningOptimizer(Optimizer):
         if max_steps is None and max_epochs is None:
             max_epochs = 5
         model.train()
-        for batch_begin in tqdm(
-            range(0, len(self.train_data[0]), self.finetuning_batch_size),
-            file=LoggerProgressBar(),
-        ):
-            data, label = self.prepare_input_output_data(batch_begin)
-            optimizer.zero_grad()
-            output = model(data)
-            loss = criterion(output, label)
-            loss.backward()
-            optimizer.step()
-            if max_steps is not None:
-                max_steps -= 1
-                if max_steps == 0:
-                    return
+        with LoggerProgressBar() as logger_progress_bar:
+            for batch_begin in tqdm(
+                range(0, len(self.train_data[0]), self.finetuning_batch_size),
+                file=logger_progress_bar,
+            ):
+                data, label = self.prepare_input_output_data(batch_begin)
+                optimizer.zero_grad()
+                output = model(data)
+                loss = criterion(output, label)
+                loss.backward()
+                optimizer.step()
+                if max_steps is not None:
+                    max_steps -= 1
+                    if max_steps == 0:
+                        return
 
         if max_steps:
-            self.log.info(f"{max_steps} steps left")
+            KLogger.info(f'{max_steps} steps left')
         if max_epochs is None:
             self.train_model(
                 model,
@@ -539,7 +547,7 @@ class NNIPruningOptimizer(Optimizer):
                 max_steps=max_steps
             )
         elif max_epochs > 1:
-            self.log.info(f"{max_epochs} epochs left")
+            KLogger.info(f'{max_epochs} epochs left')
             self.train_model(
                 model,
                 optimizer,
@@ -570,10 +578,10 @@ class NNIPruningOptimizer(Optimizer):
         model.eval()
         data_len = len(self.valid_data[0])
         loss_sum = 0
-        with torch.no_grad():
+        with torch.no_grad(), LoggerProgressBar() as logger_progress_bar:
             for batch_begin in tqdm(
                 range(0, data_len, self.finetuning_batch_size),
-                file=LoggerProgressBar(),
+                file=logger_progress_bar,
             ):
                 data, target = self.prepare_input_output_data(batch_begin)
                 output = model(data)
@@ -729,8 +737,9 @@ class NNIPruningOptimizer(Optimizer):
                 })
                 break
         if not added:
-            self.log.warning("Last Linear layer was not found -"
-                             " cannot be excluded")
+            KLogger.warning(
+                'Last Linear layer was not found - cannot be excluded'
+            )
 
     def set_pruner_class(self, pruner_type):
         """

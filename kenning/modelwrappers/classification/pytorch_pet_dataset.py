@@ -17,6 +17,7 @@ from tqdm import tqdm
 from kenning.core.dataset import Dataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -213,23 +214,24 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         for epoch in range(epochs):
             self.model.train()
-            bar = tqdm(trainloader)
-            losssum = torch.zeros(1).to(self.device)
-            losscount = 0
-            for i, (images, labels) in enumerate(bar):
-                images = images.to(self.device)
-                labels = labels.to(self.device)
-                opt.zero_grad()
+            with LoggerProgressBar() as logger_progress_bar:
+                bar = tqdm(trainloader, file=logger_progress_bar)
+                losssum = torch.zeros(1).to(self.device)
+                losscount = 0
+                for i, (images, labels) in enumerate(bar):
+                    images = images.to(self.device)
+                    labels = labels.to(self.device)
+                    opt.zero_grad()
 
-                outputs = self.model(images)
-                loss = criterion(outputs, labels)
+                    outputs = self.model(images)
+                    loss = criterion(outputs, labels)
 
-                loss.backward()
-                opt.step()
+                    loss.backward()
+                    opt.step()
 
-                losssum += loss
-                losscount += 1
-                bar.set_description(f'train epoch: {epoch:3}')
+                    losssum += loss
+                    losscount += 1
+                    bar.set_description(f'train epoch: {epoch:3}')
             writer.add_scalar(
                 'Loss/train',
                 losssum.data.cpu().numpy() / losscount,
@@ -237,8 +239,8 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             )
 
             self.model.eval()
-            with torch.no_grad():
-                bar = tqdm(validloader)
+            with torch.no_grad(), LoggerProgressBar() as logger_progress_bar:
+                bar = tqdm(validloader, file=logger_progress_bar)
                 total = 0
                 correct = 0
                 for (images, labels) in bar:

@@ -21,6 +21,7 @@ from tqdm import tqdm
 
 from .measurements import Measurements
 from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import Resources
 
 
@@ -599,8 +600,12 @@ class Dataset(ArgumentsHandler, ABC):
             )[1]
         else:
             X = self.prepare_external_calibration_dataset(percentage, seed)
-        for x in tqdm(X):
-            yield self.prepare_input_samples([x])
+        with LoggerProgressBar() as logger_progress_bar:
+            for x in tqdm(
+                X,
+                file=logger_progress_bar
+            ):
+                yield self.prepare_input_samples([x])
 
     def prepare_external_calibration_dataset(
             self,

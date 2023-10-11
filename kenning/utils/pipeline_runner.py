@@ -131,18 +131,6 @@ class PipelineRunner(object):
                 if 'model_wrapper' in json_cfg else None
         )
 
-        dataconverter = (
-            any_from_json(json_cfg['data_converter'])
-            if 'data_converter' in json_cfg else None
-        )
-
-        assert model_wrapper or dataconverter, (
-            'Provide either dataconverter or model_wrapper.'
-        )
-
-        if not dataconverter:
-            dataconverter = ModelWrapperDataConverter(model_wrapper)
-
         optimizers = (
             [
                 any_from_json(optimizer_cfg, dataset=dataset)
@@ -160,6 +148,18 @@ class PipelineRunner(object):
             any_from_json(json_cfg['protocol'])
             if 'protocol' in json_cfg else None
         )
+
+        dataconverter = (
+            any_from_json(json_cfg['runtime']['data_converter'])
+            if json_cfg.get('runtime', {}).get('data_converter', None) else None    # noqa: E501
+        )
+
+        assert model_wrapper or dataconverter, (
+            'Provide either dataconverter or model_wrapper.'
+        )
+
+        if not dataconverter:
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
 
         if assert_integrity:
             cls.assert_io_formats(model_wrapper, optimizers, runtime)

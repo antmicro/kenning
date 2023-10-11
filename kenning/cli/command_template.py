@@ -97,7 +97,9 @@ class CommandTemplate(ABC):
         groups[DEFAULT_GROUP].add_argument(
             '--verbosity',
             help='Verbosity level',
-            choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
+            choices=[
+                'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+            ],
             default='INFO'
         )
 

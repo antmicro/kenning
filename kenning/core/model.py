@@ -24,6 +24,7 @@ from kenning.core.measurements import (
 )
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
+from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
@@ -311,11 +312,15 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         measurements = Measurements()
 
-        for X, y in tqdm(self.dataset.iter_test()):
-            prepX = self._preprocess_input(X)
-            preds = self._run_inference(prepX)
-            posty = self._postprocess_outputs(preds)
-            measurements += self.dataset.evaluate(posty, y)
+        with LoggerProgressBar() as logger_progress_bar:
+            for X, y in tqdm(
+                self.dataset.iter_test(),
+                file=logger_progress_bar
+            ):
+                prepX = self._preprocess_input(X)
+                preds = self._run_inference(prepX)
+                posty = self._postprocess_outputs(preds)
+                measurements += self.dataset.evaluate(posty, y)
 
         MeasurementsCollector.measurements += measurements
 

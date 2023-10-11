@@ -37,7 +37,7 @@ else:
     from importlib.resources import path
 
 from kenning.resources import coco_detection
-from kenning.utils.logger import download_url
+from kenning.utils.logger import LoggerProgressBar, download_url
 
 import zipfile
 
@@ -148,13 +148,17 @@ def download_all_images(
     download_folder.mkdir(parents=True, exist_ok=True)
     image_list = list(check_and_homogenize_image_list(image_list))
 
-    progress_bar = tqdm.tqdm(
-        total=len(image_list),
-        desc='Downloading images',
-        leave=True
-    )
-    with futures.ThreadPoolExecutor(
-            max_workers=num_processes) as executor:
+
+    with (
+        LoggerProgressBar() as logger_progress_bar,
+        tqdm.tqdm(
+            total=len(image_list),
+            desc='Downloading images',
+            leave=True,
+            file=logger_progress_bar
+        ) as progress_bar,
+        futures.ThreadPoolExecutor(max_workers=num_processes) as executor
+    ):
         all_futures = [
             executor.submit(
                 download_one_image,
@@ -167,7 +171,6 @@ def download_all_images(
         for future in futures.as_completed(all_futures):
             future.result()
             progress_bar.update(1)
-    progress_bar.close()
 
 
 def download_instance_segmentation_zip_file(

@@ -36,6 +36,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
 )
 from kenning.core.drawing import (
+    DEFAULT_PLOT_SIZE,
     IMMATERIAL_COLORS,
     RED_GREEN_CMAP,
     Barplot,
@@ -63,7 +64,7 @@ from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 
 SERVIS_PLOT_OPTIONS = {
-    "figsize": (900, 500),
+    "figsize": (DEFAULT_PLOT_SIZE, DEFAULT_PLOT_SIZE * 2 // 3),
     "plottype": "scatter",
     "backend": "matplotlib",
 }
@@ -341,8 +342,6 @@ def comparison_performance_report(
     from servis import render_multiple_time_series_plot
 
     KLogger.info("Running comparison_performance_report")
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
 
     metric_names = {
         "inference_step": ("Inference time", "s"),
@@ -445,7 +444,7 @@ def comparison_performance_report(
             for metric in common_metrics
         ],
         colors=colors,
-    ).plot(plot_path, _image_formats)
+    ).plot(plot_path, image_formats)
     report_variables["meanperformancepath"] = get_plot_wildcard_path(
         plot_path, root_dir
     )
@@ -471,7 +470,7 @@ def comparison_performance_report(
                 metric_names[metric][0] for metric in hardware_usage_metrics
             ],
             colors=colors,
-        ).plot(plot_path, _image_formats)
+        ).plot(plot_path, image_formats)
         report_variables["hardwareusagepath"] = get_plot_wildcard_path(
             plot_path, root_dir
         )
@@ -615,7 +614,6 @@ def comparison_classification_report(
     """
     KLogger.info("Running comparison_classification_report")
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
 
     # check that each measurements have the same classes
     for data in measurementsdata:
@@ -676,7 +674,7 @@ def comparison_classification_report(
             size_label="Model size",
             bubble_labels=names,
             colors=colors,
-        ).plot(plot_path, _image_formats)
+        ).plot(plot_path, image_formats)
         report_variables["bubbleplotpath"] = get_plot_wildcard_path(
             plot_path, root_dir
         )
@@ -687,7 +685,7 @@ def comparison_classification_report(
             metric_data=metric_visualization,
             metric_labels=["Accuracy", "Mean precision", "Mean recall"],
             colors=colors,
-        ).plot(plot_path, _image_formats)
+        ).plot(plot_path, image_formats)
         report_variables["radarchartpath"] = get_plot_wildcard_path(
             plot_path, root_dir
         )
@@ -785,8 +783,6 @@ def detection_report(
     measurementsdata |= metrics
 
     lines = get_recall_precision(measurementsdata, 0.5)
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
 
     aps = []
     for line in lines:
@@ -797,7 +793,7 @@ def detection_report(
         title="Recall-Precision curves" if draw_titles else None,
         lines=lines,
         class_names=measurementsdata["class_names"],
-    ).plot(curve_path, _image_formats)
+    ).plot(curve_path, image_formats)
     measurementsdata["curvepath"] = get_plot_wildcard_path(
         curve_path, root_dir
     )
@@ -810,7 +806,7 @@ def detection_report(
         avg_precisions=aps,
         mean_avg_precision=measurementsdata["mAP"],
         cmap=cmap,
-    ).plot(gradient_path, _image_formats)
+    ).plot(gradient_path, image_formats)
     measurementsdata["gradientpath"] = get_plot_wildcard_path(
         gradient_path, root_dir
     )
@@ -838,7 +834,7 @@ def detection_report(
         class_names=measurementsdata["class_names"],
         colors=colors,
         color_offset=color_offset,
-    ).plot(tpiou_path, _image_formats)
+    ).plot(tpiou_path, image_formats)
     measurementsdata["tpioupath"] = get_plot_wildcard_path(
         tpiou_path, root_dir
     )
@@ -852,7 +848,7 @@ def detection_report(
             iou_data=all_tp_ious,
             colors=colors,
             color_offset=color_offset,
-        ).plot(iouhist_path, _image_formats)
+        ).plot(iouhist_path, image_formats)
         measurementsdata["iouhistpath"] = get_plot_wildcard_path(
             iouhist_path, root_dir
         )
@@ -872,7 +868,7 @@ def detection_report(
         lines=[(thresholds, mapvalues)],
         colors=colors,
         color_offset=color_offset,
-    ).plot(map_path, _image_formats)
+    ).plot(map_path, image_formats)
     measurementsdata["mappath"] = get_plot_wildcard_path(map_path, root_dir)
     measurementsdata["max_mAP"] = max(mapvalues)
     measurementsdata["max_mAP_index"] = thresholds[np.argmax(mapvalues)].round(
@@ -930,8 +926,6 @@ def comparison_detection_report(
         "report_name_simple": measurementsdata[0]["report_name_simple"],
         "model_names": [],
     }
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
 
     visualization_data = []
     for data in measurementsdata:
@@ -952,7 +946,7 @@ def comparison_detection_report(
         lines=visualization_data,
         lines_labels=report_variables["model_names"],
         colors=colors,
-    ).plot(plot_path, _image_formats)
+    ).plot(plot_path, image_formats)
     report_variables["mapcomparisonpath"] = get_plot_wildcard_path(
         plot_path, root_dir
     )
@@ -1008,9 +1002,6 @@ def renode_stats_report(
     KLogger.info(
         f'Running renode_stats_report for {measurementsdata["model_name"]}'
     )
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
-
     # shift colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
     plot_options["colormap"] = plot_options["colormap"][color_offset:]
@@ -1093,7 +1084,7 @@ def renode_stats_report(
             x_unit="s",
             y_label="Total executed instructions",
             colors=plot_options["colormap"],
-        ).plot(cum_executed_instructions_plot_path, _image_formats)
+        ).plot(cum_executed_instructions_plot_path, image_formats)
         paths["cumulative"] = get_plot_wildcard_path(
             cum_executed_instructions_plot_path, root_dir
         )
@@ -1149,7 +1140,7 @@ def renode_stats_report(
                 )
             ],
             colors=plot_options["colormap"],
-        ).plot(cum_memory_access_plot_path, _image_formats)
+        ).plot(cum_memory_access_plot_path, image_formats)
         paths["cumulative"] = get_plot_wildcard_path(
             cum_memory_access_plot_path, root_dir
         )
@@ -1208,7 +1199,7 @@ def renode_stats_report(
                     )
                 ],
                 colors=plot_options["colormap"],
-            ).plot(cum_peripheral_access_plot_path, _image_formats)
+            ).plot(cum_peripheral_access_plot_path, image_formats)
             paths[access_type]["cumulative"] = get_plot_wildcard_path(
                 cum_peripheral_access_plot_path, root_dir
             )
@@ -1257,7 +1248,7 @@ def renode_stats_report(
                 )
             ],
             colors=plot_options["colormap"],
-        ).plot(cum_exceptions_plot_path, _image_formats)
+        ).plot(cum_exceptions_plot_path, image_formats)
 
         paths["cumulative"] = get_plot_wildcard_path(
             cum_exceptions_plot_path, root_dir
@@ -1309,9 +1300,6 @@ def comparison_renode_stats_report(
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
-
-    # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {"html"}
 
     def retrieve_non_zero_profiler_data(
         measurementsdata: List[Dict], keys: List[str] = []
@@ -1436,7 +1424,7 @@ def comparison_renode_stats_report(
             lines=[(x, np.cumsum(y)) for x, y in zip(xdata, ydata)],
             lines_labels=labels,
             colors=SERVIS_PLOT_OPTIONS["colormap"],
-        ).plot(cum_executed_instructions_plot_path, _image_formats)
+        ).plot(cum_executed_instructions_plot_path, image_formats)
         paths["cumulative"] = get_plot_wildcard_path(
             cum_executed_instructions_plot_path, root_dir
         )
@@ -1493,7 +1481,7 @@ def comparison_renode_stats_report(
                 ],
                 lines_labels=[m["model_name"] for m in measurementsdata],
                 colors=SERVIS_PLOT_OPTIONS["colormap"],
-            ).plot(cum_memory_access_plot_path, _image_formats)
+            ).plot(cum_memory_access_plot_path, image_formats)
             paths["cumulative"] = get_plot_wildcard_path(
                 cum_memory_access_plot_path, root_dir
             )
@@ -1562,7 +1550,7 @@ def comparison_renode_stats_report(
                 lines=[(x, np.cumsum(y)) for x, y in zip(xdata, ydata)],
                 lines_labels=labels,
                 colors=SERVIS_PLOT_OPTIONS["colormap"],
-            ).plot(cum_peripheral_access_plot_path, _image_formats)
+            ).plot(cum_peripheral_access_plot_path, image_formats)
             paths[access_type]["cumulative"] = get_plot_wildcard_path(
                 cum_peripheral_access_plot_path, root_dir
             )
@@ -1615,7 +1603,7 @@ def comparison_renode_stats_report(
                 for m in measurementsdata
             ],
             colors=SERVIS_PLOT_OPTIONS["colormap"],
-        ).plot(cum_exceptions_plot_path, _image_formats)
+        ).plot(cum_exceptions_plot_path, image_formats)
 
         paths["cumulative"] = get_plot_wildcard_path(
             cum_exceptions_plot_path, root_dir

@@ -8,7 +8,7 @@ and print cache settings.
 """
 import argparse
 import sys
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 from kenning.cli.command_template import (
     CACHE,
@@ -20,13 +20,13 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceManager
 
 
-def format_size(size: int, unit: str = "B") -> str:
+def format_size(size: Union[int, float], unit: str = "B") -> str:
     """
     Return string with proper unit.
 
     Parameters
     ----------
-    size : int
+    size : Union[int, float]
         Value to be formatted.
     unit : str
         Value units.

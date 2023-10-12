@@ -31,6 +31,7 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
 from numpy.typing import ArrayLike
+from scipy.stats import gaussian_kde
 
 from kenning.resources import reports
 from kenning.scenarios.manage_cache import format_size
@@ -45,7 +46,7 @@ else:
 BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
 MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
 MATPLOTLIB_DPI = 120
-DEFAULT_PLOT_SIZE = 1200
+DEFAULT_PLOT_SIZE = 1000
 MATPLOTLIB_FONT_SIZE = 12
 
 plt.rc("font", size=MATPLOTLIB_FONT_SIZE)  # default text sizes
@@ -306,7 +307,12 @@ class Plot(object):
             HTML template for tooltip.
         """
         if values is None:
-            values = [f"{name}" for name in names]
+            values = [f"@{{{name}}}" for name in names]
+        else:
+            values = [
+                f"@{{{value[1:]}}}" if value[0] == "@" else value
+                for value in values
+            ]
         if units is None:
             units = ["" for _ in names]
         else:
@@ -314,7 +320,7 @@ class Plot(object):
         template = """
         <tr class="bk-tooltip-entry">
             <td class="bk-tt-entry-name">%s</td>
-            <td class="bk-tt-entry-value">@{%s}%s</td>
+            <td class="bk-tt-entry-value">%s%s</td>
         </tr>
         """
         result = "<table>"
@@ -449,7 +455,85 @@ class ViolinComparisonPlot(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        raise NotImplementedError
+        from bokeh.layouts import gridplot
+        from bokeh.models import ColumnDataSource, Div, Legend, Patch
+        from bokeh.plotting import figure
+
+        violin_figs = {
+            metric_label: figure(
+                title=metric_label,
+                tools="pan,box_zoom,wheel_zoom,reset,save",
+                toolbar_location=None,
+                width=self.width,
+                height=self.height,
+                output_backend="webgl",
+            )
+            for metric_label in self.metric_labels
+        }
+
+        legend_items = {name: [] for name in self.metric_data.keys()}
+        for i, (color, (sample_name, samples)) in enumerate(
+            zip(self.colors, self.metric_data.items())
+        ):
+            for name, sample in zip(self.metric_labels, samples):
+                kde = gaussian_kde(sample)
+                x_min = min(sample)
+                x_max = max(sample)
+                x = np.linspace(x_min, x_max, 1000)
+                y = kde.pdf(x)
+                y *= 0.45 / max(y)
+                renderer = violin_figs[name].add_glyph(
+                    ColumnDataSource(
+                        data=dict(
+                            x=np.hstack([x, x[::-1]]),
+                            y=i + np.hstack([y, -y[::-1]]),
+                        )
+                    ),
+                    Patch(
+                        x="x",
+                        y="y",
+                        fill_color=color,
+                        fill_alpha=0.5,
+                        line_color=color,
+                    ),
+                )
+                legend_items[sample_name].append(renderer)
+                for line_start, line_end in (
+                    ([x_min, x_max], [i, i]),
+                    ([x_min, x_min], [i - 0.2, i + 0.2]),
+                    ([x_max, x_max], [i - 0.2, i + 0.2]),
+                ):
+                    violin_figs[name].line(
+                        line_start,
+                        line_end,
+                        color=color,
+                        line_width=2,
+                    )
+
+        legend = Legend(
+            items=[
+                (name, renderers) for name, renderers in legend_items.items()
+            ],
+            orientation="horizontal",
+            label_text_font="Lato",
+            click_policy="mute",
+            location="center",
+        )
+        violin_figs[self.metric_labels[-1]].add_layout(legend, "below")
+
+        if self.title is not None:
+            violin_figs[self.metric_labels[0]].add_layout(
+                Div(text=self.title), "above"
+            )
+
+        grid_fig = gridplot(
+            [[violin_figs[name]] for name in self.metric_labels],
+            merge_tools=True,
+            toolbar_location="above",
+            toolbar_options={"logo": None},
+        )
+
+        self._output_bokeh_figure(grid_fig, output_path, output_formats)
 
 
 class RadarChart(Plot):
@@ -574,7 +658,132 @@ class RadarChart(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        raise NotImplementedError
+        from bokeh.models import (
+            ColumnDataSource,
+            HoverTool,
+            Label,
+            Legend,
+            Patch,
+        )
+        from bokeh.plotting import figure
+
+        radius = 300
+
+        radar_fig = figure(
+            title=self.title,
+            tools="reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            match_aspect=True,
+            output_backend="webgl",
+        )
+        radar_fig.grid.visible = False
+        radar_fig.xaxis.visible = False
+        radar_fig.yaxis.visible = False
+        radar_fig.background_fill_alpha = 0
+
+        for i in [25, 50, 75, 100]:
+            radar_fig.circle(
+                x=0,
+                y=0,
+                radius=radius * i / 100,
+                line_color="black" if i == 100 else "gray",
+                fill_color="black",
+                fill_alpha=0.05 if i == 100 else 0,
+            )
+            if i != 100:
+                radar_fig.add_layout(
+                    Label(x=0, y=radius * i / 100, text=f"{i}%")
+                )
+
+        for i, name in enumerate(self.metric_labels):
+            a = i / len(self.metric_labels) * 2 * np.pi
+            radar_fig.line(
+                [0, radius * np.cos(a + 0.5 * np.pi)],
+                [0, radius * np.sin(a + 0.5 * np.pi)],
+                color="gray",
+            )
+            flip = 0.5 * np.pi < a < 1.5 * np.pi
+            text_a = a - np.pi if flip else a
+            radar_fig.add_layout(
+                Label(
+                    x=(radius + 12) * np.cos(a + 0.5 * np.pi),
+                    y=(radius + 12) * np.sin(a + 0.5 * np.pi),
+                    text=name,
+                    angle=text_a,
+                    text_align="center",
+                    text_baseline="middle",
+                )
+            )
+
+        sorted_metric_data = list(self.metric_data.items())
+        sorted_metric_data.sort(key=lambda m: sum(m[1]), reverse=True)
+
+        legend_items = {name: [] for name in self.metric_data.keys()}
+        for i, (sample_name, samples) in enumerate(sorted_metric_data):
+            x = []
+            y = []
+            for j, sample in enumerate(samples):
+                a = j * 2 * np.pi / len(self.metric_labels)
+                x.append(sample * radius * np.cos(a + 0.5 * np.pi))
+                y.append(sample * radius * np.sin(a + 0.5 * np.pi))
+
+            renderer = radar_fig.add_glyph(
+                ColumnDataSource(
+                    data=dict(
+                        x=x,
+                        y=y,
+                    )
+                ),
+                Patch(
+                    x="x",
+                    y="y",
+                    fill_color=self.colors[i],
+                    fill_alpha=0.5,
+                    line_color=self.colors[i],
+                ),
+            )
+            radar_fig.add_tools(
+                HoverTool(
+                    renderers=[renderer],
+                    tooltips=self._create_custom_hover_template(
+                        self.metric_labels,
+                        values=[f"{100 * s:.2f}" for s in samples],
+                        units=["%" for _ in samples],
+                    ),
+                )
+            )
+            legend_items[sample_name].append(renderer)
+
+        # dummy patch for correct initial zoom
+        radar_fig.add_glyph(
+            ColumnDataSource(
+                data=dict(
+                    x=[radius * 1.05, 0, -radius * 1.05, 0],
+                    y=[0, radius * 1.05, 0, -radius * 1.05],
+                )
+            ),
+            Patch(
+                x="x",
+                y="y",
+                fill_alpha=0,
+                line_alpha=0,
+            ),
+        )
+
+        legend = Legend(
+            items=[
+                (name, renderers) for name, renderers in legend_items.items()
+            ],
+            orientation="horizontal",
+            label_text_font="Lato",
+            click_policy="mute",
+            location="center",
+        )
+        radar_fig.add_layout(legend, "below")
+
+        self._output_bokeh_figure(radar_fig, output_path, output_formats)
 
 
 class BubblePlot(Plot):
@@ -754,7 +963,64 @@ class BubblePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import ColumnDataSource, HoverTool, Legend, Range1d
+        from bokeh.plotting import figure
+
+        source = ColumnDataSource(
+            dict(
+                x=self.x_data,
+                y=self.y_data,
+                size=15 + np.array(self.bubble_size),
+                model_size=[format_size(s) for s in self.size_data],
+                color=self.colors,
+                name=self.bubble_labels,
+            )
+        )
+
+        bubbleplot_fig = figure(
+            title=self.title,
+            x_range=Range1d(*self.x_lim),
+            y_range=Range1d(*self.y_lim),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label=self.x_label,
+            y_axis_label=self.y_label,
+            output_backend="webgl",
+        )
+
+        bubbleplot_fig.add_layout(
+            Legend(
+                orientation="horizontal",
+                label_text_font="Lato",
+                location="center",
+            ),
+            "below",
+        )
+        bubbleplot_fig.scatter(
+            x="x",
+            y="y",
+            size="size",
+            fill_color="color",
+            line_color="black",
+            legend="name",
+            source=source,
+        )
+        # custom tooltips
+        bubbleplot_fig.add_tools(
+            HoverTool(
+                tooltips=self._create_custom_hover_template(
+                    ["Model", self.size_label], values=["@name", "@model_size"]
+                )
+            )
+        )
+
+        self._output_bokeh_figure(
+            bubbleplot_fig,
+            output_path,
+            output_formats,
+        )
 
 
 class ConfusionMatrixPlot(Plot):
@@ -1469,7 +1735,58 @@ class RecallPrecisionCurvesPlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import Legend, Range1d
+        from bokeh.plotting import figure
+
+        precision_fig = figure(
+            title=self.title,
+            x_range=Range1d(0, 1),
+            y_range=Range1d(0, 1),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label="recall",
+            y_axis_label="precision",
+            output_backend="webgl",
+        )
+
+        colors = [
+            self.cmap(i) for i in np.linspace(0, 1, len(self.class_names))
+        ]
+        linestyles = ["solid", "dashed", "dotted", "dotdash", "dashdot"]
+
+        line_renderers = []
+        for i, ((x, y), c) in enumerate(zip(self.lines, colors)):
+            line_renderers.append(
+                precision_fig.line(
+                    x,
+                    y,
+                    color=self._matplotlib_color_to_bokeh(c),
+                    line_width=2.0,
+                    line_dash=linestyles[i % len(linestyles)],
+                )
+            )
+
+        legend_ncol = 6
+        for i in range((len(line_renderers) + legend_ncol - 1) // legend_ncol):
+            labels = self.class_names[i * legend_ncol : (i + 1) * legend_ncol]
+            renderers = line_renderers[i * legend_ncol : (i + 1) * legend_ncol]
+            legend = Legend(
+                items=[
+                    (label, [renderer])
+                    for label, renderer in zip(labels, renderers)
+                ],
+                orientation="horizontal",
+                label_text_font="Lato",
+                click_policy="mute",
+                location="left",
+                padding=-10,
+            )
+            legend.label_width = 120
+            precision_fig.add_layout(legend, "below")
+
+        self._output_bokeh_figure(precision_fig, output_path, output_formats)
 
 
 class TruePositiveIoUHistogram(Plot):
@@ -1542,7 +1859,53 @@ class TruePositiveIoUHistogram(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import ColumnDataSource, HoverTool, Range1d
+        from bokeh.plotting import figure
+
+        source = ColumnDataSource(
+            data=dict(
+                x=self.iou_data,
+                y=self.class_names,
+                y_idx=range(0, len(self.class_names)),
+            )
+        )
+
+        hist_fig = figure(
+            title=self.title,
+            x_range=Range1d(0, 1),
+            y_range=Range1d(-1, len(self.class_names)),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label="IoU precision",
+            y_axis_label="classes",
+            output_backend="webgl",
+        )
+
+        hbar = hist_fig.hbar(
+            y="y_idx",
+            left=0,
+            right="x",
+            fill_color=self.colors[0],
+            source=source,
+        )
+
+        hist_fig.yaxis.ticker = list(range(0, len(self.class_names)))
+        hist_fig.yaxis.major_label_overrides = {
+            i: label for i, label in enumerate(self.class_names)
+        }
+
+        hist_fig.add_tools(
+            HoverTool(
+                renderers=[hbar],
+                tooltips=self._create_custom_hover_template(
+                    ["Class", "IoU precision"], values=["@y", "@x"]
+                ),
+            )
+        )
+
+        self._output_bokeh_figure(hist_fig, output_path, output_formats)
 
 
 class TruePositivesPerIoURangeHistogram(Plot):
@@ -1609,7 +1972,54 @@ class TruePositivesPerIoURangeHistogram(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import ColumnDataSource, HoverTool
+        from bokeh.plotting import figure
+
+        hist_fig = figure(
+            title=self.title,
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label="IoU ranges",
+            y_axis_label="Number of masks in IoU range",
+            output_backend="webgl",
+        )
+
+        hist = np.histogram(self.iou_data, bins=self.x_range)[0]
+
+        source = ColumnDataSource(
+            dict(
+                x_left=self.x_range[:-1],
+                x_right=self.x_range[1:],
+                x_mid=(self.x_range[:-1] + self.x_range[1:]) / 2,
+                y=hist,
+            )
+        )
+
+        vbar = hist_fig.vbar(
+            x="x_mid",
+            bottom=0,
+            top="y",
+            width=self.x_range[1] - self.x_range[0],
+            fill_color=self.colors[0],
+            source=source,
+        )
+
+        hist_fig.xaxis.ticker = self.x_range
+        hist_fig.xaxis.major_label_orientation = "vertical"
+
+        hist_fig.add_tools(
+            HoverTool(
+                renderers=[vbar],
+                tooltips=self._create_custom_hover_template(
+                    ["Number of masks", "min IoU", "max IoU"],
+                    values=["@y", "@x_left", "@x_right"],
+                ),
+            )
+        )
+
+        self._output_bokeh_figure(hist_fig, output_path, output_formats)
 
 
 class RecallPrecisionGradients(Plot):
@@ -1705,7 +2115,70 @@ class RecallPrecisionGradients(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import (
+            ColorBar,
+            ColumnDataSource,
+            LinearColorMapper,
+            Range1d,
+        )
+        from bokeh.plotting import figure
+
+        gradient_fig = figure(
+            title=f"{self.title} (mAP={self.mean_avg_precision})",
+            x_range=Range1d(0, 1),
+            y_range=Range1d(-1, len(self.class_names)),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label="recall",
+            y_axis_label="classes",
+            output_backend="webgl",
+        )
+        color_mapper = LinearColorMapper(
+            palette=[
+                self._matplotlib_color_to_bokeh(color)
+                for color in self.cmap.colors
+            ],
+            low=0,
+            high=1,
+        )
+        for i, line in enumerate(self.lines):
+            x = np.linspace(0, 1, len(line[0]) + 2)
+            y = np.ones(len(line[0]) + 2) * i
+            source = ColumnDataSource(
+                dict(
+                    xs=[x[i : i + 2] for i in range(len(x) - 2)],
+                    ys=[y[i : i + 2] for i in range(len(y) - 2)],
+                    precision=line[1],
+                )
+            )
+            gradient_fig.multi_line(
+                xs="xs",
+                ys="ys",
+                line_color={"field": "precision", "transform": color_mapper},
+                line_width=10,
+                source=source,
+            )
+
+        gradient_fig.xaxis.ticker = np.arange(0, 1.1, 0.1)
+        gradient_fig.yaxis.ticker = list(range(0, len(self.class_names)))
+        gradient_fig.yaxis.major_label_overrides = {
+            i: f"{label} (AP={ap:.4f})"
+            for i, (label, ap) in enumerate(
+                zip(self.class_names, self.avg_precisions)
+            )
+        }
+
+        color_bar = ColorBar(
+            color_mapper=color_mapper,
+            title="Precision",
+            border_line_color=None,
+            background_fill_alpha=0,
+        )
+        gradient_fig.add_layout(color_bar, "below")
+
+        self._output_bokeh_figure(gradient_fig, output_path, output_formats)
 
 
 class LinePlot(Plot):
@@ -1802,7 +2275,42 @@ class LinePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        raise NotImplementedError
+        from bokeh.models import Legend
+        from bokeh.plotting import figure
+
+        plot_fig = figure(
+            title=self.title,
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label=self.x_label,
+            y_axis_label=self.y_label,
+            output_backend="webgl",
+        )
+
+        line_renderers = []
+        for color, (x, y) in zip(self.colors, self.lines):
+            line_renderers.append(
+                plot_fig.line(x, y, color=color, line_width=2.0)
+            )
+
+        if self.lines_labels is not None:
+            legend = Legend(
+                items=[
+                    (label, [renderer])
+                    for label, renderer in zip(
+                        self.lines_labels, line_renderers
+                    )
+                ],
+                orientation="horizontal",
+                label_text_font="Lato",
+                click_policy="mute",
+                location="center",
+            )
+            plot_fig.add_layout(legend, "below")
+
+        self._output_bokeh_figure(plot_fig, output_path, output_formats)
 
 
 class Barplot(Plot):
@@ -1959,7 +2467,7 @@ class Barplot(Plot):
                 fill_color=self.colors[i],
                 width=self.bar_width,
             )
-            tooltips = [(self.x_label, "xdata"), (self.y_label, f"{label}")]
+            tooltips = [(self.x_label, "@xdata"), (self.y_label, f"@{label}")]
             if len(self.y_data) > 1:
                 tooltips.insert(0, ("File", label))
 

@@ -212,17 +212,19 @@ class ROS2Protocol(Protocol):
         return True
 
     def upload_io_specification(self, path: Path) -> bool:
-        self.log_warning('IO specification is not supported in ROS2 protocol. Skipping.')  # noqa: E501
+        self.log_warning('IO specification is not supported in ROS2 protocol. '
+                         'Skipping.')
         return True
 
     def upload_model(self, path: Path) -> bool:
         self.log_debug('Uploading model')
-        assert self.model_service is not None, \
-               'Model service is not initialized'
-
-        if not self.model_service.wait_for_service(timeout_sec=1.0):
+        if self.model_service is None:
+            self.log_error('Model service is not initialized')
+            return False
+        elif not self.model_service.wait_for_service(timeout_sec=1.0):
             self.log_error('Model service not available')
             return False
+
         request = self._model_service_type.Request()
         future = self.model_service.call_async(request)
         rclpy.spin_until_future_complete(self.node, future)
@@ -248,9 +250,10 @@ class ROS2Protocol(Protocol):
         bool :
             True if the message was sent successfully, False otherwise.
         """
-        assert self.process_action is not None, \
-               'Process action is not initialized'
-        if not self.process_action.wait_for_server(timeout_sec=1.0):
+        if self.process_action is None:
+            self.log_error('Process action is not initialized')
+            return False
+        elif not self.process_action.wait_for_server(timeout_sec=1.0):
             self.log_error('Action server not available')
             return False
 
@@ -286,12 +289,13 @@ class ROS2Protocol(Protocol):
         return True
 
     def download_statistics(self) -> Measurements:
-        assert self.measurements_service is not None, \
-               'Measurements service is not initialized'
-
         self.log_debug('Downloading statistics')
         measurements = Measurements()
-        if not self.measurements_service.wait_for_service(timeout_sec=1.0):
+
+        if self.measurements_service is None:
+            self.log_error('Measurements service is not initialized')
+            return measurements
+        elif not self.measurements_service.wait_for_service(timeout_sec=1.0):
             self.log_error('Measurements service not available')
             return measurements
 

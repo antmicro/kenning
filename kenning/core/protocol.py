@@ -15,7 +15,7 @@ from pathlib import Path
 from typing import Any, Callable, Dict, Literal, Optional, Tuple, Union
 
 import kenning.utils.logger as logger
-from kenning.core.measurements import Measurements, MeasurementsCollector
+from kenning.core.measurements import Measurements, timemeasurements
 from kenning.utils.args_manager import ArgumentsHandler
 
 MSG_SIZE_LEN = 4
@@ -604,17 +604,10 @@ class Protocol(ArgumentsHandler):
         if not self.send_message(Message(MessageType.PROCESS)):
             return False
 
-        start = get_time_func()
-        ret = self.receive_confirmation()[0]
+        ret = timemeasurements('protocol_inference_step', get_time_func)(
+                self.receive_confirmation)()[0]
         if not ret:
             return False
-
-        duration = get_time_func() - start
-        measurementname = 'protocol_inference_step'
-        MeasurementsCollector.measurements += {
-            measurementname: [duration],
-            f'{measurementname}_timestamp': [start]
-        }
         return True
 
     def download_output(self) -> Tuple[bool, Optional[bytes]]:
@@ -710,17 +703,10 @@ class Protocol(ArgumentsHandler):
         if not self.send_message(Message(MessageType.OPTIMIZE_MODEL, model)):
             return False, None
 
-        start = get_time_func()
-        ret, compiled_model_data = self.receive_confirmation()
+        ret, compiled_model_data = timemeasurements(
+                'protocol_model_optimization', get_time_func)(self.receive_confirmation)()  # noqa: E501
         if not ret:
             return False, None
-
-        duration = get_time_func() - start
-        measurement_name = 'protocol_model_optimization'
-        MeasurementsCollector.measurements += {
-            measurement_name: [duration],
-            f'{measurement_name}_timestamp': [start]
-        }
         return ret, compiled_model_data
 
     def request_success(self, data: Optional[bytes] = bytes()) -> bool:

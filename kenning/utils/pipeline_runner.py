@@ -197,12 +197,12 @@ class PipelineRunner(object):
             ],
             'command': command,
             'build_cfg': serialize_inference(
-                self.dataset,
-                self.dataconverter,
-                self.optimizers,
-                self.protocol,
-                self.runtime,
-                self.model_wrapper
+                dataset=self.dataset,
+                model=self.model_wrapper,
+                optimizers=self.optimizers,
+                protocol=self.protocol,
+                runtime=self.runtime,
+                dataconverter=self.dataconverter,
             ),
         }
 

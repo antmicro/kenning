@@ -1,11 +1,11 @@
 # Structured pruning for PyTorch models
 
-One of the methods of reducing model's size is structured pruning, which removes least contributing neurons, filters and/or convolution kernels.
+Structured pruning is of the methods for reducing model size, which removes the least contributing neurons, filters and/or convolution kernels.
 In this example, we present scenarios for structured pruning of [`PyTorchPetDatasetMobileNetV2`](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/pytorch_pet_dataset.py) using [Neural Network Intelligence](https://github.com/microsoft/nni).
 
 ## Setup
 
-Installation of required dependencies:
+Install required dependencies:
 
 ```bash
 pip install "kenning[nni,reports] @ git+https://github.com/antmicro/kenning.git"
@@ -13,7 +13,7 @@ pip install "kenning[nni,reports] @ git+https://github.com/antmicro/kenning.git"
 
 ## Experiments
 
-In order to compare original model, we have to execute the scenario:
+In order to compare with an original model, you need to execute a scenario:
 
 ```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-pytorch.json save-as=mobilenetv2-pytorch.json
 :language: json
@@ -27,24 +27,27 @@ kenning test \
   --measurements build/torch.json
 ```
 
-{{project}} supports activation-based pruners, specific one can be chosen with `pruner_type` parameter:
-* `apoz` - [`ActivationAPoZRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-apoz-rank-pruner) based on Average Percentage of Zeros in activations,
-* `mean_rank` - [`ActivationMeanRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-mean-rank-pruner) based on metric that calculates the smallest mean value of activations.
+{{project}} supports activation-based pruners. 
+You can choose a specific pruner with the `pruner_type` parameter:
 
-These activations are collected during dataset inference and the number of samples collected for statistics can be modified with `training_steps`.
+* `apoz` - [`ActivationAPoZRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-apoz-rank-pruner) based on Average Percentage of Zeros in activations,
+* `mean_rank` - [`ActivationMeanRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-mean-rank-pruner) based on a metric that calculates the smallest mean value of activations.
+
+These activations are collected during dataset inference. 
+The number of samples collected for statistics can be modified with `training_steps`.
 Moreover, pruning has two modes:
 
-* `dependency_aware` which makes pruner aware of channels' and groups' dependencies
-* `normal`, where dependencies are ignored.
+* `dependency_aware` - makes pruner aware of dependencies for channels and groups.
+* `normal` - dependencies are ignored.
 
-Also, there is a possibility to chose which `activation` pruner will use - `relu`, `relu6` or `gelu`.
-Additional configuration can be specified in `config_list`, which follows the format defined in the [NNI specification](https://nni.readthedocs.io/en/stable/compression/config_list.html#pruning-specific-configuration-keys).
-Furthermore, if `exclude_last_layer` is positive, the optimizer will be configured to exclude the last layer from the pruning process, to prevent changing size of the output.
-Apart from that, `confidence` defines coefficient for the sparsity inference and also the batch size of the dummy input for this process.
-If GPU is available, it will be used by default, but as pruning can be memory-consuming, there is a `pruning_on_cuda` option for manual configuration of the GPU usage during this process.
+You can also choose which `activation` the pruner will use - `relu`, `relu6` or `gelu`.
+Additional configuration can be specified in `config_list` which follows a format defined in the [NNI specification](https://nni.readthedocs.io/en/stable/compression/config_list.html#pruning-specific-configuration-keys).
+When `exclude_last_layer` is positive, the optimizer will be configured to exclude the last layer from the pruning process, to prevent changing the size of the output.
+Apart from that, `confidence` defines the coefficient for sparsity inference and batch size of the dummy input for the process.
+When a GPU is available, it is used by default, but as pruning can be memory-consuming, the `pruning_on_cuda` option enables manual GPU usage configuration during the process.
 
-Other arguments influence fine-tuning of the pruned model, e.g. `criterion` and `optimizer` accepts paths to the class respectively calculating criterion and optimizing neural network.
-Also, number of `finetuning_epochs` can be changed, as well as `finetuning_batch_size` and `finetuning_learning_rate`.
+Other arguments affect fine-tuning of the pruned model, e.g. `criterion` and `optimizer` accept paths to classes, respectively calculating a criterion and optimizing a neural network.
+The number of `finetuning_epochs`, the `finetuning_batch_size` and `finetuning_learning_rate` can be modified.
 
 ```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-pytorch.json save-as=pruning-mobilenetv2-pytorch.json
 :language: json
@@ -59,7 +62,7 @@ kenning optimize test \
   --measurements build/nni-pruning.json
 ```
 
-To ensure better quality of performance measurements, we suggest running optimization and tests separately, like:
+To ensure better quality of performance measurements, we suggest running optimization and tests separately, like below:
 
 ```bash test-skip
 kenning optimize --json-cfg pruning-mobilenetv2-pytorch.json
@@ -68,7 +71,7 @@ kenning test \
   --measurements build/nni-pruning.json
 ```
 
-For greater size reduction, we can use larger sparsity with adjusted parameters, like:
+For more size reduction, you can use larger sparsity with adjusted parameters, like below:
 
 { emphasize-lines="7,14,18-19,24" }
 ```json

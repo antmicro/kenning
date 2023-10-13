@@ -19,7 +19,7 @@ from rclpy.action import ActionClient
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
-from kenning.core.measurements import Measurements, MeasurementsCollector
+from kenning.core.measurements import Measurements, timemeasurements
 from kenning.core.protocol import Protocol
 from kenning.utils.class_loader import load_class
 
@@ -277,15 +277,9 @@ class ROS2Protocol(Protocol):
             self.log_error('No input uploaded')
             return False
 
-        start = get_time_func()
         self.future = self.future.result().get_result_async()
-        rclpy.spin_until_future_complete(self.node, self.future)
-        duration = get_time_func() - start
-        measurementname = 'protocol_inference_step'
-        MeasurementsCollector.measurements += {
-            measurementname: [duration],
-            f'{measurementname}_timestamp': [start]
-        }
+        timemeasurements('protocol_inference_step', get_time_func)(
+                rclpy.spin_until_future_complete)(self.node, self.future)
         return True
 
     def download_statistics(self) -> Measurements:

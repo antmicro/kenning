@@ -76,15 +76,15 @@ class ROS2Protocol(Protocol):
             },
     }
 
-    def __init__(self,
-                 node_name: str,
-                 process_action_type_str: str,
-                 process_action_name: str,
-                 model_service_type_str: str = 'std_srvs.srv.Trigger',
-                 model_service_name: str = 'cvnode_prepare',
-                 measurements_service_type_str: str = 'std_srvs.srv.Trigger',
-                 measurements_service_name: str = 'cvnode_measurements',
-                 ):
+    def __init__(
+            self,
+            node_name: str,
+            process_action_type_str: str,
+            process_action_name: str,
+            model_service_type_str: str = 'std_srvs.srv.Trigger',
+            model_service_name: str = 'cvnode_prepare',
+            measurements_service_type_str: str = 'std_srvs.srv.Trigger',
+            measurements_service_name: str = 'cvnode_measurements',):
         """
         Initializes ROS2Protocol object.
 

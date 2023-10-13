@@ -1,10 +1,11 @@
 # Unstructured Pruning of TensorFlow Models
 
-This section contains a tutorial for the unstructured pruning of [the TensorFlow classification model](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py).
+This section contains a tutorial for unstructured pruning of [the TensorFlow classification model](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py).
 
-As in most of the pruning techniques, this unstructured pruning requires the fine-tuning after "removing" certain connections through training.
-In the unstructured pruning, the weights for certain connections are set to zero - the weights and layers are not removed, but the matrices holding weights become sparse.
-It can be used to improve the compression of models (for storage purposes), and can also be used with dedicated hardware and libraries that can take advantage of sparse computing.
+As is the case with most pruning techniques, this type of unstructured pruning requires fine-tuning after "removing" certain connections through training.
+In unstructured pruning, the weights for certain connections are set to zero. 
+The weights and layers are not removed, but the matrices holding weights become sparse.
+It can be used to improve model compression (for storage purposes) and for use with dedicated hardware and libraries that can take advantage of sparse computing.
 
 ## Setup
 
@@ -16,7 +17,7 @@ pip install "kenning[tensorflow,reports] @ git+https://github.com/antmicro/kenni
 
 ## Experiments
 
-At the beginning, we would like to know a performance of the original model, which can be achieved by running the following pipeline:
+First, we need to know the performance of the original model which can be achieved by running the following pipeline:
 
 ```{literalinclude} ../scripts/jsonconfigs/mobilenetv2-tensorflow.json save-as=mobilenetv2-tensorflow.json
 :language: json
@@ -30,22 +31,23 @@ kenning test \
   --measurements build/tf.json
 ```
 
-`TensorflowPruningOptimizer` has two main parameters for adjusting pruning process:
+`TensorflowPruningOptimizer` has two main parameters for adjusting the pruning process:
 
-* `target_sparsity` - defines sparsity of weights after the pruning,
-* `prune_dense` - if `true`, only dense layers will be pruned, otherwise whole model will be used.
+* `target_sparsity` - defines sparsity of weights after pruning,
+* `prune_dense` - if `true`, only dense layers will be pruned instead of the entire model.
 
-There is also possibility to adjust how often model will be pruned (with `pruning_frequency`), and when it cannot be pruned (`pruning_end`).
+You can also adjust how often a model will be pruned (with `pruning_frequency`), and when it cannot be pruned (`pruning_end`).
 
-In this example we decided to fine-tune the model for three epochs with size of the batch equal to 128.
-Apart from that, there is also possibility to chose `optimizer` (one of `adam`, `RMSprop` or `SGD`) and specify if network's output is normalized with `disable_from_logits`.
+You can also chose an `optimizer` (one of `adam`, `RMSprop` or `SGD`) and specify if network's output is normalized with `disable_from_logits`.
+
+In this example, we decided to fine-tune the model for three epochs with batch size equal to 128.
 
 ```{literalinclude} ../scripts/jsonconfigs/pruning-mobilenetv2-tensorflow.json save-as=pruning-mobilenetv2-tensorflow.json
 :language: json
 :emphasize-lines: 15-26
 ```
 
-To prune model, run:
+To prune the model, run:
 
 ```bash
 kenning optimize \
@@ -55,9 +57,9 @@ kenning test \
   --measurements build/tf-pruning.json
 ```
 
-Despite the fact, that Kenning CLI is capable of running commands in sequence (like `kenning optimize test [FLAGS]`), we suggest separating them to make sure performance measurements are more precise.
+Despite the fact, that the Kenning CLI is capable of running commands in sequence (like `kenning optimize test [FLAGS]`), we suggest separating them for more measurement precision.
 
-In order to compare model before and after pruning, report can be generated with the following command:
+In order to compare a model before and after pruning, you can generate a report using the following command:
 
 ```bash
 kenning report \
@@ -68,7 +70,7 @@ kenning report \
   --to-html
 ```
 
-For greater size reduction, we can use larger sparsity with adjusted parameters, like:
+For greater size reduction, we can use larger sparsity with adjusted parameters, like below:
 
 ```json
 {
@@ -85,8 +87,8 @@ For greater size reduction, we can use larger sparsity with adjusted parameters,
 }
 ```
 
-Moreover, default TensorFlow version of the pretrained MobileNetV2 (`kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5`) is exported with optimizer, what makes it a lot larger.
-To ensure better quality of measurements, we will present data with default MobileNetV2 stripped from any unnecessary information.
+The default TensorFlow version of the pretrained MobileNetV2 (`kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5`) is exported with an optimizer, resulting in size increase.
+To ensure better measurement quality, we will present the data with the default MobileNetV2 stripped from any unnecessary information.
 
 Summary of pruned models:
 
@@ -111,11 +113,11 @@ Model size, speed and quality comparison for TensorFlow pruning
 {{project}} provides a few other methods for reducing the size of the model.
 One of such techniques is clustering.
 It groups weights into K groups of similar values.
-Then, it computes K centroids based on those weights and use them as new weights' values.
-In weights matrices, instead of values, we store indices to corresponding centroid.
-The indices can be stored as integers with very small number of bits necessary to represent them, reducing the model size significantly.
+Then, it computes K centroids based on those weights and use them as values for new weights.
+In weight matrices, we store indices to corresponding centroid instead of values.
+The indices can be stored as integers with a very small number of bits necessary to represent them, reducing the model size significantly.
 
-It can be used by adding `kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer`:
+You can do this by adding `kenning.optimizers.tensorflow_clustering.TensorFlowClusteringOptimizer`:
 
 ```{literalinclude} ../scripts/jsonconfigs/pruning-clustering-mobilenetv2-tensorflow.json save-as=pruning-clustering-mobilenetv2-tensorflow.json
 :language: json
@@ -133,8 +135,8 @@ kenning optimize test report \
   --to-html
 ```
 
-Clustering allows to greatly reduce the size of the model without significant decrease in quality.
-Here is a comparison of model with and without clustering:
+Clustering allows for substantial model size reduction without significant decrease in quality.
+Here is a comparison of a model with and without clustering:
 
 | Sparsity  | Number of clusters | Accuracy     | Compressed size | Size reduction |
 |-----------|--------------------|--------------|-----------------|----------------|

@@ -6,15 +6,16 @@
 Wrapper for TensorFlow Lite deep learning compiler.
 """
 
-from shutil import which
 import subprocess
 from pathlib import Path
-import numpy as np
 from typing import Literal, Optional, Dict, List
+from shutil import which
 
+import numpy as np
+
+from kenning.core.dataset import Dataset
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
-from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -39,10 +40,11 @@ def tensorflowconversion(model_path: PathOrURI):
 
 
 def onnxconversion(model_path: PathOrURI):
+    from datetime import datetime
+
+    import onnx
     import tensorflow as tf
     from onnx_tf.backend import prepare
-    import onnx
-    from datetime import datetime
     onnxmodel = onnx.load(str(model_path))
     model = prepare(onnxmodel)
     convertedpath = model_path.with_suffix(
@@ -155,7 +157,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         disable_from_logits : bool
             Determines whether output of the model is normalized.
         save_to_zip : bool
-            Detemines whether optimized model should additionaly be saved
+            Determines whether optimized model should additionally be saved
             in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.

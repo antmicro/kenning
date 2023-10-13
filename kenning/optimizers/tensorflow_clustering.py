@@ -5,14 +5,16 @@
 """
 Wrapper for TensorFlowClustering optimizer.
 """
+from typing import Dict, List, Optional
+
 import tensorflow as tf
-from typing import Literal, Optional, Dict, List
+from typing import Literal
 import tensorflow_model_optimization as tfmot
 
-from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.core.dataset import Dataset
-from kenning.utils.resource_manager import PathOrURI
+from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI
 
 LOGGER = get_logger()
 
@@ -102,7 +104,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         disable_from_logits : bool
             Determines whether output of the model is normalized.
         save_to_zip : bool
-            Detemines whether optimized model should be saved in ZIP format.
+            Determines whether optimized model should be saved in ZIP format.
         model_framework : str
             Framework of the input model, used to select a proper backend.
         cluster_dense : bool

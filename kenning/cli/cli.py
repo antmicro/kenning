@@ -11,22 +11,13 @@ import argparse
 import sys
 from typing import Dict
 
-from kenning.cli.parser import (
-    Parser,
-    ParserHelpException,
-    print_help_from_parsers,
-)
-from kenning.cli.config import (
-    AVAILABLE_COMMANDS,
-    MAP_COMMAND_TO_SCENARIO,
-    SUB_DEST_FORM,
-    setup_base_parser,
-)
-from kenning.utils.excepthook import (
-    MissingKenningDependencies,
-    find_missing_optional_dependency
-)
 from kenning.cli.autocompletion import configure_autocomplete
+from kenning.cli.config import (AVAILABLE_COMMANDS, MAP_COMMAND_TO_SCENARIO,
+                                SUB_DEST_FORM, setup_base_parser)
+from kenning.cli.parser import (Parser, ParserHelpException,
+                                print_help_from_parsers)
+from kenning.utils.excepthook import (MissingKenningDependencies,
+                                      find_missing_optional_dependency)
 
 
 def main():
@@ -143,7 +134,7 @@ def main():
                 result = run(args, not_parsed=rem)
                 if result:
                     parser.error(
-                        f"`{subcommand}` subcommand did not end sucessfully",
+                        f"`{subcommand}` subcommand did not end successfully",
                         print_usage=False
                     )
             except ModuleNotFoundError as er:

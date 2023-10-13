@@ -2,23 +2,24 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-import pexpect
-import tempfile
-import venv
+import copy
 import os
 import re
-import uuid
-import copy
-import shutil
 import shlex
+import shutil
+import tempfile
+import uuid
+import venv
+from collections import defaultdict
 from glob import glob
 from pathlib import Path
-from tuttest import get_snippets, Snippet
-from typing import Generator, Tuple, Dict, Optional, Callable
-from collections import defaultdict
+from typing import Callable, Dict, Generator, Optional, Tuple
 
-# Regex for changing Kenning installtion to local version
+import pexpect
+import pytest
+from tuttest import Snippet, get_snippets
+
+# Regex for changing Kenning installation to local version
 KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
 # Regex for detecting Kenning installation
 PIP_INSTALL_KENNING_RE = r'pip (.* )?install .*' + KENNING_LINK_RE
@@ -228,7 +229,7 @@ def get_venv(markdown: str, tmpfolder: Path) -> Path:
     """
     Returns path to the virtual environment.
 
-    Returns path for existing virtual environment assosiated with markdown
+    Returns path for existing virtual environment associated with markdown
     file or create a new one.
 
     Parameters
@@ -257,7 +258,7 @@ def get_subshell(
     log_dir: Optional[str] = None,
 ) -> pexpect.spawn:
     """
-    Returns existing subshell assosiated with markdown file and ID
+    Returns existing subshell associated with markdown file and ID
     or create new one.
 
     Parameters
@@ -342,7 +343,7 @@ def create_script(snippet: Snippet) -> str:
     """
     script = None
     if snippet.lang == 'bash':
-        # If `pip install` change it to intall local Kenning version
+        # If `pip install` change it to install local Kenning version
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
             snippet.text = re.sub(KENNING_LINK_RE, r'.\2', snippet.text)

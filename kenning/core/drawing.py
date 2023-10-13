@@ -6,27 +6,27 @@
 Wrappers for drawing plots for reports.
 """
 
-import sys
-import matplotlib as mpl
-from matplotlib import pyplot as plt
-from typing import List, Tuple, Optional, Dict, Union, Iterable, Any
-import numpy as np
 import itertools
+import sys
+from contextlib import contextmanager
+from math import floor, pi
 from pathlib import Path
-from matplotlib import gridspec
-from matplotlib import patheffects
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+
+import matplotlib as mpl
+import numpy as np
+from matplotlib import gridspec, patheffects
+from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
-from math import floor, pi
 from scipy.signal import savgol_filter
-from contextlib import contextmanager
+
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
 
 from kenning.resources import reports
-
 
 BOKEH_THEME_FILE = path(reports, 'bokeh_theme.yml')
 MATPLOTLIB_THEME_FILE = path(reports, 'matplotlib_theme_rc')
@@ -1007,10 +1007,10 @@ def draw_confusion_matrix_bokeh(
     formats : Tuple[str]
         Tuple with formats names.
     """
-    from bokeh.plotting import figure, output_file, save, row, show
-    from bokeh.models import ColumnDataSource, HoverTool, FactorRange, Range1d
-    from bokeh.layouts import Spacer, gridplot
     from bokeh.io import export_png, export_svg
+    from bokeh.layouts import Spacer, gridplot
+    from bokeh.models import ColumnDataSource, FactorRange, HoverTool, Range1d
+    from bokeh.plotting import figure, output_file, row, save, show
 
     if cmap is None:
         cmap = plt.get_cmap('RdYlGn')
@@ -1090,7 +1090,7 @@ def draw_confusion_matrix_bokeh(
     sensitivity_fig = figure(
         title=None,
         x_range=confusion_matrix_fig.x_range,
-        y_range=FactorRange(factors=['Sensivity'], bounds=(0, 1)),
+        y_range=FactorRange(factors=['Sensitivity'], bounds=(0, 1)),
         width=confusion_matrix_fig.width,
         height=confusion_matrix_fig.height // 15,
         toolbar_location=None,
@@ -1100,7 +1100,7 @@ def draw_confusion_matrix_bokeh(
     # Preprocess data
     cc = cmap(sensitivity).reshape((-1, 4))
     sensitivity_source = ColumnDataSource(data={
-        'y': ['Sensivity' for _ in class_names],
+        'y': ['Sensitivity' for _ in class_names],
         'Class': class_names,
         'color': cc,
         "Sensitivity": sensitivity.flatten() * 100,
@@ -1797,9 +1797,9 @@ def draw_barplot_bokeh(
     formats : Tuple[str]
         Tuple with formats names.
     """
-    from bokeh.plotting import figure, output_file, save, show
-    from bokeh.models import Range1d, HoverTool
     from bokeh.io import export_png, export_svg
+    from bokeh.models import HoverTool, Range1d
+    from bokeh.plotting import figure, output_file, save, show
     from bokeh.transform import dodge
 
     if width is None:

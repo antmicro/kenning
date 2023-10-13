@@ -6,7 +6,6 @@
 Wrapper for TVM deep learning compiler.
 """
 
-from pathlib import Path
 import tvm
 import onnx
 import tvm.relay as relay

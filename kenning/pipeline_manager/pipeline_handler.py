@@ -21,7 +21,7 @@ from kenning.utils.pipeline_runner import PipelineRunner
 
 class VisualEditorGraphParserError(Exception):
     """
-    Exception occuring when conversion from scenario to graph and vice versa
+    Exception occurring when conversion from scenario to graph and vice versa
     fails.
     """
     pass

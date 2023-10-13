@@ -6,15 +6,15 @@
 Wrapper for TensorFlow optimizers.
 """
 
-from typing import List, Literal, Tuple, Optional
-from kenning.utils.resource_manager import PathOrURI
 import tensorflow as tf
 import zipfile
 
-from kenning.core.optimizer import Optimizer
+from typing import List, Literal, Tuple, Optional
+
 from kenning.core.dataset import Dataset
-from kenning.utils.resource_manager import PathOrURI
+from kenning.core.optimizer import Optimizer
 from kenning.utils.logger import get_logger
+from kenning.utils.resource_manager import PathOrURI
 
 LOGGER = get_logger()
 
@@ -47,7 +47,7 @@ class TensorFlowOptimizer(Optimizer):
             'default': False
         },
         'save_to_zip': {
-            'description': 'Detemines whether optimized model should '
+            'description': 'Determines whether optimized model should '
                            'additionally be saved in ZIP format',
             'type': bool,
             'default': False,
@@ -200,7 +200,7 @@ class TensorFlowOptimizer(Optimizer):
     def save_model(self, model: tf.keras.Model):
         """
         Save Keras model to compiled_model_path
-        and optionaly archive it into ZIP.
+        and optionally archive it into ZIP.
 
         Parameters
         ----------

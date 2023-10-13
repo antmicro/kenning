@@ -7,9 +7,9 @@ Provides implementation of interface used by other Kenning components to manage
 their input and output types.
 """
 
-from abc import ABC, abstractmethod
-from typing import Dict, List, Tuple, Any
 import json
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Tuple
 
 from kenning.utils.resource_manager import PathOrURI
 
@@ -122,7 +122,7 @@ class IOInterface(ABC):
         dtypes for each layer.
 
         Since no object initialization is done for this method, some IO
-        specification may be incomplete, this method fils in -1 in case
+        specification may be incomplete, this method fills in -1 in case
         the information is missing from the JSON dictionary.
 
         Parameters

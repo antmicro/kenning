@@ -7,10 +7,11 @@ Provides an API for ONNX conversions of various models in a given framework.
 """
 
 from collections import namedtuple
-from pathlib import Path
 from enum import Enum
-import onnx
+from pathlib import Path
 from typing import List
+
+import onnx
 
 from kenning.utils.logger import get_logger
 
@@ -173,7 +174,7 @@ class ONNXConversion(object):
         """
         Virtual function for preparing the ONNX conversion test.
 
-        This method should add model entries using add_entry methos.
+        This method should add model entries using add_entry methods.
 
         It is later called in the constructor to prepare the list of models to
         test.

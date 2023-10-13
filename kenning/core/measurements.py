@@ -264,7 +264,9 @@ def tagmeasurements(tagname: str):
     return statistics_decorator
 
 
-def timemeasurements(measurementname: str):
+def timemeasurements(
+        measurementname: str,
+        get_time_func: Callable[[], float] = time.perf_counter) -> Callable:
     """
     Decorator for measuring time of the function.
 
@@ -274,19 +276,26 @@ def timemeasurements(measurementname: str):
     ----------
     measurementname : str
         The name of the measurement type.
+    get_time_func : Callable[[], float]
+        Function that returns current timestamp.
+
+    Returns
+    -------
+    Callable :
+        Decorated function.
     """
     def statistics_decorator(function):
         @wraps(function)
-        def statistics_wrapper(*args):
-            start = time.perf_counter()
-            returnvalue = function(*args)
-            duration = time.perf_counter() - start
+        def statistics_wrapper(*args, **kwargs):
+            start = get_time_func()
+            returnvalue = function(*args, **kwargs)
+            duration = get_time_func() - start
             logger.get_logger().debug(
                 f'{function.__name__} time:  {duration * 1000} ms'
             )
             MeasurementsCollector.measurements += {
                 measurementname: [duration],
-                f'{measurementname}_timestamp': [time.perf_counter()]
+                f'{measurementname}_timestamp': [get_time_func()]
             }
             return returnvalue
         return statistics_wrapper

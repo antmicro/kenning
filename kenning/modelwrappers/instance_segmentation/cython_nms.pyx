@@ -1,3 +1,7 @@
+# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
 # cython: language_level=3
 cimport cython
 import numpy as np

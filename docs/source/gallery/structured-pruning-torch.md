@@ -27,13 +27,13 @@ kenning test \
   --measurements build/torch.json
 ```
 
-{{project}} supports activation-based pruners. 
+{{project}} supports activation-based pruners.
 You can choose a specific pruner with the `pruner_type` parameter:
 
 * `apoz` - [`ActivationAPoZRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-apoz-rank-pruner) based on Average Percentage of Zeros in activations,
 * `mean_rank` - [`ActivationMeanRankPruner`](https://nni.readthedocs.io/en/v2.5/Compression/v2_pruning_algo.html#activation-mean-rank-pruner) based on a metric that calculates the smallest mean value of activations.
 
-These activations are collected during dataset inference. 
+These activations are collected during dataset inference.
 The number of samples collected for statistics can be modified with `training_steps`.
 Moreover, pruning has two modes:
 

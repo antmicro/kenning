@@ -68,14 +68,14 @@ Modelwrappers (in kenning.modelwrappers):
 
 ```
 
-The output of the command can be limited by providing one or more positional arguments representing module groups: 
-* `optimizers`, 
-* `runners`, 
-* `dataproviders`, 
-* `datasets`, 
-* `modelwrappers`, 
-* `onnxconversions`, 
-* `outputcollectors`, 
+The output of the command can be limited by providing one or more positional arguments representing module groups:
+* `optimizers`,
+* `runners`,
+* `dataproviders`,
+* `datasets`,
+* `modelwrappers`,
+* `onnxconversions`,
+* `outputcollectors`,
 * `runtimes`.
 
 The command can also be used to list available runtimes:

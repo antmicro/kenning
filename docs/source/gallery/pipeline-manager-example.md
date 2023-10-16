@@ -4,7 +4,7 @@
 
 This chapter describes how to set up Pipeline Manager and use it with Kenning graphs.
 
-Pipeline Manager is application-agnostic and does not assume any properties of the application it is working with. 
+Pipeline Manager is application-agnostic and does not assume any properties of the application it is working with.
 Kenning, however, implements a Pipeline Manager client which provides tools for creating complex Kenning pipelines and flows, while also allowing for running and saving these configurations directly from Pipeline Manager's editor.
 
 ![](img/pipeline-manager-visualisation.png)

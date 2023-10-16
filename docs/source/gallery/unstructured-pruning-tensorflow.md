@@ -3,7 +3,7 @@
 This section contains a tutorial for unstructured pruning of [the TensorFlow classification model](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/classification/tensorflow_pet_dataset.py).
 
 As is the case with most pruning techniques, this type of unstructured pruning requires fine-tuning after "removing" certain connections through training.
-In unstructured pruning, the weights for certain connections are set to zero. 
+In unstructured pruning, the weights for certain connections are set to zero.
 The weights and layers are not removed, but the matrices holding weights become sparse.
 It can be used to improve model compression (for storage purposes) and for use with dedicated hardware and libraries that can take advantage of sparse computing.
 

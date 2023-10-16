@@ -6,6 +6,7 @@ import pytest
 
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.tests.pipeline_manager.handler_tests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
+from kenning.pipeline_manager.core import VisualEditorGraphParserError
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.utils.class_loader import load_class
 
@@ -282,3 +283,22 @@ class TestFlowHandler(HandlerTests):
     test_equivalence = factory_test_equivalence(
         PATH_TO_JSON_SCRIPTS
     )
+
+    def test_create_dataflow_fail(self, handler):
+        """
+        Test if the handler correctly fails when the JSON is invalid.
+        """
+        with pytest.raises(VisualEditorGraphParserError) as e:
+            invalid_flow_json = [{"type": "Unknown", }]
+            handler.create_dataflow(invalid_flow_json)
+        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
+            raise e.value
+
+        with pytest.raises(VisualEditorGraphParserError) as e:
+            invalid_flow_json = [{
+                "parameters": {},
+                "test": "test",
+            }]
+            handler.create_dataflow(invalid_flow_json)
+        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
+            raise e.value

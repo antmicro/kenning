@@ -279,5 +279,4 @@ class TestPipelineHandler(HandlerTests):
         with pytest.raises(VisualEditorGraphParserError) as e:
             invalid_flow_json = {"test": {"Unknown": "test_parameter", }, }
             handler.create_dataflow(invalid_flow_json)
-        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
-            raise e.value
+        assert 'is not available in the Visual Editor.' in str(e.value)

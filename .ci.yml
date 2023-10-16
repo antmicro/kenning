@@ -77,9 +77,6 @@ docs-tests:
         refs:
             - main
             - dev
-    except:
-        refs:
-            - merge_requests
     <<: *pytest-docs
 
 docs-tests-manual:

@@ -10,6 +10,7 @@ from kenning.tests.pipeline_manager.handler_tests import (
     factory_test_equivalence,
 )
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
+from kenning.pipeline_manager.core import VisualEditorGraphParserError
 
 PET_DATASET_DATAFLOW_NODE = {
     "name": "PetDataset",
@@ -270,3 +271,13 @@ class TestPipelineHandler(HandlerTests):
     test_create_dataflow = factory_test_create_dataflow(PATH_TO_JSON_SCRIPTS)
 
     test_equivalence = factory_test_equivalence(PATH_TO_JSON_SCRIPTS)
+
+    def test_create_dataflow_fail(self, handler):
+        """
+        Test if the handler correctly fails when the JSON is invalid.
+        """
+        with pytest.raises(VisualEditorGraphParserError) as e:
+            invalid_flow_json = {"test": {"Unknown": "test_parameter", }, }
+            handler.create_dataflow(invalid_flow_json)
+        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
+            raise e.value

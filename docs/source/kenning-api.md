@@ -22,6 +22,7 @@ The grey blocks represent the inference results and metrics flow.
 * a [](optimizer-api) class - optimizes and compiles the model,
 * a [](runtime-api) class - loads the model, performs inference on compiled model, runs target-specific processing of inputs and outputs, and runs performance benchmarks,
 * a [](protocol-api) class - implements the communication protocol between the host and the target,
+* a [](dataconverter-api) class - performs conversion of data between different formats used by surrounding blocks,
 * a [](dataprovider-api) class - implements providing data for inference from such sources as camera, TCP connection, or others,
 * a [](outputcollector-api) class - implements parsing and utilizing data coming from inference (such as displaying visualizations or sending results via TCP).
 
@@ -117,7 +118,6 @@ Example implementations:
 ```
 
 (modelwrapper-api)=
-
 ## ModelWrapper
 
 `kenning.core.model.ModelWrapper` base class requires implementing methods for:
@@ -151,7 +151,6 @@ Model wrapper examples:
 ```
 
 (optimizer-api)=
-
 ## Optimizer
 
 `kenning.core.optimizer.Optimizer` objects wrap the deep learning compilation process.
@@ -172,7 +171,6 @@ Example model optimizers:
 ```
 
 (runtime-api)=
-
 ## Runtime
 
 The `kenning.core.runtime.Runtime` class provides interfaces for methods for running compiled models locally or remotely on a target device.
@@ -198,7 +196,6 @@ Runtime examples:
 ```
 
 (protocol-api)=
-
 ## Protocol
 
 The `kenning.core.protocol.Protocol` class conducts communication between the client (host) and the server (target).
@@ -223,9 +220,8 @@ Protocol examples:
 
 * [NetworkProtocol](https://github.com/antmicro/kenning/blob/main/kenning/protocols/network.py) - implements a TCP-based communication between the host and the client.
 
-(runtime-protocol-spec)=
-
-### Runtime protocol specification
+(protocol-spec)=
+### Protocol specification
 
 The communication protocol is message-based.
 Possible messages are:
@@ -260,9 +256,9 @@ Communication during an inference benchmark session goes as follows:
 The way the message type is determined and the data between the server and the client is sent depends on the implementation of the `kenning.core.protocol.Protocol` class.
 The implementation of running inference on the given target is contained within the `kenning.core.runtime.Runtime` class.
 
-### Protocol API
+### Protocol
 
-`kenning.core.protocol.Protocol`-based classes implement the [](runtime-protocol-spec) in a given means of transport, e.g. TCP connection or UART.
+`kenning.core.protocol.Protocol`-based classes implement the [](protocol-spec) in a given means of transport, e.g. TCP connection or UART.
 It requires method implementation for:
 
 * server (target hardware) and client (compiling host) initialization,
@@ -276,8 +272,28 @@ It requires method implementation for:
    :members:
 ```
 
-(measurements-api)=
+(dataconverter-api)=
+## DataConverter
 
+`kennning.core.dataconverter.DataConverter` - based classes are responsible for:
+
+* converting data to the format expected by surrounding block,
+* converting data from the surrounding block format to one previous block excepts.
+
+The `DataConverter` objects are used by [PipelineRunner](https://github.com/antmicro/kenning/blob/main/kenning/utils/pipeline_runner.py) during inference.
+
+The available implementations of dataconverter are included in the `kenning.dataconverters` submodule.
+Example implementations:
+
+* [ModelWrapperDataConverter](https://github.com/antmicro/kenning/blob/main/kenning/dataconverters/modelwrapper_dataconverter.py) implement conversions by utilizing the [ModelWrapper](modelwrapper-api) classes,
+* [ROS2SegmentationDataConverter](https://github.com/antmicro/kenning/blob/main/kenning/dataconverters/ros2_segmentation_dataconverter.py) performs conversions by utilizing ROS2 action for segmentation problems from [kenning_computer_vision_msgs](https://github.com/antmicro/ros2-kenning-computer-vision-msgs) repository.
+
+```{eval-rst}
+.. autoclass:: kenning.core.dataconverter.DataConverter
+   :members:
+```
+
+(measurements-api)=
 ## Measurements
 
 The `kenning.core.measurements` module contains `Measurements` and `MeasurementsCollector` classes for collecting performance and quality metrics.
@@ -291,7 +307,6 @@ The dictionary held by `Measurements` requires serializable data, since most scr
 ```
 
 (onnxconversion-api)=
-
 ## ONNXConversion
 
 The `ONNXConversion` object contains methods for model conversion in various frameworks to ONNX and vice versa.
@@ -303,7 +318,6 @@ It also provides methods for testing the conversion process empirically on a lis
 ```
 
 (dataprovider-api)=
-
 ## DataProvider
 
 The `DataProvider` classes are used during deployment to provide data for inference.
@@ -320,7 +334,6 @@ Example implementations:
 ```
 
 (outputcollector-api)=
-
 ## OutputCollector
 
 The `OutputCollector` classes are used during deployment for inference results receiving and processing.
@@ -345,7 +358,6 @@ Example implementations:
 ```
 
 (argumentshandler-api)=
-
 ## ArgumentsHandler
 
 The `ArgumentsHandler` class is responsible for concatenating `arguments_structure` and creating parsers for command line and JSON config arguments.
@@ -358,7 +370,6 @@ In order to make some class being able to be instantiated from command line argu
 ```
 
 (resourcemanager-api)=
-
 ## ResourceManager
 
 The `ResourceManager` is a singleton class which handles local and remote files for Kenning, such as datasets or models.
@@ -370,7 +381,6 @@ It downloads missing files, provides paths to the available files, resolves cust
 ```
 
 (resourceuri-api)=
-
 ## ResourceURI
 
 The `ResourceURI` class is a [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path)-based object allowing the user to work with Kenning resources, both using regular paths and URI schemes supported by the [](resourcemanager-api).

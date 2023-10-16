@@ -9,22 +9,16 @@ from pipeline_manager import specification_builder
 
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol
-from kenning.pipeline_manager.core import BaseDataflowHandler, GraphCreator, \
-    SPECIFICATION_VERSION
-from kenning.pipeline_manager.node_utils import add_node, get_category_name
-from kenning.utils.class_loader import (
-    get_all_subclasses,
-    get_base_classes_dict,
+from kenning.pipeline_manager.core import (
+        SPECIFICATION_VERSION,
+        BaseDataflowHandler,
+        GraphCreator,
+        VisualEditorGraphParserError,
 )
+from kenning.pipeline_manager.node_utils import add_node, get_category_name
+from kenning.utils.class_loader import (get_all_subclasses,
+                                        get_base_classes_dict)
 from kenning.utils.pipeline_runner import PipelineRunner
-
-
-class VisualEditorGraphParserError(Exception):
-    """
-    Exception occurring when conversion from scenario to graph and vice versa
-    fails.
-    """
-    pass
 
 
 class PipelineHandler(BaseDataflowHandler):
@@ -60,29 +54,6 @@ class PipelineHandler(BaseDataflowHandler):
         pass
 
     def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
-        """
-        Parses a Kenning JSON into a Pipeline Manager dataflow format
-        that can be loaded into the Pipeline Manager editor.
-
-        For the details of the shape of resulting dictionary, check the
-        Pipeline Manager graph representation detailed in
-        `PipelineManagerGraphCreator` documentation.
-
-        Parameters
-        ----------
-        pipeline : Dict
-            Valid Kenning pipeline in JSON.
-
-        Returns
-        -------
-        Dict[str, Union[float, Dict]] :
-            Dictionary that can be loaded into the Pipeline Manager editor.
-
-        Raises
-        ------
-        VisualEditorGraphParserError :
-            If the pipeline is not valid or contains unsupported blocks.
-        """
         def add_block(kenning_block: dict):
             """
             Adds dataflow node based on the `kenning_block` entry.

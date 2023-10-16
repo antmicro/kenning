@@ -4,7 +4,7 @@
 
 import itertools
 from pathlib import Path
-from typing import Any, Dict, NamedTuple, List, Tuple, Union, Optional
+from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import get_logger
@@ -12,6 +12,14 @@ from kenning.utils.logger import get_logger
 _LOGGER = get_logger()
 
 SPECIFICATION_VERSION = '20230830.11'
+
+
+class VisualEditorGraphParserError(Exception):
+    """
+    Exception occurring when conversion from scenario to graph and vice versa
+    fails.
+    """
+    pass
 
 
 class Node(NamedTuple):
@@ -460,6 +468,11 @@ class BaseDataflowHandler:
             JSON representation of a dataflow in Pipeline Manager format.
             Should not be created directly, but rather should be the result of
             `flush_graph` method from graph creator.
+
+        Raises
+        ------
+        VisualEditorGraphParserError :
+            If the pipeline is not valid or contains unsupported blocks.
         """
         raise NotImplementedError
 

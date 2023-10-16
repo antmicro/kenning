@@ -4,17 +4,21 @@
 
 import itertools
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, Iterable, List, Union
 
 from pipeline_manager import specification_builder
 
 from kenning.core.flow import KenningFlow
-from kenning.pipeline_manager.core import BaseDataflowHandler, \
-    GraphCreator, SPECIFICATION_VERSION
-from kenning.pipeline_manager.node_utils import get_category_name, add_node
+from kenning.pipeline_manager.core import (
+        SPECIFICATION_VERSION,
+        BaseDataflowHandler,
+        GraphCreator,
+        VisualEditorGraphParserError,
+)
+from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
-from kenning.utils.class_loader import get_all_subclasses, load_class, \
-    get_base_classes_dict
+from kenning.utils.class_loader import (get_all_subclasses,
+                                        get_base_classes_dict, load_class)
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -67,10 +71,15 @@ class KenningFlowHandler(BaseDataflowHandler):
     def destroy_dataflow(self, kenningflow):
         kenningflow.cleanup()
 
-    def create_dataflow(self, pipeline: Dict):
+    def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
         # Create runner nodes and register connections between them.
         conn_to, conn_from = defaultdict(list), {}
         for kenning_node in pipeline:
+            if not all([x in kenning_node for x in ['type', 'parameters']]):
+                raise VisualEditorGraphParserError(
+                    "Invalid Kenningflow: "
+                    "Each node must have 'type' and 'parameters' fields"
+                )
             parameters = kenning_node['parameters']
             inputs = kenning_node.get('inputs', {})
             outputs = kenning_node.get('outputs', {})

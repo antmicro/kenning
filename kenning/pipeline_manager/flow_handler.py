@@ -71,7 +71,28 @@ class KenningFlowHandler(BaseDataflowHandler):
     def destroy_dataflow(self, kenningflow):
         kenningflow.cleanup()
 
-    def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
+    def create_dataflow(
+            self,
+            pipeline: List[Dict]) -> Dict[str, Union[float, Dict]]:
+        """
+        Parses a KenningFlow JSON representation into a Pipeline Manager
+        dataflow format that can be loaded into the Pipeline Manager editor.
+
+        Parameters
+        ----------
+        pipeline : List[Dict]
+            List of valid KenningFlow nodes each represented as a dictionary.
+
+        Returns
+        -------
+        Dict[str, Union[float, Dict]] :
+            JSON representation of a dataflow in Pipeline Manager format.
+
+        Raises
+        ------
+        VisualEditorGraphParserError :
+            If the pipeline is not valid or contains unsupported blocks.
+        """
         # Create runner nodes and register connections between them.
         conn_to, conn_from = defaultdict(list), {}
         for kenning_node in pipeline:

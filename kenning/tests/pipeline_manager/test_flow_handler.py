@@ -291,8 +291,7 @@ class TestFlowHandler(HandlerTests):
         with pytest.raises(VisualEditorGraphParserError) as e:
             invalid_flow_json = [{"type": "Unknown", }]
             handler.create_dataflow(invalid_flow_json)
-        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
-            raise e.value
+        assert "Invalid Kenningflow: Each node must" in str(e.value)
 
         with pytest.raises(VisualEditorGraphParserError) as e:
             invalid_flow_json = [{
@@ -300,5 +299,4 @@ class TestFlowHandler(HandlerTests):
                 "test": "test",
             }]
             handler.create_dataflow(invalid_flow_json)
-        if not isinstance(e.value.__cause__, VisualEditorGraphParserError):
-            raise e.value
+        assert "Invalid Kenningflow: Each node must" in str(e.value)

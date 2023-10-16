@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Dict, Tuple, Union
 
 from pipeline_manager import specification_builder
 
@@ -59,7 +59,30 @@ class PipelineHandler(BaseDataflowHandler):
         # anything
         pass
 
-    def create_dataflow(self, pipeline: Dict) -> Dict:
+    def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
+        """
+        Parses a Kenning JSON into a Pipeline Manager dataflow format
+        that can be loaded into the Pipeline Manager editor.
+
+        For the details of the shape of resulting dictionary, check the
+        Pipeline Manager graph representation detailed in
+        `PipelineManagerGraphCreator` documentation.
+
+        Parameters
+        ----------
+        pipeline : Dict
+            Valid Kenning pipeline in JSON.
+
+        Returns
+        -------
+        Dict[str, Union[float, Dict]] :
+            Dictionary that can be loaded into the Pipeline Manager editor.
+
+        Raises
+        ------
+        VisualEditorGraphParserError :
+            If the pipeline is not valid or contains unsupported blocks.
+        """
         def add_block(kenning_block: dict):
             """
             Adds dataflow node based on the `kenning_block` entry.
@@ -90,9 +113,16 @@ class PipelineHandler(BaseDataflowHandler):
 
         node_ids = {}
 
-        for name in ['dataset', 'model_wrapper', 'runtime', 'protocol']:
-            if name in pipeline:
-                node_ids[name] = add_block(pipeline[name])
+        block_names = ['dataset', 'model_wrapper', 'runtime', 'protocol']
+        supported_blocks = block_names + ['optimizers']
+        for name, block in pipeline.items():
+            if name not in supported_blocks:
+                raise VisualEditorGraphParserError(
+                    f"The node type {name} is not available in the "
+                    "Visual Editor."
+                )
+            elif name in block_names:
+                node_ids[name] = add_block(block)
 
         node_ids['optimizer'] = []
         for optimizer in pipeline.get('optimizers', []):

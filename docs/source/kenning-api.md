@@ -70,6 +70,7 @@ It is responsible for validating all runners provided in a config file and their
 
 ```{eval-rst}
 .. autoclass:: kenning.core.flow.KenningFlow
+   :show-inheritance:
    :members:
 ```
 
@@ -85,6 +86,7 @@ The available runner implementations are:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.runner.Runner
+   :show-inheritance:
    :members:
 ```
 
@@ -114,6 +116,7 @@ Example implementations:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.dataset.Dataset
+   :show-inheritance:
    :members:
 ```
 
@@ -147,6 +150,7 @@ Model wrapper examples:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.model.ModelWrapper
+   :show-inheritance:
    :members:
 ```
 
@@ -167,6 +171,7 @@ Example model optimizers:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.optimizer.Optimizer
+   :show-inheritance:
    :members:
 ```
 
@@ -192,6 +197,7 @@ Runtime examples:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.runtime.Runtime
+   :show-inheritance:
    :members:
 ```
 
@@ -269,6 +275,7 @@ It requires method implementation for:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.protocol.Protocol
+   :show-inheritance:
    :members:
 ```
 
@@ -290,6 +297,7 @@ Example implementations:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.dataconverter.DataConverter
+   :show-inheritance:
    :members:
 ```
 
@@ -314,6 +322,7 @@ It also provides methods for testing the conversion process empirically on a lis
 
 ```{eval-rst}
 .. autoclass:: kenning.core.onnxconversion.ONNXConversion
+   :show-inheritance:
    :members:
 ```
 
@@ -330,6 +339,7 @@ Example implementations:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.dataprovider.DataProvider
+   :show-inheritance:
    :members:
 ```
 
@@ -354,6 +364,7 @@ Example implementations:
 
 ```{eval-rst}
 .. autoclass:: kenning.core.outputcollector.OutputCollector
+   :show-inheritance:
    :members:
 ```
 
@@ -366,6 +377,7 @@ In order to make some class being able to be instantiated from command line argu
 
 ```{eval-rst}
 .. autoclass:: kenning.utils.args_manager.ArgumentsHandler
+   :show-inheritance:
    :members:
 ```
 
@@ -377,6 +389,7 @@ It downloads missing files, provides paths to the available files, resolves cust
 
 ```{eval-rst}
 .. autoclass:: kenning.utils.resource_manager.ResourceManager
+   :show-inheritance:
    :members:
 ```
 
@@ -387,5 +400,6 @@ The `ResourceURI` class is a [`pathlib.Path`](https://docs.python.org/3/library/
 
 ```{eval-rst}
 .. autoclass:: kenning.utils.resource_manager.ResourceURI
+   :show-inheritance:
    :members:
 ```

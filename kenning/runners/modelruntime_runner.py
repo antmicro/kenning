@@ -101,7 +101,6 @@ class ModelRuntimeRunner(Runner):
             outputs=outputs,
         )
 
-
     @classmethod
     def from_json(
         cls,

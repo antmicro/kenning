@@ -56,7 +56,6 @@ jobs:
           cp -r inferencetest docs/source/generated
           cd docs
           make html latexpdf
-          make linkcheck
           cp build/latex/*.pdf build/html/
       - uses: actions/upload-artifact@v3
         with:

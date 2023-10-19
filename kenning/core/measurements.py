@@ -222,7 +222,12 @@ class MeasurementsCollector(object):
             if isinstance(measurement, np.ndarray):
                 cls.measurements.data[key] = measurement.tolist()
         with open(resultpath, "w") as measurementsfile:
-            json.dump(cls.measurements.data, measurementsfile, indent=2)
+            json.dump(
+                cls.measurements.data,
+                measurementsfile,
+                indent=2,
+                default=str,
+            )
 
     @classmethod
     def clear(cls):

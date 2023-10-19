@@ -36,7 +36,7 @@ pytest:
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -m "not docs_gallery" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -m "(not docs_gallery) and (not docs)" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vvl
     artifacts:
         paths:
             - log.json
@@ -44,21 +44,19 @@ pytest:
         when: always
 
 .pytest-docs: &pytest-docs
+    image: $CI_MINIMAL_IMAGE
     stage: tests
     before_script:
+        - /scripts/prepare_environment.sh .
         # Prepare Docker
         - apt-get update --allow-releaseinfo-change -y > /dev/null 2> /dev/null
         - apt-get -qqy --no-install-recommends install docker.io cgroupfs-mount crun fuse-overlayfs pigz ca-certificates > /dev/null
-        - pip install -e ".[test,pipeline_manager]"
         - cgroupfs-mount
         - dockerd -s fuse-overlayfs --add-runtime=crun=/usr/bin/crun --default-runtime=crun --config-file="" > /dev/null 2> /dev/null &
         - while ! test -S /var/run/docker.sock; do echo "Waiting for Docker..." && sleep 1; done; docker info
         - trap "kill $(cat /var/run/docker.pid)" EXIT
-        # Do not use installed TVM
-        - rm /usr/lib/libtvm.so /usr/lib/libtvm_runtime.so
-        - /scripts/prepare_environment.sh .
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m docs_gallery -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_gallery -vvl
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m $TESTS_SCOPE -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir $TESTS_SCOPE -vvl
     artifacts:
         paths:
             - log.json
@@ -67,6 +65,8 @@ pytest:
 
 docs-tests:
     <<: *ace
+    variables:
+        TESTS_SCOPE: 'docs'
     only:
         refs:
             - main
@@ -75,6 +75,32 @@ docs-tests:
 
 docs-tests-manual:
     <<: *ace
+    variables:
+        TESTS_SCOPE: 'docs'
+    except:
+        refs:
+            - main
+            - dev
+    only:
+        refs:
+            - merge_requests
+    <<: *pytest-docs
+    when: manual
+
+docs-gallery-tests:
+    <<: *ace
+    variables:
+        TESTS_SCOPE: 'docs_gallery'
+    only:
+        refs:
+            - main
+            - dev
+    <<: *pytest-docs
+
+docs-gallery-tests-manual:
+    <<: *ace
+    variables:
+        TESTS_SCOPE: 'docs_gallery'
     except:
         refs:
             - main
@@ -113,8 +139,8 @@ sample-client-server-scenario:
     <<: *common_only
     stage: tests
     script:
-        - apt-get update && apt-get install -y procps
         - /scripts/prepare_environment.sh .
+        - apt-get update && apt-get install -y procps
         - sed -i 's/10.9.8.7/localhost/g' ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json
         - ./scripts/json-tflite-tvm-classification-server.sh &
         - PID=$!

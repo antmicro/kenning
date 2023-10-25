@@ -22,6 +22,7 @@ from rclpy.node import Node
 from kenning.core.measurements import Measurements, timemeasurements
 from kenning.core.protocol import Protocol
 from kenning.utils.class_loader import load_class
+from kenning.utils.logger import KLogger
 
 GoalHandle = TypeVar('GoalHandle', bound=_rclpy.ActionGoalHandle)
 
@@ -142,7 +143,7 @@ class ROS2Protocol(Protocol):
         message : str
             Message to be sent.
         """
-        self.log.info(message)
+        KLogger.info(message)
         if self.node is not None:
             self.node.get_logger().info(message)
 
@@ -155,7 +156,7 @@ class ROS2Protocol(Protocol):
         message : str
             Message to be sent.
         """
-        self.log.debug(message)
+        KLogger.debug(message)
         if self.node is not None:
             self.node.get_logger().debug(message)
 
@@ -168,7 +169,7 @@ class ROS2Protocol(Protocol):
         message : str
             Message to be sent.
         """
-        self.log.warning(message)
+        KLogger.warning(message)
         if self.node is not None:
             self.node.get_logger().warn(message)
 
@@ -181,7 +182,7 @@ class ROS2Protocol(Protocol):
         message : str
             Message to be sent.
         """
-        self.log.error(message)
+        KLogger.error(message)
         if self.node is not None:
             self.node.get_logger().error(message)
 
@@ -319,7 +320,7 @@ class ROS2Protocol(Protocol):
             self.log_error('No input uploaded')
             return False, None
 
-        self.log.debug('Downloading output')
+        KLogger.debug('Downloading output')
         result = self.future.result()
         self.future = None
         if result is None:

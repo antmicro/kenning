@@ -4,7 +4,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python -m kenning.scenarios.inference_tester \
+set -e
+
+python -m kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-tvm.json \
@@ -22,7 +24,7 @@ python -m kenning.scenarios.inference_tester \
     --download-dataset \
     --verbosity INFO
 
-python -m kenning.scenarios.inference_tester \
+python -m kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-tflite.json \
@@ -36,7 +38,7 @@ python -m kenning.scenarios.inference_tester \
     --inference-batch-size 1 \
     --verbosity INFO
 
-python -m kenning.scenarios.inference_tester \
+python -m kenning optimize test \
     --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --measurements ./build/pet-dataset-iree.json \
@@ -52,7 +54,7 @@ python -m kenning.scenarios.inference_tester \
     --inference-batch-size 1 \
     --verbosity INFO
 
-python -m kenning.scenarios.render_report \
+python -m kenning report \
     --report-path build/classification-report/report.md \
     --report-name "Classification comparison on Pet Dataset" \
     --root-dir build/classification-report \

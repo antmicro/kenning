@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python -m kenning.scenarios.inference_tester \
+python -m kenning test \
     --json-cfg "$1" \
     --measurements ./build/report-output.json \
     --verbosity INFO

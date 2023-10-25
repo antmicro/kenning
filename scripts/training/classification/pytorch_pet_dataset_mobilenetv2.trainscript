@@ -4,7 +4,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-python -m kenning.scenarios.model_training \
+python -m kenning train \
     --modelwrapper-cls kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2 \
     --dataset-cls kenning.datasets.pet_dataset.PetDataset \
     --logdir build/pytorch-training-`date +%Y-%m-%d-%H%M%S` \

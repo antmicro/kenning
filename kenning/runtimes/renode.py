@@ -155,6 +155,8 @@ class RenodeRuntime(Runtime):
             self.renode_handler = renode_handler
             self.init_renode()
 
+            protocol.initialize_client()
+
             try:
                 spec_path = self.get_io_spec_path(compiled_model_path)
                 if spec_path.exists():

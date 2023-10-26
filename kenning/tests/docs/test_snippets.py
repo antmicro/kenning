@@ -22,7 +22,7 @@ from tuttest import Snippet, get_snippets
 
 # Regex for changing Kenning installation to local version
 
-# Regex for changing Kenning installtion to local version
+# Regex for changing Kenning installation to local version
 KENNING_LINK_RE = r"(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git"
 # Regex for detecting Kenning installation
 PIP_INSTALL_RE = r"pip (?:.* )?install"

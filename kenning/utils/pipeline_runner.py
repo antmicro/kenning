@@ -380,7 +380,7 @@ class PipelineRunner(object):
         )
 
         ret = True
-        if self.protocol:
+        if self.protocol and not isinstance(self.runtime, RenodeRuntime):
             check_request(self.protocol.initialize_client(), 'prepare client')
         model_path = self.handle_optimizations(
             convert_to_onnx,

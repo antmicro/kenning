@@ -55,19 +55,16 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
         tmp_model_path = tmp_path.with_suffix(model_path.suffix)
         shutil.copy(model_path, tmp_model_path)
 
-        json_path = model_path.with_suffix(model_path.suffix + '.json')
+        json_path = model_path.with_suffix(model_path.suffix + ".json")
         if json_path.exists():
             shutil.copy(
                 json_path,
-                tmp_model_path.with_suffix(tmp_model_path.suffix + '.json')
+                tmp_model_path.with_suffix(tmp_model_path.suffix + ".json"),
             )
 
-        config_file = model_path.with_suffix('.cfg')
+        config_file = model_path.with_suffix(".cfg")
         if config_file.exists():
-            shutil.copy(
-                config_file,
-                tmp_model_path.with_suffix('.cfg')
-            )
+            shutil.copy(config_file, tmp_model_path.with_suffix(".cfg"))
     elif model_path.is_dir():
         tmp_model_path = tmp_path
         shutil.copytree(model_path, tmp_model_path)
@@ -76,8 +73,7 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
     return ResourceURI(tmp_model_path)
 
 
-def get_default_dataset_model(
-        framework: str) -> Tuple[Dataset, ModelWrapper]:
+def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
     """
     Returns default model and dataset for given framework. Returned dataset is
     a mock of default dataset of returned model.
@@ -92,48 +88,46 @@ def get_default_dataset_model(
     Tuple[Type[Dataset], Type[ModelWrapper]] :
         Tuple with dataset and model for given framework.
     """
-    if framework == 'keras':
+    if framework == "keras":
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = copy_model_to_tmp(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
-        model = MagicWandModelWrapper(
-            model_path,
-            dataset,
-            from_file=True
-        )
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'tensorflow':
+    elif framework == "tensorflow":
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = get_tmp_path()
         keras_model = load_keras_model(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
-            compile=False
+            compile=False,
         )
         keras_model.save(model_path)
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'tflite':
+    elif framework == "tflite":
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = copy_model_to_tmp(
-            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            .with_suffix('.tflite')
+            ResourceURI(
+                MagicWandModelWrapper.pretrained_model_uri
+            ).with_suffix(".tflite")
         )
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'onnx':
+    elif framework == "onnx":
         dataset = get_dataset_random_mock(MagicWandDataset)
-        model_path = get_tmp_path(suffix='.onnx')
+        model_path = get_tmp_path(suffix=".onnx")
         onnx_compiler = ONNXCompiler(dataset, model_path)
         onnx_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'torch':
+    elif framework == "torch":
         import dill
+
         dataset = get_dataset_random_mock(MagicWandDataset)
-        onnx_model_path = get_tmp_path(suffix='.onnx')
+        onnx_model_path = get_tmp_path(suffix=".onnx")
         onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
         onnx_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
@@ -141,32 +135,32 @@ def get_default_dataset_model(
 
         torch_model = onnx2torch.convert(onnx_model_path)
 
-        model_path = get_tmp_path(suffix='.pth')
+        model_path = get_tmp_path(suffix=".pth")
         torch_save(torch_model, model_path, pickle_module=dill)
 
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'darknet':
+    elif framework == "darknet":
         dataset = get_dataset_random_mock(COCODataset2017)
         model_path = copy_model_to_tmp(
             ResourceURI(TVMDarknetCOCOYOLOV3.pretrained_model_uri)
         )
         model = TVMDarknetCOCOYOLOV3(model_path, dataset)
 
-    elif framework == 'iree':
+    elif framework == "iree":
         dataset = get_dataset_random_mock(MagicWandDataset)
-        model_path = get_tmp_path(suffix='.vmfb')
+        model_path = get_tmp_path(suffix=".vmfb")
         iree_compiler = IREECompiler(dataset, model_path)
         iree_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-    elif framework == 'tvm':
+    elif framework == "tvm":
         dataset = get_dataset_random_mock(MagicWandDataset)
-        model_path = get_tmp_path(suffix='.tar')
+        model_path = get_tmp_path(suffix=".tar")
         tvm_compiler = TVMCompiler(
-            dataset, model_path, model_framework='keras'
+            dataset, model_path, model_framework="keras"
         )
         tvm_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
@@ -174,7 +168,7 @@ def get_default_dataset_model(
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
     else:
-        raise UnknownFramework(f'Unknown framework: {framework}')
+        raise UnknownFramework(f"Unknown framework: {framework}")
 
     model.save_io_specification(model.model_path)
     return dataset, model
@@ -209,7 +203,7 @@ def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
     Path :
         Temporary path for dataset download.
     """
-    return pytest.test_directory / 'datasets' / dataset_cls.__name__
+    return pytest.test_directory / "datasets" / dataset_cls.__name__
 
 
 def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
@@ -247,23 +241,23 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     if dataset_cls is PetDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=37*5,
+            samplescount=37 * 5,
             numclasses=37,
-            inputdims=(224, 224, 3)
+            inputdims=(224, 224, 3),
         )
     if dataset_cls is ImageNetDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=8*5,
+            samplescount=8 * 5,
             numclasses=8,
-            inputdims=(224, 224, 3)
+            inputdims=(224, 224, 3),
         )
     if dataset_cls is MagicWandDataset:
         dataset = RandomizedClassificationDataset(
             get_tmp_path(),
-            samplescount=4*10,
+            samplescount=4 * 10,
             numclasses=4,
-            inputdims=(128, 3, 1)
+            inputdims=(128, 3, 1),
         )
         return dataset
     if dataset_cls is COCODataset2017:
@@ -271,14 +265,14 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
             get_tmp_path(),
             samplescount=8,
             numclasses=80,
-            inputdims=(3, 608, 608)
+            inputdims=(3, 608, 608),
         )
     if dataset_cls is VisualWakeWordsDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),
             samplescount=10,
             numclasses=2,
-            inputdims=(480, 320, 3)
+            inputdims=(480, 320, 3),
         )
     raise NotImplementedError
 
@@ -287,4 +281,5 @@ class UnknownFramework(ValueError):
     """
     Raised when unknown framework is passed.
     """
+
     pass

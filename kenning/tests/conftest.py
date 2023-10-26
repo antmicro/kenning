@@ -36,6 +36,7 @@ class DataFolder:
     amount : int
         Amount of generated images.
     """
+
     path: Path
     amount: int
 
@@ -108,17 +109,17 @@ def pytest_addoption(parser: pytest.Parser):
     Adds argparse options to parser.
     """
     parser.addoption(
-        '--test-directory',
-        action='store',
-        default='./build',
-        help='Directory used to store files used during test execution'
+        "--test-directory",
+        action="store",
+        default="./build",
+        help="Directory used to store files used during test execution",
     )
     parser.addoption(
-        '--test-docs-log-dir',
+        "--test-docs-log-dir",
         type=Path,
-        default='./log_docs',
-        help='If defined saves additional logs of docs tests to specified '
-             'folder',
+        default="./log_docs",
+        help="If defined saves additional logs of docs tests to specified "
+        "folder",
     )
 
 
@@ -129,14 +130,14 @@ def pytest_sessionstart(session: pytest.Session):
     test_directory = Path(session.config.option.test_directory).resolve()
     pytest.test_directory = test_directory
     # only master worker should do init
-    if hasattr(session.config, 'workerinput'):
+    if hasattr(session.config, "workerinput"):
         return
     # do nothing when only collecting tests
-    if '--collect-only' in session.config.invocation_params.args:
+    if "--collect-only" in session.config.invocation_params.args:
         return
 
-    ResourceManager().set_cache_dir(test_directory / 'cache')
-    (test_directory / 'tmp').mkdir(parents=True, exist_ok=True)
+    ResourceManager().set_cache_dir(test_directory / "cache")
+    (test_directory / "tmp").mkdir(parents=True, exist_ok=True)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
@@ -144,12 +145,12 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
     Cleanup a testing directory once we are finished.
     """
     # only master worker should do cleanup
-    if hasattr(session.config, 'workerinput'):
+    if hasattr(session.config, "workerinput"):
         return
     # do nothing when only collecting tests
-    if '--collect-only' in session.config.invocation_params.args:
+    if "--collect-only" in session.config.invocation_params.args:
         return
-    test_directory_tmp = pytest.test_directory / 'tmp'
+    test_directory_tmp = pytest.test_directory / "tmp"
     if test_directory_tmp.exists():
         shutil.rmtree(test_directory_tmp)
 
@@ -159,12 +160,11 @@ def pytest_generate_tests(metafunc: Metafunc):
     Creates parameterscheme structure for the pytest tests.
     """
     test_directory = metafunc.config.option.test_directory
-    if 'tmpfolder' in metafunc.fixturenames:
-        metafunc.parametrize('test_directory', [test_directory],
-                             scope='class')
+    if "tmpfolder" in metafunc.fixturenames:
+        metafunc.parametrize("test_directory", [test_directory], scope="class")
 
 
-def get_tmp_path(suffix: str = '') -> Path:
+def get_tmp_path(suffix: str = "") -> Path:
     """
     Generates temporary path.
 
@@ -183,19 +183,19 @@ def get_tmp_path(suffix: str = '') -> Path:
     while candidate is None or candidate.exists():
         candidate = (
             pytest.test_directory
-            / 'tmp'
+            / "tmp"
             / next(tempfile._get_candidate_names())
         ).with_suffix(suffix)
 
     return Path(candidate)
 
 
-@pytest.fixture(scope='function', autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def clear_measurements():
     MeasurementsCollector.clear()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def tmpfolder(test_directory: Optional[Path]) -> Generator[Path, None, None]:
     """
     Creates a temporary directory.
@@ -214,7 +214,7 @@ def tmpfolder(test_directory: Optional[Path]) -> Generator[Path, None, None]:
     """
     if test_directory is not None:
         test_directory = Path(test_directory)
-        tempfile.tempdir = test_directory / 'tmp'
+        tempfile.tempdir = test_directory / "tmp"
         test_directory.mkdir(exist_ok=True)
         yield Path(tempfile.mkdtemp())
     else:
@@ -233,31 +233,32 @@ def modelsamples():
             super().__init__()
             self.add(
                 ResourceURI(
-                    'kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth'  # noqa: E501
+                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"  # noqa: E501
                 ),
-                'torch',
-                'PyTorchPetDatasetMobileNetV2'
+                "torch",
+                "PyTorchPetDatasetMobileNetV2",
             )
             self.add(
                 ResourceURI(
-                    'kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth'  # noqa: E501
+                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"  # noqa: E501
                 ),
-                'torch_weights',
-                'PyTorchPetDatasetMobileNetV2'
+                "torch_weights",
+                "PyTorchPetDatasetMobileNetV2",
             )
             self.add(
                 ResourceURI(
-                    'kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: E501
+                    "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
                 ),
-                'keras',
-                'TensorFlowPetDatasetMobileNetV2'
+                "keras",
+                "TensorFlowPetDatasetMobileNetV2",
             )
 
         def add(
-                self,
-                model_path: PathOrURI,
-                model_framework: str,
-                modelwrapper: str):
+            self,
+            model_path: PathOrURI,
+            model_framework: str,
+            modelwrapper: str,
+        ):
             """
             Adds path to model with associated framework
             and associated modelwrapper name to samples.
@@ -290,6 +291,7 @@ def modelsamples():
                 it is compatible with.
             """
             return self.samples[model_name]
+
     return ModelData()
 
 
@@ -302,29 +304,43 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             Stores basic Optimizer objects with its parameters.
             """
             super().__init__()
-            self.add('kenning.optimizers.tflite.TFLiteCompiler',
-                     'default', 'keras', 'tflite',
-                     dataset=datasetsamples.get('PetDataset'),
-                     compiled_model_path=datasetimages.path)
+            self.add(
+                "kenning.optimizers.tflite.TFLiteCompiler",
+                "default",
+                "keras",
+                "tflite",
+                dataset=datasetsamples.get("PetDataset"),
+                compiled_model_path=datasetimages.path,
+            )
 
-            self.add('kenning.optimizers.tvm.TVMCompiler',
-                     'llvm', 'keras', 'so',
-                     dataset='PetDataset',
-                     compiled_model_path=datasetimages.path)
+            self.add(
+                "kenning.optimizers.tvm.TVMCompiler",
+                "llvm",
+                "keras",
+                "so",
+                dataset="PetDataset",
+                compiled_model_path=datasetimages.path,
+            )
 
-            self.add('kenning.optimizers.tvm.TVMCompiler',
-                     'llvm', 'torch', 'so',
-                     dataset='PetDataset',
-                     compiled_model_path=datasetimages.path)
+            self.add(
+                "kenning.optimizers.tvm.TVMCompiler",
+                "llvm",
+                "torch",
+                "so",
+                dataset="PetDataset",
+                compiled_model_path=datasetimages.path,
+            )
 
-        def add(self,
-                import_path: str,
-                target: str,
-                model_framework: str,
-                filesuffix: str,
-                dataset: Optional[str] = None,
-                compiled_model_path: PathOrURI = datasetimages.path,
-                **kwargs):
+        def add(
+            self,
+            import_path: str,
+            target: str,
+            model_framework: str,
+            filesuffix: str,
+            dataset: Optional[str] = None,
+            compiled_model_path: PathOrURI = datasetimages.path,
+            **kwargs,
+        ):
             """
             Adds Optimizer class to samples with its parameters.
 
@@ -348,17 +364,18 @@ def optimizersamples(datasetimages: DataFolder, datasetsamples: Samples):
             """
             optimizer = load_class(import_path)
             optimizer_name = f'{import_path.rsplit(".")[-1]}_{model_framework}'
-            file_name = optimizer_name + '.' + filesuffix
+            file_name = optimizer_name + "." + filesuffix
             compiled_model_path = compiled_model_path / file_name
             self._params[optimizer_name] = (
                 (dataset, compiled_model_path),
                 {
-                    'target': target,
-                    'model_framework': model_framework,
-                    **kwargs
-                }
+                    "target": target,
+                    "model_framework": model_framework,
+                    **kwargs,
+                },
             )
             self.samples[optimizer_name] = optimizer
+
     return OptimizerData()
 
 
@@ -371,23 +388,29 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
             Stores parameters for ModelWrapper objects creation.
             """
             super().__init__()
-            torch_pet_mobilenet_import_path = "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2"    # noqa: E501
+            torch_pet_mobilenet_import_path = "kenning.modelwrappers.classification.pytorch_pet_dataset.PyTorchPetDatasetMobileNetV2"  # noqa: E501
             tensorflow_pet_mobilenet_import_path = "kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2"  # noqa: E501
 
             self.add(
                 torch_pet_mobilenet_import_path,
-                modelsamples.get('torch_weights')[0],
-                dataset=datasetsamples.get('PetDataset')
+                modelsamples.get("torch_weights")[0],
+                dataset=datasetsamples.get("PetDataset"),
             )
 
             self.add(
                 tensorflow_pet_mobilenet_import_path,
-                modelsamples.get('keras')[0],
-                dataset=datasetsamples.get('PetDataset')
+                modelsamples.get("keras")[0],
+                dataset=datasetsamples.get("PetDataset"),
             )
 
-        def add(self, import_path: str, model: str,
-                dataset: Dataset = None, from_file: bool = True, **kwargs):
+        def add(
+            self,
+            import_path: str,
+            model: str,
+            dataset: Dataset = None,
+            from_file: bool = True,
+            **kwargs,
+        ):
             """
             Adds ModelWrapper class to samples with its parameters.
 
@@ -405,10 +428,13 @@ def modelwrappersamples(datasetsamples: Samples, modelsamples: Samples):
                 Modelwrapper parameters.
             """
             wrapper = load_class(import_path)
-            wrapper_name = import_path.rsplit('.')[-1]
-            self._params[wrapper_name] = ((model, dataset),
-                                          {'from_file': from_file, **kwargs})
+            wrapper_name = import_path.rsplit(".")[-1]
+            self._params[wrapper_name] = (
+                (model, dataset),
+                {"from_file": from_file, **kwargs},
+            )
             self.samples[wrapper_name] = wrapper
+
     return WrapperData()
 
 
@@ -423,8 +449,14 @@ def datasetsamples(datasetimages: DataFolder):
             super().__init__()
             self.add("kenning.datasets.pet_dataset.PetDataset")
 
-        def add(self, import_path: str, datapath: Path = datasetimages.path,
-                batch_size: int = 1, download_dataset: bool = False, **kwargs):
+        def add(
+            self,
+            import_path: str,
+            datapath: Path = datasetimages.path,
+            batch_size: int = 1,
+            download_dataset: bool = False,
+            **kwargs,
+        ):
             """
             Adds Dataset class to samples with its parameters.
 
@@ -447,17 +479,21 @@ def datasetsamples(datasetimages: DataFolder):
                 Class Dataset.
             """
             dataset = load_class(import_path)
-            dataset_name = import_path.rsplit('.')[-1]
-            self._params[dataset_name] = ((datapath, ), {
-                'batch_size': batch_size,
-                'download_dataset': download_dataset,
-                **kwargs}
+            dataset_name = import_path.rsplit(".")[-1]
+            self._params[dataset_name] = (
+                (datapath,),
+                {
+                    "batch_size": batch_size,
+                    "download_dataset": download_dataset,
+                    **kwargs,
+                },
             )
             self.samples[dataset_name] = dataset
+
     return DatasetData()
 
 
-@pytest.fixture(scope='class')
+@pytest.fixture(scope="class")
 def datasetimages(tmpfolder: Path) -> DataFolder:
     """
     Creates a temporary dir with images and data files.
@@ -474,17 +510,17 @@ def datasetimages(tmpfolder: Path) -> DataFolder:
         A DataFolder object that stores path to data and images amount.
     """
     images_amount = 185
-    (tmpfolder / 'images').mkdir()
-    (tmpfolder / 'img').symlink_to(tmpfolder / 'images')
-    (tmpfolder / 'annotations').mkdir()
-    (tmpfolder / 'annotations' / 'list.txt').touch()
+    (tmpfolder / "images").mkdir()
+    (tmpfolder / "img").symlink_to(tmpfolder / "images")
+    (tmpfolder / "annotations").mkdir()
+    (tmpfolder / "annotations" / "list.txt").touch()
     write_to_dirs(tmpfolder, images_amount)
 
     for i in range(images_amount):
-        file = (tmpfolder / 'images' / f'image_{i}.jpg')
+        file = tmpfolder / "images" / f"image_{i}.jpg"
         color = (randint(0, 255), randint(0, 255), randint(0, 255))
-        img = Image.new(mode='RGB', size=(5, 5), color=color)
-        img.save(file, 'JPEG')
+        img = Image.new(mode="RGB", size=(5, 5), color=color)
+        img.save(file, "JPEG")
 
     return DataFolder(tmpfolder, images_amount)
 
@@ -501,34 +537,41 @@ def write_to_dirs(path, amount):
     amount : int
         Amount of images are being written to data files.
     """
+
     def three_random_one_hot(i):
-        return f'{i%37+1} {randint(0, 1)} {randint(0, 1)}'
+        return f"{i % 37 + 1} {randint(0, 1)} {randint(0, 1)}"
 
     def four_random():
-        return f'{random()},{random()},{random()},{random()}'
+        return f"{random()},{random()},{random()},{random()}"
 
-    with open(path / 'annotations' / 'list.txt', 'w') as f:
-        [print(f'image_{i} {three_random_one_hot(i)}', file=f)
-         for i in range(amount)]
+    with open(path / "annotations" / "list.txt", "w") as f:
+        [
+            print(f"image_{i} {three_random_one_hot(i)}", file=f)
+            for i in range(amount)
+        ]
 
-    with open(path / 'classnames.csv', 'w') as f:
-        print('/m/o0fd,person', file=f)
+    with open(path / "classnames.csv", "w") as f:
+        print("/m/o0fd,person", file=f)
 
-    with open(path / 'annotations.csv', 'w') as f:
-        title = 'ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,'
-        title += 'IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside'
+    with open(path / "annotations.csv", "w") as f:
+        title = "ImageID,Source,LabelName,Confidence,XMin,XMax,YMin,YMax,"
+        title += "IsOccluded,IsTruncated,IsGroupOf,IsDepiction,IsInside"
         print(title, file=f)
-        [print(f'image_{i},xclick,/m/o0fd,1,{four_random()},0,0,0,0,0', file=f)
-            for i in range(amount)]
+        [
+            print(
+                f"image_{i},xclick,/m/o0fd,1,{four_random()},0,0,0,0,0", file=f
+            )
+            for i in range(amount)
+        ]
 
 
 @pytest.fixture
 def mock_configuration_file_contents_modelruntime_runner(tmp_path):
-    dataset_file = tmp_path / 'dir/dataset.json'
-    runtime_file = tmp_path / 'dir/runtime.json'
-    model_file = tmp_path / 'dir/modelwrapper.json'
+    dataset_file = tmp_path / "dir/dataset.json"
+    runtime_file = tmp_path / "dir/runtime.json"
+    model_file = tmp_path / "dir/modelwrapper.json"
 
-    invalid_runtime_file = tmp_path / 'dir/runtime-invalid.json'
+    invalid_runtime_file = tmp_path / "dir/runtime-invalid.json"
 
     dataset_file.parent.mkdir()
     dataset_file.touch()
@@ -536,24 +579,30 @@ def mock_configuration_file_contents_modelruntime_runner(tmp_path):
     model_file.touch()
     invalid_runtime_file.touch()
 
-    dataset_file.write_text('{}')
-    model_file.write_text('''
+    dataset_file.write_text("{}")
+    model_file.write_text(
+        """
         {
             "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
             "parameters": {
                 "model_path": "kenning:///models/object_detection/yolov4.onnx"
             }
-        }''')
-    runtime_file.write_text('''
+        }"""
+    )
+    runtime_file.write_text(
+        """
         {"type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters": {
         "save_model_path": "kenning:///models/object_detection/yolov4.onnx"
         }
-    }''')
-    invalid_runtime_file.write_text('''
+    }"""
+    )
+    invalid_runtime_file.write_text(
+        """
         {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters": {
                 "invalid_arg": "build/yolov4.onnx"
             }
-        }''')
+        }"""
+    )

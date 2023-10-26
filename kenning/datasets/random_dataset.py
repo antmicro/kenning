@@ -27,25 +27,25 @@ class RandomizedClassificationDataset(Dataset):
     """
 
     arguments_structure = {
-        'samplescount': {
-            'argparse_name': '--num-samples',
-            'description': 'Number of samples to process',
-            'type': int,
-            'default': 100
+        "samplescount": {
+            "argparse_name": "--num-samples",
+            "description": "Number of samples to process",
+            "type": int,
+            "default": 100,
         },
-        'numclasses': {
-            'argparse_name': '--num-classes',
-            'description': 'Number of classes in inputs',
-            'type': int,
-            'default': 3
+        "numclasses": {
+            "argparse_name": "--num-classes",
+            "description": "Number of classes in inputs",
+            "type": int,
+            "default": 3,
         },
-        'inputdims': {
-            'argparse_name': '--input-dims',
-            'description': 'Dimensionality of the inputs',
-            'type': int,
-            'default': [224, 224, 3],
-            'is_list': True
-        }
+        "inputdims": {
+            "argparse_name": "--input-dims",
+            "description": "Dimensionality of the inputs",
+            "type": int,
+            "default": [224, 224, 3],
+            "is_list": True,
+        },
     }
 
     def __init__(
@@ -59,7 +59,7 @@ class RandomizedClassificationDataset(Dataset):
         integer_classes: bool = False,
         inputdims: List = [224, 224, 3],
         dtype: Type = np.float32,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """
         Creates randomized dataset.
@@ -97,10 +97,7 @@ class RandomizedClassificationDataset(Dataset):
         self.classnames = self.get_class_names()
 
         super().__init__(
-            root,
-            batch_size,
-            force_download_dataset,
-            download_dataset
+            root, batch_size, force_download_dataset, download_dataset
         )
 
     def get_class_names(self):
@@ -111,12 +108,12 @@ class RandomizedClassificationDataset(Dataset):
 
     def prepare(self):
         self.dataX = [
-            f'{self.root}/images/{i}.jpg' for i in range(self.samplescount)
+            f"{self.root}/images/{i}.jpg" for i in range(self.samplescount)
         ]
         self.dataY = [j % self.numclasses for j in range(self.samplescount)]
         shuffle(self.dataY)
 
-        (self.root / 'images').mkdir(parents=True, exist_ok=True)
+        (self.root / "images").mkdir(parents=True, exist_ok=True)
         samples = self.prepare_input_samples(self.dataX)
         for img_path, img_data in zip(self.dataX, samples):
             cv2.imwrite(img_path, img_data)
@@ -139,14 +136,15 @@ class RandomizedClassificationDataset(Dataset):
         return Measurements()
 
     def calibration_dataset_generator(
-            self,
-            percentage: float = 0.25,
-            seed: int = 12345):
+        self, percentage: float = 0.25, seed: int = 12345
+    ):
         for _ in range(int(self.samplescount * percentage)):
             yield [np.random.randint(0, 255, size=self.inputdims)]
 
 
-class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset):   # noqa: E501
+class RandomizedDetectionSegmentationDataset(
+    ObjectDetectionSegmentationDataset
+):  # noqa: E501
     """
     Creates a sample randomized detection dataset.
 
@@ -156,25 +154,25 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
     """
 
     arguments_structure = {
-        'samplescount': {
-            'argparse_name': '--num-samples',
-            'description': 'Number of samples to process',
-            'type': int,
-            'default': 100
+        "samplescount": {
+            "argparse_name": "--num-samples",
+            "description": "Number of samples to process",
+            "type": int,
+            "default": 100,
         },
-        'numclasses': {
-            'argparse_name': '--num-classes',
-            'description': 'Number of classes in inputs',
-            'type': int,
-            'default': 3
+        "numclasses": {
+            "argparse_name": "--num-classes",
+            "description": "Number of classes in inputs",
+            "type": int,
+            "default": 3,
         },
-        'inputdims': {
-            'argparse_name': '--input-dims',
-            'description': 'Dimensionality of the inputs',
-            'type': int,
-            'default': [224, 224, 3],
-            'is_list': True
-        }
+        "inputdims": {
+            "argparse_name": "--input-dims",
+            "description": "Dimensionality of the inputs",
+            "type": int,
+            "default": [224, 224, 3],
+            "is_list": True,
+        },
     }
 
     def __init__(
@@ -186,7 +184,7 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
         numclasses: int = 3,
         inputdims: List = [224, 224, 3],
         dtype: Type = np.float32,
-        **kwargs: Any
+        **kwargs: Any,
     ):
         """
         Creates randomized dataset.
@@ -229,15 +227,19 @@ class RandomizedDetectionSegmentationDataset(ObjectDetectionSegmentationDataset)
         for i in range(self.samplescount):
             x_rand = np.random.random((2,))
             y_rand = np.random.random((2,))
-            self.dataY.append([DetectObject(
-                clsname=str(classes[i]),
-                xmin=x_rand.min(),
-                ymin=y_rand.min(),
-                xmax=x_rand.min(),
-                ymax=y_rand.max(),
-                score=1.0,
-                iscrowd=(np.random.randint(0, 1) == 1)
-            )])
+            self.dataY.append(
+                [
+                    DetectObject(
+                        clsname=str(classes[i]),
+                        xmin=x_rand.min(),
+                        ymin=y_rand.min(),
+                        xmax=x_rand.min(),
+                        ymax=y_rand.max(),
+                        score=1.0,
+                        iscrowd=(np.random.randint(0, 1) == 1),
+                    )
+                ]
+            )
 
     def download_dataset_fun(self):
         pass

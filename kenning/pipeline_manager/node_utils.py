@@ -8,10 +8,8 @@ from kenning.pipeline_manager.core import Node
 
 
 def add_node(
-        node_list: Dict[str, Node],
-        nodemodule: str,
-        category: str,
-        type: str):
+    node_list: Dict[str, Node], nodemodule: str, category: str, type: str
+):
     """
     Loads a class containing Kenning block and adds it to available nodes.
 
@@ -29,9 +27,7 @@ def add_node(
         Type of the block added to the specification.
     """
     nodeclass = nodemodule.split(".")[-1]
-    node_list[nodeclass] = (
-        Node(nodeclass, category, type, nodemodule)
-    )
+    node_list[nodeclass] = Node(nodeclass, category, type, nodemodule)
 
 
 def get_category_name(kenning_class):
@@ -44,4 +40,4 @@ def get_category_name(kenning_class):
     names = re.sub(r"kenning\.", "", names)
     # Remove last class name
     names = names.split(".")[:-1]
-    return '/'.join(names)
+    return "/".join(names)

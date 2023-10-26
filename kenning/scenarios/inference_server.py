@@ -48,17 +48,17 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 
-JSON_CONFIG = 'Server configuration with JSON'
-FLAG_CONFIG = 'Server configuration with flags'
+JSON_CONFIG = "Server configuration with JSON"
+FLAG_CONFIG = "Server configuration with flags"
 ARGS_GROUPS = {
     JSON_CONFIG: (
-        'Configuration with data defined in JSON file. This section is not '
+        "Configuration with data defined in JSON file. This section is not "
         f"compatible with '{FLAG_CONFIG}'. Arguments with '*' are required"
     ),
     FLAG_CONFIG: (
-        'Configuration with flags. This section is not compatible with '
+        "Configuration with flags. This section is not compatible with "
         f"'{JSON_CONFIG}'. Arguments with '*' are required.",
-    )
+    ),
 }
 
 
@@ -93,19 +93,19 @@ class InferenceServer(object):
         """
         status = self.protocol.initialize_server()
         if not status:
-            KLogger.error('Server prepare failed')
+            KLogger.error("Server prepare failed")
             return
 
         self.should_work = True
-        KLogger.info('Server started')
+        KLogger.info("Server started")
 
         while self.should_work:
             server_status, message = self.protocol.receive_message(timeout=1)
             if server_status == ServerStatus.DATA_READY:
-                KLogger.debug(f'Received message {message}')
+                KLogger.debug(f"Received message {message}")
                 self.callbacks[message.message_type](message.payload)
             elif server_status == ServerStatus.DATA_INVALID:
-                KLogger.error('Invalid message received')
+                KLogger.error("Invalid message received")
 
         self.protocol.disconnect()
 
@@ -149,10 +149,10 @@ class InferenceServer(object):
         input_data : bytes
             Not used here.
         """
-        KLogger.debug('Processing input')
+        KLogger.debug("Processing input")
         self.runtime.run()
         self.protocol.request_success()
-        KLogger.debug('Input processed')
+        KLogger.debug("Input processed")
 
     def _output_callback(self, input_data: bytes):
         """
@@ -211,37 +211,36 @@ class InferenceServer(object):
         json_cfg = json.loads(input_data.decode())
 
         optimizers_cfg = (
-            json_cfg['optimizers']
-            if 'optimizers' in json_cfg else []
+            json_cfg["optimizers"] if "optimizers" in json_cfg else []
         )
-        optimizers_cls = [load_class(cfg['type']) for cfg in optimizers_cfg]
+        optimizers_cls = [load_class(cfg["type"]) for cfg in optimizers_cfg]
         self.optimizers = [
-            cls.from_json(cfg['parameters'], dataset=None)
+            cls.from_json(cfg["parameters"], dataset=None)
             for cls, cfg in zip(optimizers_cls, optimizers_cfg)
         ]
 
-        prev_block_cfg = json_cfg['prev_block']
+        prev_block_cfg = json_cfg["prev_block"]
 
         class PrevBlockStub(object):
             def __init__(self):
-                self.compiled_model_path = Path(prev_block_cfg['model_path'])
+                self.compiled_model_path = Path(prev_block_cfg["model_path"])
 
             def get_output_formats(self):
-                return prev_block_cfg['model_type']
+                return prev_block_cfg["model_type"]
 
             def save_io_specification(self, model_path: Path):
-                with open(Optimizer.get_spec_path(model_path), 'w') as spec_f:
-                    spec_f.write(json.dumps(prev_block_cfg['io_spec']))
+                with open(Optimizer.get_spec_path(model_path), "w") as spec_f:
+                    spec_f.write(json.dumps(prev_block_cfg["io_spec"]))
 
             def get_io_specification(self) -> Dict[str, Any]:
-                return prev_block_cfg['io_spec']
+                return prev_block_cfg["io_spec"]
 
         self.prev_block = PrevBlockStub()
 
-        optimizers_str = ', '.join(
+        optimizers_str = ", ".join(
             optimizer.__class__.__name__ for optimizer in self.optimizers
         )
-        KLogger.info(f'Loaded optimizers: {optimizers_str}')
+        KLogger.info(f"Loaded optimizers: {optimizers_str}")
 
         return self.protocol.request_success()
 
@@ -257,23 +256,20 @@ class InferenceServer(object):
         prev_block = self.prev_block
         model_path = prev_block.compiled_model_path
 
-        with open(model_path, 'wb') as model_f:
+        with open(model_path, "wb") as model_f:
             model_f.write(input_data)
 
         try:
             for optimizer in self.optimizers:
-                KLogger.info(
-                    f'Processing block: {type(optimizer).__name__}'
-                )
+                KLogger.info(f"Processing block: {type(optimizer).__name__}")
 
                 model_type = optimizer.consult_model_type(prev_block)
 
                 prev_block.save_io_specification(model_path)
                 optimizer.set_input_type(model_type)
-                if hasattr(prev_block, 'get_io_specification'):
+                if hasattr(prev_block, "get_io_specification"):
                     optimizer.compile(
-                        model_path,
-                        prev_block.get_io_specification()
+                        model_path, prev_block.get_io_specification()
                     )
                 else:
                     optimizer.compile(model_path)
@@ -283,18 +279,18 @@ class InferenceServer(object):
 
             model_path = self.optimizers[-1].compiled_model_path
 
-            with open(model_path, 'rb') as model_f:
+            with open(model_path, "rb") as model_f:
                 model_data = model_f.read()
 
             return self.protocol.request_success(model_data)
         except Exception as e:
-            KLogger.error(f'Compilation error: {e}', stack_info=True)
+            KLogger.error(f"Compilation error: {e}", stack_info=True)
             return self.protocol.request_failure()
 
 
 class InferenceServerRunner(CommandTemplate):
     parse_all = False
-    description = __doc__.split('\n\n')[0]
+    description = __doc__.split("\n\n")[0]
 
     @staticmethod
     def configure_parser(
@@ -310,22 +306,22 @@ class InferenceServerRunner(CommandTemplate):
         groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
         groups[JSON_CONFIG].add_argument(
-            '--json-cfg',
-            help='* The path to the input JSON file with configuration',
+            "--json-cfg",
+            help="* The path to the input JSON file with configuration",
             type=ResourceURI,
         ).completer = FilesCompleter("*.json")
         groups[FLAG_CONFIG].add_argument(
-            '--protocol-cls',
+            "--protocol-cls",
             help=(
-                '* Protocol-based class with the implementation of '
-                'communication between inference tester and inference runner'
+                "* Protocol-based class with the implementation of "
+                "communication between inference tester and inference runner"
             ),
         ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         groups[FLAG_CONFIG].add_argument(
-            '--runtime-cls',
+            "--runtime-cls",
             help=(
-                '* Runtime-based class with the implementation of model '
-                'runtime'
+                "* Runtime-based class with the implementation of model "
+                "runtime"
             ),
         ).completer = ClassPathCompleter(RUNTIMES)
 
@@ -335,19 +331,19 @@ class InferenceServerRunner(CommandTemplate):
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         KLogger.set_verbosity(args.verbosity)
 
-        flag_config_names = ('runtime_cls', 'protocol_cls')
+        flag_config_names = ("runtime_cls", "protocol_cls")
         flag_config_not_none = [
             getattr(args, name, None) is not None for name in flag_config_names
         ]
         if args.json_cfg is None and not any(flag_config_not_none):
             raise argparse.ArgumentError(
-                None, 'JSON or flag configuration is required.'
+                None, "JSON or flag configuration is required."
             )
         if args.json_cfg is not None and any(flag_config_not_none):
             raise argparse.ArgumentError(
                 None,
-                'JSON and flag configurations are mutually exclusive. Please '
-                'use only one method of configuration.',
+                "JSON and flag configurations are mutually exclusive. Please "
+                "use only one method of configuration.",
             )
 
         if args.json_cfg is not None:
@@ -380,7 +376,7 @@ class InferenceServerRunner(CommandTemplate):
         )
 
         parser = argparse.ArgumentParser(
-            ' '.join(map(lambda x: x.strip(), get_command(with_slash=False))),
+            " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
             parents=[]
             + ([protocol_cls.form_argparse()[0]] if protocol_cls else [])
             + ([runtime_cls.form_argparse()[0]] if runtime_cls else []),
@@ -406,24 +402,24 @@ class InferenceServerRunner(CommandTemplate):
                 None, f'unrecognized arguments: {" ".join(not_parsed)}'
             )
 
-        with open(args.json_cfg, 'r') as f:
+        with open(args.json_cfg, "r") as f:
             json_cfg = json.load(f)
 
-        protocol_cfg = json_cfg['protocol']
-        runtime_cfg = json_cfg['runtime']
+        protocol_cfg = json_cfg["protocol"]
+        runtime_cfg = json_cfg["runtime"]
 
-        protocol_cls = load_class(protocol_cfg['type'])
-        runtime_cls = load_class(runtime_cfg['type'])
+        protocol_cls = load_class(protocol_cfg["type"])
+        runtime_cls = load_class(runtime_cfg["type"])
 
-        protocol = protocol_cls.from_json(protocol_cfg['parameters'])
-        runtime = runtime_cls.from_json(runtime_cfg['parameters'])
+        protocol = protocol_cls.from_json(protocol_cfg["parameters"])
+        runtime = runtime_cls.from_json(runtime_cfg["parameters"])
 
         InferenceServerRunner._run_server(runtime, protocol)
 
     @staticmethod
     def _run_server(runtime: Runtime, protocol: Protocol):
         if protocol is None:
-            raise RequestFailure('Protocol is not provided')
+            raise RequestFailure("Protocol is not provided")
 
         formersighandler = signal.getsignal(signal.SIGINT)
 
@@ -432,15 +428,15 @@ class InferenceServerRunner(CommandTemplate):
         def sigint_handler(sig, frame):
             server.close()
             KLogger.info(
-                'Closing application (press Ctrl-C again for force closing)...'
+                "Closing application (press Ctrl-C again for force closing)..."
             )
             signal.signal(signal.SIGINT, formersighandler)
 
         signal.signal(signal.SIGINT, sigint_handler)
 
-        KLogger.info('Starting server...')
+        KLogger.info("Starting server...")
         server.run()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(InferenceServerRunner.scenario_run())

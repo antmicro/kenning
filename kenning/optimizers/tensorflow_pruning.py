@@ -27,54 +27,53 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
     """
     The TensorFlowPruning optimizer.
     """
+
     inputtypes = {
-        'keras': kerasconversion,
+        "keras": kerasconversion,
     }
 
-    outputtypes = [
-        'keras'
-    ]
+    outputtypes = ["keras"]
 
     arguments_structure = {
-        'model_framework': {
-            'argparse_name': '--model-framework',
-            'description': 'The input type of the model, framework-wise',
-            'default': 'keras',
-            'enum': list(inputtypes.keys())
+        "model_framework": {
+            "argparse_name": "--model-framework",
+            "description": "The input type of the model, framework-wise",
+            "default": "keras",
+            "enum": list(inputtypes.keys()),
         },
-        'prune_dense': {
-            'description': 'Prune only dense layers',
-            'type': bool,
-            'default': False,
+        "prune_dense": {
+            "description": "Prune only dense layers",
+            "type": bool,
+            "default": False,
         },
-        'target_sparsity': {
-            'description': 'Target weights sparsity of the model after pruning',  # noqa: E501
-            'type': float,
-            'default': 0.1
+        "target_sparsity": {
+            "description": "Target weights sparsity of the model after pruning",  # noqa: E501
+            "type": float,
+            "default": 0.1,
         },
-        'pruning_frequency': {
-            'description': 'Defines number of steps between prunings',
-            'type': int,
-            'default': 100,
+        "pruning_frequency": {
+            "description": "Defines number of steps between prunings",
+            "type": int,
+            "default": 100,
         },
-        'pruning_end': {
-            'description': 'Last steps for which model can be pruned, -1 means no end',  # noqa: E501
-            'type': int,
-            'default': -1,
-        }
+        "pruning_end": {
+            "description": "Last steps for which model can be pruned, -1 means no end",  # noqa: E501
+            "type": int,
+            "default": -1,
+        },
     }
 
     def __init__(
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
+        location: Literal["host", "target"] = "host",
         epochs: int = 10,
         batch_size: int = 32,
-        optimizer: str = 'adam',
+        optimizer: str = "adam",
         disable_from_logits: bool = False,
         save_to_zip: bool = False,
-        model_framework: str = 'keras',
+        model_framework: str = "keras",
         prune_dense: bool = False,
         target_sparsity: float = 0.1,
         pruning_frequency: int = 100,
@@ -133,42 +132,41 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         )
 
     def compile(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
         model = self.inputtypes[self.inputtype](input_model_path)
 
         pruning_params = {
-            'pruning_schedule': tfmot.sparsity.keras.ConstantSparsity(
+            "pruning_schedule": tfmot.sparsity.keras.ConstantSparsity(
                 target_sparsity=self.target_sparsity,
-                begin_step=0, frequency=self.pruning_frequency,
+                begin_step=0,
+                frequency=self.pruning_frequency,
                 end_step=self.pruning_end,
             )
         }
 
         if self.prune_dense:
+
             def apply_pruning_to_dense(layer):
                 if isinstance(layer, tf.keras.layers.Dense):
                     return tfmot.sparsity.keras.prune_low_magnitude(
-                        layer,
-                        **pruning_params
+                        layer, **pruning_params
                     )
                 return layer
 
             pruned_model = tf.keras.models.clone_model(
-                model,
-                clone_function=apply_pruning_to_dense
+                model, clone_function=apply_pruning_to_dense
             )
         else:
             pruned_model = tfmot.sparsity.keras.prune_low_magnitude(
-                model,
-                **pruning_params
+                model, **pruning_params
             )
 
-        KLogger.info('Pruning will start after dataset is prepared')
+        KLogger.info("Pruning will start after dataset is prepared")
         pruned_model = self.train_model(
-            pruned_model,
-            [tfmot.sparsity.keras.UpdatePruningStep()]
+            pruned_model, [tfmot.sparsity.keras.UpdatePruningStep()]
         )
 
         optimized_model = tfmot.sparsity.keras.strip_pruning(pruned_model)

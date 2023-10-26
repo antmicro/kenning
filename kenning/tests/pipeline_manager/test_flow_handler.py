@@ -5,7 +5,11 @@
 import pytest
 
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
-from kenning.tests.pipeline_manager.handler_tests import HandlerTests, factory_test_create_dataflow, factory_test_equivalence  # noqa: E501
+from kenning.tests.pipeline_manager.handler_tests import (
+    HandlerTests,
+    factory_test_create_dataflow,
+    factory_test_equivalence,
+)  # noqa: E501
 from kenning.pipeline_manager.core import VisualEditorGraphParserError
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.utils.class_loader import load_class
@@ -17,39 +21,18 @@ CAMERA_DATAPROVIDER_DATAFLOW_NODE = {
     "width": 300,
     "twoColumn": False,
     "interfaces": [
-        {
-            "name": "Data",
-            "id": "1",
-            "direction": "output",
-            "side": "right"
-        }
+        {"name": "Data", "id": "1", "direction": "output", "side": "right"}
     ],
     "properties": [
-        {
-            "name": "video_file_path",
-            "id": "2",
-            "value": "/dev/video0"
-        },
-        {
-            "name": "input_memory_layout",
-            "id": "3",
-            "value": "NCHW"
-        },
+        {"name": "video_file_path", "id": "2", "value": "/dev/video0"},
+        {"name": "input_memory_layout", "id": "3", "value": "NCHW"},
         {
             "name": "input_color_format",
             "id": "a9966a81-edbb-4b1c-b15a-a7f7c24823c9",
-            "value": "BGR"
+            "value": "BGR",
         },
-        {
-            "name": "input_width",
-            "id": "4",
-            "value": 608
-        },
-        {
-            "name": "input_height",
-            "id": "5",
-            "value": 608
-        }
+        {"name": "input_width", "id": "4", "value": 608},
+        {"name": "input_height", "id": "5", "value": 608},
     ],
 }
 
@@ -64,20 +47,20 @@ ONNXYOLO_DATAFLOW_NODE = {
             "name": "Model wrapper",
             "id": "7",
             "direction": "output",
-            "side": "right"
+            "side": "right",
         }
     ],
     "properties": [
         {
             "name": "classes",
             "id": "66c5b122-711e-4e87-afd5-7dfda9b633b6",
-            "value": "coco"
+            "value": "coco",
         },
         {
             "name": "model_path",
             "id": "8",
-            "value": "kenning:///models/object_detection/yolov4.onnx"
-        }
+            "value": "kenning:///models/object_detection/yolov4.onnx",
+        },
     ],
 }
 
@@ -88,31 +71,24 @@ ONNXRUNTIME_DATAFLOW_NODE = {
     "width": 300,
     "twoColumn": False,
     "interfaces": [
-        {
-            "name": "Runtime",
-            "id": "10",
-            "direction": "output",
-            "side": "right"
-        }
+        {"name": "Runtime", "id": "10", "direction": "output", "side": "right"}
     ],
     "properties": [
         {
             "name": "save_model_path",
             "id": "11",
-            "value": "kenning:///models/object_detection/yolov4.onnx"
+            "value": "kenning:///models/object_detection/yolov4.onnx",
         },
         {
             "name": "execution_providers",
             "id": "12",
-            "value": [
-                "CUDAExecutionProvider"
-            ]
+            "value": ["CUDAExecutionProvider"],
         },
         {
             "name": "disable_performance_measurements",
             "id": "9fcaafdc-5f09-4204-a54e-fa0f66abd804",
-            "value": False
-        }
+            "value": False,
+        },
     ],
 }
 
@@ -127,32 +103,27 @@ MODELRUNTIMERUNNER_DATAFLOW_NODE = {
             "name": "Input data",
             "id": "14",
             "direction": "input",
-            "side": "left"
+            "side": "left",
         },
         {
             "name": "Model Wrapper",
             "id": "15",
             "direction": "input",
-            "side": "left"
+            "side": "left",
         },
-        {
-            "name": "Runtime",
-            "id": "16",
-            "direction": "input",
-            "side": "left"
-        },
+        {"name": "Runtime", "id": "16", "direction": "input", "side": "left"},
         {
             "name": "Calibration dataset",
             "id": "17",
             "direction": "input",
-            "side": "left"
+            "side": "left",
         },
         {
             "name": "Model output",
             "id": "18",
             "direction": "output",
-            "side": "right"
-        }
+            "side": "right",
+        },
     ],
     "properties": [],
 }
@@ -168,74 +139,57 @@ DETECTIONVISUALIZER_DATAFLOW_NODE = {
             "name": "Model output",
             "id": "22",
             "direction": "input",
-            "side": "left"
+            "side": "left",
         },
         {
             "name": "Input frames",
             "id": "23",
             "direction": "input",
-            "side": "left"
-        }
+            "side": "left",
+        },
     ],
     "properties": [
-        {
-            "name": "viewer_width",
-            "id": "24",
-            "value": 512
-        },
-        {
-            "name": "viewer_height",
-            "id": "25",
-            "value": 512
-        },
-        {
-            "name": "input_color_format",
-            "id": "27",
-            "value": "BGR"
-        },
-        {
-            "name": "input_memory_layout",
-            "id": "26",
-            "value": "NCHW"
-        }
+        {"name": "viewer_width", "id": "24", "value": 512},
+        {"name": "viewer_height", "id": "25", "value": 512},
+        {"name": "input_color_format", "id": "27", "value": "BGR"},
+        {"name": "input_memory_layout", "id": "26", "value": "NCHW"},
     ],
 }
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def use_static_io_spec_parser():
     """
     Changes the ModelRuntimeRunner `get_io_specification` implementation to use
     runtime's static IO spec parser.
     """
+
     def _create_model(dataset, json_dict):
-        cls = load_class(json_dict['type'])
+        cls = load_class(json_dict["type"])
         model = cls.from_json(
-            dataset=dataset,
-            json_dict=json_dict['parameters'])
-        model._json_dict = json_dict['parameters']
+            dataset=dataset, json_dict=json_dict["parameters"]
+        )
+        model._json_dict = json_dict["parameters"]
         return model
 
     def get_io_specification(self):
         return self._get_io_specification(
-            self.model.parse_io_specification_from_json(
-                self.model._json_dict
-            )
+            self.model.parse_io_specification_from_json(self.model._json_dict)
         )
 
     ModelRuntimeRunner._create_model = _create_model
     ModelRuntimeRunner.get_io_specification = get_io_specification
 
 
-@pytest.mark.xdist_group(name='use_resources')
-@pytest.mark.usefixtures('use_static_io_spec_parser')
+@pytest.mark.xdist_group(name="use_resources")
+@pytest.mark.usefixtures("use_static_io_spec_parser")
 class TestFlowHandler(HandlerTests):
     dataflow_nodes = [
         CAMERA_DATAPROVIDER_DATAFLOW_NODE,
         ONNXYOLO_DATAFLOW_NODE,
         ONNXRUNTIME_DATAFLOW_NODE,
         MODELRUNTIMERUNNER_DATAFLOW_NODE,
-        DETECTIONVISUALIZER_DATAFLOW_NODE
+        DETECTIONVISUALIZER_DATAFLOW_NODE,
     ]
     dataflow_connections = [
         {"id": "19", "from": "7", "to": "15"},
@@ -265,38 +219,40 @@ class TestFlowHandler(HandlerTests):
                 conn_name_mapping[global_name1] = global_name2
 
         for node1, node2 in zip(dataflow1, dataflow2):
-            for local_name in node1.get('inputs', {}):
-                connection_check(node1['inputs'], node2['inputs'], local_name)
+            for local_name in node1.get("inputs", {}):
+                connection_check(node1["inputs"], node2["inputs"], local_name)
 
-            for local_name in node1.get('outputs', {}):
+            for local_name in node1.get("outputs", {}):
                 connection_check(
-                    node1['outputs'],  node2['outputs'], local_name
+                    node1["outputs"], node2["outputs"], local_name
                 )
         return True
 
     PATH_TO_JSON_SCRIPTS = "./scripts/jsonflowconfigs"
 
-    test_create_dataflow = factory_test_create_dataflow(
-        PATH_TO_JSON_SCRIPTS
-    )
+    test_create_dataflow = factory_test_create_dataflow(PATH_TO_JSON_SCRIPTS)
 
-    test_equivalence = factory_test_equivalence(
-        PATH_TO_JSON_SCRIPTS
-    )
+    test_equivalence = factory_test_equivalence(PATH_TO_JSON_SCRIPTS)
 
     def test_create_dataflow_fail(self, handler):
         """
         Test if the handler correctly fails when the JSON is invalid.
         """
         with pytest.raises(VisualEditorGraphParserError) as e:
-            invalid_flow_json = [{"type": "Unknown", }]
+            invalid_flow_json = [
+                {
+                    "type": "Unknown",
+                }
+            ]
             handler.create_dataflow(invalid_flow_json)
         assert "Invalid Kenningflow: Each node must" in str(e.value)
 
         with pytest.raises(VisualEditorGraphParserError) as e:
-            invalid_flow_json = [{
-                "parameters": {},
-                "test": "test",
-            }]
+            invalid_flow_json = [
+                {
+                    "parameters": {},
+                    "test": "test",
+                }
+            ]
             handler.create_dataflow(invalid_flow_json)
         assert "Invalid Kenningflow: Each node must" in str(e.value)

@@ -22,4 +22,4 @@ from kenning.utils.excepthook import kenning_missing_import_excepthook
 if os.environ.get("KENNING_USE_DEFAULT_EXCEPTHOOK", None) is None:
     sys.excepthook = kenning_missing_import_excepthook
 
-sys.path.insert(0, os.path.abspath(__file__ + '../'))
+sys.path.insert(0, os.path.abspath(__file__ + "../"))

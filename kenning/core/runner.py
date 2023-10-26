@@ -21,10 +21,11 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
     """
 
     def __init__(
-            self,
-            inputs_sources: Dict[str, Tuple[int, str]],
-            inputs_specs: Dict[str, Dict],
-            outputs: Dict[str, str]):
+        self,
+        inputs_sources: Dict[str, Tuple[int, str]],
+        inputs_specs: Dict[str, Dict],
+        outputs: Dict[str, str],
+    ):
         """
         Creates the runner.
 
@@ -45,8 +46,8 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         runner_input_spec = {}
         runner_io_spec = self.get_io_specification()
         for local_name, (_, global_name) in self.inputs_sources.items():
-            for spec in runner_io_spec['input']:
-                if spec['name'] == local_name:
+            for spec in runner_io_spec["input"]:
+                if spec["name"] == local_name:
                     runner_input_spec[global_name] = spec
                     break
 
@@ -58,8 +59,8 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         if not IOInterface.validate(outputs_specs, runner_input_spec):
             self.cleanup()
             raise IOCompatibilityError(
-                f'Input and output are not compatible.\nOutput is:\n'
-                f'{outputs_specs}\nInput is:\n{runner_input_spec}\n'
+                f"Input and output are not compatible.\nOutput is:\n"
+                f"{outputs_specs}\nInput is:\n{runner_input_spec}\n"
             )
 
     def cleanup(self):
@@ -87,7 +88,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         inputs_sources: Dict[str, Tuple[int, str]],
         inputs_specs: Dict[str, Dict],
         outputs: Dict[str, str],
-    ) -> 'Runner':
+    ) -> "Runner":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -114,7 +115,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             args,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     @classmethod
@@ -124,7 +125,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         inputs_sources: Dict[str, Tuple[int, str]],
         inputs_specs: Dict[str, Dict],
         outputs: Dict[str, str],
-    ) -> 'Runner':
+    ) -> "Runner":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -152,12 +153,10 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             json_dict,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
-    def _run(
-            self,
-            flow_state: List[Dict[str, Any]]):
+    def _run(self, flow_state: List[Dict[str, Any]]):
         """
         Method used to prepare inputs and run this Runner.
 
@@ -168,9 +167,13 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         """
         # retrieves input values from current flow state based on data
         # saved in input sources (block index and block output name)
-        inputs = {input_name: flow_state[block_idx][output_name]
-                  for input_name, (block_idx, output_name)
-                  in self.inputs_sources.items()}
+        inputs = {
+            input_name: flow_state[block_idx][output_name]
+            for input_name, (
+                block_idx,
+                output_name,
+            ) in self.inputs_sources.items()
+        }
         local_outputs = self.run(inputs)
         outputs = {}
         for local_name, global_name in self.outputs.items():
@@ -179,9 +182,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         flow_state.append(outputs)
 
     @abstractmethod
-    def run(
-            self,
-            inputs: Dict[str, Any]) -> Dict[str, Any]:
+    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
         """
         Method used to run this Runner.
 

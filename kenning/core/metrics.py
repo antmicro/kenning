@@ -32,8 +32,8 @@ def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
-        np.array(confusion_matrix).diagonal() /
-        (np.sum(confusion_matrix, axis=0)+EPS)
+        np.array(confusion_matrix).diagonal()
+        / (np.sum(confusion_matrix, axis=0) + EPS)
     )
 
 
@@ -47,8 +47,8 @@ def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
         The Numpy nxn array or nxn list representing confusion matrix.
     """
     return np.mean(
-        np.array(confusion_matrix).diagonal() /
-        (np.sum(confusion_matrix, axis=1)+EPS)
+        np.array(confusion_matrix).diagonal()
+        / (np.sum(confusion_matrix, axis=1) + EPS)
     )
 
 
@@ -61,10 +61,13 @@ def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
     confusion_matrix : ArrayLike
         The Numpy nxn array or nxn list representing confusion matrix.
     """
-    return np.float_power(np.prod(
-        np.array(confusion_matrix).diagonal() /
-        (np.sum(confusion_matrix, axis=1)+EPS)
-    ), 1.0 / np.array(confusion_matrix).shape[0])
+    return np.float_power(
+        np.prod(
+            np.array(confusion_matrix).diagonal()
+            / (np.sum(confusion_matrix, axis=1) + EPS)
+        ),
+        1.0 / np.array(confusion_matrix).shape[0],
+    )
 
 
 def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
@@ -113,46 +116,50 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
         if not metric_value:
             metric_value = measurementsdata[metric_name]
         operations = {
-            'mean': np.mean,
-            'std': np.std,
-            'median': np.median,
+            "mean": np.mean,
+            "std": np.std,
+            "median": np.median,
         }
         for op_name, op in operations.items():
-            computed_metrics[f'{metric_name}_{op_name}'] = op(metric_value)
+            computed_metrics[f"{metric_name}_{op_name}"] = op(metric_value)
 
     # inferencetime
     inference_step = None
-    if 'target_inference_step' in measurementsdata:
-        inference_step = 'target_inference_step'
-    elif 'protocol_inference_step' in measurementsdata:
-        inference_step = 'protocol_inference_step'
+    if "target_inference_step" in measurementsdata:
+        inference_step = "target_inference_step"
+    elif "protocol_inference_step" in measurementsdata:
+        inference_step = "protocol_inference_step"
 
     if inference_step:
-        compute_metrics('inferencetime', measurementsdata[inference_step])
+        compute_metrics("inferencetime", measurementsdata[inference_step])
 
     # mem_percent
-    if 'session_utilization_mem_percent' in measurementsdata:
+    if "session_utilization_mem_percent" in measurementsdata:
         compute_metrics(
-            'session_utilization_mem_percent',
-            measurementsdata['session_utilization_mem_percent']
+            "session_utilization_mem_percent",
+            measurementsdata["session_utilization_mem_percent"],
         )
 
     # cpus_percent
-    if 'session_utilization_cpus_percent' in measurementsdata:
+    if "session_utilization_cpus_percent" in measurementsdata:
         cpus_percent_avg = [
-            np.mean(cpus) for cpus in
-            measurementsdata['session_utilization_cpus_percent']
+            np.mean(cpus)
+            for cpus in measurementsdata["session_utilization_cpus_percent"]
         ]
-        computed_metrics['session_utilization_cpus_percent_avg'] = cpus_percent_avg  # noqa: E501
-        compute_metrics('session_utilization_cpus_percent_avg', cpus_percent_avg)  # noqa: E501
+        computed_metrics[
+            "session_utilization_cpus_percent_avg"
+        ] = cpus_percent_avg  # noqa: E501
+        compute_metrics(
+            "session_utilization_cpus_percent_avg", cpus_percent_avg
+        )  # noqa: E501
 
     # gpu_mem
-    if 'session_utilization_gpu_mem_utilization' in measurementsdata:
-        compute_metrics('session_utilization_gpu_mem_utilization')
+    if "session_utilization_gpu_mem_utilization" in measurementsdata:
+        compute_metrics("session_utilization_gpu_mem_utilization")
 
     # gpu
-    if 'session_utilization_gpu_utilization' in measurementsdata:
-        compute_metrics('session_utilization_gpu_utilization')
+    if "session_utilization_gpu_utilization" in measurementsdata:
+        compute_metrics("session_utilization_gpu_utilization")
 
     return computed_metrics
 
@@ -178,19 +185,21 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     # If confusion matrix is not present in the measurementsdata, then
     # classification metrics can not be calculated.
-    if 'eval_confusion_matrix' in measurementsdata:
+    if "eval_confusion_matrix" in measurementsdata:
         confusion_matrix = np.asarray(
-            measurementsdata['eval_confusion_matrix'])
-        confusion_matrix[np.isnan(confusion_matrix)] = 0.
+            measurementsdata["eval_confusion_matrix"]
+        )
+        confusion_matrix[np.isnan(confusion_matrix)] = 0.0
         metrics = {
-            'accuracy': accuracy(confusion_matrix),
-            'mean_precision': mean_precision(confusion_matrix),
-            'mean_sensitivity': mean_sensitivity(confusion_matrix),
-            'g_mean': g_mean(confusion_matrix),
+            "accuracy": accuracy(confusion_matrix),
+            "mean_precision": mean_precision(confusion_matrix),
+            "mean_sensitivity": mean_sensitivity(confusion_matrix),
+            "g_mean": g_mean(confusion_matrix),
         }
-        if 'top_5_count' in measurementsdata.keys():
-            metrics['top_5_accuracy'] = \
-                measurementsdata['top_5_count'] / measurementsdata['total']
+        if "top_5_count" in measurementsdata.keys():
+            metrics["top_5_accuracy"] = (
+                measurementsdata["top_5_count"] / measurementsdata["total"]
+            )
         return metrics
     return {}
 
@@ -212,17 +221,16 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Dict :
         Gathered computed metrics.
     """
-    from kenning.datasets.helpers.detection_and_segmentation import \
-        compute_map_per_threshold
+    from kenning.datasets.helpers.detection_and_segmentation import (
+        compute_map_per_threshold,
+    )
 
     # If ground truths count is not present in the measurementsdata, then
     # mAP metric can not be calculated.
     if any(
-            [key.startswith('eval_gtcount') for key in measurementsdata.keys()]
+        [key.startswith("eval_gtcount") for key in measurementsdata.keys()]
     ):
-        return {
-            'mAP': compute_map_per_threshold(measurementsdata, [0.0])[0]
-        }
+        return {"mAP": compute_map_per_threshold(measurementsdata, [0.0])[0]}
     return {}
 
 
@@ -243,13 +251,13 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
     Dict :
         Gathered computed metrics.
     """
-    if not any(('opcode_counters' in data for data in measurementsdata)):
+    if not any(("opcode_counters" in data for data in measurementsdata)):
         return {}
 
     # retrieve all opcodes with nonzero counters
     all_opcodes = set()
     for data in measurementsdata:
-        for opcode, counter in data['opcode_counters'].items():
+        for opcode, counter in data["opcode_counters"].items():
             if counter > 0:
                 all_opcodes.add(opcode)
 
@@ -259,13 +267,13 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
     for opcode in all_opcodes:
         counters = [opcode]
         for data in measurementsdata:
-            counters.append(data['opcode_counters'].get(opcode, 0))
+            counters.append(data["opcode_counters"].get(opcode, 0))
         opcode_ctrs.append(counters)
 
     opcode_ctrs.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
 
     v_opcode_ctrs = [
-        counters for counters in opcode_ctrs if counters[0][0] == 'v'
+        counters for counters in opcode_ctrs if counters[0][0] == "v"
     ]
 
     # transpose
@@ -274,62 +282,63 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
 
     ret = {}
     if len(opcode_ctrs):
-        ret['sorted_opcode_counters'] = {}
-        ret['sorted_opcode_counters']['opcodes'] = t_opcode_ctrs[0]
+        ret["sorted_opcode_counters"] = {}
+        ret["sorted_opcode_counters"]["opcodes"] = t_opcode_ctrs[0]
         if len(measurementsdata) == 1:
-            ret['sorted_opcode_counters']['counters'] = {
-                'counters': t_opcode_ctrs[1]
+            ret["sorted_opcode_counters"]["counters"] = {
+                "counters": t_opcode_ctrs[1]
             }
         else:
-            ret['sorted_opcode_counters']['counters'] = {
-                measurementsdata[i]['model_name']: t_opcode_ctrs[i + 1]
+            ret["sorted_opcode_counters"]["counters"] = {
+                measurementsdata[i]["model_name"]: t_opcode_ctrs[i + 1]
                 for i in range(len(measurementsdata))
             }
 
     if len(v_opcode_ctrs):
-        ret['sorted_vector_opcode_counters'] = {}
-        ret['sorted_vector_opcode_counters']['opcodes'] = t_v_opcode_ctrs[0]
+        ret["sorted_vector_opcode_counters"] = {}
+        ret["sorted_vector_opcode_counters"]["opcodes"] = t_v_opcode_ctrs[0]
         if len(measurementsdata) == 1:
-            ret['sorted_vector_opcode_counters']['counters'] = {
-                'counters': t_v_opcode_ctrs[1]
+            ret["sorted_vector_opcode_counters"]["counters"] = {
+                "counters": t_v_opcode_ctrs[1]
             }
         else:
-            ret['sorted_vector_opcode_counters']['counters'] = {
-                data['model_name']: t_v_opcode_ctrs[i + 1]
+            ret["sorted_vector_opcode_counters"]["counters"] = {
+                data["model_name"]: t_v_opcode_ctrs[i + 1]
                 for i, data in enumerate(measurementsdata)
             }
 
-    ret['instructions_per_inference_pass'] = {
-        data['model_name']:
-            int(sum(data['opcode_counters'].values()) / data['total'])
+    ret["instructions_per_inference_pass"] = {
+        data["model_name"]: int(
+            sum(data["opcode_counters"].values()) / data["total"]
+        )
         for data in measurementsdata
     }
     if len(v_opcode_ctrs):
-        ret['vector_opcodes_fraction'] = {
-            data['model_name']:
-                sum(t_v_opcode_ctrs[i + 1]) / sum(t_opcode_ctrs[i + 1])
+        ret["vector_opcodes_fraction"] = {
+            data["model_name"]: sum(t_v_opcode_ctrs[i + 1])
+            / sum(t_opcode_ctrs[i + 1])
             for i, data in enumerate(measurementsdata)
         }
 
-    ret['top_10_opcodes_per_inference_pass'] = {}
+    ret["top_10_opcodes_per_inference_pass"] = {}
     for data in measurementsdata:
-        opcode_counters = list(map(list, data['opcode_counters'].items()))
+        opcode_counters = list(map(list, data["opcode_counters"].items()))
         opcode_counters.sort(key=lambda x: x[::-1], reverse=True)
         for i in range(len(opcode_counters)):
-            opcode_counters[i][1] //= data['total']
+            opcode_counters[i][1] //= data["total"]
         top_10 = opcode_counters[:10]
-        ret['top_10_opcodes_per_inference_pass'][data['model_name']] = top_10
+        ret["top_10_opcodes_per_inference_pass"][data["model_name"]] = top_10
 
     if len(measurementsdata) == 1:
-        ret['instructions_per_inference_pass'] = next(iter(
-            ret['instructions_per_inference_pass'].values()
-        ))
-        ret['top_10_opcodes_per_inference_pass'] = next(iter(
-            ret['top_10_opcodes_per_inference_pass'].values()
-        ))
-        if 'vector_opcodes_fraction' in ret:
-            ret['vector_opcodes_fraction'] = next(iter((
-                ret['vector_opcodes_fraction'].values())
-            ))
+        ret["instructions_per_inference_pass"] = next(
+            iter(ret["instructions_per_inference_pass"].values())
+        )
+        ret["top_10_opcodes_per_inference_pass"] = next(
+            iter(ret["top_10_opcodes_per_inference_pass"].values())
+        )
+        if "vector_opcodes_fraction" in ret:
+            ret["vector_opcodes_fraction"] = next(
+                iter((ret["vector_opcodes_fraction"].values()))
+            )
 
     return ret

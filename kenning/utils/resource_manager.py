@@ -50,20 +50,19 @@ def extract_zip(target_dir: Path, src_path: Path):
     src_path : Path
         Path to the ZIP file.
     """
-    with (
-        LoggerProgressBar() as logger_progress_bar,
-        ZipFile(src_path, 'r') as zip
-    ):
+    with LoggerProgressBar() as logger_progress_bar, ZipFile(
+        src_path, "r"
+    ) as zip:
         for f in tqdm(
             iterable=zip.namelist(),
             total=len(zip.namelist()),
-            file=logger_progress_bar
+            file=logger_progress_bar,
         ):
             zip.extract(member=f, path=target_dir)
 
 
 def _gh_converter(netloc: str, path: str, params_dict: Dict[str, str]) -> str:
-    netloc = netloc.split(':')
+    netloc = netloc.split(":")
     return (
         f'https://raw.githubusercontent.com/{netloc[0]}/{netloc[1]}/'
         f'{params_dict["branch"]}{path}'
@@ -84,12 +83,12 @@ def _get_cache_dir(env_var: str) -> Path:
     Path :
         Path to the cache.
     """
-    cache_dir = os.environ.get(env_var, '')
+    cache_dir = os.environ.get(env_var, "")
 
     if cache_dir:
         cache_dir = Path(cache_dir)
     else:
-        cache_dir = Path.home() / '.kenning'
+        cache_dir = Path.home() / ".kenning"
 
     return cache_dir.expanduser().resolve()
 
@@ -99,8 +98,8 @@ class ResourceManager(metaclass=Singleton):
     Download and cache resources used by Kenning.
     """
 
-    CACHE_DIR_ENV_VAR = 'KENNING_CACHE_DIR'
-    MAX_CACHE_SIZE_ENV_VAR = 'KENNING_MAX_CACHE_SIZE'
+    CACHE_DIR_ENV_VAR = "KENNING_CACHE_DIR"
+    MAX_CACHE_SIZE_ENV_VAR = "KENNING_MAX_CACHE_SIZE"
 
     CACHE_DIR = _get_cache_dir(CACHE_DIR_ENV_VAR)
 
@@ -109,18 +108,18 @@ class ResourceManager(metaclass=Singleton):
         os.environ.get(MAX_CACHE_SIZE_ENV_VAR, 50_000_000_000)
     )
 
-    HASHING_ALGORITHM = 'md5'
+    HASHING_ALGORITHM = "md5"
 
     BASE_URL_SCHEMES = {
-        'http': None,
-        'https': None,
-        'kenning': 'https://dl.antmicro.com/kenning/{path}',
-        'gh': _gh_converter,
-        'demo-scenario': (
-            'https://raw.githubusercontent.com/'
-            'antmicro/kenning/main/scripts/{path}'
+        "http": None,
+        "https": None,
+        "kenning": "https://dl.antmicro.com/kenning/{path}",
+        "gh": _gh_converter,
+        "demo-scenario": (
+            "https://raw.githubusercontent.com/"
+            "antmicro/kenning/main/scripts/{path}"
         ),
-        'file': lambda uri: Path(uri.path).expanduser().resolve(),
+        "file": lambda uri: Path(uri.path).expanduser().resolve(),
     }
 
     def __init__(self):
@@ -137,18 +136,18 @@ class ResourceManager(metaclass=Singleton):
         # find parameters indexed by numbers, slices or string
         # (e.g. netloc[0], path[2:], params["branch"])
         self.param_pattern = re.compile(
-            r'(\{'                                      # opening brace
-            r'([a-zA-Z][a-zA-Z0-9_]+)'                  # match param name
-            r'(?:\[((?:'                                # opening bracket
-            r'(?:[+-]?[0-9]+)?(?::[+-]?[0-9]*){0,2})'   # match number or slice
-            r'|(?:\"[a-zA-Z0-9]+\")'                    # or match string
-            r')\])?'                                    # closing bracket
-            r'\})'                                      # closing brace
+            r"(\{"  # opening brace
+            r"([a-zA-Z][a-zA-Z0-9_]+)"  # match param name
+            r"(?:\[((?:"  # opening bracket
+            r"(?:[+-]?[0-9]+)?(?::[+-]?[0-9]*){0,2})"  # match number or slice
+            r"|(?:\"[a-zA-Z0-9]+\")"  # or match string
+            r")\])?"  # closing bracket
+            r"\})"  # closing brace
         )
         # find parameters indexed (or not) by anything
         # used only to check if there are some params left after parsing
         self.params_any_index_pattern = re.compile(
-            r'(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})'
+            r"(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})"
         )
 
     def get_resource(
@@ -182,7 +181,7 @@ class ResourceManager(metaclass=Singleton):
         parsed_uri = urlparse(uri)
 
         # no scheme in URI - treat as path string
-        if '' == parsed_uri.scheme:
+        if "" == parsed_uri.scheme:
             if output_path is None:
                 return Path(uri).expanduser().resolve()
             else:
@@ -202,7 +201,7 @@ class ResourceManager(metaclass=Singleton):
 
         if output_path is None:
             output_path = self.cache_dir / Path(parsed_uri.path).relative_to(
-                '/'
+                "/"
             )
 
         output_path = output_path.resolve()
@@ -220,7 +219,7 @@ class ResourceManager(metaclass=Singleton):
                 if local_hash_valid is not True:
                     self._save_file_checksum(output_path)
 
-                KLogger.info(f'Using cached: {output_path}')
+                KLogger.info(f"Using cached: {output_path}")
                 return output_path
 
         output_path.parent.mkdir(parents=True, exist_ok=True)
@@ -229,8 +228,8 @@ class ResourceManager(metaclass=Singleton):
 
         if self._validate_file_remote(resolved_uri, output_path) is False:
             raise ChecksumVerifyError(
-                f'Error downloading file {uri} from {resolved_uri}. Invalid '
-                'checksum.'
+                f"Error downloading file {uri} from {resolved_uri}. Invalid "
+                "checksum."
             )
         self._save_file_checksum(output_path)
 
@@ -288,10 +287,10 @@ class ResourceManager(metaclass=Singleton):
         """
         result = []
 
-        for cached_file in self.cache_dir.glob('**/*'):
+        for cached_file in self.cache_dir.glob("**/*"):
             if (
                 cached_file.is_file()
-                and f'.{self.HASHING_ALGORITHM}' not in cached_file.suffixes
+                and f".{self.HASHING_ALGORITHM}" not in cached_file.suffixes
             ):
                 result.append(cached_file.resolve())
 
@@ -328,7 +327,7 @@ class ResourceManager(metaclass=Singleton):
             converter = self.url_schemes[parsed_uri.scheme]
         except KeyError:
             raise ValueError(
-                f'Invalid URI scheme provided: {parsed_uri.scheme}'
+                f"Invalid URI scheme provided: {parsed_uri.scheme}"
             )
 
         if converter is None:
@@ -340,12 +339,10 @@ class ResourceManager(metaclass=Singleton):
         if callable(converter):
             return self._handle_callable_converter(parsed_uri, converter)
 
-        raise ValueError(f'Invalid conversion for scheme {parsed_uri.scheme}')
+        raise ValueError(f"Invalid conversion for scheme {parsed_uri.scheme}")
 
     def _handle_str_converter(
-        self,
-        parsed_uri: ParseResult,
-        converter: str
+        self, parsed_uri: ParseResult, converter: str
     ) -> str:
         """
         Handle string converter parsing.
@@ -366,54 +363,54 @@ class ResourceManager(metaclass=Singleton):
 
         for param_str, param, index in params:
             if not hasattr(parsed_uri, param):
-                raise ValueError(f'Invalid param name {param}')
+                raise ValueError(f"Invalid param name {param}")
 
-            if index == '' and ('[' in param_str or ']' in param_str):
-                raise ValueError(
-                    f'Invalid index for param: {param_str}'
-                )
+            if index == "" and ("[" in param_str or "]" in param_str):
+                raise ValueError(f"Invalid index for param: {param_str}")
 
             param_value = getattr(parsed_uri, param)
             param_as_list = None
             param_as_dict = None
-            if 'path' == param:
-                sep = '/'
+            if "path" == param:
+                sep = "/"
                 param_as_list = self._param_as_list(param_value, sep)
-            elif 'netloc' == param:
-                sep = '.'
+            elif "netloc" == param:
+                sep = "."
                 param_as_list = self._param_as_list(param_value, sep)
-            elif 'params' == param and '=' in param_value:
-                sep = ';'
+            elif "params" == param and "=" in param_value:
+                sep = ";"
                 param_as_dict = self._param_as_dict(param_value, sep)
-            elif 'query' == param and '=' in param_value:
-                sep = '&'
+            elif "query" == param and "=" in param_value:
+                sep = "&"
                 param_as_dict = self._param_as_dict(param_value, sep)
             elif len(index):
                 raise ValueError(
-                    f'Invalid conversion for scheme {parsed_uri.scheme}, '
-                    f'param {param} does not support indexing and slicing'
+                    f"Invalid conversion for scheme {parsed_uri.scheme}, "
+                    f"param {param} does not support indexing and slicing"
                 )
 
-            if ':' in index:
+            if ":" in index:
                 # slice index
                 if param_as_list is None:
-                    raise ValueError(f'Invalid param: {param}')
+                    raise ValueError(f"Invalid param: {param}")
                 # convert slice str to slice object
-                param_slice = slice(*[
-                    {True: lambda n: None, False: int}[x == ''](x)
-                    for x in (index.split(':') + ['', '', ''])[:3]
-                ])
+                param_slice = slice(
+                    *[
+                        {True: lambda n: None, False: int}[x == ""](x)
+                        for x in (index.split(":") + ["", "", ""])[:3]
+                    ]
+                )
                 value = sep.join(param_as_list[param_slice])
             elif index.isnumeric():
                 # numeric index
                 if param_as_list is None:
-                    raise ValueError(f'Invalid param: {param}')
+                    raise ValueError(f"Invalid param: {param}")
                 value = param_as_list[int(index)]
             elif len(index):
                 # string index
                 index = index.strip('"')
                 if param_as_dict is None:
-                    raise ValueError(f'Invalid param: {param}')
+                    raise ValueError(f"Invalid param: {param}")
                 value = param_as_dict[index]
             else:
                 value = param_value
@@ -421,21 +418,16 @@ class ResourceManager(metaclass=Singleton):
             converter = converter.replace(param_str, value)
 
         # check if there are any params left
-        params_check = set(
-            self.params_any_index_pattern.findall(converter)
-        )
+        params_check = set(self.params_any_index_pattern.findall(converter))
         if len(params_check):
             raise ValueError(
-                'Invalid syntax for params: '
-                f'{[p[1] for p in params_check]}'
+                "Invalid syntax for params: " f"{[p[1] for p in params_check]}"
             )
 
         return converter
 
     def _handle_callable_converter(
-        self,
-        parsed_uri: ParseResult,
-        converter: Callable
+        self, parsed_uri: ParseResult, converter: Callable
     ) -> str:
         """
         Handle string converter parsing.
@@ -457,26 +449,26 @@ class ResourceManager(metaclass=Singleton):
         args = []
 
         for arg in callable_arg_spec.args:
-            if arg == 'uri':
+            if arg == "uri":
                 args.append(parsed_uri)
             elif hasattr(parsed_uri, arg):
                 args.append(getattr(parsed_uri, arg))
-            elif '_' in arg:
-                arg_name, arg_type = arg.rsplit('_', 1)
-                if 'netloc' == arg_name and 'list' == arg_type:
-                    args.append(self._param_as_list(parsed_uri.netloc, '.'))
-                elif 'path' == arg_name and 'list' == arg_type:
-                    args.append(self._param_as_list(parsed_uri.path, '/'))
-                elif 'params' == arg_name and 'dict' == arg_type:
-                    args.append(self._param_as_dict(parsed_uri.params, ';'))
-                elif 'query' == arg_name and 'dict' == arg_type:
-                    args.append(self._param_as_dict(parsed_uri.query, '&'))
+            elif "_" in arg:
+                arg_name, arg_type = arg.rsplit("_", 1)
+                if "netloc" == arg_name and "list" == arg_type:
+                    args.append(self._param_as_list(parsed_uri.netloc, "."))
+                elif "path" == arg_name and "list" == arg_type:
+                    args.append(self._param_as_list(parsed_uri.path, "/"))
+                elif "params" == arg_name and "dict" == arg_type:
+                    args.append(self._param_as_dict(parsed_uri.params, ";"))
+                elif "query" == arg_name and "dict" == arg_type:
+                    args.append(self._param_as_dict(parsed_uri.query, "&"))
                 else:
                     raise ValueError(
-                        'Invalid parameter name {arg} in converter'
+                        "Invalid parameter name {arg} in converter"
                     )
             else:
-                raise ValueError('Invalid parameter name {arg} in converter')
+                raise ValueError("Invalid parameter name {arg} in converter")
 
         return converter(*args)
 
@@ -489,7 +481,7 @@ class ResourceManager(metaclass=Singleton):
         return {
             name: val
             for name_val in param_value.strip(sep).split(sep)
-            for name, val in (name_val.split('='),)
+            for name, val in (name_val.split("="),)
         }
 
     def _validate_file_remote(
@@ -511,18 +503,18 @@ class ResourceManager(metaclass=Singleton):
             None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
-        checksum_url = f'{url}.{self.HASHING_ALGORITHM}'
+        checksum_url = f"{url}.{self.HASHING_ALGORITHM}"
 
         response = requests.get(checksum_url, allow_redirects=True)
         if 200 != response.status_code:
-            KLogger.warning(f'Cannot verify {file_path} checksum')
+            KLogger.warning(f"Cannot verify {file_path} checksum")
             return None
 
         remote_hash = response.content.decode().strip().lower()
-        KLogger.debug(f'{url} {remote_hash=}')
+        KLogger.debug(f"{url} {remote_hash=}")
 
         file_hash = self._compute_file_checksum(file_path)
-        KLogger.debug(f'{file_path} {file_hash=}')
+        KLogger.debug(f"{file_path} {file_hash=}")
 
         return file_hash == remote_hash
 
@@ -542,18 +534,18 @@ class ResourceManager(metaclass=Singleton):
             checksum is valid.
         """
         hash_file_path = file_path.with_suffix(
-            file_path.suffix + f'.{self.HASHING_ALGORITHM}'
+            file_path.suffix + f".{self.HASHING_ALGORITHM}"
         )
 
         if not hash_file_path.exists():
             return None
 
-        with open(hash_file_path, 'r') as checksum_file:
+        with open(hash_file_path, "r") as checksum_file:
             local_hash = checksum_file.read().strip().lower()
-        KLogger.debug(f'{file_path} {local_hash=}')
+        KLogger.debug(f"{file_path} {local_hash=}")
 
         file_hash = self._compute_file_checksum(file_path)
-        KLogger.debug(f'{file_path} {file_hash=}')
+        KLogger.debug(f"{file_path} {file_hash=}")
 
         return file_hash == local_hash
 
@@ -569,10 +561,10 @@ class ResourceManager(metaclass=Singleton):
         file_hash = self._compute_file_checksum(file_path)
 
         hash_file_path = file_path.with_suffix(
-            file_path.suffix + f'.{self.HASHING_ALGORITHM}'
+            file_path.suffix + f".{self.HASHING_ALGORITHM}"
         )
 
-        with open(hash_file_path, 'w') as checksum_file:
+        with open(hash_file_path, "w") as checksum_file:
             checksum_file.write(file_hash)
 
     def _download_resource(self, url: str, output_path: Path):
@@ -590,13 +582,13 @@ class ResourceManager(metaclass=Singleton):
             response = requests.head(url)
             if (
                 response.status_code == 200
-                and 'Content-Length' in response.headers
+                and "Content-Length" in response.headers
             ):
-                self._free_cache(int(response.headers['Content-Length']))
+                self._free_cache(int(response.headers["Content-Length"]))
             else:
-                KLogger.warning('Cannot read file size before downloading')
+                KLogger.warning("Cannot read file size before downloading")
 
-        KLogger.debug(f'Downloading {url} to {output_path}')
+        KLogger.debug(f"Downloading {url} to {output_path}")
         download_url(url, output_path)
 
         if self.cache_dir in output_path.parents:
@@ -619,7 +611,7 @@ class ResourceManager(metaclass=Singleton):
             Raised when required free space is bigger that max cache size.
         """
         if required_free > self.max_cache_size:
-            raise ValueError(f'Required free space too big: {required_free} B')
+            raise ValueError(f"Required free space too big: {required_free} B")
         cached_files = self.list_cached_files()
         cached_files.sort(key=lambda f: f.stat().st_mtime)
         cache_size = sum(f.stat().st_size for f in cached_files)
@@ -645,7 +637,7 @@ class ResourceManager(metaclass=Singleton):
         """
         hash_algo = getattr(hashlib, self.HASHING_ALGORITHM)()
 
-        with open(file_path, 'rb') as file:
+        with open(file_path, "rb") as file:
             while True:
                 data = file.read(hash_algo.block_size)
                 if not data:
@@ -663,11 +655,11 @@ class ResourceURI(Path):
     _flavour = type(Path())._flavour
     _uri: Optional[ParseResult]
 
-    def __new__(cls, uri_or_path: Union[str, Path, 'ResourceURI']):
-        if isinstance(uri_or_path, str) and ':/' in uri_or_path:
+    def __new__(cls, uri_or_path: Union[str, Path, "ResourceURI"]):
+        if isinstance(uri_or_path, str) and ":/" in uri_or_path:
             uri = urlparse(uri_or_path)
             path = ResourceManager().cache_dir / Path(uri.path).relative_to(
-                '/'
+                "/"
             )
         elif isinstance(uri_or_path, cls):
             uri = uri_or_path._uri
@@ -699,11 +691,11 @@ class ResourceURI(Path):
             return None
 
         return self._uri._replace(
-            path=f'/{str(Path(self).relative_to(ResourceManager().cache_dir))}'
+            path=f"/{str(Path(self).relative_to(ResourceManager().cache_dir))}"
         ).geturl()
 
     @property
-    def parent(self) -> 'ResourceURI':
+    def parent(self) -> "ResourceURI":
         """
         Get parent of the URI.
         """
@@ -711,7 +703,7 @@ class ResourceURI(Path):
         ret._uri = self._uri
         return ret
 
-    def with_suffix(self, suffix: str) -> 'ResourceURI':
+    def with_suffix(self, suffix: str) -> "ResourceURI":
         """
         Return new URI with changed suffix.
 
@@ -729,7 +721,7 @@ class ResourceURI(Path):
         ret._uri = self._uri
         return ResourceURI(ret)
 
-    def with_name(self, name: str) -> 'ResourceURI':
+    def with_name(self, name: str) -> "ResourceURI":
         """
         Return new URI with changed name.
 
@@ -747,7 +739,7 @@ class ResourceURI(Path):
         ret._uri = self._uri
         return ResourceURI(ret)
 
-    def with_stem(self, stem: str) -> 'ResourceURI':
+    def with_stem(self, stem: str) -> "ResourceURI":
         """
         Return new URI with changed stem.
 
@@ -769,7 +761,7 @@ class ResourceURI(Path):
         return super().__str__()
 
     def __repr__(self) -> str:
-        return f'ResourceURI({self.uri})'
+        return f"ResourceURI({self.uri})"
 
 
 class Resources(object):
@@ -795,7 +787,7 @@ class Resources(object):
         resources_uri = self._resources_uri
         for key in keys:
             if not isinstance(resources_uri, dict) or key not in resources_uri:
-                raise KeyError(f'Invalid key: {keys}')
+                raise KeyError(f"Invalid key: {keys}")
             resources_uri = resources_uri[key]
 
         if isinstance(resources_uri, str):
@@ -803,13 +795,13 @@ class Resources(object):
         if isinstance(resources_uri, ResourceURI):
             return resources_uri
 
-        raise KeyError(f'Invalid key: {keys}')
+        raise KeyError(f"Invalid key: {keys}")
 
     def __setitem__(self, keys: Union[Tuple[str], str], value: str):
         if isinstance(keys, str):
             keys = (keys,)
         if keys in self.keys():
-            raise KeyError(f'Resource {keys} already exists')
+            raise KeyError(f"Resource {keys} already exists")
         resources_uri = self._resources_uri
         for key in keys[:-1]:
             resources_uri = resources_uri[key]

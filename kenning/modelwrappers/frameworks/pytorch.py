@@ -16,14 +16,18 @@ from kenning.utils.resource_manager import PathOrURI
 
 class PyTorchWrapper(ModelWrapper, ABC):
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool = True,
-            model_name: Optional[str] = None):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+    ):
         super().__init__(model_path, dataset, from_file, model_name)
         import torch
-        self.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')  # noqa: E501
+
+        self.device = torch.device(
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )  # noqa: E501
 
     def load_weights(self, weights: OrderedDict):
         """
@@ -35,9 +39,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
         weights : OrderedDict
             Dictionary used to load model weights.
         """
-        self.model.load_state_dict(
-            copy.deepcopy(weights)
-        )
+        self.model.load_state_dict(copy.deepcopy(weights))
         self.model.eval()
 
     def create_model_structure(self):
@@ -49,10 +51,8 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def load_model(self, model_path: PathOrURI):
         import torch
-        input_data = torch.load(
-            self.model_path,
-            map_location=self.device
-        )
+
+        input_data = torch.load(self.model_path, map_location=self.device)
 
         # If the file contains only the weights
         # we have to recreate the model's structure
@@ -65,30 +65,29 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def save_to_onnx(self, model_path: PathOrURI):
         import torch
+
         self.prepare_model()
-        x = tuple(torch.randn(
-            spec['shape'],
-            device='cpu'
-        ) for spec in self.get_io_specification()['input'])
+        x = tuple(
+            torch.randn(spec["shape"], device="cpu")
+            for spec in self.get_io_specification()["input"]
+        )
 
         torch.onnx.export(
-            self.model.to(device='cpu'),
+            self.model.to(device="cpu"),
             x,
             model_path,
             opset_version=11,
             input_names=[
-                spec['name'] for spec in self.get_io_specification()['input']
+                spec["name"] for spec in self.get_io_specification()["input"]
             ],
             output_names=[
-                spec['name'] for spec in self.get_io_specification()['output']
-            ]
+                spec["name"] for spec in self.get_io_specification()["output"]
+            ],
         )
 
-    def save_model(
-            self,
-            model_path: PathOrURI,
-            export_dict: bool = True):
+    def save_model(self, model_path: PathOrURI, export_dict: bool = True):
         import torch
+
         self.prepare_model()
         if export_dict:
             torch.save(self.model.state_dict(), model_path)
@@ -97,10 +96,12 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def preprocess_input(self, X):
         import torch
+
         return torch.Tensor(np.array(X)).to(self.device)
 
     def postprocess_outputs(self, y):
         import torch
+
         if isinstance(y, torch.Tensor):
             return y.detach().cpu().numpy()
         if isinstance(y, np.ndarray):
@@ -115,7 +116,8 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def get_framework_and_version(self):
         import torch
-        return ('torch', torch.__version__)
+
+        return ("torch", torch.__version__)
 
     def get_output_formats(self):
-        return ['onnx', 'torch']
+        return ["onnx", "torch"]

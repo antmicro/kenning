@@ -12,8 +12,9 @@ import pytest
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import RequestFailure
-from kenning.dataconverters.modelwrapper_dataconverter import \
-    ModelWrapperDataConverter
+from kenning.dataconverters.modelwrapper_dataconverter import (
+    ModelWrapperDataConverter,
+)
 from kenning.protocols.network import NetworkProtocol
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.scenarios.inference_server import InferenceServer
@@ -27,9 +28,9 @@ class OptimizerMock(Optimizer):
     Optimizer mock that only copies model.
     """
 
-    inputtypes = {'keras': lambda: None}
+    inputtypes = {"keras": lambda: None}
 
-    outputtypes = ['keras']
+    outputtypes = ["keras"]
 
     def compile(
         self,
@@ -39,13 +40,13 @@ class OptimizerMock(Optimizer):
         shutil.copy(input_model_path, self.compiled_model_path)
 
     def get_framework_and_version(self) -> Tuple[str, str]:
-        return 'none', '0'
+        return "none", "0"
 
     def to_json(self) -> Dict[str, Any]:
         ret = super().to_json()
-        ret['type'] = (
-            'kenning.tests.optimizers.test_target_side_optimization.'
-            f'{self.__class__.__name__}'
+        ret["type"] = (
+            "kenning.tests.optimizers.test_target_side_optimization."
+            f"{self.__class__.__name__}"
         )
         return ret
 
@@ -64,7 +65,7 @@ class OptimizerFailMock(OptimizerMock):
 
 
 class TestServerSideOptimization:
-    @pytest.mark.xdist_group(name='use_resources')
+    @pytest.mark.xdist_group(name="use_resources")
     def test_local_optimization(self):
         """
         Test local compilation.
@@ -72,16 +73,16 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_{i}.h5'),
+                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
             )
             for i in range(3)
         ]
 
         runtime_host = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
 
         pipeline_runner = PipelineRunner(
@@ -96,34 +97,33 @@ class TestServerSideOptimization:
 
         assert model_path.exists()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
-        'optimizers_locations',
+        "optimizers_locations",
         (
-            ('host',),
-            ('target',),
-            ('host', 'target'),
-            ('target', 'host'),
-            ('host', 'host'),
-            ('target', 'target'),
-            ('host', 'target', 'host', 'target'),
+            ("host",),
+            ("target",),
+            ("host", "target"),
+            ("target", "host"),
+            ("host", "host"),
+            ("target", "target"),
+            ("host", "target", "host", "target"),
             (
-                'host',
-                'target',
-                'target',
-                'target',
-                'target',
-                'host',
-                'host',
-                'target',
-                'target',
-                'host',
+                "host",
+                "target",
+                "target",
+                "target",
+                "target",
+                "host",
+                "host",
+                "target",
+                "target",
+                "host",
             ),
         ),
     )
     def test_target_side_optimization(
-        self,
-        optimizers_locations: List[Literal['host', 'target']]
+        self, optimizers_locations: List[Literal["host", "target"]]
     ):
         """
         Test various target-side compilation scenarios.
@@ -131,26 +131,26 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_{i}.h5'),
+                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
             )
             for i, location in enumerate(optimizers_locations)
         ]
 
         runtime_target = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol('localhost', 12345, 32768)
+        protocol_target = NetworkProtocol("localhost", 12345, 32768)
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_host = NetworkProtocol('localhost', 12345, 32768)
+        protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
@@ -182,7 +182,7 @@ class TestServerSideOptimization:
             server_thread.join()
             assert not server_thread.is_alive()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_optimization_fail_when_server_is_not_running(self):
         """
         Test target side optimizations handling when the server is not running.
@@ -190,18 +190,18 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_{i}.h5'),
+                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
             )
-            for i, location in enumerate(('target', 'host', 'target'))
+            for i, location in enumerate(("target", "host", "target"))
         ]
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol = NetworkProtocol('localhost', 12345, 32768)
+        protocol = NetworkProtocol("localhost", 12345, 32768)
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
@@ -215,7 +215,7 @@ class TestServerSideOptimization:
         with pytest.raises(RequestFailure):
             pipeline_runner.handle_optimizations()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_target_side_optimization_compile_fail(self):
         """
         Test various target-side compilation scenarios.
@@ -223,35 +223,35 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path('./build/compiled_model_0.h5'),
-                location='host',
+                compiled_model_path=Path("./build/compiled_model_0.h5"),
+                location="host",
             ),
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path('./build/compiled_model_1.h5'),
-                location='target',
+                compiled_model_path=Path("./build/compiled_model_1.h5"),
+                location="target",
             ),
             OptimizerFailMock(
                 dataset=None,
-                compiled_model_path=Path('./build/compiled_model_0.h5'),
-                location='target',
+                compiled_model_path=Path("./build/compiled_model_0.h5"),
+                location="target",
             ),
         ]
 
         runtime_target = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol('localhost', 12345, 32768)
+        protocol_target = NetworkProtocol("localhost", 12345, 32768)
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_host = NetworkProtocol('localhost', 12345, 32768)
+        protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,
@@ -279,7 +279,7 @@ class TestServerSideOptimization:
             server_thread.join()
             assert not server_thread.is_alive()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_optimization_when_protocol_is_not_specified(self):
         """
         Test target side optimizations handling when protocol is not specified.
@@ -287,16 +287,16 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_{i}.h5'),
+                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
             )
-            for i, location in enumerate(('target', 'host', 'target'))
+            for i, location in enumerate(("target", "host", "target"))
         ]
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
 
         pipeline_runner = PipelineRunner(
@@ -313,8 +313,8 @@ class TestServerSideOptimization:
         assert model_path.exists()
         assert model_path.read_bytes() == model_wrapper.model_path.read_bytes()
 
-    @pytest.mark.xdist_group(name='use_socket')
-    @pytest.mark.parametrize('max_optimizers', (1, 2, 4, 8))
+    @pytest.mark.xdist_group(name="use_socket")
+    @pytest.mark.parametrize("max_optimizers", (1, 2, 4, 8))
     def test_limit_target_side_optimization(self, max_optimizers: int):
         """
         Test various target-side compilation scenarios.
@@ -322,10 +322,10 @@ class TestServerSideOptimization:
         optimizers = [
             OptimizerMock(
                 dataset=None,
-                compiled_model_path=Path(f'./build/compiled_model_{i}.h5'),
+                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
                 location=location,
             )
-            for i, location in enumerate(('target',) * 6)
+            for i, location in enumerate(("target",) * 6)
         ]
 
         max_loaded_optimizers = -1
@@ -343,19 +343,19 @@ class TestServerSideOptimization:
         InferenceServer._optimizers_callback = optimizers_callback_mock
 
         runtime_target = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_target = NetworkProtocol('localhost', 12345, 32768)
+        protocol_target = NetworkProtocol("localhost", 12345, 32768)
         inference_server = InferenceServer(
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model('keras')
+        dataset, model_wrapper = get_default_dataset_model("keras")
         dataconverter = ModelWrapperDataConverter(model_wrapper)
         runtime_host = TFLiteRuntime(
-            model_path=Path('./build/compiled_model.tflite'),
+            model_path=Path("./build/compiled_model.tflite"),
         )
-        protocol_host = NetworkProtocol('localhost', 12345, 32768)
+        protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
         pipeline_runner = PipelineRunner(
             dataset=dataset,

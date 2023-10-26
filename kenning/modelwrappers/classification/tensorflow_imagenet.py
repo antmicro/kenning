@@ -19,60 +19,60 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
-
     default_dataset = ImageNetDataset
-    pretrained_model_uri = 'kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5'  # noqa: E501
+    pretrained_model_uri = "kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5"  # noqa: E501
     arguments_structure = {
-        'modelcls': {
-            'argparse_name': '--model-cls',
-            'description': 'The Keras model class',
-            'type': str
+        "modelcls": {
+            "argparse_name": "--model-cls",
+            "description": "The Keras model class",
+            "type": str,
         },
-        'modelinputname': {
-            'argparse_name': '--model-input-name',
-            'description': 'Name of the input in the TensorFlow model',
-            'type': str,
-            'default': 'input'
+        "modelinputname": {
+            "argparse_name": "--model-input-name",
+            "description": "Name of the input in the TensorFlow model",
+            "type": str,
+            "default": "input",
         },
-        'modeloutputname': {
-            'argparse_name': '--model-output-name',
-            'description': 'Name of the output in the TensorFlow model',
-            'type': str,
-            'default': 'output'
+        "modeloutputname": {
+            "argparse_name": "--model-output-name",
+            "description": "Name of the output in the TensorFlow model",
+            "type": str,
+            "default": "output",
         },
-        'inputshape': {
-            'argparse_name': '--input-shape',
-            'description': 'Input shape',
-            'type': int,
-            'is_list': True,
-            'default': [1, 224, 224, 3]
+        "inputshape": {
+            "argparse_name": "--input-shape",
+            "description": "Input shape",
+            "type": int,
+            "is_list": True,
+            "default": [1, 224, 224, 3],
         },
-        'numclasses': {
-            'argparse_name': '--num-classes',
-            'description': 'Output shape',
-            'type': int,
-            'default': 1000
+        "numclasses": {
+            "argparse_name": "--num-classes",
+            "description": "Output shape",
+            "type": int,
+            "default": 1000,
         },
-        'disablebuiltinpreprocessing': {
-            'argparse_name': '--disable-builtin-preprocessing',
-            'description': 'Removes (if possible) internal preprocessing in the model',  # noqa: E501
-            'type': bool,
-            'default': False
-        }
+        "disablebuiltinpreprocessing": {
+            "argparse_name": "--disable-builtin-preprocessing",
+            "description": "Removes (if possible) internal preprocessing in the model",  # noqa: E501
+            "type": bool,
+            "default": False,
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool = False,
-            model_name: Optional[str] = None,
-            modelcls: str = '',
-            modelinputname: str = 'input',
-            modeloutputname: str = 'output',
-            inputshape: List[int] = [1, 224, 224, 3],
-            numclasses: int = 1000,
-            disablebuiltinpreprocessing: bool = False):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = False,
+        model_name: Optional[str] = None,
+        modelcls: str = "",
+        modelinputname: str = "input",
+        modeloutputname: str = "output",
+        inputshape: List[int] = [1, 224, 224, 3],
+        numclasses: int = 1000,
+        disablebuiltinpreprocessing: bool = False,
+    ):
         """
         Creates model wrapper for TensorFlow classification
         model pretrained on ImageNet dataset.
@@ -103,7 +103,8 @@ class TensorFlowImageNet(TensorFlowWrapper):
         """
         super().__init__(model_path, dataset, from_file, model_name)
         import tensorflow as tf
-        gpus = tf.config.list_physical_devices('GPU')
+
+        gpus = tf.config.list_physical_devices("GPU")
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
         self.modelcls = modelcls
@@ -116,29 +117,42 @@ class TensorFlowImageNet(TensorFlowWrapper):
 
         if dataset and dataset.batch_size != self.inputshape[0]:
             KLogger.error(
-                'Dataset batch size and ModelWrapper inputshape mismatch'
+                "Dataset batch size and ModelWrapper inputshape mismatch"
             )
-            KLogger.error(f'batch size: {dataset.batch_size}')
-            KLogger.error(f'input shape[0]: {self.inputshape[0]}')
+            KLogger.error(f"batch size: {dataset.batch_size}")
+            KLogger.error(f"input shape[0]: {self.inputshape[0]}")
             raise ValueError
 
     @classmethod
     def _get_io_specification(
-            cls, modelinputname, inputshape, modeloutputname, outputshape):
+        cls, modelinputname, inputshape, modeloutputname, outputshape
+    ):
         return {
-            'input': [{'name': modelinputname, 'shape': inputshape, 'dtype': 'float32'}],  # noqa: E501
-            'output': [{'name': modeloutputname, 'shape': outputshape, 'dtype': 'float32'}]  # noqa: E501
+            "input": [
+                {
+                    "name": modelinputname,
+                    "shape": inputshape,
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
+            "output": [
+                {
+                    "name": modeloutputname,
+                    "shape": outputshape,
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
         }
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
-        input_shape = json_dict['inputshape']
-        output_shape = [input_shape[0], json_dict['numclasses']]
+        input_shape = json_dict["inputshape"]
+        output_shape = [input_shape[0], json_dict["numclasses"]]
         return cls._get_io_specification(
-            json_dict['modelinputname'],
+            json_dict["modelinputname"],
             input_shape,
-            json_dict['modeloutputname'],
-            output_shape
+            json_dict["modeloutputname"],
+            output_shape,
         )
 
     def get_io_specification_from_model(self):
@@ -146,7 +160,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             self.modelinputname,
             self.inputshape,
             self.modeloutputname,
-            self.outputshape
+            self.outputshape,
         )
 
     def prepare_model(self):
@@ -159,7 +173,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
             if self.disablebuiltinpreprocessing:
                 self.model = load_class(self.modelcls)(
                     input_shape=tuple(self.inputshape[1:]),
-                    include_preprocessing=False
+                    include_preprocessing=False,
                 )
             else:
                 self.model = load_class(self.modelcls)(

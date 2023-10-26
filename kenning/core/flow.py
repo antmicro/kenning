@@ -40,9 +40,7 @@ class KenningFlow:
     runner that is placed before that runner.
     """
 
-    def __init__(
-            self,
-            runners: List[Runner]):
+    def __init__(self, runners: List[Runner]):
         """
         Initializes the flow.
 
@@ -67,32 +65,24 @@ class KenningFlow:
             Schema for the class.
         """
         return {
-            'type': 'array',
-            'items': {
-                'type': 'object',
-                'properties': {
-                    'type': {
-                        'type': 'string'
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "type": {"type": "string"},
+                    "parameters": {"type": "object"},
+                    "inputs": {
+                        "type": "object",
+                        "patternProperties": {".": {"type": "string"}},
                     },
-                    'parameters': {
-                        'type': 'object'
+                    "outputs": {
+                        "type": "object",
+                        "patternProperties": {".": {"type": "string"}},
                     },
-                    'inputs': {
-                        'type': 'object',
-                        'patternProperties': {
-                            '.': {'type': 'string'}
-                        }
-                    },
-                    'outputs': {
-                        'type': 'object',
-                        'patternProperties': {
-                            '.': {'type': 'string'}
-                        }
-                    },
-                    'additionalProperties': False
+                    "additionalProperties": False,
                 },
-                'required': ['type', 'parameters']
-            }
+                "required": ["type", "parameters"],
+            },
         }
 
     @classmethod
@@ -117,10 +107,10 @@ class KenningFlow:
 
         try:
             jsonschema.validate(
-                runners_specifications,
-                cls.form_parameterschema())
+                runners_specifications, cls.form_parameterschema()
+            )
         except jsonschema.ValidationError as e:
-            KLogger.error(f'JSON description is invalid: {e.message}')
+            KLogger.error(f"JSON description is invalid: {e.message}")
             raise
 
         output_variables = {}
@@ -129,25 +119,25 @@ class KenningFlow:
 
         for runner_idx, runner_spec in enumerate(runners_specifications):
             try:
-                runner_cls: Runner = load_class(runner_spec['type'])
-                cfg = runner_spec['parameters']
-                inputs = runner_spec.get('inputs', {})
-                outputs = runner_spec.get('outputs', {})
+                runner_cls: Runner = load_class(runner_spec["type"])
+                cfg = runner_spec["parameters"]
+                inputs = runner_spec.get("inputs", {})
+                outputs = runner_spec.get("outputs", {})
 
-                KLogger.info(f'Loading runner: {runner_cls.__name__}')
+                KLogger.info(f"Loading runner: {runner_cls.__name__}")
 
                 # validate output variables and add them to dict
                 for local_name, global_name in outputs.items():
                     if global_name in output_variables.keys():
                         KLogger.error(
-                            f'Error loading runner {runner_idx}: {runner_cls}'
+                            f"Error loading runner {runner_idx}: {runner_cls}"
                         )
                         KLogger.error(
-                            f'Redefined output variable {local_name}:'
-                            f'{global_name}'
+                            f"Redefined output variable {local_name}:"
+                            f"{global_name}"
                         )
                         raise Exception(
-                            f'Redefined output variable {global_name}'
+                            f"Redefined output variable {global_name}"
                         )
 
                     output_variables[global_name] = runner_idx
@@ -158,17 +148,17 @@ class KenningFlow:
                 for local_name, global_name in inputs.items():
                     if global_name not in output_variables:
                         KLogger.error(
-                            f'Error loading runner {runner_idx}:'
-                            f'{runner_cls}. Undefined input variable '
-                            f'{local_name}:{global_name}.'
+                            f"Error loading runner {runner_idx}:"
+                            f"{runner_cls}. Undefined input variable "
+                            f"{local_name}:{global_name}."
                         )
                         raise Exception(
-                            f'Undefined input variable {global_name}'
+                            f"Undefined input variable {global_name}"
                         )
 
                     inputs_sources[local_name] = (
                         output_variables[global_name],
-                        global_name
+                        global_name,
                     )
 
                 # get output specs from global flow variables
@@ -181,24 +171,24 @@ class KenningFlow:
                     cfg,
                     inputs_sources=inputs_sources,
                     inputs_specs=inputs_specs,
-                    outputs=outputs
+                    outputs=outputs,
                 )
 
                 # populate dict with flow variables specs
                 runner_io_spec = runner.get_io_specification()
-                runner_output_specification = \
-                    (runner_io_spec['output']
-                     + runner_io_spec.get('processed_output', []))
+                runner_output_specification = runner_io_spec[
+                    "output"
+                ] + runner_io_spec.get("processed_output", [])
 
                 for local_name, global_name in runner.outputs.items():
                     for out_spec in runner_output_specification:
-                        if out_spec['name'] == local_name:
+                        if out_spec["name"] == local_name:
                             output_specs[global_name] = out_spec
 
                 runners.append(runner)
 
             except Exception as e:
-                KLogger.error(f'Error during flow json parsing: {e}')
+                KLogger.error(f"Error during flow json parsing: {e}")
                 for runner in runners:
                     runner.cleanup()
                 raise
@@ -239,30 +229,26 @@ class KenningFlow:
 
             except KeyboardInterrupt:
                 KLogger.warning(
-                    'Processing interrupted due to keyboard interrupt'
+                    "Processing interrupted due to keyboard interrupt"
                 )
-                KLogger.warning('Aborting')
+                KLogger.warning("Aborting")
                 break
 
             except StopIteration:
                 KLogger.warning(
-                    'Processing interrupted due to an empty stream'
+                    "Processing interrupted due to an empty stream"
                 )
                 break
 
             except NotImplementedError:
-                KLogger.error(
-                    'Missing implementation of action from module'
-                )
+                KLogger.error("Missing implementation of action from module")
                 break
 
             except RuntimeError as e:
-                KLogger.error(
-                    'Processing interrupted from inside of module'
-                )
+                KLogger.error("Processing interrupted from inside of module")
                 KLogger.error(e)
                 break
 
         self.cleanup()
 
-        KLogger.debug(f'Final {self.flow_state=}')
+        KLogger.debug(f"Final {self.flow_state=}")

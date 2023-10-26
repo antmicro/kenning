@@ -15,10 +15,7 @@ import onnx
 
 from kenning.utils.logger import KLogger
 
-ModelEntry = namedtuple(
-    'ModelEntry',
-    ['name', 'modelgenerator', 'parameters']
-)
+ModelEntry = namedtuple("ModelEntry", ["name", "modelgenerator", "parameters"])
 ModelEntry.__doc__ = """
 Represents single model entry for a given framework.
 
@@ -34,8 +31,7 @@ parameters : Dict[str, Any]
 """
 
 Support = namedtuple(
-    'Support',
-    ['framework', 'version', 'model', 'exported', 'imported']
+    "Support", ["framework", "version", "model", "exported", "imported"]
 )
 Support.__doc__ = """
 Shows the framework's ONNX conversion support status for a given model.
@@ -66,6 +62,7 @@ class SupportStatus(Enum):
     ERROR - import/export resulted in an error.
     ONNXMODELINVALID - exported ONNX model is invalid.
     """
+
     NOTIMPLEMENTED = 0
     SUPPORTED = 1
     UNSUPPORTED = 2
@@ -75,12 +72,12 @@ class SupportStatus(Enum):
 
     def __str__(self):
         converter = {
-            self.NOTIMPLEMENTED: 'not implemented',
-            self.SUPPORTED: 'supported',
-            self.UNSUPPORTED: 'unsupported',
-            self.UNVERIFIED: 'unverified',
-            self.ERROR: 'ERROR',
-            self.ONNXMODELINVALID: 'Converter returned invalid ONNX model',
+            self.NOTIMPLEMENTED: "not implemented",
+            self.SUPPORTED: "supported",
+            self.UNSUPPORTED: "unsupported",
+            self.UNVERIFIED: "unverified",
+            self.ERROR: "ERROR",
+            self.ONNXMODELINVALID: "Converter returned invalid ONNX model",
         }
         return converter[SupportStatus(self.value)]
 
@@ -212,35 +209,37 @@ class ONNXConversion(object):
         List[Support] :
             List with Support tuples describing support status.
         """
-        KLogger.info(f'~~~~> {self.framework} (ver. {self.version})')
+        KLogger.info(f"~~~~> {self.framework} (ver. {self.version})")
         modelsdir = Path(modelsdir)
         modelsdir.mkdir(parents=True, exist_ok=True)
         supportlist = []
         for modelentry in self.modelslist:
-            onnxtargetpath = modelsdir / f'{modelentry.name}.onnx'
-            KLogger.info(f'\t{modelentry.name} ===> {onnxtargetpath}')
-            KLogger.info('\t\tExporting...')
+            onnxtargetpath = modelsdir / f"{modelentry.name}.onnx"
+            KLogger.info(f"\t{modelentry.name} ===> {onnxtargetpath}")
+            KLogger.info("\t\tExporting...")
             exported = self._onnx_export(modelentry, onnxtargetpath)
-            KLogger.info('\t\tExported')
+            KLogger.info("\t\tExported")
             if exported == SupportStatus.SUPPORTED:
-                KLogger.info('\t\t\tVerifying...')
+                KLogger.info("\t\t\tVerifying...")
                 onnxmodel = onnx.load(onnxtargetpath)
                 try:
                     onnx.checker.check_model(onnxmodel)
-                    KLogger.info('\t\t\tVerified')
+                    KLogger.info("\t\t\tVerified")
                 except Exception as ex:
                     KLogger.error(ex, stack_info=True)
                     exported = SupportStatus.ONNXMODELINVALID
             imported = SupportStatus.UNVERIFIED
             if exported == SupportStatus.SUPPORTED:
-                KLogger.info('\t\tImporting...')
+                KLogger.info("\t\tImporting...")
                 imported = self._onnx_import(modelentry, onnxtargetpath)
-                KLogger.info('\t\tImported')
-            supportlist.append(Support(
-                self.framework,
-                self.version,
-                modelentry.name,
-                exported,
-                imported
-            ))
+                KLogger.info("\t\tImported")
+            supportlist.append(
+                Support(
+                    self.framework,
+                    self.version,
+                    modelentry.name,
+                    exported,
+                    imported,
+                )
+            )
         return supportlist

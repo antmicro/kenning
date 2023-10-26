@@ -8,8 +8,11 @@ It contains custom converters to enable pruning with NNI.
 WARNING: importing this module will change onnx2torch default converters,
 to reverte changes see restore_default_converters function.
 """
-__all__ = ["convert", "restore_default_converters",
-           "restore_custom_converters"]
+__all__ = [
+    "convert",
+    "restore_default_converters",
+    "restore_custom_converters",
+]
 from typing import Union, Tuple, List, Optional
 from pathlib import Path
 import copy
@@ -23,9 +26,7 @@ from onnx2torch.node_converters.batch_norm import _ as _batch_converter
 from onnx2torch.node_converters.reshape import OnnxReshape
 from onnx2torch.node_converters.matmul import _ as _matmul_converter
 from onnx2torch.node_converters.constant import OnnxConstant
-from onnx2torch.node_converters.max_pool import (
-    _ as _max_pool_converter
-)
+from onnx2torch.node_converters.max_pool import _ as _max_pool_converter
 from onnx2torch.node_converters.binary_math_operations import (
     _ as _binary_math_converter,
 )
@@ -114,7 +115,7 @@ def extract_value_from_graph(
     node: OnnxNode,
     graph: OnnxGraph,
     value_name: str,
-    default_value: Optional = None
+    default_value: Optional = None,
 ) -> Optional[torch.Tensor]:
     """
     The function for extracting values from graph of converted model
@@ -144,7 +145,7 @@ def extract_value_from_graph(
         # Value is output of other node, checking if node is constant
         value_node, _ = graph.value_as_node_output(value_name)
         if value_node.operation_type == "Constant":
-            value = value_node.attributes.get('value', default_value)
+            value = value_node.attributes.get("value", default_value)
         elif value_node.name in CONST_NODES:
             value = CONST_NODES[value_node.name].value
 
@@ -200,10 +201,10 @@ def gemm_converter(
     c_name = node.input_values[2] if len(node.input_values) > 2 else None
 
     # Extracting nodes attributes
-    alpha = extract_value_from_graph(node, graph, 'alpha', 1.0)
-    beta = extract_value_from_graph(node, graph, 'beta', 1.0)
-    trans_a = extract_value_from_graph(node, graph, 'transA', 0) != 0
-    trans_b = extract_value_from_graph(node, graph, 'transB', 0) != 0
+    alpha = extract_value_from_graph(node, graph, "alpha", 1.0)
+    beta = extract_value_from_graph(node, graph, "beta", 1.0)
+    trans_a = extract_value_from_graph(node, graph, "transA", 0) != 0
+    trans_b = extract_value_from_graph(node, graph, "transB", 0) != 0
 
     sequence = []
     if trans_a:
@@ -273,9 +274,7 @@ def matmul_converter(
         return _matmul_converter(node, graph)
 
     sequence.append(create_linear_from_weights(weights))
-    mapping = OnnxMapping(
-        inputs=(in_name_0,), outputs=node.output_values
-    )
+    mapping = OnnxMapping(inputs=(in_name_0,), outputs=node.output_values)
     if len(sequence) > 1:
         return OperationConverterResult(
             torch_module=torch.nn.Sequential(*sequence),
@@ -309,9 +308,7 @@ def batch_norm_converter(
         Scheme for converting BatchNormalization
     """
     if len(node.output_values) > 1:
-        KLogger.warning(
-            "Number of BatchNormalization outputs reduced to one"
-        )
+        KLogger.warning("Number of BatchNormalization outputs reduced to one")
         node._output_values = (node.output_values[0],)
     return _batch_converter(node, graph)
 
@@ -339,17 +336,15 @@ def dropout_converter(
         Scheme for converting Dropout
     """
     if len(node.input_values) > 1:
-        KLogger.warning('Number of Dropout inputs reduced to one')
+        KLogger.warning("Number of Dropout inputs reduced to one")
         node._input_values = (node.input_values[0],)
     if len(node.output_values) > 1:
-        KLogger.warning('Number of Dropout outputs reduced to one')
+        KLogger.warning("Number of Dropout outputs reduced to one")
         node._output_values = (node.output_values[0],)
     ratio = extract_value_from_graph(node, graph, "ratio", 0.5)
     seed = extract_value_from_graph(node, graph, "seed")
     if seed is not None:
-        raise NotImplementedError(
-            "Dropout nodes seeds are not supported"
-        )
+        raise NotImplementedError("Dropout nodes seeds are not supported")
 
     dropout = torch.nn.Dropout(ratio)
     return OperationConverterResult(
@@ -367,9 +362,7 @@ class ReshapeWithConstShape(torch.nn.Module):
         self.shape = size
 
     def forward(self, *x: torch.Tensor) -> torch.Tensor:
-        return torch.reshape(
-            x[0],
-            torch.Size((x[0].shape[0], *self.shape)))
+        return torch.reshape(x[0], torch.Size((x[0].shape[0], *self.shape)))
 
 
 class Reshape(OnnxReshape):
@@ -378,7 +371,7 @@ class Reshape(OnnxReshape):
     """
 
     def flatten(self, input_, shape):
-        return torch.flatten(input_, startt_dim=shape.shape[0]-1)
+        return torch.flatten(input_, startt_dim=shape.shape[0] - 1)
 
     def forward(self, *inputs):
         if len(inputs) <= 2:
@@ -423,20 +416,17 @@ def reshape_converter(
     )
     if shape is None:
         return OperationConverterResult(
-            torch_module=Reshape(),
-            onnx_mapping=onnx_mapping_from_node(node)
+            torch_module=Reshape(), onnx_mapping=onnx_mapping_from_node(node)
         )
 
     if shape.shape[0] <= 2:
         return OperationConverterResult(
-            torch_module=torch.nn.Flatten(
-                start_dim=shape.shape[0] - 1
-            ),
+            torch_module=torch.nn.Flatten(start_dim=shape.shape[0] - 1),
             onnx_mapping=mapping,
         )
     return OperationConverterResult(
         torch_module=ReshapeWithConstShape(tuple(shape[1:])),
-        onnx_mapping=mapping
+        onnx_mapping=mapping,
     )
 
 
@@ -465,7 +455,7 @@ def max_pool_converter(
     """
     padding = extract_value_from_graph(node, graph, "pads")
     if padding is not None:
-        KLogger.warning('Forcing symmetric paddings')
+        KLogger.warning("Forcing symmetric paddings")
         half_len = len(padding) // 2
         begin_pads, end_pads = padding[:half_len], padding[half_len:]
         new_padding = []
@@ -521,18 +511,14 @@ def add_sub_converter(
     else:
         # If both input is not known return default conversion
         return _binary_math_converter(node, graph)
-    if node.operation_type == 'Sub':
+    if node.operation_type == "Sub":
         # Subtraction is addition of reversed value
         bias = bias * -1
     # Creating Linear layer with frozen weights as identity matrix
     weights = torch.eye(bias.shape[-1], requires_grad=False)
     linear = create_linear_from_weights(weights, bias)
-    mapping = OnnxMapping(
-        inputs=(input_name,), outputs=node.output_values
-    )
-    return OperationConverterResult(
-        torch_module=linear, onnx_mapping=mapping
-    )
+    mapping = OnnxMapping(inputs=(input_name,), outputs=node.output_values)
+    return OperationConverterResult(torch_module=linear, onnx_mapping=mapping)
 
 
 class ShapeWithMemory(torch.nn.Module):
@@ -541,9 +527,7 @@ class ShapeWithMemory(torch.nn.Module):
     or, if input is not provided, previously returned value
     """
 
-    def __init__(
-        self, start: Optional[int] = None, end: Optional[int] = None
-    ):
+    def __init__(self, start: Optional[int] = None, end: Optional[int] = None):
         super().__init__()
         self.start = start
         self.end = end
@@ -582,7 +566,7 @@ def shape_converter(
     """
     return OperationConverterResult(
         torch_module=ShapeWithMemory(),
-        onnx_mapping=onnx_mapping_from_node(node)
+        onnx_mapping=onnx_mapping_from_node(node),
     )
 
 
@@ -612,7 +596,7 @@ def fill_none(
             result.append(inputs[i] if len(inputs) > i else None)
             i += 1
         else:
-            result.append(module.get_buffer(f'const{c}'))
+            result.append(module.get_buffer(f"const{c}"))
             c += 1
     return result
 
@@ -625,9 +609,9 @@ class FunctionWrapperForCheckingConst:
 
     # Operation types with different behavior depending on test/eval
     op_type_train_eval = {
-        'Dropout',
-        'BatchNormalization',
-        'LayerNormalization',
+        "Dropout",
+        "BatchNormalization",
+        "LayerNormalization",
     }
 
     def __init__(self, default_converter):
@@ -642,8 +626,10 @@ class FunctionWrapperForCheckingConst:
             return default_conversion
 
         # Trying to extract input values from model's graph
-        inputs = [extract_value_from_graph(node, graph, name)
-                  for name in default_conversion.onnx_mapping.inputs]
+        inputs = [
+            extract_value_from_graph(node, graph, name)
+            for name in default_conversion.onnx_mapping.inputs
+        ]
         constant_input = [_input is not None for _input in inputs]
 
         if all(constant_input):
@@ -654,35 +640,46 @@ class FunctionWrapperForCheckingConst:
             return OperationConverterResult(
                 torch_module=const,
                 onnx_mapping=OnnxMapping(
-                    inputs=tuple(),
-                    outputs=node.output_values
-                )
+                    inputs=tuple(), outputs=node.output_values
+                ),
             )
 
         if (any(constant_input) and len(params) > 0) or len(params) == 0:
             # Some inputs are constants or module don't have
             # parameters - fixing number of inputs
-            inputs_name = tuple((name for name, const in zip(
-                default_conversion.onnx_mapping.inputs, constant_input
-            ) if not const))
+            inputs_name = tuple(
+                (
+                    name
+                    for name, const in zip(
+                        default_conversion.onnx_mapping.inputs, constant_input
+                    )
+                    if not const
+                )
+            )
             module: torch.nn.Module = type(
                 node.operation_type,
-                (torch.nn.Module,), {
+                (torch.nn.Module,),
+                {
                     "template": constant_input,
-                    "forward": lambda self, *inputs:
-                    self.wrapped_module(*fill_none(self, *inputs))
-                })()
-            if len(params) > 0 or \
-                    node.operation_type in self.op_type_train_eval:
+                    "forward": lambda self, *inputs: self.wrapped_module(
+                        *fill_none(self, *inputs)
+                    ),
+                },
+            )()
+            if (
+                len(params) > 0
+                or node.operation_type in self.op_type_train_eval
+            ):
                 # Creating module with registered submodule - NNI can see it
                 # and prune it separately
                 module.register_module(
-                    'wrapped_module',
-                    default_conversion.torch_module)
+                    "wrapped_module", default_conversion.torch_module
+                )
             else:
                 # Creating module without registered submodule
                 module.__dict__[
-                    'wrapped_module'] = default_conversion.torch_module
+                    "wrapped_module"
+                ] = default_conversion.torch_module
             # Registering constant values as module buffer,
             # so it will be moved to specific device when method .to() invoked
             i = 0
@@ -694,8 +691,9 @@ class FunctionWrapperForCheckingConst:
                 torch_module=module,
                 onnx_mapping=OnnxMapping(
                     inputs=inputs_name,
-                    outputs=default_conversion.onnx_mapping.outputs
-                ))
+                    outputs=default_conversion.onnx_mapping.outputs,
+                ),
+            )
 
         return default_conversion
 
@@ -703,7 +701,8 @@ class FunctionWrapperForCheckingConst:
 # Wrapping all converters in FunctionWrapperForCheckingConst
 for description, converter in _CONVERTER_REGISTRY.items():
     _CONVERTER_REGISTRY[description] = FunctionWrapperForCheckingConst(
-        converter)
+        converter
+    )
 
 
 def convert(onnx_model: Union[Path, onnx.ModelProto]):
@@ -742,4 +741,5 @@ def restore_custom_converters():
     """
     import importlib
     from kenning.onnxconverters import onnx2torch
+
     importlib.reload(onnx2torch)

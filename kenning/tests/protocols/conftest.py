@@ -24,7 +24,7 @@ def random_network_port() -> Optional[int]:
         try:
             # check if port is not used
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.bind(('', port))
+            s.bind(("", port))
             s.close()
             break
         except OSError:

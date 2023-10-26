@@ -33,10 +33,11 @@ def annotations() -> Path:
     """
     path = Path(tempfile.NamedTemporaryFile().name)
     path.mkdir()
-    (path / 'annotations').mkdir()
-    (path / 'annotations' / 'list.txt').touch()
+    (path / "annotations").mkdir()
+    (path / "annotations" / "list.txt").touch()
     yield path
     import shutil
+
     shutil.rmtree(path)
 
 
@@ -55,19 +56,23 @@ class TestPetDataset:
 
         with pytest.raises(FileNotFoundError) as execinfo:
             PetDataset(path, download_dataset=False)
-        assert str(path / 'annotations' / 'list.txt') in str(execinfo.value)
+        assert str(path / "annotations" / "list.txt") in str(execinfo.value)
 
         with pytest.raises(AssertionError):
-            PetDataset(path,
-                       standardize=False,
-                       classify_by=random_string(),
-                       download_dataset=False)
+            PetDataset(
+                path,
+                standardize=False,
+                classify_by=random_string(),
+                download_dataset=False,
+            )
 
         with pytest.raises(AssertionError):
-            PetDataset(path,
-                       standardize=False,
-                       image_memory_layout=random_string(),
-                       download_dataset=False)
+            PetDataset(
+                path,
+                standardize=False,
+                image_memory_layout=random_string(),
+                download_dataset=False,
+            )
 
     def test_empty_folder(self, annotations: Path):
         """
@@ -103,19 +108,19 @@ class TestPetDataset:
         -------------
         annotations - to get folder with empty 'annotations/list.txt'
         """
-        with open(annotations / 'annotations' / 'list.txt', 'w') as f:
-            [print(f'{random_string()}', file=f) for i in range(100)]
+        with open(annotations / "annotations" / "list.txt", "w") as f:
+            [print(f"{random_string()}", file=f) for i in range(100)]
 
         with pytest.raises((IndexError, ValueError)) as execinfo:
             PetDataset(annotations, download_dataset=False)
 
-        with open(annotations / 'annotations' / 'list.txt', 'w') as f:
-            [print(f'image_{i} 1 1 1', file=f) for i in range(100)]
+        with open(annotations / "annotations" / "list.txt", "w") as f:
+            [print(f"image_{i} 1 1 1", file=f) for i in range(100)]
 
         dataset = PetDataset(annotations, download_dataset=False)
         with pytest.raises(FileNotFoundError) as execinfo:
             dataset.get_data()
-        assert 'image_0' in str(execinfo.value)
+        assert "image_0" in str(execinfo.value)
 
     def test_correct_data(self, datasetimages: DataFolder):
         """
@@ -132,17 +137,19 @@ class TestPetDataset:
         datasetimages - to get folder with correct data.
         """
         with pytest.raises(AssertionError):
-            PetDataset(datasetimages.path,
-                       batch_size=-1,
-                       download_dataset=False)
+            PetDataset(
+                datasetimages.path, batch_size=-1, download_dataset=False
+            )
         with pytest.raises(AssertionError):
-            PetDataset(datasetimages.path,
-                       batch_size=0,
-                       download_dataset=False)
-        dataset = PetDataset(datasetimages.path,
-                             batch_size=1,
-                             standardize=False,
-                             download_dataset=False)
+            PetDataset(
+                datasetimages.path, batch_size=0, download_dataset=False
+            )
+        dataset = PetDataset(
+            datasetimages.path,
+            batch_size=1,
+            standardize=False,
+            download_dataset=False,
+        )
         data = dataset.__next__()
         assert isinstance(data, tuple)
         assert len(data) > 0 and isinstance(data[0], list)

@@ -13,15 +13,15 @@ class TestMessageType:
         """
         Test converting message to bytes.
         """
-        byte_num = (1).to_bytes(2, 'little', signed=False)
+        byte_num = (1).to_bytes(2, "little", signed=False)
         assert MessageType.ERROR.to_bytes() == byte_num
 
     def test_from_bytes(self):
         """
         Test converting message from bytes.
         """
-        byte_num = (1).to_bytes(2, 'little', signed=False)
-        assert MessageType.ERROR == MessageType.from_bytes(byte_num, 'little')
+        byte_num = (1).to_bytes(2, "little", signed=False)
+        assert MessageType.ERROR == MessageType.from_bytes(byte_num, "little")
 
 
 @pytest.mark.fast
@@ -49,11 +49,11 @@ class TestCoreProtocol:
         """
         server = self.init_protocol()
         if server.initialize_server() is False:
-            pytest.fail('Server initialization failed')
+            pytest.fail("Server initialization failed")
 
         client = self.init_protocol()
         if client.initialize_client() is False:
-            pytest.fail('Client initialization failed')
+            pytest.fail("Client initialization failed")
 
         yield server, client
         client.disconnect()

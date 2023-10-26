@@ -26,54 +26,51 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
     """
     The TensorFlowClustering optimizer.
     """
-    outputtypes = [
-        'keras'
-    ]
 
-    inputtypes = {
-        'keras': kerasconversion
-    }
+    outputtypes = ["keras"]
+
+    inputtypes = {"keras": kerasconversion}
 
     arguments_structure = {
-        'model_framework': {
-            'argparse_name': '--model-framework',
-            'description': 'The input type of the model, framework-wise',
-            'default': 'keras',
-            'enum': list(inputtypes.keys()),
+        "model_framework": {
+            "argparse_name": "--model-framework",
+            "description": "The input type of the model, framework-wise",
+            "default": "keras",
+            "enum": list(inputtypes.keys()),
         },
-        'cluster_dense': {
-            'description': 'Clusterize only dense layers',
-            'type': bool,
-            'default': False,
+        "cluster_dense": {
+            "description": "Clusterize only dense layers",
+            "type": bool,
+            "default": False,
         },
-        'clusters_number': {
-            'description': 'Number of cluster centroids that split each layer',
-            'type': int,
-            'default': 10,
+        "clusters_number": {
+            "description": "Number of cluster centroids that split each layer",
+            "type": int,
+            "default": 10,
         },
-        'preserve_sparsity': {
-            'description': 'Enable sparsity preservation of the given model',
-            'type': bool,
-            'default': False,
+        "preserve_sparsity": {
+            "description": "Enable sparsity preservation of the given model",
+            "type": bool,
+            "default": False,
         },
-        'fine_tune': {
-            'description': 'Fine-tune the model after clustering',
-            'type': bool,
-            'default': False
-        }
+        "fine_tune": {
+            "description": "Fine-tune the model after clustering",
+            "type": bool,
+            "default": False,
+        },
     }
 
     def __init__(
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
+        location: Literal["host", "target"] = "host",
         epochs: int = 10,
         batch_size: int = 32,
-        optimizer: str = 'adam',
+        optimizer: str = "adam",
         disable_from_logits: bool = False,
         save_to_zip: bool = False,
-        model_framework: str = 'keras',
+        model_framework: str = "keras",
         cluster_dense: bool = False,
         clusters_number: int = 10,
         preserve_sparsity: bool = False,
@@ -128,31 +125,31 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             batch_size=batch_size,
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
-            save_to_zip=save_to_zip
+            save_to_zip=save_to_zip,
         )
 
     def compile(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
         model = self.inputtypes[self.inputtype](input_model_path)
         for layer in model.layers:
             layer.trainable = True
 
         clustering_params = {
-            'number_of_clusters': self.clusters_number,
-            'cluster_centroids_init':
-                tfmot.clustering.keras.CentroidInitialization.KMEANS_PLUS_PLUS,
-            'preserve_sparsity': self.preserve_sparsity
+            "number_of_clusters": self.clusters_number,
+            "cluster_centroids_init": tfmot.clustering.keras.CentroidInitialization.KMEANS_PLUS_PLUS,  # noqa: E501
+            "preserve_sparsity": self.preserve_sparsity,
         }
 
-        KLogger.info('Clustering model...')
+        KLogger.info("Clustering model...")
         if self.cluster_dense:
+
             def apply_clustering_to_dense(layer):
                 if isinstance(layer, tf.keras.layers.Dense):
                     return tfmot.clustering.keras.cluster_weights(
-                        layer,
-                        **clustering_params
+                        layer, **clustering_params
                     )
                 return layer
 
@@ -162,8 +159,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             )
         else:
             clustered_model = tfmot.clustering.keras.cluster_weights(
-                model,
-                **clustering_params
+                model, **clustering_params
             )
 
         if self.fine_tune:

@@ -10,15 +10,18 @@ from pipeline_manager import specification_builder
 
 from kenning.core.flow import KenningFlow
 from kenning.pipeline_manager.core import (
-        SPECIFICATION_VERSION,
-        BaseDataflowHandler,
-        GraphCreator,
-        VisualEditorGraphParserError,
+    SPECIFICATION_VERSION,
+    BaseDataflowHandler,
+    GraphCreator,
+    VisualEditorGraphParserError,
 )
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
 from kenning.pipeline_manager.pipeline_handler import PipelineHandler
-from kenning.utils.class_loader import (get_all_subclasses,
-                                        get_base_classes_dict, load_class)
+from kenning.utils.class_loader import (
+    get_all_subclasses,
+    get_base_classes_dict,
+    load_class,
+)
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -27,8 +30,12 @@ class KenningFlowHandler(BaseDataflowHandler):
     """
 
     def __init__(self, **kwargs):
-        self.spec_builder = specification_builder.SpecificationBuilder(SPECIFICATION_VERSION)  # noqa: E501
-        pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(self.spec_builder)  # noqa: E501
+        self.spec_builder = specification_builder.SpecificationBuilder(
+            SPECIFICATION_VERSION
+        )  # noqa: E501
+        pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(
+            self.spec_builder
+        )  # noqa: E501
 
         # Nodes from PipelineHandler are used only as arguments for
         # different runners. Therefore they should have no inputs and
@@ -36,30 +43,30 @@ class KenningFlowHandler(BaseDataflowHandler):
         # as runner input
         io_mapping = {
             node_type: {
-                'inputs': [],
-                'outputs': [
+                "inputs": [],
+                "outputs": [
                     {
-                        'name': str.capitalize(node_type.replace('_', ' ')),
-                        'type': node_type,
-                        'required': True
+                        "name": str.capitalize(node_type.replace("_", " ")),
+                        "type": node_type,
+                        "required": True,
                     }
-                ]
-            } for node_type in pipeline_io_dict.keys()
+                ],
+            }
+            for node_type in pipeline_io_dict.keys()
         }
 
         # Everything that is not Runner
-        primitive_modules = {
-            node.name for node in pipeline_nodes.values()
-        }
+        primitive_modules = {node.name for node in pipeline_nodes.values()}
 
         nodes, io_mapping = KenningFlowHandler.get_nodes(
-            self.spec_builder, pipeline_nodes, io_mapping)
+            self.spec_builder, pipeline_nodes, io_mapping
+        )
         super().__init__(
             nodes,
             io_mapping,
             FlowGraphCreator(primitive_modules),
             self.spec_builder,
-            **kwargs
+            **kwargs,
         )
 
     def parse_json(self, json_cfg):
@@ -72,8 +79,8 @@ class KenningFlowHandler(BaseDataflowHandler):
         kenningflow.cleanup()
 
     def create_dataflow(
-            self,
-            pipeline: List[Dict]) -> Dict[str, Union[float, Dict]]:
+        self, pipeline: List[Dict]
+    ) -> Dict[str, Union[float, Dict]]:
         """
         Parses a KenningFlow JSON representation into a Pipeline Manager
         dataflow format that can be loaded into the Pipeline Manager editor.
@@ -96,36 +103,35 @@ class KenningFlowHandler(BaseDataflowHandler):
         # Create runner nodes and register connections between them.
         conn_to, conn_from = defaultdict(list), {}
         for kenning_node in pipeline:
-            if not all([x in kenning_node for x in ['type', 'parameters']]):
+            if not all([x in kenning_node for x in ["type", "parameters"]]):
                 raise VisualEditorGraphParserError(
                     "Invalid Kenningflow: "
                     "Each node must have 'type' and 'parameters' fields"
                 )
-            parameters = kenning_node['parameters']
-            inputs = kenning_node.get('inputs', {})
-            outputs = kenning_node.get('outputs', {})
+            parameters = kenning_node["parameters"]
+            inputs = kenning_node.get("inputs", {})
+            outputs = kenning_node.get("outputs", {})
 
             node_properties = []
             primitives = []
             for name, value in parameters.items():
                 if isinstance(value, dict):
                     # Primitive should be a separate node, not a property
-                    primitive_name = load_class(value['type']).__name__
+                    primitive_name = load_class(value["type"]).__name__
                     spec_node = self.nodes[primitive_name]
-                    prim_properties = value['parameters']
+                    prim_properties = value["parameters"]
                     prim_properties = [
-                        {"value": param_value, 'name': param_name}
+                        {"value": param_value, "name": param_name}
                         for param_name, param_value in prim_properties.items()
                     ]
                     prim_id = self.pm_graph.create_node(
-                        spec_node,
-                        prim_properties
+                        spec_node, prim_properties
                     )
                     primitives.append(prim_id)
                 else:
-                    node_properties.append({"value": value, 'name': name})
+                    node_properties.append({"value": value, "name": name})
 
-            kenning_name = load_class(kenning_node['type']).__name__
+            kenning_name = load_class(kenning_node["type"]).__name__
             spec_node = self.nodes[kenning_name]
             node_id = self.pm_graph.create_node(spec_node, node_properties)
 
@@ -136,8 +142,7 @@ class KenningFlowHandler(BaseDataflowHandler):
             for global_name in inputs.values():
                 conn_to[global_name].append(node_id)
             for global_name in outputs.values():
-                assert global_name not in conn_from, \
-                    "Invalid Kenningflow"
+                assert global_name not in conn_from, "Invalid Kenningflow"
                 conn_from[global_name] = node_id
 
         # Finalize connections between all nodes
@@ -157,92 +162,87 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         global_base_classes = get_base_classes_dict()
 
-        flow_mode_classes = ['kenning.outputcollectors',
-                             'kenning.dataproviders',
-                             'kenning.runners']
+        flow_mode_classes = [
+            "kenning.outputcollectors",
+            "kenning.dataproviders",
+            "kenning.runners",
+        ]
 
-        base_modules = [v for k, v in global_base_classes.items() if v[0] in
-                        flow_mode_classes]
+        base_modules = [
+            v
+            for k, v in global_base_classes.items()
+            if v[0] in flow_mode_classes
+        ]
 
         for base_module, base_type in base_modules:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
-                node_name = f"{kenning_class.__module__}." \
-                            f"{kenning_class.__name__}".split('.')[-1]
+                node_name = (
+                    f"{kenning_class.__module__}."
+                    f"{kenning_class.__name__}".split(".")[-1]
+                )
                 spec_builder.add_node_type(
                     name=node_name,
                     category=get_category_name(kenning_class),
-                    layer=base_module.split(".")[-1]
+                    layer=base_module.split(".")[-1],
                 )
                 if kenning_class.__doc__ is not None:
                     spec_builder.add_node_description(
-                        node_name,
-                        str(kenning_class.__doc__)
+                        node_name, str(kenning_class.__doc__)
                     )
                 add_node(
                     nodes,
                     f"{kenning_class.__module__}.{kenning_class.__name__}",
                     get_category_name(kenning_class),
-                    base_module.split(".")[-1]
+                    base_module.split(".")[-1],
                 )
 
         io_mapping = {
             **io_mapping,
-            'dataproviders': {
-                'inputs': [],
-                'outputs': [
-                    {
-                        'name': 'Data',
-                        'type': 'data_runner',
-                        'required': True
-                    }
-                ]
+            "dataproviders": {
+                "inputs": [],
+                "outputs": [
+                    {"name": "Data", "type": "data_runner", "required": True}
+                ],
             },
-            'runners': {
-                'inputs': [
+            "runners": {
+                "inputs": [
                     {
-                        'name': 'Input data',
-                        'type': 'data_runner',
-                        'required': True
+                        "name": "Input data",
+                        "type": "data_runner",
+                        "required": True,
                     },
                     {
-                        'name': 'Model Wrapper',
-                        'type': 'model_wrapper',
-                        'required': True
+                        "name": "Model Wrapper",
+                        "type": "model_wrapper",
+                        "required": True,
                     },
+                    {"name": "Runtime", "type": "runtime", "required": True},
+                    {"name": "Calibration dataset", "type": "dataset"},
+                ],
+                "outputs": [
                     {
-                        'name': 'Runtime',
-                        'type': 'runtime',
-                        'required': True
-                    },
-                    {
-                        'name': 'Calibration dataset',
-                        'type': 'dataset'
+                        "name": "Model output",
+                        "type": "model_output",
+                        "required": True,
                     }
                 ],
-                'outputs': [
-                    {
-                        'name': 'Model output',
-                        'type': 'model_output',
-                        'required': True
-                    }
-                ]
             },
-            'outputcollectors': {
-                'inputs': [
+            "outputcollectors": {
+                "inputs": [
                     {
-                        'name': 'Model output',
-                        'type': 'model_output',
-                        'required': True
+                        "name": "Model output",
+                        "type": "model_output",
+                        "required": True,
                     },
                     {
-                        'name': 'Input frames',
-                        'type': 'data_runner',
-                        'required': True
-                    }
+                        "name": "Input frames",
+                        "type": "data_runner",
+                        "required": True,
+                    },
                 ],
-                'outputs': []
-            }
+                "outputs": [],
+            },
         }
 
         return nodes, io_mapping
@@ -273,17 +273,17 @@ class FlowGraphCreator(GraphCreator):
     def create_node(self, node, parameters):
         node_id = self.gen_id()
         if node.name in self.primitive_modules:
-            self.nodes[node_id] = node.type, {
-                'type': node.cls_name,
-                'parameters': parameters
-            }
+            self.nodes[node_id] = (
+                node.type,
+                {"type": node.cls_name, "parameters": parameters},
+            )
             self.primitives.append(node_id)
         else:
             self.nodes[node_id] = {
-                'type': node.cls_name,
-                'parameters': parameters,
-                'inputs': {},
-                'outputs': {}
+                "type": node.cls_name,
+                "parameters": parameters,
+                "inputs": {},
+                "outputs": {},
             }
         return node_id
 
@@ -302,9 +302,9 @@ class FlowGraphCreator(GraphCreator):
             IO specification defined by the runner.
         """
         runner_node = self.nodes[node_id]
-        runner_obj = load_class(runner_node['type'])
+        runner_obj = load_class(runner_node["type"])
         return runner_obj.parse_io_specification_from_json(
-            runner_node['parameters']
+            runner_node["parameters"]
         )
 
     def _is_match(self, arg1: Dict[str, Any], arg2: Dict[str, Any]) -> bool:
@@ -325,12 +325,12 @@ class FlowGraphCreator(GraphCreator):
         bool :
             Whether IO specification items are compatible with each other.
         """
-        if 'type' in arg1 and 'type' in arg2:
-            return arg1['type'] == arg2['type']
-        if 'shape' in arg1 and 'shape' in arg2:
-            if arg1['dtype'] != arg2['dtype']:
+        if "type" in arg1 and "type" in arg2:
+            return arg1["type"] == arg2["type"]
+        if "shape" in arg1 and "shape" in arg2:
+            if arg1["dtype"] != arg2["dtype"]:
                 return False
-            shape1, shape2 = arg1['shape'], arg2['shape']
+            shape1, shape2 = arg1["shape"], arg2["shape"]
             if len(shape1) != len(shape2):
                 return False
             for dim1, dim2 in zip(shape1, shape2):
@@ -355,16 +355,18 @@ class FlowGraphCreator(GraphCreator):
         to_args = to_runner_io[input_key]
         for arg1, arg2 in itertools.product(from_args, to_args):
             if self._is_match(arg1, arg2):
-                return arg1['name'], arg2['name']
-        from_name = self.nodes[from_id]['type'].split(".")[-1]
-        to_name = self.nodes[to_id]['type'].split(".")[-1]
-        raise RuntimeError(f"Couldn't find matching connection between "
-                           f"{from_name} and {to_name}")
+                return arg1["name"], arg2["name"]
+        from_name = self.nodes[from_id]["type"].split(".")[-1]
+        to_name = self.nodes[to_id]["type"].split(".")[-1]
+        raise RuntimeError(
+            f"Couldn't find matching connection between "
+            f"{from_name} and {to_name}"
+        )
 
     def create_connection(self, from_id, to_id):
         if from_id in self.primitives:
             kenning_type, node = self.nodes[from_id]
-            self.nodes[to_id]['parameters'][kenning_type] = node
+            self.nodes[to_id]["parameters"][kenning_type] = node
             del self.nodes[from_id]
         else:
             # Connections between nodes can only be created at the end,
@@ -379,15 +381,16 @@ class FlowGraphCreator(GraphCreator):
             local_from, local_to = self.find_compatible_io(from_id, to_id)
             from_ = self.nodes[from_id]
             to_ = self.nodes[to_id]
-            if local_to in to_['inputs']:
-                raise RuntimeError(f"Input {local_to} has more than one "
-                                   f"connection")
-            if local_from in from_['outputs']:
-                conn_id = from_['outputs'][local_from]
+            if local_to in to_["inputs"]:
+                raise RuntimeError(
+                    f"Input {local_to} has more than one " f"connection"
+                )
+            if local_from in from_["outputs"]:
+                conn_id = from_["outputs"][local_from]
             else:
                 conn_id = self.gen_id()
-                from_['outputs'][local_from] = conn_id
-            to_['inputs'][local_to] = conn_id
+                from_["outputs"][local_from] = conn_id
+            to_["inputs"][local_to] = conn_id
 
         finished_graph = list(self.nodes.values())
         self.start_new_graph()

@@ -12,8 +12,8 @@ from typing import Dict, List
 
 
 def create_report_from_measurements(
-        template: Path,
-        measurementsdata: Dict[str, List]) -> str:
+    template: Path, measurementsdata: Dict[str, List]
+) -> str:
     """
     Creates a report from template and measurements data.
 
@@ -31,12 +31,10 @@ def create_report_from_measurements(
     str :
         Content of the report.
     """
-    with open(template, 'r') as resourcetemplatefile:
+    with open(template, "r") as resourcetemplatefile:
         resourcetemplate = resourcetemplatefile.read()
         tm = Template(resourcetemplate)
 
-        content = tm.render(
-            data=measurementsdata
-        )
+        content = tm.render(data=measurementsdata)
 
         return content

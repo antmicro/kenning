@@ -8,9 +8,12 @@ import pytest
 
 class TestModelWrapperAndDatasetCompatibility:
     @pytest.mark.fast
-    @pytest.mark.parametrize("datasetname", [
-        ("PetDataset"),
-    ])
+    @pytest.mark.parametrize(
+        "datasetname",
+        [
+            ("PetDataset"),
+        ],
+    )
     def test_deliver_input(self, datasetsamples: Samples, datasetname):
         """
         Tests dataset functions used by modelwrappers for data delivering
@@ -30,7 +33,8 @@ class TestModelWrapperAndDatasetCompatibility:
         dataset = datasetsamples.get(datasetname)
 
         Xt, Xv, Yt, Yv = dataset.train_test_split_representations(
-            test_fraction=0.25)
+            test_fraction=0.25
+        )
         assert isinstance(Xt, list) and isinstance(Xv, list)
         assert len(Xt) > 0 and len(Xv) > 0
         assert len(Xt) == len(Yt) and len(Xv) == len(Yv)
@@ -47,15 +51,20 @@ class TestModelWrapperAndDatasetCompatibility:
         assert isinstance(mean_and_std, tuple)
 
     @pytest.mark.slow
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize("wrappername", [
-        ('PyTorchPetDatasetMobileNetV2'),
-        ('TensorFlowPetDatasetMobileNetV2')
-    ])
-    def test_deliver_output(self,
-                            wrappername: str,
-                            datasetimages: DataFolder,
-                            modelwrappersamples: Samples):
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "wrappername",
+        [
+            ("PyTorchPetDatasetMobileNetV2"),
+            ("TensorFlowPetDatasetMobileNetV2"),
+        ],
+    )
+    def test_deliver_output(
+        self,
+        wrappername: str,
+        datasetimages: DataFolder,
+        modelwrappersamples: Samples,
+    ):
         """
         Tests modelwrapper functions to deliver output to datasets
 
@@ -75,5 +84,6 @@ class TestModelWrapperAndDatasetCompatibility:
 
         measurements = wrapper.test_inference()
         assert isinstance(measurements, Measurements)
-        assert measurements.get_values('total') == int(
-            datasetimages.amount * wrapper.dataset.split_fraction_test)
+        assert measurements.get_values("total") == int(
+            datasetimages.amount * wrapper.dataset.split_fraction_test
+        )

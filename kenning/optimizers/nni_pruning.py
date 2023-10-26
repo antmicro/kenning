@@ -16,7 +16,7 @@ from nni.compression.pytorch.speedup import ModelSpeedup
 from nni.algorithms.compression.v2.pytorch import TorchEvaluator
 from nni.compression.pytorch.speedup.compress_modules import (
     convert_to_coarse_mask,
-    replace_module
+    replace_module,
 )
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from nni.common.graph_utils import _logger as nni_graph_logger
@@ -42,16 +42,18 @@ def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
     loaded = torch.load(str(model_path), map_location=device)
     if not isinstance(loaded, torch.nn.Module):
         raise CompilationError(
-            f'Expecting model of type:'
-            f' torch.nn.Module, but got {type(loaded).__name__}')
+            f"Expecting model of type:"
+            f" torch.nn.Module, but got {type(loaded).__name__}"
+        )
     return loaded
 
 
 def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
     conversion = PyTorchONNXConversion()
     if conversion.onnx_import(None, model_path) != SupportStatus.SUPPORTED:
-        raise CompilationError('Conversion for provided model to PyTorch'
-                               ' is not supported')
+        raise CompilationError(
+            "Conversion for provided model to PyTorch" " is not supported"
+        )
     model = convert(str(model_path))
     model.to(device)
     return model
@@ -62,22 +64,28 @@ class AddOperation(torch.nn.Module):
     PyTorch module for adding and adjusting size of two tensor with masks
     """
 
-    def __init__(self,
-                 mask_a: torch.Tensor,
-                 mask_b: torch.Tensor,
-                 mask_out: torch.Tensor) -> None:
+    def __init__(
+        self,
+        mask_a: torch.Tensor,
+        mask_b: torch.Tensor,
+        mask_out: torch.Tensor,
+    ) -> None:
         super().__init__()
         self.original_size = tuple(mask_out.shape)[1:]
         self.register_buffer(
-            'channels_a', convert_to_coarse_mask(mask_a, 1)[1])
+            "channels_a", convert_to_coarse_mask(mask_a, 1)[1]
+        )
         self.register_buffer(
-            'channels_b', convert_to_coarse_mask(mask_b, 1)[1])
+            "channels_b", convert_to_coarse_mask(mask_b, 1)[1]
+        )
         self.register_buffer(
-            'channels_out', convert_to_coarse_mask(mask_out, 1)[1])
+            "channels_out", convert_to_coarse_mask(mask_out, 1)[1]
+        )
 
     def forward(self, a: torch.Tensor, b: torch.Tensor):
-        operation_result = torch.zeros(a.shape[0], *self.original_size,
-                                       dtype=a.dtype, device=a.device)
+        operation_result = torch.zeros(
+            a.shape[0], *self.original_size, dtype=a.dtype, device=a.device
+        )
         operation_result[:, self.channels_a] = a
         operation_result[:, self.channels_b] += b
         return operation_result[:, self.channels_out]
@@ -88,11 +96,7 @@ def add_replacer(onnx_math_op, masks: Tuple):
     Function converting Addition to AddOperation
     """
     in_masks, out_masks, _ = masks
-    return AddOperation(
-        in_masks[0],
-        in_masks[1],
-        out_masks
-    )
+    return AddOperation(in_masks[0], in_masks[1], out_masks)
 
 
 def reshape_replacer(reshape, masks):
@@ -101,9 +105,11 @@ def reshape_replacer(reshape, masks):
     """
     in_masks, out_mask, _ = masks
     reshape = copy.deepcopy(reshape)
-    if hasattr(reshape.wrapped_module, 'shape'):
-        rem = [convert_to_coarse_mask(out_mask, i)[1].shape[0]
-               for i in range(1, out_mask.dim())]
+    if hasattr(reshape.wrapped_module, "shape"):
+        rem = [
+            convert_to_coarse_mask(out_mask, i)[1].shape[0]
+            for i in range(1, out_mask.dim())
+        ]
         reshape.wrapped_module.shape = tuple(rem)
     return reshape
 
@@ -113,11 +119,15 @@ def expand_conversion(expand, masks):
     Function replacing Expand for pruned model
     """
     in_masks, out_mask, _ = masks
-    if hasattr(expand, 'const0'):
+    if hasattr(expand, "const0"):
         expand = copy.deepcopy(expand)
         expand.const0 = torch.tensor(
-            [1]+[convert_to_coarse_mask(out_mask, i)[1].shape[0]
-                 for i in range(1, expand.const0.shape[0])])
+            [1]
+            + [
+                convert_to_coarse_mask(out_mask, i)[1].shape[0]
+                for i in range(1, expand.const0.shape[0])
+            ]
+        )
     return expand
 
 
@@ -127,8 +137,9 @@ class TmpLoss(torch.nn.modules.loss._Loss):
     """
 
     def forward(self, input, target) -> torch.Tensor:
-        return torch.mean(input[0]) + torch.mean(input[1]) + \
-            torch.mean(input[2])
+        return (
+            torch.mean(input[0]) + torch.mean(input[1]) + torch.mean(input[2])
+        )
 
 
 class Modes(str, Enum):
@@ -215,7 +226,7 @@ class NNIPruningOptimizer(Optimizer):
             "argparse_name": "--finetuning-batch-size",
             "description": "Batch size for fine-tuning",
             "type": int,
-            "default": 32
+            "default": 32,
         },
         "training_steps": {
             "argparse_name": "--training-steps",
@@ -264,9 +275,11 @@ class NNIPruningOptimizer(Optimizer):
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
+        location: Literal["host", "target"] = "host",
         pruner_type: str = list(prunertypes.keys())[0],
-        config_list: List[Dict] = [{"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}],  # noqa: E501
+        config_list: List[Dict] = [
+            {"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}
+        ],  # noqa: E501
         training_steps: int = 1,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",
@@ -362,16 +375,19 @@ class NNIPruningOptimizer(Optimizer):
 
         self.pruning_on_cuda = pruning_on_cuda
         self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu")
+            "cuda" if torch.cuda.is_available() else "cpu"
+        )
 
         nni_logger.setLevel(KLogger.level)
         nni_graph_logger.setLevel(KLogger.level)
 
-        replace_module.update({
-            'Add': add_replacer,
-            'Reshape': reshape_replacer,
-            'Expand': expand_conversion,
-        })
+        replace_module.update(
+            {
+                "Add": add_replacer,
+                "Reshape": reshape_replacer,
+                "Expand": expand_conversion,
+            }
+        )
 
     def compile(
         self,
@@ -387,7 +403,7 @@ class NNIPruningOptimizer(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(input_model_path)
         self.io_spec = io_spec
-        KLogger.info(f'Model before pruning\n{model}')
+        KLogger.info(f"Model before pruning\n{model}")
 
         dummy_input = self.generate_dummy_input(io_spec)
         criterion = load_class(self.criterion_modulepath)()
@@ -406,16 +422,16 @@ class NNIPruningOptimizer(Optimizer):
             dummy_input=dummy_input,
         )
 
-        KLogger.info('Pruning model')
+        KLogger.info("Pruning model")
         _, mask = pruner.compress()
         pruner._unwrap_model()
 
         if torch.cuda.is_available() and not self.pruning_on_cuda:
-            model.to('cpu')
-            dummy_input = dummy_input.to('cpu')
+            model.to("cpu")
+            dummy_input = dummy_input.to("cpu")
             for m_name, m_masks in mask.items():
                 for w_name, w_mask in m_masks.items():
-                    mask[m_name][w_name] = w_mask.to('cpu')
+                    mask[m_name][w_name] = w_mask.to("cpu")
 
         try:
             ModelSpeedup(
@@ -427,32 +443,29 @@ class NNIPruningOptimizer(Optimizer):
         except Exception as ex:
             raise CompilationError from ex
 
-        KLogger.info(f'Model after pruning \n{model}\n')
+        KLogger.info(f"Model after pruning \n{model}\n")
         KLogger.info(
-            f'Parameters: {params_before:,} -> '
-            f'{self.get_number_of_parameters(model):,}\n'
+            f"Parameters: {params_before:,} -> "
+            f"{self.get_number_of_parameters(model):,}\n"
         )
 
         model.to(self.device)
-        optimizer = optimizer_cls(model.parameters(),
-                                  lr=self.finetuning_learning_rate)
+        optimizer = optimizer_cls(
+            model.parameters(), lr=self.finetuning_learning_rate
+        )
         if KLogger.level == logging.INFO and self.finetuning_epochs > 0:
             mean_loss = self.evaluate_model(model)
             KLogger.info(
-                'Fine-tuning model starting with mean loss '
-                f'{mean_loss if mean_loss else None}\n'
+                "Fine-tuning model starting with mean loss "
+                f"{mean_loss if mean_loss else None}\n"
             )
         for finetuning_epoch in range(self.finetuning_epochs):
-            self.train_model(
-                model,
-                optimizer,
-                criterion,
-                max_epochs=1)
+            self.train_model(model, optimizer, criterion, max_epochs=1)
             if KLogger.level == logging.INFO:
                 mean_loss = self.evaluate_model(model)
                 KLogger.info(
-                    f'Epoch {finetuning_epoch+1} from {self.finetuning_epochs}'
-                    f', validation data mean loss: {mean_loss}\n'
+                    f"Epoch {finetuning_epoch + 1} from {self.finetuning_epochs}"  # noqa: E501
+                    f", validation data mean loss: {mean_loss}\n"
                 )
 
         try:
@@ -461,10 +474,10 @@ class NNIPruningOptimizer(Optimizer):
             KLogger.error(
                 "torch.save can't pickle full model, model parameters will be "
                 "saved and dill will try to save full model",
-                stack_info=True
+                stack_info=True,
             )
             try:
-                with open(self.compiled_model_path, 'wb') as fd:
+                with open(self.compiled_model_path, "wb") as fd:
                     dill.dump(model, fd)
             except Exception:
                 torch.save(model.state_dict(), self.compiled_model_path)
@@ -473,8 +486,10 @@ class NNIPruningOptimizer(Optimizer):
                     f"{self.compiled_model_path}"
                 )
             else:
-                torch.save(model.state_dict(),
-                           str(self.compiled_model_path)+'.state_dict')
+                torch.save(
+                    model.state_dict(),
+                    str(self.compiled_model_path) + ".state_dict",
+                )
                 KLogger.info(
                     f"Full model was saved to {self.compiled_model_path} "
                     "by `dill` and state dict was saved to "
@@ -538,22 +553,17 @@ class NNIPruningOptimizer(Optimizer):
                         return
 
         if max_steps:
-            KLogger.info(f'{max_steps} steps left')
+            KLogger.info(f"{max_steps} steps left")
         if max_epochs is None:
-            self.train_model(
-                model,
-                optimizer,
-                criterion,
-                max_steps=max_steps
-            )
+            self.train_model(model, optimizer, criterion, max_steps=max_steps)
         elif max_epochs > 1:
-            KLogger.info(f'{max_epochs} epochs left')
+            KLogger.info(f"{max_epochs} epochs left")
             self.train_model(
                 model,
                 optimizer,
                 criterion,
                 max_steps=max_steps,
-                max_epochs=max_epochs-1
+                max_epochs=max_epochs - 1,
             )
 
     def evaluate_model(self, model: torch.nn.Module):
@@ -603,18 +613,20 @@ class NNIPruningOptimizer(Optimizer):
         Prepared batch of data and targets
         """
         batch_x = self.train_data[0][
-            batch_begin:batch_begin + self.finetuning_batch_size
+            batch_begin : batch_begin + self.finetuning_batch_size
         ]
         data = np.asarray(self.dataset.prepare_input_samples(batch_x))
         batch_y = self.train_data[1][
-            batch_begin:batch_begin + self.finetuning_batch_size
+            batch_begin : batch_begin + self.finetuning_batch_size
         ]
         label = self.dataset.prepare_output_samples(batch_y)
 
-        assert list(data.shape[1:]) == \
-            list(self.io_spec['input'][0]['shape'][1:]), \
-            f"Input data in shape {data.shape[1:]}, but only " \
+        assert list(data.shape[1:]) == list(
+            self.io_spec["input"][0]["shape"][1:]
+        ), (
+            f"Input data in shape {data.shape[1:]}, but only "
             f"{self.io_spec['input'][0]['shape'][1:]} shape supported"
+        )
 
         data = torch.from_numpy(data).to(self.device)
         try:
@@ -731,14 +743,11 @@ class NNIPruningOptimizer(Optimizer):
         for name, node in reversed(list(model.named_modules())):
             if isinstance(node, torch.nn.Linear):
                 added = True
-                self.config_list.append({
-                    'exclude': True,
-                    'op_names': [name]
-                })
+                self.config_list.append({"exclude": True, "op_names": [name]})
                 break
         if not added:
             KLogger.warning(
-                'Last Linear layer was not found - cannot be excluded'
+                "Last Linear layer was not found - cannot be excluded"
             )
 
     def set_pruner_class(self, pruner_type):

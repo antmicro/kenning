@@ -23,6 +23,7 @@ class ConversionError(Exception):
     """
     General purpose exception raised when the model conversion process fails.
     """
+
     pass
 
 
@@ -30,6 +31,7 @@ class CompilationError(Exception):
     """
     General purpose exception raised when the compilation process fails.
     """
+
     pass
 
 
@@ -37,6 +39,7 @@ class IOSpecificationNotFoundError(Exception):
     """
     Exception raised when needed input/output specification can not be found.
     """
+
     pass
 
 
@@ -49,27 +52,27 @@ class Optimizer(ArgumentsHandler, ABC):
 
     inputtypes = {}
 
-    locations = ['host', 'target']
+    locations = ["host", "target"]
 
     arguments_structure = {
-        'compiled_model_path': {
-            'description': 'The path to the compiled model output',
-            'type': ResourceURI,
-            'required': True
+        "compiled_model_path": {
+            "description": "The path to the compiled model output",
+            "type": ResourceURI,
+            "required": True,
         },
-        'location': {
-            'description': 'Specifies where optimization should be performed '
-                           'in client-server scenario',
-            'default': 'host',
-            'enum': locations
-        }
+        "location": {
+            "description": "Specifies where optimization should be performed "
+            "in client-server scenario",
+            "default": "host",
+            "enum": locations,
+        },
     }
 
     def __init__(
         self,
         dataset: Optional[Dataset],
         compiled_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
+        location: Literal["host", "target"] = "host",
     ):
         """
         Prepares the Optimizer object.
@@ -85,7 +88,7 @@ class Optimizer(ArgumentsHandler, ABC):
             Specifies where optimization should be performed in client-server
             scenario.
         """
-        assert location in Optimizer.locations, f'Invalid location: {location}'
+        assert location in Optimizer.locations, f"Invalid location: {location}"
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.location = location
@@ -95,7 +98,7 @@ class Optimizer(ArgumentsHandler, ABC):
         cls,
         dataset: Optional[Dataset],
         args: Namespace,
-    ) -> 'Optimizer':
+    ) -> "Optimizer":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -118,7 +121,7 @@ class Optimizer(ArgumentsHandler, ABC):
         cls,
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
-    ) -> 'Optimizer':
+    ) -> "Optimizer":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -166,7 +169,7 @@ class Optimizer(ArgumentsHandler, ABC):
     def compile(
         self,
         input_model_path: PathOrURI,
-        io_spec: Optional[Dict[str, List[Dict]]] = None
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
         """
         Compiles the given model to a target format.
@@ -230,8 +233,8 @@ class Optimizer(ArgumentsHandler, ABC):
 
     def consult_model_type(
         self,
-        previous_block: Union['ModelWrapper', 'Optimizer'],
-        force_onnx: bool = False
+        previous_block: Union["ModelWrapper", "Optimizer"],
+        force_onnx: bool = False,
     ) -> str:
         """
         Finds output format of the previous block in the chain
@@ -258,12 +261,12 @@ class Optimizer(ArgumentsHandler, ABC):
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx:
-            KLogger.warning('Forcing ONNX conversion')
+            KLogger.warning("Forcing ONNX conversion")
             if (
-                'onnx' in self.get_input_formats()
-                and 'onnx' in possible_outputs
+                "onnx" in self.get_input_formats()
+                and "onnx" in possible_outputs
             ):
-                return 'onnx'
+                return "onnx"
             else:
                 raise ValueError(
                     '"onnx" format is not supported by at least one block\n'
@@ -298,14 +301,14 @@ class Optimizer(ArgumentsHandler, ABC):
         PathOrURI :
             Path to the input/output specification of a given model.
         """
-        spec_path = model_path.with_suffix(model_path.suffix + '.json')
+        spec_path = model_path.with_suffix(model_path.suffix + ".json")
 
         return spec_path
 
     def save_io_specification(
         self,
         input_model_path: PathOrURI,
-        io_spec: Optional[Dict[str, List[Dict]]] = None
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
         """
         Internal function that saves input/output model specification
@@ -331,13 +334,10 @@ class Optimizer(ArgumentsHandler, ABC):
             io_spec = self.load_io_specification(input_model_path)
 
         if io_spec:
-            with open(self.get_spec_path(self.compiled_model_path), 'w') as f:
-                json.dump(
-                    io_spec,
-                    f
-                )
+            with open(self.get_spec_path(self.compiled_model_path), "w") as f:
+                json.dump(io_spec, f)
         else:
-            KLogger.warning(f'{self} did not save io_specification')
+            KLogger.warning(f"{self} did not save io_specification")
 
     def load_io_specification(
         self,
@@ -360,11 +360,11 @@ class Optimizer(ArgumentsHandler, ABC):
         """
         spec_path = self.get_spec_path(model_path)
         if spec_path.exists():
-            with open(spec_path, 'r') as f:
+            with open(spec_path, "r") as f:
                 spec = json.load(f)
             return spec
 
         KLogger.warning(
-            f'{self} did not find io_specification in path: {spec_path}'
+            f"{self} did not find io_specification in path: {spec_path}"
         )
         return None

@@ -23,42 +23,43 @@ class TVMRuntime(Runtime):
     for testing inference on TVM models.
     """
 
-    inputtypes = ['tvm']
+    inputtypes = ["tvm"]
 
     arguments_structure = {
-        'model_path': {
-            'argparse_name': '--save-model-path',
-            'description': 'Path where the model will be uploaded',
-            'type': ResourceURI,
-            'default': 'model.tar'
+        "model_path": {
+            "argparse_name": "--save-model-path",
+            "description": "Path where the model will be uploaded",
+            "type": ResourceURI,
+            "default": "model.tar",
         },
-        'contextname': {
-            'argparse_name': '--target-device-context',
-            'description': 'What accelerator should be used on target device',
-            'default': 'cpu',
-            'enum': list(tvm.runtime.Device.STR2MASK.keys())
+        "contextname": {
+            "argparse_name": "--target-device-context",
+            "description": "What accelerator should be used on target device",
+            "default": "cpu",
+            "enum": list(tvm.runtime.Device.STR2MASK.keys()),
         },
-        'contextid': {
-            'argparse_name': '--target-device-context-id',
-            'description': 'ID of the device to run the inference on',
-            'type': int,
-            'default': 0
+        "contextid": {
+            "argparse_name": "--target-device-context-id",
+            "description": "ID of the device to run the inference on",
+            "type": int,
+            "default": 0,
         },
-        'use_tvm_vm': {
-            'argparse_name': '--runtime-use-vm',
-            'description': 'At runtime use the TVM Relay VirtualMachine',
-            'type': bool,
-            'default': False
-        }
+        "use_tvm_vm": {
+            "argparse_name": "--runtime-use-vm",
+            "description": "At runtime use the TVM Relay VirtualMachine",
+            "type": bool,
+            "default": False,
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            contextname: str = 'cpu',
-            contextid: int = 0,
-            use_tvm_vm: bool = False,
-            disable_performance_measurements: bool = False):
+        self,
+        model_path: PathOrURI,
+        contextname: str = "cpu",
+        contextid: int = 0,
+        use_tvm_vm: bool = False,
+        disable_performance_measurements: bool = False,
+    ):
         """
         Constructs TVM runtime.
 
@@ -88,7 +89,7 @@ class TVMRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
         if self.model is None:
             raise ModelNotPreparedError
 
@@ -96,48 +97,44 @@ class TVMRuntime(Runtime):
         try:
             ordered_input = self.preprocess_input(input_data)
             for spec, inp in zip(self.input_spec, ordered_input):
-                input[spec['name']] = tvm.nd.array(inp)
+                input[spec["name"]] = tvm.nd.array(inp)
 
             if self.use_tvm_vm:
-                self.model.set_input(
-                    "main",
-                    **input
-                )
+                self.model.set_input("main", **input)
             else:
-                self.model.set_input(
-                    **input
-                )
-            KLogger.debug('Inputs are ready')
+                self.model.set_input(**input)
+            KLogger.debug("Inputs are ready")
             self._input_prepared = True
             return True
         except (TypeError, ValueError, tvm.TVMError) as ex:
-            KLogger.error(f'Failed to load input: {ex}', stack_info = True)
+            KLogger.error(f"Failed to load input: {ex}", stack_info=True)
             return False
 
     def prepare_model(self, input_data):
-        KLogger.info('Loading model')
+        KLogger.info("Loading model")
         ctx = tvm.runtime.device(self.contextname, self.contextid)
         if self.use_tvm_vm:
-            self.module = tvm.runtime.load_module(str(
-                self.model_path.with_suffix(self.model_path.suffix + '.so')
-
-            ))
+            self.module = tvm.runtime.load_module(
+                str(
+                    self.model_path.with_suffix(self.model_path.suffix + ".so")
+                )
+            )
             loaded_bytecode = bytearray(
-                open(str(self.model_path)+'.ro', "rb").read()
+                open(str(self.model_path) + ".ro", "rb").read()
             )
             loaded_vm_exec = Executable.load_exec(loaded_bytecode, self.module)
 
             self.model = VirtualMachine(loaded_vm_exec, ctx)
         else:
             if input_data:
-                with open(self.model_path, 'wb') as outmodel:
+                with open(self.model_path, "wb") as outmodel:
                     outmodel.write(input_data)
             else:
                 self.model_path
             self.module = tvm.runtime.load_module(str(self.model_path))
-            self.func = self.module.get_function('default')
+            self.func = self.module.get_function("default")
             self.model = graph_executor.GraphModule(self.func(ctx))
-        KLogger.info('Model loading ended successfully')
+        KLogger.info("Model loading ended successfully")
         return True
 
     def run(self):
@@ -157,7 +154,5 @@ class TVMRuntime(Runtime):
                 results.append(output.asnumpy())
         else:
             for i in range(self.model.get_num_outputs()):
-                results.append(
-                    self.model.get_output(i).asnumpy()
-                )
+                results.append(self.model.get_output(i).asnumpy())
         return self.postprocess_output(results)

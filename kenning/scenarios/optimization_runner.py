@@ -105,10 +105,10 @@ def get_block_product(block: Dict[str, Any]) -> List:
     """
     return [
         {
-            'type': block['type'],
-            'parameters': dict(zip(block['parameters'].keys(), p)),
+            "type": block["type"],
+            "parameters": dict(zip(block["parameters"].keys(), p)),
         }
-        for p in product(*block['parameters'].values())
+        for p in product(*block["parameters"].values())
     ]
 
 
@@ -217,14 +217,14 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
     Then a cartesian product is computed that returns all possible
     pipeline configurations.
     """
-    optimization_parameters = json_cfg['optimization_parameters']
-    blocks_to_optimize = set(optimization_parameters['optimizable'])
+    optimization_parameters = json_cfg["optimization_parameters"]
+    blocks_to_optimize = set(optimization_parameters["optimizable"])
     all_blocks = {
-        'model_wrapper',
-        'dataset',
-        'optimizers',
-        'runtime',
-        'protocol',
+        "model_wrapper",
+        "dataset",
+        "optimizers",
+        "runtime",
+        "protocol",
     }
     remaining_blocks = all_blocks & (set(json_cfg.keys()) - blocks_to_optimize)
 
@@ -240,7 +240,7 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
 
         # We need to treat optimizers differently, as those can be chained.
         # For other blocks we have to pick only one.
-        if block == 'optimizers':
+        if block == "optimizers":
             optimizers_blocks = [list(p) for p in product(*block_parameters)]
 
             # We also need to take every mask of the list of optimizers.
@@ -295,14 +295,14 @@ def replace_paths(pipeline: Dict, id: int) -> Dict:
         changed.
     """
     pipeline = copy.deepcopy(pipeline)
-    for optimizer in pipeline['optimizers']:
-        path = Path(optimizer['parameters']['compiled_model_path'])
-        new_path = path.with_stem(f'{str(id)}_{path.stem}')
-        optimizer['parameters']['compiled_model_path'] = str(new_path)
+    for optimizer in pipeline["optimizers"]:
+        path = Path(optimizer["parameters"]["compiled_model_path"])
+        new_path = path.with_stem(f"{str(id)}_{path.stem}")
+        optimizer["parameters"]["compiled_model_path"] = str(new_path)
 
-    path = Path(pipeline['runtime']['parameters']['save_model_path'])
-    new_path = path.with_stem(f'{str(id)}_{path.stem}')
-    pipeline['runtime']['parameters']['save_model_path'] = str(new_path)
+    path = Path(pipeline["runtime"]["parameters"]["save_model_path"])
+    new_path = path.with_stem(f"{str(id)}_{path.stem}")
+    pipeline["runtime"]["parameters"]["save_model_path"] = str(new_path)
     return pipeline
 
 
@@ -324,10 +324,7 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
     for pipeline in pipelines:
         try:
-            PipelineRunner.from_json_cfg(
-                pipeline,
-                assert_integrity=True
-            )
+            PipelineRunner.from_json_cfg(pipeline, assert_integrity=True)
             filtered_pipelines.append(pipeline)
         except ValueError:
             pass
@@ -337,7 +334,7 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
 class OptimizationRunner(CommandTemplate):
     parse_all = True
-    description = __doc__.split('\n\n')[0]
+    description = __doc__.split("\n\n")[0]
 
     @staticmethod
     def configure_parser(
@@ -355,14 +352,14 @@ class OptimizationRunner(CommandTemplate):
         )
 
         command_group.add_argument(
-            '--json-cfg',
-            help='The path to the input JSON file with configuration',
+            "--json-cfg",
+            help="The path to the input JSON file with configuration",
             type=ResourceURI,
             required=True,
         ).completer = FilesCompleter("*.json")
         command_group.add_argument(
-            '--output',
-            help='The path to the output JSON file with the best pipeline',
+            "--output",
+            help="The path to the output JSON file with the best pipeline",
             type=Path,
             required=True,
         ).completer = FilesCompleter("*.json")
@@ -373,19 +370,19 @@ class OptimizationRunner(CommandTemplate):
     def run(args: argparse.Namespace, **kwargs):
         KLogger.set_verbosity(args.verbosity)
 
-        with open(args.json_cfg, 'r') as f:
+        with open(args.json_cfg, "r") as f:
             json_cfg = json.load(f)
 
-        optimization_parameters = json_cfg['optimization_parameters']
-        optimization_strategy = optimization_parameters['strategy']
-        policy = optimization_parameters['policy']
-        metric = optimization_parameters['metric']
+        optimization_parameters = json_cfg["optimization_parameters"]
+        optimization_strategy = optimization_parameters["strategy"]
+        policy = optimization_parameters["policy"]
+        metric = optimization_parameters["metric"]
 
-        if optimization_strategy == 'grid_search':
+        if optimization_strategy == "grid_search":
             pipelines = grid_search(json_cfg)
         else:
             raise ValueError(
-                f'Invalid optimization strategy: {optimization_strategy}'
+                f"Invalid optimization strategy: {optimization_strategy}"
             )
 
         pipelines = filter_invalid_pipelines(pipelines)
@@ -393,28 +390,27 @@ class OptimizationRunner(CommandTemplate):
         pipelines_num = len(pipelines)
         pipelines_scores = []
 
-        KLogger.info(f'Finding {policy} for {metric}')
+        KLogger.info(f"Finding {policy} for {metric}")
         for pipeline_idx, pipeline in enumerate(pipelines):
             module_error = None
             pipeline = replace_paths(pipeline, pipeline_idx)
             MeasurementsCollector.clear()
             try:
                 KLogger.info(
-                    f'Running pipeline {pipeline_idx + 1} / {pipelines_num}'
+                    f"Running pipeline {pipeline_idx + 1} / {pipelines_num}"
                 )
-                KLogger.info(f'Configuration {pformat(pipeline)}')
+                KLogger.info(f"Configuration {pformat(pipeline)}")
                 measurements_path = args.output.with_stem(
-                    f'{args.output.stem}_{pipeline_idx}'
+                    f"{args.output.stem}_{pipeline_idx}"
                 )
 
                 pipeline_runner = PipelineRunner.from_json_cfg(pipeline)
                 pipeline_runner.run(
-                    output=Path(measurements_path),
-                    verbosity=args.verbosity
+                    output=Path(measurements_path), verbosity=args.verbosity
                 )
 
                 # Consider using MeasurementsCollector.measurements
-                with open(measurements_path, 'r') as measurements_file:
+                with open(measurements_path, "r") as measurements_file:
                     measurements = json.load(measurements_file)
 
                 computed_metrics = {}
@@ -424,52 +420,50 @@ class OptimizationRunner(CommandTemplate):
                     measurements
                 )
                 computed_metrics |= compute_detection_metrics(measurements)
-                computed_metrics.pop('session_utilization_cpus_percent_avg')
+                computed_metrics.pop("session_utilization_cpus_percent_avg")
 
                 try:
                     pipelines_scores.append(
-                        {'pipeline': pipeline, 'metrics': computed_metrics}
+                        {"pipeline": pipeline, "metrics": computed_metrics}
                     )
                 except KeyError:
-                    KLogger.error(f'{metric} not found in the metrics')
+                    KLogger.error(f"{metric} not found in the metrics")
                     raise
             except ValidationError as ex:
-                KLogger.error('Incorrect parameters passed')
+                KLogger.error("Incorrect parameters passed")
                 KLogger.error(ex, stack_info=True)
                 raise
             except ModuleNotFoundError as missing_module_error:
                 module_error = missing_module_error
             except Exception as ex:
-                KLogger.warning('Pipeline was invalid')
+                KLogger.warning("Pipeline was invalid")
                 KLogger.warning(ex)
 
             if module_error:
                 raise module_error
 
         if pipelines_scores:
-            policy_fun = min if policy == 'min' else max
+            policy_fun = min if policy == "min" else max
             best_pipeline = policy_fun(
                 pipelines_scores,
-                key=lambda pipeline: pipeline['metrics'][metric],
+                key=lambda pipeline: pipeline["metrics"][metric],
             )
 
-            best_score = best_pipeline['metrics'][metric]
-            KLogger.info(f'Best score for {metric} is {best_score}')
-            with open(args.output, 'w') as f:
+            best_score = best_pipeline["metrics"][metric]
+            KLogger.info(f"Best score for {metric} is {best_score}")
+            with open(args.output, "w") as f:
                 json.dump(best_pipeline, f, indent=4)
-            KLogger.info(f'Pipeline stored in {args.output}')
+            KLogger.info(f"Pipeline stored in {args.output}")
 
             path_all_results = args.output.with_stem(
-                f'{args.output.stem}_all_results'
+                f"{args.output.stem}_all_results"
             )
-            with open(path_all_results, 'w') as f:
+            with open(path_all_results, "w") as f:
                 json.dump(pipelines_scores, f, indent=4)
-            KLogger.info(f'All results stored in {path_all_results}')
+            KLogger.info(f"All results stored in {path_all_results}")
         else:
-            KLogger.info(
-                'No pipeline was found for the optimization problem'
-            )
+            KLogger.info("No pipeline was found for the optimization problem")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(OptimizationRunner.scenario_run())

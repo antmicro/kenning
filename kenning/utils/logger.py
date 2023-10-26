@@ -31,19 +31,19 @@ class _KLogger(logging.Logger, metaclass=Singleton):
     """
 
     FORMAT = (
-        '[%(asctime)-15s {package} %(filename)s:%(lineno)s] [%(levelname)s] '
-        '%(message)s'
+        "[%(asctime)-15s {package} %(filename)s:%(lineno)s] [%(levelname)s] "
+        "%(message)s"
     )
 
     def __init__(self):
         """
         Initialize the root logger.
         """
-        super().__init__('kenning', 'NOTSET')
+        super().__init__("kenning", "NOTSET")
         coloredlogs.install(
             logger=self,
-            level='NOTSET',
-            fmt=_KLogger.FORMAT.format(package='kenning')
+            level="NOTSET",
+            fmt=_KLogger.FORMAT.format(package="kenning"),
         )
         self.configure()
 
@@ -60,7 +60,7 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             coloredlogs.install(
                 logger=logger,
                 level=logger.level,
-                fmt=_KLogger.FORMAT.format(package=logger.name)
+                fmt=_KLogger.FORMAT.format(package=logger.name),
             )
 
         # set format for new loggers
@@ -71,7 +71,7 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             coloredlogs.install(
                 logger=logger,
                 level=logger.level,
-                fmt=_KLogger.FORMAT.format(package=logger.name)
+                fmt=_KLogger.FORMAT.format(package=logger.name),
             )
             return logger
 
@@ -108,10 +108,10 @@ class LoggerProgressBar(io.StringIO):
 
     def __init__(self, suppress_new_line=True):
         super().__init__()
-        self.buf = ''
+        self.buf = ""
         self.suppress_new_line = suppress_new_line
 
-    def __enter__(self) -> 'LoggerProgressBar':
+    def __enter__(self) -> "LoggerProgressBar":
         return self
 
     def __exit__(
@@ -125,7 +125,7 @@ class LoggerProgressBar(io.StringIO):
         return False
 
     def write(self, buf):
-        self.buf = buf.strip('\r\n\t ')
+        self.buf = buf.strip("\r\n\t ")
 
     def flush(self):
         prev_terminators = []
@@ -133,7 +133,7 @@ class LoggerProgressBar(io.StringIO):
             for handler in _KLogger().handlers:
                 if isinstance(handler, logging.StreamHandler):
                     prev_terminators.append((handler, handler.terminator))
-                    handler.terminator = '\r'
+                    handler.terminator = "\r"
 
         _KLogger().info(self.buf)
         # restore previous terminator
@@ -153,11 +153,11 @@ def download_url(url, output_path):
     with (
         LoggerProgressBar() as logger_progress_bar,
         DownloadProgressBar(
-            unit='B',
+            unit="B",
             unit_scale=True,
             miniters=1,
             file=logger_progress_bar,
-            desc=url.split('/')[-1],
+            desc=url.split("/")[-1],
         ) as t,
     ):
         urllib.request.urlretrieve(

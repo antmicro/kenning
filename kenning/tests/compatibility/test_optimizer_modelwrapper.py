@@ -11,17 +11,23 @@ from pathlib import Path
 
 @pytest.mark.slow
 class TestOptimizerModelWrapper:
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('optimizername', [('TFLiteCompiler_keras'),
-                                               ('TVMCompiler_keras'),
-                                               ('TVMCompiler_torch')]
-                             )
-    def test_compile_existence_models(self,
-                                      tmpfolder: Path,
-                                      optimizername: str,
-                                      modelsamples: Samples,
-                                      optimizersamples: Samples,
-                                      modelwrappersamples: Samples):
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "optimizername",
+        [
+            ("TFLiteCompiler_keras"),
+            ("TVMCompiler_keras"),
+            ("TVMCompiler_torch"),
+        ],
+    )
+    def test_compile_existence_models(
+        self,
+        tmpfolder: Path,
+        optimizername: str,
+        modelsamples: Samples,
+        optimizersamples: Samples,
+        modelwrappersamples: Samples,
+    ):
         """
         Tests compilation process for models presented in Kenning docs.
 
@@ -55,11 +61,13 @@ class TestOptimizerModelWrapper:
         assert os.path.exists(filepath)
         os.remove(filepath)
 
-    @pytest.mark.xdist_group(name='use_resources')
-    def test_onnx_model_optimization(self,
-                                     tmpfolder: Path,
-                                     modelwrappersamples: Samples,
-                                     optimizersamples: Samples):
+    @pytest.mark.xdist_group(name="use_resources")
+    def test_onnx_model_optimization(
+        self,
+        tmpfolder: Path,
+        modelwrappersamples: Samples,
+        optimizersamples: Samples,
+    ):
         """
         Tests saving model to onnx format with modelwrappers
         and converting it using optimizers.
@@ -96,8 +104,8 @@ class TestOptimizerModelWrapper:
                 assert model_type in optimizer.get_input_formats()
                 assert model_type in wrapper.get_output_formats()
 
-                optimizer.set_input_type('onnx')
-                compiled_model_path = (filename + '_' + optimizer.inputtype)
+                optimizer.set_input_type("onnx")
+                compiled_model_path = filename + "_" + optimizer.inputtype
                 compiled_model_path = tmpfolder / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
                 optimizer.compile(filepath, io_specs)

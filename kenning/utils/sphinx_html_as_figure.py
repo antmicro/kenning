@@ -23,7 +23,7 @@ def extend_default_translator(app: Sphinx):
     currently used translator with feature for selecting images in HTML format,
     if they're available.
     """
-    if app.builder.format != 'html':
+    if app.builder.format != "html":
         return
 
     translator_class = app.registry.get_translator_class(app.builder)
@@ -35,6 +35,7 @@ def extend_default_translator(app: Sphinx):
         Custom Translator for HTML, with feature for selecting images in HTML
         format if available.
         """
+
         logger = logging.getLogger(__name__)
         BACKUP_IMAGE, BACKUP_RAW = None, None
 
@@ -60,16 +61,18 @@ def extend_default_translator(app: Sphinx):
             the original state of node is restored during departure - method
             ``depart_image``.
             """
-            if 'candidates' not in image or \
-                    'image/x-html' not in image['candidates']:
+            if (
+                "candidates" not in image
+                or "image/x-html" not in image["candidates"]
+            ):
                 return super().visit_image(image)
             # Backup image
             self.BACKUP_IMAGE = copy.deepcopy(image)
             # Create raw node from image data
-            filepath = image['candidates']['image/x-html']
-            with open(Path(self.settings.env.srcdir, filepath), 'r') as fd:
+            filepath = image["candidates"]["image/x-html"]
+            with open(Path(self.settings.env.srcdir, filepath), "r") as fd:
                 html = fd.read()
-            raw = nodes.raw('', text=html, format='html')
+            raw = nodes.raw("", text=html, format="html")
             self.BACKUP_RAW = raw
             # Replacing image with raw
             image.replace_self([raw])
@@ -99,15 +102,16 @@ def extend_default_translator(app: Sphinx):
             self.BACKUP_IMAGE, self.BACKUP_RAW = None, None
 
     SelectHTMLImageTranslator.logger.setLevel(
-        sphinx_logger.getEffectiveLevel())
-    app.set_translator('html', SelectHTMLImageTranslator)
+        sphinx_logger.getEffectiveLevel()
+    )
+    app.set_translator("html", SelectHTMLImageTranslator)
 
 
 def setup(app: Sphinx):
-    app.connect('builder-inited', extend_default_translator)
+    app.connect("builder-inited", extend_default_translator)
 
     return {
-        'version': '0.1',
-        'parallel_read_safe': True,
-        'parallel_write_safe': False,
+        "version": "0.1",
+        "parallel_read_safe": True,
+        "parallel_write_safe": False,
     }

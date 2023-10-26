@@ -10,7 +10,7 @@ from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
 
-SPECIFICATION_VERSION = '20230830.11'
+SPECIFICATION_VERSION = "20230830.11"
 
 
 class VisualEditorGraphParserError(Exception):
@@ -18,6 +18,7 @@ class VisualEditorGraphParserError(Exception):
     Exception occurring when conversion from scenario to graph and vice versa
     fails.
     """
+
     pass
 
 
@@ -36,6 +37,7 @@ class Node(NamedTuple):
     cls_name : str
         Full name of class (including module names) that the node represents.
     """
+
     name: str
     category: str
     type: str
@@ -71,11 +73,7 @@ class GraphCreator:
         """
         raise NotImplementedError
 
-    def create_node(
-            self,
-            node: Node,
-            parameters: Any
-    ) -> str:
+    def create_node(self, node: Node, parameters: Any) -> str:
         """
         Creates new node in a graph. Graph creator abstracts away the
         implementation specific details of a node representation in a graph,
@@ -97,11 +95,7 @@ class GraphCreator:
         """
         raise NotImplementedError
 
-    def find_compatible_io(
-            self,
-            from_id: str,
-            to_id: str
-    ) -> Tuple[Any, Any]:
+    def find_compatible_io(self, from_id: str, to_id: str) -> Tuple[Any, Any]:
         """
         Some graph formats have inputs/outputs of nodes that have a name, or
         are otherwise identifiable. That means that whenever a node has a
@@ -126,11 +120,7 @@ class GraphCreator:
         """
         raise NotImplementedError
 
-    def create_connection(
-            self,
-            from_id: str,
-            to_id: str
-    ):
+    def create_connection(self, from_id: str, to_id: str):
         """
         Creates connection between two nodes.
 
@@ -167,12 +157,12 @@ class BaseDataflowHandler:
     from pipeline_manager.specification_builder import SpecificationBuilder
 
     def __init__(
-            self,
-            nodes: Dict[str, Node],
-            io_mapping: Dict[str, Dict],
-            graph_creator: GraphCreator,
-            spec_builder: SpecificationBuilder,
-            layout_algorithm: str
+        self,
+        nodes: Dict[str, Node],
+        io_mapping: Dict[str, Dict],
+        graph_creator: GraphCreator,
+        spec_builder: SpecificationBuilder,
+        layout_algorithm: str,
     ):
         """
         Prepares the dataflow handler, creates graph creators - `pm_graph` for
@@ -203,9 +193,8 @@ class BaseDataflowHandler:
         self.autolayout = layout_algorithm
 
     def get_specification(
-            self,
-            workspace_dir: Path,
-            spec_save_path: Optional[Path] = None) -> Dict:
+        self, workspace_dir: Path, spec_save_path: Optional[Path] = None
+    ) -> Dict:
         """
         Prepares core-based Kenning classes to be sent to Pipeline Manager.
 
@@ -225,12 +214,8 @@ class BaseDataflowHandler:
             Specification ready to be send to Pipeline Manager.
         """
 
-        self.spec_builder.metadata_add_param(
-            'twoColumn', True
-        )
-        self.spec_builder.metadata_add_param(
-            'layout', self.autolayout
-        )
+        self.spec_builder.metadata_add_param("twoColumn", True)
+        self.spec_builder.metadata_add_param("layout", self.autolayout)
 
         def strip_io(io_list: list, direction) -> list:
             """
@@ -239,9 +224,9 @@ class BaseDataflowHandler:
             """
             return [
                 {
-                    'name': io['name'],
-                    'type': io['type'],
-                    'direction': direction
+                    "name": io["name"],
+                    "type": io["type"],
+                    "direction": direction,
                 }
                 for io in io_list
             ]
@@ -251,14 +236,14 @@ class BaseDataflowHandler:
                 return None
             property_type = str(type(value).__name__)
 
-            if property_type == 'str':
-                return 'string'
-            if property_type == 'int':
-                return 'integer'
-            if property_type == 'float':
-                return 'number'
-            if property_type == 'bool':
-                return 'boolean'
+            if property_type == "str":
+                return "string"
+            if property_type == "int":
+                return "integer"
+            if property_type == "float":
+                return "number"
+            if property_type == "bool":
+                return "boolean"
             return None
 
         nodes_to_remove = set()
@@ -266,89 +251,89 @@ class BaseDataflowHandler:
             try:
                 node_cls = load_class(node.cls_name)
             except (ModuleNotFoundError, ImportError, Exception) as err:
-                msg = f'Could not add {node_cls}. Reason:'
-                KLogger.warn('-' * len(msg))
+                msg = f"Could not add {node_cls}. Reason:"
+                KLogger.warn("-" * len(msg))
                 KLogger.warn(msg)
                 KLogger.warn(err)
-                KLogger.warn('-' * len(msg))
+                KLogger.warn("-" * len(msg))
                 nodes_to_remove.add(key)
                 continue
             parameterschema = node_cls.form_parameterschema()
 
-            for name, props in parameterschema['properties'].items():
-                new_property = {'name': name}
+            for name, props in parameterschema["properties"].items():
+                new_property = {"name": name}
 
-                if 'default' in props:
-                    new_property['default'] = props['default']
+                if "default" in props:
+                    new_property["default"] = props["default"]
 
-                if 'description' in props:
-                    new_property['description'] = props['description']
+                if "description" in props:
+                    new_property["description"] = props["description"]
 
                 def add_default(default_val):
-                    if new_property.get('default') is None:
-                        new_property['default'] = default_val
+                    if new_property.get("default") is None:
+                        new_property["default"] = default_val
 
                 # Case for an input with range defined
-                if 'enum' in props:
-                    new_property['type'] = 'select'
-                    new_property['values'] = list(map(str, props['enum']))
-                    add_default(new_property['values'][0])
+                if "enum" in props:
+                    new_property["type"] = "select"
+                    new_property["values"] = list(map(str, props["enum"]))
+                    add_default(new_property["values"][0])
                 # Case for a single value input
-                elif 'type' in props:
-                    if 'array' in props['type']:
-                        new_property['type'] = 'list'
-                        if 'items' in props and 'type' in props['items']:
-                            dtype = props['items']['type']
-                            new_property['dtype'] = dtype
+                elif "type" in props:
+                    if "array" in props["type"]:
+                        new_property["type"] = "list"
+                        if "items" in props and "type" in props["items"]:
+                            dtype = props["items"]["type"]
+                            new_property["dtype"] = dtype
                         add_default([])
-                    elif 'boolean' in props['type']:
-                        new_property['type'] = 'bool'
+                    elif "boolean" in props["type"]:
+                        new_property["type"] = "bool"
                         add_default(False)
-                    elif 'string' in props['type']:
-                        new_property['type'] = 'text'
-                        add_default('')
-                    elif 'integer' in props['type']:
-                        new_property['type'] = 'integer'
+                    elif "string" in props["type"]:
+                        new_property["type"] = "text"
+                        add_default("")
+                    elif "integer" in props["type"]:
+                        new_property["type"] = "integer"
                         add_default(0)
-                    elif 'number' in props['type']:
-                        new_property['type'] = 'number'
+                    elif "number" in props["type"]:
+                        new_property["type"] = "number"
                         add_default(0)
-                    elif 'object' in props['type']:
+                    elif "object" in props["type"]:
                         # Object arguments should be defined in specification
                         # as node inputs, rather than properties
                         new_property = None
                     else:
-                        new_property['type'] = 'text'
-                        add_default('')
+                        new_property["type"] = "text"
+                        add_default("")
                 # If no type is specified then text is used
                 else:
-                    new_property['type'] = 'text'
-                    add_default('')
+                    new_property["type"] = "text"
+                    add_default("")
 
                 if new_property is None:
                     continue
 
                 self.spec_builder.add_node_type_property(
                     node.name,
-                    propname=new_property['name'],
-                    proptype=new_property['type'],
-                    default=new_property.get('default'),
-                    description=new_property.get('description'),
-                    min=new_property.get('min'),
-                    max=new_property.get('max'),
-                    values=new_property.get('values'),
-                    dtype=property_value_to_dtype(new_property.get('default')),
+                    propname=new_property["name"],
+                    proptype=new_property["type"],
+                    default=new_property.get("default"),
+                    description=new_property.get("description"),
+                    min=new_property.get("min"),
+                    max=new_property.get("max"),
+                    values=new_property.get("values"),
+                    dtype=property_value_to_dtype(new_property.get("default")),
                 )
 
-            stripped_interfaces = \
-                strip_io(self.io_mapping[node.type]['inputs'], 'input') + \
-                strip_io(self.io_mapping[node.type]['outputs'], 'output')
+            stripped_interfaces = strip_io(
+                self.io_mapping[node.type]["inputs"], "input"
+            ) + strip_io(self.io_mapping[node.type]["outputs"], "output")
             for interface in stripped_interfaces:
                 self.spec_builder.add_node_type_interface(
                     node.name,
-                    interfacename=interface['name'],
-                    interfacetype=interface['type'],
-                    direction=interface['direction']
+                    interfacename=interface["name"],
+                    interfacetype=interface["type"],
+                    direction=interface["direction"],
                 )
 
         specification = self.spec_builder.create_and_validate_spec(
@@ -382,27 +367,28 @@ class BaseDataflowHandler:
 
         try:
             interface_to_id = {}
-            graph = dataflow['graph']
-            for dataflow_node in graph['nodes']:
-                kenning_node = self.nodes[dataflow_node['name']]
-                parameters = dataflow_node['properties']
+            graph = dataflow["graph"]
+            for dataflow_node in graph["nodes"]:
+                kenning_node = self.nodes[dataflow_node["name"]]
+                parameters = dataflow_node["properties"]
                 parameters = {
-                    parameter['name']: parameter['value']
+                    parameter["name"]: parameter["value"]
                     for parameter in parameters
-                    if not (isinstance(parameter['value'], str) and parameter['value'] == '')  # noqa: E501
+                    if not (
+                        isinstance(parameter["value"], str)
+                        and parameter["value"] == ""
+                    )  # noqa: E501
                 }
                 node_id = self.dataflow_graph.create_node(
-                    kenning_node,
-                    parameters
+                    kenning_node, parameters
                 )
 
-                for interface in dataflow_node['interfaces']:
-                    interface_to_id[interface['id']] = node_id
+                for interface in dataflow_node["interfaces"]:
+                    interface_to_id[interface["id"]] = node_id
 
-            for conn in graph['connections']:
+            for conn in graph["connections"]:
                 self.dataflow_graph.create_connection(
-                    interface_to_id[conn['from']],
-                    interface_to_id[conn['to']]
+                    interface_to_id[conn["from"]], interface_to_id[conn["to"]]
                 )
 
             return True, self.dataflow_graph.flush_graph()
@@ -477,9 +463,9 @@ class BaseDataflowHandler:
 
     @staticmethod
     def get_nodes(
-            spec_builder: SpecificationBuilder,
-            nodes: Dict[str, Node] = None,
-            io_mapping: Dict[str, Dict] = None
+        spec_builder: SpecificationBuilder,
+        nodes: Dict[str, Node] = None,
+        io_mapping: Dict[str, Dict] = None,
     ) -> Tuple[Dict[str, Node], Dict[str, Dict]]:
         """
         Defines specification for the dataflow type that will be managed
@@ -524,11 +510,7 @@ class PipelineManagerGraphCreator(GraphCreator):
     documentation of Pipeline Manager
     """
 
-    def __init__(
-            self,
-            io_mapping: Dict,
-            node_width: int = 300
-    ):
+    def __init__(self, io_mapping: Dict, node_width: int = 300):
         """
         Prepares the Graph creator for Pipeline Manager.
 
@@ -549,9 +531,7 @@ class PipelineManagerGraphCreator(GraphCreator):
         self.out_interface_map = {}
 
     def _create_interface(
-            self,
-            io_spec: Dict[str, List],
-            direction: str
+        self, io_spec: Dict[str, List], direction: str
     ) -> Tuple[str, List]:
         """
         Creates a node interface based on it's IO specification.
@@ -570,9 +550,9 @@ class PipelineManagerGraphCreator(GraphCreator):
         """
         interface_id = self.gen_id()
         interface = {
-            'name': io_spec['name'],
-            'id': interface_id,
-            'direction': direction
+            "name": io_spec["name"],
+            "id": interface_id,
+            "direction": direction,
         }
         return interface_id, interface
 
@@ -581,48 +561,48 @@ class PipelineManagerGraphCreator(GraphCreator):
         io_map = self.io_mapping[node.type]
 
         interfaces = []
-        for io_spec in io_map['inputs']:
-            interface_id, interface = self._create_interface(io_spec, 'input')
+        for io_spec in io_map["inputs"]:
+            interface_id, interface = self._create_interface(io_spec, "input")
             interfaces.append(interface)
             self.inp_interface_map[interface_id] = io_spec
-        for io_spec in io_map['outputs']:
-            interface_id, interface = self._create_interface(io_spec, 'output')
+        for io_spec in io_map["outputs"]:
+            interface_id, interface = self._create_interface(io_spec, "output")
             interfaces.append(interface)
             self.out_interface_map[interface_id] = io_spec
 
         self.nodes[node_id] = {
-            'name': node.name,
-            'id': node_id,
-            'properties': [
-                {**param, 'id': self.gen_id()} for param in parameters
+            "name": node.name,
+            "id": node_id,
+            "properties": [
+                {**param, "id": self.gen_id()} for param in parameters
             ],
-            'interfaces': interfaces,
-            'width': self.node_width
+            "interfaces": interfaces,
+            "width": self.node_width,
         }
         return node_id
 
     def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
-        from_interface_arr = self.nodes[from_id]['interfaces']
-        to_interface_arr = self.nodes[to_id]['interfaces']
+        from_interface_arr = self.nodes[from_id]["interfaces"]
+        to_interface_arr = self.nodes[to_id]["interfaces"]
 
         for from_interface, to_interface in itertools.product(
-                from_interface_arr, to_interface_arr):
-
-            from_interface_id = from_interface['id']
-            to_interface_id = to_interface['id']
+            from_interface_arr, to_interface_arr
+        ):
+            from_interface_id = from_interface["id"]
+            to_interface_id = to_interface["id"]
             try:
                 from_io_spec = self.out_interface_map[from_interface_id]
                 to_io_spec = self.inp_interface_map[to_interface_id]
             except KeyError:
                 KLogger.debug(
-                    f'The connection from {from_interface_id} to '
-                    f'{to_interface_id} could not be established.'
+                    f"The connection from {from_interface_id} to "
+                    f"{to_interface_id} could not be established."
                 )
                 continue
 
-            if from_io_spec['type'] == to_io_spec['type']:
+            if from_io_spec["type"] == to_io_spec["type"]:
                 return from_interface_id, to_interface_id
         raise RuntimeError("No compatible connections were found")
 
@@ -630,21 +610,23 @@ class PipelineManagerGraphCreator(GraphCreator):
         from_interface_id, to_interface_id = self.find_compatible_io(
             from_id, to_id
         )
-        self.connections.append({
-            'id': self.gen_id(),
-            'from': from_interface_id,
-            'to': to_interface_id
-        })
+        self.connections.append(
+            {
+                "id": self.gen_id(),
+                "from": from_interface_id,
+                "to": to_interface_id,
+            }
+        )
 
     def flush_graph(self):
         finished_graph = {
-            'version': SPECIFICATION_VERSION,
-            'graph': {
-                'id': self.gen_id(),
-                'nodes': list(self.nodes.values()),
-                'connections': self.connections
+            "version": SPECIFICATION_VERSION,
+            "graph": {
+                "id": self.gen_id(),
+                "nodes": list(self.nodes.values()),
+                "connections": self.connections,
             },
-            'subgraphs': []
+            "subgraphs": [],
         }
         self.start_new_graph()
         return finished_graph

@@ -13,7 +13,10 @@ import subprocess
 from pathlib import Path
 
 from kenning.cli.command_template import (
-    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, COMPLETION
+    ArgumentsGroups,
+    CommandTemplate,
+    GROUP_SCHEMA,
+    COMPLETION,
 )
 
 BASH = "bash"
@@ -40,11 +43,12 @@ def configure_fish():
     Configures autocompletion for Fish, using `argcomplete`
     script `register-python-argcomplete`.
     """
-    kenning_completion_path = \
-        Path.home() / Path(".config/fish/completions/kenning.fish")
+    kenning_completion_path = Path.home() / Path(
+        ".config/fish/completions/kenning.fish"
+    )
     print(f"Fish completion script will be saved at {kenning_completion_path}")
     proceed = input("OK to proceed? [y/n] ")
-    if not proceed[0].lower() == 'y':
+    if not proceed[0].lower() == "y":
         print("Fish configuration cancelled")
         return
     with open(kenning_completion_path, "w+") as fd:
@@ -52,8 +56,10 @@ def configure_fish():
             "register-python-argcomplete --shell fish kenning".split(),
             stdout=fd,
         )
-    print("Please restart your shell "
-          "or source the installed file to activate it.")
+    print(
+        "Please restart your shell "
+        "or source the installed file to activate it."
+    )
 
 
 CONFIGURE_SHELL = {
@@ -65,7 +71,7 @@ CONFIGURE_SHELL = {
 
 class ConfigureCompletion(CommandTemplate):
     parse_all = True
-    description = __doc__.strip('\n')
+    description = __doc__.strip("\n")
 
     @staticmethod
     def configure_parser(
@@ -77,9 +83,7 @@ class ConfigureCompletion(CommandTemplate):
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             ConfigureCompletion, ConfigureCompletion
-        ).configure_parser(
-            parser, command, types, groups
-        )
+        ).configure_parser(parser, command, types, groups)
 
         group = parser.add_argument_group(GROUP_SCHEMA.format(COMPLETION))
         group.add_argument(
@@ -93,10 +97,7 @@ class ConfigureCompletion(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def run(
-        args: argparse.Namespace,
-        **kwargs
-    ):
+    def run(args: argparse.Namespace, **kwargs):
         for shell in args.shell:
             CONFIGURE_SHELL[shell]()
 

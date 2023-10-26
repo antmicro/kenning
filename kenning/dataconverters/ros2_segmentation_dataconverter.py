@@ -18,7 +18,6 @@ from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 
 
 class ROS2SegmentationDataConverter(DataConverter):
-
     def __init__(self):
         """
         Initializes the ModelWrapperDataConverter object.
@@ -47,10 +46,11 @@ class ROS2SegmentationDataConverter(DataConverter):
         """
         goal = SegmentationAction.Goal()
         for frame in data:
-            assert len(frame.shape) == 3, \
-                'Input data must be 3-dimensional and have BGR8 encoding'
+            assert (
+                len(frame.shape) == 3
+            ), "Input data must be 3-dimensional and have BGR8 encoding"
 
-            if (frame.shape[2] > frame.shape[0]):
+            if frame.shape[2] > frame.shape[0]:
                 frame = np.transpose(frame, (1, 2, 0))
             if frame.dtype != np.uint8:
                 if frame.max() <= 1.0:
@@ -60,14 +60,15 @@ class ROS2SegmentationDataConverter(DataConverter):
             img = Image()
             img._height = frame.shape[0]
             img._width = frame.shape[1]
-            img._encoding = 'bgr8'
+            img._encoding = "bgr8"
             img._step = frame.shape[1] * frame.shape[2]
             img._data = frame.tobytes()
             goal._input.append(img)
         return goal
 
-    def to_previous_block(self, data: SegmentationAction.Result
-                          ) -> List[List[SegmObject]]:
+    def to_previous_block(
+        self, data: SegmentationAction.Result
+    ) -> List[List[SegmObject]]:
         """
         Converts segmentation action result to SegmObject list.
 
@@ -81,7 +82,7 @@ class ROS2SegmentationDataConverter(DataConverter):
         List[List[SegmObject]] :
             The converted data.
         """
-        assert data.success, 'Segmentation action failed'
+        assert data.success, "Segmentation action failed"
         result = []
         for frame in data.output:
             tmp_res = []
@@ -93,13 +94,22 @@ class ROS2SegmentationDataConverter(DataConverter):
                 ymin = box.ymin
                 xmax = box.xmax
                 ymax = box.ymax
-                mask = np.frombuffer(frame.masks[i]._data,
-                                     dtype=np.uint8)
+                mask = np.frombuffer(frame.masks[i]._data, dtype=np.uint8)
                 mask = mask.reshape(
-                    frame.masks[i].dimension[0],
-                    frame.masks[i].dimension[1])
-                tmp_res.append(SegmObject(clsname, None,
-                                          xmin, ymin, xmax, ymax,
-                                          mask, score, False))
+                    frame.masks[i].dimension[0], frame.masks[i].dimension[1]
+                )
+                tmp_res.append(
+                    SegmObject(
+                        clsname,
+                        None,
+                        xmin,
+                        ymin,
+                        xmax,
+                        ymax,
+                        mask,
+                        score,
+                        False,
+                    )
+                )
             result.append(tmp_res)
         return result

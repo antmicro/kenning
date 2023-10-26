@@ -21,12 +21,17 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.protocol import Protocol
-from kenning.utils.args_manager import to_argparse_name, jsontype_to_type, \
-    from_argparse_name
-from kenning.utils.excepthook import MissingKenningDependencies, \
-    find_missing_optional_dependency
+from kenning.utils.args_manager import (
+    to_argparse_name,
+    jsontype_to_type,
+    from_argparse_name,
+)
+from kenning.utils.excepthook import (
+    MissingKenningDependencies,
+    find_missing_optional_dependency,
+)
 
-KEYWORDS = ['inputtypes', 'outputtypes', 'arguments_structure']
+KEYWORDS = ["inputtypes", "outputtypes", "arguments_structure"]
 
 
 class Argument:
@@ -35,48 +40,48 @@ class Argument:
     """
 
     def __init__(self):
-        self.name = ''
-        self.argparse_name = ''
-        self.description = ''
-        self.required = ''
-        self.default = ''
-        self.nullable = ''
-        self.type = ''
+        self.name = ""
+        self.argparse_name = ""
+        self.description = ""
+        self.required = ""
+        self.default = ""
+        self.nullable = ""
+        self.type = ""
         self.enum: List[str] = []
 
     def __repr__(self):
-        lines = [f'* {self.name}']
+        lines = [f"* {self.name}"]
 
         if self.argparse_name:
-            lines.append(f'  * argparse name: {self.argparse_name}')
+            lines.append(f"  * argparse name: {self.argparse_name}")
         if self.type:
-            lines.append(f'  * type: {self.type}')
+            lines.append(f"  * type: {self.type}")
         if self.description:
-            lines.append(f'  * description: {self.description}')
+            lines.append(f"  * description: {self.description}")
         if self.required:
-            lines.append(f'  * required: {self.required}')
+            lines.append(f"  * required: {self.required}")
         if self.default:
-            lines.append(f'  * default: {self.default}')
+            lines.append(f"  * default: {self.default}")
         if self.nullable:
-            lines.append(f'  * nullable: {self.nullable}')
+            lines.append(f"  * nullable: {self.nullable}")
 
         if len(self.enum) != 0:
-            lines.append('  * enum')
+            lines.append("  * enum")
         for element in self.enum:
-            lines.append(f'    * {element}')
+            lines.append(f"    * {element}")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)
 
 
 class ClassInfoInvalidArgument(Exception):
     """
     Exception raised when the arguments provided are not valid
     """
+
     pass
 
 
-def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
-                          Module]) -> str:
+def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
     """
     Displays class name from syntax node
 
@@ -90,11 +95,12 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.
     str: Formatted Markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
-        return f'Class: {syntax_node.name}\n\n'
+        return f"Class: {syntax_node.name}\n\n"
 
 
 def get_class_module_docstrings(
-        syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
+    syntax_node: Union[ast.ClassDef, ast.Module]
+) -> str:
     """
     Displays docstrings of provided class or module
 
@@ -111,16 +117,17 @@ def get_class_module_docstrings(
     docstring = ast.get_docstring(syntax_node, clean=True)
 
     if not docstring:
-        return f'Class: {syntax_node.name}\n\n'
+        return f"Class: {syntax_node.name}\n\n"
 
-    docstring = '\n'.join(
-        ['    ' + docstr for docstr in docstring.strip('\n').split('\n')])
+    docstring = "\n".join(
+        ["    " + docstr for docstr in docstring.strip("\n").split("\n")]
+    )
 
     if isinstance(syntax_node, ast.ClassDef):
-        return f'Class: {syntax_node.name}\n\n{docstring}\n\n'
+        return f"Class: {syntax_node.name}\n\n{docstring}\n\n"
 
     if isinstance(syntax_node, ast.Module):
-        return f'Module description:\n\n{docstring}\n\n'
+        return f"Module description:\n\n{docstring}\n\n"
 
 
 def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
@@ -140,40 +147,42 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
     or are provided by the default python distribution
     """
     for dependency in syntax_node.names:
-        module_path = ''
-        dependency_path = ''
+        module_path = ""
+        dependency_path = ""
         if isinstance(syntax_node, ast.ImportFrom):
-            dependency_path = f'{syntax_node.module}.{dependency.name}'
-            module_path = f'{syntax_node.module}'
+            dependency_path = f"{syntax_node.module}.{dependency.name}"
+            module_path = f"{syntax_node.module}"
 
         if isinstance(syntax_node, ast.Import):
-            dependency_path = f'{dependency.name}'
+            dependency_path = f"{dependency.name}"
             module_path = dependency_path
 
-        if module_path == '' or dependency_path == '':
-            return ''
+        if module_path == "" or dependency_path == "":
+            return ""
 
         try:
             importlib.import_module(module_path)
 
-            if 'kenning' in dependency_path:
-                return ''
+            if "kenning" in dependency_path:
+                return ""
 
-            if place_module(module_path) == 'STDLIB':
-                return ''
+            if place_module(module_path) == "STDLIB":
+                return ""
 
-            return '* ' + dependency_path + '\n'
+            return "* " + dependency_path + "\n"
         except (ImportError, ModuleNotFoundError, Exception) as e:
             err = MissingKenningDependencies(
                 name=module_path,
                 path=dependency_path,
-                optional_dependencies=find_missing_optional_dependency(e.name)
+                optional_dependencies=find_missing_optional_dependency(e.name),
             )
 
             if find_missing_optional_dependency(e.name) is None:
-                return f'* {dependency_path} - Not available (Reason: {e})\n'
+                return f"* {dependency_path} - Not available (Reason: {e})\n"
 
-            return f'* {dependency_path} - Not available (Reason: {e})\n    {err}'  # noqa: E501
+            return (
+                f"* {dependency_path} - Not available (Reason: {e})\n    {err}"
+            )  # noqa: E501
 
 
 def get_input_specification(syntax_node: ast.Assign) -> str:
@@ -190,19 +199,21 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     str: Formatted Markdown-like string to be printed later.
     """
 
-    input_formats = ''
+    input_formats = ""
 
-    if isinstance(syntax_node.value, ast.List) \
-            and len(syntax_node.value.elts) == 0:
-        return ''
+    if (
+        isinstance(syntax_node.value, ast.List)
+        and len(syntax_node.value.elts) == 0
+    ):
+        return ""
 
     if isinstance(syntax_node.value, ast.List):
         for input_format in syntax_node.value.elts:
-            input_formats += f'* {input_format.value}\n'
+            input_formats += f"* {input_format.value}\n"
         return input_formats
 
     for input_format in syntax_node.value.keys:
-        input_formats += f'* {input_format.value}\n'
+        input_formats += f"* {input_format.value}\n"
 
     return input_formats
 
@@ -226,28 +237,27 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     resulting_output = []
 
     if not isinstance(dict_node, ast.Dict):
-        return ['']
+        return [""]
 
     dict_elements = []
     for key, value in zip(dict_node.keys, dict_node.values):
-
         if not isinstance(value, ast.List):
-            resulting_output.append(f'* {key.value}: {value.value}')
+            resulting_output.append(f"* {key.value}: {value.value}")
             continue
 
         dict_elements.extend(value.elts)
 
     for dict_element in dict_elements:
-
         if isinstance(dict_element.values[0], ast.Constant):
-            resulting_output.append(f'* {dict_element.values[0].value}\n')
+            resulting_output.append(f"* {dict_element.values[0].value}\n")
         else:
             # if the first value (name) is not a string, use the variable name
-            resulting_output.append(f'* {dict_element.values[0].id}\n')
+            resulting_output.append(f"* {dict_element.values[0].id}\n")
 
         for key, value in zip(dict_element.keys[1:], dict_element.values[1:]):
-            resulting_output.append(f'  * {key.value}: '
-                                    f'{clean_variable_name(value)}\n')
+            resulting_output.append(
+                f"  * {key.value}: " f"{clean_variable_name(value)}\n"
+            )
 
     return resulting_output
 
@@ -274,7 +284,7 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
         if not isinstance(node, ast.FunctionDef):
             continue
 
-        if node.name != '_get_io_specification':
+        if node.name != "_get_io_specification":
             continue
 
         io_spec_function_node = node
@@ -309,7 +319,7 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
     str: Formatted Markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
-        return f'* {output_format.value}\n'
+        return f"* {output_format.value}\n"
 
 
 def clean_variable_name(variable_name: ast.AST) -> str:
@@ -326,11 +336,12 @@ def clean_variable_name(variable_name: ast.AST) -> str:
     -------
     str: Cleaned up variable
     """
-    return astunparse \
-        .unparse(variable_name) \
-        .strip() \
-        .removeprefix("'") \
+    return (
+        astunparse.unparse(variable_name)
+        .strip()
+        .removeprefix("'")
         .removesuffix("'")
+    )
 
 
 def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
@@ -349,52 +360,59 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
     -------
     str: Formatted Markdown-like string to be printed later.
     """
-    output_string = ''
+    output_string = ""
 
-    for argument, argument_specification_dict in zip(syntax_node.value.keys,
-                                                     syntax_node.value.values):
+    for argument, argument_specification_dict in zip(
+        syntax_node.value.keys, syntax_node.value.values
+    ):
         argument_object = Argument()
 
         argument_object.name = argument.value
 
-        for key, value in zip(argument_specification_dict.keys,
-                              argument_specification_dict.values):
-
-            if isinstance(value, ast.Call) \
-                    and isinstance(value.func, ast.Name) \
-                    and value.func.id == 'list':
-                argument_list_variable = astunparse.unparse(value) \
-                    .strip() \
-                    .removeprefix("'") \
-                    .removesuffix("'") \
-                    .replace('list(', '') \
-                    .replace('.keys())', '')
+        for key, value in zip(
+            argument_specification_dict.keys,
+            argument_specification_dict.values,
+        ):
+            if (
+                isinstance(value, ast.Call)
+                and isinstance(value.func, ast.Name)
+                and value.func.id == "list"
+            ):
+                argument_list_variable = (
+                    astunparse.unparse(value)
+                    .strip()
+                    .removeprefix("'")
+                    .removesuffix("'")
+                    .replace("list(", "")
+                    .replace(".keys())", "")
+                )
 
                 argument_keys, argument_type = evaluate_argument_list_of_keys(
-                    argument_list_variable,
-                    source_path)
+                    argument_list_variable, source_path
+                )
 
                 argument_object.enum = argument_keys
                 argument_object.type = argument_type
-            elif isinstance(value, ast.Call) \
-                    and isinstance(value.func, ast.Attribute):
+            elif isinstance(value, ast.Call) and isinstance(
+                value.func, ast.Attribute
+            ):
                 key_str = clean_variable_name(key)
                 value_str = clean_variable_name(value)
 
                 argument_object.__setattr__(key_str, [value_str])
 
-            elif key.value == 'enum':
+            elif key.value == "enum":
                 argument_list_variable = clean_variable_name(value)
 
                 enum_list, argument_type = evaluate_argument_list(
-                    argument_list_variable,
-                    source_path)
+                    argument_list_variable, source_path
+                )
 
                 argument_object.enum = enum_list
                 argument_object.type = argument_type
 
-                if argument_type == 'Error':
-                    return f'Error: {enum_list[0]}'
+                if argument_type == "Error":
+                    return f"Error: {enum_list[0]}"
 
             else:
                 key_str = clean_variable_name(key)
@@ -402,13 +420,14 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
 
                 argument_object.__setattr__(key_str, value_str)
 
-        output_string += argument_object.__repr__() + '\n'
+        output_string += argument_object.__repr__() + "\n"
 
     return output_string
 
 
-def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
-        -> Tuple[List[str], str]:
+def evaluate_argument_list_of_keys(
+    argument_list_name: str, source_path: str
+) -> Tuple[List[str], str]:
     """
     Evaluate an expression like `list(some_dict.keys())` and return the list
     of elements as strings.
@@ -425,13 +444,13 @@ def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
     Tuple[List[str], str]: tuple with the first argument being the list of
     evaluated elements and the second being the type as a string
     """
-    with open(source_path, 'r') as file:
+    with open(source_path, "r") as file:
         parsed_file = ast.parse(file.read())
 
     syntax_nodes = ast.walk(parsed_file)
 
     argument_list_keys = []
-    argument_type = ''
+    argument_type = ""
 
     for node in syntax_nodes:
         if not isinstance(node, ast.Assign):
@@ -446,15 +465,16 @@ def evaluate_argument_list_of_keys(argument_list_name: str, source_path: str) \
         for key in node.value.keys:
             argument_list_keys.append(key.value)
 
-        argument_type = f'List[{type(node.value.keys[0].value).__name__}]'
+        argument_type = f"List[{type(node.value.keys[0].value).__name__}]"
 
         break
 
     return argument_list_keys, argument_type
 
 
-def evaluate_argument_list(argument_list_name: str, source_path: str) \
-        -> Tuple[List[str], str]:
+def evaluate_argument_list(
+    argument_list_name: str, source_path: str
+) -> Tuple[List[str], str]:
     """
     Evaluate an expression like `list('tflite', 'tvm')` and return the list
     of elements as strings.
@@ -477,21 +497,23 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
     syntax_nodes = ast.walk(parsed_file)
 
     enum_elements = []
-    argument_type = ''
+    argument_type = ""
 
     # argument list is an explicit python list (['int8', 'float16'])
-    if argument_list_name.endswith(']') and argument_list_name[0] == '[':
+    if argument_list_name.endswith("]") and argument_list_name[0] == "[":
         try:
             enum_elements = eval(argument_list_name)
         except NameError:
-            return ['Static code analysis failed here, please import the '
-                    'necessary modules and/or try to load the class with '
-                    'arguments'], 'Error'
+            return [
+                "Static code analysis failed here, please import the "
+                "necessary modules and/or try to load the class with "
+                "arguments"
+            ], "Error"
 
         if len(enum_elements) > 0:
-            argument_type = f'List[{type(enum_elements[0]).__name__}]'
+            argument_type = f"List[{type(enum_elements[0]).__name__}]"
         else:
-            argument_type = 'List[]'
+            argument_type = "List[]"
         return enum_elements, argument_type
 
     for node in syntax_nodes:
@@ -507,13 +529,15 @@ def evaluate_argument_list(argument_list_name: str, source_path: str) \
         for element in node.value.elts:
             enum_elements.append(element.value)
 
-        argument_type = f'List[{type(node.value.elts[0].value).__name__}]'
+        argument_type = f"List[{type(node.value.elts[0].value).__name__}]"
         break
 
     return enum_elements, argument_type
 
 
-def get_args_structure_from_parameterschema(parameterschema: Dict) -> List[str]:  # noqa: E501
+def get_args_structure_from_parameterschema(
+    parameterschema: Dict
+) -> List[str]:  # noqa: E501
     """
     Returns argument structure in the form of Markdown-like strings based on
     the provided parameterschema.
@@ -529,43 +553,45 @@ def get_args_structure_from_parameterschema(parameterschema: Dict) -> List[str]:
     """
     resulting_lines = []
 
-    args_structure = parameterschema['properties']
+    args_structure = parameterschema["properties"]
 
     required_args: List = []
-    if 'required' in parameterschema:
-        required_args = parameterschema['required']
+    if "required" in parameterschema:
+        required_args = parameterschema["required"]
 
     if not args_structure:
-        return ['']
+        return [""]
 
     for arg_name, arg_dict in args_structure.items():
-        resulting_lines.append(f'* {arg_name}\n')
+        resulting_lines.append(f"* {arg_name}\n")
 
-        resulting_lines.append(f'  * argparse_name: '
-                               f'{to_argparse_name(arg_name)}\n')
+        resulting_lines.append(
+            f"  * argparse_name: " f"{to_argparse_name(arg_name)}\n"
+        )
 
         for key, value in arg_dict.items():
             # skip real_name as it is the same as arg_name
-            if key == 'real_name':
+            if key == "real_name":
                 continue
 
             # expand enums (lists)
             if isinstance(value, list):
-                resulting_lines.append(f'  * {key}\n')
+                resulting_lines.append(f"  * {key}\n")
                 for elt in value:
-                    resulting_lines.append(f'    * {elt}\n')
+                    resulting_lines.append(f"    * {elt}\n")
                 continue
 
             # extract qualified class name if value is a class
             if inspect.isclass(value):
-                resulting_lines.append(f'  * {key}: {value.__module__}.'
-                                       f'{value.__qualname__}\n')
+                resulting_lines.append(
+                    f"  * {key}: {value.__module__}." f"{value.__qualname__}\n"
+                )
                 continue
 
-            resulting_lines.append(f'  * {key}: {value}\n')
+            resulting_lines.append(f"  * {key}: {value}\n")
 
         if arg_name in required_args:
-            resulting_lines.append('  * required: True\n')
+            resulting_lines.append("  * required: True\n")
 
     return resulting_lines
 
@@ -589,33 +615,33 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
     dict_elements = []
 
     if not isinstance(dictionary, dict):
-        return ['']
+        return [""]
 
     for key, value in dictionary.items():
         if not isinstance(value, list):
-            resulting_output.append(f'* {key}: {value}\n')
+            resulting_output.append(f"* {key}: {value}\n")
 
         [dict_elements.append(elt) for elt in value]
 
     for dict_element in dict_elements:
         resulting_output.append(f'* {dict_element["name"]}\n')
-        dict_element.pop('name', None)
+        dict_element.pop("name", None)
 
         for key, value in dict_element.items():
             if isinstance(value, list):
-                resulting_output.append(f'  * {key}\n')
+                resulting_output.append(f"  * {key}\n")
                 for elt in value:
-                    resulting_output.append(f'    * {elt}\n')
+                    resulting_output.append(f"    * {elt}\n")
                 continue
 
-            resulting_output.append(f'  * {key}: {value}\n')
+            resulting_output.append(f"  * {key}: {value}\n")
 
     return resulting_output
 
 
-def instantiate_object(imported_class: Type,
-                       parameterschema: Dict = {},
-                       arguments: List[str] = []) -> object:
+def instantiate_object(
+    imported_class: Type, parameterschema: Dict = {}, arguments: List[str] = []
+) -> object:
     """
     Parses provided arguments into a dictionary, then creates an instance of
     the provided class.
@@ -638,35 +664,35 @@ def instantiate_object(imported_class: Type,
     parsed_args: Dict = {}
 
     # split the arguments into lists with two elements, i.e. argparse_name and value # noqa: E501
-    arg_tuples = [arguments[i:i + 2] for i in range(0, len(arguments), 2)]
+    arg_tuples = [arguments[i : i + 2] for i in range(0, len(arguments), 2)]
 
     for arg_tuple in arg_tuples:
         argparse_name = from_argparse_name(arg_tuple[0])
 
-        if argparse_name not in parameterschema['properties'].keys():
+        if argparse_name not in parameterschema["properties"].keys():
             raise ClassInfoInvalidArgument(
-                f'Argparse name {to_argparse_name(argparse_name)} not present '
-                f'in argument specification')
+                f"Argparse name {to_argparse_name(argparse_name)} not present "
+                f"in argument specification"
+            )
 
-        parameter = parameterschema['properties'][argparse_name]
+        parameter = parameterschema["properties"][argparse_name]
 
         argument_type = str
-        if 'type' in parameter.keys() and isinstance(parameter['type'], list):
-            argument_type = jsontype_to_type[parameter['type'][0]]
+        if "type" in parameter.keys() and isinstance(parameter["type"], list):
+            argument_type = jsontype_to_type[parameter["type"][0]]
 
-        parsed_args[argparse_name] = \
-            argument_type(arg_tuple[1])
+        parsed_args[argparse_name] = argument_type(arg_tuple[1])
 
     class_object = instantiate_object_based_on_base_class(
-        imported_class,
-        parsed_args)
+        imported_class, parsed_args
+    )
 
     return class_object
 
 
 def instantiate_object_based_on_base_class(
-        imported_class: Type,
-        parsed_args: Dict) -> object:
+    imported_class: Type, parsed_args: Dict
+) -> object:
     """
     Creates an object of the provided class, based on the arguments provided
     in dictionary format and the class it inherits from. Raises a custom
@@ -687,64 +713,68 @@ def instantiate_object_based_on_base_class(
         # create an object based on its base class
         if issubclass(imported_class, Runtime):
             return imported_class.from_json(
-                json_dict=parsed_args,
-                protocol=Protocol())
+                json_dict=parsed_args, protocol=Protocol()
+            )
 
         if issubclass(imported_class, ModelWrapper):
             return imported_class.from_json(
-                json_dict=parsed_args,
-                dataset=None,
-                from_file=False)
+                json_dict=parsed_args, dataset=None, from_file=False
+            )
 
         if issubclass(imported_class, Dataset):
             return imported_class.from_json(parsed_args)
 
         if issubclass(imported_class, Optimizer):
             return imported_class.from_json(
-                dataset=None,
-                json_dict=parsed_args)
+                dataset=None, json_dict=parsed_args
+            )
 
         if issubclass(imported_class, DataProvider):
             return imported_class.from_json(
                 json_dict=parsed_args,
                 inputs_sources={},
                 inputs_specs={},
-                outputs={})
+                outputs={},
+            )
 
         if issubclass(imported_class, OutputCollector):
             return imported_class.from_json(
                 json_dict=parsed_args,
                 inputs_specs={},
                 inputs_sources={},
-                outputs={})
+                outputs={},
+            )
 
         if issubclass(imported_class, Runner):
             # TODO Runner class is to be updated
             return None
 
     except ValidationError as e:
-        reason = str(e).partition('\n')[0]
+        reason = str(e).partition("\n")[0]
         raise ClassInfoInvalidArgument(
-            f'Could not create a {imported_class.__name__} object. '
-            f'You need to provide the required arguments.\n'
-            f'Reason: {reason}\n')
+            f"Could not create a {imported_class.__name__} object. "
+            f"You need to provide the required arguments.\n"
+            f"Reason: {reason}\n"
+        )
     except FileNotFoundError as e:
         raise ClassInfoInvalidArgument(
-            f'Could not create a {imported_class.__name__} object.\n'
-            f'Reason: {e}\n')
+            f"Could not create a {imported_class.__name__} object.\n"
+            f"Reason: {e}\n"
+        )
 
     return None
 
 
 def generate_class_info(
-        target: str,
-        class_name='',
-        docstrings=True,
-        dependencies=True,
-        input_formats=True,
-        output_formats=True,
-        argument_formats=True,
-        load_class_with_args=None) -> List[str]:
+    target: str,
+    class_name="",
+    docstrings=True,
+    dependencies=True,
+    input_formats=True,
+    output_formats=True,
+    argument_formats=True,
+    load_class_with_args=None,
+) -> List[str]:
     """
     Wrapper function that handles displaying information about a class
 
@@ -775,19 +805,19 @@ def generate_class_info(
     resulting_lines = []
 
     # if target contains a class, split to path and class name
-    split_target = target.split('.')
+    split_target = target.split(".")
     if split_target[-1][0].isupper():
         class_name = split_target[-1]
         split_target = split_target[:-1]
 
-    target = '.'.join(split_target)
+    target = ".".join(split_target)
 
     target_path = find_spec(target).origin
 
     if not os.path.exists(target_path):
-        return [f'File {target_path} does not exist\n']
+        return [f"File {target_path} does not exist\n"]
 
-    with open(target_path, 'r') as file:
+    with open(target_path, "r") as file:
         parsed_file = ast.parse(file.read())
 
     syntax_nodes = ast.walk(parsed_file)
@@ -810,26 +840,25 @@ def generate_class_info(
         # try to load the class into memory
         try:
             imported_class = getattr(
-                importlib.import_module(find_spec(target).name),
-                class_name
+                importlib.import_module(find_spec(target).name), class_name
             )
 
             parameterschema = imported_class.form_parameterschema()
 
         except (ModuleNotFoundError, ImportError, Exception):
             resulting_lines.append(
-                'Warning: Only static code analysis will be performed - '
-                f'cannot import class {class_name}.\nTry installing the '
-                f'required dependencies or loading the class with '
-                f'arguments.\n\n')
+                "Warning: Only static code analysis will be performed - "
+                f"cannot import class {class_name}.\nTry installing the "
+                f"required dependencies or loading the class with "
+                f"arguments.\n\n"
+            )
 
     # create an object when it has no required arguments if possible
     if imported_class and load_class_with_args is not None:
         try:
             class_object = instantiate_object(
-                imported_class,
-                parameterschema,
-                load_class_with_args)
+                imported_class, parameterschema, load_class_with_args
+            )
         except ClassInfoInvalidArgument as e:
             return [str(e)]
 
@@ -843,14 +872,15 @@ def generate_class_info(
                 io_specification_lines[node] = io_specification
                 found_io_specification = True
 
-        if isinstance(node, ast.Module) and class_name == '':
+        if isinstance(node, ast.Module) and class_name == "":
             class_nodes.append(node)
 
         if isinstance(node, (ast.Import, ast.ImportFrom)):
             dependency_nodes.append(node)
 
-        if isinstance(node, ast.Assign) and \
-                isinstance(node.targets[0], ast.Name):
+        if isinstance(node, ast.Assign) and isinstance(
+            node.targets[0], ast.Name
+        ):
             if node.targets[0].id not in KEYWORDS:
                 continue
 
@@ -866,77 +896,80 @@ def generate_class_info(
     for node in class_nodes:
         if docstrings:
             if len(class_nodes) == 0:
-                resulting_lines.append(f'Class {class_name}'
-                                       f' has not been found')
+                resulting_lines.append(
+                    f"Class {class_name}" f" has not been found"
+                )
                 return resulting_lines
             resulting_lines.append(get_class_module_docstrings(node))
         else:
             resulting_lines.append(get_class_module_name(node))
 
         if input_formats or output_formats:
-            if imported_class and hasattr(class_object, 'get_io_specification'):  # noqa: E501
+            if imported_class and hasattr(
+                class_object, "get_io_specification"
+            ):  # noqa: E501
                 # object has been created - detailed i/o specification found
                 found_io_specification = True
-                resulting_lines.append('Input/output specification:\n')
+                resulting_lines.append("Input/output specification:\n")
                 io_spec = class_object.get_io_specification()
                 resulting_lines += parse_io_spec_dict_to_str(io_spec)
-                resulting_lines.append('\n')
+                resulting_lines.append("\n")
 
             elif node in io_specification_lines:
                 # no object, but i/o specification found - extract statically
                 # from source code
-                resulting_lines.append('Input/output specification:\n')
+                resulting_lines.append("Input/output specification:\n")
                 resulting_lines += io_specification_lines[node]
-                resulting_lines.append('\n')
+                resulting_lines.append("\n")
 
     if dependencies:
-        resulting_lines.append('Dependencies:\n')
+        resulting_lines.append("Dependencies:\n")
         dependencies: List[str] = []
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         for node in dependency_nodes:
             dependency_str = get_dependency(node)
-            if dependency_str == '':
+            if dependency_str == "":
                 continue
             dependencies.append(dependency_str)
 
         for dep_str in list(set(dependencies)):
             resulting_lines.append(dep_str)
 
-        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
-        resulting_lines.append('\n')
+        os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
+        resulting_lines.append("\n")
 
     if input_formats and not found_io_specification:
-        resulting_lines.append('Input formats:\n')
+        resulting_lines.append("Input formats:\n")
         if input_specification_node:
             data = get_input_specification(input_specification_node)
-            resulting_lines.append(data if data else 'No inputs')
+            resulting_lines.append(data if data else "No inputs")
         else:
-            resulting_lines.append('No inputs')
-        resulting_lines.append('\n\n')
+            resulting_lines.append("No inputs")
+        resulting_lines.append("\n\n")
 
     if output_formats and not found_io_specification:
-        resulting_lines.append('Output formats:\n')
+        resulting_lines.append("Output formats:\n")
         if output_specification_node:
             data = get_output_specification(output_specification_node)
-            resulting_lines.append(data if data else 'No outputs')
+            resulting_lines.append(data if data else "No outputs")
         else:
-            resulting_lines.append('No outputs')
-        resulting_lines.append('\n\n')
+            resulting_lines.append("No outputs")
+        resulting_lines.append("\n\n")
 
     if argument_formats:
-        resulting_lines.append('Arguments specification:\n')
+        resulting_lines.append("Arguments specification:\n")
         if parameterschema:
-            resulting_lines += \
-                get_args_structure_from_parameterschema(parameterschema)
+            resulting_lines += get_args_structure_from_parameterschema(
+                parameterschema
+            )
 
         elif arguments_structure_node:
             data = get_arguments_structure(
-                arguments_structure_node,
-                target_path
+                arguments_structure_node, target_path
             )
-            resulting_lines.append(data if data else 'No arguments')
+            resulting_lines.append(data if data else "No arguments")
         else:
-            resulting_lines.append('No arguments')
-        resulting_lines.append('\n\n')
+            resulting_lines.append("No arguments")
+        resulting_lines.append("\n\n")
 
     return resulting_lines

@@ -14,11 +14,12 @@ from kenning.utils.resource_manager import PathOrURI
 
 class TensorFlowWrapper(ModelWrapper, ABC):
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool,
-            model_name: Optional[str] = None):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool,
+        model_name: Optional[str] = None,
+    ):
         """
         Creates the TensorFlow model wrapper.
 
@@ -40,8 +41,9 @@ class TensorFlowWrapper(ModelWrapper, ABC):
 
     def load_model(self, model_path: PathOrURI):
         import tensorflow as tf
+
         tf.keras.backend.clear_session()
-        if hasattr(self, 'model') and self.model is not None:
+        if hasattr(self, "model") and self.model is not None:
             del self.model
         self.model = tf.keras.models.load_model(str(model_path))
         print(self.model.summary())
@@ -51,7 +53,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.model.save(model_path)
 
     def preprocess_input(self, X):
-        return np.array(X, dtype='float32')
+        return np.array(X, dtype="float32")
 
     def run_inference(self, X):
         self.prepare_model()
@@ -59,27 +61,28 @@ class TensorFlowWrapper(ModelWrapper, ABC):
 
     def get_framework_and_version(self):
         import tensorflow as tf
-        return ('tensorflow', tf.__version__)
+
+        return ("tensorflow", tf.__version__)
 
     def get_output_formats(self):
-        return ['onnx', 'keras']
+        return ["onnx", "keras"]
 
     def save_to_onnx(self, model_path: PathOrURI):
         import tensorflow as tf
         import tf2onnx
 
         self.prepare_model()
-        x = tuple(tf.TensorSpec(
-            spec['shape'],
-            spec['dtype'],
-            name=spec['name'],
-        ) for spec in self.get_io_specification()['input'])
+        x = tuple(
+            tf.TensorSpec(
+                spec["shape"],
+                spec["dtype"],
+                name=spec["name"],
+            )
+            for spec in self.get_io_specification()["input"]
+        )
 
         modelproto, _ = tf2onnx.convert.from_keras(
-            self.model,
-            input_signature=x,
-            output_path=model_path,
-            opset=11
+            self.model, input_signature=x, output_path=model_path, opset=11
         )
 
     def convert_input_to_bytes(self, inputdata):
@@ -90,8 +93,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
         for ind in range(0, len(outputdata), singleoutputsize):
             arr = np.frombuffer(
-                outputdata[ind:ind + singleoutputsize],
-                dtype=np.float32
+                outputdata[ind : ind + singleoutputsize], dtype=np.float32
             )
             result.append(arr)
         return result

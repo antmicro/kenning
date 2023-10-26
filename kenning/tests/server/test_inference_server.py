@@ -50,18 +50,17 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                protocol, 'initialize_server'
+                protocol, "initialize_server"
             ) as protocol_initialize_server_mock,
             patch.object(
-                protocol, 'receive_message'
+                protocol, "receive_message"
             ) as protocol_receive_message_mock,
-            patch.object(
-                protocol, 'disconnect'
-            ) as protocol_disconnect_mock
+            patch.object(protocol, "disconnect") as protocol_disconnect_mock,
         ):
             protocol_initialize_server_mock.return_value = True
             protocol_receive_message_mock.return_value = (
-                ServerStatus.NOTHING, None
+                ServerStatus.NOTHING,
+                None,
             )
 
             server_thread = threading.Thread(target=inference_server.run)
@@ -78,22 +77,22 @@ class TestInferenceServerRunner:
             protocol_disconnect_mock.assert_called_once()
 
     @pytest.mark.parametrize(
-        'message_type,callback_name',
+        "message_type,callback_name",
         (
-            (MessageType.DATA, '_data_callback'),
-            (MessageType.MODEL, '_model_callback'),
-            (MessageType.PROCESS, '_process_callback'),
-            (MessageType.OUTPUT, '_output_callback'),
-            (MessageType.STATS, '_stats_callback'),
-            (MessageType.IO_SPEC, '_io_spec_callback'),
-        )
+            (MessageType.DATA, "_data_callback"),
+            (MessageType.MODEL, "_model_callback"),
+            (MessageType.PROCESS, "_process_callback"),
+            (MessageType.OUTPUT, "_output_callback"),
+            (MessageType.STATS, "_stats_callback"),
+            (MessageType.IO_SPEC, "_io_spec_callback"),
+        ),
     )
     def test_callback(
         self,
         runtime: Runtime,
         protocol: Protocol,
         message_type: MessageType,
-        callback_name: str
+        callback_name: str,
     ):
         """
         Test inference server callback.
@@ -105,20 +104,19 @@ class TestInferenceServerRunner:
                 inference_server, callback_name
             ) as server_callback_mock,
             patch.object(
-                protocol, 'initialize_server'
+                protocol, "initialize_server"
             ) as protocol_initialize_server_mock,
             patch.object(
-                protocol, 'receive_message'
+                protocol, "receive_message"
             ) as protocol_receive_message_mock,
-            patch.object(
-                protocol, 'disconnect'
-            ) as protocol_disconnect_mock
+            patch.object(protocol, "disconnect") as protocol_disconnect_mock,
         ):
             inference_server.callbacks[message_type] = server_callback_mock
             protocol_initialize_server_mock.return_value = True
             data = np.random.bytes(128)
             protocol_receive_message_mock.return_value = (
-                ServerStatus.DATA_READY, Message(message_type, data)
+                ServerStatus.DATA_READY,
+                Message(message_type, data),
             )
 
             server_thread = threading.Thread(target=inference_server.run)
@@ -128,7 +126,7 @@ class TestInferenceServerRunner:
             assert inference_server.should_work
             assert server_thread.is_alive()
 
-            sleep(.01)
+            sleep(0.01)
 
             inference_server.close()
             server_thread.join()
@@ -148,11 +146,11 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_input'
+                runtime, "prepare_input"
             ) as runtime_prepare_input_mock,
             patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
             runtime_prepare_input_mock.return_value = True
 
@@ -163,10 +161,10 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_input'
+                runtime, "prepare_input"
             ) as runtime_prepare_input_mock,
             patch.object(
-                protocol, 'request_failure'
+                protocol, "request_failure"
             ) as protocol_request_failure_mock,
         ):
             runtime_prepare_input_mock.return_value = False
@@ -186,14 +184,14 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_model'
+                runtime, "prepare_model"
             ) as runtime_prepare_model_mock,
             patch.object(
-                runtime, 'inference_session_start'
+                runtime, "inference_session_start"
             ) as runtime_inference_session_start_mock,
             patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
             runtime_prepare_model_mock.return_value = True
 
@@ -205,13 +203,13 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_model'
+                runtime, "prepare_model"
             ) as runtime_prepare_model_mock,
             patch.object(
-                runtime, 'inference_session_start'
+                runtime, "inference_session_start"
             ) as runtime_inference_session_start_mock,
             patch.object(
-                protocol, 'request_failure'
+                protocol, "request_failure"
             ) as protocol_request_failure_mock,
         ):
             runtime_prepare_model_mock.return_value = False
@@ -229,14 +227,12 @@ class TestInferenceServerRunner:
         inference_server = InferenceServer(runtime, protocol)
 
         with (
+            patch.object(runtime, "run") as runtime_run_mock,
             patch.object(
-                runtime, 'run'
-            ) as runtime_run_mock,
-            patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
-            inference_server.callbacks[MessageType.PROCESS](b'')
+            inference_server.callbacks[MessageType.PROCESS](b"")
 
             runtime_run_mock.assert_called_once()
             protocol_request_success_mock.assert_called_once()
@@ -251,30 +247,30 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'upload_output'
+                runtime, "upload_output"
             ) as runtime_upload_output_mock,
             patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
             runtime_upload_output_mock.return_value = data
 
-            inference_server.callbacks[MessageType.OUTPUT](b'')
+            inference_server.callbacks[MessageType.OUTPUT](b"")
 
             runtime_upload_output_mock.assert_called_once()
             protocol_request_success_mock.assert_called_once_with(data)
 
         with (
             patch.object(
-                runtime, 'upload_output'
+                runtime, "upload_output"
             ) as runtime_upload_output_mock,
             patch.object(
-                protocol, 'request_failure'
+                protocol, "request_failure"
             ) as protocol_request_failure_mock,
         ):
             runtime_upload_output_mock.return_value = None
 
-            inference_server.callbacks[MessageType.OUTPUT](b'')
+            inference_server.callbacks[MessageType.OUTPUT](b"")
 
             runtime_upload_output_mock.assert_called_once()
             protocol_request_failure_mock.assert_called_once()
@@ -288,16 +284,14 @@ class TestInferenceServerRunner:
         data = np.random.bytes(128)
 
         with (
+            patch.object(runtime, "upload_stats") as runtime_upload_stats_mock,
             patch.object(
-                runtime, 'upload_stats'
-            ) as runtime_upload_stats_mock,
-            patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
             runtime_upload_stats_mock.return_value = data
 
-            inference_server.callbacks[MessageType.STATS](b'')
+            inference_server.callbacks[MessageType.STATS](b"")
 
             runtime_upload_stats_mock.assert_called_once()
             protocol_request_success_mock.assert_called_once_with(data)
@@ -312,11 +306,11 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_io_specification'
+                runtime, "prepare_io_specification"
             ) as runtime_prepare_io_spec_mock,
             patch.object(
-                protocol, 'request_success'
-            ) as protocol_request_success_mock
+                protocol, "request_success"
+            ) as protocol_request_success_mock,
         ):
             runtime_prepare_io_spec_mock.return_value = True
 
@@ -327,10 +321,10 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, 'prepare_io_specification'
+                runtime, "prepare_io_specification"
             ) as runtime_prepare_io_spec_mock,
             patch.object(
-                protocol, 'request_failure'
+                protocol, "request_failure"
             ) as protocol_request_failure_mock,
         ):
             runtime_prepare_io_spec_mock.return_value = False

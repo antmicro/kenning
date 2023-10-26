@@ -28,15 +28,15 @@ else:
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
-
     default_dataset = COCODataset2017
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool = True,
-            model_name: Optional[str] = None):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+    ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.threshold = 0.7
         if dataset is not None:
@@ -44,11 +44,12 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
     def create_model_structure(self):
         from torchvision import models
+
         self.model = models.detection.maskrcnn_resnet50_fpn(
             pretrained=True,  # downloads mask r-cnn model to torchhub dir
             progress=True,
             num_classes=91,
-            pretrained_backbone=True  # downloads backbone to torchhub dir
+            pretrained_backbone=True,  # downloads backbone to torchhub dir
         )
 
     def prepare_model(self):
@@ -65,8 +66,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         self.model.to(self.device)
         self.model.eval()
         self.custom_classnames = []
-        with path(coco_instance_segmentation, 'pytorch_classnames.txt') as p:
-            with open(p, 'r') as f:
+        with path(coco_instance_segmentation, "pytorch_classnames.txt") as p:
+            with open(p, "r") as f:
                 for line in f:
                     self.custom_classnames.append(line.strip())
 
@@ -76,24 +77,23 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             ret.append([])
             if not isinstance(out, dict):
                 continue
-            for i in range(len(out['labels'])):
-                masks_np = out['masks'][i].cpu().detach().numpy()
-                ret[-1].append(SegmObject(
-                    clsname=self.custom_classnames[
-                        int(out['labels'][i])
-                    ],
-                    maskpath=None,
-                    xmin=float(out['boxes'][i][0]),
-                    ymin=float(out['boxes'][i][1]),
-                    xmax=float(out['boxes'][i][2]),
-                    ymax=float(out['boxes'][i][3]),
-                    mask=np.multiply(
-                        masks_np.transpose(1, 2, 0),
-                        255
-                    ).astype('uint8'),
-                    score=float(out['scores'][i]),
-                    iscrowd=False
-                ))
+            for i in range(len(out["labels"])):
+                masks_np = out["masks"][i].cpu().detach().numpy()
+                ret[-1].append(
+                    SegmObject(
+                        clsname=self.custom_classnames[int(out["labels"][i])],
+                        maskpath=None,
+                        xmin=float(out["boxes"][i][0]),
+                        ymin=float(out["boxes"][i][1]),
+                        xmax=float(out["boxes"][i][2]),
+                        ymax=float(out["boxes"][i][3]),
+                        mask=np.multiply(
+                            masks_np.transpose(1, 2, 0), 255
+                        ).astype("uint8"),
+                        score=float(out["scores"][i]),
+                        iscrowd=False,
+                    )
+                )
         return ret
 
     def convert_input_to_bytes(self, input_data):
@@ -111,23 +111,22 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         i = np.dtype(np.int64).itemsize
         num_dets = S // (416 * 416 * f + i)
 
-        output_specification = self.get_io_specification()['        ']
+        output_specification = self.get_io_specification()["        "]
 
         result = {}
         for spec in output_specification:
-            name = spec['name']
+            name = spec["name"]
             shape = list(
-                num_dets if val == -1 else val for val in spec['shape']
+                num_dets if val == -1 else val for val in spec["shape"]
             )
-            dtype = np.dtype(spec['dtype'])
+            dtype = np.dtype(spec["dtype"])
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
             # is not writeable, which breaks output postprocessing.
-            outputtensor = np.array(np.frombuffer(
-                output_data[:tensorsize],
-                dtype=dtype
-            )).reshape(shape)
+            outputtensor = np.array(
+                np.frombuffer(output_data[:tensorsize], dtype=dtype)
+            ).reshape(shape)
             result[name] = outputtensor
             output_data = output_data[tensorsize:]
 
@@ -136,13 +135,23 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
     @classmethod
     def _get_io_specification(cls):
         return {
-            'input': [{'name': 'input.1', 'shape': (1, 3, 416, 416), 'dtype': 'float32'}],  # noqa: E501
-            'output': [
-                {'name': 'boxes', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': 'labels', 'shape': (-1,), 'dtype': 'int64'},
-                {'name': 'scores', 'shape': (-1,), 'dtype': 'float32'},
-                {'name': 'masks', 'shape': (-1, 1, 416, 416), 'dtype': 'float32'}  # noqa: E501
-            ]
+            "input": [
+                {
+                    "name": "input.1",
+                    "shape": (1, 3, 416, 416),
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
+            "output": [
+                {"name": "boxes", "shape": (-1, 4), "dtype": "float32"},
+                {"name": "labels", "shape": (-1,), "dtype": "int64"},
+                {"name": "scores", "shape": (-1,), "dtype": "float32"},
+                {
+                    "name": "masks",
+                    "shape": (-1, 1, 416, 416),
+                    "dtype": "float32",
+                },  # noqa: E501
+            ],
         }
 
     @classmethod
@@ -155,8 +164,8 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
 
 def dict_to_tuple(out_dict):
     return (
-        out_dict['boxes'],
-        out_dict['labels'],
-        out_dict['scores'],
-        out_dict['masks'],
+        out_dict["boxes"],
+        out_dict["labels"],
+        out_dict["scores"],
+        out_dict["masks"],
     )

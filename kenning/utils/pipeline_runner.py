@@ -14,15 +14,19 @@ from tqdm import tqdm
 
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
-from kenning.core.measurements import (Measurements, MeasurementsCollector,
-                                       systemstatsmeasurements,
-                                       tagmeasurements)
+from kenning.core.measurements import (
+    Measurements,
+    MeasurementsCollector,
+    systemstatsmeasurements,
+    tagmeasurements,
+)
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
-from kenning.dataconverters.modelwrapper_dataconverter import \
-    ModelWrapperDataConverter
+from kenning.dataconverters.modelwrapper_dataconverter import (
+    ModelWrapperDataConverter,
+)
 
 try:
     from kenning.runtimes.renode import RenodeRuntime
@@ -33,7 +37,7 @@ from kenning.utils.class_loader import any_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar, TqdmCallback
 from kenning.utils.resource_manager import PathOrURI
 
-UNOPTIMIZED_MEASUREMENTS = '__unoptimized__'
+UNOPTIMIZED_MEASUREMENTS = "__unoptimized__"
 
 
 class PipelineRunner(object):
@@ -82,7 +86,7 @@ class PipelineRunner(object):
         assert_integrity: bool = True,
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
-    ) -> 'PipelineRunner':
+    ) -> "PipelineRunner":
         """
         Method that parses a json configuration of an inference pipeline.
 
@@ -117,45 +121,49 @@ class PipelineRunner(object):
         jsonschema.exceptions.ValidationError :
             Raised if parameters are incorrect.
         """
-        if 'runtime' not in json_cfg:
+        if "runtime" not in json_cfg:
             skip_runtime = True
 
         dataset = (
-            any_from_json(json_cfg['dataset'])
-            if 'dataset' in json_cfg else None
+            any_from_json(json_cfg["dataset"])
+            if "dataset" in json_cfg
+            else None
         )
 
         model_wrapper = (
-                any_from_json(json_cfg['model_wrapper'], dataset=dataset)
-                if 'model_wrapper' in json_cfg else None
+            any_from_json(json_cfg["model_wrapper"], dataset=dataset)
+            if "model_wrapper" in json_cfg
+            else None
         )
 
         optimizers = (
             [
                 any_from_json(optimizer_cfg, dataset=dataset)
-                for optimizer_cfg in json_cfg.get('optimizers', [])
+                for optimizer_cfg in json_cfg.get("optimizers", [])
             ]
-            if not skip_optimizers else None
+            if not skip_optimizers
+            else None
         )
 
         runtime = (
-            any_from_json(json_cfg['runtime'])
-            if not skip_runtime else None
+            any_from_json(json_cfg["runtime"]) if not skip_runtime else None
         )
 
         protocol = (
-            any_from_json(json_cfg['protocol'])
-            if 'protocol' in json_cfg else None
+            any_from_json(json_cfg["protocol"])
+            if "protocol" in json_cfg
+            else None
         )
 
         dataconverter = (
-            any_from_json(json_cfg['runtime']['data_converter'])
-            if json_cfg.get('runtime', {}).get('data_converter', None) else None    # noqa: E501
+            any_from_json(json_cfg["runtime"]["data_converter"])
+            if json_cfg.get("runtime", {}).get("data_converter", None)
+            else None  # noqa: E501
         )
 
-        assert model_wrapper or dataconverter, (
-            'Provide either dataconverter or model_wrapper.'
-        )
+        assert (
+            model_wrapper or dataconverter
+        ), "Provide either dataconverter or model_wrapper."
 
         if not dataconverter:
             dataconverter = ModelWrapperDataConverter(model_wrapper)
@@ -205,14 +213,27 @@ class PipelineRunner(object):
         Dict :
             Serialized inference.
         """
+
         def object_to_module(obj):
-            return type(obj).__module__ + '.' + type(obj).__name__
+            return type(obj).__module__ + "." + type(obj).__name__
 
         serialized_dict = {}
 
         for obj, name in zip(
-            [dataset, model, protocol, runtime, dataconverter,],
-            ['dataset', 'model_wrapper', 'protocol', 'runtime', 'data_converter',]  # noqa: E501
+            [
+                dataset,
+                model,
+                protocol,
+                runtime,
+                dataconverter,
+            ],
+            [
+                "dataset",
+                "model_wrapper",
+                "protocol",
+                "runtime",
+                "data_converter",
+            ],  # noqa: E501
         ):
             if obj:
                 serialized_dict[name] = obj.to_json()
@@ -221,16 +242,15 @@ class PipelineRunner(object):
             if not isinstance(optimizers, list):
                 optimizers = [optimizers]
 
-            serialized_dict['optimizers'] = [
+            serialized_dict["optimizers"] = [
                 optimizer.to_json() for optimizer in optimizers
             ]
 
         return serialized_dict
 
     def add_scenario_configuration_to_measurements(
-            self,
-            command: List,
-            model_path: Optional[PathOrURI]):
+        self, command: List, model_path: Optional[PathOrURI]
+    ):
         """
         Adds scenario configuration to measurements.
 
@@ -242,15 +262,17 @@ class PipelineRunner(object):
             Path to the compiled model.
         """
         MeasurementsCollector.measurements += {
-            'optimizers': [
-                dict(zip(
-                    ('compiler_framework', 'compiler_version'),
-                    optimizer.get_framework_and_version()
-                ))
+            "optimizers": [
+                dict(
+                    zip(
+                        ("compiler_framework", "compiler_version"),
+                        optimizer.get_framework_and_version(),
+                    )
+                )
                 for optimizer in self.optimizers
             ],
-            'command': command,
-            'build_cfg': self.serialize_inference(
+            "command": command,
+            "build_cfg": self.serialize_inference(
                 dataset=self.dataset,
                 model=self.model_wrapper,
                 optimizers=self.optimizers,
@@ -261,29 +283,27 @@ class PipelineRunner(object):
         }
 
         if self.model_wrapper:
-            framework, version = (
-                    self.model_wrapper.get_framework_and_version()
-            )
+            framework, version = self.model_wrapper.get_framework_and_version()
             MeasurementsCollector.measurements += {
-                    'model_framework': framework,
-                    'model_version': version
+                "model_framework": framework,
+                "model_version": version,
             }
 
         # TODO: add method for providing metadata to dataset
-        if hasattr(self.dataset, 'classnames'):
+        if hasattr(self.dataset, "classnames"):
             MeasurementsCollector.measurements += {
-                'class_names': self.dataset.get_class_names()
+                "class_names": self.dataset.get_class_names()
             }
 
         if model_path:
             model_path = Path(model_path)
             # If model compressed in ZIP exists use its size
             # It is more accurate for Keras models
-            if model_path.with_suffix('.zip').exists():
-                model_path = model_path.with_suffix('.zip')
+            if model_path.with_suffix(".zip").exists():
+                model_path = model_path.with_suffix(".zip")
 
             MeasurementsCollector.measurements += {
-                'compiled_model_size': model_path.stat().st_size
+                "compiled_model_size": model_path.stat().st_size
             }
 
     def execute_benchmarks(self, model_path: PathOrURI) -> bool:
@@ -304,17 +324,17 @@ class PipelineRunner(object):
         if self.runtime:
             if not self.dataset:
                 KLogger.error(
-                    'The benchmarks cannot be performed without a dataset and '
-                    'a runtime or model wrapper'
+                    "The benchmarks cannot be performed without a dataset and "
+                    "a runtime or model wrapper"
                 )
                 return False
             elif self.protocol:
                 if isinstance(self.runtime, RenodeRuntime):
                     return self.runtime.run_client(
-                            dataset=self.dataset,
-                            modelwrapper=self.model_wrapper,
-                            protocol=self.protocol,
-                            compiled_model_path=model_path
+                        dataset=self.dataset,
+                        modelwrapper=self.model_wrapper,
+                        protocol=self.protocol,
+                        compiled_model_path=model_path,
                     )
                 return self._run_client(model_path)
             else:
@@ -326,10 +346,10 @@ class PipelineRunner(object):
     def run(
         self,
         output: Optional[Path] = None,
-        verbosity: str = 'INFO',
+        verbosity: str = "INFO",
         convert_to_onnx: Optional[Path] = None,
         max_target_side_optimizers: int = -1,
-        command: List = ['Run in a different environment'],
+        command: List = ["Run in a different environment"],
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
     ) -> int:
@@ -368,33 +388,30 @@ class PipelineRunner(object):
             Raised if blocks are connected incorrectly.
         """
         assert run_optimizations or run_benchmarks, (
-            'If both optimizations and benchmarks are skipped, pipeline will '
-            'not be executed'
+            "If both optimizations and benchmarks are skipped, pipeline will "
+            "not be executed"
         )
         KLogger.set_verbosity(verbosity)
 
         self.assert_io_formats(
-            self.model_wrapper,
-            self.optimizers,
-            self.runtime
+            self.model_wrapper, self.optimizers, self.runtime
         )
 
         ret = True
         if self.protocol and not isinstance(self.runtime, RenodeRuntime):
-            check_request(self.protocol.initialize_client(), 'prepare client')
+            check_request(self.protocol.initialize_client(), "prepare client")
         model_path = self.handle_optimizations(
-            convert_to_onnx,
-            run_optimizations
+            convert_to_onnx, run_optimizations
         )
         if output:
             self.add_scenario_configuration_to_measurements(
-                    command, model_path
+                command, model_path
             )
         if run_benchmarks:
             if not output:
                 KLogger.warning(
-                    'Running benchmarks without defined output -- '
-                    'measurements will not be saved'
+                    "Running benchmarks without defined output -- "
+                    "measurements will not be saved"
                 )
             ret = self.execute_benchmarks(model_path)
 
@@ -405,8 +422,9 @@ class PipelineRunner(object):
             return 0
         return 1
 
-    def upload_essentials(self,
-                          compiled_model_path: Optional[PathOrURI]) -> bool:
+    def upload_essentials(
+        self, compiled_model_path: Optional[PathOrURI]
+    ) -> bool:
         """
         Wrapper for uploading data to the server.
         Uploads model by default.
@@ -423,14 +441,14 @@ class PipelineRunner(object):
         """
         if not compiled_model_path:
             KLogger.warning(
-                'No compiled model provided, skipping uploading IO spec'
+                "No compiled model provided, skipping uploading IO spec"
             )
         else:
             spec_path = self.runtime.get_io_spec_path(compiled_model_path)
             if spec_path.exists():
                 self.protocol.upload_io_specification(spec_path)
             else:
-                KLogger.info('No Input/Output specification found')
+                KLogger.info("No Input/Output specification found")
         return self.protocol.upload_model(compiled_model_path)
 
     def handle_optimizations(
@@ -473,12 +491,14 @@ class PipelineRunner(object):
             else:
                 return None
 
-        assert self.model_wrapper, 'Model wrapper is required for optimizations'    # noqa: E501
+        assert (
+            self.model_wrapper
+        ), "Model wrapper is required for optimizations"  # noqa: E501
         model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
             KLogger.warning(
-                'Force conversion of the input model to the ONNX format'
+                "Force conversion of the input model to the ONNX format"
             )
             model_path = convert_to_onnx
             prev_block.save_to_onnx(model_path)
@@ -490,27 +510,27 @@ class PipelineRunner(object):
             model_type = next_block.consult_model_type(
                 prev_block,
                 force_onnx=(
-                    convert_to_onnx is not None and
-                    isinstance(prev_block, ModelWrapper)
-                )
+                    convert_to_onnx is not None
+                    and isinstance(prev_block, ModelWrapper)
+                ),
             )
 
             if (
-                model_type == 'onnx' and
-                isinstance(prev_block, ModelWrapper) and
-                not convert_to_onnx
+                model_type == "onnx"
+                and isinstance(prev_block, ModelWrapper)
+                and not convert_to_onnx
             ):
                 model_path = Path(tempfile.NamedTemporaryFile().name)
                 prev_block.save_to_onnx(model_path)
 
             prev_block.save_io_specification(model_path)
 
-            if 'target' == next_block.location and self.protocol is not None:
+            if "target" == next_block.location and self.protocol is not None:
                 server_optimizers = []
                 while (
-                    optimizer_idx < len(self.optimizers) and
-                    'target' == self.optimizers[optimizer_idx].location and
-                    (
+                    optimizer_idx < len(self.optimizers)
+                    and "target" == self.optimizers[optimizer_idx].location
+                    and (
                         len(server_optimizers) < max_target_side_optimizers
                         or max_target_side_optimizers == -1
                     )
@@ -519,57 +539,56 @@ class PipelineRunner(object):
                     optimizer_idx += 1
 
                 optimizers_cfg = {
-                    'prev_block': {
-                        'model_path': model_path,
-                        'model_type': model_type,
-                        'io_spec': prev_block.load_io_specification(model_path)
+                    "prev_block": {
+                        "model_path": model_path,
+                        "model_type": model_type,
+                        "io_spec": prev_block.load_io_specification(
+                            model_path
+                        ),
                     },
-                    'optimizers': [
+                    "optimizers": [
                         optimizer.to_json() for optimizer in server_optimizers
-                    ]
+                    ],
                 }
-                optimizers_str = ', '.join(
+                optimizers_str = ", ".join(
                     optimizer.__class__.__name__
                     for optimizer in server_optimizers
                 )
-                KLogger.info(
-                    f'Processing blocks: {optimizers_str} on server'
-                )
+                KLogger.info(f"Processing blocks: {optimizers_str} on server")
 
                 ret, _ = check_request(
                     self.protocol.upload_optimizers(optimizers_cfg),
-                    'upload optimizers config'
+                    "upload optimizers config",
                 )
                 if not ret:
-                    raise RuntimeError('Optimizers config upload failed')
+                    raise RuntimeError("Optimizers config upload failed")
 
                 ret, compiled_model = check_request(
                     self.protocol.request_optimization(model_path),
-                    'request optimization'
+                    "request optimization",
                 )
                 if not ret or compiled_model is None:
-                    raise RuntimeError('Model compilation failed')
+                    raise RuntimeError("Model compilation failed")
 
                 prev_block = server_optimizers[-1]
-                with open(prev_block.compiled_model_path, 'wb') as model_f:
+                with open(prev_block.compiled_model_path, "wb") as model_f:
                     model_f.write(compiled_model)
 
             else:
-                if 'target' == next_block.location:
+                if "target" == next_block.location:
                     KLogger.warning(
-                        'Ignoring target location parameter for '
-                        f'{type(next_block).__name__} as the protocol is not '
-                        'provided'
+                        "Ignoring target location parameter for "
+                        f"{type(next_block).__name__} as the protocol is not "
+                        "provided"
                     )
                 KLogger.info(
-                    f'Processing block: {type(next_block).__name__} on client'
+                    f"Processing block: {type(next_block).__name__} on client"
                 )
 
                 next_block.set_input_type(model_type)
-                if hasattr(prev_block, 'get_io_specification'):
+                if hasattr(prev_block, "get_io_specification"):
                     next_block.compile(
-                        model_path,
-                        prev_block.get_io_specification()
+                        model_path, prev_block.get_io_specification()
                     )
                 else:
                     next_block.compile(model_path)
@@ -582,7 +601,7 @@ class PipelineRunner(object):
         if self.optimizers:
             self.optimizers[-1].save_io_specification(model_path)
 
-        KLogger.info(f'Compiled model path: {model_path}')
+        KLogger.info(f"Compiled model path: {model_path}")
         return model_path
 
     def _run_client(self, compiled_model_path: Optional[Path]) -> bool:
@@ -614,31 +633,36 @@ class PipelineRunner(object):
         """
 
         if self.protocol is None:
-            raise RequestFailure('Protocol is not provided')
+            raise RequestFailure("Protocol is not provided")
         try:
             check_request(
                 self.upload_essentials(compiled_model_path),
-                'upload essentials',
+                "upload essentials",
             )
             measurements = Measurements()
             with LoggerProgressBar() as logger_progress_bar:
                 for X, y in tqdm(
                     self.dataset.iter_test(), file=logger_progress_bar
                 ):
-                    prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
+                    prepX = tagmeasurements("preprocessing")(
+                        self.dataconverter.to_next_block
+                    )(X)  # noqa: E501
                     check_request(
-                        self.protocol.upload_input(prepX),
-                        'send input'
+                        self.protocol.upload_input(prepX), "send input"
                     )
                     check_request(
-                        self.protocol.request_processing(self.runtime.get_time),
-                        'inference',
+                        self.protocol.request_processing(
+                            self.runtime.get_time
+                        ),
+                        "inference",
                     )
                     _, preds = check_request(
-                        self.protocol.download_output(), 'receive output'
+                        self.protocol.download_output(), "receive output"
                     )
-                    KLogger.debug('Received output')
-                    posty = tagmeasurements("postprocessing")(self.dataconverter.to_previous_block)(preds)  # noqa: E501
+                    KLogger.debug("Received output")
+                    posty = tagmeasurements("postprocessing")(
+                        self.dataconverter.to_previous_block
+                    )(preds)  # noqa: E501
                     measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -651,7 +675,7 @@ class PipelineRunner(object):
         self.protocol.disconnect()
         return True
 
-    @systemstatsmeasurements('full_run_statistics')
+    @systemstatsmeasurements("full_run_statistics")
     def _run_locally(self, compiled_model_path: Path) -> bool:
         """
         Runs inference locally.
@@ -671,22 +695,29 @@ class PipelineRunner(object):
         measurements = Measurements()
         try:
             self.runtime.inference_session_start()
-            assert self.runtime.prepare_local(), "Cannot prepare local environment"  # noqa: E501
+            assert (
+                self.runtime.prepare_local()
+            ), "Cannot prepare local environment"  # noqa: E501
             with LoggerProgressBar() as logger_progress_bar:
                 for X, y in TqdmCallback(
-                    'runtime', self.dataset.iter_test(),
-                    file=logger_progress_bar
+                    "runtime",
+                    self.dataset.iter_test(),
+                    file=logger_progress_bar,
                 ):
-                    prepX = tagmeasurements("preprocessing")(self.dataconverter.to_next_block)(X)   # noqa: E501
+                    prepX = tagmeasurements("preprocessing")(
+                        self.dataconverter.to_next_block
+                    )(X)  # noqa: E501
                     succeed = self.runtime.prepare_input(prepX)
                     if not succeed:
                         return False
                     self.runtime._run()
                     preds = self.runtime.extract_output()
-                    posty = tagmeasurements("postprocessing")(self.model_wrapper._postprocess_outputs)(preds)   # noqa: E501
+                    posty = tagmeasurements("postprocessing")(
+                        self.model_wrapper._postprocess_outputs
+                    )(preds)  # noqa: E501
                     measurements += self.dataset.evaluate(posty, y)
         except KeyboardInterrupt:
-            KLogger.info('Stopping benchmark...')
+            KLogger.info("Stopping benchmark...")
             return False
         finally:
             self.runtime.inference_session_end()
@@ -696,9 +727,10 @@ class PipelineRunner(object):
 
     @staticmethod
     def assert_io_formats(
-            model_wrapper: Optional[ModelWrapper],
-            optimizers: Union[List[Optimizer], Optimizer],
-            runtime: Optional[Runtime]):
+        model_wrapper: Optional[ModelWrapper],
+        optimizers: Union[List[Optimizer], Optimizer],
+        runtime: Optional[Runtime],
+    ):
         """
         Asserts that given blocks can be put together in a pipeline.
 
@@ -723,27 +755,28 @@ class PipelineRunner(object):
         chain = [block for block in chain if block is not None]
 
         for previous_block, next_block in zip(chain, chain[1:]):
-            check_model_type = getattr(next_block, 'consult_model_type', None)
+            check_model_type = getattr(next_block, "consult_model_type", None)
             if callable(check_model_type):
                 check_model_type(previous_block)
                 continue
-            elif (set(next_block.get_input_formats()) &
-                    set(previous_block.get_output_formats())):
+            elif set(next_block.get_input_formats()) & set(
+                previous_block.get_output_formats()
+            ):
                 continue
 
             if next_block == runtime:
                 KLogger.warning(
-                    f'Runtime {next_block} has no matching format with the '
-                    f'previous block: {previous_block}\nModel may not run '
-                    'correctly'
+                    f"Runtime {next_block} has no matching format with the "
+                    f"previous block: {previous_block}\nModel may not run "
+                    "correctly"
                 )
                 continue
 
-            output_formats_str = ', '.join(previous_block.get_output_formats())
-            input_formats_str = ', '.join(previous_block.get_output_formats())
+            output_formats_str = ", ".join(previous_block.get_output_formats())
+            input_formats_str = ", ".join(previous_block.get_output_formats())
             raise ValueError(
-                f'No matching formats between two objects: {previous_block} '
-                f'and {next_block}\n'
-                f'Output block supported formats: {output_formats_str}\n'
-                f'Input block supported formats: {input_formats_str}'
+                f"No matching formats between two objects: {previous_block} "
+                f"and {next_block}\n"
+                f"Output block supported formats: {output_formats_str}\n"
+                f"Input block supported formats: {input_formats_str}"
             )

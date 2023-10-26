@@ -72,7 +72,7 @@ class TestGetKenningSubmoduleFromPath:
 
     def test_invalid_capitalization(self):
         with pytest.raises(ValueError) as execinfo:
-            x = "/usr/lib/python3.10/site-packages/Kenning/utils/class_loader.py"   # noqa: E501
+            x = "/usr/lib/python3.10/site-packages/Kenning/utils/class_loader.py"  # noqa: E501
             get_kenning_submodule_from_path(x)
         assert "not in tuple" in str(execinfo.value)
 
@@ -81,59 +81,69 @@ class TestGetKenningSubmoduleFromPath:
 class TestGetCommand:
     def test_invalid_capitalization(self):
         with pytest.raises(ValueError) as execinfo:
-            x = ['/usr/lib/python3.10/Kenning/utils/class_loader.py', ]
+            x = [
+                "/usr/lib/python3.10/Kenning/utils/class_loader.py",
+            ]
             get_command(x)
         assert "not in tuple" in str(execinfo.value)
 
     def test_different_flags(self):
-        x = ['/usr/lib/python3.10/kenning/scenarios/model_training.py',
-             '--help',
-             '-h',
-             ]
-        y = ['python -m kenning.scenarios.model_training \\',
-             '    --help \\',
-             '    -h'
-             ]
+        x = [
+            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "--help",
+            "-h",
+        ]
+        y = [
+            "python -m kenning.scenarios.model_training \\",
+            "    --help \\",
+            "    -h",
+        ]
         assert get_command(x) == y
 
     def test_only_file(self):
-        x = ['/usr/lib/python3.10/kenning/scenarios/model_training.py', ]
-        y = ['python -m kenning.scenarios.model_training', ]
+        x = [
+            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+        ]
+        y = [
+            "python -m kenning.scenarios.model_training",
+        ]
         assert get_command(x) == y
 
     def test_multiple_flags(self):
-        x = ['/usr/lib/python3.10/kenning/scenarios/model_training.py',
-             '--modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2',  # noqa: E501
-             '--dataset-cls kenning.datasets.pet_dataset.PetDataset',
-             '--logdir',
-             'build/logs',
-             '--dataset-root',
-             'build/pet-dataset',
-             '--model-path',
-             'build/trained-model.h5',
-             '--batch-size',
-             '32',
-             '--learning-rate',
-             '0.0001',
-             '--num-epochs',
-             '50',
-             ]
-        y = ['python -m kenning.scenarios.model_training \\',
-             '    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \\',  # noqa: E501
-             '    --dataset-cls kenning.datasets.pet_dataset.PetDataset \\',
-             '    --logdir \\',
-             '        build/logs \\',
-             '    --dataset-root \\',
-             '        build/pet-dataset \\',
-             '    --model-path \\',
-             '        build/trained-model.h5 \\',
-             '    --batch-size \\',
-             '        32 \\',
-             '    --learning-rate \\',
-             '        0.0001 \\',
-             '    --num-epochs \\',
-             '        50',
-             ]
+        x = [
+            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "--modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2",  # noqa: E501
+            "--dataset-cls kenning.datasets.pet_dataset.PetDataset",
+            "--logdir",
+            "build/logs",
+            "--dataset-root",
+            "build/pet-dataset",
+            "--model-path",
+            "build/trained-model.h5",
+            "--batch-size",
+            "32",
+            "--learning-rate",
+            "0.0001",
+            "--num-epochs",
+            "50",
+        ]
+        y = [
+            "python -m kenning.scenarios.model_training \\",
+            "    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \\",  # noqa: E501
+            "    --dataset-cls kenning.datasets.pet_dataset.PetDataset \\",
+            "    --logdir \\",
+            "        build/logs \\",
+            "    --dataset-root \\",
+            "        build/pet-dataset \\",
+            "    --model-path \\",
+            "        build/trained-model.h5 \\",
+            "    --batch-size \\",
+            "        32 \\",
+            "    --learning-rate \\",
+            "        0.0001 \\",
+            "    --num-epochs \\",
+            "        50",
+        ]
         assert get_command(x) == y
 
     def test_empty_command(self):
@@ -143,17 +153,17 @@ class TestGetCommand:
         assert "list index out of range" in str(execinfo.value)
 
     def test_empty_flags(self):
-        x = ['/usr/lib/python3.10/kenning/scenarios/model_training.py',
-             '',
-             ]
-        y = ['python -m kenning.scenarios.model_training']
+        x = [
+            "/usr/lib/python3.10/kenning/scenarios/model_training.py",
+            "",
+        ]
+        y = ["python -m kenning.scenarios.model_training"]
         assert get_command(x) == y
 
 
 class TestGetAllSubclasses:
     @pytest.mark.parametrize(
-        'module_path,cls',
-        get_base_classes_dict().values()
+        "module_path,cls", get_base_classes_dict().values()
     )
     def test_get_all_subclasses_should_return_non_abstract_classes(
         self,
@@ -164,9 +174,7 @@ class TestGetAllSubclasses:
         Tests loading all subclasses of given class.
         """
         subclasses = get_all_subclasses(
-            module_path,
-            cls,
-            raise_exception=False
+            module_path, cls, raise_exception=False
         )
 
         for subcls in subclasses:
@@ -175,8 +183,7 @@ class TestGetAllSubclasses:
             assert abc.ABC not in subcls.__bases__
 
     @pytest.mark.parametrize(
-        'module_path,cls',
-        get_base_classes_dict().values()
+        "module_path,cls", get_base_classes_dict().values()
     )
     def test_get_all_subclasses_should_not_load_classes_if_specified(
         self,
@@ -187,10 +194,7 @@ class TestGetAllSubclasses:
         Tests retrieving without loading all subclasses of given class.
         """
         subclasses = get_all_subclasses(
-            module_path,
-            cls,
-            raise_exception=False,
-            import_classes=False
+            module_path, cls, raise_exception=False, import_classes=False
         )
 
         for subcls, module in subclasses:

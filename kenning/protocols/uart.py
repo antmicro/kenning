@@ -33,10 +33,11 @@ ALLOCATION_STATS_SIZE = 24
 
 
 def _io_spec_to_struct(
-        io_spec: Dict[str, Any],
-        entry_func: str = 'module.main',
-        model_name: str = 'module',
-        byteorder: Literal['little', 'big'] = 'little') -> bytes:
+    io_spec: Dict[str, Any],
+    entry_func: str = "module.main",
+    model_name: str = "module",
+    byteorder: Literal["little", "big"] = "little",
+) -> bytes:
     """
     Method used to convert IO spec in JSON form into struct that can be easily
     parsed by runtime.
@@ -59,25 +60,23 @@ def _io_spec_to_struct(
     """
 
     if len(entry_func) > MAX_LENGTH_ENTRY_FUNC_NAME:
-        raise ValueError(f'Invalid entry func name: {entry_func}')
+        raise ValueError(f"Invalid entry func name: {entry_func}")
     if len(model_name) > MAX_LENGTH_MODEL_NAME:
-        raise ValueError(f'Invalid model name: {model_name}')
+        raise ValueError(f"Invalid model name: {model_name}")
 
-    input_shape = [inp['shape'] for inp in io_spec['input']]
-    output_length = [
-        int(np.prod(outp['shape'])) for outp in io_spec['output']
-    ]
-    dtype = io_spec['input'][0]['dtype']
+    input_shape = [inp["shape"] for inp in io_spec["input"]]
+    output_length = [int(np.prod(outp["shape"])) for outp in io_spec["output"]]
+    dtype = io_spec["input"][0]["dtype"]
 
-    dtype_size = re.findall(r'\d+', dtype)
+    dtype_size = re.findall(r"\d+", dtype)
     if (
-        len(dtype_size) != 1 or
-        int(dtype_size[0]) % 8 != 0 or
-        int(dtype_size[0]) == 0
+        len(dtype_size) != 1
+        or int(dtype_size[0]) % 8 != 0
+        or int(dtype_size[0]) == 0
     ):
-        raise ValueError(f'Invalid dtype: {dtype}')
+        raise ValueError(f"Invalid dtype: {dtype}")
 
-    dtype_size_bytes = int(dtype_size[0])//8
+    dtype_size_bytes = int(dtype_size[0]) // 8
     dtype = dtype[0] + dtype_size[0]
 
     num_input = len(input_shape)
@@ -90,16 +89,16 @@ def _io_spec_to_struct(
     # check constraints
     if num_input > MAX_MODEL_INPUT_NUM:
         raise ValueError(
-            f'Too many inputs: {num_input} > {MAX_MODEL_INPUT_NUM}'
+            f"Too many inputs: {num_input} > {MAX_MODEL_INPUT_NUM}"
         )
     for dim in num_input_dim:
         if dim > MAX_MODEL_INPUT_DIM:
             raise ValueError(
-                f'Too many dimensions: {dim} > {MAX_MODEL_INPUT_DIM}'
+                f"Too many dimensions: {dim} > {MAX_MODEL_INPUT_DIM}"
             )
     if num_output > MAX_MODEL_OUTPUTS:
         raise ValueError(
-            f'Too many outputs: {num_output} > {MAX_MODEL_OUTPUTS}'
+            f"Too many outputs: {num_output} > {MAX_MODEL_OUTPUTS}"
         )
 
     def int_to_bytes(num: int) -> bytes:
@@ -108,21 +107,19 @@ def _io_spec_to_struct(
     def array_to_bytes(a: List, shape: Tuple) -> bytes:
         a_np = np.array(a, dtype=np.uint32)
         a_pad = np.pad(
-            a_np,
-            [(0, shape[i] - a_np.shape[i]) for i in range(a_np.ndim)]
+            a_np, [(0, shape[i] - a_np.shape[i]) for i in range(a_np.ndim)]
         )
-        return a_pad.astype(np.uint32).tobytes('C')
+        return a_pad.astype(np.uint32).tobytes("C")
 
     def str_to_bytes(s: str, length: int) -> bytes:
-        return s.ljust(length, '\0')[:length].encode('ascii')
+        return s.ljust(length, "\0")[:length].encode("ascii")
 
     # input spec
     result = bytes()
     result += int_to_bytes(num_input)
     result += array_to_bytes(num_input_dim, (MAX_MODEL_INPUT_NUM,))
     result += array_to_bytes(
-        input_shape,
-        (MAX_MODEL_INPUT_NUM, MAX_MODEL_INPUT_DIM)
+        input_shape, (MAX_MODEL_INPUT_NUM, MAX_MODEL_INPUT_DIM)
     )
     result += array_to_bytes(input_length, (MAX_MODEL_INPUT_NUM,))
     result += array_to_bytes(input_size_bytes, (MAX_MODEL_INPUT_NUM,))
@@ -138,7 +135,7 @@ def _io_spec_to_struct(
 
     result += str_to_bytes(model_name, MAX_LENGTH_MODEL_NAME)
 
-    assert len(result) == MODEL_STRUCT_SIZE, 'Wrong struct size'
+    assert len(result) == MODEL_STRUCT_SIZE, "Wrong struct size"
 
     return result
 
@@ -158,16 +155,16 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
         Parsed stats.
     """
     if len(data) != ALLOCATION_STATS_SIZE:
-        raise ValueError(f'Invalid allocations stats size: {len(data)}')
+        raise ValueError(f"Invalid allocations stats size: {len(data)}")
 
     stats = np.frombuffer(data, dtype=np.uint32, count=6)
     stats_json = {
-        'host_bytes_peak': int(stats[0]),
-        'host_bytes_allocated': int(stats[1]),
-        'host_bytes_freed': int(stats[2]),
-        'device_bytes_peak': int(stats[3]),
-        'device_bytes_allocated': int(stats[4]),
-        'device_bytes_freed': int(stats[5]),
+        "host_bytes_peak": int(stats[0]),
+        "host_bytes_allocated": int(stats[1]),
+        "host_bytes_freed": int(stats[2]),
+        "device_bytes_peak": int(stats[3]),
+        "device_bytes_allocated": int(stats[4]),
+        "device_bytes_freed": int(stats[5]),
     }
     return stats_json
 
@@ -181,24 +178,25 @@ class UARTProtocol(BytesBasedProtocol):
     """
 
     arguments_structure = {
-        'port': {
-            'description': 'The target device name',
-            'type': str,
-            'required': True
+        "port": {
+            "description": "The target device name",
+            "type": str,
+            "required": True,
         },
-        'baudrate': {
-            'description': 'The baud rate',
-            'type': int,
-            'default': 9600
-        }
+        "baudrate": {
+            "description": "The baud rate",
+            "type": int,
+            "default": 9600,
+        },
     }
 
     def __init__(
-            self,
-            port: str,
-            baudrate: int = 9600,
-            packet_size: int = 4096,
-            endianness: str = 'little'):
+        self,
+        port: str,
+        baudrate: int = 9600,
+        packet_size: int = 4096,
+        endianness: str = "little",
+    ):
         """
         Initializes UARTProtocol.
 
@@ -224,7 +222,7 @@ class UARTProtocol(BytesBasedProtocol):
         self.selector.register(
             self.connection,
             selectors.EVENT_READ | selectors.EVENT_WRITE,
-            self.receive_data
+            self.receive_data,
         )
         return self.connection.is_open
 
@@ -234,9 +232,8 @@ class UARTProtocol(BytesBasedProtocol):
         return len(data) == self.connection.write(data)
 
     def receive_data(
-            self,
-            connection: serial.Serial,
-            mask: int) -> Tuple[ServerStatus, Optional[bytes]]:
+        self, connection: serial.Serial, mask: int
+    ) -> Tuple[ServerStatus, Optional[bytes]]:
         if self.connection is None or not self.connection.is_open:
             return ServerStatus.CLIENT_DISCONNECTED, None
 
@@ -249,8 +246,8 @@ class UARTProtocol(BytesBasedProtocol):
             self.connection.close()
 
     def upload_io_specification(self, path: Path) -> bool:
-        KLogger.debug('Uploading io specification')
-        with open(path, 'rb') as io_spec_file:
+        KLogger.debug("Uploading io specification")
+        with open(path, "rb") as io_spec_file:
             io_spec = json.load(io_spec_file)
 
         data = _io_spec_to_struct(io_spec)
@@ -260,8 +257,8 @@ class UARTProtocol(BytesBasedProtocol):
         self.send_message(message)
         return self.receive_confirmation()[0]
 
-    def download_statistics(self) -> 'Measurements':
-        KLogger.debug('Downloading statistics')
+    def download_statistics(self) -> "Measurements":
+        KLogger.debug("Downloading statistics")
         self.send_message(Message(MessageType.STATS))
         status, data = self.receive_confirmation()
         measurements = Measurements()

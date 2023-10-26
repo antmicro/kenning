@@ -26,12 +26,12 @@ class RequestFailure(Exception):
     """
     Exception for failing requests.
     """
+
     pass
 
 
 def check_request(
-    request: Union[bool, Tuple[bool, Optional[bytes]]],
-    msg: str
+    request: Union[bool, Tuple[bool, Optional[bytes]]], msg: str
 ) -> Tuple[bool, Optional[bytes]]:
     """
     Checks if the request finished successfully.
@@ -59,7 +59,7 @@ def check_request(
     if isinstance(request, bool):
         request = request, None
     if not request[0]:
-        raise RequestFailure(f'Failed to handle request: {msg}')
+        raise RequestFailure(f"Failed to handle request: {msg}")
 
     return request
 
@@ -94,8 +94,7 @@ class MessageType(Enum):
     OPTIMIZE_MODEL = 9
 
     def to_bytes(
-        self,
-        endianness: Literal['little', 'big'] = 'little'
+        self, endianness: Literal["little", "big"] = "little"
     ) -> bytes:
         """
         Converts MessageType enum to bytes.
@@ -116,8 +115,8 @@ class MessageType(Enum):
     def from_bytes(
         cls,
         value: bytes,
-        endianness: Literal['little', 'big'] = 'little',
-    ) -> 'MessageType':
+        endianness: Literal["little", "big"] = "little",
+    ) -> "MessageType":
         """
         Converts bytes to MessageType enum.
 
@@ -157,12 +156,10 @@ class Message(object):
     """
 
     def __init__(
-        self,
-        message_type: MessageType,
-        payload: Optional[bytes] = None
+        self, message_type: MessageType, payload: Optional[bytes] = None
     ):
         self.message_type = message_type
-        self.payload = payload if payload is not None else b''
+        self.payload = payload if payload is not None else b""
 
     @property
     def message_size(self) -> int:
@@ -172,8 +169,8 @@ class Message(object):
     def from_bytes(
         cls,
         data: bytes,
-        endianness: Literal['little', 'big'] = 'little',
-    ) -> Tuple[Optional['Message'], int]:
+        endianness: Literal["little", "big"] = "little",
+    ) -> Tuple[Optional["Message"], int]:
         """
         Converts bytes to Message.
 
@@ -201,16 +198,16 @@ class Message(object):
             return None, 0
 
         message_type = MessageType.from_bytes(
-            data[MSG_SIZE_LEN: MSG_SIZE_LEN + MSG_TYPE_LEN],
-            endianness=endianness
+            data[MSG_SIZE_LEN : MSG_SIZE_LEN + MSG_TYPE_LEN],
+            endianness=endianness,
         )
-        message_payload = data[MSG_SIZE_LEN + MSG_TYPE_LEN:][:message_size]
+        message_payload = data[MSG_SIZE_LEN + MSG_TYPE_LEN :][:message_size]
 
         return cls(message_type, message_payload), MSG_SIZE_LEN + message_size
 
     def to_bytes(
         self,
-        endianness: Literal['little', 'big'] = 'little',
+        endianness: Literal["little", "big"] = "little",
     ) -> bytes:
         """
         Converts Message to bytes.
@@ -232,14 +229,16 @@ class Message(object):
 
         return data
 
-    def __eq__(self, other: 'Message') -> bool:
+    def __eq__(self, other: "Message") -> bool:
         if not isinstance(other, Message):
             return False
-        return (self.message_type == other.message_type and
-                self.payload == other.payload)
+        return (
+            self.message_type == other.message_type
+            and self.payload == other.payload
+        )
 
     def __repr__(self) -> str:
-        return f'Message(type={self.message_type}, size={self.message_size})'
+        return f"Message(type={self.message_type}, size={self.message_size})"
 
 
 class ServerStatus(Enum):
@@ -281,9 +280,8 @@ class Protocol(ArgumentsHandler):
 
     arguments_structure = {}
 
-
     @classmethod
-    def from_argparse(cls, args: Namespace) -> 'Protocol':
+    def from_argparse(cls, args: Namespace) -> "Protocol":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -300,7 +298,7 @@ class Protocol(ArgumentsHandler):
         return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict) -> 'Protocol':
+    def from_json(cls, json_dict: Dict) -> "Protocol":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -367,8 +365,8 @@ class Protocol(ArgumentsHandler):
         raise NotImplementedError
 
     def receive_message(
-            self,
-            timeout: Optional[float] = None) -> Tuple[ServerStatus, Message]:
+        self, timeout: Optional[float] = None
+    ) -> Tuple[ServerStatus, Message]:
         """
         Waits for incoming data from the other side of connection.
 
@@ -411,9 +409,8 @@ class Protocol(ArgumentsHandler):
         raise NotImplementedError
 
     def receive_data(
-            self,
-            connection: Any,
-            mask: int) -> Tuple[ServerStatus, Optional[Any]]:
+        self, connection: Any, mask: int
+    ) -> Tuple[ServerStatus, Optional[Any]]:
         """
         Receives data from the target device.
 
@@ -432,9 +429,8 @@ class Protocol(ArgumentsHandler):
         raise NotImplementedError
 
     def gather_data(
-            self,
-            timeout: Optional[float] = None
-            ) -> Tuple[ServerStatus, Optional[Any]]:
+        self, timeout: Optional[float] = None
+    ) -> Tuple[ServerStatus, Optional[Any]]:
         """
         Gathers data from the client.
 
@@ -469,24 +465,24 @@ class Protocol(ArgumentsHandler):
             True if OK received and attached message data, False otherwise.
         """
         while True:
-            status, message = self.receive_message(.01)
+            status, message = self.receive_message(0.01)
 
             if status == ServerStatus.DATA_READY:
                 if message.message_type == MessageType.ERROR:
-                    KLogger.error('Error during uploading input')
+                    KLogger.error("Error during uploading input")
                     return False, None
                 if message.message_type != MessageType.OK:
-                    KLogger.error(f'Unexpected message {message}')
+                    KLogger.error(f"Unexpected message {message}")
                     return False, None
-                KLogger.debug('Upload finished successfully')
+                KLogger.debug("Upload finished successfully")
                 return True, message.payload
 
             elif status == ServerStatus.CLIENT_DISCONNECTED:
-                KLogger.error('Client is disconnected')
+                KLogger.error("Client is disconnected")
                 return False, None
 
             elif status == ServerStatus.DATA_INVALID:
-                KLogger.error('Received invalid packet')
+                KLogger.error("Received invalid packet")
                 return False, None
 
     def upload_input(self, data: bytes) -> bool:
@@ -506,7 +502,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if ready for inference.
         """
-        KLogger.debug('Uploading input')
+        KLogger.debug("Uploading input")
 
         message = Message(MessageType.DATA, data)
 
@@ -534,8 +530,8 @@ class Protocol(ArgumentsHandler):
         bool :
             True if model upload finished successfully.
         """
-        KLogger.debug('Uploading model')
-        with open(path, 'rb') as modfile:
+        KLogger.debug("Uploading model")
+        with open(path, "rb") as modfile:
             data = modfile.read()
 
         message = Message(MessageType.MODEL, data)
@@ -564,8 +560,8 @@ class Protocol(ArgumentsHandler):
         bool :
             True if data upload finished successfully.
         """
-        KLogger.debug('Uploading io specification')
-        with open(path, 'rb') as detfile:
+        KLogger.debug("Uploading io specification")
+        with open(path, "rb") as detfile:
             data = detfile.read()
 
         message = Message(MessageType.IO_SPEC, data)
@@ -575,8 +571,8 @@ class Protocol(ArgumentsHandler):
         return self.receive_confirmation()[0]
 
     def request_processing(
-            self,
-            get_time_func: Callable[[], float] = time.perf_counter) -> bool:
+        self, get_time_func: Callable[[], float] = time.perf_counter
+    ) -> bool:
         """
         Requests processing of input data and waits for acknowledgement.
 
@@ -598,12 +594,13 @@ class Protocol(ArgumentsHandler):
         bool :
             True if inference finished successfully.
         """
-        KLogger.debug('Requesting processing')
+        KLogger.debug("Requesting processing")
         if not self.send_message(Message(MessageType.PROCESS)):
             return False
 
-        ret = timemeasurements('protocol_inference_step', get_time_func)(
-                self.receive_confirmation)()[0]
+        ret = timemeasurements("protocol_inference_step", get_time_func)(
+            self.receive_confirmation
+        )()[0]
         if not ret:
             return False
         return True
@@ -621,9 +618,9 @@ class Protocol(ArgumentsHandler):
             Tuple with download status (True if successful)
             and downloaded data.
         """
-        KLogger.debug('Downloading output')
+        KLogger.debug("Downloading output")
         if not self.send_message(Message(MessageType.OUTPUT)):
-            return False, b''
+            return False, b""
         return self.receive_confirmation()
 
     def download_statistics(self) -> Measurements:
@@ -639,13 +636,13 @@ class Protocol(ArgumentsHandler):
         """
         measurements = Measurements()
 
-        KLogger.debug('Downloading statistics')
+        KLogger.debug("Downloading statistics")
         if not self.send_message(Message(MessageType.STATS)):
             return measurements
 
         status, data = self.receive_confirmation()
         if status and isinstance(data, bytes) and len(data) > 0:
-            measurements += json.loads(data.decode('utf8'))
+            measurements += json.loads(data.decode("utf8"))
         return measurements
 
     def upload_optimizers(self, optimizers_cfg: Dict[str, Any]) -> bool:
@@ -662,11 +659,11 @@ class Protocol(ArgumentsHandler):
         bool :
             True if data upload finished successfully.
         """
-        KLogger.debug('Uploading optimizers config')
+        KLogger.debug("Uploading optimizers config")
 
         message = Message(
             MessageType.OPTIMIZERS,
-            json.dumps(optimizers_cfg, default=str).encode()
+            json.dumps(optimizers_cfg, default=str).encode(),
         )
 
         if not self.send_message(message):
@@ -694,15 +691,16 @@ class Protocol(ArgumentsHandler):
             First element is equal to True if optimization finished
             successfully and the second element contains compiled model.
         """
-        KLogger.debug('Requesting model optimization')
-        with open(model_path, 'rb') as model_f:
+        KLogger.debug("Requesting model optimization")
+        with open(model_path, "rb") as model_f:
             model = model_f.read()
 
         if not self.send_message(Message(MessageType.OPTIMIZE_MODEL, model)):
             return False, None
 
         ret, compiled_model_data = timemeasurements(
-                'protocol_model_optimization', get_time_func)(self.receive_confirmation)()  # noqa: E501
+            "protocol_model_optimization", get_time_func
+        )(self.receive_confirmation)()  # noqa: E501
         if not ret:
             return False, None
         return ret, compiled_model_data
@@ -721,7 +719,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if sent successfully.
         """
-        KLogger.debug('Sending OK')
+        KLogger.debug("Sending OK")
 
         message = Message(MessageType.OK, data)
 
@@ -736,7 +734,7 @@ class Protocol(ArgumentsHandler):
         bool :
             True if sent successfully.
         """
-        KLogger.debug('Sending ERROR')
+        KLogger.debug("Sending ERROR")
 
         return self.send_message(Message(MessageType.ERROR))
 

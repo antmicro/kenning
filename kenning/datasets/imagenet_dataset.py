@@ -39,32 +39,33 @@ class ImageNetDataset(Dataset):
     """
 
     arguments_structure = {
-        'image_memory_layout': {
-            'argparse_name': '--image-memory-layout',
-            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            'default': 'NHWC',
-            'enum': ['NHWC', 'NCHW']
+        "image_memory_layout": {
+            "argparse_name": "--image-memory-layout",
+            "description": "Determines if images should be delivered in NHWC or NCHW format",  # noqa: E501
+            "default": "NHWC",
+            "enum": ["NHWC", "NCHW"],
         },
-        'preprocess_type': {
-            'argparse_name': '--preprocess_type',
-            'description': 'Determines the preprocessing type. See ImageNetDataset documentation for more details',  # noqa: E501
-            'default': 'caffe',
-            'enum': ['caffe', 'tf', 'torch', 'none']
+        "preprocess_type": {
+            "argparse_name": "--preprocess_type",
+            "description": "Determines the preprocessing type. See ImageNetDataset documentation for more details",  # noqa: E501
+            "default": "caffe",
+            "enum": ["caffe", "tf", "torch", "none"],
         },
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = False,
-            force_download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None,
-            split_fraction_test: float = 0.2,
-            split_fraction_val: Optional[float] = None,
-            split_seed: int = 1234,
-            image_memory_layout: str = 'NHWC',
-            preprocess_type: str = 'caffe'):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+        image_memory_layout: str = "NHWC",
+        preprocess_type: str = "caffe",
+    ):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -104,8 +105,8 @@ class ImageNetDataset(Dataset):
                 * caffe - will convert RGB to BGR and apply standardization
                 * none - data is passed as is from file, without conversions
         """
-        assert image_memory_layout in ['NHWC', 'NCHW']
-        assert preprocess_type in ['caffe', 'torch', 'tf', 'none']
+        assert image_memory_layout in ["NHWC", "NCHW"]
+        assert preprocess_type in ["caffe", "torch", "tf", "none"]
         self.numclasses = None
         self.classnames = dict()
         self.image_memory_layout = image_memory_layout
@@ -118,54 +119,54 @@ class ImageNetDataset(Dataset):
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
-            split_seed
+            split_seed,
         )
 
     def download_dataset_fun(self):
         raise CannotDownloadDatasetError(
-            'ImageNet dataset needs to be downloaded manually.\n'
-            'The images need to be stored in <root>/images directory.\n'
-            'The labels need to be provided in the JSON format.\n'
-            'The JSON file should be saved in <root>/labels.json.\n'
-            'JSON should be a dictionary mapping names to labels, i.e.\n'
-            '{\n'
+            "ImageNet dataset needs to be downloaded manually.\n"
+            "The images need to be stored in <root>/images directory.\n"
+            "The labels need to be provided in the JSON format.\n"
+            "The JSON file should be saved in <root>/labels.json.\n"
+            "JSON should be a dictionary mapping names to labels, i.e.\n"
+            "{\n"
             '    "file1.png": 1,\n'
             '    "file2.png": 853,\n'
-            '    ...\n'
-            '}\n'
+            "    ...\n"
+            "}\n"
         )
 
     def prepare(self):
-        with open(self.root / 'labels.json', 'r') as groundtruthdesc:
+        with open(self.root / "labels.json", "r") as groundtruthdesc:
             groundtruth = json.load(groundtruthdesc)
             for imagename, label in groundtruth.items():
-                self.dataX.append(str(self.root / 'images' / imagename))
+                self.dataX.append(str(self.root / "images" / imagename))
                 self.dataY.append(int(label))
-            self.classnames = [f'{i}' for i in range(1000)]
+            self.classnames = [f"{i}" for i in range(1000)]
             self.numclasses = 1000
 
     def prepare_input_samples(self, samples):
         result = []
         for sample in samples:
             img = Image.open(sample)
-            img = img.convert('RGB')
+            img = img.convert("RGB")
             img = img.resize((224, 224))
             npimg = np.array(img).astype(np.float32)
-            if self.preprocess_type == 'caffe':
+            if self.preprocess_type == "caffe":
                 # convert to BGR
                 npimg = npimg[:, :, ::-1]
-            if self.preprocess_type == 'tf':
+            if self.preprocess_type == "tf":
                 npimg /= 127.5
                 npimg -= 1.0
-            elif self.preprocess_type == 'torch':
+            elif self.preprocess_type == "torch":
                 npimg /= 255.0
                 mean = np.array([0.485, 0.456, 0.406], dtype=np.float32)
                 std = np.array([0.229, 0.224, 0.225], dtype=np.float32)
                 npimg = (npimg - mean) / std
-            elif self.preprocess_type == 'caffe':
+            elif self.preprocess_type == "caffe":
                 mean = np.array([103.939, 116.779, 123.68], dtype=np.float32)
                 npimg -= mean
-            if self.image_memory_layout == 'NCHW':
+            if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
         return result
@@ -188,13 +189,13 @@ class ImageNetDataset(Dataset):
             currindex += 1
         measurements = Measurements()
         measurements.accumulate(
-            'eval_confusion_matrix',
+            "eval_confusion_matrix",
             confusion_matrix,
-            lambda: np.zeros((self.numclasses, self.numclasses))
+            lambda: np.zeros((self.numclasses, self.numclasses)),
         )
-        measurements.add_measurement('top_5', top_5_results)
-        measurements.accumulate('top_5_count', top_5_count, lambda: 0)
-        measurements.accumulate('total', len(predictions), lambda: 0)
+        measurements.add_measurement("top_5", top_5_results)
+        measurements.accumulate("top_5_count", top_5_count, lambda: 0)
+        measurements.accumulate("total", len(predictions), lambda: 0)
         return measurements
 
     def get_class_names(self):

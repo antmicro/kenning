@@ -62,8 +62,14 @@ BASIC_COMMANDS = (
     COMPLETION,
 )
 # All available subcommands and help flags
-AVAILABLE_COMMANDS = (OPTIMIZE, TRAIN, TEST, REPORT,
-                      *BASIC_COMMANDS, *HELP["flags"])
+AVAILABLE_COMMANDS = (
+    OPTIMIZE,
+    TRAIN,
+    TEST,
+    REPORT,
+    *BASIC_COMMANDS,
+    *HELP["flags"],
+)
 # Connection between subcommand and its logic (extending CommandTemplate)
 MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     FINE_TUNE: optimization_runner.OptimizationRunner,
@@ -148,22 +154,24 @@ def create_subcommands(
     for i, name in enumerate(names):
         if parser:
             subparser = parser.add_subparsers(
-                title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(number + i))
+                title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(number + i)
+            )
         desc = MAP_COMMAND_TO_SCENARIO[name].description
         if not isinstance(desc, str):
             desc = desc[name]
         parser = subparser.add_parser(
             name,
-            help=desc.split('.', 1)[0].strip('\n'),
+            help=desc.split(".", 1)[0].strip("\n"),
             add_help=False,
-            conflict_handler='resolve' if with_arguments else 'error',
+            conflict_handler="resolve" if with_arguments else "error",
         )
         if with_arguments:
-            for n in names[:i + 1]:
+            for n in names[: i + 1]:
                 parser, groups = MAP_COMMAND_TO_SCENARIO[n].configure_parser(
-                    types=[n], parser=parser)
+                    types=[n], parser=parser
+                )
 
-        parsers[tuple(names[:i + 1])] = parser
+        parsers[tuple(names[: i + 1])] = parser
     return parsers
 
 
@@ -188,18 +196,19 @@ def setup_base_parser(
     parser = argparse.ArgumentParser(
         prog="kenning",
         description="Command-line interface for Kenning",
-        conflict_handler='resolve',
+        conflict_handler="resolve",
         formatter_class=Formatter,
         add_help=False,
     )
     parsers = {}
     subparsers = parser.add_subparsers(
-        title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(0))
+        title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(0)
+    )
 
-    flag_group = parser.add_argument_group('Flags')
+    flag_group = parser.add_argument_group("Flags")
     flag_group.add_argument(
         *HELP["flags"],
-        action='store_true',
+        action="store_true",
         help=HELP["msg"],
     )
 
@@ -207,17 +216,23 @@ def setup_base_parser(
     for sequence in SEQUENCED_COMMANDS:
         sequences.update(get_all_sequences(sequence))
     for sequence in sorted(sequences, key=lambda x: x[0]):
-        parsers.update(create_subcommands(
-            subparsers, sequence, with_arguments=with_arguments))
+        parsers.update(
+            create_subcommands(
+                subparsers, sequence, with_arguments=with_arguments
+            )
+        )
 
     for subcommand in BASIC_COMMANDS:
         parsers[(subcommand,)] = subparsers.add_parser(
             subcommand,
-            help=MAP_COMMAND_TO_SCENARIO[subcommand].description.split(
-                '.')[0].strip('\n').replace('\n', ' '),
+            help=MAP_COMMAND_TO_SCENARIO[subcommand]
+            .description.split(".")[0]
+            .strip("\n")
+            .replace("\n", " "),
             add_help=False,
         )
         if with_arguments:
             MAP_COMMAND_TO_SCENARIO[subcommand].configure_parser(
-                parsers[(subcommand,)])
+                parsers[(subcommand,)]
+            )
     return parser, parsers

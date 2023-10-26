@@ -21,37 +21,39 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class PersonDetectionModelWrapper(ModelWrapper):
-
     default_dataset = VisualWakeWordsDataset
-    pretrained_model_uri = 'kenning:///models/classification/person_detect.tflite'  # noqa: E501
+    pretrained_model_uri = (
+        "kenning:///models/classification/person_detect.tflite"
+    )  # noqa: E501
     arguments_structure = {
-        'central_fraction': {
-            'argparse_name': '--central-fraction',
-            'description': 'Fraction used to crop images during preprocessing',
-            'default': .875,
-            'type': float
+        "central_fraction": {
+            "argparse_name": "--central-fraction",
+            "description": "Fraction used to crop images during preprocessing",
+            "default": 0.875,
+            "type": float,
         },
-        'image_width': {
-            'description': 'Width of the input images',
-            'type': int,
-            'default': 96
+        "image_width": {
+            "description": "Width of the input images",
+            "type": int,
+            "default": 96,
         },
-        'image_height': {
-            'description': 'Height of the input images',
-            'type': int,
-            'default': 96
-        }
+        "image_height": {
+            "description": "Height of the input images",
+            "type": int,
+            "default": 96,
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool = True,
-            model_name: Optional[str] = None,
-            central_fraction: float = .875,
-            image_width: int = 96,
-            image_height: int = 96):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+        central_fraction: float = 0.875,
+        image_width: int = 96,
+        image_height: int = 96,
+    ):
         """
         Creates the Person Detection model wrapper.
 
@@ -86,27 +88,32 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     @classmethod
     def _get_io_specification(
-            cls, img_width=96, img_height=96, class_names=None, batch_size=1):
+        cls, img_width=96, img_height=96, class_names=None, batch_size=1
+    ):
         io_spec = {
-            'input': [{
-                'name': 'input_1',
-                'shape': (batch_size, img_width, img_height, 1),
-                'dtype': 'int8',
-                'prequantized_dtype': 'float32',
-                'zero_point': -1,
-                'scale': .007843137718737125
-            }],
-            'output': [{
-                'name': 'out_layer',
-                'shape': (batch_size, 2),
-                'dtype': 'int8',
-                'prequantized_dtype': 'float32',
-                'zero_point': -128,
-                'scale': .00390625
-            }]
+            "input": [
+                {
+                    "name": "input_1",
+                    "shape": (batch_size, img_width, img_height, 1),
+                    "dtype": "int8",
+                    "prequantized_dtype": "float32",
+                    "zero_point": -1,
+                    "scale": 0.007843137718737125,
+                }
+            ],
+            "output": [
+                {
+                    "name": "out_layer",
+                    "shape": (batch_size, 2),
+                    "dtype": "int8",
+                    "prequantized_dtype": "float32",
+                    "zero_point": -128,
+                    "scale": 0.00390625,
+                }
+            ],
         }
         if class_names is not None:
-            io_spec['output'][0]['class_names'] = class_names
+            io_spec["output"][0]["class_names"] = class_names
         return io_spec
 
     @classmethod
@@ -119,7 +126,8 @@ class PersonDetectionModelWrapper(ModelWrapper):
                 self.image_width,
                 self.image_height,
                 self.class_names,
-                self.dataset.batch_size)
+                self.dataset.batch_size,
+            )
 
         return self._get_io_specification(
             self.image_width, self.image_height, self.class_names
@@ -133,10 +141,10 @@ class PersonDetectionModelWrapper(ModelWrapper):
             self.model_prepared = True
 
     def get_output_formats(self) -> List[str]:
-        return ['tflite']
+        return ["tflite"]
 
     def get_framework_and_version(self) -> Tuple[str, str]:
-        return ('tensorflow', tf.__version__)
+        return ("tensorflow", tf.__version__)
 
     def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
         data = bytes()
@@ -146,42 +154,48 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()
-        dtype = np.dtype(io_spec['output'][0]['dtype'])
-        shape = io_spec['output'][0]['shape']
+        dtype = np.dtype(io_spec["output"][0]["dtype"])
+        shape = io_spec["output"][0]["shape"]
 
-        tensor_size = dtype.itemsize*np.prod(shape)
+        tensor_size = dtype.itemsize * np.prod(shape)
 
         assert len(outputdata) % tensor_size == 0
 
         y = []
-        for i in range(len(outputdata)//tensor_size):
-            y.append(np.frombuffer(
-                outputdata[tensor_size*i: tensor_size*(i + 1)],
-                dtype=dtype
-            ))
+        for i in range(len(outputdata) // tensor_size):
+            y.append(
+                np.frombuffer(
+                    outputdata[tensor_size * i : tensor_size * (i + 1)],
+                    dtype=dtype,
+                )
+            )
 
         return y
 
     def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()
-        zero_point = io_spec['input'][0]['zero_point']
-        scale = io_spec['input'][0]['scale']
-        dtype = np.dtype(io_spec['input'][0]['dtype'])
+        zero_point = io_spec["input"][0]["zero_point"]
+        scale = io_spec["input"][0]["scale"]
+        dtype = np.dtype(io_spec["input"][0]["dtype"])
 
         result = []
         for img in X:
             w, h = img.shape[:2]
-            img = img[int((w/2)*(1 - self.central_fraction)):
-                      int((w/2)*(1 + self.central_fraction)),
-                      int((h/2)*(1 - self.central_fraction)):
-                      int((h/2)*(1 + self.central_fraction))]
+            img = img[
+                int((w / 2) * (1 - self.central_fraction)) : int(
+                    (w / 2) * (1 + self.central_fraction)
+                ),
+                int((h / 2) * (1 - self.central_fraction)) : int(
+                    (h / 2) * (1 + self.central_fraction)
+                ),
+            ]
             img = cv2.resize(img, (self.image_width, self.image_height))
             img = cv2.cvtColor(img, cv2.COLOR_RGB2GRAY).astype(np.float32)
-            img = img*2. - 1
+            img = img * 2.0 - 1
             img = np.expand_dims(img, -1)
 
             # quantization
-            img = np.around(img/scale + zero_point).astype(dtype)
+            img = np.around(img / scale + zero_point).astype(dtype)
 
             result.append(img)
 
@@ -189,8 +203,8 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     def postprocess_outputs(self, y: List[np.ndarray]) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()
-        zero_point = io_spec['output'][0]['zero_point']
-        scale = io_spec['output'][0]['scale']
-        dtype = np.dtype(io_spec['output'][0]['prequantized_dtype'])
+        zero_point = io_spec["output"][0]["zero_point"]
+        scale = io_spec["output"][0]["scale"]
+        dtype = np.dtype(io_spec["output"][0]["prequantized_dtype"])
 
-        return [(output.astype(dtype) - zero_point)*scale for output in y]
+        return [(output.astype(dtype) - zero_point) * scale for output in y]

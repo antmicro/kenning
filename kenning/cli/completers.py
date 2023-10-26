@@ -45,15 +45,17 @@ class ClassPathCompleter(BaseCompleter):
         self.class_type = class_type
 
     def __call__(
-        self, *,
+        self,
+        *,
         prefix: str,
         action: argparse.Action,
         parser: argparse.ArgumentParser,
-        parsed_args: argparse.Namespace
+        parsed_args: argparse.Namespace,
     ) -> Dict[str, str]:
         self.class_type
         paths = list_classes(
             [self.class_type] if self.class_type else ALL_TYPES,
-            'autocomplete', prefix
+            "autocomplete",
+            prefix,
         )
         return dict(paths)

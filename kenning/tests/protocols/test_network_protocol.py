@@ -27,15 +27,15 @@ from kenning.tests.protocols.test_core_protocol import (
 
 
 class TestNetworkProtocol(TestCoreProtocol):
-    host = 'localhost'
+    host = "localhost"
     port = random_network_port()
 
     def init_protocol(self):
         if self.port is None:
-            pytest.fail('Cannot find free port')
+            pytest.fail("Cannot find free port")
         return NetworkProtocol(self.host, self.port)
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_initialize_server(self):
         """
         Tests the `initialize_server()` method.
@@ -47,7 +47,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert second_server.serversocket is None
         server.disconnect()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_initialize_client(self):
         """
         Tests the `initialize_client()` method.
@@ -61,7 +61,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         client.disconnect()
         server.disconnect()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_message(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -85,7 +85,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         status, message = server.receive_message(timeout=1)
         assert status == ServerStatus.NOTHING and message is None
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_message_send_data(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -108,7 +108,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             and message.message_type == MessageType.OK
         )
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_message_send_error(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -131,7 +131,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             and message.message_type == MessageType.ERROR
         )
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_message_send_empty(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -146,14 +146,14 @@ class TestNetworkProtocol(TestCoreProtocol):
         # Send empty message
         class EmptyMessage(object):
             def to_bytes(self):
-                return b''
+                return b""
 
         client.send_message(EmptyMessage())
         status, message = server.receive_message(timeout=1)
         assert message is None
         assert status == ServerStatus.NOTHING, status
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_send_data(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -165,7 +165,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         server, client = server_and_client
         assert client.send_data(random_byte_data)
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_data(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -176,7 +176,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         with pytest.raises(AttributeError):
             server.receive_data(None, None)
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_data_data_sent(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -193,7 +193,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert status is ServerStatus.DATA_READY
         assert random_byte_data == received_data
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_receive_client_disconnect(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -208,7 +208,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert status == ServerStatus.CLIENT_DISCONNECTED
         assert received_data is None
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_accept_client(self):
         """
         Tests the `accept_client()` method.
@@ -255,7 +255,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         protocol = self.init_protocol()
         assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_wait_send(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -277,9 +277,9 @@ class TestNetworkProtocol(TestCoreProtocol):
             assert server_status == ServerStatus.DATA_READY
             assert (
                 server_data == random_byte_data
-            ), f'{server_data}!={random_byte_data}'
+            ), f"{server_data}!={random_byte_data}"
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_send_message(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -298,11 +298,11 @@ class TestNetworkProtocol(TestCoreProtocol):
         with pytest.raises(ConnectionResetError):
             server.send_message(Message(MessageType.OK))
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
-        'message,expected',
+        "message,expected",
         [
-            (Message(MessageType.OK), (True, b'')),
+            (Message(MessageType.OK), (True, b"")),
             (Message(MessageType.ERROR), (False, None)),
             (Message(MessageType.DATA), (False, None)),
             (Message(MessageType.MODEL), (False, None)),
@@ -331,7 +331,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         output = server.receive_confirmation()
         assert output == (False, None)
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_upload_input(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -376,7 +376,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert message.payload == random_byte_data
         assert queue.get()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_upload_model(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -423,9 +423,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert receive_status == ServerStatus.DATA_READY
         answer = Message(MessageType.MODEL, random_byte_data)
         parsed_message = client.parse_message(received_data)
-        assert parsed_message == answer, f'{parsed_message}!={answer}'
+        assert parsed_message == answer, f"{parsed_message}!={answer}"
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_upload_io_specification(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -436,9 +436,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         """
         # FIXME: Add actual example with input/output data
         server, client = server_and_client
-        io_specification = {1: 'one', 2: 'two', 3: 'three'}
+        io_specification = {1: "one", 2: "two", 3: "three"}
         path = tmpfolder / uuid.uuid4().hex
-        with open(path, 'w') as file:
+        with open(path, "w") as file:
             json.dump(io_specification, file)
 
         def receive_io(server: NetworkProtocol, queue: multiprocessing.Queue):
@@ -475,9 +475,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         encoded_data = (json.dumps(io_specification)).encode()
         answer = Message(MessageType.IO_SPEC, encoded_data)
         parsed_message = client.parse_message(received_data)
-        assert parsed_message == answer, f'{parsed_message}!={answer}'
+        assert parsed_message == answer, f"{parsed_message}!={answer}"
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_download_output(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
@@ -494,7 +494,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert status
         assert downloaded_data == random_byte_data
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_download_statistics(
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
@@ -502,7 +502,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `download_statistics()` method.
         """
         server, client = server_and_client
-        data = {'1': 'one', '2': 'two', '3': 'three'}
+        data = {"1": "one", "2": "two", "3": "three"}
         to_send = json.dumps(data).encode()
         server.accept_client(server.serversocket, None)
 
@@ -532,7 +532,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         thread_send.start()
 
         output = server.receive_confirmation()
-        assert output == (True, b'')
+        assert output == (True, b"")
         server.send_message(Message(MessageType.OK))
 
         time.sleep(0.1)
@@ -540,7 +540,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert status == ServerStatus.DATA_READY
         assert (
             message.message_type == MessageType.STATS
-            and message.payload == b''
+            and message.payload == b""
         )
         assert server.send_message(Message(MessageType.OK, to_send))
         thread_send.join()
@@ -549,9 +549,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert isinstance(downloaded_stats, Measurements)
         assert downloaded_stats.data == data
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
-        'message_type',
+        "message_type",
         [
             MessageType.OK,
             MessageType.ERROR,
@@ -583,7 +583,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             and message_type == message.message_type
         )
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_disconnect(self, server_and_client):
         """
         Tests the `disconnect()` method.
@@ -601,9 +601,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         with pytest.raises(OSError):
             server.send_message(Message(MessageType.OK))
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
-        'client_response,expected',
+        "client_response,expected",
         [(Message(MessageType.OK), True), (Message(MessageType.ERROR), False)],
     )
     def test_request_processing(
@@ -623,10 +623,10 @@ class TestNetworkProtocol(TestCoreProtocol):
         )
         thread_send.start()
         response = server.request_processing()
-        assert response is expected, f'{response}!={expected}'
+        assert response is expected, f"{response}!={expected}"
         thread_send.join()
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_request_failure(self, server_and_client):
         """
         Tests the `request_failure()` method.
@@ -639,10 +639,10 @@ class TestNetworkProtocol(TestCoreProtocol):
         message = client.parse_message(message)
         assert (
             message.message_type == MessageType.ERROR
-            and message.payload == b''
+            and message.payload == b""
         )
 
-    @pytest.mark.xdist_group(name='use_socket')
+    @pytest.mark.xdist_group(name="use_socket")
     def test_request_success(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],

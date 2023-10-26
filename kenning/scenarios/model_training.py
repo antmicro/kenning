@@ -15,16 +15,14 @@ from pathlib import Path
 from typing import Optional, List, Tuple
 
 from kenning.utils.class_loader import load_class, get_command
-from kenning.cli.completers import (
-    ClassPathCompleter, MODEL_WRAPPERS, DATASETS
-)
+from kenning.cli.completers import ClassPathCompleter, MODEL_WRAPPERS, DATASETS
 from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
     TRAIN,
     TEST,
     GROUP_SCHEMA,
-    ParserHelpException
+    ParserHelpException,
 )
 
 
@@ -46,58 +44,54 @@ class TrainModel(CommandTemplate):
         train_group = parser.add_argument_group(GROUP_SCHEMA.format(TRAIN))
 
         train_group.add_argument(
-            '--modelwrapper-cls',
-            help='ModelWrapper-based class with inference implementation to import',  # noqa: E501
+            "--modelwrapper-cls",
+            help="ModelWrapper-based class with inference implementation to import",  # noqa: E501
             required=True,
         ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         train_group.add_argument(
-            '--dataset-cls',
-            help='Dataset-based class with dataset to import',
+            "--dataset-cls",
+            help="Dataset-based class with dataset to import",
             required=True,
         ).completer = ClassPathCompleter(DATASETS)
         train_group.add_argument(
-            '--batch-size',
-            help='The batch size for training',
+            "--batch-size",
+            help="The batch size for training",
             type=int,
             required=True,
         )
         train_group.add_argument(
-            '--learning-rate',
-            help='The learning rate for training',
+            "--learning-rate",
+            help="The learning rate for training",
             type=float,
-            required=True
+            required=True,
         )
         train_group.add_argument(
-            '--num-epochs',
-            help='Number of epochs to train for',
+            "--num-epochs",
+            help="Number of epochs to train for",
             type=int,
-            required=True
+            required=True,
         )
         train_group.add_argument(
-            '--logdir',
-            help='Path to the training logs directory',
+            "--logdir",
+            help="Path to the training logs directory",
             type=Path,
-            required=True
+            required=True,
         )
         return parser, groups
 
     @staticmethod
-    def run(
-        args: argparse.Namespace,
-        not_parsed: List[str] = [],
-        **kwargs
-    ):
-        modelwrappercls = load_class(args.modelwrapper_cls) \
-            if args.modelwrapper_cls else None
-        datasetcls = load_class(args.dataset_cls) \
-            if args.dataset_cls else None
+    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
+        modelwrappercls = (
+            load_class(args.modelwrapper_cls)
+            if args.modelwrapper_cls
+            else None
+        )
+        datasetcls = load_class(args.dataset_cls) if args.dataset_cls else None
 
         parser = argparse.ArgumentParser(
-            ' '.join(map(lambda x: x.strip(),
-                     get_command(with_slash=False))),
+            " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
             parents=[]
-            + ([modelwrappercls.form_argparse()[0]]
-               if modelwrappercls else [])
+            + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
             + ([datasetcls.form_argparse()[0]] if datasetcls else []),
             add_help=False,
         )
@@ -112,13 +106,10 @@ class TrainModel(CommandTemplate):
         args.logdir.mkdir(parents=True, exist_ok=True)
 
         model.train_model(
-            args.batch_size,
-            args.learning_rate,
-            args.num_epochs,
-            args.logdir
+            args.batch_size, args.learning_rate, args.num_epochs, args.logdir
         )
         model.save_model(model.get_path())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(TrainModel.scenario_run(sys.argv))

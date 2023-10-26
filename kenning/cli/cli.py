@@ -25,9 +25,10 @@ from kenning.cli.config import (
 )
 from kenning.utils.excepthook import (
     MissingKenningDependencies,
-    find_missing_optional_dependency
+    find_missing_optional_dependency,
 )
 from kenning.utils.logger import KLogger
+
 
 def main():
     """
@@ -35,12 +36,12 @@ def main():
 
     Creates and manages parsers, runs subcommands, and handle errors.
     """
-    verbosity = 'WARNING'
+    verbosity = "WARNING"
     if (
-        '--verbosity' in sys.argv and
-        len(sys.argv) > sys.argv.index('--verbosity') + 1
+        "--verbosity" in sys.argv
+        and len(sys.argv) > sys.argv.index("--verbosity") + 1
     ):
-        verbosity = sys.argv[sys.argv.index('--verbosity') + 1]
+        verbosity = sys.argv[sys.argv.index("--verbosity") + 1]
     KLogger.configure()
     KLogger.set_verbosity(level=verbosity)
     configure_autocomplete()
@@ -48,8 +49,7 @@ def main():
 
     # Get only subcommands and help
     i = 1
-    while i < len(sys.argv) and \
-            sys.argv[i] in AVAILABLE_COMMANDS:
+    while i < len(sys.argv) and sys.argv[i] in AVAILABLE_COMMANDS:
         i += 1
 
     # Parse subcommands and help
@@ -68,7 +68,9 @@ def main():
         parser.print_help()
         if rem:
             parser.exit(
-                2, f"{parser.prog}: error: '{rem[0]}' doesn't match any subcommand")  # noqa: E501
+                2,
+                f"{parser.prog}: error: '{rem[0]}' doesn't match any subcommand",  # noqa: E501
+            )
         return
 
     # Creating parent-parsers from scenarios and completing description
@@ -85,20 +87,19 @@ def main():
             desc = scenario.description[subcommand]
         else:
             desc = scenario.description[1:]
-        description.append(
-            ('- ' if seq_description else '') + desc)
+        description.append(("- " if seq_description else "") + desc)
         if scenario.configure_parser not in used_configs:
-            parents.append(scenario.configure_parser(
-                types=subcommands, groups=groups)[0]
+            parents.append(
+                scenario.configure_parser(types=subcommands, groups=groups)[0]
             )
             used_configs.add(scenario.configure_parser)
             parse_all = parse_all and scenario.parse_all
-    description = '\n'.join(description)
+    description = "\n".join(description)
 
     # The main parser without subcommands
     parser = Parser(
-        "kenning "+" ".join(subcommands),
-        conflict_handler='resolve',
+        "kenning " + " ".join(subcommands),
+        conflict_handler="resolve",
         parents=parents,
         description=description,
         add_help=False,
@@ -109,7 +110,7 @@ def main():
         Prints help message for non sequenced subcommands.
         """
         print_help_from_parsers(
-            "kenning "+" ".join(subcommands),
+            "kenning " + " ".join(subcommands),
             [parsers[tuple(subcommands)], parser],
             description,
         )
@@ -124,7 +125,7 @@ def main():
     if parse_all:
         try:
             args = parser.parse_args(
-                args=sys.argv[1 + len(subcommands):], namespace=args
+                args=sys.argv[1 + len(subcommands) :], namespace=args
             )
         except ParserHelpException:
             args.help = True
@@ -136,7 +137,8 @@ def main():
         # Parse only known args if scenario will add more arguments
         try:
             args, rem = parser.parse_known_args(
-                sys.argv[1 + len(subcommands):], namespace=args)
+                sys.argv[1 + len(subcommands) :], namespace=args
+            )
         except ParserHelpException as ex:
             errors.append(ex.error)
 
@@ -152,14 +154,15 @@ def main():
                 if result:
                     parser.error(
                         f"`{subcommand}` subcommand did not end successfully",
-                        print_usage=False
+                        print_usage=False,
                     )
             except ModuleNotFoundError as er:
                 extras = find_missing_optional_dependency(er.name)
                 if not extras:
                     raise
                 er = MissingKenningDependencies(
-                    name=er.name, path=er.path, optional_dependencies=extras)
+                    name=er.name, path=er.path, optional_dependencies=extras
+                )
                 raise
 
             except argparse.ArgumentError as er:
@@ -170,9 +173,9 @@ def main():
             if ex.error is not None:
                 errors.append(ex.error)
             if len(errors) > 1:
-                ex.error = '\n'
+                ex.error = "\n"
                 for error in errors:
-                    ex.error += f'- {error}\n'
+                    ex.error += f"- {error}\n"
             elif errors:
                 ex.error = errors[0]
             # Print help with errors

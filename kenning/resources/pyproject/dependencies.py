@@ -51,8 +51,8 @@ def _parse_dependencies() -> Dict[str, List[str]]:
         Optional and normal dependencies from pyproject.toml
     """
     with path(__package__, PYPROJECT_FILE) as dependencies:
-        with open(dependencies, 'rb') as fd:
+        with open(dependencies, "rb") as fd:
             pyproject = tomllib.load(fd)
-    return pyproject['project']['optional-dependencies'] | {
-        "kenning": pyproject['project']['dependencies']
+    return pyproject["project"]["optional-dependencies"] | {
+        "kenning": pyproject["project"]["dependencies"]
     }

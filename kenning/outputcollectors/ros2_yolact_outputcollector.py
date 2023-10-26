@@ -29,38 +29,40 @@ class ROS2YolactOutputCollector(OutputCollector):
     """
 
     arguments_structure = {
-        'node_name': {
-            'description': 'Name for the ROS2 node',
-            'type': str,
-            'required': True,
+        "node_name": {
+            "description": "Name for the ROS2 node",
+            "type": str,
+            "required": True,
         },
-        'topic_name': {
-            'description': 'Name of the ROS2 topic for messages to be published to',  # noqa: E501
-            'type': str,
-            'required': True,
+        "topic_name": {
+            "description": "Name of the ROS2 topic for messages to be published to",  # noqa: E501
+            "type": str,
+            "required": True,
         },
-        'input_color_format': {
-            'description': 'Color format of the input images (RGB, BGR, GRAY)',
-            'type': str,
-            'required': False,
-            'default': 'RGB',
+        "input_color_format": {
+            "description": "Color format of the input images (RGB, BGR, GRAY)",
+            "type": str,
+            "required": False,
+            "default": "RGB",
         },
-        'input_memory_layout': {
-            'description': 'Memory layout of the input images (NHWC or NCHW)',
-            'type': str,
-            'required': False,
-            'default': 'NHWC',
+        "input_memory_layout": {
+            "description": "Memory layout of the input images (NHWC or NCHW)",
+            "type": str,
+            "required": False,
+            "default": "NHWC",
         },
     }
 
-    def __init__(self,
-                 node_name: str,
-                 topic_name: str,
-                 input_color_format: Optional[str] = 'RGB',
-                 input_memory_layout: Optional[str] = 'NHWC',
-                 inputs_sources: Dict[str, Tuple[int, str]] = {},
-                 inputs_specs: Dict[str, Dict] = {},
-                 outputs: Dict[str, str] = {}):
+    def __init__(
+        self,
+        node_name: str,
+        topic_name: str,
+        input_color_format: Optional[str] = "RGB",
+        input_memory_layout: Optional[str] = "NHWC",
+        inputs_sources: Dict[str, Tuple[int, str]] = {},
+        inputs_specs: Dict[str, Dict] = {},
+        outputs: Dict[str, str] = {},
+    ):
         """
         Creates ROS2YolactOutputCollector object.
 
@@ -86,13 +88,13 @@ class ROS2YolactOutputCollector(OutputCollector):
         self._input_color_format = input_color_format
         self._input_memory_layout = input_memory_layout
 
-        self._node = None               # ROS2 node to be spinned
-        self._topic_publisher = None    # ROS2 topic publisher
+        self._node = None  # ROS2 node to be spinned
+        self._topic_publisher = None  # ROS2 topic publisher
 
         super().__init__(
-                inputs_sources=inputs_sources,
-                inputs_specs=inputs_specs,
-                outputs=outputs
+            inputs_sources=inputs_sources,
+            inputs_specs=inputs_specs,
+            outputs=outputs,
         )
 
         self.prepare()
@@ -103,18 +105,15 @@ class ROS2YolactOutputCollector(OutputCollector):
         self._node = Node(self._node_name)
 
         self._topic_publisher = self._node.create_publisher(
-                SegmentationMsg,
-                self._topic_name,
-                2
+            SegmentationMsg, self._topic_name, 2
         )
 
     def run(self, inputs: Dict[str, Tuple[int, str]]) -> Dict[str, str]:
-        if (self._topic_publisher.get_subscription_count() == 0):
+        if self._topic_publisher.get_subscription_count() == 0:
             return {}
 
-        y = inputs['output'][0] if inputs['output'] else []
-        yolact_msg = self._create_yolact_msg(inputs['frame'],
-                                             y)
+        y = inputs["output"][0] if inputs["output"] else []
+        yolact_msg = self._create_yolact_msg(inputs["frame"], y)
         self._topic_publisher.publish(yolact_msg)
         return {}
 
@@ -134,7 +133,7 @@ class ROS2YolactOutputCollector(OutputCollector):
         parameterschema = cls.for_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
         return cls._get_io_specification(
-                parsed_json_dict['input_memory_layout']
+            parsed_json_dict["input_memory_layout"]
         )
 
     @classmethod
@@ -153,18 +152,19 @@ class ROS2YolactOutputCollector(OutputCollector):
             Dictionary that conveys input and output layers specification.
         """
         return {
-            'input': [
+            "input": [
                 {
-                    'name': 'frame_original',
-                    'shape': (1, -1, -1, -1),
-                    'dtype': 'uint8'
+                    "name": "frame_original",
+                    "shape": (1, -1, -1, -1),
+                    "dtype": "uint8",
                 },
             ],
-            'output': [],
+            "output": [],
         }
 
-    def _extract_yolact_output(self, y: List[SegmObject],
-                               yolact_msg: SegmentationMsg):
+    def _extract_yolact_output(
+        self, y: List[SegmObject], yolact_msg: SegmentationMsg
+    ):
         """
         Extracts YOLACT output from given list of SegmObject.
 
@@ -195,8 +195,9 @@ class ROS2YolactOutputCollector(OutputCollector):
         yolact_msg._scores = scores
         yolact_msg._boxes = boxes
 
-    def _create_yolact_msg(self, image: np.ndarray, y: List[SegmObject]
-                           ) -> SegmentationMsg:
+    def _create_yolact_msg(
+        self, image: np.ndarray, y: List[SegmObject]
+    ) -> SegmentationMsg:
         """
         Creates SegmentationMsg from given image and YOLACT output.
 
@@ -230,16 +231,16 @@ class ROS2YolactOutputCollector(OutputCollector):
         sensor_msgs.msg.Image : Image message filled with given image data.
         """
         image = image.squeeze()
-        if self._input_memory_layout == 'NCHW':
+        if self._input_memory_layout == "NCHW":
             image = np.transpose(image, (1, 2, 0))
 
         message = sensor_msgs.msg.Image()
 
         message.header.stamp = self._node.get_clock().now().to_msg()
-        message.header.frame_id = 'camera_frame'
+        message.header.frame_id = "camera_frame"
         message.height, message.width = image.shape[0], image.shape[1]
         message.encoding = self._color_format_to_encoding(
-                self._input_color_format
+            self._input_color_format
         )
         message.is_bigendian = False
         message.step = message.width * image.shape[2]
@@ -260,10 +261,10 @@ class ROS2YolactOutputCollector(OutputCollector):
         str : Supported ROS2 image encoding.
         """
         encodings = {
-                'RGB': 'rgb8',
-                'BGR': 'bgr8',
-                'GRAY': 'mono8',
-                }
+            "RGB": "rgb8",
+            "BGR": "bgr8",
+            "GRAY": "mono8",
+        }
         if color_format not in encodings:
-            raise ValueError('Unknown color format')
+            raise ValueError("Unknown color format")
         return encodings[color_format]

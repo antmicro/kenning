@@ -32,7 +32,7 @@ from kenning.cli.command_template import (
     DEFAULT_GROUP,
     REPORT,
     GROUP_SCHEMA,
-    TEST
+    TEST,
 )
 from kenning.core.drawing import (
     draw_confusion_matrix,
@@ -40,16 +40,21 @@ from kenning.core.drawing import (
     recall_precision_gradients,
     true_positive_iou_histogram,
     true_positives_per_iou_range_histogram,
-    draw_plot, draw_radar_chart,
+    draw_plot,
+    draw_radar_chart,
     draw_violin_comparison_plot,
-    draw_bubble_plot, choose_theme,
+    draw_bubble_plot,
+    choose_theme,
     draw_barplot,
-    IMMATERIAL_COLORS, RED_GREEN_CMAP)
+    IMMATERIAL_COLORS,
+    RED_GREEN_CMAP,
+)
 from kenning.core.metrics import (
     compute_performance_metrics,
     compute_classification_metrics,
     compute_detection_metrics,
-    compute_renode_metrics)
+    compute_renode_metrics,
+)
 from kenning.resources import reports
 from kenning.utils.class_loader import get_command
 from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
@@ -57,9 +62,9 @@ from kenning.utils.logger import KLogger
 
 
 SERVIS_PLOT_OPTIONS = {
-    'figsize': (900, 500),
-    'plottype': 'scatter',
-    'backend': 'matplotlib',
+    "figsize": (900, 500),
+    "plottype": "scatter",
+    "backend": "matplotlib",
 }
 
 # REPORT_TYPES:
@@ -89,14 +94,15 @@ def get_model_name(filepath: Path) -> str:
 
 
 def performance_report(
-        measurementsdata: Dict[str, List],
-        imgdir: Path,
-        imgprefix: str,
-        rootdir: Path,
-        image_formats: Set[str],
-        color_offset: int = 0,
-        draw_titles: bool = True,
-        **kwargs) -> str:
+    measurementsdata: Dict[str, List],
+    imgdir: Path,
+    imgprefix: str,
+    rootdir: Path,
+    image_formats: Set[str],
+    color_offset: int = 0,
+    draw_titles: bool = True,
+    **kwargs,
+) -> str:
     """
     Creates performance section of the report.
 
@@ -135,164 +141,161 @@ def performance_report(
 
     # Shifting colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
-    plot_options['colormap'] = plot_options['colormap'][color_offset:]
+    plot_options["colormap"] = plot_options["colormap"][color_offset:]
 
     inference_step = None
-    if 'target_inference_step' in measurementsdata:
-        KLogger.info('Using target measurements for inference time')
-        inference_step = 'target_inference_step'
-    elif 'protocol_inference_step' in measurementsdata:
-        KLogger.info('Using protocol measurements for inference time')
-        inference_step = 'protocol_inference_step'
+    if "target_inference_step" in measurementsdata:
+        KLogger.info("Using target measurements for inference time")
+        inference_step = "target_inference_step"
+    elif "protocol_inference_step" in measurementsdata:
+        KLogger.info("Using protocol measurements for inference time")
+        inference_step = "protocol_inference_step"
     else:
-        KLogger.warning('No inference time measurements in the report')
+        KLogger.warning("No inference time measurements in the report")
 
     if inference_step:
-        usepath = imgdir / f'{imgprefix}inference_time'
+        usepath = imgdir / f"{imgprefix}inference_time"
         render_time_series_plot_with_histogram(
             ydata=measurementsdata[inference_step],
-            xdata=measurementsdata[f'{inference_step}_timestamp'],
-            title='Inference time' if draw_titles else None,
-            xtitle='Time',
-            xunit='s',
-            ytitle='Inference time',
-            yunit='s',
+            xdata=measurementsdata[f"{inference_step}_timestamp"],
+            title="Inference time" if draw_titles else None,
+            xtitle="Time",
+            xunit="s",
+            ytitle="Inference time",
+            yunit="s",
             outpath=str(usepath),
             skipfirst=True,
             outputext=image_formats,
             **plot_options,
         )
 
-        usepath_asterisk = Path(f'{usepath}.*')
-        measurementsdata['inferencetimepath'] = str(
+        usepath_asterisk = Path(f"{usepath}.*")
+        measurementsdata["inferencetimepath"] = str(
             usepath_asterisk.relative_to(rootdir)
         )
 
-        measurementsdata['inferencetime'] = measurementsdata[inference_step]
+        measurementsdata["inferencetime"] = measurementsdata[inference_step]
 
-    if 'session_utilization_mem_percent' in measurementsdata:
-        KLogger.info('Using target measurements memory usage percentage')
-        usepath = imgdir / f'{imgprefix}cpu_memory_usage'
+    if "session_utilization_mem_percent" in measurementsdata:
+        KLogger.info("Using target measurements memory usage percentage")
+        usepath = imgdir / f"{imgprefix}cpu_memory_usage"
         render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_mem_percent'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Memory usage' if draw_titles else None,
-            xtitle='Time',
-            xunit='s',
-            ytitle='Memory usage',
-            yunit='%',
+            ydata=measurementsdata["session_utilization_mem_percent"],
+            xdata=measurementsdata["session_utilization_timestamp"],
+            title="Memory usage" if draw_titles else None,
+            xtitle="Time",
+            xunit="s",
+            ytitle="Memory usage",
+            yunit="%",
             outpath=str(usepath),
             skipfirst=True,
             outputext=image_formats,
             **plot_options,
         )
 
-        usepath_asterisk = Path(f'{usepath}.*')
-        measurementsdata['memusagepath'] = str(
+        usepath_asterisk = Path(f"{usepath}.*")
+        measurementsdata["memusagepath"] = str(
             usepath_asterisk.relative_to(rootdir)
         )
     else:
-        KLogger.warning('No memory usage measurements in the report')
+        KLogger.warning("No memory usage measurements in the report")
 
-    if 'session_utilization_cpus_percent' in measurementsdata:
-        KLogger.info('Using target measurements CPU usage percentage')
-        usepath = imgdir / f'{imgprefix}cpu_usage'
+    if "session_utilization_cpus_percent" in measurementsdata:
+        KLogger.info("Using target measurements CPU usage percentage")
+        usepath = imgdir / f"{imgprefix}cpu_usage"
         render_time_series_plot_with_histogram(
-            ydata=measurementsdata['session_utilization_cpus_percent_avg'],
-            xdata=measurementsdata['session_utilization_timestamp'],
-            title='Average CPU usage' if draw_titles else None,
-            xtitle='Time',
-            xunit='s',
-            ytitle='Average CPU usage',
-            yunit='%',
+            ydata=measurementsdata["session_utilization_cpus_percent_avg"],
+            xdata=measurementsdata["session_utilization_timestamp"],
+            title="Average CPU usage" if draw_titles else None,
+            xtitle="Time",
+            xunit="s",
+            ytitle="Average CPU usage",
+            yunit="%",
             outpath=str(usepath),
             skipfirst=True,
             outputext=image_formats,
             **plot_options,
         )
 
-        usepath_asterisk = Path(f'{usepath}.*')
-        measurementsdata['cpuusagepath'] = str(
+        usepath_asterisk = Path(f"{usepath}.*")
+        measurementsdata["cpuusagepath"] = str(
             usepath_asterisk.relative_to(rootdir)
         )
     else:
-        KLogger.warning('No memory usage measurements in the report')
+        KLogger.warning("No memory usage measurements in the report")
 
-    if 'session_utilization_gpu_mem_utilization' in measurementsdata:
-        KLogger.info('Using target measurements GPU memory usage percentage')
-        usepath = imgdir / f'{imgprefix}gpu_memory_usage'
-        gpumemmetric = 'session_utilization_gpu_mem_utilization'
+    if "session_utilization_gpu_mem_utilization" in measurementsdata:
+        KLogger.info("Using target measurements GPU memory usage percentage")
+        usepath = imgdir / f"{imgprefix}gpu_memory_usage"
+        gpumemmetric = "session_utilization_gpu_mem_utilization"
         if len(measurementsdata[gpumemmetric]) == 0:
             KLogger.warning(
-                'Incorrectly collected data for GPU memory utilization'
+                "Incorrectly collected data for GPU memory utilization"
             )
         else:
             render_time_series_plot_with_histogram(
                 ydata=measurementsdata[gpumemmetric],
-                xdata=measurementsdata[
-                    'session_utilization_gpu_timestamp'],
-                title='GPU memory usage' if draw_titles else None,
-                xtitle='Time',
-                xunit='s',
-                ytitle='GPU memory usage',
-                yunit='%',
+                xdata=measurementsdata["session_utilization_gpu_timestamp"],
+                title="GPU memory usage" if draw_titles else None,
+                xtitle="Time",
+                xunit="s",
+                ytitle="GPU memory usage",
+                yunit="%",
                 outpath=str(usepath),
                 skipfirst=True,
                 outputext=image_formats,
                 **plot_options,
             )
 
-            usepath_asterisk = Path(f'{usepath}.*')
-            measurementsdata['gpumemusagepath'] = str(
+            usepath_asterisk = Path(f"{usepath}.*")
+            measurementsdata["gpumemusagepath"] = str(
                 usepath_asterisk.relative_to(rootdir)
             )
     else:
-        KLogger.warning('No GPU memory usage measurements in the report')
+        KLogger.warning("No GPU memory usage measurements in the report")
 
-    if 'session_utilization_gpu_utilization' in measurementsdata:
-        KLogger.info('Using target measurements GPU utilization')
-        usepath = imgdir / f'{imgprefix}gpu_usage'
-        if len(measurementsdata['session_utilization_gpu_utilization']) == 0:
-            KLogger.warning('Incorrectly collected data for GPU utilization')
+    if "session_utilization_gpu_utilization" in measurementsdata:
+        KLogger.info("Using target measurements GPU utilization")
+        usepath = imgdir / f"{imgprefix}gpu_usage"
+        if len(measurementsdata["session_utilization_gpu_utilization"]) == 0:
+            KLogger.warning("Incorrectly collected data for GPU utilization")
         else:
             render_time_series_plot_with_histogram(
-                ydata=measurementsdata[
-                    'session_utilization_gpu_utilization'],
-                xdata=measurementsdata[
-                    'session_utilization_gpu_timestamp'],
-                title='GPU Utilization' if draw_titles else None,
-                xtitle='Time',
-                xunit='s',
-                ytitle='Utilization',
-                yunit='%',
+                ydata=measurementsdata["session_utilization_gpu_utilization"],
+                xdata=measurementsdata["session_utilization_gpu_timestamp"],
+                title="GPU Utilization" if draw_titles else None,
+                xtitle="Time",
+                xunit="s",
+                ytitle="Utilization",
+                yunit="%",
                 outpath=str(usepath),
                 skipfirst=True,
                 outputext=image_formats,
                 **plot_options,
             )
 
-            usepath_asterisk = Path(f'{usepath}.*')
-            measurementsdata['gpuusagepath'] = str(
+            usepath_asterisk = Path(f"{usepath}.*")
+            measurementsdata["gpuusagepath"] = str(
                 usepath_asterisk.relative_to(rootdir)
             )
     else:
-        KLogger.warning('No GPU utilization measurements in the report')
+        KLogger.warning("No GPU utilization measurements in the report")
 
-    with path(reports, 'performance.md') as reporttemplate:
+    with path(reports, "performance.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            measurementsdata
+            reporttemplate, measurementsdata
         )
 
 
 def comparison_performance_report(
-        measurementsdata: List[Dict],
-        imgdir: Path,
-        rootdir: Path,
-        image_formats: Set[str],
-        colors: Optional[List] = None,
-        draw_titles: bool = True,
-        **kwargs) -> str:
+    measurementsdata: List[Dict],
+    imgdir: Path,
+    rootdir: Path,
+    image_formats: Set[str],
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    **kwargs,
+) -> str:
     """
     Creates performance comparison section of report.
 
@@ -321,42 +324,45 @@ def comparison_performance_report(
     from servis import render_multiple_time_series_plot
     from kenning.core.report import create_report_from_measurements
 
-    KLogger.info('Running comparison_performance_report')
+    KLogger.info("Running comparison_performance_report")
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {'html'}
+    _image_formats = image_formats - {"html"}
 
     metric_names = {
-        'inference_step': ('Inference time', 's'),
-        'session_utilization_mem_percent': ('Memory usage', '%'),
-        'session_utilization_cpus_percent_avg': ('CPU usage', '%'),
-        'session_utilization_gpu_mem_utilization': ('GPU memory usage', '%'),
-        'session_utilization_gpu_utilization': ('GPU usage', '%')
+        "inference_step": ("Inference time", "s"),
+        "session_utilization_mem_percent": ("Memory usage", "%"),
+        "session_utilization_cpus_percent_avg": ("CPU usage", "%"),
+        "session_utilization_gpu_mem_utilization": ("GPU memory usage", "%"),
+        "session_utilization_gpu_utilization": ("GPU usage", "%"),
     }
     common_metrics = set(metric_names.keys())
-    hardware_usage_metrics = common_metrics - {'inference_step'}
+    hardware_usage_metrics = common_metrics - {"inference_step"}
     report_variables = {
-        'report_name': measurementsdata[0]['report_name'],
-        'report_name_simple': measurementsdata[0]['report_name_simple']
+        "report_name": measurementsdata[0]["report_name"],
+        "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
 
     for data in measurementsdata:
-        if 'target_inference_step' in data:
-            data['inference_step'] = data['target_inference_step']
-            data['inference_step_timestamp'] = \
-                data['target_inference_step_timestamp']
-        elif 'protocol_inference_step' in data:
-            data['inference_step'] = data['protocol_inference_step']
-            data['inference_step_timestamp'] = \
-                data['protocol_inference_step_timestamp']
+        if "target_inference_step" in data:
+            data["inference_step"] = data["target_inference_step"]
+            data["inference_step_timestamp"] = data[
+                "target_inference_step_timestamp"
+            ]
+        elif "protocol_inference_step" in data:
+            data["inference_step"] = data["protocol_inference_step"]
+            data["inference_step_timestamp"] = data[
+                "protocol_inference_step_timestamp"
+            ]
 
-        if 'session_utilization_cpus_percent' in data:
+        if "session_utilization_cpus_percent" in data:
             metrics = compute_performance_metrics(data)
-            data['session_utilization_cpus_percent_avg'] = \
-                metrics['session_utilization_cpus_percent_avg']
+            data["session_utilization_cpus_percent_avg"] = metrics[
+                "session_utilization_cpus_percent_avg"
+            ]
 
         gpumetrics = [
-            'session_utilization_gpu_mem_utilization',
-            'session_utilization_gpu_utilization'
+            "session_utilization_gpu_mem_utilization",
+            "session_utilization_gpu_utilization",
         ]
         for gpumetric in gpumetrics:
             if gpumetric in data and len(data[gpumetric]) == 0:
@@ -367,12 +373,12 @@ def comparison_performance_report(
 
     for metric, (metric_name, unit) in metric_names.items():
         metric_data = {}
-        if metric_name == 'Inference time':
-            timestamp_key = 'inference_step_timestamp'
-        elif metric_name in ('GPU usage', 'GPU memory usage'):
-            timestamp_key = 'session_utilization_gpu_timestamp'
+        if metric_name == "Inference time":
+            timestamp_key = "inference_step_timestamp"
+        elif metric_name in ("GPU usage", "GPU memory usage"):
+            timestamp_key = "session_utilization_gpu_timestamp"
         else:
-            timestamp_key = 'session_utilization_timestamp'
+            timestamp_key = "session_utilization_timestamp"
         if timestamp_key not in data:
             KLogger.warning(
                 f'Missing measurement "{timestamp_key}" in the measurements '
@@ -380,22 +386,22 @@ def comparison_performance_report(
             )
             continue
         timestamps = {
-            data['model_name']: data[timestamp_key]
+            data["model_name"]: data[timestamp_key]
             for data in measurementsdata
         }
 
         for data in measurementsdata:
             if metric in data:
-                metric_data[data['model_name']] = data[metric]
+                metric_data[data["model_name"]] = data[metric]
         if len(metric_data) > 1:
             usepath = imgdir / f"{metric}_comparison"
             render_multiple_time_series_plot(
                 ydatas=[list(metric_data.values())],
                 xdatas=[list(timestamps.values())],
-                title=f'{metric_name} comparison' if draw_titles else None,
+                title=f"{metric_name} comparison" if draw_titles else None,
                 subtitles=None,
-                xtitles=['Time'],
-                xunits=['s'],
+                xtitles=["Time"],
+                xunits=["s"],
                 ytitles=[metric_name],
                 yunits=[unit],
                 legend_labels=list(metric_data.keys()),
@@ -411,22 +417,25 @@ def comparison_performance_report(
     common_metrics = sorted(list(common_metrics))
     visualizationdata = {}
     for data in measurementsdata:
-        visualizationdata[data['model_name']] = [
+        visualizationdata[data["model_name"]] = [
             data[metric] for metric in common_metrics
         ]
 
-    usepath = imgdir / 'mean_performance_comparison'
+    usepath = imgdir / "mean_performance_comparison"
     draw_violin_comparison_plot(
         usepath,
         "Performance comparison plot" if draw_titles else None,
-        [f'{metric_names[metric][0]} [{metric_names[metric][1]}]'
-            for metric in common_metrics],
+        [
+            f"{metric_names[metric][0]} [{metric_names[metric][1]}]"
+            for metric in common_metrics
+        ],
         visualizationdata,
         colors=colors,
         outext=_image_formats,
     )
-    report_variables["meanperformancepath"] = \
-        f'{usepath.relative_to(rootdir)}.*'
+    report_variables[
+        "meanperformancepath"
+    ] = f"{usepath.relative_to(rootdir)}.*"
 
     hardware_usage_metrics = sorted(list(hardware_usage_metrics))
     measurements_metrics = set()
@@ -436,8 +445,8 @@ def comparison_performance_report(
     if set(hardware_usage_metrics).intersection(measurements_metrics):
         usage_visualization = {}
         for data in measurementsdata:
-            usage_visualization[data['model_name']] = [
-                np.mean(data.get(metric, 0))/100
+            usage_visualization[data["model_name"]] = [
+                np.mean(data.get(metric, 0)) / 100
                 for metric in hardware_usage_metrics
             ]
 
@@ -450,26 +459,27 @@ def comparison_performance_report(
             colors=colors,
             outext=_image_formats,
         )
-        report_variables["hardwareusagepath"] = \
-            f'{usepath.relative_to(rootdir)}.*'
+        report_variables[
+            "hardwareusagepath"
+        ] = f"{usepath.relative_to(rootdir)}.*"
 
-    with path(reports, 'performance_comparison.md') as reporttemplate:
+    with path(reports, "performance_comparison.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            report_variables
+            reporttemplate, report_variables
         )
 
 
 def classification_report(
-        measurementsdata: Dict[str, List],
-        imgdir: Path,
-        imgprefix: str,
-        rootdir: Path,
-        image_formats: Set[str],
-        cmap: Optional[Any] = None,
-        colors: Optional[List] = None,
-        draw_titles: bool = True,
-        **kwargs) -> str:
+    measurementsdata: Dict[str, List],
+    imgdir: Path,
+    imgprefix: str,
+    rootdir: Path,
+    image_formats: Set[str],
+    cmap: Optional[Any] = None,
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    **kwargs,
+) -> str:
     """
     Creates classification quality section of the report.
 
@@ -507,68 +517,71 @@ def classification_report(
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
 
-    if 'eval_confusion_matrix' in measurementsdata:
-        KLogger.info('Using confusion matrix')
-        confusionpath = imgdir / f'{imgprefix}confusion_matrix'
+    if "eval_confusion_matrix" in measurementsdata:
+        KLogger.info("Using confusion matrix")
+        confusionpath = imgdir / f"{imgprefix}confusion_matrix"
         draw_confusion_matrix(
-            measurementsdata['eval_confusion_matrix'],
+            measurementsdata["eval_confusion_matrix"],
             str(confusionpath),
-            'Confusion matrix' if draw_titles else None,
-            measurementsdata['class_names'],
+            "Confusion matrix" if draw_titles else None,
+            measurementsdata["class_names"],
             cmap=cmap,
             outext=image_formats,
         )
-        measurementsdata['confusionpath'] = (
-            str(confusionpath.relative_to(rootdir)) + '.*'
+        measurementsdata["confusionpath"] = (
+            str(confusionpath.relative_to(rootdir)) + ".*"
         )
-    elif 'predictions' in measurementsdata:
-        KLogger.info('Using predictions')
+    elif "predictions" in measurementsdata:
+        KLogger.info("Using predictions")
 
-        predictions = list(zip(
-            measurementsdata['predictions'],
-            measurementsdata['class_names']
-        ))
+        predictions = list(
+            zip(
+                measurementsdata["predictions"],
+                measurementsdata["class_names"],
+            )
+        )
         predictions.sort(key=lambda x: x[0], reverse=True)
 
         predictions = list(zip(*predictions))
 
-        predictions_path = imgdir / f'{imgprefix}predictions'
+        predictions_path = imgdir / f"{imgprefix}predictions"
         draw_barplot(
             outpath=predictions_path,
-            title='Predictions' if draw_titles else None,
-            xtitle='Class',
+            title="Predictions" if draw_titles else None,
+            xtitle="Class",
             xunit=None,
-            ytitle='Percentage',
-            yunit='%',
+            ytitle="Percentage",
+            yunit="%",
             xdata=list(predictions[1]),
-            ydata={'predictions': list(predictions[0])},
+            ydata={"predictions": list(predictions[0])},
             colors=colors,
-            outext=image_formats
+            outext=image_formats,
         )
-        measurementsdata['predictionspath'] = (
-            str(predictions_path.relative_to(rootdir)) + '.*'
+        measurementsdata["predictionspath"] = (
+            str(predictions_path.relative_to(rootdir)) + ".*"
         )
     else:
         KLogger.error(
-            'Confusion matrix and predictions not present for classification '
-            'report'
+            "Confusion matrix and predictions not present for classification "
+            "report"
         )
-        return ''
+        return ""
 
-    with path(reports, 'classification.md') as reporttemplate:
+    with path(reports, "classification.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
         )
 
 
 def comparison_classification_report(
-        measurementsdata: List[Dict],
-        imgdir: Path,
-        rootdir: Path,
-        image_formats: Set[str],
-        colors: Optional[List] = None,
-        draw_titles: bool = True,
-        **kwargs) -> str:
+    measurementsdata: List[Dict],
+    imgdir: Path,
+    rootdir: Path,
+    image_formats: Set[str],
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    **kwargs,
+) -> str:
     """
     Creates classification comparison section of report.
 
@@ -596,94 +609,96 @@ def comparison_classification_report(
     """
     from kenning.core.report import create_report_from_measurements
 
-    KLogger.info('Running comparison_classification_report')
+    KLogger.info("Running comparison_classification_report")
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {'html'}
+    _image_formats = image_formats - {"html"}
 
     # check that each measurements have the same classes
     for data in measurementsdata:
         assert (
-            measurementsdata[0]['class_names'] == data['class_names']
-        ), 'Invalid class names in measurements'
+            measurementsdata[0]["class_names"] == data["class_names"]
+        ), "Invalid class names in measurements"
 
     report_variables = {
-        'report_name': measurementsdata[0]['report_name'],
-        'report_name_simple': measurementsdata[0]['report_name_simple']
+        "report_name": measurementsdata[0]["report_name"],
+        "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
-    names = [data['model_name'] for data in measurementsdata]
+    names = [data["model_name"] for data in measurementsdata]
     metric_visualization = {}
     accuracy, mean_inference_time, model_sizes = [], [], []
     skip_inference_metrics = False
     for data in measurementsdata:
         performance_metrics = compute_performance_metrics(data)
-        if 'inferencetime_mean' not in performance_metrics:
+        if "inferencetime_mean" not in performance_metrics:
             skip_inference_metrics = True
             break
 
         classification_metrics = compute_classification_metrics(data)
-        model_accuracy = classification_metrics['accuracy']
-        model_precision = classification_metrics['mean_precision']
-        model_sensitivity = classification_metrics['mean_sensitivity']
+        model_accuracy = classification_metrics["accuracy"]
+        model_precision = classification_metrics["mean_precision"]
+        model_sensitivity = classification_metrics["mean_sensitivity"]
         accuracy.append(model_accuracy)
 
-        model_inferencetime_mean = performance_metrics['inferencetime_mean']
+        model_inferencetime_mean = performance_metrics["inferencetime_mean"]
         mean_inference_time.append(model_inferencetime_mean)
 
-        if 'compiled_model_size' in data:
-            model_sizes.append(data['compiled_model_size'])
+        if "compiled_model_size" in data:
+            model_sizes.append(data["compiled_model_size"])
         else:
             KLogger.warning(
-                'Missing information about model size in measurements'
-                ' - computing size based on average RAM usage'
+                "Missing information about model size in measurements"
+                " - computing size based on average RAM usage"
             )
             model_sizes.append(
-                performance_metrics['session_utilization_mem_percent_mean']
+                performance_metrics["session_utilization_mem_percent_mean"]
             )
 
         # Accuracy, precision, sensitivity
-        metric_visualization[data['model_name']] = [
+        metric_visualization[data["model_name"]] = [
             model_accuracy,
             model_precision,
             model_sensitivity,
         ]
 
     if not skip_inference_metrics:
-        usepath = imgdir / 'accuracy_vs_inference_time'
+        usepath = imgdir / "accuracy_vs_inference_time"
         draw_bubble_plot(
             usepath,
-            'Accuracy vs Mean inference time' if draw_titles else None,
+            "Accuracy vs Mean inference time" if draw_titles else None,
             mean_inference_time,
-            'Mean inference time [s]',
+            "Mean inference time [s]",
             accuracy,
-            'Accuracy',
+            "Accuracy",
             model_sizes,
             names,
             colors=colors,
             outext=_image_formats,
         )
-        report_variables['bubbleplotpath'] = \
-            str(usepath.relative_to(rootdir)) + '.*'
+        report_variables["bubbleplotpath"] = (
+            str(usepath.relative_to(rootdir)) + ".*"
+        )
 
-        usepath = imgdir / 'classification_metric_comparison'
+        usepath = imgdir / "classification_metric_comparison"
         draw_radar_chart(
             usepath,
-            'Metric comparison' if draw_titles else None,
+            "Metric comparison" if draw_titles else None,
             metric_visualization,
-            ['Accuracy', 'Mean precision', 'Mean recall'],
+            ["Accuracy", "Mean precision", "Mean recall"],
             colors=colors,
             outext=_image_formats,
         )
-        report_variables['radarchartpath'] = \
-            f'{usepath.relative_to(rootdir)}.*'
-        report_variables['model_names'] = names
+        report_variables[
+            "radarchartpath"
+        ] = f"{usepath.relative_to(rootdir)}.*"
+        report_variables["model_names"] = names
         report_variables = {
             **report_variables,
             **metric_visualization,
         }
 
-    if 'predictions' in measurementsdata[0]:
-        predictions = [measurementsdata[0]['class_names']] + [
-            data['predictions'] for data in measurementsdata
+    if "predictions" in measurementsdata[0]:
+        predictions = [measurementsdata[0]["class_names"]] + [
+            data["predictions"] for data in measurementsdata
         ]
         predictions = list(zip(*predictions))
         predictions.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
@@ -691,14 +706,14 @@ def comparison_classification_report(
         predictions_data = {
             name: data for name, data in zip(names, predictions[1:])
         }
-        predictions_batplot_path = imgdir / 'predictions'
+        predictions_batplot_path = imgdir / "predictions"
         draw_barplot(
             outpath=predictions_batplot_path,
-            title='Predictions barplot' if draw_titles else None,
-            xtitle='Class',
+            title="Predictions barplot" if draw_titles else None,
+            xtitle="Class",
             xunit=None,
-            ytitle='Percentage',
-            yunit='%',
+            ytitle="Percentage",
+            yunit="%",
             xdata=predictions[0],
             ydata=predictions_data,
             colors=colors,
@@ -706,31 +721,32 @@ def comparison_classification_report(
         )
 
         report_variables[
-            'predictionsbarpath'
-        ] = f'{predictions_batplot_path.relative_to(rootdir)}.*'
+            "predictionsbarpath"
+        ] = f"{predictions_batplot_path.relative_to(rootdir)}.*"
 
     elif skip_inference_metrics:
         KLogger.warning(
-            'No inference measurements available, skipping report generation'
+            "No inference measurements available, skipping report generation"
         )
-        return ''
+        return ""
 
-    with path(reports, 'classification_comparison.md') as reporttemplate:
+    with path(reports, "classification_comparison.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, report_variables
         )
 
 
 def detection_report(
-        measurementsdata: Dict[str, List],
-        imgdir: Path,
-        imgprefix: str,
-        rootdir: Path,
-        image_formats: Set[str],
-        color_offset: int = 0,
-        cmap: Optional[Any] = None,
-        colors: Optional[List] = None,
-        draw_titles: bool = True) -> str:
+    measurementsdata: Dict[str, List],
+    imgdir: Path,
+    imgprefix: str,
+    rootdir: Path,
+    image_formats: Set[str],
+    color_offset: int = 0,
+    cmap: Optional[Any] = None,
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+) -> str:
     """
     Creates detection quality section of the report.
 
@@ -761,10 +777,11 @@ def detection_report(
         Content of the report in MyST format.
     """
     from kenning.core.report import create_report_from_measurements
-    from kenning.datasets.helpers.detection_and_segmentation import \
-        get_recall_precision, \
-        compute_ap, \
-        compute_map_per_threshold
+    from kenning.datasets.helpers.detection_and_segmentation import (
+        get_recall_precision,
+        compute_ap,
+        compute_map_per_threshold,
+    )
 
     KLogger.info(
         f'Running detection report for {measurementsdata["model_name"]}'
@@ -774,40 +791,44 @@ def detection_report(
 
     lines = get_recall_precision(measurementsdata, 0.5)
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {'html'}
+    _image_formats = image_formats - {"html"}
 
     aps = []
     for line in lines:
         aps.append(compute_ap(line[0], line[1]))
 
-    curvepath = imgdir / '{imgprefix}recall_precision_curves'
+    curvepath = imgdir / "{imgprefix}recall_precision_curves"
     recall_precision_curves(
         str(curvepath),
-        'Recall-Precision curves' if draw_titles else None,
+        "Recall-Precision curves" if draw_titles else None,
         lines,
-        measurementsdata['class_names'],
+        measurementsdata["class_names"],
         outext=_image_formats,
     )
-    measurementsdata['curvepath'] = f'{curvepath.relative_to(rootdir)}.*'
+    measurementsdata["curvepath"] = f"{curvepath.relative_to(rootdir)}.*"
 
-    gradientpath = imgdir / f'{imgprefix}recall_precision_gradients'
+    gradientpath = imgdir / f"{imgprefix}recall_precision_gradients"
     recall_precision_gradients(
         str(gradientpath),
-        'Average precision plots' if draw_titles else None,
+        "Average precision plots" if draw_titles else None,
         lines,
-        measurementsdata['class_names'],
+        measurementsdata["class_names"],
         aps,
-        measurementsdata['mAP'],
+        measurementsdata["mAP"],
         cmap=cmap,
         outext=_image_formats,
     )
-    measurementsdata['gradientpath'] = f'{gradientpath.relative_to(rootdir)}.*'
+    measurementsdata["gradientpath"] = f"{gradientpath.relative_to(rootdir)}.*"
 
     tp_iou = []
     all_tp_ious = []
 
-    for i in measurementsdata['class_names']:
-        dets = measurementsdata[f'eval_det/{i}'] if f'eval_det/{i}' in measurementsdata else []  # noqa: E501
+    for i in measurementsdata["class_names"]:
+        dets = (
+            measurementsdata[f"eval_det/{i}"]
+            if f"eval_det/{i}" in measurementsdata
+            else []
+        )  # noqa: E501
         det_tp_iou = [i[2] for i in dets if i[1]]
         if len(det_tp_iou) > 0:
             tp_iou.append(sum(det_tp_iou) / len(det_tp_iou))
@@ -815,70 +836,72 @@ def detection_report(
         else:
             tp_iou.append(0)
 
-    tpioupath = imgdir / f'{imgprefix}true_positive_iou_histogram'
+    tpioupath = imgdir / f"{imgprefix}true_positive_iou_histogram"
     true_positive_iou_histogram(
         str(tpioupath),
-        'Average True Positive IoU values' if draw_titles else None,
+        "Average True Positive IoU values" if draw_titles else None,
         tp_iou,
-        measurementsdata['class_names'],
+        measurementsdata["class_names"],
         colors=colors,
         color_offset=color_offset,
         outext=_image_formats,
     )
-    measurementsdata['tpioupath'] = f'{tpioupath.relative_to(rootdir)}.*'
+    measurementsdata["tpioupath"] = f"{tpioupath.relative_to(rootdir)}.*"
 
     if len(all_tp_ious) > 0:
-        iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values'
+        iouhistpath = imgdir / f"{imgprefix}histogram_tp_iou_values"
         true_positives_per_iou_range_histogram(
             str(iouhistpath),
-            "Histogram of True Positive IoU values" if draw_titles
-            else None,
+            "Histogram of True Positive IoU values" if draw_titles else None,
             all_tp_ious,
             colors=colors,
             color_offset=color_offset,
             outext=_image_formats,
         )
-        iouhistpath = imgdir / f'{imgprefix}histogram_tp_iou_values.*'
-        measurementsdata['iouhistpath'] = \
-            f'{iouhistpath.relative_to(rootdir)}.*'
+        iouhistpath = imgdir / f"{imgprefix}histogram_tp_iou_values.*"
+        measurementsdata[
+            "iouhistpath"
+        ] = f"{iouhistpath.relative_to(rootdir)}.*"
 
     thresholds = np.arange(0.2, 1.05, 0.05)
     mapvalues = compute_map_per_threshold(measurementsdata, thresholds)
 
-    mappath = imgdir / f'{imgprefix}map'
+    mappath = imgdir / f"{imgprefix}map"
     draw_plot(
         str(mappath),
-        'mAP value change over objectness threshold values' if draw_titles
+        "mAP value change over objectness threshold values"
+        if draw_titles
         else None,
-        'threshold',
+        "threshold",
         None,
-        'mAP',
+        "mAP",
         None,
         [[thresholds, mapvalues]],
         colors=colors,
         color_offset=color_offset,
         outext=_image_formats,
     )
-    measurementsdata['mappath'] = str(
-        mappath.relative_to(rootdir)) + '.*'
-    measurementsdata['max_mAP'] = max(mapvalues)
-    measurementsdata['max_mAP_index'] = thresholds[np.argmax(mapvalues)].round(2)  # noqa: E501
+    measurementsdata["mappath"] = str(mappath.relative_to(rootdir)) + ".*"
+    measurementsdata["max_mAP"] = max(mapvalues)
+    measurementsdata["max_mAP_index"] = thresholds[np.argmax(mapvalues)].round(
+        2
+    )  # noqa: E501
 
-    with path(reports, 'detection.md') as reporttemplate:
+    with path(reports, "detection.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            measurementsdata
+            reporttemplate, measurementsdata
         )
 
 
 def comparison_detection_report(
-        measurementsdata: List[Dict],
-        imgdir: Path,
-        rootdir: Path,
-        image_formats: Set[str],
-        colors: Optional[List] = None,
-        draw_titles: bool = True,
-        **kwargs) -> str:
+    measurementsdata: List[Dict],
+    imgdir: Path,
+    rootdir: Path,
+    image_formats: Set[str],
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    **kwargs,
+) -> str:
     """
     Creates detection comparison section of report.
 
@@ -904,60 +927,62 @@ def comparison_detection_report(
     str :
         Content of the report in MyST format.
     """
-    KLogger.info('Running comparison_detection_report')
+    KLogger.info("Running comparison_detection_report")
 
     from kenning.core.report import create_report_from_measurements
-    from kenning.datasets.helpers.detection_and_segmentation import \
-        compute_map_per_threshold
+    from kenning.datasets.helpers.detection_and_segmentation import (
+        compute_map_per_threshold,
+    )
 
     report_variables = {
-        'report_name': measurementsdata[0]['report_name'],
-        'report_name_simple': measurementsdata[0]['report_name_simple'],
-        'model_names': []
+        "report_name": measurementsdata[0]["report_name"],
+        "report_name_simple": measurementsdata[0]["report_name_simple"],
+        "model_names": [],
     }
     # HTML plots format unsupported, removing html
-    _image_formats = image_formats - {'html'}
+    _image_formats = image_formats - {"html"}
 
     visualization_data = []
     for data in measurementsdata:
         thresholds = np.arange(0.2, 1.05, 0.05)
         mapvalues = compute_map_per_threshold(data, thresholds)
         visualization_data.append((thresholds, mapvalues))
-        report_variables['model_names'].append(data['model_name'])
+        report_variables["model_names"].append(data["model_name"])
 
     usepath = imgdir / "detection_map_thresholds"
     draw_plot(
         usepath,
         "mAP values comparison over different threshold values"
-        if draw_titles else None,
-        'threshold',
+        if draw_titles
+        else None,
+        "threshold",
         None,
-        'mAP',
+        "mAP",
         None,
         visualization_data,
-        report_variables['model_names'],
+        report_variables["model_names"],
         colors=colors,
         outext=_image_formats,
     )
-    report_variables['mapcomparisonpath'] = f'{usepath.relative_to(rootdir)}.*'
+    report_variables["mapcomparisonpath"] = f"{usepath.relative_to(rootdir)}.*"
 
-    with path(reports, 'detection_comparison.md') as reporttemplate:
+    with path(reports, "detection_comparison.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            report_variables
+            reporttemplate, report_variables
         )
 
 
 def renode_stats_report(
-        measurementsdata: Dict,
-        imgdir: Path,
-        imgprefix: str,
-        rootdir: Path,
-        image_formats: Set[str],
-        draw_titles: bool = True,
-        colors: Optional[List] = None,
-        color_offset: int = 0,
-        **kwargs) -> str:
+    measurementsdata: Dict,
+    imgdir: Path,
+    imgprefix: str,
+    rootdir: Path,
+    image_formats: Set[str],
+    draw_titles: bool = True,
+    colors: Optional[List] = None,
+    color_offset: int = 0,
+    **kwargs,
+) -> str:
     """
     Creates Renode stats section of the report.
 
@@ -996,281 +1021,297 @@ def renode_stats_report(
 
     # shift colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
-    plot_options['colormap'] = plot_options['colormap'][color_offset:]
+    plot_options["colormap"] = plot_options["colormap"][color_offset:]
 
     measurementsdata |= compute_renode_metrics([measurementsdata])
 
     # opcode counter barplot
-    if 'sorted_opcode_counters' in measurementsdata:
-        opcode_counters = measurementsdata['sorted_opcode_counters']
-        instr_barplot_path = imgdir / f'{imgprefix}instr_barplot'
+    if "sorted_opcode_counters" in measurementsdata:
+        opcode_counters = measurementsdata["sorted_opcode_counters"]
+        instr_barplot_path = imgdir / f"{imgprefix}instr_barplot"
 
         draw_barplot(
             outpath=instr_barplot_path,
-            title='Instructions barplot' if draw_titles else None,
-            xtitle='Opcode',
+            title="Instructions barplot" if draw_titles else None,
+            xtitle="Opcode",
             xunit=None,
-            ytitle='Counter',
+            ytitle="Counter",
             yunit=None,
-            xdata=opcode_counters['opcodes'],
-            ydata=opcode_counters['counters'],
+            xdata=opcode_counters["opcodes"],
+            ydata=opcode_counters["counters"],
             colors=colors[color_offset:],
             outext=image_formats,
-            max_bars_matplotlib=32
+            max_bars_matplotlib=32,
         )
 
-        measurementsdata['instrbarpath'] = \
-            f'{instr_barplot_path.relative_to(rootdir)}.*'
+        measurementsdata[
+            "instrbarpath"
+        ] = f"{instr_barplot_path.relative_to(rootdir)}.*"
 
     # vector opcode counter barplot
-    if 'sorted_vector_opcode_counters' in measurementsdata:
-        vector_opcode_counters = \
-            measurementsdata['sorted_vector_opcode_counters']
-        vector_instr_barplot_path = imgdir / f'{imgprefix}vector_instr_barplot'
+    if "sorted_vector_opcode_counters" in measurementsdata:
+        vector_opcode_counters = measurementsdata[
+            "sorted_vector_opcode_counters"
+        ]
+        vector_instr_barplot_path = imgdir / f"{imgprefix}vector_instr_barplot"
 
         draw_barplot(
             outpath=vector_instr_barplot_path,
-            title='Vector instructions barplot' if draw_titles else None,
-            xtitle='Opcode',
+            title="Vector instructions barplot" if draw_titles else None,
+            xtitle="Opcode",
             xunit=None,
-            ytitle='Counter',
+            ytitle="Counter",
             yunit=None,
-            xdata=vector_opcode_counters['opcodes'],
-            ydata=vector_opcode_counters['counters'],
+            xdata=vector_opcode_counters["opcodes"],
+            ydata=vector_opcode_counters["counters"],
             colors=colors[color_offset:],
             outext=image_formats,
-            max_bars_matplotlib=32
+            max_bars_matplotlib=32,
         )
 
-        measurementsdata['vectorinstrbarpath'] = \
-            f'{vector_instr_barplot_path.relative_to(rootdir)}.*'
+        measurementsdata[
+            "vectorinstrbarpath"
+        ] = f"{vector_instr_barplot_path.relative_to(rootdir)}.*"
 
     # executed instructions plot
-    for cpu, data in measurementsdata['executed_instructions'].items():
+    for cpu, data in measurementsdata["executed_instructions"].items():
         paths = {}
 
-        executed_instructions_plot_path = \
-            imgdir / f'{imgprefix}executed_instructions_{cpu}_plot'
+        executed_instructions_plot_path = (
+            imgdir / f"{imgprefix}executed_instructions_{cpu}_plot"
+        )
 
         render_time_series_plot_with_histogram(
             ydata=data,
-            xdata=measurementsdata['profiler_timestamps'],
-            title=f'Executed instructions for {cpu}' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Executed instructions',
-            yunit='1/s',
+            xdata=measurementsdata["profiler_timestamps"],
+            title=f"Executed instructions for {cpu}" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Executed instructions",
+            yunit="1/s",
             outpath=str(executed_instructions_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **plot_options
+            **plot_options,
         )
 
-        paths['persec'] = \
-            f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "persec"
+        ] = f"{executed_instructions_plot_path.relative_to(rootdir)}.*"
 
-        cum_executed_instructions_plot_path = \
-            imgdir / f'{imgprefix}cumulative_executed_instructions_{cpu}_plot'
+        cum_executed_instructions_plot_path = (
+            imgdir / f"{imgprefix}cumulative_executed_instructions_{cpu}_plot"
+        )
 
         draw_plot(
-            lines=[[
-                measurementsdata['profiler_timestamps'],
-                np.cumsum(data)
-            ]],
-            title=f'Executed instructions for {cpu}' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Total executed instructions',
+            lines=[[measurementsdata["profiler_timestamps"], np.cumsum(data)]],
+            title=f"Executed instructions for {cpu}" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Total executed instructions",
             yunit=None,
             outpath=str(cum_executed_instructions_plot_path),
-            outext=image_formats.difference({'html'}),
-            colors=plot_options['colormap']
+            outext=image_formats.difference({"html"}),
+            colors=plot_options["colormap"],
         )
 
-        paths['cumulative'] = \
-            f'{cum_executed_instructions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "cumulative"
+        ] = f"{cum_executed_instructions_plot_path.relative_to(rootdir)}.*"
 
-        if 'executedinstrplotpath' not in measurementsdata:
-            measurementsdata['executedinstrplotpath'] = {}
+        if "executedinstrplotpath" not in measurementsdata:
+            measurementsdata["executedinstrplotpath"] = {}
 
-        measurementsdata['executedinstrplotpath'][cpu] = paths
+        measurementsdata["executedinstrplotpath"][cpu] = paths
 
     # memory accesses plot
-    for access_type in ('read', 'write'):
-        if not len(measurementsdata['memory_accesses'][access_type]):
+    for access_type in ("read", "write"):
+        if not len(measurementsdata["memory_accesses"][access_type]):
             continue
 
         paths = {}
 
-        memory_access_plot_path = \
-            imgdir / f'{imgprefix}memory_{access_type}s_plot'
+        memory_access_plot_path = (
+            imgdir / f"{imgprefix}memory_{access_type}s_plot"
+        )
 
         render_time_series_plot_with_histogram(
-            ydata=measurementsdata['memory_accesses'][access_type],
-            xdata=measurementsdata['profiler_timestamps'],
-            title=f'Memory {access_type}s' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle=f'Memory {access_type}s',
-            yunit='1/s',
+            ydata=measurementsdata["memory_accesses"][access_type],
+            xdata=measurementsdata["profiler_timestamps"],
+            title=f"Memory {access_type}s" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle=f"Memory {access_type}s",
+            yunit="1/s",
             outpath=str(memory_access_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **plot_options
+            **plot_options,
         )
 
-        paths['persec'] = \
-            f'{memory_access_plot_path.relative_to(rootdir)}.*'
+        paths["persec"] = f"{memory_access_plot_path.relative_to(rootdir)}.*"
 
-        cum_memory_access_plot_path = \
-            imgdir / f'{imgprefix}cumulative_memory_{access_type}s_plot'
+        cum_memory_access_plot_path = (
+            imgdir / f"{imgprefix}cumulative_memory_{access_type}s_plot"
+        )
 
         draw_plot(
-            lines=[[
-                measurementsdata['profiler_timestamps'],
-                np.cumsum(measurementsdata['memory_accesses'][access_type])
-            ]],
-            title=f'Memory {access_type}s' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle=f'Total memory {access_type}s',
+            lines=[
+                [
+                    measurementsdata["profiler_timestamps"],
+                    np.cumsum(
+                        measurementsdata["memory_accesses"][access_type]
+                    ),
+                ]
+            ],
+            title=f"Memory {access_type}s" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle=f"Total memory {access_type}s",
             yunit=None,
             outpath=str(cum_memory_access_plot_path),
-            outext=image_formats.difference({'html'}),
-            colors=plot_options['colormap']
+            outext=image_formats.difference({"html"}),
+            colors=plot_options["colormap"],
         )
 
-        paths['cumulative'] = \
-            f'{cum_memory_access_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "cumulative"
+        ] = f"{cum_memory_access_plot_path.relative_to(rootdir)}.*"
 
-        if 'memoryaccessesplotpath' not in measurementsdata:
-            measurementsdata['memoryaccessesplotpath'] = {}
+        if "memoryaccessesplotpath" not in measurementsdata:
+            measurementsdata["memoryaccessesplotpath"] = {}
 
-        measurementsdata['memoryaccessesplotpath'][access_type] = paths
+        measurementsdata["memoryaccessesplotpath"][access_type] = paths
 
     # peripheral accesses plot
-    for (peripheral,
-         measurements) in measurementsdata['peripheral_accesses'].items():
+    for peripheral, measurements in measurementsdata[
+        "peripheral_accesses"
+    ].items():
         paths = {}
 
-        for access_type in ('read', 'write'):
+        for access_type in ("read", "write"):
             if not sum(measurements[access_type]):
                 continue
 
             peripheral_access_plot_path = (
-                imgdir /
-                f'{imgprefix}_{peripheral}_{access_type}s_plot'
+                imgdir / f"{imgprefix}_{peripheral}_{access_type}s_plot"
             )
 
             render_time_series_plot_with_histogram(
                 ydata=measurements[access_type],
-                xdata=measurementsdata['profiler_timestamps'],
-                title=f'{peripheral} {access_type}s'
-                      if draw_titles else None,
-                xtitle='Interval timestamp',
-                xunit='s',
-                ytitle=f'{peripheral} {access_type}s',
-                yunit='1/s',
+                xdata=measurementsdata["profiler_timestamps"],
+                title=f"{peripheral} {access_type}s" if draw_titles else None,
+                xtitle="Interval timestamp",
+                xunit="s",
+                ytitle=f"{peripheral} {access_type}s",
+                yunit="1/s",
                 outpath=str(peripheral_access_plot_path),
                 skipfirst=True,
                 outputext=image_formats,
-                **plot_options
+                **plot_options,
             )
 
             paths[access_type] = {}
-            paths[access_type]['persec'] = \
-                f'{peripheral_access_plot_path.relative_to(rootdir)}.*'
+            paths[access_type][
+                "persec"
+            ] = f"{peripheral_access_plot_path.relative_to(rootdir)}.*"
 
             cum_peripheral_access_plot_path = (
-                imgdir /
-                f'{imgprefix}cumulative_{peripheral}_{access_type}s_plot'
+                imgdir
+                / f"{imgprefix}cumulative_{peripheral}_{access_type}s_plot"
             )
 
             draw_plot(
-                lines=[[
-                    measurementsdata['profiler_timestamps'],
-                    np.cumsum(measurements[access_type])
-                ]],
-                title=f'{peripheral} {access_type}s'
-                      if draw_titles else None,
-                xtitle='Interval timestamp',
-                xunit='s',
-                ytitle=f'Total {peripheral} {access_type}s',
+                lines=[
+                    [
+                        measurementsdata["profiler_timestamps"],
+                        np.cumsum(measurements[access_type]),
+                    ]
+                ],
+                title=f"{peripheral} {access_type}s" if draw_titles else None,
+                xtitle="Interval timestamp",
+                xunit="s",
+                ytitle=f"Total {peripheral} {access_type}s",
                 yunit=None,
                 outpath=str(cum_peripheral_access_plot_path),
-                outext=image_formats.difference({'html'}),
-                colors=plot_options['colormap']
+                outext=image_formats.difference({"html"}),
+                colors=plot_options["colormap"],
             )
 
-            paths[access_type]['cumulative'] = \
-                f'{cum_peripheral_access_plot_path.relative_to(rootdir)}.*'
+            paths[access_type][
+                "cumulative"
+            ] = f"{cum_peripheral_access_plot_path.relative_to(rootdir)}.*"
 
         if len(paths):
-            if 'peripheralaccessesplotpath' not in measurementsdata:
-                measurementsdata['peripheralaccessesplotpath'] = {}
-            measurementsdata['peripheralaccessesplotpath'][peripheral] = paths
+            if "peripheralaccessesplotpath" not in measurementsdata:
+                measurementsdata["peripheralaccessesplotpath"] = {}
+            measurementsdata["peripheralaccessesplotpath"][peripheral] = paths
 
     # exceptions plot
-    if sum(measurementsdata['exceptions']):
+    if sum(measurementsdata["exceptions"]):
         paths = {}
 
-        exceptions_plot_path = imgdir / f'{imgprefix}exceptions_plot'
+        exceptions_plot_path = imgdir / f"{imgprefix}exceptions_plot"
 
         render_time_series_plot_with_histogram(
-            ydata=measurementsdata['exceptions'],
-            xdata=measurementsdata['profiler_timestamps'],
-            title='Exceptions' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Exceptions count',
-            yunit='1/s',
+            ydata=measurementsdata["exceptions"],
+            xdata=measurementsdata["profiler_timestamps"],
+            title="Exceptions" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Exceptions count",
+            yunit="1/s",
             outpath=str(exceptions_plot_path),
             skipfirst=True,
             outputext=image_formats,
-            **plot_options
+            **plot_options,
         )
 
-        paths['persec'] = f'{exceptions_plot_path.relative_to(rootdir)}.*'
+        paths["persec"] = f"{exceptions_plot_path.relative_to(rootdir)}.*"
 
-        cum_exceptions_plot_path = \
-            imgdir / f'{imgprefix}cumulative_exceptions_plot'
+        cum_exceptions_plot_path = (
+            imgdir / f"{imgprefix}cumulative_exceptions_plot"
+        )
 
         draw_plot(
-            lines=[[
-                measurementsdata['profiler_timestamps'],
-                np.cumsum(measurementsdata['exceptions'])
-            ]],
-            title='Total xceptions' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Total exceptions',
+            lines=[
+                [
+                    measurementsdata["profiler_timestamps"],
+                    np.cumsum(measurementsdata["exceptions"]),
+                ]
+            ],
+            title="Total xceptions" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Total exceptions",
             yunit=None,
             outpath=str(cum_exceptions_plot_path),
-            outext=image_formats.difference({'html'}),
-            colors=plot_options['colormap']
+            outext=image_formats.difference({"html"}),
+            colors=plot_options["colormap"],
         )
 
-        paths['cumulative'] = \
-            f'{cum_exceptions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "cumulative"
+        ] = f"{cum_exceptions_plot_path.relative_to(rootdir)}.*"
 
-        measurementsdata['exceptionsplotpath'] = paths
+        measurementsdata["exceptionsplotpath"] = paths
 
-    with path(reports, 'renode_stats.md') as reporttemplate:
+    with path(reports, "renode_stats.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            measurementsdata
+            reporttemplate, measurementsdata
         )
 
 
 def comparison_renode_stats_report(
-        measurementsdata: List[Dict],
-        imgdir: Path,
-        rootdir: Path,
-        image_formats: Set[str],
-        color_offset: int = 0,
-        draw_titles: bool = True,
-        colors: Optional[List] = None,
-        **kwargs) -> str:
+    measurementsdata: List[Dict],
+    imgdir: Path,
+    rootdir: Path,
+    image_formats: Set[str],
+    color_offset: int = 0,
+    draw_titles: bool = True,
+    colors: Optional[List] = None,
+    **kwargs,
+) -> str:
     """
     Creates Renode stats section of the report.
 
@@ -1304,8 +1345,8 @@ def comparison_renode_stats_report(
     from kenning.core.report import create_report_from_measurements
 
     def retrieve_non_zero_profiler_data(
-            measurementsdata: List[Dict],
-            keys: List[str] = []) -> Tuple[List, List, List]:
+        measurementsdata: List[Dict], keys: List[str] = []
+    ) -> Tuple[List, List, List]:
         ydata = []
         xdata = []
         labels = []
@@ -1324,324 +1365,341 @@ def comparison_renode_stats_report(
                 continue
 
             ydata.append(data)
-            xdata.append(m['profiler_timestamps'])
-            labels.append(m['model_name'])
+            xdata.append(m["profiler_timestamps"])
+            labels.append(m["model_name"])
 
         return xdata, ydata, labels
 
-    KLogger.info('Running comparison_renode_stats_report')
+    KLogger.info("Running comparison_renode_stats_report")
 
     report_variables = {
-        'report_name': measurementsdata[0]['report_name'],
-        'report_name_simple': measurementsdata[0]['report_name_simple']
+        "report_name": measurementsdata[0]["report_name"],
+        "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
 
     metrics = compute_renode_metrics(measurementsdata)
 
     # opcode counter barplot
-    if 'sorted_opcode_counters' in metrics:
-        opcode_counters = metrics['sorted_opcode_counters']
-        instr_barplot_path = imgdir / 'instr_barplot_comparison'
+    if "sorted_opcode_counters" in metrics:
+        opcode_counters = metrics["sorted_opcode_counters"]
+        instr_barplot_path = imgdir / "instr_barplot_comparison"
 
         draw_barplot(
             outpath=instr_barplot_path,
-            title='Instructions barplot' if draw_titles else None,
-            xtitle='Opcode',
+            title="Instructions barplot" if draw_titles else None,
+            xtitle="Opcode",
             xunit=None,
-            ytitle='Counter',
+            ytitle="Counter",
             yunit=None,
-            xdata=opcode_counters['opcodes'],
-            ydata=opcode_counters['counters'],
+            xdata=opcode_counters["opcodes"],
+            ydata=opcode_counters["counters"],
             colors=colors,
             outext=image_formats,
-            max_bars_matplotlib=32
+            max_bars_matplotlib=32,
         )
 
-        report_variables['instrbarpath'] = \
-            f'{instr_barplot_path.relative_to(rootdir)}.*'
+        report_variables[
+            "instrbarpath"
+        ] = f"{instr_barplot_path.relative_to(rootdir)}.*"
 
     # vector opcode counter barplot
-    if 'sorted_vector_opcode_counters' in metrics:
-        vector_opcode_counters = metrics['sorted_vector_opcode_counters']
-        vector_instr_barplot_path = imgdir / 'vector_instr_barplot_comparison'
+    if "sorted_vector_opcode_counters" in metrics:
+        vector_opcode_counters = metrics["sorted_vector_opcode_counters"]
+        vector_instr_barplot_path = imgdir / "vector_instr_barplot_comparison"
 
         draw_barplot(
             outpath=vector_instr_barplot_path,
-            title='Vector instructions barplot' if draw_titles else None,
-            xtitle='Opcode',
+            title="Vector instructions barplot" if draw_titles else None,
+            xtitle="Opcode",
             xunit=None,
-            ytitle='Counter',
+            ytitle="Counter",
             yunit=None,
-            xdata=vector_opcode_counters['opcodes'],
-            ydata=vector_opcode_counters['counters'],
+            xdata=vector_opcode_counters["opcodes"],
+            ydata=vector_opcode_counters["counters"],
             colors=colors,
             outext=image_formats,
-            max_bars_matplotlib=32
+            max_bars_matplotlib=32,
         )
 
-        report_variables['vectorinstrbarpath'] = \
-            f'{vector_instr_barplot_path.relative_to(rootdir)}.*'
+        report_variables[
+            "vectorinstrbarpath"
+        ] = f"{vector_instr_barplot_path.relative_to(rootdir)}.*"
 
     # executed instructions plot
-    report_variables['executedinstrplotpath'] = {}
+    report_variables["executedinstrplotpath"] = {}
 
     all_cpus = set()
 
     for data in measurementsdata:
-        all_cpus = all_cpus.union(
-            data['executed_instructions'].keys()
-        )
+        all_cpus = all_cpus.union(data["executed_instructions"].keys())
 
     for cpu in all_cpus:
         xdata, ydata, labels = retrieve_non_zero_profiler_data(
-            measurementsdata,
-            ['executed_instructions', cpu]
+            measurementsdata, ["executed_instructions", cpu]
         )
 
         paths = {}
 
-        executed_instructions_plot_path = \
-            imgdir / f'executed_instructions_{cpu}_plot_comparison'
+        executed_instructions_plot_path = (
+            imgdir / f"executed_instructions_{cpu}_plot_comparison"
+        )
 
         render_multiple_time_series_plot(
             ydatas=[ydata],
             xdatas=[xdata],
-            title=f'Executed instructions for {cpu} comparison'
-                  if draw_titles else None,
+            title=f"Executed instructions for {cpu} comparison"
+            if draw_titles
+            else None,
             subtitles=None,
-            xtitles=['Interval timestamp'],
-            xunits=['s'],
-            ytitles=['Executed instructions'],
-            yunits=['1/s'],
+            xtitles=["Interval timestamp"],
+            xunits=["s"],
+            ytitles=["Executed instructions"],
+            yunits=["1/s"],
             legend_labels=labels,
             outpath=executed_instructions_plot_path,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **SERVIS_PLOT_OPTIONS,
         )
 
-        paths['persec'] = \
-            f'{executed_instructions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "persec"
+        ] = f"{executed_instructions_plot_path.relative_to(rootdir)}.*"
 
-        cum_executed_instructions_plot_path = \
-            imgdir / f'cumulative_executed_instructions_{cpu}_plot_comparison'
+        cum_executed_instructions_plot_path = (
+            imgdir / f"cumulative_executed_instructions_{cpu}_plot_comparison"
+        )
 
         draw_plot(
             lines=[[x, np.cumsum(y)] for x, y in zip(xdata, ydata)],
-            title=f'Executed instructions for {cpu}' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Total executed instructions',
+            title=f"Executed instructions for {cpu}" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Total executed instructions",
             yunit=None,
             linelabels=labels,
             outpath=str(cum_executed_instructions_plot_path),
-            outext=image_formats.difference({'html'}),
-            colors=SERVIS_PLOT_OPTIONS['colormap']
+            outext=image_formats.difference({"html"}),
+            colors=SERVIS_PLOT_OPTIONS["colormap"],
         )
 
-        paths['cumulative'] = \
-            f'{cum_executed_instructions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "cumulative"
+        ] = f"{cum_executed_instructions_plot_path.relative_to(rootdir)}.*"
 
-        if 'executedinstrplotpath' not in report_variables:
-            report_variables['executedinstrplotpath'] = {}
+        if "executedinstrplotpath" not in report_variables:
+            report_variables["executedinstrplotpath"] = {}
 
-        report_variables['executedinstrplotpath'][cpu] = paths
+        report_variables["executedinstrplotpath"][cpu] = paths
 
     # memory accesses plot
-    if any(('memory_accesses' in data for data in measurementsdata)):
-        for access_type in ('read', 'write'):
+    if any(("memory_accesses" in data for data in measurementsdata)):
+        for access_type in ("read", "write"):
             paths = {}
 
-            memory_access_plot_path = \
-                imgdir / f'memory_{access_type}s_plot_comparison'
+            memory_access_plot_path = (
+                imgdir / f"memory_{access_type}s_plot_comparison"
+            )
 
             render_multiple_time_series_plot(
-                ydatas=[[m['memory_accesses']['read']
-                         for m in measurementsdata]],
-                xdatas=[[m['profiler_timestamps'] for m in measurementsdata]],
-                title='Memory reads comparison' if draw_titles else None,
+                ydatas=[
+                    [m["memory_accesses"]["read"] for m in measurementsdata]
+                ],
+                xdatas=[[m["profiler_timestamps"] for m in measurementsdata]],
+                title="Memory reads comparison" if draw_titles else None,
                 subtitles=None,
-                xtitles=['Interval timestamp'],
-                xunits=['s'],
-                ytitles=['Memory reads'],
-                yunits=['1/s'],
-                legend_labels=[m['model_name'] for m in measurementsdata],
+                xtitles=["Interval timestamp"],
+                xunits=["s"],
+                ytitles=["Memory reads"],
+                yunits=["1/s"],
+                legend_labels=[m["model_name"] for m in measurementsdata],
                 outpath=memory_access_plot_path,
                 outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS
+                **SERVIS_PLOT_OPTIONS,
             )
 
-            paths['persec'] = \
-                f'{memory_access_plot_path.relative_to(rootdir)}.*'
+            paths[
+                "persec"
+            ] = f"{memory_access_plot_path.relative_to(rootdir)}.*"
 
-            cum_memory_access_plot_path = \
-                imgdir / f'cumulative_memory_{access_type}s_plot_comparison'
+            cum_memory_access_plot_path = (
+                imgdir / f"cumulative_memory_{access_type}s_plot_comparison"
+            )
 
             draw_plot(
-                lines=[[
-                    m['profiler_timestamps'],
-                    np.cumsum(m['memory_accesses'][access_type])
-                ] for m in measurementsdata],
-                title=f'Memory {access_type}s' if draw_titles else None,
-                xtitle='Interval timestamp',
-                xunit='s',
-                ytitle=f'Total memory {access_type}s',
+                lines=[
+                    [
+                        m["profiler_timestamps"],
+                        np.cumsum(m["memory_accesses"][access_type]),
+                    ]
+                    for m in measurementsdata
+                ],
+                title=f"Memory {access_type}s" if draw_titles else None,
+                xtitle="Interval timestamp",
+                xunit="s",
+                ytitle=f"Total memory {access_type}s",
                 yunit=None,
-                linelabels=[m['model_name'] for m in measurementsdata],
+                linelabels=[m["model_name"] for m in measurementsdata],
                 outpath=str(cum_memory_access_plot_path),
-                outext=image_formats.difference({'html'}),
-                colors=SERVIS_PLOT_OPTIONS['colormap']
+                outext=image_formats.difference({"html"}),
+                colors=SERVIS_PLOT_OPTIONS["colormap"],
             )
 
-            paths['cumulative'] = \
-                f'{cum_memory_access_plot_path.relative_to(rootdir)}.*'
+            paths[
+                "cumulative"
+            ] = f"{cum_memory_access_plot_path.relative_to(rootdir)}.*"
 
-            if 'memoryaccessesplotpath' not in report_variables:
-                report_variables['memoryaccessesplotpath'] = {}
+            if "memoryaccessesplotpath" not in report_variables:
+                report_variables["memoryaccessesplotpath"] = {}
 
-            report_variables['memoryaccessesplotpath'][access_type] = paths
+            report_variables["memoryaccessesplotpath"][access_type] = paths
 
     # peripheral accesses plot
-    report_variables['peripheralaccessesplotpath'] = {}
+    report_variables["peripheralaccessesplotpath"] = {}
 
     all_peripherals = set()
 
     for data in measurementsdata:
         all_peripherals = all_peripherals.union(
-            data['peripheral_accesses'].keys()
+            data["peripheral_accesses"].keys()
         )
 
     for peripheral in all_peripherals:
         paths = {}
 
-        for access_type in ('read', 'write'):
+        for access_type in ("read", "write"):
             xdata, ydata, labels = retrieve_non_zero_profiler_data(
                 measurementsdata,
-                ['peripheral_accesses', peripheral, access_type]
+                ["peripheral_accesses", peripheral, access_type],
             )
 
             if not len(ydata):
                 continue
 
             peripheral_access_plot_path = (
-                imgdir /
-                f'{peripheral}_{access_type}s_plot_comparison'
+                imgdir / f"{peripheral}_{access_type}s_plot_comparison"
             )
 
             render_multiple_time_series_plot(
                 ydatas=[ydata],
                 xdatas=[xdata],
-                title=f'{peripheral} reads comparison'
-                      if draw_titles else None,
+                title=f"{peripheral} reads comparison"
+                if draw_titles
+                else None,
                 subtitles=None,
-                xtitles=['Interval timestamp'],
-                xunits=['s'],
-                ytitles=[f'{peripheral} {access_type}s'],
-                yunits=['1/s'],
+                xtitles=["Interval timestamp"],
+                xunits=["s"],
+                ytitles=[f"{peripheral} {access_type}s"],
+                yunits=["1/s"],
                 legend_labels=labels,
                 outpath=peripheral_access_plot_path,
                 outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS
+                **SERVIS_PLOT_OPTIONS,
             )
 
             paths[access_type] = {}
-            paths[access_type]['persec'] = \
-                f'{peripheral_access_plot_path.relative_to(rootdir)}.*'
+            paths[access_type][
+                "persec"
+            ] = f"{peripheral_access_plot_path.relative_to(rootdir)}.*"
 
             cum_peripheral_access_plot_path = (
-                imgdir /
-                f'cumulative_{peripheral}_{access_type}s_plot_comparison'
+                imgdir
+                / f"cumulative_{peripheral}_{access_type}s_plot_comparison"
             )
 
             draw_plot(
                 lines=[[x, np.cumsum(y)] for x, y in zip(xdata, ydata)],
-                title=f'{peripheral} {access_type}s' if draw_titles else None,
-                xtitle='Interval timestamp',
-                xunit='s',
-                ytitle=f'Total {peripheral} {access_type}s',
+                title=f"{peripheral} {access_type}s" if draw_titles else None,
+                xtitle="Interval timestamp",
+                xunit="s",
+                ytitle=f"Total {peripheral} {access_type}s",
                 yunit=None,
                 linelabels=labels,
                 outpath=str(cum_peripheral_access_plot_path),
-                outext=image_formats.difference({'html'}),
-                colors=SERVIS_PLOT_OPTIONS['colormap']
+                outext=image_formats.difference({"html"}),
+                colors=SERVIS_PLOT_OPTIONS["colormap"],
             )
 
-            paths[access_type]['cumulative'] = \
-                f'{cum_peripheral_access_plot_path.relative_to(rootdir)}.*'
+            paths[access_type][
+                "cumulative"
+            ] = f"{cum_peripheral_access_plot_path.relative_to(rootdir)}.*"
 
         if len(paths):
-            report_variables['peripheralaccessesplotpath'][peripheral] = paths
+            report_variables["peripheralaccessesplotpath"][peripheral] = paths
 
     # exceptions plot
     xdata, ydata, labels = retrieve_non_zero_profiler_data(
-        measurementsdata,
-        ['exceptions']
+        measurementsdata, ["exceptions"]
     )
 
     if len(ydata):
         paths = {}
 
-        exceptions_plot_path = imgdir / 'exceptions_plot_comparison'
+        exceptions_plot_path = imgdir / "exceptions_plot_comparison"
 
         render_multiple_time_series_plot(
             ydatas=[ydata],
             xdatas=[xdata],
-            title='Exceptions comparison' if draw_titles else None,
+            title="Exceptions comparison" if draw_titles else None,
             subtitles=None,
-            xtitles=['Interval timestamp'],
-            xunits=['s'],
-            ytitles=['Exceptions count'],
-            yunits='1/s',
+            xtitles=["Interval timestamp"],
+            xunits=["s"],
+            ytitles=["Exceptions count"],
+            yunits="1/s",
             legend_labels=labels,
             outpath=exceptions_plot_path,
             outputext=image_formats,
-            **SERVIS_PLOT_OPTIONS
+            **SERVIS_PLOT_OPTIONS,
         )
 
-        paths['persec'] = f'{exceptions_plot_path.relative_to(rootdir)}.*'
+        paths["persec"] = f"{exceptions_plot_path.relative_to(rootdir)}.*"
 
-        cum_exceptions_plot_path = \
-            imgdir / 'cumulative_exceptions_plot_comparison'
+        cum_exceptions_plot_path = (
+            imgdir / "cumulative_exceptions_plot_comparison"
+        )
 
         draw_plot(
-            lines=[[
-                measurementsdata['profiler_timestamps'],
-                np.cumsum(measurementsdata['exceptions'])
-            ]],
-            title='Total xceptions' if draw_titles else None,
-            xtitle='Interval timestamp',
-            xunit='s',
-            ytitle='Total exceptions',
+            lines=[
+                [
+                    measurementsdata["profiler_timestamps"],
+                    np.cumsum(measurementsdata["exceptions"]),
+                ]
+            ],
+            title="Total xceptions" if draw_titles else None,
+            xtitle="Interval timestamp",
+            xunit="s",
+            ytitle="Total exceptions",
             yunit=None,
             outpath=str(cum_exceptions_plot_path),
-            outext=image_formats.difference({'html'}),
-            colors=SERVIS_PLOT_OPTIONS['colormap']
+            outext=image_formats.difference({"html"}),
+            colors=SERVIS_PLOT_OPTIONS["colormap"],
         )
 
-        paths['cumulative'] = \
-            f'{cum_exceptions_plot_path.relative_to(rootdir)}.*'
+        paths[
+            "cumulative"
+        ] = f"{cum_exceptions_plot_path.relative_to(rootdir)}.*"
 
-        report_variables['exceptionsplotpath'] = paths
+        report_variables["exceptionsplotpath"] = paths
 
-    with path(reports, 'renode_stats_comparison.md') as reporttemplate:
+    with path(reports, "renode_stats_comparison.md") as reporttemplate:
         return create_report_from_measurements(
-            reporttemplate,
-            report_variables
+            reporttemplate, report_variables
         )
 
 
 def generate_report(
-        report_name: str,
-        data: List[Dict],
-        outputpath: Path,
-        imgdir: Path,
-        report_types: List[str],
-        rootdir: Path,
-        image_formats: Set[str],
-        command: List[str] = [],
-        cmap: Optional[Any] = None,
-        colors: Optional[List] = None,
-        draw_titles: bool = True,
-        smaller_header: bool = False,):
+    report_name: str,
+    data: List[Dict],
+    outputpath: Path,
+    imgdir: Path,
+    report_types: List[str],
+    rootdir: Path,
+    image_formats: Set[str],
+    command: List[str] = [],
+    cmap: Optional[Any] = None,
+    colors: Optional[List] = None,
+    draw_titles: bool = True,
+    smaller_header: bool = False,
+):
     """
     Generates an MyST report based on Measurements data.
 
@@ -1686,38 +1744,35 @@ def generate_report(
         PERFORMANCE: performance_report,
         CLASSIFICATION: classification_report,
         DETECTION: detection_report,
-        RENODE: renode_stats_report
+        RENODE: renode_stats_report,
     }
     comparereptypes = {
         PERFORMANCE: comparison_performance_report,
         CLASSIFICATION: comparison_classification_report,
         DETECTION: comparison_detection_report,
-        RENODE: comparison_renode_stats_report
+        RENODE: comparison_renode_stats_report,
     }
 
     header_data = {
-        'report_name': report_name,
-        'model_names': [],
-        'command': [],
-        'smaller_header': smaller_header,
+        "report_name": report_name,
+        "model_names": [],
+        "command": [],
+        "smaller_header": smaller_header,
     }
 
     for model_data in data:
-        header_data['model_names'].append(model_data['model_name'])
-        if 'command' in model_data:
-            header_data['command'] += model_data['command'] + ['']
-        header_data[model_data['model_name']] = model_data
+        header_data["model_names"].append(model_data["model_name"])
+        if "command" in model_data:
+            header_data["command"] += model_data["command"] + [""]
+        header_data[model_data["model_name"]] = model_data
 
     # add command only if previous one is not the same
     # if any(c1 != c2 for c1, c2 in zip(header_data['command'], command)):
-    if header_data['command'] == command:
-        header_data['command'] += command
+    if header_data["command"] == command:
+        header_data["command"] += command
 
-    with path(reports, 'header.md') as reporttemplate:
-        content = create_report_from_measurements(
-            reporttemplate,
-            header_data
-        )
+    with path(reports, "header.md") as reporttemplate:
+        content = create_report_from_measurements(reporttemplate, header_data)
 
     for typ in report_types:
         for i, model_data in enumerate(data):
@@ -1726,17 +1781,30 @@ def generate_report(
             else:
                 imgprefix = ""
             content += reptypes[typ](
-                model_data, imgdir, imgprefix, rootdir,
-                image_formats, color_offset=i, cmap=cmap, colors=colors,
-                draw_titles=draw_titles)
+                model_data,
+                imgdir,
+                imgprefix,
+                rootdir,
+                image_formats,
+                color_offset=i,
+                cmap=cmap,
+                colors=colors,
+                draw_titles=draw_titles,
+            )
         if len(data) > 1:
             content += comparereptypes[typ](
-                data, imgdir, rootdir, image_formats,
-                cmap=cmap, colors=colors, draw_titles=draw_titles)
+                data,
+                imgdir,
+                rootdir,
+                image_formats,
+                cmap=cmap,
+                colors=colors,
+                draw_titles=draw_titles,
+            )
 
-    content = re.sub(r'[ \t]+$', "", content, 0, re.M)
+    content = re.sub(r"[ \t]+$", "", content, 0, re.M)
 
-    with open(outputpath, 'w') as out:
+    with open(outputpath, "w") as out:
         out.write(content)
 
 
@@ -1766,25 +1834,26 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
     _append_type_if(
         PERFORMANCE,
         lambda data: "target_inference_step" in data
-        or "protocol_inference_step" in data)
+        or "protocol_inference_step" in data,
+    )
     _append_type_if(
-        CLASSIFICATION, lambda data: "eval_confusion_matrix" in data)
+        CLASSIFICATION, lambda data: "eval_confusion_matrix" in data
+    )
     _append_type_if(DETECTION, lambda data: "eval_gtcount" in data)
     _append_type_if(RENODE, lambda data: "opcode_counters" in data)
 
     if len(report_types) == 0:
         KLogger.error(
-            'There is no report type which is suitable for all measurements'
+            "There is no report type which is suitable for all measurements"
         )
         return []
 
-    KLogger.info(f'Following report types were deduced: {report_types}')
+    KLogger.info(f"Following report types were deduced: {report_types}")
     return report_types
 
 
 def deduce_report_name(
-    measurements_data: List[Dict],
-    report_types: List[str]
+    measurements_data: List[Dict], report_types: List[str]
 ) -> str:
     """
     Deduces simple report name based on measurements and its type.
@@ -1802,20 +1871,25 @@ def deduce_report_name(
         Report name
     """
     if len(measurements_data) > 1:
-        report_name = "Comparison of " \
-            f"{', '.join([d['model_name'] for d in measurements_data[:-1]])}" \
+        report_name = (
+            "Comparison of "
+            f"{', '.join([d['model_name'] for d in measurements_data[:-1]])}"
             f" and {measurements_data[-1]['model_name']}"
+        )
     elif "report_name" in measurements_data[0]:
-        report_name = measurements_data[0]['report_name']
+        report_name = measurements_data[0]["report_name"]
     elif len(report_types) > 1:
-        report_name = f"{', '.join(report_types[:-1])} and " \
+        report_name = (
+            f"{', '.join(report_types[:-1])} and "
             f"{report_types[-1]} of {measurements_data[0]['model_name']}"
+        )
     else:
-        report_name = f"{report_types[0]} of " \
-            f"{measurements_data[0]['model_name']}"
+        report_name = (
+            f"{report_types[0]} of " f"{measurements_data[0]['model_name']}"
+        )
     report_name = report_name[0].upper() + report_name[1:]
 
-    KLogger.info(f'Report name: {report_name}')
+    KLogger.info(f"Report name: {report_name}")
     return report_name
 
 
@@ -1840,10 +1914,10 @@ def generate_html_report(
     from sphinx.application import Sphinx
     from sphinx.cmd.build import handle_exception
 
-    with path(reports, 'conf.py') as _conf:
+    with path(reports, "conf.py") as _conf:
         override_conf = {
             # Include only report file
-            "include_patterns": [f'{report_path.name}'],
+            "include_patterns": [f"{report_path.name}"],
             # Ensure report file isn't excluded
             "exclude_patterns": [],
             # Use report file as main source
@@ -1859,25 +1933,30 @@ def generate_html_report(
         try:
             with patch_docutils(_conf.parent), docutils_namespace():
                 app = Sphinx(
-                    report_path.parent, _conf.parent, output_folder,
-                    output_folder / '.doctrees', 'html',
-                    override_conf, freshenv=False)
+                    report_path.parent,
+                    _conf.parent,
+                    output_folder,
+                    output_folder / ".doctrees",
+                    "html",
+                    override_conf,
+                    freshenv=False,
+                )
                 app.build(False, [str(report_path)])
         except Exception as ex:
             mock_args = namedtuple(
-                "MockArgs", ('pdb', 'verbosity', 'traceback')
+                "MockArgs", ("pdb", "verbosity", "traceback")
             )(pdb=debug, verbosity=debug, traceback=debug)
             handle_exception(app, mock_args, ex)
             KLogger.error(
                 "Error occurred, HTML report won't be generated",
                 ex.args,
-                stack_info=True
+                stack_info=True,
             )
 
 
 class RenderReport(CommandTemplate):
     parse_all = True
-    description = __doc__.split('\n\n')[0]
+    description = __doc__.split("\n\n")[0]
 
     @staticmethod
     def configure_parser(
@@ -1887,7 +1966,8 @@ class RenderReport(CommandTemplate):
         groups: Optional[ArgumentsGroups] = None,
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(RenderReport, RenderReport).configure_parser(
-            parser, command, types, groups)
+            parser, command, types, groups
+        )
 
         other_group = groups[DEFAULT_GROUP]
         # Group specific for this scenario,
@@ -1896,74 +1976,77 @@ class RenderReport(CommandTemplate):
         run_in_sequence = TEST in types
 
         other_group.add_argument(
-            '--measurements',
-            help='Path to the JSON files with measurements' +
-            (f' created with {TEST} subcommand' if run_in_sequence else
-             '. If more than one file is provided, model comparison will be generated.') +  # noqa: E501
-            "It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
+            "--measurements",
+            help="Path to the JSON files with measurements"
+            + (
+                f" created with {TEST} subcommand"
+                if run_in_sequence
+                else ". If more than one file is provided, model comparison will be generated."  # noqa: E501
+            )  # noqa: E501
+            + " It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
             type=Path,
-            nargs=1 if run_in_sequence else '*',
+            nargs=1 if run_in_sequence else "*",
             default=[None],
             required=run_in_sequence,
         ).completer = FilesCompleter("*.json")
         report_group.add_argument(
-            '--report-name',
-            help='Name of the report',
+            "--report-name",
+            help="Name of the report",
             type=str,
         )
         other_group.add_argument(
-            '--report-path',
-            help='Path to the output MyST file',
+            "--report-path",
+            help="Path to the output MyST file",
             type=Path,
             required=True,
         )
         other_group.add_argument(
-            '--to-html',
-            help='Generate HTML version of the report, it can receive path to the folder where HTML will be saved',  # noqa: E501
-            nargs='?',
+            "--to-html",
+            help="Generate HTML version of the report, it can receive path to the folder where HTML will be saved",  # noqa: E501
+            nargs="?",
             default=False,
             const=True,
             type=Path,
         ).completer = DirectoriesCompleter()
         report_group.add_argument(
-            '--root-dir',
-            help='Path to root directory for documentation (paths in the MyST file are relative to this directory)',  # noqa: E501
+            "--root-dir",
+            help="Path to root directory for documentation (paths in the MyST file are relative to this directory)",  # noqa: E501
             type=Path,
         )
         report_group.add_argument(
-            '--report-types',
-            help='List of types that implement this report',
-            nargs='+',
+            "--report-types",
+            help="List of types that implement this report",
+            nargs="+",
             choices=REPORT_TYPES,
         )
         report_group.add_argument(
-            '--img-dir',
-            help='Path to the directory where images will be stored',
-            type=Path
+            "--img-dir",
+            help="Path to the directory where images will be stored",
+            type=Path,
         )
         report_group.add_argument(
-            '--model-names',
-            help='Names of the models used to create measurements in order',
-            nargs='+',
-            type=str
+            "--model-names",
+            help="Names of the models used to create measurements in order",
+            nargs="+",
+            type=str,
         )
         report_group.add_argument(
-            '--only-png-images',
+            "--only-png-images",
             help="Forcing to generate images only in PNG format, if not specified also images in HTML will be generated",  # noqa: E501
-            action="store_true"
+            action="store_true",
         )
         report_group.add_argument(
-            '--use-default-theme',
+            "--use-default-theme",
             help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
-            action='store_true'
+            action="store_true",
         )
         report_group.add_argument(
-            '--skip-unoptimized-model',
-            help='Do not use measurements of unoptimized model',
-            action='store_true',
+            "--skip-unoptimized-model",
+            help="Do not use measurements of unoptimized model",
+            action="store_true",
         )
         report_group.add_argument(
-            '--smaller-header',
+            "--smaller-header",
             help="Use smaller size for header containing report name",
             action="store_true",
         )
@@ -1977,12 +2060,11 @@ class RenderReport(CommandTemplate):
 
         if args.to_html:
             if not isinstance(args.to_html, (str, Path)):
-                args.to_html = Path(args.report_path).with_suffix('')
+                args.to_html = Path(args.report_path).with_suffix("")
             if not args.measurements and args.report_path.exists():
                 # Only render HTML report
                 generate_html_report(
-                    args.report_path, args.to_html,
-                    args.verbosity == 'DEBUG'
+                    args.report_path, args.to_html, args.verbosity == "DEBUG"
                 )
                 return
             elif not args.measurements:
@@ -1991,7 +2073,7 @@ class RenderReport(CommandTemplate):
                     "HTML report cannot be generated, file from "
                     "'--report-path' does not exist. Please, make sure the "
                     "path is correct or use '--measurements' to generate new "
-                    "report."
+                    "report.",
                 )
 
         if not args.measurements:
@@ -1999,7 +2081,7 @@ class RenderReport(CommandTemplate):
                 None,
                 "'--measurements' have to be defined to generate new report. "
                 "If only HTML version from existing report has to be "
-                "rendered, please use '--to-html' flag"
+                "rendered, please use '--to-html' flag",
             )
 
         root_dir = args.root_dir
@@ -2012,36 +2094,41 @@ class RenderReport(CommandTemplate):
             img_dir = args.img_dir
         img_dir.mkdir(parents=True, exist_ok=True)
 
-        if args.model_names is not None and \
-                len(args.measurements) != len(args.model_names):
+        if args.model_names is not None and len(args.measurements) != len(
+            args.model_names
+        ):
             KLogger.warning(
-                'Number of model names differ from number of measurements! '
-                'Ignoring --model-names argument'
+                "Number of model names differ from number of measurements! "
+                "Ignoring --model-names argument"
             )
             args.model_names = None
 
-        image_formats = {'png'}
+        image_formats = {"png"}
         if not args.only_png_images:
-            image_formats |= {'html'}
+            image_formats |= {"html"}
 
         measurementsdata = []
         for i, measurementspath in enumerate(args.measurements):
-            with open(measurementspath, 'r') as measurementsfile:
+            with open(measurementspath, "r") as measurementsfile:
                 measurements = json.load(measurementsfile)
             if args.model_names is not None:
-                measurements['model_name'] = args.model_names[i]
-            elif 'model_name' not in measurements:
-                measurements['model_name'] = get_model_name(measurementspath)
-            measurements['model_name'] = \
-                measurements['model_name'].replace(' ', '_')
+                measurements["model_name"] = args.model_names[i]
+            elif "model_name" not in measurements:
+                measurements["model_name"] = get_model_name(measurementspath)
+            measurements["model_name"] = measurements["model_name"].replace(
+                " ", "_"
+            )
             # Append measurements of unoptimized data separately
-            if not args.skip_unoptimized_model and \
-                    UNOPTIMIZED_MEASUREMENTS in measurements:
+            if (
+                not args.skip_unoptimized_model
+                and UNOPTIMIZED_MEASUREMENTS in measurements
+            ):
                 unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
                 del measurements[UNOPTIMIZED_MEASUREMENTS]
-                if 'model_name' not in unoptimized:
-                    unoptimized['model_name'] = \
-                        f"unoptimized_{measurements['model_name']}"
+                if "model_name" not in unoptimized:
+                    unoptimized[
+                        "model_name"
+                    ] = f"unoptimized_{measurements['model_name']}"
                 measurementsdata.append(unoptimized)
             measurementsdata.append(measurements)
 
@@ -2053,34 +2140,35 @@ class RenderReport(CommandTemplate):
                 None,
                 "Report types cannot be deduced. Please specify "
                 "'--report-types' or make sure the path is correct "
-                "measurements were chosen."
+                "measurements were chosen.",
             )
 
         report_name = args.report_name
         if report_name is None:
             report_name = deduce_report_name(measurementsdata, report_types)
         for measurements in measurementsdata:
-            if 'build_cfg' in measurements:
-                measurements['build_cfg'] = json.dumps(
-                    measurements['build_cfg'],
-                    indent=4
-                ).split('\n')
+            if "build_cfg" in measurements:
+                measurements["build_cfg"] = json.dumps(
+                    measurements["build_cfg"], indent=4
+                ).split("\n")
 
-            if 'report_name' not in measurements:
-                measurements['report_name'] = deduce_report_name(
-                    [measurements], report_types)
-            measurements['report_name_simple'] = re.sub(
-                r'[\W]', '',
-                measurements['report_name'].lower().replace(' ', '_')
+            if "report_name" not in measurements:
+                measurements["report_name"] = deduce_report_name(
+                    [measurements], report_types
+                )
+            measurements["report_name_simple"] = re.sub(
+                r"[\W]",
+                "",
+                measurements["report_name"].lower().replace(" ", "_"),
             )
 
         cmap, colors = None, None
         if not args.use_default_theme:
-            SERVIS_PLOT_OPTIONS['colormap'] = IMMATERIAL_COLORS
+            SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
             cmap = RED_GREEN_CMAP
             colors = IMMATERIAL_COLORS
-        elif 'colormap' in SERVIS_PLOT_OPTIONS:
-            del SERVIS_PLOT_OPTIONS['colormap']
+        elif "colormap" in SERVIS_PLOT_OPTIONS:
+            del SERVIS_PLOT_OPTIONS["colormap"]
 
         with choose_theme(
             custom_bokeh_theme=not args.use_default_theme,
@@ -2103,10 +2191,9 @@ class RenderReport(CommandTemplate):
 
         if args.to_html:
             generate_html_report(
-                args.report_path, args.to_html,
-                args.verbosity == 'DEBUG'
+                args.report_path, args.to_html, args.verbosity == "DEBUG"
             )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(RenderReport.scenario_run())

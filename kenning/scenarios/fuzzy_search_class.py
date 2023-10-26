@@ -14,7 +14,11 @@ import shutil
 from typing import List, Optional, Tuple
 
 from kenning.cli.command_template import (
-    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, SEARCH)
+    ArgumentsGroups,
+    CommandTemplate,
+    GROUP_SCHEMA,
+    SEARCH,
+)
 
 from kenning.scenarios.list_classes import list_classes, ListClassesRunner
 from kenning.utils.logger import KLogger
@@ -26,8 +30,9 @@ class FuzzySearchClass(CommandTemplate):
 
     It uses `fzf` program to search through Kenning classes.
     """
+
     parse_all = True
-    description = __doc__.split('\n\n')[0]
+    description = __doc__.split("\n\n")[0]
 
     @staticmethod
     def configure_parser(
@@ -37,8 +42,7 @@ class FuzzySearchClass(CommandTemplate):
         groups: Optional[ArgumentsGroups] = None,
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
-            FuzzySearchClass,
-            FuzzySearchClass
+            FuzzySearchClass, FuzzySearchClass
         ).configure_parser(
             parser,
             command,
@@ -67,28 +71,32 @@ class FuzzySearchClass(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def run(
-        args: argparse.Namespace,
-        not_parsed: List[str] = [],
-        **kwargs
-    ):
-        if not shutil.which('fzf'):
+    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
+        if not shutil.which("fzf"):
             KLogger.error(
                 "'fzf' cannot be found, please make sure it is installed"
             )
             return 1
         # Get all Kenning classes
-        classes = [name.strip() for name in list_classes(
-            ListClassesRunner.base_class_arguments,
-            'list') if name.lstrip().startswith('kenning.')]
+        classes = [
+            name.strip()
+            for name in list_classes(
+                ListClassesRunner.base_class_arguments, "list"
+            )
+            if name.lstrip().startswith("kenning.")
+        ]
 
         # Run fuzzy search
-        cls_str = '\n'.join(classes)
+        cls_str = "\n".join(classes)
         os.system(
-            f"echo '{cls_str}' | fzf {' '.join(args.fzf_args)}" +
-            (" --preview 'python3 -m kenning.scenarios.class_info {}"
-             " --verbosity ERROR'" if not args.no_preview else '')
-            + (f" --query '{' '.join(args.pattern)}'" if args.pattern else ''),
+            f"echo '{cls_str}' | fzf {' '.join(args.fzf_args)}"
+            + (
+                " --preview 'python3 -m kenning.scenarios.class_info {}"
+                " --verbosity ERROR'"
+                if not args.no_preview
+                else ""
+            )
+            + (f" --query '{' '.join(args.pattern)}'" if args.pattern else ""),
         )
 
 

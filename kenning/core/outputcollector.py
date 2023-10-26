@@ -13,14 +13,14 @@ from kenning.core.runner import Runner
 
 
 class OutputCollector(Runner, ABC):
-
     arguments_structure = {}
 
     def __init__(
-            self,
-            inputs_sources: Dict[str, Tuple[int, str]] = {},
-            inputs_specs: Dict[str, Dict] = {},
-            outputs: Dict[str, str] = {}):
+        self,
+        inputs_sources: Dict[str, Tuple[int, str]] = {},
+        inputs_specs: Dict[str, Dict] = {},
+        outputs: Dict[str, str] = {},
+    ):
         """
         Creates the output collector.
 
@@ -36,7 +36,7 @@ class OutputCollector(Runner, ABC):
         super().__init__(
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     def process_output(self, input_data: Any, output_data: Any):

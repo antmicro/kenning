@@ -13,7 +13,11 @@ from typing import Optional, List, Tuple
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
-    ArgumentsGroups, CommandTemplate, GROUP_SCHEMA, FLOW)
+    ArgumentsGroups,
+    CommandTemplate,
+    GROUP_SCHEMA,
+    FLOW,
+)
 from kenning.core.flow import KenningFlow
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
@@ -31,31 +35,32 @@ class FlowRunner(CommandTemplate):
         groups: Optional[ArgumentsGroups] = None,
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(FlowRunner, FlowRunner).configure_parser(
-            parser, command, types, groups)
+            parser, command, types, groups
+        )
 
         flow_group = parser.add_argument_group(GROUP_SCHEMA.format(FLOW))
 
         flow_group.add_argument(
-            '--json-cfg',
-            help='The path to the input JSON file with configuration of the graph',  # noqa: E501
+            "--json-cfg",
+            help="The path to the input JSON file with configuration of the graph",  # noqa: E501
             type=ResourceURI,
             required=True,
-        ).completer = FilesCompleter('*.json')
+        ).completer = FilesCompleter("*.json")
         return parser, groups
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
         KLogger.set_verbosity(args.verbosity)
 
-        with open(args.json_cfg, 'r') as f:
+        with open(args.json_cfg, "r") as f:
             json_cfg = json.load(f)
 
         flow: KenningFlow = KenningFlow.from_json(json_cfg)
         _ = flow.run()
 
-        KLogger.info('Processing has finished')
+        KLogger.info("Processing has finished")
         return 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(FlowRunner.scenario_run())

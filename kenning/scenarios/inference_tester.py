@@ -63,8 +63,9 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
-from kenning.dataconverters.modelwrapper_dataconverter import \
-    ModelWrapperDataConverter
+from kenning.dataconverters.modelwrapper_dataconverter import (
+    ModelWrapperDataConverter,
+)
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
@@ -96,21 +97,24 @@ class InferenceTester(CommandTemplate):
         parser, groups = super(
             InferenceTester, InferenceTester
         ).configure_parser(
-            parser, command, types, groups,
-            (len(types) > 1 and REPORT in types) or TRAIN in types
+            parser,
+            command,
+            types,
+            groups,
+            (len(types) > 1 and REPORT in types) or TRAIN in types,
         )
 
         other_group = groups[DEFAULT_GROUP]
-        required_prefix = ''
+        required_prefix = ""
         if TRAIN not in types:
             # 'train' is not used, JSON and flag configuration available
             groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
-            required_prefix = '* '
+            required_prefix = "* "
             groups[JSON_CONFIG].add_argument(
-                '--json-cfg',
-                help=f'{required_prefix}The path to the input JSON file with configuration of the inference',  # noqa: E501
+                "--json-cfg",
+                help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
                 type=ResourceURI,
-            ).completer = FilesCompleter(allowednames=('*.json',))
+            ).completer = FilesCompleter(allowednames=("*.json",))
             flag_group = groups[FLAG_CONFIG]
             shared_flags_group = flag_group
         else:
@@ -119,93 +123,98 @@ class InferenceTester(CommandTemplate):
             shared_flags_group = other_group
 
         shared_flags_group.add_argument(
-            '--modelwrapper-cls',
-            help=f'{required_prefix}ModelWrapper-based class with inference implementation to import',  # noqa: E501
+            "--modelwrapper-cls",
+            help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
             required=TRAIN in types,
         ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         dataset_flag = shared_flags_group.add_argument(
-            '--dataset-cls',
-            help='Dataset-based class with dataset to import',
+            "--dataset-cls",
+            help="Dataset-based class with dataset to import",
             required=TRAIN in types,
         )
         dataset_flag.completer = ClassPathCompleter(DATASETS)
         # 'optimize' specific arguments
         if not types or OPTIMIZE in types:
             flag_group.add_argument(
-                '--compiler-cls',
-                help=f'{required_prefix}Optimizer-based class with compiling routines to import',  # noqa: E501
+                "--compiler-cls",
+                help=f"{required_prefix}Optimizer-based class with compiling routines to import",  # noqa: E501
             ).completer = ClassPathCompleter(OPTIMIZERS)
             other_group.add_argument(
-                '--convert-to-onnx',
-                help='Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)',  # noqa: E501
-                type=Path
+                "--convert-to-onnx",
+                help="Before compiling the model, convert it to ONNX and use in compilation (provide a path to save here)",  # noqa: E501
+                type=Path,
             )
             other_group.add_argument(
-                '--max-target-side-optimizers',
-                help='Max number of consecutive target-side optimizers',
+                "--max-target-side-optimizers",
+                help="Max number of consecutive target-side optimizers",
                 type=int,
                 default=-1,
             )
         # 'test' specific arguments
         if not types or TEST in types:
             other_group.add_argument(
-                '--measurements',
-                help='The path to the output JSON file with measurements',
+                "--measurements",
+                help="The path to the output JSON file with measurements",
                 nargs=1,
                 type=Path,
                 default=[None],
                 required=bool(types),
             )
             other_group.add_argument(
-                '--evaluate-unoptimized',
-                help='Test model before optimization and append measurements',
+                "--evaluate-unoptimized",
+                help="Test model before optimization and append measurements",
                 action="store_true",
             )
             dataset_flag.help = f"{required_prefix}{dataset_flag.help}"
             flag_group.add_argument(
-                '--runtime-cls',
-                help='Runtime-based class with the implementation of model runtime',  # noqa: E501
+                "--runtime-cls",
+                help="Runtime-based class with the implementation of model runtime",  # noqa: E501
             ).completer = ClassPathCompleter(RUNTIMES)
             flag_group.add_argument(
-                '--protocol-cls',
-                help='Protocol-based class with the implementation of communication between inference tester and inference runner',  # noqa: E501
+                "--protocol-cls",
+                help="Protocol-based class with the implementation of communication between inference tester and inference runner",  # noqa: E501
             ).completer = ClassPathCompleter(RUNTIME_PROTOCOLS)
         # Only when scenario is used outside of Kenning CLI
         if not types:
             other_group.add_argument(
-                '--run-benchmarks-only',
-                help='Instead of running the full compilation and testing flow, only testing of the model is executed',  # noqa: E501
-                action='store_true'
+                "--run-benchmarks-only",
+                help="Instead of running the full compilation and testing flow, only testing of the model is executed",  # noqa: E501
+                action="store_true",
             )
         return parser, groups
 
     @staticmethod
-    def run(
-        args: argparse.Namespace,
-        not_parsed: List[str] = [],
-        **kwargs
-    ):
+    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
 
         KLogger.set_verbosity(args.verbosity)
 
-        flag_config_names = ('modelwrapper_cls',
-                             'dataset_cls', 'compiler_cls', 'runtime_cls',
-                             'protocol_cls')
-        flag_config_not_none = [getattr(args, name, None) is not None
-                                for name in flag_config_names]
+        flag_config_names = (
+            "modelwrapper_cls",
+            "dataset_cls",
+            "compiler_cls",
+            "runtime_cls",
+            "protocol_cls",
+        )
+        flag_config_not_none = [
+            getattr(args, name, None) is not None for name in flag_config_names
+        ]
         if "json_cfg" not in args:
             args.json_cfg = None
-        if not args.help and (args.json_cfg is None
-                              and not any(flag_config_not_none)):
+        if not args.help and (
+            args.json_cfg is None and not any(flag_config_not_none)
+        ):
             raise argparse.ArgumentError(
                 None, "JSON or flag config is required."
             )
-        if not args.help and (args.json_cfg is not None
-                              and any(flag_config_not_none)):
+        if not args.help and (
+            args.json_cfg is not None and any(flag_config_not_none)
+        ):
             raise argparse.ArgumentError(
-                None, "JSON and flag configurations are mutually exclusive. "
-                "Please use only one method of configuration.")
+                None,
+                "JSON and flag configurations are mutually exclusive. "
+                "Please use only one method of configuration.",
+            )
         if "measurements" not in args:
             args.measurements = [None]
         if "evaluate_unoptimized" not in args:
@@ -215,44 +224,50 @@ class InferenceTester(CommandTemplate):
             if args.help:
                 raise ParserHelpException
             return InferenceTester._run_from_json(
-                args, command, not_parsed=not_parsed, **kwargs)
+                args, command, not_parsed=not_parsed, **kwargs
+            )
 
-        required_args = [0] + [1] if args.measurements[0] is not None else [] \
-            + [2] if 'compiler_cls' in args else []
+        required_args = (
+            [0] + [1]
+            if args.measurements[0] is not None
+            else [] + [2]
+            if "compiler_cls" in args
+            else []
+        )
         missing_args = [
-            f"'{flag_config_names[i]}'" for i in required_args
+            f"'{flag_config_names[i]}'"
+            for i in required_args
             if not flag_config_not_none[i]
         ]
 
         if missing_args and not args.help:
             raise argparse.ArgumentError(
-                None, f"missing required arguments: {', '.join(missing_args)}")
+                None, f"missing required arguments: {', '.join(missing_args)}"
+            )
 
         return InferenceTester._run_from_flags(
-            args, command, not_parsed=not_parsed, **kwargs)
+            args, command, not_parsed=not_parsed, **kwargs
+        )
 
     @staticmethod
     def _run_from_json(
         args: argparse.Namespace,
         command: List[str],
         not_parsed: List[str] = [],
-        **kwargs
+        **kwargs,
     ):
         if not_parsed:
             raise argparse.ArgumentError(
-                None,
-                f"unrecognized arguments: {' '.join(not_parsed)}"
+                None, f"unrecognized arguments: {' '.join(not_parsed)}"
             )
 
-        with open(args.json_cfg, 'r') as f:
+        with open(args.json_cfg, "r") as f:
             json_cfg = json.load(f)
 
         pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
 
         return InferenceTester._run_pipeline(
-            args=args,
-            command=command,
-            pipeline_runner=pipeline_runner
+            args=args, command=command, pipeline_runner=pipeline_runner
         )
 
     @staticmethod
@@ -260,28 +275,42 @@ class InferenceTester(CommandTemplate):
         args: argparse.Namespace,
         command: List[str],
         not_parsed: List[str] = [],
-        **kwargs
+        **kwargs,
     ):
-        modelwrappercls = load_class(args.modelwrapper_cls) \
-            if args.modelwrapper_cls else None
-        datasetcls = load_class(args.dataset_cls) \
-            if getattr(args, 'dataset_cls', None) else None
-        runtimecls = load_class(args.runtime_cls) \
-            if getattr(args, 'runtime_cls', None) else None
-        compilercls = load_class(args.compiler_cls) \
-            if getattr(args, 'compiler_cls', None) else None
-        protocolcls = load_class(args.protocol_cls) \
-            if getattr(args, 'protocol_cls', None) else None
+        modelwrappercls = (
+            load_class(args.modelwrapper_cls)
+            if args.modelwrapper_cls
+            else None
+        )
+        datasetcls = (
+            load_class(args.dataset_cls)
+            if getattr(args, "dataset_cls", None)
+            else None
+        )
+        runtimecls = (
+            load_class(args.runtime_cls)
+            if getattr(args, "runtime_cls", None)
+            else None
+        )
+        compilercls = (
+            load_class(args.compiler_cls)
+            if getattr(args, "compiler_cls", None)
+            else None
+        )
+        protocolcls = (
+            load_class(args.protocol_cls)
+            if getattr(args, "protocol_cls", None)
+            else None
+        )
 
         if not compilercls and (protocolcls and not runtimecls):
             raise argparse.ArgumentError(
-                None,
-                "'--protocol-cls' requires '--runtime-cls' to be defined"
+                None, "'--protocol-cls' requires '--runtime-cls' to be defined"
             )
 
         parser = argparse.ArgumentParser(
-            ' '.join(map(lambda x: x.strip(),
-                     get_command(with_slash=False))) + '\n',
+            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
+            + "\n",
             parents=[]
             + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
             + ([datasetcls.form_argparse()[0]] if datasetcls else [])
@@ -296,9 +325,14 @@ class InferenceTester(CommandTemplate):
         args = parser.parse_args(not_parsed, namespace=args)
 
         dataset = datasetcls.from_argparse(args) if datasetcls else None
-        model = modelwrappercls.from_argparse(
-            dataset, args) if modelwrappercls else None
-        optimizers = [compilercls.from_argparse(dataset, args)] if compilercls else []  # noqa: E501
+        model = (
+            modelwrappercls.from_argparse(dataset, args)
+            if modelwrappercls
+            else None
+        )
+        optimizers = (
+            [compilercls.from_argparse(dataset, args)] if compilercls else []
+        )  # noqa: E501
         protocol = protocolcls.from_argparse(args) if protocolcls else None
         runtime = runtimecls.from_argparse(args) if runtimecls else None
 
@@ -316,29 +350,27 @@ class InferenceTester(CommandTemplate):
         )
 
         return InferenceTester._run_pipeline(
-            args=args,
-            command=command,
-            pipeline_runner=pipeline_runner
+            args=args, command=command, pipeline_runner=pipeline_runner
         )
 
     @staticmethod
     def _run_pipeline(
         args: argparse.Namespace,
         command: List[str],
-        pipeline_runner: PipelineRunner
+        pipeline_runner: PipelineRunner,
     ):
         try:
             ret = pipeline_runner.run(
                 output=args.measurements[0] if args.measurements[0] else None,
                 verbosity=args.verbosity,
-                convert_to_onnx=getattr(args, 'convert_to_onnx', False),
+                convert_to_onnx=getattr(args, "convert_to_onnx", False),
                 max_target_side_optimizers=(
-                    getattr(args, 'max_target_side_optimizers', -1)
+                    getattr(args, "max_target_side_optimizers", -1)
                 ),
                 command=command,
                 run_optimizations=(
-                    'compiler_cls' in args
-                    and not getattr(args, 'run_benchmarks_only', False)
+                    "compiler_cls" in args
+                    and not getattr(args, "run_benchmarks_only", False)
                     and len(pipeline_runner.optimizers) > 0
                 ),
                 run_benchmarks=(
@@ -347,7 +379,7 @@ class InferenceTester(CommandTemplate):
                 ),
             )
         except ValidationError as ex:
-            KLogger.error(f'Validation error: {ex}', stack_info=True)
+            KLogger.error(f"Validation error: {ex}", stack_info=True)
             raise
         except Exception as ex:
             KLogger.error(ex, stack_info=True)
@@ -358,5 +390,5 @@ class InferenceTester(CommandTemplate):
         return ret
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(InferenceTester.scenario_run())

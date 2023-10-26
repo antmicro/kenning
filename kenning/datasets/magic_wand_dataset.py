@@ -24,43 +24,46 @@ class MagicWandDataset(Dataset):
     gestures captured by accelerometer and gyroscope.
     """
 
-    resources = Resources({
-        'data': 'http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz',  # noqa: E501
-    })
-    arguments_structure = {
-        'window_size': {
-            'argparse_name': '--window-size',
-            'description': 'Determines the size of single sample window',
-            'default': 128,
-            'type': int
-        },
-        'window_shift': {
-            'argparse_name': '--window-shift',
-            'description': 'Determines the shift of single sample window',
-            'default': 128,
-            'type': int
-        },
-        'noise_level': {
-            'argparse_name': '--noise-level',
-            'description': 'Determines the level of noise added as padding',
-            'default': 20,
-            'type': int
+    resources = Resources(
+        {
+            "data": "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz",  # noqa: E501
         }
+    )
+    arguments_structure = {
+        "window_size": {
+            "argparse_name": "--window-size",
+            "description": "Determines the size of single sample window",
+            "default": 128,
+            "type": int,
+        },
+        "window_shift": {
+            "argparse_name": "--window-shift",
+            "description": "Determines the shift of single sample window",
+            "default": 128,
+            "type": int,
+        },
+        "noise_level": {
+            "argparse_name": "--noise-level",
+            "description": "Determines the level of noise added as padding",
+            "default": 20,
+            "type": int,
+        },
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = True,
-            force_download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None,
-            split_fraction_test: float = 0.2,
-            split_fraction_val: Optional[float] = None,
-            split_seed: int = 1234,
-            window_size: int = 128,
-            window_shift: int = 128,
-            noise_level: int = 20):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = True,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+        window_size: int = 128,
+        window_shift: int = 128,
+        noise_level: int = 20,
+    ):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -103,7 +106,7 @@ class MagicWandDataset(Dataset):
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
-            split_seed
+            split_seed,
         )
 
     def rev_class_id(self, classname: str) -> int:
@@ -126,12 +129,7 @@ class MagicWandDataset(Dataset):
         return {v: k for k, v in self.classnames.items()}[classname]
 
     def prepare(self):
-        self.classnames = {
-            0: 'wing',
-            1: 'ring',
-            2: 'slope',
-            3: 'negative'
-        }
+        self.classnames = {0: "wing", 1: "ring", 2: "slope", 3: "negative"}
         self.numclasses = 4
         tmp_dataX = []
         tmp_dataY = []
@@ -140,11 +138,11 @@ class MagicWandDataset(Dataset):
             if not path.is_dir():
                 raise FileNotFoundError
             class_id = self.rev_class_id(class_name)
-            for file in glob.glob(str(path / '*.txt')):
+            for file in glob.glob(str(path / "*.txt")):
                 data_frame = []
                 with open(file) as f:
                     for line in f:
-                        line_split = line.strip().split(',')
+                        line_split = line.strip().split(",")
                         if len(line_split) != 3:
                             continue
                         try:
@@ -159,9 +157,9 @@ class MagicWandDataset(Dataset):
         self.dataX = []
         self.dataY = []
         for data, label in zip(tmp_dataX, tmp_dataY):
-            padded_data = np.array(self.split_sample_to_windows(
-                self.generate_padding(data)
-            ))
+            padded_data = np.array(
+                self.split_sample_to_windows(self.generate_padding(data))
+            )
             for sample in padded_data:
                 self.dataX.append(sample)
                 self.dataY.append(np.eye(self.numclasses)[label])
@@ -169,20 +167,17 @@ class MagicWandDataset(Dataset):
         assert len(self.dataX) == len(self.dataY)
 
     def download_dataset_fun(self):
-        extract_tar(self.root, self.resources['data'])
+        extract_tar(self.root, self.resources["data"])
 
         # cleanup MacOS-related hidden metadata files present in the dataset
-        for macos_dotfile in (
-            glob.glob(str(self.root) + '/**/._*')
-            + glob.glob(str(self.root) + '/._*')
+        for macos_dotfile in glob.glob(str(self.root) + "/**/._*") + glob.glob(
+            str(self.root) + "/._*"
         ):
             os.remove(macos_dotfile)
 
     def _generate_padding(
-            self,
-            noise_level: int,
-            amount: int,
-            neighbor: List) -> List:
+        self, noise_level: int, amount: int, neighbor: List
+    ) -> List:
         """
         Generates noise padding of given length.
 
@@ -200,13 +195,13 @@ class MagicWandDataset(Dataset):
         List :
             Neighbor data with noise padding.
         """
-        padding = (np.round((np.random.rand(amount, 3) - 0.5)*noise_level, 1)
-                   + neighbor)
+        padding = (
+            np.round((np.random.rand(amount, 3) - 0.5) * noise_level, 1)
+            + neighbor
+        )
         return [list(i) for i in padding]
 
-    def generate_padding(
-            self,
-            data_frame: List) -> List:
+    def generate_padding(self, data_frame: List) -> List:
         """
         Generates neighbor-based padding around a given data frame.
 
@@ -223,15 +218,13 @@ class MagicWandDataset(Dataset):
         pre_padding = self._generate_padding(
             self.noise_level,
             abs(self.window_size - len(data_frame)) % self.window_size,
-            data_frame[0]
+            data_frame[0],
         )
         unpadded_len = len(pre_padding) + len(data_frame)
         post_len = (-unpadded_len) % self.window_shift
 
         post_padding = self._generate_padding(
-            self.noise_level,
-            post_len,
-            data_frame[-1]
+            self.noise_level, post_len, data_frame[-1]
         )
         return pre_padding + data_frame + post_padding
 
@@ -245,31 +238,29 @@ class MagicWandDataset(Dataset):
             for prediction, label in zip(predictions[0], truth):
                 confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             measurements.accumulate(
-                'eval_confusion_matrix',
+                "eval_confusion_matrix",
                 confusion_matrix,
-                lambda: np.zeros((self.numclasses, self.numclasses))
+                lambda: np.zeros((self.numclasses, self.numclasses)),
             )
         else:
             predictions_vector = np.zeros(self.numclasses)
             for prediction in predictions:
                 predictions_vector[np.argmax(prediction)] += 1
             measurements.accumulate(
-                'predictions',
+                "predictions",
                 predictions_vector,
-                lambda: np.zeros(self.numclasses)
+                lambda: np.zeros(self.numclasses),
             )
-        measurements.accumulate('total', len(predictions), lambda: 0)
+        measurements.accumulate("total", len(predictions), lambda: 0)
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
         return (
             np.array([-219.346, 198.207, 854.390]),
-            np.array([430.269, 326.288, 447.666])
+            np.array([430.269, 326.288, 447.666]),
         )
 
-    def split_sample_to_windows(
-            self,
-            data_frame: List) -> np.ndarray:
+    def split_sample_to_windows(self, data_frame: List) -> np.ndarray:
         """
         Splits given data sample into windows.
 
@@ -283,6 +274,8 @@ class MagicWandDataset(Dataset):
         np.ndarray :
             Data sample split into windows.
         """
-        return np.array(np.array_split(
-            data_frame, len(data_frame) // self.window_size, axis=0
-        ))
+        return np.array(
+            np.array_split(
+                data_frame, len(data_frame) // self.window_size, axis=0
+            )
+        )

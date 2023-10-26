@@ -17,9 +17,12 @@ from typing import Any, Dict, List, Optional
 
 import numpy as np
 
-from kenning.core.measurements import (MeasurementsCollector,
-                                       SystemStatsCollector, tagmeasurements,
-                                       timemeasurements)
+from kenning.core.measurements import (
+    MeasurementsCollector,
+    SystemStatsCollector,
+    tagmeasurements,
+    timemeasurements,
+)
 from kenning.core.model import ModelWrapper
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
@@ -33,8 +36,9 @@ class ModelNotPreparedError(Exception):
 
     def __init__(
         self,
-        msg='Make sure to run prepare_model method before running it.',
-        *args, **kwargs
+        msg="Make sure to run prepare_model method before running it.",
+        *args,
+        **kwargs,
     ):
         super().__init__(msg, *args, **kwargs)
 
@@ -47,8 +51,9 @@ class InputNotPreparedError(Exception):
 
     def __init__(
         self,
-        msg='Make sure to run prepare_input method before running the model.',
-        *args, **kwargs
+        msg="Make sure to run prepare_input method before running the model.",
+        *args,
+        **kwargs,
     ):
         super().__init__(msg, *args, **kwargs)
 
@@ -61,18 +66,16 @@ class Runtime(ArgumentsHandler, ABC):
     inputtypes = []
 
     arguments_structure = {
-        'disable_performance_measurements': {
-            'argparse_name': '--disable-performance-measurements',
-            'description': 'Disable collection and processing of performance '
-                           'metrics',
-            'type': bool,
-            'default': False
+        "disable_performance_measurements": {
+            "argparse_name": "--disable-performance-measurements",
+            "description": "Disable collection and processing of performance "
+            "metrics",
+            "type": bool,
+            "default": False,
         }
     }
 
-    def __init__(
-            self,
-            disable_performance_measurements: bool = False):
+    def __init__(self, disable_performance_measurements: bool = False):
         """
         Creates Runtime object.
 
@@ -89,7 +92,7 @@ class Runtime(ArgumentsHandler, ABC):
         self.output_spec = None
 
     @classmethod
-    def from_argparse(cls, args: Namespace) -> 'Runtime':
+    def from_argparse(cls, args: Namespace) -> "Runtime":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -106,7 +109,7 @@ class Runtime(ArgumentsHandler, ABC):
         return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict) -> 'Runtime':
+    def from_json(cls, json_dict: Dict) -> "Runtime":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -148,7 +151,7 @@ class Runtime(ArgumentsHandler, ABC):
         if not self.disable_performance_measurements:
             if self.statsmeasurements is None:
                 self.statsmeasurements = SystemStatsCollector(
-                    'session_utilization'
+                    "session_utilization"
                 )
             self.statsmeasurements.start()
         else:
@@ -251,38 +254,38 @@ class Runtime(ArgumentsHandler, ABC):
         """
         if self.input_spec is None:
             raise AttributeError(
-                'You must load the input specification first.'
+                "You must load the input specification first."
             )
 
-        is_reordered = any(['order' in spec for spec in self.input_spec])
+        is_reordered = any(["order" in spec for spec in self.input_spec])
         if is_reordered:
             reordered_input_spec = sorted(
-                self.input_spec, key=lambda spec: spec['order']
+                self.input_spec, key=lambda spec: spec["order"]
             )
         else:
             reordered_input_spec = self.input_spec
 
         if not input_data:
-            KLogger.error('Received empty data payload')
-            raise ValueError('Received empty data payload')
+            KLogger.error("Received empty data payload")
+            raise ValueError("Received empty data payload")
 
         # reading input
         inputs = []
         for spec in reordered_input_spec:
-            shape = spec['shape']
+            shape = spec["shape"]
             # get original model dtype
-            dtype = spec.get('prequantized_dtype', spec['dtype'])
+            dtype = spec.get("prequantized_dtype", spec["dtype"])
 
             expected_size = np.abs(np.prod(shape) * np.dtype(dtype).itemsize)
 
             if len(input_data) % (expected_size / shape[0]) != 0:
                 KLogger.error(
-                    'Received input data that is not a multiple of the sample '
-                    'size'
+                    "Received input data that is not a multiple of the sample "
+                    "size"
                 )
                 raise ValueError(
-                    'Received input data that is not a multiple of the sample '
-                    'size'
+                    "Received input data that is not a multiple of the sample "
+                    "size"
                 )
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
@@ -295,23 +298,23 @@ class Runtime(ArgumentsHandler, ABC):
             input = input.reshape(shape)
 
             # quantization
-            if 'prequantized_dtype' in spec:
-                scale = spec['scale']
-                zero_point = spec['zero_point']
-                input = (input / scale + zero_point).astype(spec['dtype'])
+            if "prequantized_dtype" in spec:
+                scale = spec["scale"]
+                zero_point = spec["zero_point"]
+                input = (input / scale + zero_point).astype(spec["dtype"])
 
             inputs.append(input)
             input_data = input_data[expected_size:]
 
         if input_data:
-            KLogger.error('Received more data than model expected')
-            raise ValueError('Received more data than model expected')
+            KLogger.error("Received more data than model expected")
+            raise ValueError("Received more data than model expected")
 
         # retrieving original order
         reordered_inputs = [None] * len(inputs)
         if is_reordered:
             for order, spec in enumerate(self.input_spec):
-                reordered_inputs[order] = inputs[spec['order']]
+                reordered_inputs[order] = inputs[spec["order"]]
         else:
             reordered_inputs = inputs
 
@@ -346,20 +349,20 @@ class Runtime(ArgumentsHandler, ABC):
         """
         if self.output_spec is None:
             raise AttributeError(
-                'You must load the output specification first.'
+                "You must load the output specification first."
             )
-        is_reordered = any(['order' in spec for spec in self.output_spec])
+        is_reordered = any(["order" in spec for spec in self.output_spec])
 
         # dequantization/precision conversion
         for i, spec in enumerate(self.output_spec):
-            if 'prequantized_dtype' in spec:
-                if ('scale' not in spec) and ('zero_point' not in spec):
-                    results[i] = results[i].astype(spec['prequantized_dtype'])
+            if "prequantized_dtype" in spec:
+                if ("scale" not in spec) and ("zero_point" not in spec):
+                    results[i] = results[i].astype(spec["prequantized_dtype"])
                 else:
-                    scale = spec.get('scale', 1.)
-                    zero_point = spec.get('zero_point', 0.)
+                    scale = spec.get("scale", 1.0)
+                    zero_point = spec.get("zero_point", 0.0)
                     results[i] = (
-                        results[i].astype(spec['prequantized_dtype'])
+                        results[i].astype(spec["prequantized_dtype"])
                         - zero_point
                     ) * scale
 
@@ -367,7 +370,7 @@ class Runtime(ArgumentsHandler, ABC):
         reordered_results = [None] * len(results)
         if is_reordered:
             for spec, result in zip(self.output_spec, results):
-                reordered_results[spec['order']] = result
+                reordered_results[spec["order"]] = result
         else:
             reordered_results = results
 
@@ -395,8 +398,8 @@ class Runtime(ArgumentsHandler, ABC):
             Specification of the input/output layers.
         """
 
-        self.input_spec = io_spec['input']
-        self.output_spec = io_spec['output']
+        self.input_spec = io_spec["input"]
+        self.output_spec = io_spec["output"]
 
     def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
         """
@@ -425,22 +428,22 @@ class Runtime(ArgumentsHandler, ABC):
         if input_data is None:
             path = self.get_io_spec_path(self.model_path)
             if not path.exists():
-                KLogger.info('No Input/Output specification found')
+                KLogger.info("No Input/Output specification found")
                 return False
 
-            with open(path, 'rb') as f:
+            with open(path, "rb") as f:
                 try:
                     io_spec = json.load(f)
                 except json.JSONDecodeError as e:
                     KLogger.warning(
-                        f'Error while parsing IO specification: {e}'
+                        f"Error while parsing IO specification: {e}"
                     )
                     return False
         else:
             io_spec = json.loads(input_data)
 
         self.read_io_specification(io_spec)
-        KLogger.info('Input/Output specification loaded')
+        KLogger.info("Input/Output specification loaded")
         return True
 
     def get_io_spec_path(self, model_path: PathOrURI) -> Path:
@@ -458,12 +461,12 @@ class Runtime(ArgumentsHandler, ABC):
         Path :
             Returns path to the specification.
         """
-        spec_path = model_path.with_suffix(model_path.suffix + '.json')
+        spec_path = model_path.with_suffix(model_path.suffix + ".json")
 
         return Path(str(spec_path))
 
-    @timemeasurements('target_inference_step')
-    @tagmeasurements('inference')
+    @timemeasurements("target_inference_step")
+    @tagmeasurements("inference")
     def _run(self):
         """
         Performance wrapper for run method.
@@ -520,7 +523,7 @@ class Runtime(ArgumentsHandler, ABC):
         ModelNotLoadedError :
             Raised if model is not loaded.
         """
-        KLogger.debug('Uploading output')
+        KLogger.debug("Uploading output")
         results = self.extract_output()
         output_bytes = bytes()
         for result in results:
@@ -544,9 +547,9 @@ class Runtime(ArgumentsHandler, ABC):
         bytes :
             Statistics to be sent to the client.
         """
-        KLogger.debug('Uploading stats')
+        KLogger.debug("Uploading stats")
         stats = json.dumps(MeasurementsCollector.measurements.data)
-        return stats.encode('utf-8')
+        return stats.encode("utf-8")
 
     def prepare_local(self) -> bool:
         """
@@ -560,10 +563,11 @@ class Runtime(ArgumentsHandler, ABC):
         return self.prepare_model(None) and self.prepare_io_specification(None)
 
     def infer(
-            self,
-            X: np.ndarray,
-            model_wrapper: ModelWrapper,
-            postprocess: bool = True) -> Any:
+        self,
+        X: np.ndarray,
+        model_wrapper: ModelWrapper,
+        postprocess: bool = True,
+    ) -> Any:
         """
         Runs inference on single batch locally using a given runtime.
 

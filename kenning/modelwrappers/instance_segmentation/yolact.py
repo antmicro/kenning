@@ -25,17 +25,13 @@ from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.resource_manager import PathOrURI
 
-pyximport.install(setup_args={"include_dirs": np.get_include()},
-                  reload_support=True)
-from kenning.modelwrappers.instance_segmentation.cython_nms import \
-    nms  # noqa: E402
+pyximport.install(
+    setup_args={"include_dirs": np.get_include()}, reload_support=True
+)
+from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: E402
 
 
-def crop(
-        masks: np.ndarray,
-        boxes: np.ndarray,
-        padding: int = 1
-) -> np.ndarray:
+def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:
     """
     "Crop" predicted masks by zeroing out everything not in
     the predicted bbox.
@@ -63,23 +59,26 @@ def crop(
         (there are no non-zero pixels outside the bbox).
     """
     h, w, n = masks.shape
-    x1, x2 = sanitize_coordinates(
-        boxes[:, 0],
-        boxes[:, 2],
-        w, padding
-    )
+    x1, x2 = sanitize_coordinates(boxes[:, 0], boxes[:, 2], w, padding)
     y1, y2 = sanitize_coordinates(
         boxes[:, 1],
         boxes[:, 3],
-        h, padding,
+        h,
+        padding,
     )
 
-    rows = np.arange(
-        w, dtype=x1.dtype
-    ).reshape(1, -1, 1).repeat(h, axis=0).repeat(n, axis=2)
-    cols = np.arange(
-        h, dtype=x1.dtype
-    ).reshape(-1, 1, 1).repeat(w, axis=1).repeat(n, axis=2)
+    rows = (
+        np.arange(w, dtype=x1.dtype)
+        .reshape(1, -1, 1)
+        .repeat(h, axis=0)
+        .repeat(n, axis=2)
+    )
+    cols = (
+        np.arange(h, dtype=x1.dtype)
+        .reshape(-1, 1, 1)
+        .repeat(w, axis=1)
+        .repeat(n, axis=2)
+    )
 
     masks_left = rows >= x1.reshape(1, 1, -1)
     masks_right = rows < x2.reshape(1, 1, -1)
@@ -92,10 +91,7 @@ def crop(
 
 
 def sanitize_coordinates(
-        _x1: np.ndarray,
-        _x2: np.ndarray,
-        img_size: int,
-        padding: int = 0
+    _x1: np.ndarray, _x2: np.ndarray, img_size: int, padding: int = 0
 ) -> Tuple[np.ndarray, np.ndarray]:
     """
     Sanitizes the input coordinates so that x1 < x2, x1 != x2, x1 >= 0,
@@ -146,9 +142,7 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
         Result of element wise sigmoid function.
     """
     return np.where(
-        x >= 0,
-        1. / (1. + np.exp(-x)),
-        np.exp(x) / (1. + np.exp(x))
+        x >= 0, 1.0 / (1.0 + np.exp(-x)), np.exp(x) / (1.0 + np.exp(x))
     )
 
 
@@ -159,32 +153,31 @@ RATIO = MEANS / STD
 
 
 class YOLACTWrapper(ModelWrapper):
-
     default_dataset = COCODataset2017
     arguments_structure = {
-        'top_k': {
-            'argparse_name': '--top-k',
-            'description': 'Maximum number of returned detected objects',
-            'type': int,
-            'default': None,
-            'nullable': True
+        "top_k": {
+            "argparse_name": "--top-k",
+            "description": "Maximum number of returned detected objects",
+            "type": int,
+            "default": None,
+            "nullable": True,
         },
-        'score_threshold': {
-            'argparse_name': '--score-threshold',
-            'description': 'Option to filter out detected objects with score lower than the threshold',  # noqa: E501
-            'type': float,
-            'default': 0.05
-        }
+        "score_threshold": {
+            "argparse_name": "--score-threshold",
+            "description": "Option to filter out detected objects with score lower than the threshold",  # noqa: E501
+            "type": float,
+            "default": 0.05,
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file=True,
-            model_name: Optional[str] = None,
-            top_k: Optional[int] = None,
-            score_threshold: float = 0.05,
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file=True,
+        model_name: Optional[str] = None,
+        top_k: Optional[int] = None,
+        score_threshold: float = 0.05,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.model = None
@@ -193,11 +186,9 @@ class YOLACTWrapper(ModelWrapper):
         else:
             io_spec = self.load_io_specification(self.model_path)
             segmentation_output = IOInterface.find_spec(
-                io_spec,
-                'processed_output',
-                'segmentation_output'
+                io_spec, "processed_output", "segmentation_output"
             )
-            self.class_names = segmentation_output['class_names']
+            self.class_names = segmentation_output["class_names"]
 
         self.top_k = top_k
         self.score_threshold = score_threshold
@@ -222,7 +213,7 @@ class YOLACTWrapper(ModelWrapper):
         shutil.copy(self.original_model_path, model_path)
 
     def get_framework_and_version(self):
-        return ('onnx', onnx.__version__)
+        return ("onnx", onnx.__version__)
 
     def get_output_formats(self):
         return ["onnx"]
@@ -239,13 +230,12 @@ class YOLACTWrapper(ModelWrapper):
 
     def get_io_specification_from_model(self):
         io_spec = self._get_io_specification()
-        io_spec['processed_output'][0]['class_names'] = self.class_names
+        io_spec["processed_output"][0]["class_names"] = self.class_names
         return io_spec
 
 
 class YOLACTWithPostprocessing(YOLACTWrapper):
-
-    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx'  # noqa: E501
+    pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"  # noqa: E501
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -257,7 +247,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         X = np.transpose(X[0], (1, 2, 0))
         X = cv2.resize(X, (550, 550))
         X = np.transpose(X, (2, 0, 1))
-        X = (X * 255. - MEANS) / STD
+        X = (X * 255.0 - MEANS) / STD
         return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
@@ -274,23 +264,19 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         masks = cv2.resize(
             masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
         ).transpose(2, 0, 1)
-        y[1] = (masks >= 0.5).astype(np.float32) * 255.
+        y[1] = (masks >= 0.5).astype(np.float32) * 255.0
 
         boxes = y[0]
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
-            boxes[:, 0],
-            boxes[:, 2],
-            550
+            boxes[:, 0], boxes[:, 2], 550
         )
         boxes[:, 1], boxes[:, 3] = sanitize_coordinates(
-            boxes[:, 1],
-            boxes[:, 3],
-            550
+            boxes[:, 1], boxes[:, 3], 550
         )
-        y[0] = (boxes / 550)
+        y[0] = boxes / 550
 
         if self.top_k is not None:
-            idx = np.argsort(y[3], 0)[:-(self.top_k + 1):-1]
+            idx = np.argsort(y[3], 0)[: -(self.top_k + 1) : -1]
             for k in range(len(y)):
                 if k != 4:
                     y[k] = y[k][idx]
@@ -303,17 +289,19 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         Y = []
         for i in range(len(y[3])):
             x1, y1, x2, y2 = y[0][i, :]
-            Y.append(SegmObject(
-                clsname=self.class_names[y[2][i]],
-                maskpath=None,
-                xmin=x1,
-                ymin=y1,
-                xmax=x2,
-                ymax=y2,
-                mask=y[1][i],
-                score=y[3][i],
-                iscrowd=False
-            ))
+            Y.append(
+                SegmObject(
+                    clsname=self.class_names[y[2][i]],
+                    maskpath=None,
+                    xmin=x1,
+                    ymin=y1,
+                    xmax=x2,
+                    ymax=y2,
+                    mask=y[1][i],
+                    score=y[3][i],
+                    iscrowd=False,
+                )
+            )
         return [Y]
 
     def convert_output_from_bytes(self, outputdata):
@@ -332,22 +320,21 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         i = np.dtype(np.int64).itemsize
         num_dets = (S - 138 * 138 * 32 * f) // (37 * f + i)
 
-        output_specification = self.get_io_specification()['output']
+        output_specification = self.get_io_specification()["output"]
 
         result = []
         for spec in output_specification:
             shape = list(
-                num_dets if val == -1 else val for val in spec['shape']
+                num_dets if val == -1 else val for val in spec["shape"]
             )
-            dtype = np.dtype(spec['dtype'])
+            dtype = np.dtype(spec["dtype"])
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
             # is not writeable, which breaks output postprocessing.
-            outputtensor = np.array(np.frombuffer(
-                outputdata[:tensorsize],
-                dtype=dtype
-            )).reshape(shape)
+            outputtensor = np.array(
+                np.frombuffer(outputdata[:tensorsize], dtype=dtype)
+            ).reshape(shape)
             result.append(outputtensor)
             outputdata = outputdata[tensorsize:]
 
@@ -356,24 +343,34 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
     @classmethod
     def _get_io_specification(cls):
         return {
-            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],  # noqa: E501
-            'output': [
-                {'name': 'output_0', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': 'output_1', 'shape': (-1, 32), 'dtype': 'float32'},
-                {'name': 'output_2', 'shape': (-1,), 'dtype': 'int64'},
-                {'name': 'output_3', 'shape': (-1,), 'dtype': 'float32'},
-                {'name': 'output_4', 'shape': (138, 138, 32), 'dtype': 'float32'}  # noqa: E501
+            "input": [
+                {
+                    "name": "input",
+                    "shape": (1, 3, 550, 550),
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
+            "output": [
+                {"name": "output_0", "shape": (-1, 4), "dtype": "float32"},
+                {"name": "output_1", "shape": (-1, 32), "dtype": "float32"},
+                {"name": "output_2", "shape": (-1,), "dtype": "int64"},
+                {"name": "output_3", "shape": (-1,), "dtype": "float32"},
+                {
+                    "name": "output_4",
+                    "shape": (138, 138, 32),
+                    "dtype": "float32",
+                },  # noqa: E501
             ],
-            'processed_output': [{
-                'name': 'segmentation_output',
-                'type': 'List[SegmObject]'
-            }]
+            "processed_output": [
+                {"name": "segmentation_output", "type": "List[SegmObject]"}
+            ],
         }
 
 
 class YOLACT(YOLACTWrapper):
-
-    pretrained_model_uri = 'kenning:///models/instance_segmentation/yolact.onnx'  # noqa: E501
+    pretrained_model_uri = (
+        "kenning:///models/instance_segmentation/yolact.onnx"
+    )  # noqa: E501
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -395,46 +392,43 @@ class YOLACT(YOLACTWrapper):
 
         if self.top_k is not None:
             for k in y:
-                if k != 'proto':
-                    y[k] = y[k][:self.top_k]
+                if k != "proto":
+                    y[k] = y[k][: self.top_k]
 
-        masks = sigmoid(y['proto'] @ y['mask'].T)
-        masks = crop(masks, y['box'])
+        masks = sigmoid(y["proto"] @ y["mask"].T)
+        masks = crop(masks, y["box"])
         masks = cv2.resize(
             masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
         )
         if len(masks.shape) == 2:
             masks = masks[:, :, None]
-        y['mask'] = ((masks >= 0.5).astype(np.uint8) * 255
-                     ).transpose(2, 0, 1)
+        y["mask"] = ((masks >= 0.5).astype(np.uint8) * 255).transpose(2, 0, 1)
 
-        boxes = y['box']
+        boxes = y["box"]
         boxes[:, 0], boxes[:, 2] = sanitize_coordinates(
-            boxes[:, 0],
-            boxes[:, 2],
-            550
+            boxes[:, 0], boxes[:, 2], 550
         )
         boxes[:, 1], boxes[:, 3] = sanitize_coordinates(
-            boxes[:, 1],
-            boxes[:, 3],
-            550
+            boxes[:, 1], boxes[:, 3], 550
         )
-        y['box'] = boxes / 550
+        y["box"] = boxes / 550
 
         Y = []
-        for i in range(len(y['score'])):
-            x1, y1, x2, y2 = y['box'][i, :]
-            Y.append(SegmObject(
-                clsname=self.class_names[y['class'][i]],
-                maskpath=None,
-                xmin=x1,
-                ymin=y1,
-                xmax=x2,
-                ymax=y2,
-                mask=y['mask'][i],
-                score=y['score'][i],
-                iscrowd=False
-            ))
+        for i in range(len(y["score"])):
+            x1, y1, x2, y2 = y["box"][i, :]
+            Y.append(
+                SegmObject(
+                    clsname=self.class_names[y["class"][i]],
+                    maskpath=None,
+                    xmin=x1,
+                    ymin=y1,
+                    xmax=x2,
+                    ymax=y2,
+                    mask=y["mask"][i],
+                    score=y["score"][i],
+                    iscrowd=False,
+                )
+            )
         return [Y]
 
     def convert_output_from_bytes(self, outputdata):
@@ -452,22 +446,21 @@ class YOLACT(YOLACTWrapper):
         f = np.dtype(np.float32).itemsize
         num_dets = (S - 138 * 138 * 32 * f) // (121 * f)
 
-        output_specification = self.get_io_specification()['output']
+        output_specification = self.get_io_specification()["output"]
 
         result = []
         for spec in output_specification:
             shape = list(
-                num_dets if val == -1 else val for val in spec['shape']
+                num_dets if val == -1 else val for val in spec["shape"]
             )
-            dtype = np.dtype(spec['dtype'])
+            dtype = np.dtype(spec["dtype"])
             tensorsize = reduce(operator.mul, shape) * dtype.itemsize
 
             # Copy of numpy array is needed because the result of np.frombuffer
             # is not writeable, which breaks output postprocessing.
-            outputtensor = np.array(np.frombuffer(
-                outputdata[:tensorsize],
-                dtype=dtype
-            )).reshape(shape)
+            outputtensor = np.array(
+                np.frombuffer(outputdata[:tensorsize], dtype=dtype)
+            ).reshape(shape)
             result.append(outputtensor)
             outputdata = outputdata[tensorsize:]
 
@@ -491,19 +484,24 @@ class YOLACT(YOLACTWrapper):
         """
         variances = [0.1, 0.2]
 
-        boxes = np.concatenate((
-            priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
-            priors[:, 2:] * np.exp(loc[:, 2:] * variances[1])), 1)
+        boxes = np.concatenate(
+            (
+                priors[:, :2] + loc[:, :2] * variances[0] * priors[:, 2:],
+                priors[:, 2:] * np.exp(loc[:, 2:] * variances[1]),
+            ),
+            1,
+        )
         boxes[:, :2] -= boxes[:, 2:] / 2
         boxes[:, 2:] += boxes[:, :2]
         return boxes
 
-    def _filter_detections(self,
-                           conf_preds: np.ndarray,
-                           decode_boxes: np.ndarray,
-                           mask_data: np.ndarray,
-                           nms_thresh: Optional[float] = 0.5
-                           ) -> Dict[str, np.ndarray]:
+    def _filter_detections(
+        self,
+        conf_preds: np.ndarray,
+        decode_boxes: np.ndarray,
+        mask_data: np.ndarray,
+        nms_thresh: Optional[float] = 0.5,
+    ) -> Dict[str, np.ndarray]:
         """
         Filters detections using confidence threshold and NMS.
 
@@ -528,7 +526,7 @@ class YOLACT(YOLACTWrapper):
         cur_scores = conf_preds[1:, :]
 
         conf_scores = np.max(cur_scores, axis=0)
-        keep = (conf_scores > self.score_threshold)
+        keep = conf_scores > self.score_threshold
         scores = cur_scores[:, keep]
         boxes = decode_boxes[keep, :]
         masks = mask_data[keep, :]
@@ -559,8 +557,12 @@ class YOLACT(YOLACTWrapper):
 
         scores, idx2 = np.sort(scores)[::-1], np.argsort(scores)[::-1]
         idx = idx[idx2]
-        return {'box': boxes[idx], 'mask': masks[idx], 'class': classes[idx2],
-                'score': scores}
+        return {
+            "box": boxes[idx],
+            "mask": masks[idx],
+            "class": classes[idx2],
+            "score": scores,
+        }
 
     def _detect(self, y: List[np.ndarray]) -> Dict[str, np.ndarray]:
         """
@@ -584,26 +586,35 @@ class YOLACT(YOLACTWrapper):
             Dictionary of model outputs with detected objects.
         """
         decode_boxes = self._decode(y[0].squeeze(0), y[3])
-        result = self._filter_detections(y[1].squeeze(0).T,
-                                         decode_boxes,
-                                         y[2].squeeze(0))
+        result = self._filter_detections(
+            y[1].squeeze(0).T, decode_boxes, y[2].squeeze(0)
+        )
         if result is not None:
-            result['proto'] = y[4].squeeze(0)
+            result["proto"] = y[4].squeeze(0)
         return result
 
     @classmethod
     def _get_io_specification(cls):
         return {
-            'input': [{'name': 'input', 'shape': (1, 3, 550, 550), 'dtype': 'float32'}],    # noqa: E501
-            'output': [
-                {'name': 'output_0', 'shape': (1, -1, 4), 'dtype': 'float32'},
-                {'name': 'output_1', 'shape': (1, -1, 81), 'dtype': 'float32'},
-                {'name': 'output_2', 'shape': (1, -1, 32), 'dtype': 'float32'},
-                {'name': 'output_3', 'shape': (-1, 4), 'dtype': 'float32'},
-                {'name': 'output_4', 'shape': (1, 138, 138, 32), 'dtype': 'float32'}    # noqa: E501
+            "input": [
+                {
+                    "name": "input",
+                    "shape": (1, 3, 550, 550),
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
+            "output": [
+                {"name": "output_0", "shape": (1, -1, 4), "dtype": "float32"},
+                {"name": "output_1", "shape": (1, -1, 81), "dtype": "float32"},
+                {"name": "output_2", "shape": (1, -1, 32), "dtype": "float32"},
+                {"name": "output_3", "shape": (-1, 4), "dtype": "float32"},
+                {
+                    "name": "output_4",
+                    "shape": (1, 138, 138, 32),
+                    "dtype": "float32",
+                },  # noqa: E501
             ],
-            'processed_output': [{
-                'name': 'segmentation_output',
-                'type': 'List[SegmObject]'
-            }]
+            "processed_output": [
+                {"name": "segmentation_output", "type": "List[SegmObject]"}
+            ],
         }

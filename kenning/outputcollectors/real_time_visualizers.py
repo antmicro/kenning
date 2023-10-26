@@ -37,42 +37,43 @@ class BaseRealTimeVisualizer(OutputCollector):
     setup_gui_lock = threading.Lock()
 
     arguments_structure = {
-        'viewer_width': {
-            'argparse_name': '--viewer-width',
-            'description': 'Width of the visualizer window',
-            'type': int,
-            'default': 1280
+        "viewer_width": {
+            "argparse_name": "--viewer-width",
+            "description": "Width of the visualizer window",
+            "type": int,
+            "default": 1280,
         },
-        'viewer_height': {
-            'argparse_name': '--viewer-height',
-            'description': 'Height of the visualizer window',
-            'type': int,
-            'default': 800
+        "viewer_height": {
+            "argparse_name": "--viewer-height",
+            "description": "Height of the visualizer window",
+            "type": int,
+            "default": 800,
         },
-        'input_color_format': {
-            'argparse_name': '--input-color-format',
-            'description': 'Color format of provided frame (RGB or BGR)',
-            'type': str,
-            'default': 'BGR'
+        "input_color_format": {
+            "argparse_name": "--input-color-format",
+            "description": "Color format of provided frame (RGB or BGR)",
+            "type": str,
+            "default": "BGR",
         },
-        'input_memory_layout': {
-            'argparse_name': '--input-memory-layout',
-            'description': 'Memory layout of provided frame (NCHW or NHWC)',
-            'type': str,
-            'default': 'NHWC'
-        }
+        "input_memory_layout": {
+            "argparse_name": "--input-memory-layout",
+            "description": "Memory layout of provided frame (NCHW or NHWC)",
+            "type": str,
+            "default": "NHWC",
+        },
     }
 
     def __init__(
-            self,
-            title: str,
-            viewer_width: int = 1280,
-            viewer_height: int = 800,
-            input_color_format: str = 'BGR',
-            input_memory_layout: str = 'NHWC',
-            inputs_sources: Dict[str, Tuple[int, str]] = {},
-            inputs_specs: Dict[str, Dict] = {},
-            outputs: Dict[str, str] = {}):
+        self,
+        title: str,
+        viewer_width: int = 1280,
+        viewer_height: int = 800,
+        input_color_format: str = "BGR",
+        input_memory_layout: str = "NHWC",
+        inputs_sources: Dict[str, Tuple[int, str]] = {},
+        inputs_specs: Dict[str, Dict] = {},
+        outputs: Dict[str, str] = {},
+    ):
         """
         Base class for OpenGL-based real time visualizer.
 
@@ -106,21 +107,20 @@ class BaseRealTimeVisualizer(OutputCollector):
         # new color is created using random hue and maximum
         # saturation, value and alpha
         self.class_colors = defaultdict(
-            lambda: [*colorsys.hsv_to_rgb(np.random.rand(), 1, 1), 1.]
+            lambda: [*colorsys.hsv_to_rgb(np.random.rand(), 1, 1), 1.0]
         )
 
         self.stop = False
         self.process_data = mp.Queue()
         self.process = mp.Process(
-            target=BaseRealTimeVisualizer._gui_thread,
-            args=(self,)
+            target=BaseRealTimeVisualizer._gui_thread, args=(self,)
         )
         self.process.start()
 
         super().__init__(
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     @classmethod
@@ -148,7 +148,8 @@ class BaseRealTimeVisualizer(OutputCollector):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
         return cls._get_io_specification(
-            parsed_json_dict["input_memory_layout"])
+            parsed_json_dict["input_memory_layout"]
+        )
 
     def cleanup(self):
         self.process_data.close()
@@ -167,7 +168,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         dpg.create_context()
 
         self.id = 0
-        while dpg.does_item_exist(f'main_window_{self.id}'):
+        while dpg.does_item_exist(f"main_window_{self.id}"):
             self.id += 1
 
         with dpg.texture_registry(show=False):
@@ -175,34 +176,32 @@ class BaseRealTimeVisualizer(OutputCollector):
                 width=self.width,
                 height=self.height,
                 default_value=np.zeros((self.width, self.height, 3)),
-                tag=f'input_image_texture_{self.id}',
+                tag=f"input_image_texture_{self.id}",
             )
 
         with dpg.window(
-                tag=f'main_window_{self.id}',
-                no_title_bar=True,
-                autosize=True
+            tag=f"main_window_{self.id}", no_title_bar=True, autosize=True
         ):
             dpg.add_image(
-                texture_tag=f'input_image_texture_{self.id}',
-                tag=f'image_render_{self.id}',
-                pos=(_PADDING, _PADDING)
+                texture_tag=f"input_image_texture_{self.id}",
+                tag=f"image_render_{self.id}",
+                pos=(_PADDING, _PADDING),
             )
 
         dpg.set_global_font_scale(_FONT_SCALE)
 
         if self.id == 0:
-            dpg.set_primary_window(f'main_window_{self.id}', True)
+            dpg.set_primary_window(f"main_window_{self.id}", True)
             dpg.create_viewport(
                 title=self.title,
-                width=self.width + _PADDING*2,
-                height=self.height + _PADDING*2,
-                resizable=True
+                width=self.width + _PADDING * 2,
+                height=self.height + _PADDING * 2,
+                resizable=True,
             )
             dpg.setup_dearpygui()
             dpg.show_viewport()
         elif self.id == 1:
-            dpg.set_primary_window('main_window_0', False)
+            dpg.set_primary_window("main_window_0", False)
 
         BaseRealTimeVisualizer.setup_gui_lock.release()
 
@@ -231,22 +230,22 @@ class BaseRealTimeVisualizer(OutputCollector):
         fps : float
             Number of frames per second.
         """
-        draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
+        draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
 
         dpg.draw_rectangle(
             parent=draw_layer_tag,
             pmin=(0, 0),
             pmax=(128, 32),
             fill=(0, 0, 0, 128),
-            color=(0, 0, 0, 128)
+            color=(0, 0, 0, 128),
         )
 
         dpg.draw_text(
             parent=draw_layer_tag,
-            text=f'FPS: {fps}',
-            pos=(_PADDING*2, _PADDING),
+            text=f"FPS: {fps}",
+            pos=(_PADDING * 2, _PADDING),
             color=(255, 255, 255, 255),
-            size=_FONT_SIZE
+            size=_FONT_SIZE,
         )
 
     def swap_layers(self):
@@ -254,14 +253,13 @@ class BaseRealTimeVisualizer(OutputCollector):
         Method that swaps drawing layers.
         Called when all drawings are done.
         """
-        dpg.show_item(f'draw_layer_{self.id}_{self.draw_layer_index^1}')
-        dpg.delete_item(f'draw_layer_{self.id}_{self.draw_layer_index}')
+        dpg.show_item(f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}")
+        dpg.delete_item(f"draw_layer_{self.id}_{self.draw_layer_index}")
         self.draw_layer_index ^= 1
 
     def process_output(
-            self,
-            input_data: List[np.ndarray],
-            output_data: List[Any]):
+        self, input_data: List[np.ndarray], output_data: List[Any]
+    ):
         """
         Method used to prepare data for visualization and call
         visualization method.
@@ -278,10 +276,10 @@ class BaseRealTimeVisualizer(OutputCollector):
         img = input_data[0]
         output_data = output_data[0]
 
-        if self.input_memory_layout == 'NCHW':
+        if self.input_memory_layout == "NCHW":
             img = img.transpose(1, 2, 0)
 
-        if self.input_color_format == 'BGR':
+        if self.input_color_format == "BGR":
             img = cv2.cvtColor(img, cv2.COLOR_BGR2RGBA)
         else:
             img = cv2.cvtColor(img, cv2.COLOR_RGB2RGBA)
@@ -290,7 +288,7 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         img = self.visualize_output(img, output_data)
 
-        dpg.set_value(f'input_image_texture_{self.id}', img)
+        dpg.set_value(f"input_image_texture_{self.id}", img)
 
         self._draw_fps_counter(dpg.get_frame_rate())
 
@@ -304,10 +302,7 @@ class BaseRealTimeVisualizer(OutputCollector):
     def should_close(self) -> bool:
         return not self.process.is_alive()
 
-    def visualize_output(
-            self,
-            img: np.ndarray,
-            output_data: Any):
+    def visualize_output(self, img: np.ndarray, output_data: Any):
         """
         Method used to visualize data.
 
@@ -320,9 +315,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         """
         raise NotImplementedError
 
-    def get_output_data(
-            self,
-            inputs: Dict[str, Any]) -> Any:
+    def get_output_data(self, inputs: Dict[str, Any]) -> Any:
         """
         Retrieves data specific to visualizer from inputs.
 
@@ -338,10 +331,8 @@ class BaseRealTimeVisualizer(OutputCollector):
         """
         return inputs
 
-    def run(
-            self,
-            inputs: Dict[str, Any]) -> Dict[str, Any]:
-        input_data = inputs['frame']
+    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        input_data = inputs["frame"]
         output_data = self.get_output_data(inputs)
         self.process_data.put((deepcopy(input_data), deepcopy(output_data)))
         return {}
@@ -358,28 +349,28 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         Creates the detection visualizer.
         """
         self.layer = None
-        super().__init__('Real time detection visualizer', *args, **kwargs)
+        super().__init__("Real time detection visualizer", *args, **kwargs)
 
     @classmethod
     def _get_io_specification(cls, input_memory_layout):
-        if input_memory_layout == 'NCHW':
+        if input_memory_layout == "NCHW":
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)
         return {
-            'input': [
-                {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'detection_data', 'type': 'List[DetectObject]'}],
-            'output': []
+            "input": [
+                {"name": "frame", "shape": frame_shape, "dtype": "float32"},
+                {"name": "detection_data", "type": "List[DetectObject]"},
+            ],
+            "output": [],
         }
 
     def get_output_data(self, inputs: Dict[str, Any]) -> List[DetectObject]:
-        return inputs['detection_data']
+        return inputs["detection_data"]
 
     def visualize_output(
-            self,
-            img: np.ndarray,
-            output_data: List[DetectObject]) -> np.ndarray:
+        self, img: np.ndarray, output_data: List[DetectObject]
+    ) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -395,34 +386,32 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         np.ndarray :
             Image with visualization.
         """
-        draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
+        draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
 
         self.layer = dpg.add_draw_layer(
-            parent=f'main_window_{self.id}',
-            tag=draw_layer_tag,
-            show=False
+            parent=f"main_window_{self.id}", tag=draw_layer_tag, show=False
         )
         for out in output_data:
-            description = f'{out.clsname} [{out.score*100:.2f}%]'
+            description = f"{out.clsname} [{out.score * 100:.2f}%]"
             # add alpha and convert to RGB
             color = np.array(self.class_colors[out.clsname])
-            color = tuple((255*color).astype(np.uint8))
+            color = tuple((255 * color).astype(np.uint8))
             dpg.draw_rectangle(
                 parent=draw_layer_tag,
-                pmin=(out.xmin*self.width,
-                      out.ymin*self.height),
-                pmax=(out.xmax*self.width,
-                      out.ymax*self.height),
+                pmin=(out.xmin * self.width, out.ymin * self.height),
+                pmax=(out.xmax * self.width, out.ymax * self.height),
                 color=color,
-                thickness=2
+                thickness=2,
             )
             dpg.draw_text(
                 parent=draw_layer_tag,
                 text=description,
-                pos=(out.xmin*self.width + _PADDING,
-                     out.ymin*self.height + _PADDING),
+                pos=(
+                    out.xmin * self.width + _PADDING,
+                    out.ymin * self.height + _PADDING,
+                ),
                 color=color,
-                size=_FONT_SIZE
+                size=_FONT_SIZE,
             )
 
         return img
@@ -434,11 +423,11 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
     """
 
     arguments_structure = {
-        'score_threshold': {
-            'argparse_name': '--score_threshold',
-            'description': 'Class score threshold to be drawn.',
-            'type': float,
-            'default': 0.1
+        "score_threshold": {
+            "argparse_name": "--score_threshold",
+            "description": "Class score threshold to be drawn.",
+            "type": float,
+            "default": 0.1,
         }
     }
 
@@ -457,29 +446,30 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         """
         self.layer = None
         self.score_threshold = score_threshold
-        super().__init__('Real time segmentation visualization',
-                         *args, **kwargs)
+        super().__init__(
+            "Real time segmentation visualization", *args, **kwargs
+        )
 
     @classmethod
     def _get_io_specification(cls, input_memory_layout):
-        if input_memory_layout == 'NCHW':
+        if input_memory_layout == "NCHW":
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)
         return {
-            'input': [
-                {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'segmentation_data', 'type': 'List[SegmObject]'}],
-            'output': []
+            "input": [
+                {"name": "frame", "shape": frame_shape, "dtype": "float32"},
+                {"name": "segmentation_data", "type": "List[SegmObject]"},
+            ],
+            "output": [],
         }
 
     def get_output_data(self, inputs: Dict[str, Any]) -> List[SegmObject]:
-        return inputs['segmentation_data']
+        return inputs["segmentation_data"]
 
     def visualize_output(
-            self,
-            img: np.ndarray,
-            output_data: List[SegmObject]) -> np.ndarray:
+        self, img: np.ndarray, output_data: List[SegmObject]
+    ) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -495,13 +485,11 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         np.ndarray :
             Image with visualization.
         """
-        draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
-        mix_factor = .3
+        draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
+        mix_factor = 0.3
 
         self.layer = dpg.add_draw_layer(
-            parent=f'main_window_{self.id}',
-            tag=draw_layer_tag,
-            show=False
+            parent=f"main_window_{self.id}", tag=draw_layer_tag, show=False
         )
 
         for out in output_data:
@@ -509,38 +497,35 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
                 continue
 
             mask = cv2.resize(
-                out.mask,
-                (self.width, self.height),
-                cv2.INTER_NEAREST
+                out.mask, (self.width, self.height), cv2.INTER_NEAREST
             ).astype(np.uint8)
-            color_mask = np.tile(mask[..., None]/255., [1, 1, 4])
+            color_mask = np.tile(mask[..., None] / 255.0, [1, 1, 4])
             color_image = np.tile(
-                self.class_colors[out.clsname],
-                [self.height, self.width, 1]
+                self.class_colors[out.clsname], [self.height, self.width, 1]
             )
             img += color_image * color_mask * mix_factor
             contour, _ = cv2.findContours(
-                mask.astype(np.uint8),
-                cv2.RETR_CCOMP,
-                cv2.CHAIN_APPROX_NONE
+                mask.astype(np.uint8), cv2.RETR_CCOMP, cv2.CHAIN_APPROX_NONE
             )
             color = np.array(self.class_colors[out.clsname])
-            color = tuple((255*color).astype(np.uint8))
+            color = tuple((255 * color).astype(np.uint8))
             for c in contour:
                 dpg.draw_polyline(
                     parent=draw_layer_tag,
                     points=list(c[:, 0, :]),
                     color=color,
-                    thickness=2
+                    thickness=2,
                 )
-                description = f'{out.clsname} [{out.score * 100:.2f}%]'
+                description = f"{out.clsname} [{out.score * 100:.2f}%]"
                 dpg.draw_text(
                     parent=draw_layer_tag,
                     text=description,
-                    pos=(c[:, 0, 0].min() + _PADDING,
-                         c[:, 0, 1].min() + _PADDING),
+                    pos=(
+                        c[:, 0, 0].min() + _PADDING,
+                        c[:, 0, 1].min() + _PADDING,
+                    ),
                     color=color,
-                    size=_FONT_SIZE
+                    size=_FONT_SIZE,
                 )
 
         return img
@@ -552,11 +537,11 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
     """
 
     arguments_structure = {
-        'top_n': {
-            'argparse_name': '--show-top-n',
-            'description': 'Shows top N results of classification',
-            'type': int,
-            'default': 5
+        "top_n": {
+            "argparse_name": "--show-top-n",
+            "description": "Shows top N results of classification",
+            "type": int,
+            "default": 5,
         }
     }
 
@@ -573,68 +558,70 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         kwargs : Any
             Additional keyword arguments passed to base class constructor.
         """
-        super().__init__('Real time classification visualizer',
-                         *args, **kwargs)
-        class_input_spec = self.inputs_specs['classification_data']
-        self.class_names = class_input_spec['class_names']
+        super().__init__(
+            "Real time classification visualizer", *args, **kwargs
+        )
+        class_input_spec = self.inputs_specs["classification_data"]
+        self.class_names = class_input_spec["class_names"]
         self.top_n = top_n
 
     def setup_gui(self):
         super().setup_gui()
 
         dpg.add_group(
-            parent=f'main_window_{self.id}',
-            tag=f'side_panel_{self.id}',
-            pos=(self.width + _PADDING*2, _PADDING),
-            width=_SIDE_PANEL_WIDTH
+            parent=f"main_window_{self.id}",
+            tag=f"side_panel_{self.id}",
+            pos=(self.width + _PADDING * 2, _PADDING),
+            width=_SIDE_PANEL_WIDTH,
         )
 
         with dpg.table(
-            parent=f'side_panel_{self.id}',
-            width=_SIDE_PANEL_WIDTH
+            parent=f"side_panel_{self.id}", width=_SIDE_PANEL_WIDTH
         ):
             dpg.add_table_column(
-                label='',
+                label="",
                 init_width_or_weight=_SCORE_COLUMN_WIDTH,
-                width_fixed=True
+                width_fixed=True,
             )
             dpg.add_table_column(
-                label='Score',
+                label="Score",
                 init_width_or_weight=_SCORE_COLUMN_WIDTH,
-                width_fixed=True
+                width_fixed=True,
             )
-            dpg.add_table_column(label='Name')
+            dpg.add_table_column(label="Name")
 
             for i in range(self.top_n):
                 with dpg.table_row():
-                    dpg.add_text(
-                        tag=f'cell_bar_{i}_{self.id}'
-                    )
-                    for name in ('perc', 'name'):
-                        dpg.add_text(tag=f'cell_{name}_{i}_{self.id}')
+                    dpg.add_text(tag=f"cell_bar_{i}_{self.id}")
+                    for name in ("perc", "name"):
+                        dpg.add_text(tag=f"cell_{name}_{i}_{self.id}")
 
-        dpg.set_viewport_width(self.width + _PADDING*2 + _SIDE_PANEL_WIDTH)
+        dpg.set_viewport_width(self.width + _PADDING * 2 + _SIDE_PANEL_WIDTH)
 
     @classmethod
     def _get_io_specification(cls, input_memory_layout):
-        if input_memory_layout == 'NCHW':
+        if input_memory_layout == "NCHW":
             frame_shape = (1, 3, -1, -1)
         else:
             frame_shape = (1, -1, -1, 3)
         return {
-            'input': [
-                {'name': 'frame', 'shape': frame_shape, 'dtype': 'float32'},
-                {'name': 'classification_data', 'shape': (1, -1), 'dtype': 'float32'}],  # noqa: E501
-            'output': []
+            "input": [
+                {"name": "frame", "shape": frame_shape, "dtype": "float32"},
+                {
+                    "name": "classification_data",
+                    "shape": (1, -1),
+                    "dtype": "float32",
+                },
+            ],  # noqa: E501
+            "output": [],
         }
 
     def get_output_data(self, inputs: Dict[str, Any]) -> np.ndarray:
-        return inputs['classification_data']
+        return inputs["classification_data"]
 
     def visualize_output(
-            self,
-            img: np.ndarray,
-            output_data: np.ndarray) -> np.ndarray:
+        self, img: np.ndarray, output_data: np.ndarray
+    ) -> np.ndarray:
         """
         Method used to visualize object detection data.
 
@@ -650,30 +637,29 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         np.ndarray :
             Image with visualization.
         """
-        draw_layer_tag = f'draw_layer_{self.id}_{self.draw_layer_index^1}'
+        draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
 
         self.layer = dpg.add_draw_layer(
-            parent=f'main_window_{self.id}',
-            tag=draw_layer_tag,
-            show=False
+            parent=f"main_window_{self.id}", tag=draw_layer_tag, show=False
         )
 
-        best_k = np.argsort(output_data)[-self.top_n:][::-1]
+        best_k = np.argsort(output_data)[-self.top_n :][::-1]
         class_names = np.array(self.class_names)[best_k]
         percentages = softmax(output_data[best_k])
 
         for i, (name, perc) in enumerate(zip(class_names, percentages)):
-            label_pos = dpg.get_item_pos(f'cell_bar_{i}_{self.id}')
+            label_pos = dpg.get_item_pos(f"cell_bar_{i}_{self.id}")
             dpg.draw_rectangle(
                 parent=draw_layer_tag,
                 pmin=label_pos,
                 pmax=(
-                    label_pos[0] + _SCORE_COLUMN_WIDTH*perc,
-                    label_pos[1] + _FONT_SIZE),
+                    label_pos[0] + _SCORE_COLUMN_WIDTH * perc,
+                    label_pos[1] + _FONT_SIZE,
+                ),
                 color=(0, 255, 0),
-                fill=(0, 255, 0)
+                fill=(0, 255, 0),
             )
-            dpg.set_value(f'cell_perc_{i}_{self.id}', f'{perc*100:.2f}%')
-            dpg.set_value(f'cell_name_{i}_{self.id}', name)
+            dpg.set_value(f"cell_perc_{i}_{self.id}", f"{perc * 100:.2f}%")
+            dpg.set_value(f"cell_name_{i}_{self.id}", name)
 
         return img

@@ -26,17 +26,17 @@ class ModelInserter(Optimizer):
     """
 
     arguments_structure = {
-        'model_framework': {
-            'argparse_name': '--model-framework',
-            'description': 'The input type of the model, framework-wise',
-            'type': str,
-            'required': True
+        "model_framework": {
+            "argparse_name": "--model-framework",
+            "description": "The input type of the model, framework-wise",
+            "type": str,
+            "required": True,
         },
-        'input_model_path': {
-            'argparse_name': '--input-model-path',
-            'description': 'Path to the model to be inserted',
-            'type': ResourceURI,
-            'required': True
+        "input_model_path": {
+            "argparse_name": "--input-model-path",
+            "description": "Path to the model to be inserted",
+            "type": ResourceURI,
+            "required": True,
         },
     }
 
@@ -46,7 +46,7 @@ class ModelInserter(Optimizer):
         compiled_model_path: PathOrURI,
         model_framework: str,
         input_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
+        location: Literal["host", "target"] = "host",
     ):
         """
         A mock Optimizer for model injection.
@@ -75,20 +75,22 @@ class ModelInserter(Optimizer):
         )
 
     def compile(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
-        KLogger.warning('Inserting the model into pipeline')
-        KLogger.warning('The input model from previous block is ignored')
-        KLogger.warning(f'The used model is from {self.input_model_path}')
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
+        KLogger.warning("Inserting the model into pipeline")
+        KLogger.warning("The input model from previous block is ignored")
+        KLogger.warning(f"The used model is from {self.input_model_path}")
 
         shutil.copy(self.input_model_path, self.compiled_model_path)
         self.save_io_specification(self.input_model_path, None)
 
     def consult_model_type(
-            self,
-            previous_block: Union['ModelWrapper', 'Optimizer'],
-            force_onnx=False) -> str:
+        self,
+        previous_block: Union["ModelWrapper", "Optimizer"],
+        force_onnx=False,
+    ) -> str:
         """
         Returns the first type supported by the previous block.
 
@@ -109,10 +111,8 @@ class ModelInserter(Optimizer):
         """
         possible_outputs = previous_block.get_output_formats()
 
-        if force_onnx and self.model_framework != 'onnx':
-            raise ValueError(
-                '"onnx" format is not supported by ModelInserter'
-            )
+        if force_onnx and self.model_framework != "onnx":
+            raise ValueError('"onnx" format is not supported by ModelInserter')
         return possible_outputs[0]
 
     def set_input_type(self, inputtype: str):
@@ -120,7 +120,8 @@ class ModelInserter(Optimizer):
 
     def get_framework_and_version(self):
         import kenning
-        if hasattr(kenning, '__version__'):
+
+        if hasattr(kenning, "__version__"):
             return ("kenning", kenning.__version__)
         else:
             return ("kenning", "dev")

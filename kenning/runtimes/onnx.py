@@ -22,27 +22,28 @@ class ONNXRuntime(Runtime):
     Runtime subclass that provides an API for testing inference on ONNX models.
     """
 
-    inputtypes = ['onnx']
+    inputtypes = ["onnx"]
 
     arguments_structure = {
-        'model_path': {
-            'argparse_name': '--save-model-path',
-            'description': 'Path where the model will be uploaded',
-            'type': ResourceURI,
-            'default': 'model.tar'
+        "model_path": {
+            "argparse_name": "--save-model-path",
+            "description": "Path where the model will be uploaded",
+            "type": ResourceURI,
+            "default": "model.tar",
         },
-        'execution_providers': {
-            'description': 'List of execution providers ordered by priority',
-            'is_list': True,
-            'default': ['CPUExecutionProvider']
-        }
+        "execution_providers": {
+            "description": "List of execution providers ordered by priority",
+            "is_list": True,
+            "default": ["CPUExecutionProvider"],
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            execution_providers: List[str] = ['CPUExecutionProvider'],
-            disable_performance_measurements: bool = False):
+        self,
+        model_path: PathOrURI,
+        execution_providers: List[str] = ["CPUExecutionProvider"],
+        disable_performance_measurements: bool = False,
+    ):
         """
         Constructs ONNX runtime.
 
@@ -64,73 +65,77 @@ class ONNXRuntime(Runtime):
         )
 
     def prepare_input(self, input_data):
-        KLogger.debug(f'Preparing inputs of size {len(input_data)}')
+        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
         if self.session is None:
             raise ModelNotPreparedError
 
         try:
             ordered_input = self.preprocess_input(input_data)
         except ValueError as ex:
-            KLogger.error(f'Failed to load input: {ex}', stack_info=True)
+            KLogger.error(f"Failed to load input: {ex}", stack_info=True)
             return False
 
         self.input = {}
         for spec, inp in zip(self.input_spec, ordered_input):
-            self.input[spec['name']] = inp
+            self.input[spec["name"]] = inp
         return True
 
     def prepare_model(self, input_data):
-        KLogger.info('Loading model')
+        KLogger.info("Loading model")
         if input_data:
-            with open(self.model_path, 'wb') as outmodel:
+            with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)
 
         self.session = ort.InferenceSession(
-            str(self.model_path),
-            providers=self.execution_providers
+            str(self.model_path), providers=self.execution_providers
         )
 
         # Input dtype can come either as a valid np.dtype
         # or as a string that need to be parsed
         def onnx_to_np_dtype(s):
-            if s == 'tensor(float)':
-                return 'float32'
+            if s == "tensor(float)":
+                return "float32"
             if isinstance(s, np.dtype):
                 return s.name
 
         def update_io_spec(read_spec, session_spec):
             model_spec = []
             for input in session_spec:
-                model_spec.append({
-                    'name': input.name,
-                    'shape': np.array([s if isinstance(s, int) else -1 for s in input.shape]),  # noqa: E501
-                    'dtype': onnx_to_np_dtype(input.type)
-                })
+                model_spec.append(
+                    {
+                        "name": input.name,
+                        "shape": np.array(
+                            [
+                                s if isinstance(s, int) else -1
+                                for s in input.shape
+                            ]
+                        ),  # noqa: E501
+                        "dtype": onnx_to_np_dtype(input.type),
+                    }
+                )
 
             if not read_spec:
                 return model_spec
             else:
                 for s, m in zip(read_spec, model_spec):
-                    if 'name' not in s:
-                        s['name'] = m['name']
-                    if 'shape' not in s:
-                        s['shape'] = m['shape']
-                    if 'dtype' not in s:
-                        s['dtype'] = m['dtype']
+                    if "name" not in s:
+                        s["name"] = m["name"]
+                    if "shape" not in s:
+                        s["shape"] = m["shape"]
+                    if "dtype" not in s:
+                        s["dtype"] = m["dtype"]
 
             return read_spec
 
         self.input_spec = update_io_spec(
-            self.input_spec,
-            self.session.get_inputs()
+            self.input_spec, self.session.get_inputs()
         )
 
         self.output_spec = update_io_spec(
-            self.output_spec,
-            self.session.get_outputs()
+            self.output_spec, self.session.get_outputs()
         )
 
-        KLogger.info('Model loading ended successfully')
+        KLogger.info("Model loading ended successfully")
         return True
 
     def run(self):
@@ -139,8 +144,7 @@ class ONNXRuntime(Runtime):
         if self.input is None:
             raise InputNotPreparedError
         self.scores = self.session.run(
-            [spec['name'] for spec in self.output_spec],
-            self.input
+            [spec["name"] for spec in self.output_spec], self.input
         )
 
     def extract_output(self):

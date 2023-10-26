@@ -15,7 +15,7 @@ from typing import Optional, List
 
 from kenning.cli.formatter import Formatter
 
-HELP_FLAGS = ('-h', '--help')
+HELP_FLAGS = ("-h", "--help")
 
 
 def print_help_from_parsers(
@@ -113,17 +113,17 @@ class Parser(argparse.ArgumentParser):
     def parse_args(self, args=None, namespace=None):
         args, argv = self.parse_known_args(args, namespace)
         if argv:
-            msg = gettext('unrecognized arguments: {}')
+            msg = gettext("unrecognized arguments: {}")
             # new: raise exception for help message
             if args.help:
-                raise ParserHelpException(error=msg.format(' '.join(argv)))
+                raise ParserHelpException(error=msg.format(" ".join(argv)))
             else:
-                self.error(msg.format(' '.join(argv)))
+                self.error(msg.format(" ".join(argv)))
         return args
 
     def error(self, message: str, early_exit=False, print_usage=True):
-        args = {'prog': self.prog, 'message': message}
-        error = gettext('%(prog)s: error: %(message)s\n') % args
+        args = {"prog": self.prog, "message": message}
+        error = gettext("%(prog)s: error: %(message)s\n") % args
         # new: end program when early_exit is True
         # when help flag is present raise exception
         if early_exit:

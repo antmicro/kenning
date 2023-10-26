@@ -22,8 +22,8 @@ class IOInterface(ABC):
 
     @staticmethod
     def validate(
-            output_spec: Dict[str, List[Dict]],
-            input_spec: Dict[str, List[Dict]]) -> bool:
+        output_spec: Dict[str, List[Dict]], input_spec: Dict[str, List[Dict]]
+    ) -> bool:
         """
         Method that checks compatibility between output of some object and
         input of another. Output is considered compatible if for each input
@@ -50,22 +50,27 @@ class IOInterface(ABC):
                 try:
                     single_output_spec = output_spec[global_name]
                     # dtype and type are mutually exclusive
-                    if (('dtype' in single_input_spec) ==
-                            ('type' in single_input_spec)):
+                    if ("dtype" in single_input_spec) == (
+                        "type" in single_input_spec
+                    ):
                         return False
                     # validate dtype and shape
-                    if ('dtype' in single_input_spec and
-                            'shape' in single_input_spec):
-                        if (single_input_spec['dtype']
-                                != single_output_spec['dtype']):
+                    if (
+                        "dtype" in single_input_spec
+                        and "shape" in single_input_spec
+                    ):
+                        if (
+                            single_input_spec["dtype"]
+                            != single_output_spec["dtype"]
+                        ):
                             return False
-                        if isinstance(single_input_spec['shape'], list):
+                        if isinstance(single_input_spec["shape"], list):
                             # multiple valid shapes
                             found_valid_shape = False
-                            for input_shape in single_input_spec['shape']:
+                            for input_shape in single_input_spec["shape"]:
                                 if IOInterface._validate_shape(
-                                        single_output_spec['shape'],
-                                        input_shape):
+                                    single_output_spec["shape"], input_shape
+                                ):
                                     found_valid_shape = True
                                     break
 
@@ -74,17 +79,22 @@ class IOInterface(ABC):
 
                         else:
                             return IOInterface._validate_shape(
-                                single_output_spec['shape'],
-                                single_input_spec['shape'])
+                                single_output_spec["shape"],
+                                single_input_spec["shape"],
+                            )
                     # dtype and shape imply each other
-                    elif ('dtype' in single_input_spec or
-                            'shape' in single_input_spec):
+                    elif (
+                        "dtype" in single_input_spec
+                        or "shape" in single_input_spec
+                    ):
                         return False
                     # validate type
-                    if 'type' in single_input_spec:
-                        if (single_input_spec['type'] != 'Any' and
-                                single_input_spec['type']
-                                != single_output_spec['type']):
+                    if "type" in single_input_spec:
+                        if (
+                            single_input_spec["type"] != "Any"
+                            and single_input_spec["type"]
+                            != single_output_spec["type"]
+                        ):
                             return False
                 except KeyError:
                     return False
@@ -112,7 +122,8 @@ class IOInterface(ABC):
 
     @classmethod
     def parse_io_specification_from_json(
-            cls, json_dict: Dict) -> Dict[str, List[Dict]]:
+        cls, json_dict: Dict
+    ) -> Dict[str, List[Dict]]:
         """
         Return dictionary with 'input' and 'output' keys that will map to input
         and output specification of an object created by the argument json
@@ -137,9 +148,7 @@ class IOInterface(ABC):
         """
         return NotImplementedError
 
-    def save_io_specification(
-            self,
-            path: PathOrURI):
+    def save_io_specification(self, path: PathOrURI):
         """
         Saves input/output specification to a file named `path` + `.json`. This
         function uses `get_io_specification()` function to get the properties.
@@ -149,17 +158,15 @@ class IOInterface(ABC):
         path : PathOrURI
             Path that is used to store the input/output specification.
         """
-        spec_path = path.with_suffix(path.suffix + '.json')
+        spec_path = path.with_suffix(path.suffix + ".json")
 
         if not spec_path.parent.exists():
             spec_path.parent.mkdir(parents=True, exist_ok=True)
 
-        with open(spec_path, 'w') as f:
+        with open(spec_path, "w") as f:
             json.dump(self.get_io_specification(), f)
 
-    def load_io_specification(
-            self,
-            path: PathOrURI) -> Dict[str, List[Dict]]:
+    def load_io_specification(self, path: PathOrURI) -> Dict[str, List[Dict]]:
         """
         Loads input/output specification from a file named `path` + `.json`.
 
@@ -173,16 +180,15 @@ class IOInterface(ABC):
         Dict[str, List[Dict]] :
             Loaded IO specification.
         """
-        spec_path = path.with_suffix(path.suffix + '.json')
+        spec_path = path.with_suffix(path.suffix + ".json")
 
-        with open(spec_path, 'r') as f:
+        with open(spec_path, "r") as f:
             return json.load(f)
 
     @staticmethod
     def find_spec(
-            io_spec: Dict[str, List[Dict]],
-            io_type: str,
-            io_name: str) -> Dict[str, Any]:
+        io_spec: Dict[str, List[Dict]], io_type: str, io_name: str
+    ) -> Dict[str, Any]:
         """
         Find single IO specification based on type (input, output) and name.
 
@@ -201,18 +207,18 @@ class IOInterface(ABC):
             Specification of single IO.
         """
         for spec in io_spec[io_type]:
-            if spec['name'] == io_name:
+            if spec["name"] == io_name:
                 return spec
 
         raise IOSpecNotFound(
-            f'{io_type} spec with name {io_name} not found in IO '
-            f'specification:\n{io_spec}'
+            f"{io_type} spec with name {io_name} not found in IO "
+            f"specification:\n{io_spec}"
         )
 
     @staticmethod
     def _validate_shape(
-            output_shape: Tuple[int, ...],
-            input_shape: Tuple[int, ...]) -> bool:
+        output_shape: Tuple[int, ...], input_shape: Tuple[int, ...]
+    ) -> bool:
         """
         Methods that checks shapes compatibility. If the length of dimension is
         set to -1 it means that any length at this dimension is compatible.

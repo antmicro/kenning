@@ -43,11 +43,11 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
 
     for j in range(1, lb + 1):
         for i in range(1, la + 1):
-            cost = int(a[i-1] != b[j-1])
+            cost = int(a[i - 1] != b[j - 1])
             dynamic_array[j, i] = min(
-                dynamic_array[j, i-1] + 1,
-                dynamic_array[j-1, i] + 1,
-                dynamic_array[j-1, i-1] + cost
+                dynamic_array[j, i - 1] + 1,
+                dynamic_array[j - 1, i] + 1,
+                dynamic_array[j - 1, i - 1] + cost,
             )
     return dynamic_array[lb][la]
 
@@ -73,18 +73,17 @@ def char_eval(pred: str, gt: str) -> float:
         The ratio of the Levenshtein Distance to the ground truth length.
     """
     # sanitize the Ground Truth from punctuation and uppercase letters
-    gt = gt.translate(
-        str.maketrans('', '', string.punctuation)
-    ).lower().strip()
+    gt = (
+        gt.translate(str.maketrans("", "", string.punctuation)).lower().strip()
+    )
     pred = pred.strip()
     dld = dynamic_levenshtein_distance(pred, gt)
-    return 1 - float(dld)/float(len(gt))
+    return 1 - float(dld) / float(len(gt))
 
 
 def resample_wave(
-        input_wave: np.ndarray,
-        orig_sample_rate: int,
-        target_sample_rate: int) -> np.ndarray:
+    input_wave: np.ndarray, orig_sample_rate: int, target_sample_rate: int
+) -> np.ndarray:
     """
     Resamples provided wave.
 
@@ -105,7 +104,7 @@ def resample_wave(
     return librosa.resample(
         input_wave.astype(np.float32),
         orig_sr=orig_sample_rate,
-        target_sr=target_sample_rate
+        target_sr=target_sample_rate,
     ).astype(np.int16)
 
 
@@ -126,11 +125,12 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
         The string-typed path to the converted file.
     """
     from pydub import AudioSegment
+
     sound = AudioSegment.from_mp3(str(abspath))
     dst_folder = Path(abspath.parent / subdir)
     dst_folder.mkdir(parents=True, exist_ok=True)
-    dst = str(Path(dst_folder / (abspath.stem + '.wav')))
-    sound.export(dst, format='wav')
+    dst = str(Path(dst_folder / (abspath.stem + ".wav")))
+    sound.export(dst, format="wav")
     return dst
 
 
@@ -138,31 +138,34 @@ def _init_resources():
     """
     Initializes Common Voice Dataset resources.
     """
-    languages = ['en']
+    languages = ["en"]
     url_per_version = {
-        '1': 'cv-corpus-1/',
-        '2': 'cv-corpus-2/',
-        '3': 'cv-corpus-3/',
-        '4': 'cv-corpus-4-2019-12-10/',
-        '5.1': 'cv-corpus-5.1-2020-06-22/',
-        '6.1': 'cv-corpus-6.1-2020-12-11/',
-        '7.0': 'cv-corpus-7.0-2021-07-21/cv-corpus-7.0-2021-07-21-',
-        '8.0': 'cv-corpus-8.0-2022-01-19/cv-corpus-8.0-2022-01-19-',
-        '9.0': 'cv-corpus-9.0-2022-04-27/cv-corpus-9.0-2022-04-27-',
-        '10.0': 'cv-corpus-10.0-2022-07-04/cv-corpus-10.0-2022-07-04-',
-        '11.0': 'cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-',
-        '12.0': 'cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-'
+        "1": "cv-corpus-1/",
+        "2": "cv-corpus-2/",
+        "3": "cv-corpus-3/",
+        "4": "cv-corpus-4-2019-12-10/",
+        "5.1": "cv-corpus-5.1-2020-06-22/",
+        "6.1": "cv-corpus-6.1-2020-12-11/",
+        "7.0": "cv-corpus-7.0-2021-07-21/cv-corpus-7.0-2021-07-21-",
+        "8.0": "cv-corpus-8.0-2022-01-19/cv-corpus-8.0-2022-01-19-",
+        "9.0": "cv-corpus-9.0-2022-04-27/cv-corpus-9.0-2022-04-27-",
+        "10.0": "cv-corpus-10.0-2022-07-04/cv-corpus-10.0-2022-07-04-",
+        "11.0": "cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-",
+        "12.0": "cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-",
     }
-    url_format = 'https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz'  # noqa: E501
+    url_format = "https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz"  # noqa: E501
 
-    return Resources({
-        version: {
-            language: url_format.format(
-                version_url=version_url, language=language
-            )
-            for language in languages
-        } for version, version_url in url_per_version.items()
-    })
+    return Resources(
+        {
+            version: {
+                language: url_format.format(
+                    version_url=version_url, language=language
+                )
+                for language in languages
+            }
+            for version, version_url in url_per_version.items()
+        }
+    )
 
 
 class CommonVoiceDataset(Dataset):
@@ -182,64 +185,65 @@ class CommonVoiceDataset(Dataset):
     """
 
     resources = _init_resources()
-    annotations_types = ['train', 'validation', 'test']
-    selection_methods = ['none', 'length', 'accent']
+    annotations_types = ["train", "validation", "test"]
+    selection_methods = ["none", "length", "accent"]
 
     arguments_structure = {
-        'language': {
-            'argparse_name': '--language',
-            'description': 'Determines language of recordings',
-            'default': 'en',
-            'enum': list(set(key[1] for key in resources.keys())),
+        "language": {
+            "argparse_name": "--language",
+            "description": "Determines language of recordings",
+            "default": "en",
+            "enum": list(set(key[1] for key in resources.keys())),
         },
-        'annotation_type': {
-            'argparse_name': '--annotation-type',
-            'description': 'Type of annotations to load',
-            'default': 'test',
-            'enum': annotations_types
+        "annotation_type": {
+            "argparse_name": "--annotation-type",
+            "description": "Type of annotations to load",
+            "default": "test",
+            "enum": annotations_types,
         },
-        'sample_size': {
-            'argparse_name': '--sample-size',
-            'description': 'Size of sample',
-            'type': int,
-            'default': 10
+        "sample_size": {
+            "argparse_name": "--sample-size",
+            "description": "Size of sample",
+            "type": int,
+            "default": 10,
         },
-        'sample_rate': {
-            'argparse_name': '--sample-rate',
-            'description': 'Recording sample rate',
-            'type': int,
-            'default': 16000
+        "sample_rate": {
+            "argparse_name": "--sample-rate",
+            "description": "Recording sample rate",
+            "type": int,
+            "default": 16000,
         },
-        'selection_method': {
-            'argparse_name': '--selection-method',
-            'description': 'Method to group the data',
-            'default': 'accent',
-            'enum': selection_methods
+        "selection_method": {
+            "argparse_name": "--selection-method",
+            "description": "Method to group the data",
+            "default": "accent",
+            "enum": selection_methods,
         },
-        'dataset_version': {
-            'argparse_name': '--dataset-version',
-            'description': 'Version of the dataset',
-            'default': '12.0',
-            'enum': list(set(key[0] for key in resources.keys())),
-        }
+        "dataset_version": {
+            "argparse_name": "--dataset-version",
+            "description": "Version of the dataset",
+            "default": "12.0",
+            "enum": list(set(key[0] for key in resources.keys())),
+        },
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = True,
-            force_download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None,
-            split_fraction_test: float = 0.2,
-            split_fraction_val: Optional[float] = None,
-            split_seed: int = 1234,
-            language: str = 'en',
-            annotations_type: str = 'test',
-            sample_size: int = 1000,
-            sample_rate: int = 16000,
-            selection_method: str = 'accent',
-            dataset_version: str = '12.0'):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = True,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+        language: str = "en",
+        annotations_type: str = "test",
+        sample_size: int = 1000,
+        sample_rate: int = 16000,
+        selection_method: str = "accent",
+        dataset_version: str = "12.0",
+    ):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -278,14 +282,17 @@ class CommonVoiceDataset(Dataset):
             Version of the dataset.
         """
         assert language in set(key[1] for key in self.resources.keys()), (
-            f'Unsupported language {language}, should be one'
-            f'of {set(key[1] for key in self.resources.keys())}')
+            f"Unsupported language {language}, should be one"
+            f"of {set(key[1] for key in self.resources.keys())}"
+        )
         assert annotations_type in self.annotations_types, (
-            f'Unsupported annotations type {annotations_type}, should be one'
-            f'of {self.annotations_types}')
+            f"Unsupported annotations type {annotations_type}, should be one"
+            f"of {self.annotations_types}"
+        )
         assert selection_method in self.selection_methods, (
-            f'Unsupported selection method {selection_method}, should be one'
-            f'of {self.selection_methods}')
+            f"Unsupported selection method {selection_method}, should be one"
+            f"of {self.selection_methods}"
+        )
         self.language = language
         self.annotations_type = annotations_type
         self.sample_size = sample_size
@@ -300,7 +307,7 @@ class CommonVoiceDataset(Dataset):
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
-            split_seed
+            split_seed,
         )
 
     def download_dataset_fun(self):
@@ -313,37 +320,36 @@ class CommonVoiceDataset(Dataset):
         # take the first found folder containing language subfolder inside
         # unpacked tar archive - it will be the dataset
         try:
-            voice_folder = next(self.root.glob(f'*/{self.language}'))
+            voice_folder = next(self.root.glob(f"*/{self.language}"))
         except StopIteration:
             raise FileNotFoundError
         metadata = pd.read_csv(
-            voice_folder / f'{self.annotations_type}.tsv',
-            sep='\t'
+            voice_folder / f"{self.annotations_type}.tsv", sep="\t"
         )
 
         # since the data needs to be parsed into model's specific framework
         # and for example TorchAudio does only load from a file path, there is
         # no need to load data inside of the dataset and instead leave it to
         # the modelwrapper and it's later conversion functions.
-        self.dataX, self.dataY = metadata['path'], metadata['sentence']
+        self.dataX, self.dataY = metadata["path"], metadata["sentence"]
         self.dataY = [str(y) for y in self.dataY]
 
-        if self.selection_method == 'length':
+        if self.selection_method == "length":
             metric_values = [len(i.strip().split()) for i in self.dataY]
-        elif self.selection_method == 'accent':
-            if 'accent' in metadata.columns:
-                metadata_accent = metadata['accent']
-            elif 'accents' in metadata.columns:
-                metadata_accent = metadata['accents']
+        elif self.selection_method == "accent":
+            if "accent" in metadata.columns:
+                metadata_accent = metadata["accent"]
+            elif "accents" in metadata.columns:
+                metadata_accent = metadata["accents"]
             else:
-                raise ValueError('Missing column with accents')
+                raise ValueError("Missing column with accents")
 
             metric_values = [str(i) for i in metadata_accent]
             # filter empty values
             new_dataX, new_dataY, new_metric_values = [], [], []
             assert len(metric_values) == len(self.dataX)
             for x, y, m in zip(self.dataX, self.dataY, metric_values):
-                if m != 'nan':
+                if m != "nan":
                     new_dataX.append(x)
                     new_dataY.append(y)
                     new_metric_values.append(m)
@@ -352,10 +358,9 @@ class CommonVoiceDataset(Dataset):
             metric_values = new_metric_values
 
         self.dataX = [
-            str(Path(voice_folder / 'clips' / x).resolve())
-            for x in self.dataX
+            str(Path(voice_folder / "clips" / x).resolve()) for x in self.dataX
         ]
-        if self.selection_method != 'none':
+        if self.selection_method != "none":
             assert self.sample_size <= len(self.dataX)
             self.select_representative_sample(metric_values)
 
@@ -364,20 +369,17 @@ class CommonVoiceDataset(Dataset):
         for sample in samples:
             x = Path(sample)
             # check file type
-            if x.suffix == '.mp3':
-                audio_path = str(convert_mp3_to_wav(x, 'waves'))
+            if x.suffix == ".mp3":
+                audio_path = str(convert_mp3_to_wav(x, "waves"))
             else:
                 audio_path = str(x)
-            loaded_wav = wave.open(audio_path, 'rb')
+            loaded_wav = wave.open(audio_path, "rb")
             audio = np.frombuffer(
-                loaded_wav.readframes(loaded_wav.getnframes()),
-                np.int16
+                loaded_wav.readframes(loaded_wav.getnframes()), np.int16
             )
             if loaded_wav.getframerate() != self.sample_rate:
                 audio = resample_wave(
-                    audio,
-                    loaded_wav.getframerate(),
-                    self.sample_rate
+                    audio, loaded_wav.getframerate(), self.sample_rate
                 )
             result.append(audio)
         return result
@@ -394,6 +396,7 @@ class CommonVoiceDataset(Dataset):
         """
         # select the representative sample of the metric
         from random import sample
+
         assert len(self.dataX) == len(metric_values)
         metric_values_sample = sample(metric_values, self.sample_size)
         tupled_data = list(zip(self.dataX, self.dataY, metric_values))
@@ -410,9 +413,10 @@ class CommonVoiceDataset(Dataset):
             self.dataY.append(y)
 
     def evaluate(
-            self,
-            predictions: List[str],
-            ground_truths: List[Union[str, Tuple[str, Any]]]) -> Measurements:
+        self,
+        predictions: List[str],
+        ground_truths: List[Union[str, Tuple[str, Any]]],
+    ) -> Measurements:
         # This minimal score is based on the assumption that a 'good'
         # prediction for each word would have a Levenshtein Distance of at most
         # 2 and the average word length in english is around 5 characters
@@ -423,42 +427,41 @@ class CommonVoiceDataset(Dataset):
         for pred, gt in zip(predictions, ground_truths):
             if isinstance(gt, tuple):
                 gt, metric = gt
-                type_suffix = f'/{metric}'
+                type_suffix = f"/{metric}"
             else:
-                type_suffix = ''
+                type_suffix = ""
             score = char_eval(pred, gt)
             found_gt = 1 if score >= MIN_SCORE_FOUND_GT else 0
             # not a detector therefore no confidence score is given so a new
             # render report method will need to be added for STT Models
             measurements.add_measurement(
-                f'eval_stt{type_suffix}',
-                [{
-                    'found_ground_truth': float(found_gt),
-                    'score': float(score),
-                    'true_text': gt,
-                    'predicted_text': pred,
-                    'audio_path': str(
-                        Path(self.dataX[currindex]).relative_to(self.root)
-                    )
-                }],
-                lambda: list()
+                f"eval_stt{type_suffix}",
+                [
+                    {
+                        "found_ground_truth": float(found_gt),
+                        "score": float(score),
+                        "true_text": gt,
+                        "predicted_text": pred,
+                        "audio_path": str(
+                            Path(self.dataX[currindex]).relative_to(self.root)
+                        ),
+                    }
+                ],
+                lambda: list(),
             )
-            measurements.accumulate(
-                f'eval_gtcount{type_suffix}',
-                1,
-                lambda: 0
-            )
+            measurements.accumulate(f"eval_gtcount{type_suffix}", 1, lambda: 0)
         return measurements
 
     def train_test_split_representations(
-            self,
-            test_fraction: Optional[float] = None,
-            val_fraction: Optional[float] = None,
-            seed: Optional[int] = None,
-            stratify: bool = True) -> Tuple[List, ...]:
+        self,
+        test_fraction: Optional[float] = None,
+        val_fraction: Optional[float] = None,
+        seed: Optional[int] = None,
+        stratify: bool = True,
+    ) -> Tuple[List, ...]:
         return super().train_test_split_representations(
             test_fraction=test_fraction,
             val_fraction=val_fraction,
             seed=seed,
-            stratify=False
+            stratify=False,
         )

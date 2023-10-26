@@ -55,39 +55,38 @@ def kerasconversion(model_path: PathOrURI, input_spec):
     model.set_weights(original_model.get_weights())
     del original_model
 
-    inputspec = [tf.TensorSpec(
-        spec['shape'],
-        spec['dtype']
-    ) for spec in input_spec]
+    inputspec = [
+        tf.TensorSpec(spec["shape"], spec["dtype"]) for spec in input_spec
+    ]
 
     class WrapperModule(tf.Module):
         def __init__(self):
             super().__init__()
             self.m = model
             self.m.main = lambda *args: self.m(*args, training=False)
-            self.main = tf.function(
-                input_signature=inputspec
-            )(self.m.main)
+            self.main = tf.function(input_signature=inputspec)(self.m.main)
 
     return ireetf.compile_module(
-        WrapperModule(), exported_names=['main'], import_only=True)
+        WrapperModule(), exported_names=["main"], import_only=True
+    )
 
 
 def tensorflowconversion(model_path: PathOrURI, input_spec):
     import tensorflow as tf
     from iree.compiler import tf as ireetf
+
     model = tf.saved_model.load(model_path)
 
-    inputspec = [tf.TensorSpec(
-        spec['shape'],
-        spec['dtype']
-    ) for spec in input_spec]
+    inputspec = [
+        tf.TensorSpec(spec["shape"], spec["dtype"]) for spec in input_spec
+    ]
 
-    model.main = tf.function(
-        input_signature=inputspec
-    )(lambda *args: model(*args))
+    model.main = tf.function(input_signature=inputspec)(
+        lambda *args: model(*args)
+    )
     return ireetf.compile_module(
-        model, exported_names=['main'], import_only=True)
+        model, exported_names=["main"], import_only=True
+    )
 
 
 def tfliteconversion(model_path: PathOrURI, input_spec):
@@ -98,12 +97,12 @@ def tfliteconversion(model_path: PathOrURI, input_spec):
 
 backend_convert = {
     # CPU backends
-    'dylib': 'dylib-llvm-aot',
-    'vmvx': 'vmvx',
+    "dylib": "dylib-llvm-aot",
+    "vmvx": "vmvx",
     # GPU backends
-    'vulkan': 'vulkan-spirv',
-    'cuda': 'cuda',
-    'llvm-cpu': 'llvm-cpu'
+    "vulkan": "vulkan-spirv",
+    "cuda": "cuda",
+    "llvm-cpu": "llvm-cpu",
 }
 
 
@@ -113,42 +112,42 @@ class IREECompiler(Optimizer):
     """
 
     inputtypes = {
-        'keras': kerasconversion,
-        'tensorflow': tensorflowconversion,
-        'tflite': tfliteconversion
+        "keras": kerasconversion,
+        "tensorflow": tensorflowconversion,
+        "tflite": tfliteconversion,
     }
 
-    outputtypes = ['iree']
+    outputtypes = ["iree"]
 
     arguments_structure = {
-        'model_framework': {
-            'argparse_name': '--model-framework',
-            'description': 'The input type of the model, framework-wise',
-            'default': 'keras',
-            'enum': list(inputtypes.keys())
+        "model_framework": {
+            "argparse_name": "--model-framework",
+            "description": "The input type of the model, framework-wise",
+            "default": "keras",
+            "enum": list(inputtypes.keys()),
         },
-        'backend': {
-            'argparse_name': '--backend',
-            'description': 'Name of the backend that will run the compiled module',  # noqa: E501
-            'required': True,
-            'enum': list(backend_convert.keys())
+        "backend": {
+            "argparse_name": "--backend",
+            "description": "Name of the backend that will run the compiled module",  # noqa: E501
+            "required": True,
+            "enum": list(backend_convert.keys()),
         },
-        'compiler_args': {
-            'argparse_name': '--compiler-args',
-            'description': 'Additional options that are passed to compiler',
-            'default': None,
-            'is_list': True,
-            'nullable': True
-        }
+        "compiler_args": {
+            "argparse_name": "--compiler-args",
+            "description": "Additional options that are passed to compiler",
+            "default": None,
+            "is_list": True,
+            "nullable": True,
+        },
     }
 
     def __init__(
         self,
         dataset: Dataset,
         compiled_model_path: PathOrURI,
-        location: Literal['host', 'target'] = 'host',
-        backend: str = 'vmvx',
-        model_framework: str = 'keras',
+        location: Literal["host", "target"] = "host",
+        backend: str = "vmvx",
+        model_framework: str = "keras",
         compiler_args: Optional[List[str]] = None,
     ):
         """
@@ -184,15 +183,15 @@ class IREECompiler(Optimizer):
         self.converted_backend = backend_convert.get(backend, backend)
         if compiler_args is not None:
             self.parsed_compiler_args = [
-                f'--{option}' for option in compiler_args
+                f"--{option}" for option in compiler_args
             ]
         else:
             self.parsed_compiler_args = []
 
-        if model_framework in ('keras', 'tensorflow'):
-            self.compiler_input_type = 'mhlo'
-        elif model_framework == 'tflite':
-            self.compiler_input_type = 'tosa'
+        if model_framework in ("keras", "tensorflow"):
+            self.compiler_input_type = "mhlo"
+        elif model_framework == "tflite":
+            self.compiler_input_type = "tosa"
 
         super().__init__(
             dataset=dataset,
@@ -201,16 +200,17 @@ class IREECompiler(Optimizer):
         )
 
     def compile(
-            self,
-            input_model_path: PathOrURI,
-            io_spec: Optional[Dict[str, List[Dict]]] = None):
+        self,
+        input_model_path: PathOrURI,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
         try:
-            input_spec = io_spec['input']
+            input_spec = io_spec["input"]
         except (TypeError, KeyError):
-            raise IOSpecificationNotFoundError('No input specification found')
+            raise IOSpecificationNotFoundError("No input specification found")
 
         self.model_load = self.inputtypes[self.inputtype]
         imported_model = self.model_load(input_model_path, input_spec)
@@ -219,7 +219,7 @@ class IREECompiler(Optimizer):
                 imported_model,
                 input_type=self.compiler_input_type,
                 extra_args=self.parsed_compiler_args,
-                target_backends=[self.converted_backend]
+                target_backends=[self.converted_backend],
             )
         except ireecmp.CompilerToolError as e:
             raise CompilationError(e)

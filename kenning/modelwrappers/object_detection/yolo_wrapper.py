@@ -18,7 +18,9 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper, VariableBatchSizeNotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
-    DetectObject, compute_dect_iou)
+    DetectObject,
+    compute_dect_iou,
+)
 from kenning.resources import coco_detection
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -29,13 +31,12 @@ else:
 
 
 class YOLOWrapper(ModelWrapper, ABC):
-
     arguments_structure = {
-        'class_names': {
-            'argparse_name': '--classes',
-            'description': 'File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type',  # noqa: E501
-            'default': 'coco',
-            'type': str
+        "class_names": {
+            "argparse_name": "--classes",
+            "description": "File containing Open Images class IDs and class names in CSV format to use (can be generated using kenning.scenarios.open_images_classes_extractor) or class type",  # noqa: E501
+            "default": "coco",
+            "type": str,
         }
     }
 
@@ -45,24 +46,25 @@ class YOLOWrapper(ModelWrapper, ABC):
     finthresh = 0.2
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file: bool = True,
-            model_name: Optional[str] = None,
-            class_names: str = "coco"):
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+        class_names: str = "coco",
+    ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.class_names = class_names
         # for work with dataproviders, this is handling dataset-less operation
         self.classnames = []
-        if class_names == 'coco':
-            with path(coco_detection, 'coco.names') as p:
-                with open(p, 'r') as f:
+        if class_names == "coco":
+            with path(coco_detection, "coco.names") as p:
+                with open(p, "r") as f:
                     for line in f:
                         self.classnames.append(line.strip())
         else:
             with Path(class_names) as p:
-                with open(p, 'r') as f:
+                with open(p, "r") as f:
                     for line in f:
                         self.classnames.append(line.strip())
         self.numclasses = len(self.classnames)
@@ -75,13 +77,13 @@ class YOLOWrapper(ModelWrapper, ABC):
 
     @classmethod
     def load_config_file(cls, config_path: PathOrURI):
-        keyparamsrgx = re.compile(r'(width|height|classes)=(\d+)')
-        perlayerrgx = re.compile(r'(mask|anchors|num)=((\d+,?)+)')
+        keyparamsrgx = re.compile(r"(width|height|classes)=(\d+)")
+        perlayerrgx = re.compile(r"(mask|anchors|num)=((\d+,?)+)")
         keyparams = {}
         perlayerparams = defaultdict(list)
-        with open(config_path.with_suffix('.cfg'), 'r') as config:
+        with open(config_path.with_suffix(".cfg"), "r") as config:
             for line in config:
-                line = line.replace(' ', '')
+                line = line.replace(" ", "")
                 res = keyparamsrgx.match(line)
                 if res:
                     keyparams[res.group(1)] = int(res.group(2))
@@ -89,14 +91,14 @@ class YOLOWrapper(ModelWrapper, ABC):
                 if res:
                     perlayerparams[res.group(1)].append(res.group(2))
         perlayerparams = {
-            k: [np.array([int(x) for x in s.split(',')]) for s in v]
+            k: [np.array([int(x) for x in s.split(",")]) for s in v]
             for k, v in perlayerparams.items()
         }
         return keyparams, perlayerparams
 
     def load_model(self, model_path: PathOrURI):
         self.keyparams, self.perlayerparams = self.load_config_file(
-            self.model_path.with_suffix('.cfg')
+            self.model_path.with_suffix(".cfg")
         )
         self.save_io_specification(self.model_path)
 
@@ -121,9 +123,12 @@ class YOLOWrapper(ModelWrapper, ABC):
         y2 = entry[1] + entry[3] / 2
         return DetectObject(
             self.classnames[entry[4]],
-            x1, y1, x2, y2,
+            x1,
+            y1,
+            x2,
+            y2,
             entry[5] / self.maxscore,
-            False
+            False,
         )
 
     def parse_outputs(self, data):
@@ -150,17 +155,31 @@ class YOLOWrapper(ModelWrapper, ABC):
             # x and y values from network are coordinates in a chunk
             # to get the actual coordinates, we need to compute
             # new_coords = (chunk_coords + out_coords) / out_resolution
-            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[box[0]].shape[2]  # noqa: E501
-            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[box[0]].shape[3]  # noqa: E501
+            x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[
+                box[0]
+            ].shape[2]  # noqa: E501
+            y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[
+                box[0]
+            ].shape[3]  # noqa: E501
 
             # width and height are computed using following formula:
             # w = anchor_w * exp(out_w) / input_w
             # h = anchor_h * exp(out_h) / input_h
             # anchors are computed based on dataset analysis
-            maskid = self.perlayerparams['mask'][box[0]][box[1]]
-            anchors = self.perlayerparams['anchors'][box[0]][2 * maskid:2 * maskid + 2]  # noqa: E501
-            w = anchors[0] * np.exp(data[box[0]][box[1], 2, box[2], box[3]]) / self.keyparams['width']  # noqa: E501
-            h = anchors[1] * np.exp(data[box[0]][box[1], 3, box[2], box[3]]) / self.keyparams['height']  # noqa: E501
+            maskid = self.perlayerparams["mask"][box[0]][box[1]]
+            anchors = self.perlayerparams["anchors"][box[0]][
+                2 * maskid : 2 * maskid + 2
+            ]  # noqa: E501
+            w = (
+                anchors[0]
+                * np.exp(data[box[0]][box[1], 2, box[2], box[3]])
+                / self.keyparams["width"]
+            )  # noqa: E501
+            h = (
+                anchors[1]
+                * np.exp(data[box[0]][box[1], 3, box[2], box[3]])
+                / self.keyparams["height"]
+            )  # noqa: E501
 
             # get objectness score
             objectness = data[box[0]][box[1], 4, box[2], box[3]]
@@ -169,14 +188,20 @@ class YOLOWrapper(ModelWrapper, ABC):
             classid = np.argmax(data[box[0]][box[1], 5:, box[2], box[3]])
 
             # compute final class score (objectness * class probability)
-            score = objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]  # noqa: E501
+            score = (
+                objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]
+            )  # noqa: E501
 
             bboxes.append([x, y, w, h, classid, score])
 
         # sort the bboxes by score descending
         bboxes.sort(key=lambda x: x[5], reverse=True)
 
-        bboxes = [self.convert_to_dectobject(b) for b in bboxes if b[5] / self.maxscore > self.finthresh]  # noqa: E501
+        bboxes = [
+            self.convert_to_dectobject(b)
+            for b in bboxes
+            if b[5] / self.maxscore > self.finthresh
+        ]  # noqa: E501
 
         # group bboxes by class to perform NMS sorting
         grouped_bboxes = defaultdict(list)
@@ -196,7 +221,10 @@ class YOLOWrapper(ModelWrapper, ABC):
                 # look for overlapping bounding boxes with lower probability
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
-                    if compute_dect_iou(clsbboxes[i], clsbboxes[j]) > self.iouthresh:  # noqa: E501
+                    if (
+                        compute_dect_iou(clsbboxes[i], clsbboxes[j])
+                        > self.iouthresh
+                    ):  # noqa: E501
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 
@@ -220,10 +248,10 @@ class YOLOWrapper(ModelWrapper, ABC):
         for i in range(3):
             outshape = (
                 self.batch_size,
-                len(self.perlayerparams['mask'][i]),
+                len(self.perlayerparams["mask"][i]),
                 4 + 1 + self.numclasses,
-                self.keyparams['width'] // (8 * 2 ** i),
-                self.keyparams['height'] // (8 * 2 ** i)
+                self.keyparams["width"] // (8 * 2**i),
+                self.keyparams["height"] // (8 * 2**i),
             )
 
             outputs.append(y[i].reshape(outshape))
@@ -235,11 +263,9 @@ class YOLOWrapper(ModelWrapper, ABC):
         # batches layerouts dets params width height
         perbatchoutputs = []
         for i in range(outputs[0].shape[0]):
-            perbatchoutputs.append([
-                outputs[0][i],
-                outputs[1][i],
-                outputs[2][i]
-            ])
+            perbatchoutputs.append(
+                [outputs[0][i], outputs[1][i], outputs[2][i]]
+            )
         result = []
         # parse the combined outputs for each image in batch, and return result
         for out in perbatchoutputs:
@@ -251,7 +277,7 @@ class YOLOWrapper(ModelWrapper, ABC):
         return inputdata.tobytes()
 
     def convert_output_from_bytes(self, outputdata):
-        y = np.frombuffer(outputdata, dtype='float32')
+        y = np.frombuffer(outputdata, dtype="float32")
         # iterate over each group
         lastid = 0
         outputs = []
@@ -272,14 +298,14 @@ class YOLOWrapper(ModelWrapper, ABC):
             # objectness prediction and per-class predictions
             outshape = (
                 self.batch_size,
-                len(self.perlayerparams['mask'][i]) *
-                (4 + 1 + self.numclasses),
-                self.keyparams['width'] // (8 * 2 ** i),
-                self.keyparams['height'] // (8 * 2 ** i)
+                len(self.perlayerparams["mask"][i])
+                * (4 + 1 + self.numclasses),
+                self.keyparams["width"] // (8 * 2**i),
+                self.keyparams["height"] // (8 * 2**i),
             )
 
             outputs.append(
-                y[lastid:(lastid + np.prod(outshape))].reshape(outshape)
+                y[lastid : (lastid + np.prod(outshape))].reshape(outshape)
             )
 
             lastid += np.prod(outshape)
@@ -288,7 +314,7 @@ class YOLOWrapper(ModelWrapper, ABC):
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
         keyparams, _ = cls.load_config_file(
-            ResourceURI(json_dict['model_path']).with_suffix('.cfg')
+            ResourceURI(json_dict["model_path"]).with_suffix(".cfg")
         )
         return cls._get_io_specification(keyparams)
 
@@ -297,7 +323,6 @@ class YOLOWrapper(ModelWrapper, ABC):
 
     @classmethod
     def _get_io_specification(
-            cls,
-            keyparams: Dict[str, Any],
-            batch_size: int) -> Dict[str, List[Dict]]:
+        cls, keyparams: Dict[str, Any], batch_size: int
+    ) -> Dict[str, List[Dict]]:
         raise NotImplementedError

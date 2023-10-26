@@ -35,9 +35,11 @@ class VariableBatchSizeNotSupportedError(Exception):
     """
 
     def __init__(
-            self,
-            msg="Inference batch size greater than one not supported for this model.",  # noqa: E501
-            *args, **kwargs):
+        self,
+        msg="Inference batch size greater than one not supported for this model.",  # noqa: E501
+        *args,
+        **kwargs,
+    ):
         super().__init__(msg, *args, **kwargs)
 
 
@@ -45,28 +47,30 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     """
     Wraps the given model.
     """
+
     pretrained_model_uri: Optional[str] = None
     default_dataset: Optional[Type[Dataset]] = None
     arguments_structure = {
-        'model_path': {
-            'argparse_name': '--model-path',
-            'description': 'Path to the model',
-            'type': ResourceURI,
-            'required': True
+        "model_path": {
+            "argparse_name": "--model-path",
+            "description": "Path to the model",
+            "type": ResourceURI,
+            "required": True,
         },
-        'model_name': {
-            'argparse_name': '--model-name',
-            'description': 'Name of the model used for the report',
-            'type': str,
-        }
+        "model_name": {
+            "argparse_name": "--model-name",
+            "description": "Name of the model used for the report",
+            "type": str,
+        },
     }
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Optional[Dataset],
-            from_file: bool = True,
-            model_name: Optional[str] = None):
+        self,
+        model_path: PathOrURI,
+        dataset: Optional[Dataset],
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+    ):
         """
         Creates the model wrapper.
 
@@ -104,7 +108,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         dataset: Optional[Dataset],
         args: Namespace,
         from_file: bool = True,
-    ) -> 'ModelWrapper':
+    ) -> "ModelWrapper":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -123,9 +127,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Object of class ModelWrapper.
         """
         return super().from_argparse(
-            args,
-            dataset=dataset,
-            from_file=from_file
+            args, dataset=dataset, from_file=from_file
         )
 
     @classmethod
@@ -134,7 +136,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
         from_file: bool = True,
-    ) -> 'ModelWrapper':
+    ) -> "ModelWrapper":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -157,9 +159,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Object of class ModelWrapper.
         """
         return super().from_json(
-            json_dict,
-            dataset=dataset,
-            from_file=from_file
+            json_dict, dataset=dataset, from_file=from_file
         )
 
     @abstractmethod
@@ -293,13 +293,13 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         raise NotImplementedError
 
-    @timemeasurements('target_inference_step')
+    @timemeasurements("target_inference_step")
     def _run_inference(self, X):
         return self.run_inference(X)
 
-    @systemstatsmeasurements('session_utilization')
-    @timemeasurements('inference')
-    def test_inference(self) -> 'Measurements':
+    @systemstatsmeasurements("session_utilization")
+    @timemeasurements("inference")
+    def test_inference(self) -> "Measurements":
         """
         Runs the inference on test split of the dataset.
 
@@ -314,8 +314,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         with LoggerProgressBar() as logger_progress_bar:
             for X, y in tqdm(
-                self.dataset.iter_test(),
-                file=logger_progress_bar
+                self.dataset.iter_test(), file=logger_progress_bar
             ):
                 prepX = self._preprocess_input(X)
                 preds = self._run_inference(prepX)
@@ -327,11 +326,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         return measurements
 
     def train_model(
-            self,
-            batch_size: int,
-            learning_rate: float,
-            epochs: int,
-            logdir: Path):
+        self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
+    ):
         """
         Trains the model with a given dataset.
 
@@ -397,7 +393,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Dictionary that conveys input and output
             layers specification.
         """
-        if not hasattr(self, 'io_specification'):
+        if not hasattr(self, "io_specification"):
             self.io_specification = self.get_io_specification_from_model()
         return self.io_specification
 
@@ -405,18 +401,17 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     def parse_io_specification_from_json(cls, json_dict):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
-        model_path = ResourceURI(parsed_json_dict['model_path'])
-        io_spec = model_path.with_suffix(model_path.suffix + '.json')
+        model_path = ResourceURI(parsed_json_dict["model_path"])
+        io_spec = model_path.with_suffix(model_path.suffix + ".json")
         try:
-            with open(io_spec, 'r') as f:
+            with open(io_spec, "r") as f:
                 return json.load(f)
         except (FileNotFoundError, HTTPError):
             return cls.derive_io_spec_from_json_params(parsed_json_dict)
 
     @classmethod
     def derive_io_spec_from_json_params(
-        cls,
-        json_dict: Dict
+        cls, json_dict: Dict
     ) -> Dict[str, List[Dict]]:
         """
         Creates IO specification by deriving parameters from parsed JSON

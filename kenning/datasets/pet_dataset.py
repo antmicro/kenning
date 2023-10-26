@@ -43,41 +43,44 @@ class PetDataset(Dataset):
     IDs are starting from 0 instead of 1, as in the annotations.
     """
 
-    classification_types = ['species', 'breeds']
+    classification_types = ["species", "breeds"]
 
-    resources = Resources({
-        'images': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz',  # noqa: E501
-        'annotations': 'https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz',  # noqa: E501
-    })
+    resources = Resources(
+        {
+            "images": "https://www.robots.ox.ac.uk/~vgg/data/pets/data/images.tar.gz",  # noqa: E501
+            "annotations": "https://www.robots.ox.ac.uk/~vgg/data/pets/data/annotations.tar.gz",  # noqa: E501
+        }
+    )
 
     arguments_structure = {
-        'classify_by': {
-            'argparse_name': '--classify-by',
-            'description': 'Determines if classification should be performed by species or by breeds',  # noqa: E501
-            'default': 'breeds',
-            'enum': classification_types
+        "classify_by": {
+            "argparse_name": "--classify-by",
+            "description": "Determines if classification should be performed by species or by breeds",  # noqa: E501
+            "default": "breeds",
+            "enum": classification_types,
         },
-        'image_memory_layout': {
-            'argparse_name': '--image-memory-layout',
-            'description': 'Determines if images should be delivered in NHWC or NCHW format',  # noqa: E501
-            'default': 'NHWC',
-            'enum': ['NHWC', 'NCHW']
-        }
+        "image_memory_layout": {
+            "argparse_name": "--image-memory-layout",
+            "description": "Determines if images should be delivered in NHWC or NCHW format",  # noqa: E501
+            "default": "NHWC",
+            "enum": ["NHWC", "NCHW"],
+        },
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = True,
-            force_download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None,
-            split_fraction_test: float = 0.2,
-            split_fraction_val: Optional[float] = None,
-            split_seed: int = 1234,
-            classify_by: str = 'breeds',
-            image_memory_layout: str = 'NHWC',
-            standardize: bool = True):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = True,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+        classify_by: str = "breeds",
+        image_memory_layout: str = "NHWC",
+        standardize: bool = True,
+    ):
         """
         Prepares all structures and data required for providing data samples.
 
@@ -115,10 +118,13 @@ class PetDataset(Dataset):
             Standardize the given input samples.
             Should be set to False when using `compute_input_mean_std`.
         """
-        assert classify_by in self.classification_types, \
-            f'Invalid {classify_by}, should be {self.classification_types}'
-        assert image_memory_layout in ['NHWC', 'NCHW'], \
-            f'Unsupported layout {image_memory_layout}'
+        assert (
+            classify_by in self.classification_types
+        ), f"Invalid {classify_by}, should be {self.classification_types}"
+        assert image_memory_layout in [
+            "NHWC",
+            "NCHW",
+        ], f"Unsupported layout {image_memory_layout}"
         self.classify_by = classify_by
         self.numclasses = None
         self.classnames = dict()
@@ -134,39 +140,36 @@ class PetDataset(Dataset):
             external_calibration_dataset,
             split_fraction_test,
             split_fraction_val,
-            split_seed
+            split_seed,
         )
 
     def download_dataset_fun(self):
         self.root.mkdir(parents=True, exist_ok=True)
-        extract_tar(self.root, self.resources['images'])
-        extract_tar(self.root, self.resources['annotations'])
+        extract_tar(self.root, self.resources["images"])
+        extract_tar(self.root, self.resources["annotations"])
 
     def prepare(self):
-        with open(self.root / 'annotations' / 'list.txt', 'r') as datadesc:
+        with open(self.root / "annotations" / "list.txt", "r") as datadesc:
             for line in datadesc:
-                if line.startswith('#'):
+                if line.startswith("#"):
                     continue
-                fields = line.split(' ')
+                fields = line.split(" ")
                 self.dataX.append(
-                    str(self.root / 'images' / (fields[0] + '.jpg'))
+                    str(self.root / "images" / (fields[0] + ".jpg"))
                 )
-                if self.classify_by == 'species':
+                if self.classify_by == "species":
                     self.dataY.append(int(fields[2]) - 1)
                 else:
                     self.dataY.append(int(fields[1]) - 1)
-                    clsname = fields[0].rsplit('_', 1)[0]
+                    clsname = fields[0].rsplit("_", 1)[0]
                     if self.dataY[-1] not in self.classnames:
                         self.classnames[self.dataY[-1]] = clsname
                     assert self.classnames[self.dataY[-1]] == clsname
-            if self.classify_by == 'species':
+            if self.classify_by == "species":
                 self.numclasses = 2
                 assert min(self.dataY) == 0
                 assert max(self.dataX) == self.numclasses - 1
-                self.classnames = {
-                    0: 'cat',
-                    1: 'dog'
-                }
+                self.classnames = {0: "cat", 1: "dog"}
             else:
                 self.numclasses = len(self.classnames)
 
@@ -174,12 +177,12 @@ class PetDataset(Dataset):
         result = []
         for sample in samples:
             img = Image.open(sample)
-            img = img.convert('RGB')
+            img = img.convert("RGB")
             img = img.resize((224, 224))
             npimg = np.array(img).astype(np.float32) / 255.0
             if self.standardize:
                 npimg = (npimg - self.mean) / self.std
-            if self.image_memory_layout == 'NCHW':
+            if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
         return result
@@ -192,15 +195,19 @@ class PetDataset(Dataset):
         top_5_count = 0
         for prediction, label in zip(predictions[0], truth):
             confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
-            top_5_count += 1 if np.argmax(label) in np.argsort(prediction)[::-1][:5] else 0  # noqa: E501
+            top_5_count += (
+                1
+                if np.argmax(label) in np.argsort(prediction)[::-1][:5]
+                else 0
+            )  # noqa: E501
         measurements = Measurements()
         measurements.accumulate(
-            'eval_confusion_matrix',
+            "eval_confusion_matrix",
             confusion_matrix,
-            lambda: np.zeros((self.numclasses, self.numclasses))
+            lambda: np.zeros((self.numclasses, self.numclasses)),
         )
-        measurements.accumulate('top_5_count', top_5_count, lambda: 0)
-        measurements.accumulate('total', len(predictions), lambda: 0)
+        measurements.accumulate("top_5_count", top_5_count, lambda: 0)
+        measurements.accumulate("total", len(predictions), lambda: 0)
         return measurements
 
     def compute_input_mean_std(self) -> Tuple[Any, Any]:
@@ -232,7 +239,9 @@ class PetDataset(Dataset):
         # The first mean/std are computed based on Pet Dataset
         # However, it is recommended to use Imagenet-based mean and std values
         # return np.array([0.48136492, 0.44937421, 0.39576963]), np.array([0.22781384, 0.22496867, 0.22693157])  # noqa: E501
-        return np.array([0.485, 0.456, 0.406], dtype='float32'), np.array([0.229, 0.224, 0.225], dtype='float32')  # noqa: E501
+        return np.array([0.485, 0.456, 0.406], dtype="float32"), np.array(
+            [0.229, 0.224, 0.225], dtype="float32"
+        )  # noqa: E501
 
     def get_class_names(self):
         return [val for val in self.classnames.values()]

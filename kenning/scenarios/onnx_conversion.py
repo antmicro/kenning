@@ -26,8 +26,8 @@ from kenning.utils.logger import KLogger
 
 
 def generate_onnx_support_grid(
-        converterslist: List[ONNXConversion],
-        modelsdir: Path):
+    converterslist: List[ONNXConversion], modelsdir: Path
+):
     """
     Creates support matrix for ONNX import/export functions.
 
@@ -49,40 +49,39 @@ def generate_onnx_support_grid(
     for converter in converterslist:
         supportlist += converter.check_conversions(modelsdir)
 
-    frameworkheaders = [f'{x.framework} (ver. {x.version})' for x in converterslist]  # noqa: E501
+    frameworkheaders = [
+        f"{x.framework} (ver. {x.version})" for x in converterslist
+    ]  # noqa: E501
 
     supportgrid = defaultdict(dict)
 
     for el in supportlist:
-        framework_and_ver = f'{el.framework} (ver. {el.version})'
-        val = f'{el.exported} / {el.imported}'
+        framework_and_ver = f"{el.framework} (ver. {el.version})"
+        val = f"{el.exported} / {el.imported}"
         supportgrid[el.model][framework_and_ver] = val
 
     for model in supportgrid.keys():
         for f in frameworkheaders:
             if f not in supportgrid[model]:
-                supportgrid[model][f] = 'Not provided / Not provided'
+                supportgrid[model][f] = "Not provided / Not provided"
 
     return frameworkheaders, dict(supportgrid)
 
 
 def create_onnx_support_report(
-        converterslist: List[ONNXConversion],
-        modelsdir: Path,
-        output: Path,
-        command: str = ''):
+    converterslist: List[ONNXConversion],
+    modelsdir: Path,
+    output: Path,
+    command: str = "",
+):
     headers, grid = generate_onnx_support_grid(converterslist, modelsdir)
 
-    with path(reports, 'onnx-conversion-support-grid.md') as reportpath:
-        with open(reportpath, 'r') as templatefile:
+    with path(reports, "onnx-conversion-support-grid.md") as reportpath:
+        with open(reportpath, "r") as templatefile:
             template = templatefile.read()
             tm = Template(template)
-            content = tm.render(
-                headers=headers,
-                grid=grid,
-                command=command
-            )
-            with open(output, 'w') as out:
+            content = tm.render(headers=headers, grid=grid, command=command)
+            with open(output, "w") as out:
                 out.write(content)
 
 
@@ -91,26 +90,26 @@ def main(argv):
 
     parser = argparse.ArgumentParser(argv[0])
     parser.add_argument(
-        'modelsdir',
-        help='Path to the directory where generated models will be stored',
-        type=Path
+        "modelsdir",
+        help="Path to the directory where generated models will be stored",
+        type=Path,
     )
     parser.add_argument(
-        'output',
-        help='Path to the output .md file with ONNX support grid',
-        type=Path
+        "output",
+        help="Path to the output .md file with ONNX support grid",
+        type=Path,
     )
     parser.add_argument(
-        '--converters-list',
-        help='List to the ONNXConversion-based classes from which the report will be generated',  # noqa: E501
+        "--converters-list",
+        help="List to the ONNXConversion-based classes from which the report will be generated",  # noqa: E501
         required=True,
-        nargs='+'
+        nargs="+",
     )
     parser.add_argument(
-        '--verbosity',
-        help='Verbosity level',
-        choices=['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
-        default='INFO'
+        "--verbosity",
+        help="Verbosity level",
+        choices=["NOTSET", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"],
+        default="INFO",
     )
 
     args = parser.parse_args(argv[1:])
@@ -125,11 +124,9 @@ def main(argv):
         converterslist.append(load_class(converter)())
 
     create_onnx_support_report(
-        converterslist,
-        args.modelsdir,
-        args.output,
-        command)
+        converterslist, args.modelsdir, args.output, command
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main(sys.argv)

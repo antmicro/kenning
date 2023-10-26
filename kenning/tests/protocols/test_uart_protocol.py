@@ -37,12 +37,12 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 MODEL_WRAPPER_SUBCLASSES = get_all_subclasses(
-    'kenning.modelwrappers', ModelWrapper, raise_exception=True
+    "kenning.modelwrappers", ModelWrapper, raise_exception=True
 )
 MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
     modelwrapper_cls
     for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES
-    if hasattr(modelwrapper_cls, 'pretrained_model_uri')
+    if hasattr(modelwrapper_cls, "pretrained_model_uri")
 ]
 
 
@@ -50,9 +50,9 @@ MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
 def valid_io_spec() -> Dict[str, Any]:
     modelwrapper_cls = MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC[0]
     valid_io_spec_path = ResourceURI(
-        f'{modelwrapper_cls.pretrained_model_uri}.json'
+        f"{modelwrapper_cls.pretrained_model_uri}.json"
     )
-    with open(valid_io_spec_path, 'r') as io_spec_f:
+    with open(valid_io_spec_path, "r") as io_spec_f:
         io_spec = json.load(io_spec_f)
 
     return io_spec
@@ -69,19 +69,19 @@ def valid_stats() -> bytes:
 def mock_serial() -> Tuple[Path, Path]:
     class SerialMock:
         def __init__(self, port: Tuple[Path, Path], *args, **kwargs):
-            self.fifo_in = open(port[0], 'wb+', 0)
-            self.fifo_out = open(port[1], 'wb+', 0)
+            self.fifo_in = open(port[0], "wb+", 0)
+            self.fifo_out = open(port[1], "wb+", 0)
             os.set_blocking(self.fifo_in.fileno(), False)
             os.set_blocking(self.fifo_out.fileno(), False)
             self.is_open = True
 
         def read(self, size: int = -1):
             data = self.fifo_in.read(size)
-            KLogger.debug(f'SerialMock read {data}')
+            KLogger.debug(f"SerialMock read {data}")
             return data
 
         def write(self, data: bytes):
-            KLogger.debug(f'SerialMock write {bytes}')
+            KLogger.debug(f"SerialMock write {bytes}")
             return self.fifo_out.write(data)
 
         def fileno(self):
@@ -94,8 +94,8 @@ def mock_serial() -> Tuple[Path, Path]:
 
     serial.Serial = SerialMock
 
-    fifo_in = get_tmp_path('.uart_in')
-    fifo_out = get_tmp_path('.uart_out')
+    fifo_in = get_tmp_path(".uart_in")
+    fifo_out = get_tmp_path(".uart_out")
     os.mkfifo(str(fifo_in))
     os.mkfifo(str(fifo_out))
 
@@ -104,9 +104,9 @@ def mock_serial() -> Tuple[Path, Path]:
 
 class TestIOSpecToStruct:
     @pytest.mark.parametrize(
-        'io_spec_path_str',
+        "io_spec_path_str",
         [
-            f'{modelwrapper_cls.pretrained_model_uri}.json'
+            f"{modelwrapper_cls.pretrained_model_uri}.json"
             for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC
         ],
         ids=[
@@ -117,8 +117,8 @@ class TestIOSpecToStruct:
     def test_parse_valid_io_spec(self, io_spec_path_str: str):
         io_spec_path = ResourceURI(io_spec_path_str)
         if not io_spec_path.exists():
-            pytest.skip(f'{io_spec_path} does not exist')
-        with open(io_spec_path, 'r') as io_spec_f:
+            pytest.skip(f"{io_spec_path} does not exist")
+        with open(io_spec_path, "r") as io_spec_f:
             io_spec = json.load(io_spec_f)
 
         struct = _io_spec_to_struct(io_spec)
@@ -126,21 +126,21 @@ class TestIOSpecToStruct:
         assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'dtype,expectation',
+        "dtype,expectation",
         [
-            ('f32', does_not_raise()),
-            ('u8', does_not_raise()),
-            ('i16', does_not_raise()),
-            ('f', pytest.raises(ValueError)),
-            ('f31', pytest.raises(ValueError)),
-            ('f0', pytest.raises(ValueError)),
-            ('u9', pytest.raises(ValueError)),
+            ("f32", does_not_raise()),
+            ("u8", does_not_raise()),
+            ("i16", does_not_raise()),
+            ("f", pytest.raises(ValueError)),
+            ("f31", pytest.raises(ValueError)),
+            ("f0", pytest.raises(ValueError)),
+            ("u9", pytest.raises(ValueError)),
         ],
     )
     def test_parse_io_spec_with_different_dtypes(
         self, valid_io_spec: Dict[str, Any], dtype: str, expectation
     ):
-        valid_io_spec['input'][0]['dtype'] = dtype
+        valid_io_spec["input"][0]["dtype"] = dtype
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
@@ -148,7 +148,7 @@ class TestIOSpecToStruct:
             assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'inputs_num,expectation',
+        "inputs_num,expectation",
         [
             (1, does_not_raise()),
             (MAX_MODEL_INPUT_NUM, does_not_raise()),
@@ -159,7 +159,7 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_inputs_num(
         self, valid_io_spec: Dict[str, Any], inputs_num, expectation
     ):
-        valid_io_spec['input'] = inputs_num * [valid_io_spec['input'][0]]
+        valid_io_spec["input"] = inputs_num * [valid_io_spec["input"][0]]
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
@@ -167,7 +167,7 @@ class TestIOSpecToStruct:
             assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'input_dim,expectation',
+        "input_dim,expectation",
         [
             (1, does_not_raise()),
             (MAX_MODEL_INPUT_DIM, does_not_raise()),
@@ -178,11 +178,11 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_input_dim(
         self, valid_io_spec: Dict[str, Any], input_dim, expectation
     ):
-        dims = (input_dim - len(valid_io_spec['input'][0]['shape'])) * [
+        dims = (input_dim - len(valid_io_spec["input"][0]["shape"])) * [
             1,
         ]
-        valid_io_spec['input'][0]['shape'] = (
-            *valid_io_spec['input'][0]['shape'],
+        valid_io_spec["input"][0]["shape"] = (
+            *valid_io_spec["input"][0]["shape"],
             *dims,
         )
 
@@ -192,7 +192,7 @@ class TestIOSpecToStruct:
             assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'outputs_num,expectation',
+        "outputs_num,expectation",
         [
             (1, does_not_raise()),
             (MAX_MODEL_OUTPUTS, does_not_raise()),
@@ -203,7 +203,7 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_outputs_num(
         self, valid_io_spec: Dict[str, Any], outputs_num, expectation
     ):
-        valid_io_spec['output'] = outputs_num * [valid_io_spec['output'][0]]
+        valid_io_spec["output"] = outputs_num * [valid_io_spec["output"][0]]
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
@@ -211,7 +211,7 @@ class TestIOSpecToStruct:
             assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'entry_func_name_len,expectation',
+        "entry_func_name_len,expectation",
         [
             (1, does_not_raise()),
             (MAX_LENGTH_ENTRY_FUNC_NAME, does_not_raise()),
@@ -222,7 +222,7 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_entry_func(
         self, valid_io_spec: Dict[str, Any], entry_func_name_len, expectation
     ):
-        entry_func = 'a' * entry_func_name_len
+        entry_func = "a" * entry_func_name_len
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec, entry_func=entry_func)
@@ -230,7 +230,7 @@ class TestIOSpecToStruct:
             assert len(struct) == MODEL_STRUCT_SIZE
 
     @pytest.mark.parametrize(
-        'model_name_len,expectation',
+        "model_name_len,expectation",
         [
             (1, does_not_raise()),
             (MAX_LENGTH_MODEL_NAME, does_not_raise()),
@@ -241,7 +241,7 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_model_name(
         self, valid_io_spec: Dict[str, Any], model_name_len, expectation
     ):
-        model_name = 'a' * model_name_len
+        model_name = "a" * model_name_len
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec, model_name=model_name)
@@ -261,7 +261,7 @@ class TestParseAllocationStats:
         assert json.loads(json.dumps(stats_json)) == stats_json
 
     @pytest.mark.parametrize(
-        'invalid_size',
+        "invalid_size",
         [
             0,
             ALLOCATION_STATS_SIZE - 4,
@@ -303,7 +303,7 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         client = self.init_protocol()
         if client.initialize_client() is False:
-            pytest.fail('Client initialization failed')
+            pytest.fail("Client initialization failed")
 
         yield client
 
@@ -311,10 +311,10 @@ class TestUARTProtocol(TestCoreProtocol):
 
     def mock_recv_message(self, message_type: MessageType):
         def recv_message(queue: multiprocessing.Queue):
-            data = b''
+            data = b""
             time.sleep(0.1)
             # wait for msg
-            with open(self.port_out, 'rb', 0) as serial_f:
+            with open(self.port_out, "rb", 0) as serial_f:
                 os.set_blocking(serial_f.fileno(), False)
                 while True:
                     read = serial_f.read()
@@ -332,18 +332,18 @@ class TestUARTProtocol(TestCoreProtocol):
             else:
                 response = Message(MessageType.ERROR)
 
-            with open(self.port_in, 'wb', 0) as serial_f:
+            with open(self.port_in, "wb", 0) as serial_f:
                 serial_f.write(response.to_bytes())
 
         return recv_message
 
     def mock_send_response(
-        self, message_type: MessageType, payload: bytes = b''
+        self, message_type: MessageType, payload: bytes = b""
     ):
         def send_message():
-            data = b''
+            data = b""
             # wait for msg
-            with open(self.port_out, 'rb', 0) as serial_f:
+            with open(self.port_out, "rb", 0) as serial_f:
                 os.set_blocking(serial_f.fileno(), False)
                 while True:
                     read = serial_f.read()
@@ -360,7 +360,7 @@ class TestUARTProtocol(TestCoreProtocol):
             else:
                 response = Message(MessageType.ERROR)
 
-            with open(self.port_in, 'wb', 0) as serial_f:
+            with open(self.port_in, "wb", 0) as serial_f:
                 serial_f.write(response.to_bytes())
 
         return send_message
@@ -385,7 +385,7 @@ class TestUARTProtocol(TestCoreProtocol):
         assert client.connection.is_open is False
 
     @pytest.mark.parametrize(
-        'message_type', [MessageType.OK, MessageType.ERROR]
+        "message_type", [MessageType.OK, MessageType.ERROR]
     )
     def test_receive_message(
         self,
@@ -417,13 +417,13 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client receive_message method.
         """
 
-        self.port_in.write_bytes(b'')
+        self.port_in.write_bytes(b"")
         status, message = client.receive_message(timeout=1)
         assert status == ServerStatus.NOTHING
         assert message is None
 
     @pytest.mark.parametrize(
-        'message_type', [MessageType.OK, MessageType.ERROR, MessageType.DATA]
+        "message_type", [MessageType.OK, MessageType.ERROR, MessageType.DATA]
     )
     def test_send_message(
         self,
@@ -439,7 +439,7 @@ class TestUARTProtocol(TestCoreProtocol):
 
         # send data
         client.send_message(message)
-        with open(self.port_out, 'rb', 0) as serial_f:
+        with open(self.port_out, "rb", 0) as serial_f:
             os.set_blocking(serial_f.fileno(), False)
             received_message, bytes_read = Message.from_bytes(serial_f.read())
 
@@ -453,13 +453,13 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client send_message method.
         """
 
-        class EmptyMessage():
+        class EmptyMessage:
             def to_bytes(self):
-                return b''
+                return b""
 
         # send data
         client.send_message(EmptyMessage())
-        with open(self.port_out, 'rb', 0) as serial_f:
+        with open(self.port_out, "rb", 0) as serial_f:
             os.set_blocking(serial_f.fileno(), False)
             bytes_read = serial_f.read()
 
@@ -472,7 +472,7 @@ class TestUARTProtocol(TestCoreProtocol):
 
         client.send_data(random_byte_data)
 
-        with open(self.port_out, 'rb', 0) as serial_f:
+        with open(self.port_out, "rb", 0) as serial_f:
             os.set_blocking(serial_f.fileno(), False)
             received_data = serial_f.read()
 
@@ -483,7 +483,7 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client send_data method.
         """
 
-        with open(self.port_in, 'wb', 0) as serial_f:
+        with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(random_byte_data)
 
         status, received_data = client.receive_data(None, None)
@@ -496,7 +496,7 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client request success.
         """
 
-        with open(self.port_in, 'wb', 0) as serial_f:
+        with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(Message(MessageType.OK).to_bytes())
 
         status, data = client.receive_data(None, None)
@@ -505,14 +505,14 @@ class TestUARTProtocol(TestCoreProtocol):
         assert data is not None
         message = client.parse_message(data)
         assert message.message_type == MessageType.OK
-        assert message.payload == b''
+        assert message.payload == b""
 
     def test_request_failure(self, client: UARTProtocol):
         """
         Test client request failure.
         """
 
-        with open(self.port_in, 'wb', 0) as serial_f:
+        with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(Message(MessageType.ERROR).to_bytes())
 
         status, data = client.receive_data(None, None)
@@ -521,7 +521,7 @@ class TestUARTProtocol(TestCoreProtocol):
         assert data is not None
         message = client.parse_message(data)
         assert message.message_type == MessageType.ERROR
-        assert message.payload == b''
+        assert message.payload == b""
 
     def test_upload_input(self, client: UARTProtocol, random_byte_data: bytes):
         """
@@ -621,7 +621,7 @@ class TestUARTProtocol(TestCoreProtocol):
         message = queue.get()
         assert isinstance(message, Message)
         assert message.message_type == MessageType.PROCESS
-        assert message.payload == b''
+        assert message.payload == b""
 
     def test_download_statistics(
         self, client: UARTProtocol, valid_stats: bytes

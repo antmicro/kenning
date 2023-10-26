@@ -22,25 +22,26 @@ from gettext import gettext
 class Formatter(argparse.RawDescriptionHelpFormatter):
     def _format_action(self, action):
         # determine the required width and the entry label
-        help_position = min(self._action_max_length + 2,
-                            self._max_help_position)
+        help_position = min(
+            self._action_max_length + 2, self._max_help_position
+        )
         help_width = max(self._width - help_position, 11)
         action_width = help_position - self._current_indent - 2
         action_header = self._format_action_invocation(action)
 
-        padding = ' ' * self._current_indent
+        padding = " " * self._current_indent
         # no help; start on same line and add a final newline
         if not action.help:
-            action_header = f'{padding}{action_header}\n'
+            action_header = f"{padding}{action_header}\n"
 
         # short action name; start on the same line and pad two spaces
         elif len(action_header) <= action_width:
-            action_header = f'{padding}{action_header : <{action_width}}  '
+            action_header = f"{padding}{action_header: <{action_width}}  "
             indent_first = 0
 
         # long action name; start on the next line
         else:
-            action_header = f'{padding}{action_header}\n'
+            action_header = f"{padding}{action_header}\n"
             indent_first = help_position
 
         # collect the pieces of the action help
@@ -51,13 +52,13 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
             help_text = self._expand_help(action)
             if help_text:
                 help_lines = self._split_lines(help_text, help_width)
-                parts.append(f"{' '*indent_first}{help_lines[0]}\n")
+                parts.append(f"{' ' * indent_first}{help_lines[0]}\n")
                 for line in help_lines[1:]:
-                    parts.append(f"{' '*help_position}{line}\n")
+                    parts.append(f"{' ' * help_position}{line}\n")
 
         # or add a newline if the description doesn't end with one
-        elif not action_header.endswith('\n'):
-            parts.append('\n')
+        elif not action_header.endswith("\n"):
+            parts.append("\n")
 
         # if there are any sub-actions, add their help as well
         for subaction in self._iter_indented_subactions(action):
@@ -86,7 +87,8 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
             if isinstance(result, tuple):
                 return result
             else:
-                return (result, ) * tuple_size
+                return (result,) * tuple_size
+
         return format
 
     def _format_actions_usage(self, actions, groups):
@@ -95,7 +97,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
         inserts = {}
         for group in groups:
             if not group._group_actions:
-                raise ValueError(f'empty group {group}')
+                raise ValueError(f"empty group {group}")
 
             try:
                 start = actions.index(group._group_actions[0])
@@ -105,49 +107,48 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
                 group_action_count = len(group._group_actions)
                 end = start + group_action_count
                 if actions[start:end] == group._group_actions:
-
                     suppressed_actions_count = 0
                     for action in group._group_actions:
                         group_actions.add(action)
                         if action.help is argparse.SUPPRESS:
                             suppressed_actions_count += 1
 
-                    exposed_actions_count = \
+                    exposed_actions_count = (
                         group_action_count - suppressed_actions_count
+                    )
 
                     if not group.required:
                         if start in inserts:
-                            inserts[start] += ' ['
+                            inserts[start] += " ["
                         else:
-                            inserts[start] = '['
+                            inserts[start] = "["
                         if end in inserts:
-                            inserts[end] += ']'
+                            inserts[end] += "]"
                         else:
-                            inserts[end] = ']'
+                            inserts[end] = "]"
                     elif exposed_actions_count > 1:
                         if start in inserts:
-                            inserts[start] += ' ('
+                            inserts[start] += " ("
                         else:
-                            inserts[start] = '('
+                            inserts[start] = "("
                         if end in inserts:
-                            inserts[end] += ')'
+                            inserts[end] += ")"
                         else:
-                            inserts[end] = ')'
+                            inserts[end] = ")"
                     for i in range(start + 1, end):
-                        inserts[i] = '|'
+                        inserts[i] = "|"
 
         # collect all actions format strings
         parts = []
         append_dots = False
         for i, action in enumerate(actions):
-
             # suppressed arguments are marked with None
             # remove | separators for suppressed arguments
             if action.help is argparse.SUPPRESS:
                 parts.append(None)
-                if inserts.get(i) == '|':
+                if inserts.get(i) == "|":
                     inserts.pop(i)
-                elif inserts.get(i + 1) == '|':
+                elif inserts.get(i + 1) == "|":
                     inserts.pop(i + 1)
 
             # produce all arg strings
@@ -157,14 +158,14 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
 
                 # if it's in a group, strip the outer []
                 if action in group_actions:
-                    if part[0] == '[' and part[-1] == ']':
+                    if part[0] == "[" and part[-1] == "]":
                         part = part[1:-1]
 
                 # add the action string to the list
                 # new: place subcommands at the beginning
                 if isinstance(action, argparse._SubParsersAction):
                     append_dots = True
-                    command, dots = part.split(' ')
+                    command, dots = part.split(" ")
                     parts.insert(0, command)
                 else:
                     parts.append(part)
@@ -183,7 +184,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
                 else:
                     default = self._get_default_metavar_for_optional(action)
                     args_string = self._format_args(action, default)
-                    part = f'{option_string} {args_string}'
+                    part = f"{option_string} {args_string}"
 
                 # make it look optional if it's not required or in a group
                 if not action.required and action not in group_actions:
@@ -201,14 +202,14 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
             parts.append(dots)
 
         # join all the action items with spaces
-        text = ' '.join([item for item in parts if item is not None])
+        text = " ".join([item for item in parts if item is not None])
 
         # clean up separators for mutually exclusive groups
-        open = r'[\[(]'
-        close = r'[\])]'
-        text = re.sub(f'({open}) ', r'\1', text)
-        text = re.sub(f' ({close})', r'\1', text)
-        text = re.sub(f'{open} *{close}', r'', text)
+        open = r"[\[(]"
+        close = r"[\])]"
+        text = re.sub(f"({open}) ", r"\1", text)
+        text = re.sub(f" ({close})", r"\1", text)
+        text = re.sub(f"{open} *{close}", r"", text)
         text = text.strip()
 
         # return the text
@@ -216,7 +217,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
 
     def _format_usage(self, usage, actions, groups, prefix):
         if prefix is None:
-            prefix = gettext('usage: ')
+            prefix = gettext("usage: ")
 
         # if usage is specified, use that
         if usage is not None:
@@ -242,28 +243,23 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
             # build full usage string
             format = self._format_actions_usage
             action_usage = format(optionals + positionals, groups)
-            usage = ' '.join([s for s in [prog, action_usage] if s])
+            usage = " ".join([s for s in [prog, action_usage] if s])
 
             # wrap the usage parts if it's too long
             text_width = self._width - self._current_indent
             if len(prefix) + len(usage) > text_width:
-
                 # break usage into wrappable parts
-                part_regexp = (
-                    r'\(.*?\)+(?=\s|$)|'
-                    r'\[.*?\]+(?=\s|$)|'
-                    r'\S+'
-                )
+                part_regexp = r"\(.*?\)+(?=\s|$)|" r"\[.*?\]+(?=\s|$)|" r"\S+"
                 opt_usage = format(optionals, groups)
                 pos_usage = format(positionals, groups)
                 opt_parts = re.findall(part_regexp, opt_usage)
                 pos_parts = re.findall(part_regexp, pos_usage)
-                assert ' '.join(opt_parts) == opt_usage
-                assert ' '.join(pos_parts) == pos_usage
+                assert " ".join(opt_parts) == opt_usage
+                assert " ".join(pos_parts) == pos_usage
 
                 # new: if only subcommands are in pos_parts append them
                 # to opt_parts, so subcommands are always at the beginning
-                if opt_parts and len(pos_parts) == 2 and pos_parts[1] == '...':
+                if opt_parts and len(pos_parts) == 2 and pos_parts[1] == "...":
                     opt_parts = [pos_parts[0], *opt_parts, pos_parts[1]]
                     pos_parts = []
 
@@ -277,20 +273,20 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
                         line_len = len(indent) - 1
                     for part in parts:
                         if line_len + 1 + len(part) > text_width and line:
-                            lines.append(indent + ' '.join(line))
+                            lines.append(indent + " ".join(line))
                             line = []
                             line_len = len(indent) - 1
                         line.append(part)
                         line_len += len(part) + 1
                     if line:
-                        lines.append(indent + ' '.join(line))
+                        lines.append(indent + " ".join(line))
                     if prefix is not None:
-                        lines[0] = lines[0][len(indent):]
+                        lines[0] = lines[0][len(indent) :]
                     return lines
 
                 # if prog is short, follow it with optionals or positionals
                 if len(prefix) + len(prog) <= 0.75 * text_width:
-                    indent = ' ' * (len(prefix) + len(prog) + 1)
+                    indent = " " * (len(prefix) + len(prog) + 1)
                     if opt_parts:
                         lines = get_lines([prog] + opt_parts, indent, prefix)
                         lines.extend(get_lines(pos_parts, indent))
@@ -301,7 +297,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
 
                 # if prog is long, put it on its own line
                 else:
-                    indent = ' ' * len(prefix)
+                    indent = " " * len(prefix)
                     parts = opt_parts + pos_parts
                     lines = get_lines(parts, indent)
                     if len(lines) > 1:
@@ -311,7 +307,7 @@ class Formatter(argparse.RawDescriptionHelpFormatter):
                     lines = [prog] + lines
 
                 # join lines into usage
-                usage = '\n'.join(lines)
+                usage = "\n".join(lines)
 
         # prefix with 'usage:'
-        return f'{prefix}{usage}\n\n'
+        return f"{prefix}{usage}\n\n"

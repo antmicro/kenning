@@ -16,17 +16,17 @@ from kenning.utils.resource_manager import ResourceURI
 
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
-    'kenning.modelwrappers',
-    ModelWrapper,
-    raise_exception=True
+    "kenning.modelwrappers", ModelWrapper, raise_exception=True
 )
 
 
-@pytest.fixture(autouse=True, scope='module')
+@pytest.fixture(autouse=True, scope="module")
 def prepare_models_io_specs():
     for model_cls in MODELWRAPPER_SUBCLASSES:
-        if (model_cls.default_dataset is None or
-                model_cls.pretrained_model_uri is None):
+        if (
+            model_cls.default_dataset is None
+            or model_cls.pretrained_model_uri is None
+        ):
             continue
         dataset_cls = model_cls.default_dataset
         dataset = get_dataset_random_mock(dataset_cls)
@@ -50,7 +50,7 @@ def create_model(model_cls: Type[ModelWrapper], dataset: Dataset):
     return model_cls(model_path, dataset, from_file)
 
 
-@pytest.fixture(scope='function')
+@pytest.fixture(scope="function")
 def model(request):
     model_cls = request.param
 
@@ -61,30 +61,45 @@ def model(request):
 
 
 class TestModelWrapper:
-
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model_cls', [
-        pytest.param(cls, marks=[
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    )
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+    )
     def test_initializer_no_dataset(self, model_cls: Type[ModelWrapper]):
         """
         Tests model initialization without specified dataset.
         """
         _ = create_model(model_cls, None)
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model_cls', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                name=f'test_initializer_with_dataset[{cls.__name__}]'
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model_cls",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_initializer_with_dataset[{cls.__name__}]"
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+    )
     def test_initializer_with_dataset(self, model_cls: Type[ModelWrapper]):
         """
         Tests model initialization with specified dataset.
@@ -93,33 +108,53 @@ class TestModelWrapper:
         dataset = get_dataset_random_mock(dataset_cls)
         _ = create_model(model_cls, dataset)
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                name=f'test_prepare[{cls.__name__}]',
-                depends=[f'test_initializer_with_dataset[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_prepare[{cls.__name__}]",
+                        depends=[
+                            f"test_initializer_with_dataset[{cls.__name__}]"
+                        ],
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_prepare(self, model: Type[ModelWrapper]):
         """
         Tests the `prepare_model` method.
         """
         model.prepare_model()
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_prepare[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_save(self, model: Type[ModelWrapper]):
         """
         Tests the `save_model` method.
@@ -129,19 +164,28 @@ class TestModelWrapper:
         try:
             model.save_model(model_save_path)
         except NotImplementedError:
-            pytest.xfail('save_model not implemented for this model')
+            pytest.xfail("save_model not implemented for this model")
         assert model_save_path.exists()
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_prepare[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_inference(self, model: Type[ModelWrapper]):
         """
         Tests the `test_inference` method.
@@ -150,18 +194,27 @@ class TestModelWrapper:
         try:
             model.test_inference()
         except NotImplementedError:
-            pytest.xfail('test_inference not implemented for this model')
+            pytest.xfail("test_inference not implemented for this model")
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_prepare[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_train(self, model: Type[ModelWrapper]):
         """
         Tests the `train_model` method.
@@ -170,39 +223,57 @@ class TestModelWrapper:
         try:
             model.train_model(
                 batch_size=16,
-                learning_rate=.01,
+                learning_rate=0.01,
                 epochs=1,
-                logdir=r'/tmp/logdir'
+                logdir=r"/tmp/logdir",
             )
         except NotImplementedError:
-            pytest.xfail('train_model not implemented for this model')
+            pytest.xfail("train_model not implemented for this model")
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_prepare[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_get_io_spec(self, model: Type[ModelWrapper]):
         """
         Tests the `train_model` method.
         """
         assert model.get_io_specification_from_model() is not None
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('model', [
-        pytest.param(cls, marks=[
-            pytest.mark.dependency(
-                depends=[f'test_prepare[{cls.__name__}]']
-            ),
-            pytest.mark.xdist_group(name=f'TestModelWrapper_{cls.__name__}')
-        ])
-        for cls in MODELWRAPPER_SUBCLASSES
-    ], indirect=True)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model",
+        [
+            pytest.param(
+                cls,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[f"test_prepare[{cls.__name__}]"]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestModelWrapper_{cls.__name__}"
+                    ),
+                ],
+            )
+            for cls in MODELWRAPPER_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_get_framework_and_version(self, model: Type[ModelWrapper]):
         """
         Tests the `train_model` method.

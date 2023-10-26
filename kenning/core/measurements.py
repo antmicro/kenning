@@ -51,7 +51,7 @@ class Measurements(object):
     def __init__(self):
         self.data = dict()
 
-    def __iadd__(self, other: Union[Dict, 'Measurements']) -> 'Measurements':
+    def __iadd__(self, other: Union[Dict, "Measurements"]) -> "Measurements":
         self.update_measurements(other)
         return self
 
@@ -75,7 +75,7 @@ class Measurements(object):
         """
         self.data[measurement_type] = value
 
-    def update_measurements(self, other: Union[Dict, 'Measurements']):
+    def update_measurements(self, other: Union[Dict, "Measurements"]):
         """
         Adds measurements of types given in the other object.
 
@@ -103,10 +103,7 @@ class Measurements(object):
                 else:
                     self.data[k] += other[k]
 
-    def add_measurements_list(
-            self,
-            measurementtype: str,
-            valueslist: List):
+    def add_measurements_list(self, measurementtype: str, valueslist: List):
         """
         Adds new values to a given measurement type.
 
@@ -124,10 +121,11 @@ class Measurements(object):
         self.data[measurementtype] += valueslist
 
     def add_measurement(
-            self,
-            measurementtype: str,
-            value: Any,
-            initialvaluefunc: Callable[[], Any] = lambda: list()):
+        self,
+        measurementtype: str,
+        value: Any,
+        initialvaluefunc: Callable[[], Any] = lambda: list(),
+    ):
         """
         Add new value to a given measurement type.
 
@@ -162,10 +160,11 @@ class Measurements(object):
         return self.data[measurementtype]
 
     def accumulate(
-            self,
-            measurementtype: str,
-            valuetoadd: Any,
-            initvaluefunc: Callable[[], Any] = lambda: 0) -> List:
+        self,
+        measurementtype: str,
+        valuetoadd: Any,
+        initvaluefunc: Callable[[], Any] = lambda: 0,
+    ) -> List:
         """
         Adds given value to a measurement.
 
@@ -206,6 +205,7 @@ class MeasurementsCollector(object):
     """
     It is a 'static' class collecting measurements from various sources.
     """
+
     measurements = Measurements()
 
     @classmethod
@@ -221,12 +221,8 @@ class MeasurementsCollector(object):
         for key, measurement in cls.measurements.data.items():
             if isinstance(measurement, np.ndarray):
                 cls.measurements.data[key] = measurement.tolist()
-        with open(resultpath, 'w') as measurementsfile:
-            json.dump(
-                cls.measurements.data,
-                measurementsfile,
-                indent=2
-            )
+        with open(resultpath, "w") as measurementsfile:
+            json.dump(cls.measurements.data, measurementsfile, indent=2)
 
     @classmethod
     def clear(cls):
@@ -245,6 +241,7 @@ def tagmeasurements(tagname: str):
     tagname : str
         The name of tag.
     """
+
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args):
@@ -252,24 +249,29 @@ def tagmeasurements(tagname: str):
             returnvalue = function(*args)
             endtimestamp = time.perf_counter()
             KLogger.debug(
-                f'{function.__name__} start: {starttimestamp * 1000} ms end: '
-                f'{endtimestamp * 1000} ms'
+                f"{function.__name__} start: {starttimestamp * 1000} ms end: "
+                f"{endtimestamp * 1000} ms"
             )
             MeasurementsCollector.measurements += {
-                'tags': [{
-                    'name': tagname,
-                    'start': starttimestamp,
-                    'end': endtimestamp
-                }]
+                "tags": [
+                    {
+                        "name": tagname,
+                        "start": starttimestamp,
+                        "end": endtimestamp,
+                    }
+                ]
             }
             return returnvalue
+
         return statistics_wrapper
+
     return statistics_decorator
 
 
 def timemeasurements(
-        measurementname: str,
-        get_time_func: Callable[[], float] = time.perf_counter) -> Callable:
+    measurementname: str,
+    get_time_func: Callable[[], float] = time.perf_counter,
+) -> Callable:
     """
     Decorator for measuring time of the function.
 
@@ -287,19 +289,22 @@ def timemeasurements(
     Callable :
         Decorated function.
     """
+
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args, **kwargs):
             start = get_time_func()
             returnvalue = function(*args, **kwargs)
             duration = time.perf_counter() - start
-            KLogger.debug(f'{function.__name__} time:  {duration * 1000} ms')
+            KLogger.debug(f"{function.__name__} time:  {duration * 1000} ms")
             MeasurementsCollector.measurements += {
                 measurementname: [duration],
-                f'{measurementname}_timestamp': [get_time_func()]
+                f"{measurementname}_timestamp": [get_time_func()],
             }
             return returnvalue
+
         return statistics_wrapper
+
     return statistics_decorator
 
 
@@ -337,22 +342,23 @@ class SystemStatsCollector(Thread):
             try:
                 self.nvidia_smi = nvidia_smi.getInstance()
             except Exception as ex:
-                KLogger.warning(f'No NVML support due to error {ex}')
+                KLogger.warning(f"No NVML support due to error {ex}")
                 self.nvidia_smi = None
         else:
             self.nvidia_smi = None
         self.step = step
         self.runningcondition = Condition()
 
-    def __enter__(self) -> 'SystemStatsCollector':
+    def __enter__(self) -> "SystemStatsCollector":
         self.start()
         return self
 
     def __exit__(
-            self,
-            exc_type: Optional[Type[BaseException]],
-            exc_value: Optional[BaseException],
-            traceback: Optional[TracebackType]) -> bool:
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> bool:
         self.stop()
         self.join()
         return False
@@ -384,44 +390,44 @@ class SystemStatsCollector(Thread):
         self.running = True
         tegrastatsoutputfd = None
         try:
-            tegrastats = which('tegrastats')
+            tegrastats = which("tegrastats")
             if tegrastats is not None:
                 tegrastatsoutput = tempfile.NamedTemporaryFile()
-                tegrastatsoutputfd = open(tegrastatsoutput.name, 'w')
+                tegrastatsoutputfd = open(tegrastatsoutput.name, "w")
                 tegrastatsstart = time.perf_counter()
                 tegrastatsproc = subprocess.Popen(
-                    f'{tegrastats} --interval {self.step * 1000}'.split(' '),
-                    stdout=tegrastatsoutputfd
+                    f"{tegrastats} --interval {self.step * 1000}".split(" "),
+                    stdout=tegrastatsoutputfd,
                 )
             while self.running:
                 cpus = psutil.cpu_percent(interval=0, percpu=True)
                 mem = psutil.virtual_memory()
                 self.measurements += {
-                    f'{self.prefix}_cpus_percent': [cpus],
-                    f'{self.prefix}_mem_percent': [mem.percent],
-                    f'{self.prefix}_timestamp': [time.perf_counter()],
+                    f"{self.prefix}_cpus_percent": [cpus],
+                    f"{self.prefix}_mem_percent": [mem.percent],
+                    f"{self.prefix}_timestamp": [time.perf_counter()],
                 }
                 if self.nvidia_smi is not None:
                     gpu = self.nvidia_smi.DeviceQuery(
-                        'memory.free, memory.total, utilization.gpu'
+                        "memory.free, memory.total, utilization.gpu"
                     )
-                    if gpu and 'gpu' in gpu:
+                    if gpu and "gpu" in gpu:
                         memtot = float(
-                            gpu['gpu'][0]['fb_memory_usage']['total']
+                            gpu["gpu"][0]["fb_memory_usage"]["total"]
                         )
                         memfree = float(
-                            gpu['gpu'][0]['fb_memory_usage']['free']
+                            gpu["gpu"][0]["fb_memory_usage"]["free"]
                         )
                         gpumemutilization = (memtot - memfree) / memtot * 100.0
                         gpuutilization = float(
-                            gpu['gpu'][0]['utilization']['gpu_util']
+                            gpu["gpu"][0]["utilization"]["gpu_util"]
                         )
                         self.measurements += {
-                            f'{self.prefix}_gpu_utilization': [gpuutilization],
-                            f'{self.prefix}_gpu_mem_utilization': [
+                            f"{self.prefix}_gpu_utilization": [gpuutilization],
+                            f"{self.prefix}_gpu_mem_utilization": [
                                 gpumemutilization
                             ],
-                            f'{self.prefix}_gpu_timestamp': [
+                            f"{self.prefix}_gpu_timestamp": [
                                 time.perf_counter()
                             ],
                         }
@@ -431,8 +437,8 @@ class SystemStatsCollector(Thread):
                 tegrastatsproc.terminate()
                 tegrastatsend = time.perf_counter()
                 tegrastatsoutputfd.close()
-                with open(tegrastatsoutput.name, 'r') as tegrastatsoutputfd:
-                    readings = tegrastatsoutputfd.read().split('\n')
+                with open(tegrastatsoutput.name, "r") as tegrastatsoutputfd:
+                    readings = tegrastatsoutputfd.read().split("\n")
                 tegrastatsoutputfd = None
                 ramusages = []
                 gpuutilization = []
@@ -447,67 +453,66 @@ class SystemStatsCollector(Thread):
                 vddrqpower = []
                 sys5vpower = []
                 for entry in readings:
-                    match = re.match(r'.*RAM (\d+)/(\d+)MB', entry)
+                    match = re.match(r".*RAM (\d+)/(\d+)MB", entry)
                     if match:
                         currram = float(match.group(1))
                         totram = float(match.group(2))
                         ramusages.append(int(currram / totram * 100))
-                    match = re.match(r'.*GR3D_FREQ (\d+)%', entry)
+                    match = re.match(r".*GR3D_FREQ (\d+)%", entry)
                     if match:
                         gpuutilization.append(int(match.group(1)))
-                    match = re.match(r'.*VDD_GPU_SOC (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*VDD_GPU_SOC (\d+)mW/(\d+)mW", entry)
                     if match:
                         vdd_gpu_soc.append(int(match.group(1)))
-                    match = re.match(r'.*VDD_CPU_CV (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*VDD_CPU_CV (\d+)mW/(\d+)mW", entry)
                     if match:
                         vdd_cpu_cv.append(int(match.group(1)))
-                    match = re.match(r'.*VIN_SYS_5V0 (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*VIN_SYS_5V0 (\d+)mW/(\d+)mW", entry)
                     if match:
                         vin_sys_5v0.append(int(match.group(1)))
                     match = re.match(
-                        r'.*VDDQ_VDD2_1V8AO (\d+)mW/(\d+)mW',
-                        entry
+                        r".*VDDQ_VDD2_1V8AO (\d+)mW/(\d+)mW", entry
                     )
                     if match:
                         vddq_vdd2_1v8ao.append(int(match.group(1)))
-                    match = re.match(r'.*CPU (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*CPU (\d+)mW/(\d+)mW", entry)
                     if match:
                         cpupower.append(int(match.group(1)))
-                    match = re.match(r'.*GPU (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*GPU (\d+)mW/(\d+)mW", entry)
                     if match:
                         gpupower.append(int(match.group(1)))
-                    match = re.match(r'.*SOC (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*SOC (\d+)mW/(\d+)mW", entry)
                     if match:
                         socpower.append(int(match.group(1)))
-                    match = re.match(r'.*CV (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*CV (\d+)mW/(\d+)mW", entry)
                     if match:
                         cvpower.append(int(match.group(1)))
-                    match = re.match(r'.*VDDRQ (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*VDDRQ (\d+)mW/(\d+)mW", entry)
                     if match:
                         vddrqpower.append(int(match.group(1)))
-                    match = re.match(r'.*SYS5V (\d+)mW/(\d+)mW', entry)
+                    match = re.match(r".*SYS5V (\d+)mW/(\d+)mW", entry)
                     if match:
                         sys5vpower.append(int(match.group(1)))
                 timestamps = np.linspace(
                     tegrastatsstart,
                     tegrastatsend,
-                    num=len(readings)-1,
-                    endpoint=True
+                    num=len(readings) - 1,
+                    endpoint=True,
                 ).tolist()
                 self.measurements += {
-                    f'{self.prefix}_gpu_utilization': gpuutilization,
-                    f'{self.prefix}_gpu_mem_utilization': ramusages,
-                    f'{self.prefix}_power_vdd_gpu_soc': vdd_gpu_soc,
-                    f'{self.prefix}_power_vdd_cpu_cv': vdd_cpu_cv,
-                    f'{self.prefix}_power_vin_sys_5v0': vin_sys_5v0,
-                    f'{self.prefix}_power_vddq_vdd2_1v8ao': vddq_vdd2_1v8ao,
-                    f'{self.prefix}_power_cpu': cpupower,
-                    f'{self.prefix}_power_gpu': gpupower,
-                    f'{self.prefix}_power_soc': socpower,
-                    f'{self.prefix}_power_cv': cvpower,
-                    f'{self.prefix}_power_vddrq': vddrqpower,
-                    f'{self.prefix}_power_sys5v': sys5vpower,
-                    f'{self.prefix}_gpu_timestamp': timestamps
+                    f"{self.prefix}_gpu_utilization": gpuutilization,
+                    f"{self.prefix}_gpu_mem_utilization": ramusages,
+                    f"{self.prefix}_power_vdd_gpu_soc": vdd_gpu_soc,
+                    f"{self.prefix}_power_vdd_cpu_cv": vdd_cpu_cv,
+                    f"{self.prefix}_power_vin_sys_5v0": vin_sys_5v0,
+                    f"{self.prefix}_power_vddq_vdd2_1v8ao": vddq_vdd2_1v8ao,
+                    f"{self.prefix}_power_cpu": cpupower,
+                    f"{self.prefix}_power_gpu": gpupower,
+                    f"{self.prefix}_power_soc": socpower,
+                    f"{self.prefix}_power_cv": cvpower,
+                    f"{self.prefix}_power_vddrq": vddrqpower,
+                    f"{self.prefix}_power_sys5v": sys5vpower,
+                    f"{self.prefix}_gpu_timestamp": timestamps,
                 }
         finally:
             if tegrastatsoutputfd:
@@ -537,11 +542,15 @@ def systemstatsmeasurements(measurementname: str, step: float = 0.5):
     def statistics_decorator(function):
         @wraps(function)
         def statistics_wrapper(*args):
-            with (SystemStatsCollector(measurementname, step)
-                    as measurementsthread):
+            with SystemStatsCollector(
+                measurementname, step
+            ) as measurementsthread:
                 returnvalue = function(*args)
-                MeasurementsCollector.measurements += \
+                MeasurementsCollector.measurements += (
                     measurementsthread.get_measurements()
+                )
             return returnvalue
+
         return statistics_wrapper
+
     return statistics_decorator

@@ -67,8 +67,9 @@ class ModelWrapperDataConverter(DataConverter):
         return self.model_wrapper._postprocess_outputs(preds)
 
     @classmethod
-    def from_json(cls,
-                  json_dict: Dict[str, str]) -> "ModelWrapperDataConverter":
+    def from_json(
+        cls, json_dict: Dict[str, str]
+    ) -> "ModelWrapperDataConverter":
         """
         Creates the ModelWrapperDataConverter object from the JSON
         configuration.
@@ -86,9 +87,9 @@ class ModelWrapperDataConverter(DataConverter):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
-        modelwrapper_cfg = parsed_json_dict['model_wrapper']
-        modelwrapper_cls = load_class(modelwrapper_cfg['type'])
+        modelwrapper_cfg = parsed_json_dict["model_wrapper"]
+        modelwrapper_cls = load_class(modelwrapper_cfg["type"])
         modelwrapper = modelwrapper_cls.from_json(
-                None,
-                modelwrapper_cfg['parameters'])
+            None, modelwrapper_cfg["parameters"]
+        )
         return cls(modelwrapper)

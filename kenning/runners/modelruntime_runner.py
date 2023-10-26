@@ -24,35 +24,36 @@ class ModelRuntimeRunner(Runner):
     """
 
     arguments_structure = {
-        'model_wrapper': {
-            'argparse_name': '--model-wrapper',
-            'description': 'Path to JSON describing the ModelWrapper object, '
-                           'following its argument structure',
-            'type': object,
-            'required': True,
+        "model_wrapper": {
+            "argparse_name": "--model-wrapper",
+            "description": "Path to JSON describing the ModelWrapper object, "
+            "following its argument structure",
+            "type": object,
+            "required": True,
         },
-        'dataset': {
-            'argparse_name': '--dataset',
-            'description': 'Path to JSON describing the Dataset object, '
-                           'following its argument structure',
-            'type': object,
+        "dataset": {
+            "argparse_name": "--dataset",
+            "description": "Path to JSON describing the Dataset object, "
+            "following its argument structure",
+            "type": object,
         },
-        'runtime': {
-            'argparse_name': '--runtime',
-            'description': 'Path to JSON describing the Runtime object, '
-                           'following its argument structure',
-            'type': object,
-            'required': True,
+        "runtime": {
+            "argparse_name": "--runtime",
+            "description": "Path to JSON describing the Runtime object, "
+            "following its argument structure",
+            "type": object,
+            "required": True,
         },
     }
 
     def __init__(
-            self,
-            model: ModelWrapper,
-            runtime: Runtime,
-            inputs_sources: Dict[str, Tuple[int, str]] = {},
-            inputs_specs: Dict[str, Dict] = {},
-            outputs: Dict[str, str] = {}):
+        self,
+        model: ModelWrapper,
+        runtime: Runtime,
+        inputs_sources: Dict[str, Tuple[int, str]] = {},
+        inputs_specs: Dict[str, Dict] = {},
+        outputs: Dict[str, str] = {},
+    ):
         """
         Creates the model runner.
 
@@ -78,7 +79,7 @@ class ModelRuntimeRunner(Runner):
         super().__init__(
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     def cleanup(self):
@@ -90,8 +91,8 @@ class ModelRuntimeRunner(Runner):
         args: Namespace,
         inputs_sources: Dict[str, Tuple[int, str]],
         inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str]
-    ) -> 'ModelRuntimeRunner':
+        outputs: Dict[str, str],
+    ) -> "ModelRuntimeRunner":
         parsed_json_dict = get_parsed_args_dict(cls, args)
 
         return cls._from_parsed_json_dict(
@@ -107,9 +108,8 @@ class ModelRuntimeRunner(Runner):
         json_dict: Dict,
         inputs_sources: Dict[str, Tuple[int, str]],
         inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str]
-    ) -> 'ModelRuntimeRunner':
-
+        outputs: Dict[str, str],
+    ) -> "ModelRuntimeRunner":
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
@@ -126,24 +126,24 @@ class ModelRuntimeRunner(Runner):
         parsed_json_dict: Dict[str, Any],
         inputs_sources: Dict[str, Tuple[int, str]],
         inputs_specs: Dict[str, Dict],
-        outputs: Dict[str, str]
-    ) -> 'ModelRuntimeRunner':
-        if parsed_json_dict.get('dataset', None):
-            dataset = cls._create_dataset(parsed_json_dict['dataset'])
+        outputs: Dict[str, str],
+    ) -> "ModelRuntimeRunner":
+        if parsed_json_dict.get("dataset", None):
+            dataset = cls._create_dataset(parsed_json_dict["dataset"])
         else:
             dataset = None
 
-        model = cls._create_model(dataset, parsed_json_dict['model_wrapper'])
+        model = cls._create_model(dataset, parsed_json_dict["model_wrapper"])
         model.prepare_model()
 
-        runtime = cls._create_runtime(parsed_json_dict['runtime'])
+        runtime = cls._create_runtime(parsed_json_dict["runtime"])
 
         return cls(
             model,
             runtime,
             inputs_sources=inputs_sources,
             inputs_specs=inputs_specs,
-            outputs=outputs
+            outputs=outputs,
         )
 
     @staticmethod
@@ -214,13 +214,13 @@ class ModelRuntimeRunner(Runner):
         Dict[str, List[Dict]] :
             Dictionary that conveys input and output layers specification.
         """
-        for io in ('input', 'output'):
-            if f'processed_{io}' not in model_io_spec.keys():
-                model_io_spec[f'processed_{io}'] = []
+        for io in ("input", "output"):
+            if f"processed_{io}" not in model_io_spec.keys():
+                model_io_spec[f"processed_{io}"] = []
                 for spec in model_io_spec[io]:
                     spec = deepcopy(spec)
-                    spec['name'] = 'processed_' + spec['name']
-                    model_io_spec[f'processed_{io}'].append(spec)
+                    spec["name"] = "processed_" + spec["name"]
+                    model_io_spec[f"processed_{io}"].append(spec)
 
         return model_io_spec
 
@@ -229,10 +229,10 @@ class ModelRuntimeRunner(Runner):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
-        model_json_dict = parsed_json_dict['model_wrapper']
-        model_cls = load_class(model_json_dict['type'])
+        model_json_dict = parsed_json_dict["model_wrapper"]
+        model_cls = load_class(model_json_dict["type"])
         model_io_spec = model_cls.parse_io_specification_from_json(
-            model_json_dict['parameters']
+            model_json_dict["parameters"]
         )
         return cls._get_io_specification(model_io_spec)
 
@@ -240,25 +240,21 @@ class ModelRuntimeRunner(Runner):
         return self._get_io_specification(self.model.get_io_specification())
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        model_input = inputs.get('processed_input')
+        model_input = inputs.get("processed_input")
         if model_input is None:
-            model_input = inputs['input']
+            model_input = inputs["input"]
 
-        preds = self.runtime.infer(
-            model_input,
-            self.model,
-            postprocess=False
-        )
+        preds = self.runtime.infer(model_input, self.model, postprocess=False)
         posty = self.model.postprocess_outputs(preds)
 
         io_spec = self.get_io_specification()
 
         result = {}
         # TODO: Add support for multiple inputs/outputs
-        for out_spec, out_value in zip(io_spec['output'], [preds]):
-            result[out_spec['name']] = out_value
+        for out_spec, out_value in zip(io_spec["output"], [preds]):
+            result[out_spec["name"]] = out_value
 
-        for out_spec, out_value in zip(io_spec['processed_output'], [posty]):
-            result[out_spec['name']] = out_value
+        for out_spec, out_value in zip(io_spec["processed_output"], [posty]):
+            result[out_spec["name"]] = out_value
 
         return result

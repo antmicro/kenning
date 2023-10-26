@@ -83,7 +83,7 @@ class CommandTemplate(ABC):
         if parser is None:
             parser = Parser(
                 command,
-                conflict_handler='resolve' if resolve_conflict else 'error',
+                conflict_handler="resolve" if resolve_conflict else "error",
                 add_help=False,
             )
 
@@ -95,12 +95,17 @@ class CommandTemplate(ABC):
             action="store_true",
         )
         groups[DEFAULT_GROUP].add_argument(
-            '--verbosity',
-            help='Verbosity level',
+            "--verbosity",
+            help="Verbosity level",
             choices=[
-                'NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+                "NOTSET",
+                "DEBUG",
+                "INFO",
+                "WARNING",
+                "ERROR",
+                "CRITICAL",
             ],
-            default='INFO'
+            default="INFO",
         )
 
         return parser, groups
@@ -143,15 +148,13 @@ class CommandTemplate(ABC):
                 if title not in groups:
                     groups[title] = parser.add_argument_group(title)
         else:
-            raise TypeError(f'Invalid type of new_groups: {type(new_groups)}')
+            raise TypeError(f"Invalid type of new_groups: {type(new_groups)}")
 
         return groups
 
     @abstractstaticmethod
     def run(
-        args: argparse.Namespace,
-        not_parsed: List[str] = [],
-        **kwargs
+        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
     ) -> Optional[int]:
         """
         The method containing logic of the scenario.

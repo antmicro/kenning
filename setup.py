@@ -6,7 +6,7 @@ import setuptools
 import numpy
 from Cython.Build import cythonize
 
-with open('README.md', 'r') as fh:
+with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
@@ -17,8 +17,9 @@ setuptools.setup(
         setuptools.Extension(
             "kenning.modelwrappers.instance_segmentation.cython_nms",
             sources=[
-                "kenning/modelwrappers/instance_segmentation/cython_nms.pyx"],
-            include_dirs=[numpy.get_include()]
+                "kenning/modelwrappers/instance_segmentation/cython_nms.pyx"
+            ],
+            include_dirs=[numpy.get_include()],
         )
     ),
 )

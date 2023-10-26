@@ -74,73 +74,74 @@ class Dataset(ArgumentsHandler, ABC):
 
     resources: Resources = Resources(dict())
     arguments_structure = {
-        'root': {
-            'argparse_name': '--dataset-root',
-            'description': 'Path to the dataset directory',
-            'type': Path,
-            'required': True
+        "root": {
+            "argparse_name": "--dataset-root",
+            "description": "Path to the dataset directory",
+            "type": Path,
+            "required": True,
         },
-        'batch_size': {
-            'argparse_name': '--inference-batch-size',
-            'description': 'The batch size for providing the input data',
-            'type': int,
-            'default': 1
+        "batch_size": {
+            "argparse_name": "--inference-batch-size",
+            "description": "The batch size for providing the input data",
+            "type": int,
+            "default": 1,
         },
-        'download_dataset': {
-            'argparse_name': '--download-dataset',
-            'description': 'Downloads the dataset before taking any action. '
-                           'If the dataset files are already downloaded and '
-                           'the checksum is correct then they are not '
-                           'downloaded again. Is enabled by default.',
-            'type': bool,
-            'default': True
+        "download_dataset": {
+            "argparse_name": "--download-dataset",
+            "description": "Downloads the dataset before taking any action. "
+            "If the dataset files are already downloaded and "
+            "the checksum is correct then they are not "
+            "downloaded again. Is enabled by default.",
+            "type": bool,
+            "default": True,
         },
-        'force_download_dataset': {
-            'description': 'Forces dataset download',
-            'type': bool,
-            'default': False
+        "force_download_dataset": {
+            "description": "Forces dataset download",
+            "type": bool,
+            "default": False,
         },
-        'external_calibration_dataset': {
-            'argparse_name': '--external-calibration-dataset',
-            'description': 'Path to the directory with the external '
-                           'calibration dataset',
-            'type': Path,
-            'nullable': True,
-            'default': None
+        "external_calibration_dataset": {
+            "argparse_name": "--external-calibration-dataset",
+            "description": "Path to the directory with the external "
+            "calibration dataset",
+            "type": Path,
+            "nullable": True,
+            "default": None,
         },
         "split_fraction_test": {
-            'argparse_name': '--split-fraction-test',
-            'description': 'Default fraction of data to leave for model '
-                           'testing',
-            'type': float,
-            'default': 0.2
+            "argparse_name": "--split-fraction-test",
+            "description": "Default fraction of data to leave for model "
+            "testing",
+            "type": float,
+            "default": 0.2,
         },
         "split_fraction_val": {
-            'argparse_name': '--split-fraction-val',
-            'description': 'Default fraction of data to leave for model '
-                           'valdiation',
-            'type': float,
-            'nullable': True,
-            'default': None
+            "argparse_name": "--split-fraction-val",
+            "description": "Default fraction of data to leave for model "
+            "valdiation",
+            "type": float,
+            "nullable": True,
+            "default": None,
         },
         "split_seed": {
-            'argparse_name': '--split-seed',
-            'description': 'Default seed used for dataset split',
-            'type': int,
-            'default': 1234
+            "argparse_name": "--split-seed",
+            "description": "Default seed used for dataset split",
+            "type": int,
+            "default": 1234,
         },
     }
 
     def __init__(
-            self,
-            root: Path,
-            batch_size: int = 1,
-            download_dataset: bool = True,
-            force_download_dataset: bool = False,
-            external_calibration_dataset: Optional[Path] = None,
-            split_fraction_test: float = 0.2,
-            split_fraction_val: Optional[float] = None,
-            split_seed: int = 1234):
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = True,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+    ):
         """
         Initializes dataset object.
 
@@ -185,12 +186,17 @@ class Dataset(ArgumentsHandler, ABC):
         self.batch_size = batch_size
         self.download_dataset = download_dataset
         self.force_download_dataset = force_download_dataset
-        self.external_calibration_dataset = None if external_calibration_dataset is None else Path(external_calibration_dataset)  # noqa: E501
+        self.external_calibration_dataset = (
+            None
+            if external_calibration_dataset is None
+            else Path(external_calibration_dataset)
+        )  # noqa: E501
         self.split_fraction_test = split_fraction_test
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
-        if (force_download_dataset or
-                (download_dataset and not self.verify_dataset_checksum())):
+        if force_download_dataset or (
+            download_dataset and not self.verify_dataset_checksum()
+        ):
             shutil.rmtree(self.root, ignore_errors=True)
             self.download_dataset_fun()
             self.save_dataset_checksum()
@@ -198,7 +204,7 @@ class Dataset(ArgumentsHandler, ABC):
         self.prepare()
 
     @classmethod
-    def from_argparse(cls, args: Namespace) -> 'Dataset':
+    def from_argparse(cls, args: Namespace) -> "Dataset":
         """
         Constructor wrapper that takes the parameters from argparse args.
 
@@ -218,7 +224,7 @@ class Dataset(ArgumentsHandler, ABC):
         return super().from_argparse(args)
 
     @classmethod
-    def from_json(cls, json_dict: Dict) -> 'Dataset':
+    def from_json(cls, json_dict: Dict) -> "Dataset":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -238,7 +244,7 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return super().from_json(json_dict)
 
-    def __iter__(self) -> 'Dataset':
+    def __iter__(self) -> "Dataset":
         """
         Provides iterator over data samples' tuples.
 
@@ -270,8 +276,10 @@ class Dataset(ArgumentsHandler, ABC):
             prev = self._dataindex
             self._dataindex += self.batch_size
             return (
-                self.prepare_input_samples(self.dataX[prev:self._dataindex]),
-                self.prepare_output_samples(self.dataY[prev:self._dataindex])
+                self.prepare_input_samples(self.dataX[prev : self._dataindex]),
+                self.prepare_output_samples(
+                    self.dataY[prev : self._dataindex]
+                ),
             )
         raise StopIteration
 
@@ -286,8 +294,9 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return ceil(len(self.dataX) / self.batch_size)
 
-    def _iter_subset(self, dataXsubset: List[Any], dataYsubset: List[Any]
-                     ) -> Iterable['Dataset']:
+    def _iter_subset(
+        self, dataXsubset: List[Any], dataYsubset: List[Any]
+    ) -> Iterable["Dataset"]:
         """
         Iterates over subset of the dataset.
 
@@ -310,7 +319,7 @@ class Dataset(ArgumentsHandler, ABC):
         subset.dataY = dataYsubset
         return iter(subset)
 
-    def iter_train(self) -> Iterable['Dataset']:
+    def iter_train(self) -> Iterable["Dataset"]:
         """
         Iterates over train data obtained from split.
 
@@ -324,7 +333,7 @@ class Dataset(ArgumentsHandler, ABC):
         dataYtrain = split[2]
         return self._iter_subset(dataXtrain, dataYtrain)
 
-    def iter_test(self) -> Iterable['Dataset']:
+    def iter_test(self) -> Iterable["Dataset"]:
         """
         Iterates over test data obtained from split.
 
@@ -338,7 +347,7 @@ class Dataset(ArgumentsHandler, ABC):
         dataYtest = split[3]
         return self._iter_subset(dataXtest, dataYtest)
 
-    def iter_val(self) -> Iterable['Dataset']:
+    def iter_val(self) -> Iterable["Dataset"]:
         """
         Iterates over validation data obtained from split.
 
@@ -348,7 +357,7 @@ class Dataset(ArgumentsHandler, ABC):
             Iterator over the validation data obtained from split.
         """
         split = self.train_test_split_representations()
-        assert len(split) == 6, 'No validation data in split'
+        assert len(split) == 6, "No validation data in split"
         dataXval = split[4]
         dataYval = split[5]
         return self._iter_subset(dataXval, dataYval)
@@ -422,7 +431,7 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return (
             self.prepare_input_samples(self.dataX),
-            self.prepare_output_samples(self.dataY)
+            self.prepare_output_samples(self.dataY),
         )
 
     def get_data_unloaded(self) -> Tuple[List, List]:
@@ -499,11 +508,12 @@ class Dataset(ArgumentsHandler, ABC):
         return self._subset_len(self.dataXval)
 
     def train_test_split_representations(
-            self,
-            test_fraction: Optional[float] = None,
-            val_fraction: Optional[float] = None,
-            seed: Optional[int] = None,
-            stratify: bool = True) -> Tuple[List, ...]:
+        self,
+        test_fraction: Optional[float] = None,
+        val_fraction: Optional[float] = None,
+        seed: Optional[int] = None,
+        stratify: bool = True,
+    ) -> Tuple[List, ...]:
         """
         Splits the data representations into train dataset and test dataset.
 
@@ -542,47 +552,56 @@ class Dataset(ArgumentsHandler, ABC):
         else:
             stratify_arg = None
 
-        self.dataXtrain, self.dataXtest, \
-            self.dataYtrain, self.dataYtest = train_test_split(
-                self.dataX,
-                self.dataY,
-                test_size=test_fraction,
-                random_state=seed,
-                shuffle=True,
-                stratify=stratify_arg
-            )
+        (
+            self.dataXtrain,
+            self.dataXtest,
+            self.dataYtrain,
+            self.dataYtest,
+        ) = train_test_split(
+            self.dataX,
+            self.dataY,
+            test_size=test_fraction,
+            random_state=seed,
+            shuffle=True,
+            stratify=stratify_arg,
+        )
 
         if val_fraction is not None and val_fraction != 0:
             if stratify:
                 stratify_arg = self.dataYtrain
             else:
                 stratify_arg = None
-            self.dataXtrain, self.dataXval, \
-                self.dataYtrain, self.dataYval = train_test_split(
-                    self.dataXtrain,
-                    self.dataYtrain,
-                    test_size=val_fraction/(1 - test_fraction),
-                    random_state=seed,
-                    shuffle=True,
-                    stratify=stratify_arg
-                )
+            (
+                self.dataXtrain,
+                self.dataXval,
+                self.dataYtrain,
+                self.dataYval,
+            ) = train_test_split(
+                self.dataXtrain,
+                self.dataYtrain,
+                test_size=val_fraction / (1 - test_fraction),
+                random_state=seed,
+                shuffle=True,
+                stratify=stratify_arg,
+            )
             return (
                 self.dataXtrain,
                 self.dataXtest,
                 self.dataYtrain,
                 self.dataYtest,
                 self.dataXval,
-                self.dataYval
+                self.dataYval,
             )
-        return (self.dataXtrain,
-                self.dataXtest,
-                self.dataYtrain,
-                self.dataYtest)
+        return (
+            self.dataXtrain,
+            self.dataXtest,
+            self.dataYtrain,
+            self.dataYtest,
+        )
 
     def calibration_dataset_generator(
-            self,
-            percentage: float = 0.25,
-            seed: int = 12345) -> Generator[List[Any], None, None]:
+        self, percentage: float = 0.25, seed: int = 12345
+    ) -> Generator[List[Any], None, None]:
         """
         Creates generator for the calibration data.
 
@@ -594,23 +613,16 @@ class Dataset(ArgumentsHandler, ABC):
             The seed for random state.
         """
         if self.external_calibration_dataset is None:
-            X = self.train_test_split_representations(
-                percentage,
-                seed=seed
-            )[1]
+            X = self.train_test_split_representations(percentage, seed=seed)[1]
         else:
             X = self.prepare_external_calibration_dataset(percentage, seed)
         with LoggerProgressBar() as logger_progress_bar:
-            for x in tqdm(
-                X,
-                file=logger_progress_bar
-            ):
+            for x in tqdm(X, file=logger_progress_bar):
                 yield self.prepare_input_samples([x])
 
     def prepare_external_calibration_dataset(
-            self,
-            percentage: float = 0.25,
-            seed: int = 12345) -> List[Path]:
+        self, percentage: float = 0.25, seed: int = 12345
+    ) -> List[Path]:
         """
         Prepares the data for external calibration dataset.
 
@@ -639,10 +651,12 @@ class Dataset(ArgumentsHandler, ABC):
             method.
         """
         data = [
-            x for x in self.external_calibration_dataset.rglob('*') if x.is_file()  # noqa: E501
+            x
+            for x in self.external_calibration_dataset.rglob("*")
+            if x.is_file()  # noqa: E501
         ]
         random.Random(seed).shuffle(data)
-        return data[:int(percentage * len(data) + 0.5)]
+        return data[: int(percentage * len(data) + 0.5)]
 
     @abstractmethod
     def download_dataset_fun(self):
@@ -655,13 +669,13 @@ class Dataset(ArgumentsHandler, ABC):
         """
         Writes dataset checksum to file.
         """
-        checksum_file = self.root / 'DATASET_CHECKSUM'
+        checksum_file = self.root / "DATASET_CHECKSUM"
 
         checksum = hexlify(self._compute_dataset_checksum()).decode()
         timestamp = str(datetime.datetime.now())
 
-        with open(checksum_file, 'w') as file:
-            file.write(f'{checksum} {timestamp}')
+        with open(checksum_file, "w") as file:
+            file.write(f"{checksum} {timestamp}")
 
     def verify_dataset_checksum(self) -> bool:
         """
@@ -672,13 +686,13 @@ class Dataset(ArgumentsHandler, ABC):
         bool :
             True if dataset is downloaded.
         """
-        checksum_file = self.root / 'DATASET_CHECKSUM'
+        checksum_file = self.root / "DATASET_CHECKSUM"
         if not checksum_file.exists():
             return False
 
         checksum = hexlify(self._compute_dataset_checksum()).decode()
 
-        with open(checksum_file, 'r') as file:
+        with open(checksum_file, "r") as file:
             try:
                 valid_checksum = file.read().split()[0]
             except IndexError:
@@ -698,7 +712,7 @@ class Dataset(ArgumentsHandler, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def evaluate(self, predictions: list, truth: list) -> 'Measurements':
+    def evaluate(self, predictions: list, truth: list) -> "Measurements":
         """
         Evaluates the model based on the predictions.
 
@@ -758,9 +772,9 @@ class Dataset(ArgumentsHandler, ABC):
         bytes :
             Dataset checksum.
         """
-        checksum_file = self.root / 'DATASET_CHECKSUM'
+        checksum_file = self.root / "DATASET_CHECKSUM"
 
-        dataset_files = list(self.root.rglob('*'))
+        dataset_files = list(self.root.rglob("*"))
         if checksum_file in dataset_files:
             dataset_files.remove(checksum_file)
         dataset_files.sort()
@@ -769,7 +783,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         for file in dataset_files:
             sha.update(file.name.encode())
-            sha.update(struct.pack('f', file.stat().st_mtime))
+            sha.update(struct.pack("f", file.stat().st_mtime))
 
         return sha.digest()
 
@@ -778,4 +792,5 @@ class CannotDownloadDatasetError(Exception):
     """
     Exception raised when dataset cannot be downloaded automatically.
     """
+
     pass

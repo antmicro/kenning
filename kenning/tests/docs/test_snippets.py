@@ -23,22 +23,22 @@ from tuttest import Snippet, get_snippets
 # Regex for changing Kenning installation to local version
 
 # Regex for changing Kenning installtion to local version
-KENNING_LINK_RE = r'(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git'
+KENNING_LINK_RE = r"(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git"
 # Regex for detecting Kenning installation
-PIP_INSTALL_RE = r'pip (?:.* )?install'
-PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + r' .*' + KENNING_LINK_RE
-PIP_INSTALL_KENNING_LOCAL_RE = r'(' + PIP_INSTALL_RE + r' [^\.]*)\.'
+PIP_INSTALL_RE = r"pip (?:.* )?install"
+PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + r" .*" + KENNING_LINK_RE
+PIP_INSTALL_KENNING_LOCAL_RE = r"(" + PIP_INSTALL_RE + r" [^\.]*)\."
 # Patterns of markdown files
-DOCS_DIR = Path(__file__).parent / 'source'
-DOCS_MARKDOWNS = str(DOCS_DIR / '*.md')
-GALLERY_DIR = DOCS_DIR / 'gallery'
-GALLERY_MARKDOWNS = str(GALLERY_DIR / '*.md')
+DOCS_DIR = Path(__file__).parent / "source"
+DOCS_MARKDOWNS = str(DOCS_DIR / "*.md")
+GALLERY_DIR = DOCS_DIR / "gallery"
+GALLERY_MARKDOWNS = str(GALLERY_DIR / "*.md")
 # List of snippet executables types
-EXECUTABLE_TYPES = ('bash',)
+EXECUTABLE_TYPES = ("bash",)
 # Kenning repo root path
 KENNING_ROOT_PATH = Path(os.getcwd()).resolve()
 # Pip install lockfile
-PIP_LOCK_FILE = KENNING_ROOT_PATH / '.PIP_LOCK'
+PIP_LOCK_FILE = KENNING_ROOT_PATH / ".PIP_LOCK"
 # Mapping of markdown files to separate working directories
 WORKING_DIRS: Dict[str, Path] = {}
 # Mapping of markdown files to subshells
@@ -48,15 +48,15 @@ COMMAND_CHECK = "if [[ $? == 0 ]] ; then echo '{}'; else echo '{}'; fi"
 # Template of regex detecting status of previous command
 EXPECT_RE = "(?<!'){}(?!')"
 # Regex for splitting multiline scripts
-NEW_LINE_RE = re.compile('(?<!\\\\)\n', flags=re.MULTILINE)
+NEW_LINE_RE = re.compile("(?<!\\\\)\n", flags=re.MULTILINE)
 # Default timeout of command execution
 DEFAULT_TIMEOUT = 60 * 15  # 15 min
 # Directory with datasets (relative to Kenning)
-DATASET_DIR = 'build'
+DATASET_DIR = "build"
 # Possible arguments for snippet
-SNIPPET_ARGUMENTS = ('test-skip', 'timeout', 'name', 'terminal', 'save-as')
+SNIPPET_ARGUMENTS = ("test-skip", "timeout", "name", "terminal", "save-as")
 # Key of the snippet's positional arguments
-SNIPPET_POSITIONAL_ARG = '__arg'
+SNIPPET_POSITIONAL_ARG = "__arg"
 
 
 def extract_snippet_args(snippet: Snippet):
@@ -72,21 +72,24 @@ def extract_snippet_args(snippet: Snippet):
     snippet : Snippet
         Snippet object
     """
-    args = snippet.lang.split(' ', 1)
+    args = snippet.lang.split(" ", 1)
     snippet.lang = args[0]
     args = shlex.split(args[1]) if len(args) == 2 else []
     for i, arg in enumerate(args):
-        if '=' in arg:
-            arg = arg.split('=', 1)
+        if "=" in arg:
+            arg = arg.split("=", 1)
         else:
             arg = (arg, True)
         if arg[0] in SNIPPET_ARGUMENTS:
             snippet.meta[arg[0]] = arg[1]
-        elif i == 0 and snippet.lang.startswith('{') \
-                and snippet.lang.endswith('}'):
+        elif (
+            i == 0
+            and snippet.lang.startswith("{")
+            and snippet.lang.endswith("}")
+        ):
             snippet.meta[SNIPPET_POSITIONAL_ARG] = arg[0]
         else:
-            raise KeyError(f'Snippet cannot have {arg[0]} argument')
+            raise KeyError(f"Snippet cannot have {arg[0]} argument")
 
 
 def get_all_snippets(
@@ -116,56 +119,57 @@ def get_all_snippets(
         python_snippet = None
         last_snippet_name = None
         for name, snippet in get_snippets(str(markdown)).items():
-            snippet.meta['depends'] = []
-            snippet.meta['terminal'] = int(snippet.meta.get('terminal', 0))
+            snippet.meta["depends"] = []
+            snippet.meta["terminal"] = int(snippet.meta.get("terminal", 0))
 
             # Parse args from language
             extract_snippet_args(snippet)
-            if 'save-as' in snippet.meta:
-                if snippet.lang == '{literalinclude}':
-                    file_path = \
+            if "save-as" in snippet.meta:
+                if snippet.lang == "{literalinclude}":
+                    file_path = (
                         markdown.parent / snippet.meta[SNIPPET_POSITIONAL_ARG]
+                    )
                     snippet.meta[SNIPPET_POSITIONAL_ARG] = file_path.resolve()
                 if last_snippet_name:
-                    snippet.meta['depends'].append(last_snippet_name)
+                    snippet.meta["depends"].append(last_snippet_name)
                 last_snippet_name = name
-                yield markdown.with_suffix('').name, name, snippet
-            if snippet.lang not in EXECUTABLE_TYPES + ('python',):
+                yield markdown.with_suffix("").name, name, snippet
+            if snippet.lang not in EXECUTABLE_TYPES + ("python",):
                 continue
 
             # Snippet should not be executed
-            if snippet.meta.get('test-skip', False):
+            if snippet.meta.get("test-skip", False):
                 continue
 
             # Append values to snippet's content
-            if 'append_before' in snippet.meta:
-                snippet.text = \
+            if "append_before" in snippet.meta:
+                snippet.text = (
                     f"{snippet.meta['append_before']} {snippet.text}"
-            if 'append_after' in snippet.meta:
-                snippet.text = \
-                    f"{snippet.text} {snippet.meta['append_after']}"
+                )
+            if "append_after" in snippet.meta:
+                snippet.text = f"{snippet.text} {snippet.meta['append_after']}"
 
             # Snippet is executable -- yield it
             if snippet.lang in EXECUTABLE_TYPES:
                 # Split multiline snippet
                 for id, line in enumerate(NEW_LINE_RE.split(snippet.text)):
                     # Skip empty and commented lines
-                    if line.strip() == '' or line.lstrip().startswith('#'):
+                    if line.strip() == "" or line.lstrip().startswith("#"):
                         continue
                     line_snippet = copy.deepcopy(snippet)
                     line_snippet.text = line
                     # Set previous snippet as dependency
                     if last_snippet_name:
-                        line_snippet.meta['depends'].append(last_snippet_name)
-                    last_snippet_name = f'{name}_{id}'
+                        line_snippet.meta["depends"].append(last_snippet_name)
+                    last_snippet_name = f"{name}_{id}"
                     yield markdown.stem, last_snippet_name, line_snippet
             # Python snippet -- combine and yield at the end of function
-            elif snippet.lang == 'python':
+            elif snippet.lang == "python":
                 if python_snippet:
-                    python_snippet.text += snippet.text + '\n'
+                    python_snippet.text += snippet.text + "\n"
                 else:
                     python_snippet = snippet
-                    python_snippet.text += '\n'
+                    python_snippet.text += "\n"
 
         # Yield combined python snippets
         if python_snippet:
@@ -173,7 +177,9 @@ def get_all_snippets(
 
 
 def execute_script_and_wait(
-    shell: pexpect.spawn, script: str, timeout: Optional[float] = None,
+    shell: pexpect.spawn,
+    script: str,
+    timeout: Optional[float] = None,
 ) -> bool:
     """
     Wrapper that sends commands to subshell and waits for them to end.
@@ -202,13 +208,13 @@ def execute_script_and_wait(
     ]
     lock_pip = re.match(PIP_INSTALL_RE, script) is not None
     try:
-        script = script.split('\n', 1)
+        script = script.split("\n", 1)
         content = None
-        if not script[0].endswith('\\') and len(script) > 1:
+        if not script[0].endswith("\\") and len(script) > 1:
             content = script[1]
             script = script[0]
         else:
-            script = '\n'.join(script)
+            script = "\n".join(script)
 
         if lock_pip:
             retry_count = 1000
@@ -219,18 +225,18 @@ def execute_script_and_wait(
                 except FileExistsError:
                     retry_count -= 1
                     if retry_count <= 0:
-                        pytest.fail('Failed to lock pip install')
+                        pytest.fail("Failed to lock pip install")
                     sleep(1)
 
-        if not script.rstrip().endswith(' &'):
+        if not script.rstrip().endswith(" &"):
             # Use check command twice to make sure it used
-            shell.sendline(f'{script} && \\\n {check_cmd}')
+            shell.sendline(f"{script} && \\\n {check_cmd}")
             if content:
                 shell.sendline(content)
             shell.sendline(check_cmd)
         else:
             # Running command in background
-            shell.sendline(f'{script} {check_cmd}')
+            shell.sendline(f"{script} {check_cmd}")
         # Wait for end of script
         index = shell.expect_list(
             expect_list, timeout=timeout if timeout else -1
@@ -238,7 +244,7 @@ def execute_script_and_wait(
         return index == 0
     except pexpect.TIMEOUT:
         # Send SIGTERM
-        shell.sendcontrol('\\')
+        shell.sendcontrol("\\")
         # Wait for program's end
         shell.sendline(check_cmd)
         shell.expect_list(expect_list)
@@ -248,10 +254,7 @@ def execute_script_and_wait(
             PIP_LOCK_FILE.unlink()
 
 
-def get_working_directory(
-    markdown: str,
-    tmpfolder: Path
-) -> Path:
+def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
     """
     Returns path to the virtual environment.
 
@@ -272,14 +275,10 @@ def get_working_directory(
     if markdown in WORKING_DIRS:
         return WORKING_DIRS[markdown]
 
-    working_dir_path = tmpfolder / f'{markdown}_wd'
-    venv_path = working_dir_path / 'venv'
+    working_dir_path = tmpfolder / f"{markdown}_wd"
+    venv_path = working_dir_path / "venv"
     if not venv_path.exists():
-        venv.create(
-            venv_path,
-            with_pip=True,
-            upgrade_deps=True
-        )
+        venv.create(venv_path, with_pip=True, upgrade_deps=True)
     WORKING_DIRS[markdown] = working_dir_path
     return working_dir_path
 
@@ -316,27 +315,27 @@ def get_subshell(
     working_directory = get_working_directory(markdown, tmpfolder)
 
     SHELLS[markdown][_id] = pexpect.spawn(
-        shutil.which('bash'),
+        shutil.which("bash"),
         cwd=str(working_directory),
         timeout=DEFAULT_TIMEOUT,
-        encoding='utf-8',
+        encoding="utf-8",
         echo=False,
         use_poll=True,
     )
     if log_dir:
-        tmp_file = open(f'{log_dir}/{markdown}_{_id}.log', 'w')
+        tmp_file = open(f"{log_dir}/{markdown}_{_id}.log", "w")
         SHELLS[markdown][_id].logfile_read = tmp_file
 
     # Activate virtual environment
-    venv_path = working_directory / 'venv'
+    venv_path = working_directory / "venv"
     if not execute_script_and_wait(
         SHELLS[markdown][_id], f'source {venv_path / "bin" / "activate"}'
     ):
-        raise Exception('Virtual environment cannot be activated')
+        raise Exception("Virtual environment cannot be activated")
 
     # Link directories with datasets
     os.makedirs(working_directory / DATASET_DIR, exist_ok=True)
-    for checksum_path in glob(f'{DATASET_DIR}/**/DATASET_CHECKSUM'):
+    for checksum_path in glob(f"{DATASET_DIR}/**/DATASET_CHECKSUM"):
         checksum_path = Path(checksum_path)
         target_path = (
             working_directory / DATASET_DIR / checksum_path.parent.name
@@ -367,37 +366,39 @@ def create_script(snippet: Snippet, gallery_snippet: bool) -> str:
         Prepared script
     """
     script = None
-    if snippet.lang == 'bash':
+    if snippet.lang == "bash":
         # If `pip install` change it to install local Kenning version
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
             snippet.text = re.sub(
-                KENNING_LINK_RE, fr'{KENNING_ROOT_PATH}\2', snippet.text
+                KENNING_LINK_RE, rf"{KENNING_ROOT_PATH}\2", snippet.text
             )
         else:
             snippet.text = re.sub(
                 PIP_INSTALL_KENNING_LOCAL_RE,
-                fr'\1{KENNING_ROOT_PATH}',
-                snippet.text
+                rf"\1{KENNING_ROOT_PATH}",
+                snippet.text,
             )
         script = snippet.text
-    elif snippet.lang == 'python':
+    elif snippet.lang == "python":
         # Dump python script to file and change script to run it
         _, tmpfile = tempfile.mkstemp()
-        with open(tmpfile, 'w') as fd:
+        with open(tmpfile, "w") as fd:
             fd.write(snippet.text)
-        script = f'python {tmpfile}'
-    elif 'save-as' in snippet.meta:
-        save_as = Path(snippet.meta['save-as'])
-        script = f'mkdir -p {save_as.parent}'
-        if SNIPPET_POSITIONAL_ARG in snippet.meta and \
-                isinstance(snippet.meta[SNIPPET_POSITIONAL_ARG], Path):
-            script += \
-                f' && cp {snippet.meta[SNIPPET_POSITIONAL_ARG]} {save_as}'
+        script = f"python {tmpfile}"
+    elif "save-as" in snippet.meta:
+        save_as = Path(snippet.meta["save-as"])
+        script = f"mkdir -p {save_as.parent}"
+        if SNIPPET_POSITIONAL_ARG in snippet.meta and isinstance(
+            snippet.meta[SNIPPET_POSITIONAL_ARG], Path
+        ):
+            script += (
+                f" && cp {snippet.meta[SNIPPET_POSITIONAL_ARG]} {save_as}"
+            )
         else:
             script += f' && cat <<EOF > "{save_as}"\n'
             script += snippet.text
-            script += '\nEOF\n'
+            script += "\nEOF\n"
 
     return script
 
@@ -422,29 +423,37 @@ def factory_test_snippet(
     Callable :
         Parametrized test
     """
-    tmpfolder = pytest.test_directory / 'tmp'
+    tmpfolder = pytest.test_directory / "tmp"
 
-    @pytest.mark.parametrize('script,snippet,markdown', [
-        pytest.param(
-            create_script(snippet, docs_gallery),
-            snippet, markdown,
-            id=f'{markdown}_{snippet_name}',
-            marks=[
-                pytest.mark.xdist_group(f'TestDocsGallery_{markdown}'),
-                pytest.mark.dependency(
-                    name=f'_{markdown}_{snippet_name}',
-                    depends=[
-                        f'_{markdown}_{dep}'
-                        for dep in snippet.meta['depends']
-                    ]
+    @pytest.mark.parametrize(
+        "script,snippet,markdown",
+        [
+            pytest.param(
+                create_script(snippet, docs_gallery),
+                snippet,
+                markdown,
+                id=f"{markdown}_{snippet_name}",
+                marks=[
+                    pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
+                    pytest.mark.dependency(
+                        name=f"_{markdown}_{snippet_name}",
+                        depends=[
+                            f"_{markdown}_{dep}"
+                            for dep in snippet.meta["depends"]
+                        ],
+                    ),
+                ]
+                + (
+                    [pytest.mark.docs_gallery]
+                    if docs_gallery
+                    else [pytest.mark.docs]
                 ),
-            ] + (
-                [pytest.mark.docs_gallery] if docs_gallery
-                else [pytest.mark.docs]
             )
-        ) for markdown, snippet_name, snippet
-        in get_all_snippets(markdown_pattern)
-    ])
+            for markdown, snippet_name, snippet in get_all_snippets(
+                markdown_pattern
+            )
+        ],
+    )
     def _test_snippet(
         self,
         script: str,
@@ -474,16 +483,19 @@ def factory_test_snippet(
             Path to folder where subshell logs will be saved.
         """
         subshell = get_subshell(
-            markdown, snippet.meta['terminal'], tmpfolder, docs_log_dir
+            markdown, snippet.meta["terminal"], tmpfolder, docs_log_dir
         )
 
-        timeout = float(snippet.meta['timeout']) \
-            if 'timeout' in snippet.meta else None
+        timeout = (
+            float(snippet.meta["timeout"])
+            if "timeout" in snippet.meta
+            else None
+        )
         try:
             if subshell.logfile_read:
                 subshell.logfile_read.write(
-                    f'\n\n{"-"*32}\n\n{script}\n\n{"-"*32}\n\n'
-                )
+                    f'\n\n{"-" * 32}\n\n{script}\n\n{"-" * 32}\n\n'
+                )  # noqa: E501
             success = execute_script_and_wait(subshell, script, timeout)
             if not success:
                 pytest.fail(reason=f"'{script}' returned non-zero code")
@@ -493,7 +505,8 @@ def factory_test_snippet(
                 pytest.fail(reason=f"Unexpected timeout during: '{snippet}'")
         except pexpect.EOF:
             pytest.fail(
-                reason=f"'{script}' finished without printing status message")
+                reason=f"'{script}' finished without printing status message"
+            )
 
     return _test_snippet
 
@@ -516,19 +529,26 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
         Parametrized test
     """
 
-    @pytest.mark.parametrize('markdown', [
-        pytest.param(
-            markdown,
-            marks=[
-                pytest.mark.xdist_group(f'TestDocsGallery_{markdown}'),
-                pytest.mark.order(-1),
-            ] + (
-                [pytest.mark.docs_gallery] if docs_gallery
-                else [pytest.mark.docs]
+    @pytest.mark.parametrize(
+        "markdown",
+        [
+            pytest.param(
+                markdown,
+                marks=[
+                    pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
+                    pytest.mark.order(-1),
+                ]
+                + (
+                    [pytest.mark.docs_gallery]
+                    if docs_gallery
+                    else [pytest.mark.docs]
+                ),
             )
-        ) for markdown in map(
-            lambda p: Path(p).with_suffix('').name, glob(markdown_pattern))
-    ])
+            for markdown in map(
+                lambda p: Path(p).with_suffix("").name, glob(markdown_pattern)
+            )
+        ],
+    )
     def _cleanup(self, markdown: str):
         """
         Checks if subshell is alive after the tests and cleanup used resources.
@@ -552,7 +572,6 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
 
 
 class TestDocsSnippets:
-
     test_snippet = factory_test_snippet(DOCS_MARKDOWNS, False)
     test_gallery_snippet = factory_test_snippet(GALLERY_MARKDOWNS, True)
     test_cleanup = factory_cleanup(DOCS_MARKDOWNS, False)

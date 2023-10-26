@@ -20,18 +20,18 @@ from kenning.scenarios.optimization_runner import (
 from kenning.utils.pipeline_runner import PipelineRunner
 
 OPTIMIZATION_CONFIGS_PATHS = list(
-    Path('./scripts/optimizationconfigs').glob('*.json')
+    Path("./scripts/optimizationconfigs").glob("*.json")
 )
 
 EXAMPLE_PIPELINE = json.loads(
-    open('./scripts/jsonconfigs/sample-tflite-pipeline.json').read()
+    open("./scripts/jsonconfigs/sample-tflite-pipeline.json").read()
 )
-EXAMPLE_PIPELINE['dataset']['parameters']['download_dataset'] = False
+EXAMPLE_PIPELINE["dataset"]["parameters"]["download_dataset"] = False
 
 
 class TestGetBlockProduct:
     @pytest.mark.parametrize(
-        'optimization_levels_count,dtypes_count', product([1, 2, 3, 4], [2, 3])
+        "optimization_levels_count,dtypes_count", product([1, 2, 3, 4], [2, 3])
     )
     def test_get_block_product(
         self, optimization_levels_count: int, dtypes_count: int
@@ -40,12 +40,12 @@ class TestGetBlockProduct:
         Test get_block_product function.
         """
         optimization_levels = list(range(1, optimization_levels_count + 1))
-        dtypes = ['int8', 'float16', 'float32'][:dtypes_count]
+        dtypes = ["int8", "float16", "float32"][:dtypes_count]
         block = {
-            'type': 'example',
-            'parameters': {
-                'optimization_level': optimization_levels,
-                'dtype': dtypes,
+            "type": "example",
+            "parameters": {
+                "optimization_level": optimization_levels,
+                "dtype": dtypes,
             },
         }
 
@@ -55,17 +55,17 @@ class TestGetBlockProduct:
         for optimization_level in optimization_levels:
             for dtype in dtypes:
                 assert {
-                    'type': 'example',
-                    'parameters': {
-                        'optimization_level': optimization_level,
-                        'dtype': dtype,
+                    "type": "example",
+                    "parameters": {
+                        "optimization_level": optimization_level,
+                        "dtype": dtype,
                     },
                 } in block_product
 
 
 class TestOrderedPowerset:
     @pytest.mark.parametrize(
-        'min_elements,expected_powerset',
+        "min_elements,expected_powerset",
         [
             (0, [[], [1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]),
             (1, [[1], [2], [3], [1, 2], [1, 3], [2, 3], [1, 2, 3]]),
@@ -86,9 +86,9 @@ class TestOrderedPowerset:
 
 
 class TestGridSearch:
-    @pytest.mark.xdist_group(name='use_resources')
+    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
-        'optimization_config_path',
+        "optimization_config_path",
         OPTIMIZATION_CONFIGS_PATHS,
         ids=[path.stem for path in OPTIMIZATION_CONFIGS_PATHS],
     )
@@ -96,7 +96,7 @@ class TestGridSearch:
         """
         Test if grid_search function returns valid pipelines.
         """
-        with open(optimization_config_path, 'r') as opt_f:
+        with open(optimization_config_path, "r") as opt_f:
             optimization_config = json.load(opt_f)
 
         pipelines = grid_search(optimization_config)
@@ -107,7 +107,7 @@ class TestGridSearch:
 
 
 class TestReplacePaths:
-    @pytest.mark.parametrize('pipeline_id', [0, 1, 2, 3, 100, 999])
+    @pytest.mark.parametrize("pipeline_id", [0, 1, 2, 3, 100, 999])
     def test_replace_path(self, pipeline_id: int):
         """
         Test if replace_path function return pipeline with updated paths and
@@ -117,21 +117,21 @@ class TestReplacePaths:
         pipeline = replace_paths(base_pipeline, pipeline_id)
 
         assert (
-            base_pipeline['optimizers'][0]['parameters']['compiled_model_path']
-            != pipeline['optimizers'][0]['parameters']['compiled_model_path']
+            base_pipeline["optimizers"][0]["parameters"]["compiled_model_path"]
+            != pipeline["optimizers"][0]["parameters"]["compiled_model_path"]
         )
         assert (
             str(pipeline_id)
-            in pipeline['optimizers'][0]['parameters']['compiled_model_path']
+            in pipeline["optimizers"][0]["parameters"]["compiled_model_path"]
         )
 
         assert (
-            base_pipeline['runtime']['parameters']['save_model_path']
-            != pipeline['runtime']['parameters']['save_model_path']
+            base_pipeline["runtime"]["parameters"]["save_model_path"]
+            != pipeline["runtime"]["parameters"]["save_model_path"]
         )
         assert (
             str(pipeline_id)
-            in pipeline['runtime']['parameters']['save_model_path']
+            in pipeline["runtime"]["parameters"]["save_model_path"]
         )
 
     def test_replace_path_injectivity(self):
@@ -142,18 +142,18 @@ class TestReplacePaths:
         pipeline_1 = replace_paths(EXAMPLE_PIPELINE, 1)
 
         assert (
-            pipeline_0['optimizers'][0]['parameters']['compiled_model_path']
-            != pipeline_1['optimizers'][0]['parameters']['compiled_model_path']
+            pipeline_0["optimizers"][0]["parameters"]["compiled_model_path"]
+            != pipeline_1["optimizers"][0]["parameters"]["compiled_model_path"]
         )
 
         assert (
-            pipeline_0['runtime']['parameters']['save_model_path']
-            != pipeline_1['runtime']['parameters']['save_model_path']
+            pipeline_0["runtime"]["parameters"]["save_model_path"]
+            != pipeline_1["runtime"]["parameters"]["save_model_path"]
         )
 
 
 class TestFilterInvalidPipelines:
-    @pytest.mark.xdist_group(name='use_resources')
+    @pytest.mark.xdist_group(name="use_resources")
     def test_filter_invalid_pipelines_does_not_filter_valid_pipeline(self):
         """
         Test if filter_invalid_pipelines function does not filter valid
@@ -165,21 +165,21 @@ class TestFilterInvalidPipelines:
         assert len(filtered_pipelines) == 1
         assert EXAMPLE_PIPELINE in filtered_pipelines
 
-    @pytest.mark.xdist_group(name='use_resources')
+    @pytest.mark.xdist_group(name="use_resources")
     def test_filter_invalid_pipelines_filters_invalid_pipeline(self):
         """
         Test if filter_invalid_pipelines function does filters invalid
         pipelines.
         """
         invalid_pipeline = deepcopy(EXAMPLE_PIPELINE)
-        invalid_pipeline['optimizers'].insert(
+        invalid_pipeline["optimizers"].insert(
             0,
             {
-                'type': 'kenning.optimizers.tvm.TVMCompiler',
-                'parameters': {
-                    'target': 'llvm -mcpu=core-avx2',
-                    'compiled_model_path': './build/compiled_tvm.tar',
-                    'opt_level': 3,
+                "type": "kenning.optimizers.tvm.TVMCompiler",
+                "parameters": {
+                    "target": "llvm -mcpu=core-avx2",
+                    "compiled_model_path": "./build/compiled_tvm.tar",
+                    "opt_level": 3,
                 },
             },
         )

@@ -23,18 +23,18 @@ from kenning.utils.resource_manager import PathOrURI
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     default_dataset = PetDataset
-    pretrained_model_uri = 'kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5'  # noqa: E501
+    pretrained_model_uri = "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
     arguments_structure = {}
 
     def __init__(
-            self,
-            model_path: PathOrURI,
-            dataset: Dataset,
-            from_file=True,
-            model_name: Optional[str] = None,
+        self,
+        model_path: PathOrURI,
+        dataset: Dataset,
+        from_file=True,
+        model_name: Optional[str] = None,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
-        gpus = tf.config.list_physical_devices('GPU')
+        gpus = tf.config.list_physical_devices("GPU")
         for gpu in gpus:
             tf.config.experimental.set_memory_growth(gpu, True)
 
@@ -44,37 +44,42 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.class_names = dataset.get_class_names()
         else:
             io_spec = self.load_io_specification(model_path)
-            input_1 = IOInterface.find_spec(io_spec, 'input', 'input_1')
-            out_layer = IOInterface.find_spec(io_spec, 'output', 'out_layer')
+            input_1 = IOInterface.find_spec(io_spec, "input", "input_1")
+            out_layer = IOInterface.find_spec(io_spec, "output", "out_layer")
 
-            self.mean = input_1['mean']
-            self.std = input_1['std']
-            self.class_names = out_layer['class_names']
+            self.mean = input_1["mean"]
+            self.std = input_1["std"]
+            self.class_names = out_layer["class_names"]
             self.numclasses = len(self.class_names)
 
     @classmethod
-    def _get_io_specification(cls, numclasses, class_names=None,
-                              mean=None, std=None, batch_size=1):
+    def _get_io_specification(
+        cls, numclasses, class_names=None, mean=None, std=None, batch_size=1
+    ):
         io_spec = {
-            'input': [{
-                'name': 'input_1',
-                'shape': (batch_size, 224, 224, 3),
-                'dtype': 'float32',
-                'mean': mean,
-                'std': std
-            }],
-            'output': [{
-                'name': 'out_layer',
-                'shape': (batch_size, numclasses),
-                'dtype': 'float32'
-            }],
+            "input": [
+                {
+                    "name": "input_1",
+                    "shape": (batch_size, 224, 224, 3),
+                    "dtype": "float32",
+                    "mean": mean,
+                    "std": std,
+                }
+            ],
+            "output": [
+                {
+                    "name": "out_layer",
+                    "shape": (batch_size, numclasses),
+                    "dtype": "float32",
+                }
+            ],
         }
         if class_names is not None:
-            io_spec['output'][0]['class_names'] = class_names
+            io_spec["output"][0]["class_names"] = class_names
         if mean is not None:
-            io_spec['input'][0]['mean'] = mean
+            io_spec["input"][0]["mean"] = mean
         if std is not None:
-            io_spec['input'][0]['std'] = std
+            io_spec["input"][0]["std"] = std
         return io_spec
 
     @classmethod
@@ -96,15 +101,18 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
                 self.class_names,
                 mean,
                 std,
-                self.dataset.batch_size)
+                self.dataset.batch_size,
+            )
 
-        return self._get_io_specification(self.numclasses, self.class_names,
-                                          mean, std)
+        return self._get_io_specification(
+            self.numclasses, self.class_names, mean, std
+        )
 
     def prepare_model(self):
         if self.model_prepared:
             return None
         import tensorflow as tf
+
         if self.from_file:
             self.load_model(self.model_path)
             self.model_prepared = True
@@ -112,42 +120,31 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.base = tf.keras.applications.MobileNetV2(
                 input_shape=(224, 224, 3),
                 include_top=False,
-                weights='imagenet'
+                weights="imagenet",
             )
             self.base.trainable = False
             avgpool = tf.keras.layers.GlobalAveragePooling2D()(
                 self.base.output
             )
-            layer1 = tf.keras.layers.Dense(
-                1024,
-                activation='relu')(avgpool)
+            layer1 = tf.keras.layers.Dense(1024, activation="relu")(avgpool)
             d1 = tf.keras.layers.Dropout(0.5)(layer1)
-            layer2 = tf.keras.layers.Dense(
-                512,
-                activation='relu')(d1)
+            layer2 = tf.keras.layers.Dense(512, activation="relu")(d1)
             d2 = tf.keras.layers.Dropout(0.5)(layer2)
-            layer3 = tf.keras.layers.Dense(
-                128,
-                activation='relu')(d2)
+            layer3 = tf.keras.layers.Dense(128, activation="relu")(d2)
             d3 = tf.keras.layers.Dropout(0.5)(layer3)
-            output = tf.keras.layers.Dense(
-                self.numclasses,
-                name='out_layer'
-            )(d3)
+            output = tf.keras.layers.Dense(self.numclasses, name="out_layer")(
+                d3
+            )
             self.model = tf.keras.models.Model(
-                inputs=self.base.input,
-                outputs=output
+                inputs=self.base.input, outputs=output
             )
             self.model_prepared = True
             self.save_model(self.model_path)
             self.model.summary()
 
     def train_model(
-            self,
-            batch_size: int,
-            learning_rate: int,
-            epochs: int,
-            logdir: Path):
+        self, batch_size: int, learning_rate: int, epochs: int, logdir: Path
+    ):
         import tensorflow as tf
 
         self.prepare_model()
@@ -164,48 +161,38 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             img = (img - self.mean) / self.std
             return img, tf.convert_to_tensor(onehot)
 
-        Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(
-            0.25
-        )
+        Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(0.25)
         Yt = self.dataset.prepare_output_samples(Yt)
         Yv = self.dataset.prepare_output_samples(Yv)
         traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
         traindataset = traindataset.map(
-            preprocess_input,
-            num_parallel_calls=tf.data.experimental.AUTOTUNE
+            preprocess_input, num_parallel_calls=tf.data.experimental.AUTOTUNE
         ).batch(batch_size)
         validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
         validdataset = validdataset.map(
-            preprocess_input,
-            num_parallel_calls=tf.data.experimental.AUTOTUNE
+            preprocess_input, num_parallel_calls=tf.data.experimental.AUTOTUNE
         ).batch(batch_size)
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            str(logdir),
-            histogram_freq=1
+            str(logdir), histogram_freq=1
         )
 
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
             filepath=str(logdir),
-            monitor='val_categorical_accuracy',
-            mode='max',
-            save_best_only=True
+            monitor="val_categorical_accuracy",
+            mode="max",
+            save_best_only=True,
         )
 
         self.model.compile(
             optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
-            metrics=[
-                tf.keras.metrics.CategoricalAccuracy()
-            ]
+            metrics=[tf.keras.metrics.CategoricalAccuracy()],
         )
 
         self.model.fit(
             traindataset,
             epochs=epochs,
-            callbacks=[
-                tensorboard_callback,
-                model_checkpoint_callback
-            ],
-            validation_data=validdataset
+            callbacks=[tensorboard_callback, model_checkpoint_callback],
+            validation_data=validdataset,
         )

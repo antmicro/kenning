@@ -16,20 +16,30 @@ from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 
 
 class TVMDarknetCOCOYOLOV3(YOLOWrapper):
-
-    pretrained_model_uri = 'kenning:///models/object_detection/yolov3.cfg'
+    pretrained_model_uri = "kenning:///models/object_detection/yolov3.cfg"
     default_dataset = COCODataset2017
     arguments_structure = {}
 
     @classmethod
     def _get_io_specification(cls, keyparams, batch_size):
         return {
-            'input': [{'name': 'data', 'shape': (batch_size, 3, keyparams['width'], keyparams['height']), 'dtype': 'float32'}],  # noqa: E501
-            'output': []
+            "input": [
+                {
+                    "name": "data",
+                    "shape": (
+                        batch_size,
+                        3,
+                        keyparams["width"],
+                        keyparams["height"],
+                    ),
+                    "dtype": "float32",
+                }
+            ],  # noqa: E501
+            "output": [],
         }
 
     def get_output_formats(self):
-        return ['darknet']
+        return ["darknet"]
 
     def get_framework_and_version(self):
-        return ('darknet', 'alexeyab')
+        return ("darknet", "alexeyab")

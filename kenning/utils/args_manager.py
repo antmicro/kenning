@@ -68,24 +68,24 @@ Examples:
 """
 
 supported_keywords = [
-    'argparse_name',
-    'description',
-    'type',
-    'items',
-    'default',
-    'required',
-    'enum',
-    'is_list',
-    'nullable'
+    "argparse_name",
+    "description",
+    "type",
+    "items",
+    "default",
+    "required",
+    "enum",
+    "is_list",
+    "nullable",
 ]
 
 
 def from_argparse_name(s):
-    return s.lstrip('-').replace('-', '_')
+    return s.lstrip("-").replace("-", "_")
 
 
 def to_argparse_name(s):
-    return '--' + s.replace('_', '-')
+    return "--" + s.replace("_", "-")
 
 
 def convert_to_jsontype(v: Any) -> Any:
@@ -101,21 +101,21 @@ def convert_to_jsontype(v: Any) -> Any:
 
 
 type_to_jsontype = {
-    Path: 'string',
-    ResourceURI: 'string',
-    str: 'string',
-    float: 'number',
-    int: 'integer',
-    bool: 'boolean',
-    object: 'object',
-    list: 'array',
+    Path: "string",
+    ResourceURI: "string",
+    str: "string",
+    float: "number",
+    int: "integer",
+    bool: "boolean",
+    object: "object",
+    list: "array",
 }
 
 jsontype_to_type = {
-    'string': str,
-    'number': float,
-    'integer': int,
-    'boolean': bool
+    "string": str,
+    "number": float,
+    "integer": int,
+    "boolean": bool,
 }
 
 
@@ -139,17 +139,14 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
     Dict :
         Validated dictionary with arguments.
     """
-    jsonschema.validate(
-        instance=json_dict,
-        schema=schema
-    )
+    jsonschema.validate(instance=json_dict, schema=schema)
 
     converted_json_dict = {}
 
     # Including default values
-    for name, keywords in schema['properties'].items():
-        if name not in json_dict and 'default' in keywords:
-            converted_json_dict[name] = keywords['default']
+    for name, keywords in schema["properties"].items():
+        if name not in json_dict and "default" in keywords:
+            converted_json_dict[name] = keywords["default"]
         elif name in json_dict:
             converted_json_dict[name] = json_dict[name]
 
@@ -157,21 +154,21 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
     # Following argparse convention, if our value is None
     # then we do not convert it.
     for name, value in converted_json_dict.items():
-        keywords = schema['properties'][name]
+        keywords = schema["properties"][name]
 
-        if 'convert-type' not in keywords or not value:
+        if "convert-type" not in keywords or not value:
             converted_json_dict[name] = value
             continue
 
         # do not convert to an object as this should be done by the class
         # which called this function
-        if keywords['convert-type'] == object:
+        if keywords["convert-type"] == object:
             converted_json_dict[name] = value
             continue
 
-        converter = keywords['convert-type']
+        converter = keywords["convert-type"]
 
-        if 'type' in keywords and 'array' in keywords['type']:
+        if "type" in keywords and "array" in keywords["type"]:
             converted_json_dict[name] = [
                 converter(v) if v else v for v in value
             ]
@@ -180,7 +177,7 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
 
     # Changing names so they match the constructor arguments
     converted_json_dict = {
-        schema['properties'][name]['real_name']: value
+        schema["properties"][name]["real_name"]: value
         for name, value in converted_json_dict.items()
     }
 
@@ -210,18 +207,15 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
     while len(classes):
         curr_cls = classes.pop(0)
         classes.extend(curr_cls.__bases__)
-        if not hasattr(curr_cls, 'arguments_structure'):
+        if not hasattr(curr_cls, "arguments_structure"):
             continue
-        args_structure = dict(
-            args_structure,
-            **curr_cls.arguments_structure
-        )
+        args_structure = dict(args_structure, **curr_cls.arguments_structure)
 
     # parse arguments
     parsed_args = {}
     for arg_name, arg_properties in args_structure.items():
-        if 'argparse_name' in arg_properties:
-            argparse_name = from_argparse_name(arg_properties['argparse_name'])
+        if "argparse_name" in arg_properties:
+            argparse_name = from_argparse_name(arg_properties["argparse_name"])
         else:
             argparse_name = arg_name
 
@@ -229,37 +223,37 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
             value = getattr(args, argparse_name)
         else:
             try:
-                value = arg_properties['default']
+                value = arg_properties["default"]
             except KeyError:
                 raise Exception(
-                    f'No default value provided for {argparse_name}'
+                    f"No default value provided for {argparse_name}"
                 )
 
         # For arguments of type 'object' value is embedded in a JSON file
-        if 'type' in arg_properties and arg_properties['type'] == object:
+        if "type" in arg_properties and arg_properties["type"] == object:
             if value is None:
                 try:
-                    value = arg_properties['default']
+                    value = arg_properties["default"]
                     parsed_args[arg_name] = value
                     continue
                 except KeyError:
                     raise Exception(
-                        f'No default value provided for {argparse_name}'
+                        f"No default value provided for {argparse_name}"
                     )
 
             if not os.path.exists(value):
                 raise Exception(
-                    f'JSON configuration file {value} doesnt exist'
+                    f"JSON configuration file {value} doesnt exist"
                 )
 
-            with open(value, 'r') as file:
+            with open(value, "r") as file:
                 value = json.load(file)
                 parsed_args[arg_name] = value
                 continue
 
         # convert type
-        if 'type' in arg_properties and value is not None:
-            value = arg_properties['type'](value)
+        if "type" in arg_properties and value is not None:
+            value = arg_properties["type"](value)
 
         parsed_args[arg_name] = value
 
@@ -267,9 +261,8 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
 
 
 def add_argparse_argument(
-        group: argparse._ArgumentGroup,
-        struct: Dict[str, Dict],
-        *names: str):
+    group: argparse._ArgumentGroup, struct: Dict[str, Dict], *names: str
+):
     """
     Adds arguments to the argparse group based on the given
     struct and names. If no names are given it uses all
@@ -301,46 +294,46 @@ def add_argparse_argument(
     for name in names:
         prop = struct[name]
 
-        if 'items' in prop and ('type' not in prop or prop['type'] != list):
+        if "items" in prop and (
+            "type" not in prop or prop["type"] is not list
+        ):
             raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
-                raise KeyError(f'{p} is not a supported keyword')
+                raise KeyError(f"{p} is not a supported keyword")
 
-        if 'argparse_name' in prop:
-            argparse_name = prop['argparse_name']
+        if "argparse_name" in prop:
+            argparse_name = prop["argparse_name"]
         else:
             argparse_name = to_argparse_name(name)
 
         keywords = {}
-        if 'type' in prop:
-            if prop['type'] is bool:
-                assert 'default' in prop and prop['default'] in [True, False]
+        if "type" in prop:
+            if prop["type"] is bool:
+                assert "default" in prop and prop["default"] in [True, False]
 
-                keywords['action'] = (
-                    'store_false' if prop['default']
-                    else 'store_true'
+                keywords["action"] = (
+                    "store_false" if prop["default"] else "store_true"
                 )
             else:
-                keywords['type'] = prop['type']
-        if 'description' in prop:
-            keywords['help'] = prop['description']
-        if 'default' in prop:
-            keywords['default'] = prop['default']
-        if 'required' in prop and prop['required']:
-            keywords['required'] = prop['required']
-        if 'enum' in prop:
-            keywords['choices'] = prop['enum']
-        if 'is_list' in prop and prop['is_list']:
-            keywords['nargs'] = '+'
+                keywords["type"] = prop["type"]
+        if "description" in prop:
+            keywords["help"] = prop["description"]
+        if "default" in prop:
+            keywords["default"] = prop["default"]
+        if "required" in prop and prop["required"]:
+            keywords["required"] = prop["required"]
+        if "enum" in prop:
+            keywords["choices"] = prop["enum"]
+        if "is_list" in prop and prop["is_list"]:
+            keywords["nargs"] = "+"
 
         group.add_argument(argparse_name, **keywords)
 
 
 def add_parameterschema_argument(
-        schema: Dict,
-        struct: Dict[str, Dict],
-        *names: str):
+    schema: Dict, struct: Dict[str, Dict], *names: str
+):
     """
     Adds arguments to the schema based on the given
     struct and names. If no names are given it uses all
@@ -368,8 +361,8 @@ def add_parameterschema_argument(
         already a property with a different `argparse_name` and the same
         property name.
     """
-    if 'properties' not in schema:
-        schema['properties'] = {}
+    if "properties" not in schema:
+        schema["properties"] = {}
 
     if not names:
         names = struct.keys()
@@ -377,71 +370,71 @@ def add_parameterschema_argument(
     for name in names:
         prop = struct[name]
 
-        if 'items' in prop and ('type' not in prop or prop['type'] != list):
+        if "items" in prop and (
+            "type" not in prop or prop["type"] is not list
+        ):
             raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
-                raise KeyError(f'{p} is not a supported keyword')
+                raise KeyError(f"{p} is not a supported keyword")
 
-        if 'argparse_name' in prop:
-            argparse_name = prop['argparse_name']
+        if "argparse_name" in prop:
+            argparse_name = prop["argparse_name"]
             argschema_name = from_argparse_name(argparse_name)
         else:
             argschema_name = name
 
         # Check if there is a property that is not going to be overridden
         # by the new property but has the same property name
-        for k, p in schema['properties'].items():
-            if p['real_name'] == name and k != argschema_name:
-                raise KeyError(f'{p} already has a property name: {name}')
+        for k, p in schema["properties"].items():
+            if p["real_name"] == name and k != argschema_name:
+                raise KeyError(f"{p} already has a property name: {name}")
 
         # If the property is going to be overridden it has to be removed
         # from the list of required properties
         try:
-            schema['required'].remove(argschema_name)
+            schema["required"].remove(argschema_name)
         except (KeyError, ValueError):
             pass
 
-        schema['properties'][argschema_name] = {}
-        keywords = schema['properties'][argschema_name]
-        keywords['real_name'] = name
+        schema["properties"][argschema_name] = {}
+        keywords = schema["properties"][argschema_name]
+        keywords["real_name"] = name
 
         # Case for a list of keywords
-        if 'is_list' in prop and prop['is_list']:
-            keywords['type'] = ['array']
+        if "is_list" in prop and prop["is_list"]:
+            keywords["type"] = ["array"]
 
-            if 'type' in prop:
-                assert prop['type'] is not bool
+            if "type" in prop:
+                assert prop["type"] is not bool
 
-                keywords['convert-type'] = prop['type']
-                keywords['items'] = {
-                    'type': type_to_jsontype[prop['type']]
-                }
+                keywords["convert-type"] = prop["type"]
+                keywords["items"] = {"type": type_to_jsontype[prop["type"]]}
         # Case for a single argument
         else:
-            if 'items' in prop:
-                keywords['type'] = [type_to_jsontype[prop['type']]]
-                keywords['items'] = {
-                    'type': type_to_jsontype[prop['items']],
-                    'convert-type': prop['type'],
+            if "items" in prop:
+                keywords["type"] = [type_to_jsontype[prop["type"]]]
+                keywords["items"] = {
+                    "type": type_to_jsontype[prop["items"]],
+                    "convert-type": prop["type"],
                 }
-            elif 'type' in prop:
-                keywords['convert-type'] = prop['type']
-                keywords['type'] = [type_to_jsontype[prop['type']]]
+            elif "type" in prop:
+                keywords["convert-type"] = prop["type"]
+                keywords["type"] = [type_to_jsontype[prop["type"]]]
 
-        if 'description' in prop:
-            keywords['description'] = prop['description']
-        if 'default' in prop:
-            keywords['default'] = prop['default']
-        if 'required' in prop and prop['required']:
-            if 'required' not in schema:
-                schema['required'] = []
-            schema['required'].append(argschema_name)
-        if 'enum' in prop:
-            keywords['enum'] = prop['enum']
-        if 'nullable' in prop and prop['nullable']:
-            if 'type' in keywords:
-                keywords['type'] += ['null']
+        if "description" in prop:
+            keywords["description"] = prop["description"]
+        if "default" in prop:
+            keywords["default"] = prop["default"]
+        if "required" in prop and prop["required"]:
+            if "required" not in schema:
+                schema["required"] = []
+            schema["required"].append(argschema_name)
+        if "enum" in prop:
+            keywords["enum"] = prop["enum"]
+        if "nullable" in prop and prop["nullable"]:
+            if "type" in keywords:
+                keywords["type"] += ["null"]
 
 
 class ArgumentsHandler(ABC):
@@ -468,19 +461,15 @@ class ArgumentsHandler(ABC):
             Parameter schema for the class.
         """
         classes = [cls]
-        parameterschema = {
-            'type': 'object',
-            'additionalProperties': False
-        }
+        parameterschema = {"type": "object", "additionalProperties": False}
 
         while len(classes):
             curr_cls = classes.pop(0)
             classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, 'arguments_structure'):
+            if not hasattr(curr_cls, "arguments_structure"):
                 continue
             add_parameterschema_argument(
-                parameterschema,
-                curr_cls.arguments_structure
+                parameterschema, curr_cls.arguments_structure
             )
 
         return parameterschema
@@ -502,23 +491,19 @@ class ArgumentsHandler(ABC):
         """
         classes = [cls]
         parser = argparse.ArgumentParser(
-            add_help=False,
-            conflict_handler='resolve'
+            add_help=False, conflict_handler="resolve"
         )
         group = None
 
         while len(classes):
             curr_cls = classes.pop(0)
             classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, 'arguments_structure'):
+            if not hasattr(curr_cls, "arguments_structure"):
                 continue
             group = parser.add_argument_group(
-                title=f'{curr_cls.__name__} arguments'
+                title=f"{curr_cls.__name__} arguments"
             )
-            add_argparse_argument(
-                group,
-                curr_cls.arguments_structure
-            )
+            add_argparse_argument(group, curr_cls.arguments_structure)
 
         return parser, group
 
@@ -542,10 +527,7 @@ class ArgumentsHandler(ABC):
 
         parsed_args_dict = get_parsed_args_dict(cls, args)
 
-        return cls(
-            **kwargs,
-            **parsed_args_dict
-        )
+        return cls(**kwargs, **parsed_args_dict)
 
     @classmethod
     def from_json(cls, json_dict, **kwargs) -> Any:
@@ -572,10 +554,7 @@ class ArgumentsHandler(ABC):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
-        return cls(
-            **kwargs,
-            **parsed_json_dict
-        )
+        return cls(**kwargs, **parsed_json_dict)
 
     def to_json(self) -> Dict[str, Any]:
         """
@@ -593,19 +572,19 @@ class ArgumentsHandler(ABC):
         while len(classes):
             curr_cls = classes.pop(0)
             classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, 'arguments_structure'):
+            if not hasattr(curr_cls, "arguments_structure"):
                 continue
             for arg_name, arg_opts in curr_cls.arguments_structure.items():
                 if not hasattr(self, arg_name):
                     continue
-                if 'argparse_name' in arg_opts:
-                    name = from_argparse_name(arg_opts['argparse_name'])
+                if "argparse_name" in arg_opts:
+                    name = from_argparse_name(arg_opts["argparse_name"])
                 else:
                     name = arg_name
 
                 cls_parameters[name] = getattr(self, arg_name)
 
         return {
-            'type': f'{cls.__module__}.{cls.__name__}',
-            'parameters': convert_to_jsontype(cls_parameters)
+            "type": f"{cls.__module__}.{cls.__name__}",
+            "parameters": convert_to_jsontype(cls_parameters),
         }

@@ -12,13 +12,15 @@ from typing import Set
 from kenning.utils.excepthook import find_missing_optional_dependency
 
 
-RE_IMPORT_NAME = r'^\s*(import ([^ \.]+))|(from ([^ \.]+)(\.[^ \.]+)* import)'
+RE_IMPORT_NAME = r"^\s*(import ([^ \.]+))|(from ([^ \.]+)(\.[^ \.]+)* import)"
 # Ignored modules (don't count into the threshold) extended with stdlibs
 IGNORED_MODULES = {
     # ROS dependencies -- manual installation
-    'sensor_msgs', 'kenning_computer_vision_msgs', 'rclpy',
-    'tflite_runtime',  # fallback to tensorflow
-    '__future__',  # builtin module not in stdlib
+    "sensor_msgs",
+    "kenning_computer_vision_msgs",
+    "rclpy",
+    "tflite_runtime",  # fallback to tensorflow
+    "__future__",  # builtin module not in stdlib
 } | stdlibs.py3.stdlib
 
 
@@ -36,15 +38,15 @@ def get_all_used_imports() -> Set[str]:
 
     imports = set()
     _re = re.compile(RE_IMPORT_NAME)
-    for py_file in glob(str(Path(kenning.__file__).parent / '**' / '*.py')):
-        with open(py_file, 'r') as fd:
+    for py_file in glob(str(Path(kenning.__file__).parent / "**" / "*.py")):
+        with open(py_file, "r") as fd:
             for line in fd:
-                match = _re.match(line.removesuffix('\n'))
+                match = _re.match(line.removesuffix("\n"))
                 if match:
                     imports.add(
                         match.group(2) if match.group(2) else match.group(4)
                     )
-    imports.remove('kenning')
+    imports.remove("kenning")
     return imports
 
 
@@ -63,6 +65,6 @@ class TestFindingDependency:
         failed = len(missing) / non_stdlib_modules
         if missing:
             pytest.fail(
-                f"{failed*100:.2f}% of missing modules not found "
+                f"{failed * 100:.2f}% of missing modules not found "
                 f"in project dependencies: {missing}"
             )

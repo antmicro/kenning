@@ -20,9 +20,7 @@ from kenning.tests.core.conftest import (
 from kenning.utils.class_loader import get_all_subclasses
 
 RUNTIME_SUBCLASSES = get_all_subclasses(
-    'kenning.runtimes',
-    Runtime,
-    raise_exception=True
+    "kenning.runtimes", Runtime, raise_exception=True
 )
 
 RUNTIME_INPUTTYPES = [
@@ -31,16 +29,15 @@ RUNTIME_INPUTTYPES = [
 
 
 def prepare_objects(
-        runtime_cls: Type[Runtime],
-        inputtype: str,
-        **runtime_kwargs: Any) -> Tuple[Runtime, Dataset, ModelWrapper]:
+    runtime_cls: Type[Runtime], inputtype: str, **runtime_kwargs: Any
+) -> Tuple[Runtime, Dataset, ModelWrapper]:
     try:
         dataset, model = get_default_dataset_model(inputtype)
     except UnknownFramework:
-        pytest.xfail(f'Unknown framework: {inputtype}')
+        pytest.xfail(f"Unknown framework: {inputtype}")
 
     if runtime_cls is RenodeRuntime:
-        pytest.xfail('RenodeRuntime is not a regular runtime')
+        pytest.xfail("RenodeRuntime is not a regular runtime")
     else:
         runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
 
@@ -48,36 +45,53 @@ def prepare_objects(
 
 
 class TestRuntime:
-
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                name=f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
     def test_initializer(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests runtime initialization.
         """
         _ = prepare_objects(runtime_cls, inputtype)
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                name=f'test_prepare_local[{runtime_cls.__name__}-{inputtype}]',
-                depends=[
-                    f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_prepare_local[{runtime_cls.__name__}-{inputtype}]",
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ],
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
     def test_prepare_local(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `preprocess_input` method.
@@ -87,32 +101,37 @@ class TestRuntime:
         try:
             assert runtime.prepare_local()
         except NotImplementedError:
-            pytest.xfail(f'{runtime_cls.__name__} does not support local run')
+            pytest.xfail(f"{runtime_cls.__name__} does not support local run")
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                depends=[
-                    f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
     def test_inference_session_no_stats(
-        self,
-        runtime_cls: Type[Runtime],
-        inputtype: str
+        self, runtime_cls: Type[Runtime], inputtype: str
     ):
         """
         Tests the inference session without statistics collection.
         """
         runtime, dataset, model = prepare_objects(
-            runtime_cls,
-            inputtype,
-            disable_performance_measurements=True
+            runtime_cls, inputtype, disable_performance_measurements=True
         )
         runtime.inference_session_start()
 
@@ -132,31 +151,36 @@ class TestRuntime:
         runtime.inference_session_end()
         MeasurementsCollector.clear()
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                depends=[
-                    f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
     def test_inference_session_stats(
-        self,
-        runtime_cls: Type[Runtime],
-        inputtype: str
+        self, runtime_cls: Type[Runtime], inputtype: str
     ):
         """
         Tests the inference session statistics collection.
         """
 
         runtime, dataset, model = prepare_objects(
-            runtime_cls,
-            inputtype,
-            disable_performance_measurements=False
+            runtime_cls, inputtype, disable_performance_measurements=False
         )
         runtime.inference_session_start()
 
@@ -169,7 +193,7 @@ class TestRuntime:
 
             assert runtime.prepare_input(prepX)
             runtime._run()
-            sleep(.01)
+            sleep(0.01)
 
         assert runtime.statsmeasurements is not None
         assert len(runtime.statsmeasurements.get_measurements().data) > 0
@@ -180,23 +204,28 @@ class TestRuntime:
 
         MeasurementsCollector.clear()
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                depends=[
-                    f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
-    def test_prepare_model(
-        self,
-        runtime_cls: Type[Runtime],
-        inputtype: str
-    ):
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
+    def test_prepare_model(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `prepare_model` method.
         """
@@ -204,31 +233,36 @@ class TestRuntime:
 
         assert runtime.prepare_model(None) is True
 
-        assert runtime.prepare_model(b'') is True
+        assert runtime.prepare_model(b"") is True
 
-        with open(runtime.model_path, 'rb') as model_f:
-            assert b'' != model_f.read()
+        with open(runtime.model_path, "rb") as model_f:
+            assert b"" != model_f.read()
 
         with pytest.raises(Exception):
-            assert runtime.prepare_model(b'Kenning') is False
+            assert runtime.prepare_model(b"Kenning") is False
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                depends=[
-                    f'test_initializer[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
-    def test_prepare_input(
-        self,
-        runtime_cls: Type[Runtime],
-        inputtype: str
-    ):
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
+    def test_prepare_input(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `prepare_input` method.
         """
@@ -242,21 +276,30 @@ class TestRuntime:
 
         assert runtime.prepare_input(prepX)
 
-        assert not runtime.prepare_input(b'')
+        assert not runtime.prepare_input(b"")
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                name=f'test_run[{runtime_cls.__name__}-{inputtype}]',
-                depends=[
-                    f'test_prepare_local[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        name=f"test_run[{runtime_cls.__name__}-{inputtype}]",
+                        depends=[
+                            f"test_prepare_local[{runtime_cls.__name__}-{inputtype}]"
+                        ],
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
     def test_run(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `run_locally` method.
@@ -273,35 +316,42 @@ class TestRuntime:
 
         runtime.run()
 
-    @pytest.mark.xdist_group(name='use_resources')
-    @pytest.mark.parametrize('runtime_cls,inputtype', [
-        pytest.param(runtime_cls, inputtype, marks=[
-            pytest.mark.dependency(
-                depends=[
-                    f'test_run[{runtime_cls.__name__}-{inputtype}]'
-                ]
-            ),
-            pytest.mark.xdist_group(name=f'TestRuntime_{runtime_cls.__name__}')
-        ])
-        for runtime_cls, inputtype in RUNTIME_INPUTTYPES
-    ])
-    def test_upload_output(
-        self,
-        runtime_cls: Type[Runtime],
-        inputtype: str
-    ):
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_run[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
+    def test_upload_output(self, runtime_cls: Type[Runtime], inputtype: str):
         """
         Tests the `upload_output` method.
         """
         runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
 
-        model_output_size = sum([
-            np.prod(output['shape'])*np.dtype(output['dtype']).itemsize
-            for output in model.get_io_specification()['output']
-        ])
+        model_output_size = sum(
+            [
+                np.prod(output["shape"]) * np.dtype(output["dtype"]).itemsize
+                for output in model.get_io_specification()["output"]
+            ]
+        )
 
         with pytest.raises(ModelNotPreparedError):
-            runtime.upload_output(b'')
+            runtime.upload_output(b"")
 
         assert runtime.prepare_local()
 
@@ -313,5 +363,5 @@ class TestRuntime:
 
         runtime.run()
 
-        data = runtime.upload_output(b'')
+        data = runtime.upload_output(b"")
         assert len(data) == model_output_size

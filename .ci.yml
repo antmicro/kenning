@@ -36,7 +36,7 @@ pytest:
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning -m "(not docs_gallery) and (not docs)" -n=auto --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir log_docs -vv
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report html:cov-report
     artifacts:
         paths:
             - log.json
@@ -56,11 +56,12 @@ pytest:
         - while ! test -S /var/run/docker.sock; do echo "Waiting for Docker..." && sleep 1; done; docker info
         - trap "kill $(cat /var/run/docker.pid)" EXIT
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest -ra kenning/tests/docs/test_snippets.py -m $TESTS_SCOPE -n=4 --dist=loadgroup --order-dependencies --color=yes --report-log=log.json --test-docs-log-dir $TESTS_SCOPE -vvl
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning/tests/docs/test_snippets.py -m $TESTS_SCOPE -n=4 --test-docs-log-dir $TESTS_SCOPE
     artifacts:
         paths:
             - log.json
             - log_gallery/*.log
+            - cov-report
         when: always
 
 docs-tests:

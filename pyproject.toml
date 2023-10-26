@@ -97,6 +97,7 @@ onnxruntime = [
     "onnxruntime",
 ]
 test = [
+    "pytest-cov",
     "pytest-dependency",
     "pytest-mock",
     "pytest-order",
@@ -179,6 +180,7 @@ convention = "numpy"
 "kenning/tests/*" = ["D100", "D101", "D103"]
 
 [tool.pytest.ini_options]
+addopts = "-ra --dist=loadgroup --order-dependencies --color=yes --report-log=log.json -vvl"
 markers = [
     "slow",          # marks tests as slow (deselect with '-m "not slow"')
     "fast",          # marks tests as fast (deselect with '-m "not fast"')

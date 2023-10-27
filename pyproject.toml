@@ -138,47 +138,48 @@ kenning = "kenning.cli.cli:main"
 homepage = "https://antmicro.github.io/kenning"
 repository = "https://github.com/antmicro/kenning"
 
+[tool.pydoclint]
+style = "numpy"
+allow-init-docstring = true
+exclude = 'kenning/tests'
+quiet = true
+check-return-types = true
+
 [tool.ruff]
 preview = true
 line-length = 79
 select = [
-    "D201", # No blank lines allowed before function docstring
-    "D206", # Docstring should be indented with spaces, not tabs
-    "D207", # Docstring is under-indented
-    "D208", # Docstring is over-indented
-    "D209", # Multi-line docstring closing quotes should be on a separate line
-    "D210", # No whitespaces allowed surrounding docstring text
-    "D213", # Multi-line docstring summary should start at the second line
-    "D214", # Section is over-indented
-    "D215", # Section underline is over-indented
-    "D300", # Use """triple double quotes"""
-    "D405", # Section name should be properly capitalized
-    "D406", # Section name should end with a newline
-    "D407", # Missing dashed underline after section
-    "D408", # Section underline should be in the line following the section's name
-    "D409", # Section underline should match the length of its name
-    "D410", # Missing blank line after section
-    "D411", # Missing blank line before section
-    "D412", # No blank lines allowed between a section header and its content
-    "D414", # Section has no content
-    "D417", # Missing argument descriptions in the docstring
-    "D419", # Docstring is empty
-    "E",    # PEP8 errors
-    "E261", # At least two spaces before inline comment
-    "E225", # Missing whitespace around operator
-    "F",    # PEP8 warnings
+    "D",      # docstring errors
+    "E",      # PEP8 errors
+    "E261",   # At least two spaces before inline comment
+    "E225",   # Missing whitespace around operator
+    "F",      # PEP8 warnings
 ]
 
 ignore = [
-    "E203", # Whitespace before ':'
+    "E203",  # Whitespace before ':'
+    "D105",  # Missing docstring in magic method
+    "D204",  # 1 blank line required after class docstring
+    "D205",  # 1 blank line required between summary line and description
+    "D200",  # One-line docstring should fit on one line
+    "D102",  # Missing docstring in public method
+    "D401",  # First line of docstring should be in imperative mood
+    "D407",  # Missing argument description in the docstring (handled by pydoclint)
 ]
+
+[tool.ruff.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.extend-per-file-ignores]
+"setup.py" = ["D100"]
+"kenning/tests/*" = ["D100", "D101", "D103"]
 
 [tool.pytest.ini_options]
 markers = [
-    "slow",  # marks tests as slow (deselect with '-m "not slow"')
-    "fast",  # marks tests as fast (deselect with '-m "not fast"')
+    "slow",          # marks tests as slow (deselect with '-m "not slow"')
+    "fast",          # marks tests as fast (deselect with '-m "not fast"')
     "serial",
-    "docs",  # marks tests extracted from Kenning documentation (without gallery)
+    "docs",          # marks tests extracted from Kenning documentation (without gallery)
     "docs_gallery",  # marks tests extracted from Kenning gallery
 ]
 log_cli = true

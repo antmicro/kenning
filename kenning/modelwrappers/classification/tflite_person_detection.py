@@ -21,6 +21,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class PersonDetectionModelWrapper(ModelWrapper):
+    """
+    Model wrapper for Person Detection model.
+    """
+
     default_dataset = VisualWakeWordsDataset
     pretrained_model_uri = (
         "kenning:///models/classification/person_detect.tflite"

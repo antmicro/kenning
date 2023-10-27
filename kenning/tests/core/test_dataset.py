@@ -386,7 +386,7 @@ class TestDataset:
     )
     def test_dataset_checksum_verification(self, dataset_cls: Type[Dataset]):
         """
-        Tests if dataset checksum is properly calculated
+        Tests if dataset checksum is properly calculated.
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
@@ -459,7 +459,7 @@ class TestDataset:
         self, dataset_cls: Type[Dataset]
     ):
         """
-        Tests if download is skipped when dataset files are already downloaded
+        Tests if download is skipped when dataset files are already downloaded.
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
@@ -501,7 +501,7 @@ class TestDataset:
         self, dataset_cls: Type[Dataset]
     ):
         """
-        Tests if dataset is downloaded when dataset checksum is invalid
+        Tests if dataset is downloaded when dataset checksum is invalid.
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
@@ -543,7 +543,7 @@ class TestDataset:
         self, dataset_cls: Type[Dataset]
     ):
         """
-        Tests if dataset is downloaded when dataset checksum is invalid
+        Tests if dataset is downloaded when dataset checksum is invalid.
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")

@@ -20,6 +20,10 @@ from kenning.core.dataprovider import DataProvider
 
 
 class ROS2CameraNodeDataProvider(DataProvider):
+    """
+    Provides frames collected from ROS 2 topic to Kenning nodes.
+    """
+
     arguments_structure = {
         "node_name": {
             "description": "Name of the ROS2 node",

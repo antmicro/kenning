@@ -17,6 +17,10 @@ from kenning.utils.onnx import try_extracting_input_shape_from_onnx
 
 
 class PyTorchONNXConversion(ONNXConversion):
+    """
+    Provides methods and test classes for PyTorch-ONNX support.
+    """
+
     def __init__(self):
         super().__init__("pytorch", torch.__version__)
 

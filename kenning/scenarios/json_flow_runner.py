@@ -24,6 +24,10 @@ from kenning.utils.resource_manager import ResourceURI
 
 
 class FlowRunner(CommandTemplate):
+    """
+    Command template for running Kenning applications.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
 

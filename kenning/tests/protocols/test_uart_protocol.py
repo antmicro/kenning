@@ -396,7 +396,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client receive_message method.
         """
-
         status, message = client.receive_message(timeout=1)
         assert status == ServerStatus.NOTHING
         assert message is None
@@ -416,7 +415,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client receive_message method.
         """
-
         self.port_in.write_bytes(b"")
         status, message = client.receive_message(timeout=1)
         assert status == ServerStatus.NOTHING
@@ -434,7 +432,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client send_message method.
         """
-
         message = Message(message_type, random_byte_data)
 
         # send data
@@ -469,7 +466,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client send_data method.
         """
-
         client.send_data(random_byte_data)
 
         with open(self.port_out, "rb", 0) as serial_f:
@@ -482,7 +478,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client send_data method.
         """
-
         with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(random_byte_data)
 
@@ -495,7 +490,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client request success.
         """
-
         with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(Message(MessageType.OK).to_bytes())
 
@@ -511,7 +505,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client request failure.
         """
-
         with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(Message(MessageType.ERROR).to_bytes())
 
@@ -527,7 +520,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client upload_input method.
         """
-
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.DATA),
@@ -550,7 +542,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client upload_input method.
         """
-
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.MODEL),
@@ -578,7 +569,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client upload_io_specification method.
         """
-
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.IO_SPEC),
@@ -604,7 +594,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client request_processing method.
         """
-
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.PROCESS),
@@ -629,7 +618,6 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client download_statistics method.
         """
-
         thread_send = multiprocessing.Process(
             target=self.mock_send_response(MessageType.STATS, valid_stats)
         )

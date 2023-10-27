@@ -45,7 +45,7 @@ def list_classes(
     prefix: str = "",
 ) -> List[str]:
     """
-    Lists classes of given module, displays their parameters and descriptions
+    Lists classes of given module, displays their parameters and descriptions.
 
     Parameters
     ----------
@@ -66,7 +66,6 @@ def list_classes(
     List[str] :
         List of formatted strings to be printed out later
     """
-
     kenning_base_classes = get_base_classes_dict()
 
     subclasses_dict = {}
@@ -171,6 +170,10 @@ def list_classes(
 
 
 class ListClassesRunner(CommandTemplate):
+    """
+    Command template for listing available Kenning classes.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
 

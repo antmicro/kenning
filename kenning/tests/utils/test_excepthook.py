@@ -27,7 +27,7 @@ IGNORED_MODULES = {
 def get_all_used_imports() -> Set[str]:
     """
     Reads all Python files in project and searches
-    for names of imported modules
+    for names of imported modules.
 
     Returns
     -------

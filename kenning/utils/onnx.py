@@ -17,7 +17,7 @@ def try_extracting_input_shape_from_onnx(
     model_onnx: onnx.ModelProto
 ) -> Optional[List[List]]:
     """
-    Function for extracting ONNX model's input shape
+    Function for extracting ONNX model's input shape.
 
     Parameters
     ----------

@@ -30,6 +30,10 @@ from kenning.utils.class_info import generate_class_info
 
 
 class ClassInfoRunner(CommandTemplate):
+    """
+    Command template for providing Kenning class details.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
 

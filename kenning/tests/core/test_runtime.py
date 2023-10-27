@@ -178,7 +178,6 @@ class TestRuntime:
         """
         Tests the inference session statistics collection.
         """
-
         runtime, dataset, model = prepare_objects(
             runtime_cls, inputtype, disable_performance_measurements=False
         )

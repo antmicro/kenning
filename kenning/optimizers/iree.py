@@ -35,7 +35,6 @@ def input_shapes_dict_to_list(inputshapes):
     List[Tuple[int, ...]] :
         Shapes of each input layer in order.
     """
-
     layer_order = {}
     for name in inputshapes.keys():
         layer_id = int(re.search(r"\d+", name).group(0))
@@ -44,7 +43,17 @@ def input_shapes_dict_to_list(inputshapes):
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def kerasconversion(model_path: PathOrURI, input_spec):
+def kerasconversion(model_path: PathOrURI, input_spec: Dict):
+    """
+    Converts the Keras model to IREE.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Provides the specification of the inputs
+    """
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
@@ -71,7 +80,17 @@ def kerasconversion(model_path: PathOrURI, input_spec):
     )
 
 
-def tensorflowconversion(model_path: PathOrURI, input_spec):
+def tensorflowconversion(model_path: PathOrURI, input_spec: Dict):
+    """
+    Converts the TensorFlow model to IREE.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Provides the specification of the inputs
+    """
     import tensorflow as tf
     from iree.compiler import tf as ireetf
 
@@ -89,7 +108,17 @@ def tensorflowconversion(model_path: PathOrURI, input_spec):
     )
 
 
-def tfliteconversion(model_path: PathOrURI, input_spec):
+def tfliteconversion(model_path: PathOrURI, input_spec: Dict):
+    """
+    Converts the TFLite model to IREE.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Provides the specification of the inputs
+    """
     from iree.compiler import tflite as ireetflite
 
     return ireetflite.compile_file(str(model_path), import_only=True)
@@ -174,7 +203,6 @@ class IREECompiler(Optimizer):
             'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
             listed by running 'iree-compile -h'.
         """
-
         self.model_framework = model_framework
         self.set_input_type(model_framework)
         self.backend = backend

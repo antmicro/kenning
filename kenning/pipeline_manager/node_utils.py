@@ -1,6 +1,12 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+
+"""
+Simple utility functions for creating Pipeline Manager nodes
+from Kenning classes.
+"""
+
 import re
 from typing import Dict
 

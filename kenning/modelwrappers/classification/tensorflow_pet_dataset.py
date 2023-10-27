@@ -22,6 +22,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
+    """
+    Model wrapper for pet classification in TensorFlow.
+    """
+
     default_dataset = PetDataset
     pretrained_model_uri = "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
     arguments_structure = {}

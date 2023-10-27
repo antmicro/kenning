@@ -108,6 +108,9 @@ def extend_default_translator(app: Sphinx):
 
 
 def setup(app: Sphinx):
+    """
+    Installs update to figure rendering to include HTML files.
+    """
     app.connect("builder-inited", extend_default_translator)
 
     return {

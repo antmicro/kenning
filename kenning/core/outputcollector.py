@@ -13,6 +13,15 @@ from kenning.core.runner import Runner
 
 
 class OutputCollector(Runner, ABC):
+    """
+    Collects outputs from models running in the Kenning flow.
+
+    It performs final processing of data running in the Kenning
+    flow.
+    It can be used i.e. to display predictions, save them to file
+    or send to other application.
+    """
+
     arguments_structure = {}
 
     def __init__(

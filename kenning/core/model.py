@@ -31,7 +31,7 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 class VariableBatchSizeNotSupportedError(Exception):
     """
     Exception raised when trying to create a model which is not fitted to
-    handle variable batch sizes yet
+    handle variable batch sizes yet.
     """
 
     def __init__(
@@ -373,7 +373,6 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Dictionary that conveys input and output
             layers specification.
         """
-
         raise NotImplementedError
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:

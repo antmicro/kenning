@@ -27,6 +27,10 @@ from kenning.cli.command_template import (
 
 
 class TrainModel(CommandTemplate):
+    """
+    Command template for training models with ModelWrapper.
+    """
+
     parse_all = False
     description = __doc__[:-1]
 

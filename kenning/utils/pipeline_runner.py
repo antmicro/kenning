@@ -631,7 +631,6 @@ class PipelineRunner(object):
         bool :
             True if executed successfully.
         """
-
         if self.protocol is None:
             raise RequestFailure("Protocol is not provided")
         try:

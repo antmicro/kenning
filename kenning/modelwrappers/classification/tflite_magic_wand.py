@@ -19,6 +19,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class MagicWandModelWrapper(TensorFlowWrapper):
+    """
+    Model wrapper for Magic Wand model.
+    """
+
     default_dataset = MagicWandDataset
     pretrained_model_uri = "kenning:///models/classification/magic_wand.h5"
     arguments_structure = {

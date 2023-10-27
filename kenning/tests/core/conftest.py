@@ -237,7 +237,6 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
     Dataset :
         Mock of given dataset class.
     """
-
     if dataset_cls is PetDataset:
         return RandomizedClassificationDataset(
             get_tmp_path(),

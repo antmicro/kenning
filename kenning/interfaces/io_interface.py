@@ -41,7 +41,6 @@ class IOInterface(ABC):
         bool :
             True if there is no conflict.
         """
-
         if len(input_spec) > len(output_spec):
             return False
 

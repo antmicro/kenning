@@ -333,6 +333,10 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
 
 class OptimizationRunner(CommandTemplate):
+    """
+    Command template for scenario fine-tuning subcommand.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
 

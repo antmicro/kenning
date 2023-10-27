@@ -43,7 +43,6 @@ class TestOptimizerModelWrapper:
         optimizersamples - to get optimizer instances.
         modelwrappersamples - to get inputshape and data type.
         """
-
         optimizer = optimizersamples.get(optimizername)
         model_path, wrapper_name = modelsamples.get(optimizer.inputtype)
         wrapper = modelwrappersamples.get(wrapper_name)
@@ -83,7 +82,6 @@ class TestOptimizerModelWrapper:
         optimizersamples - to get optimizers instances.
         modelwrappersamples - to get modelwrappers instances.
         """
-
         for wrapper_name in modelwrappersamples:
             wrapper = modelwrappersamples.get(wrapper_name)
             io_specs = wrapper.get_io_specification()

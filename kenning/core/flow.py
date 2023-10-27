@@ -49,7 +49,6 @@ class KenningFlow:
         runners : List[Runner]
             List of specifications of runners in the flow.
         """
-
         self.runners = runners
         self.flow_state = None
         self.should_close = False
@@ -104,7 +103,6 @@ class KenningFlow:
         KenningFlow :
             Object of class KenningFlow.
         """
-
         try:
             jsonschema.validate(
                 runners_specifications, cls.form_parameterschema()
@@ -221,7 +219,6 @@ class KenningFlow:
         """
         Main process function. Repeatedly runs constructed graph in a loop.
         """
-
         while not self.should_close:
             self.init_state()
             try:

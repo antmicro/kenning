@@ -2,12 +2,17 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+A tool for generating mapping from provided class names to
+Open Images V6 names.
+"""
+
 import json
 import argparse
 from pathlib import Path
 
 
-def main():
+def main():  # noqa: D103
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "v6classes",

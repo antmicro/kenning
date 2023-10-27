@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+A module with methods for collecting details on Kenning classes.
+"""
+
 import ast
 import importlib
 import inspect
@@ -75,7 +79,7 @@ class Argument:
 
 class ClassInfoInvalidArgument(Exception):
     """
-    Exception raised when the arguments provided are not valid
+    Exception raised when the arguments provided are not valid.
     """
 
     pass
@@ -83,7 +87,7 @@ class ClassInfoInvalidArgument(Exception):
 
 def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
     """
-    Displays class name from syntax node
+    Displays class name from syntax node.
 
     Parameters
     ----------
@@ -102,7 +106,7 @@ def get_class_module_docstrings(
     syntax_node: Union[ast.ClassDef, ast.Module]
 ) -> str:
     """
-    Displays docstrings of provided class or module
+    Displays docstrings of provided class or module.
 
     Parameters
     ----------
@@ -113,7 +117,6 @@ def get_class_module_docstrings(
     -------
     str: Formatted Markdown-like string to be printed later.
     """
-
     docstring = ast.get_docstring(syntax_node, clean=True)
 
     if not docstring:
@@ -133,7 +136,7 @@ def get_class_module_docstrings(
 def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
     """
     Extracts a dependency from an import syntax node and checks whether the
-    dependency is satisfied. It also skips internal kenning modules
+    dependency is satisfied. It also skips internal kenning modules.
 
     Parameters
     ----------
@@ -187,7 +190,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
 def get_input_specification(syntax_node: ast.Assign) -> str:
     """
-    Displays information about the input specification as bullet points
+    Displays information about the input specification as bullet points.
 
     Parameters
     ----------
@@ -198,7 +201,6 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     -------
     str: Formatted Markdown-like string to be printed later.
     """
-
     input_formats = ""
 
     if (
@@ -232,7 +234,6 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     -------
     List[str]: List of formatted Markdown-like strings to be printed later.
     """
-
     # formatted lines to be returned
     resulting_output = []
 
@@ -307,7 +308,7 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
 
 def get_output_specification(syntax_node: ast.Assign) -> str:
     """
-    Displays information about the output specification as bullet points
+    Displays information about the output specification as bullet points.
 
     Parameters
     ----------
@@ -325,7 +326,7 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
 def clean_variable_name(variable_name: ast.AST) -> str:
     """
     Unparses and cleans a parsed variable name as string from single quotation
-    marks and trailing whitespaces
+    marks and trailing whitespaces.
 
     Parameters
     ----------
@@ -347,7 +348,7 @@ def clean_variable_name(variable_name: ast.AST) -> str:
 def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
     """
     Displays information about the argument structure specification as
-    bullet points
+    bullet points.
 
     Parameters
     ----------
@@ -599,7 +600,7 @@ def get_args_structure_from_parameterschema(
 def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
     """
     Recursively parses a dictionary to a list of formatted,
-    Markdown-like strings
+    Markdown-like strings.
 
     Parameters
     ----------
@@ -659,7 +660,6 @@ def instantiate_object(
     -------
     object: An instance of imported_class
     """
-
     # create a dict of arguments that will be used to create an instance
     parsed_args: Dict = {}
 
@@ -776,7 +776,7 @@ def generate_class_info(
     load_class_with_args=None,
 ) -> List[str]:
     """
-    Wrapper function that handles displaying information about a class
+    Wrapper function that handles displaying information about a class.
 
     Parameters
     ----------

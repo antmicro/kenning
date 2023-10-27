@@ -18,6 +18,11 @@ from kenning.utils.logger import KLogger
 
 
 class BytesBasedProtocol(Protocol, ABC):
+    """
+    Provides methods for simple data passing, e.g. for simple
+    socket-based or serial-based communication.
+    """
+
     arguments_structure = {
         "packet_size": {
             "description": "The maximum size of the received packets, in "

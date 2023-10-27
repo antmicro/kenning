@@ -51,7 +51,6 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         """
         Configure logging formats.
         """
-
         # set format for existing loggers
         loggers = [
             logging.getLogger(name) for name in logging.root.manager.loggerDict
@@ -142,6 +141,16 @@ class LoggerProgressBar(io.StringIO):
 
 
 def download_url(url, output_path):
+    """
+    Downloads the resource and renders the progress bar.
+
+    Parameters
+    ----------
+    url: str
+        URL to file to download
+    output_path: str
+        Path where to download the file
+    """
     from tqdm import tqdm
 
     class DownloadProgressBar(tqdm):
@@ -170,6 +179,10 @@ def download_url(url, output_path):
 
 
 class Callback:
+    """
+    A base class for tqdm callbacks.
+    """
+
     def __init__(self, tag: str, fun: Callable, sec_interval: int, *args: Any):
         """
         Callback that can be registered for a given `tag`. Whenever

@@ -4,7 +4,7 @@
 # PYTHON_ARGCOMPLETE_OK
 
 """
-Script running Kenning CLI
+Script running Kenning CLI.
 """
 
 from kenning.cli.cli import main

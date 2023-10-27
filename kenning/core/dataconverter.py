@@ -32,7 +32,6 @@ class DataConverter(ArgumentsHandler, ABC):
         """
         Initializes dataprovider object.
         """
-
         super().__init__()
 
     @abstractmethod

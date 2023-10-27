@@ -94,7 +94,6 @@ def get_all_subclasses(
         When not importing classes: list of tuples with name and module path
         of the class
     """
-
     root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]
     i = 0
@@ -210,6 +209,24 @@ def get_all_subclasses(
 
 
 def any_from_json(json_cfg: Dict[str, Any], **kwargs) -> Optional[Any]:
+    """
+    Loads the class using `from_json` method, if available.
+
+    Parameters
+    ----------
+    json_cfg: Dict[str, Any]
+        A JSON object snippet with `type` parameter, specifying the
+        full name of the class, and `parameters` parameter, with list
+        of constructor arguments for the class.
+    **kwargs:
+        Additional arguments
+
+    Returns
+    -------
+    Optional[Any] :
+        If a class is available and contains `from_json` method, it
+        returns object of this class.
+    """
     if "type" not in json_cfg or "parameters" not in json_cfg:
         return None
     cls = load_class(json_cfg["type"])
@@ -267,7 +284,7 @@ def get_command(argv: List[str] = None, with_slash: bool = True):
     argv : List[str]
         List or arguments from sys.argv.
     with_slash : bool
-        Should \\ be included in command?
+        Tells if slash should be included in command
 
     Returns
     -------

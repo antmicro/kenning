@@ -46,7 +46,7 @@ def factory_test_create_dataflow(
     """
     Creates test for `create_dataflow` method of dataflow handlers. The test
     does not check the validity of output, only if the parsing ended
-    successfully
+    successfully.
 
     Parameters
     ----------
@@ -116,7 +116,7 @@ class HandlerTests(ABC):
     @pytest.fixture
     def dataflow_json(self) -> Dict:
         """
-        Example of dataflow in Pipeline Manager Format
+        Example of dataflow in Pipeline Manager Format.
         """
         return {
             "graph": {
@@ -132,7 +132,7 @@ class HandlerTests(ABC):
     @abstractmethod
     def handler(self) -> BaseDataflowHandler:
         """
-        Creates subclass of BaseDataflowHandler
+        Creates subclass of BaseDataflowHandler.
         """
         raise NotImplementedError
 
@@ -140,14 +140,14 @@ class HandlerTests(ABC):
     def equivalence_check(self, dataflow1, dataflow2):
         """
         Method that checks whether two JSON defining dataflow in a specific
-        Kenning format are equivalent (define the same dataflow)
+        Kenning format are equivalent (define the same dataflow).
         """
         raise NotImplementedError
 
     def test_parse_dataflow(self, dataflow_json, handler):
         """
         Test for `parse_dataflow`. Does not check the validity of output,
-        only if the parsing ended successfully
+        only if the parsing ended successfully.
         """
         status, _ = handler.parse_dataflow(dataflow_json)
         assert status

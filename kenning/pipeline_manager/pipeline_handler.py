@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+A module for parsing the Kenning scenarios provided via JSON or command-line.
+"""
+
 from pathlib import Path
 from typing import Dict, Tuple, Union
 

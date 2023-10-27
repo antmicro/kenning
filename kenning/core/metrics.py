@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+A collection of methods for computing benchmark and quality metrics.
+"""
+
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -182,7 +186,6 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     Dict :
         Gathered computed metrics.
     """
-
     # If confusion matrix is not present in the measurementsdata, then
     # classification metrics can not be calculated.
     if "eval_confusion_matrix" in measurementsdata:

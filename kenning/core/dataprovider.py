@@ -13,6 +13,10 @@ from kenning.core.runner import Runner
 
 
 class DataProvider(Runner, ABC):
+    """
+    A block that introduces data to Kenning flow.
+    """
+
     arguments_structure = {}
 
     def __init__(

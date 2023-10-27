@@ -165,7 +165,6 @@ class TestArgsManagerWrapper:
         * If the returned parsed dict is correct, e.g. ArgManager should add
         missing values, convert parameters to the correct types
         """
-
         with expectation:
             parsed_json_dict = get_parsed_json_dict(schema, json_dict)
             assert expected_result == parsed_json_dict
@@ -279,7 +278,6 @@ class TestArgsManagerWrapper:
         This test also sets paths for the ModelRuntimeRunner, since the JSON
         configuration files should exist
         """
-
         if (
             args
             == TestArgsManagerWrapper.VALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER  # noqa: E501

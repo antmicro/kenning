@@ -28,6 +28,14 @@ class EdgeTPUCompilerError(Exception):
 
 
 def kerasconversion(model_path: PathOrURI):
+    """
+    Converts Keras file to TFLite format.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    """
     import tensorflow as tf
 
     model = tf.keras.models.load_model(str(model_path), compile=False)
@@ -36,6 +44,14 @@ def kerasconversion(model_path: PathOrURI):
 
 
 def tensorflowconversion(model_path: PathOrURI):
+    """
+    Converts TensorFlow file to TFLite format.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    """
     import tensorflow as tf
 
     converter = tf.lite.TFLiteConverter.from_saved_model(str(model_path))
@@ -43,6 +59,14 @@ def tensorflowconversion(model_path: PathOrURI):
 
 
 def onnxconversion(model_path: PathOrURI):
+    """
+    Converts ONNX file to TFLite format.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    """
     from datetime import datetime
 
     import onnx

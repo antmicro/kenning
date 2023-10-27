@@ -29,7 +29,7 @@ KNOWN_PYPI_NAMES = {
 class MissingKenningDependencies(ModuleNotFoundError):
     """
     Extension of ModuleNotFoundError with information
-    about optional dependencies
+    about optional dependencies.
     """
 
     # Group of optional dependencies (from pyproject.toml) or 'kenning'

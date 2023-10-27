@@ -21,6 +21,10 @@ Batch = namedtuple("Batch", ["data"])
 
 
 class MXNetONNXConversion(ONNXConversion):
+    """
+    Provides methods and test classes for MXNet-ONNX support.
+    """
+
     def __init__(self):
         super().__init__("mxnet", mxnet.__version__)
 

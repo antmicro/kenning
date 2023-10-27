@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Module with Dataset generating random data for benchmark purposes.
+"""
+
 from pathlib import Path
 from random import shuffle
 from typing import Any, List, Type

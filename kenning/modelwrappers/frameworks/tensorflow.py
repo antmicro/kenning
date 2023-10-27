@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Provides base methods for using TensorFlow models in Kenning.
+"""
+
 from abc import ABC
 from typing import Optional
 
@@ -13,6 +17,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowWrapper(ModelWrapper, ABC):
+    """
+    Base model wrapper for TensorFlow models.
+    """
+
     def __init__(
         self,
         model_path: PathOrURI,

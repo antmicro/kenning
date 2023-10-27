@@ -3,6 +3,8 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
+Sources for YOLOv4 ModelWrapper.
+
 ModelWrapper for the YOLOv4 model generated from darknet repository using:
 
 https://github.com/Tianxiaomo/pytorch-YOLOv4
@@ -66,6 +68,10 @@ def yolov4_remove_postprocessing(
 
 
 class ONNXYOLOV4(YOLOWrapper):
+    """
+    Model wrapper for YOLOv4 model in ONNX format.
+    """
+
     pretrained_model_uri = "kenning:///models/object_detection/yolov4.onnx"
     default_dataset = COCODataset2017
     arguments_structure = {}
@@ -104,7 +110,7 @@ class ONNXYOLOV4(YOLOWrapper):
         """
         Loss function for YOLOv4, implemented to work one batch in form
         of torch.Tensors. YOLOv4 use sum of few losses - CIoU, binary
-        cross-entropy of objectness and classification scores
+        cross-entropy of objectness and classification scores.
 
         Parameters
         ----------

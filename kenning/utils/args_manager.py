@@ -5,6 +5,7 @@
 """
 Module for preparing and serializing class arguments.
 """
+
 import argparse
 import json
 import os.path
@@ -81,14 +82,33 @@ supported_keywords = [
 
 
 def from_argparse_name(s):
+    """
+    Converts argparse name to snake-case name.
+    """
     return s.lstrip("-").replace("-", "_")
 
 
-def to_argparse_name(s):
+def to_argparse_name(s: str) -> str:
+    """
+    Converts entry from arguments_structure to argparse entry.
+    """
     return "--" + s.replace("_", "-")
 
 
 def convert_to_jsontype(v: Any) -> Any:
+    """
+    Converts entry to JSON-like format.
+
+    Parameters
+    ----------
+    v: Any
+        Input entry
+
+    Returns
+    -------
+    Any:
+        Converted entry to JSON-like format
+    """
     if isinstance(v, list):
         return [convert_to_jsontype(e) for e in v]
     if isinstance(v, dict):
@@ -524,7 +544,6 @@ class ArgumentsHandler(ABC):
         Any :
             Instance created from provided args.
         """
-
         parsed_args_dict = get_parsed_args_dict(cls, args)
 
         return cls(**kwargs, **parsed_args_dict)
@@ -550,7 +569,6 @@ class ArgumentsHandler(ABC):
         Any :
             Instance created from provided JSON.
         """
-
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 

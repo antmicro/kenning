@@ -107,7 +107,6 @@ class ROS2Protocol(Protocol):
         measurements_service_name: str
             Name of the service to get measurements.
         """
-
         # ROS2 node
         self.node = None
         self.node_name = node_name

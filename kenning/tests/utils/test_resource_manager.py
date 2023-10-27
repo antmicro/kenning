@@ -165,9 +165,8 @@ class TestResourceManager:
 
     def test_resolve_file_uri(self):
         """
-        Tests if file URI is properly resolved
+        Tests if file URI is properly resolved.
         """
-
         test_file = (pytest.test_directory / "test.txt").resolve()
         test_file.touch()
         test_file.write_text("test123")
@@ -283,7 +282,6 @@ class TestResourceManager:
         """
         Tests if resolve_uri properly parses pattern string.
         """
-
         resource_manager = ResourceManager()
 
         resource_manager.add_custom_url_schemes(url_schema)
@@ -359,7 +357,6 @@ class TestResourceManager:
         """
         Tests if resolve_uri raises exception for invalid patterns.
         """
-
         resource_manager = ResourceManager()
 
         resource_manager.add_custom_url_schemes(url_schema)

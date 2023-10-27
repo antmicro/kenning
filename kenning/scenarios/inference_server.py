@@ -63,6 +63,14 @@ ARGS_GROUPS = {
 
 
 class InferenceServer(object):
+    """
+    A class for running the on-device inference server.
+
+    It is used to delegate evaluation of the model to a different
+    device if the model is optimized for a different device than
+    host.
+    """
+
     def __init__(self, runtime: Runtime, protocol: Protocol):
         self.runtime = runtime
         self.protocol = protocol
@@ -289,6 +297,10 @@ class InferenceServer(object):
 
 
 class InferenceServerRunner(CommandTemplate):
+    """
+    Command template for running the inference server.
+    """
+
     parse_all = False
     description = __doc__.split("\n\n")[0]
 

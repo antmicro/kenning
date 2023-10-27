@@ -74,6 +74,9 @@ def create_onnx_support_report(
     output: Path,
     command: str = "",
 ):
+    """
+    Creates a Mardown file summarizing the ONNX support grid.
+    """
     headers, grid = generate_onnx_support_grid(converterslist, modelsdir)
 
     with path(reports, "onnx-conversion-support-grid.md") as reportpath:
@@ -85,7 +88,7 @@ def create_onnx_support_report(
                 out.write(content)
 
 
-def main(argv):
+def main(argv):  # noqa: D103
     command = get_command(argv)
 
     parser = argparse.ArgumentParser(argv[0])

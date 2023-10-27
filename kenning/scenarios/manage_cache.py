@@ -45,6 +45,10 @@ def format_size(size: int, unit: str = "B"):
 
 
 class ManageCacheRunner(CommandTemplate):
+    """
+    Command template for managing Kenning's cache.
+    """
+
     parse_all = False
     description = __doc__.split("\n\n")[0]
 
@@ -147,7 +151,7 @@ class ManageCacheRunner(CommandTemplate):
             )
 
 
-def main(argv):
+def main(argv):  # noqa: D103
     parser, _ = ManageCacheRunner.configure_parser(command=argv[0])
     args, _ = parser.parse_known_args(argv[1:])
 

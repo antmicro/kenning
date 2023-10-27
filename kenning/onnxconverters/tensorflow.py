@@ -17,6 +17,10 @@ import tensorflow.keras.applications as apps
 
 
 class TensorFlowONNXConversion(ONNXConversion):
+    """
+    Provides methods and test models for TensorFlow-ONNX support.
+    """
+
     def __init__(self):
         super().__init__("tensorflow", tf.__version__)
 

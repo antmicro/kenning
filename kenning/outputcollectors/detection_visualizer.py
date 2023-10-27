@@ -31,6 +31,10 @@ def generate_color() -> Tuple[float, float, float]:
 
 
 class DetectionVisualizer(OutputCollector):
+    """
+    Visualizes detection predictions for video sequences.
+    """
+
     arguments_structure = {
         "output_width": {
             "argparse_name": "--output-width",
@@ -166,7 +170,6 @@ class DetectionVisualizer(OutputCollector):
         np.ndarray :
             The modified image with visualizations drawn.
         """
-
         out_img = input_data
         for i in output_data:
             low_pair = self.compute_coordinates((i.xmin, i.ymin))

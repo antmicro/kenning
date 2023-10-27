@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Provides classes for managing Kenning applications from Pipeline Manager.
+"""
+
 import itertools
 from collections import defaultdict
 from typing import Any, Dict, Iterable, List, Union

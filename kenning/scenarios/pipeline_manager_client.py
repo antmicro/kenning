@@ -30,10 +30,18 @@ from jsonschema.exceptions import ValidationError
 
 
 class PipelineManagerShutdownException(Exception):
+    """
+    Raised when Pipeline Manager ends its work.
+    """
+
     pass
 
 
 class PipelineManagerClient(CommandTemplate):
+    """
+    Command template for Visual Editor.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
     specification = None
@@ -251,7 +259,6 @@ class PipelineManagerClient(CommandTemplate):
             frontend_path : Path
                 The path where the built frontend files should be stored.
             """
-
             # provided these files exist, do not build the frontend again
             if (
                 frontend_path.exists()

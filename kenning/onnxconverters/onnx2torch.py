@@ -76,7 +76,7 @@ def create_linear_from_weights(
 ) -> torch.nn.Linear:
     """
     The function for creating torch Linear layer based on provided
-    weights and biases
+    weights and biases.
 
     Parameters
     ----------
@@ -118,7 +118,7 @@ def extract_value_from_graph(
     default_value: Optional = None,
 ) -> Optional[torch.Tensor]:
     """
-    The function for extracting values from graph of converted model
+    The function for extracting values from graph of converted model.
 
     Parameters
     ----------
@@ -165,7 +165,7 @@ def extract_value_from_graph(
 
 class Transposition(torch.nn.Module):
     """
-    Artificial torch Module for transposing input
+    Artificial torch Module for transposing input.
     """
 
     def __init__(self) -> None:
@@ -182,7 +182,7 @@ def gemm_converter(
     node: OnnxNode, graph: OnnxGraph
 ) -> OperationConverterResult:
     """
-    Conversion from Gemm to torch Linear layer
+    Conversion from Gemm to torch Linear layer.
 
     Parameters
     ----------
@@ -240,7 +240,7 @@ def matmul_converter(
 ) -> OperationConverterResult:
     """
     Conversion from MatMul to (if possible) torch Linear layer
-    or OnnxMatmul
+    or OnnxMatmul.
 
     Parameters
     ----------
@@ -293,7 +293,7 @@ def batch_norm_converter(
 ) -> OperationConverterResult:
     """
     Extension of onnx2torch's BatchNormalization conversion with
-    reducing (if needed) number of inputs
+    reducing (if needed) number of inputs.
 
     Parameters
     ----------
@@ -321,7 +321,7 @@ def dropout_converter(
 ) -> OperationConverterResult:
     """
     Extension of onnx2torch's Dropout conversion with reducing
-    (if needed) number of node's inputs and output
+    (if needed) number of node's inputs and output.
 
     Parameters
     ----------
@@ -354,7 +354,7 @@ def dropout_converter(
 
 class ReshapeWithConstShape(torch.nn.Module):
     """
-    Artificial torch Reshaping module with constant reshaping shape
+    Artificial torch Reshaping module with constant reshaping shape.
     """
 
     def __init__(self, size: Tuple[int, ...]) -> None:
@@ -367,7 +367,7 @@ class ReshapeWithConstShape(torch.nn.Module):
 
 class Reshape(OnnxReshape):
     """
-    Extension of OnnxReshape with correcting inputs order
+    Extension of OnnxReshape with correcting inputs order.
     """
 
     def flatten(self, input_, shape):
@@ -395,7 +395,7 @@ def reshape_converter(
     Conversion of Reshape to:
     - ReshapeWithConstantShape, if shape is constant
     - torch.nn.Flatten, if shape is constant and it's length is smaller than 3
-    - Reshape, in other cases
+    - Reshape, in other cases.
 
     Parameters
     ----------
@@ -439,7 +439,7 @@ def max_pool_converter(
 ) -> OperationConverterResult:
     """
     Extension of onnx2torch's MaxPool conversion with forcing
-    symmetical padding
+    symmetical padding.
 
     Parameters
     ----------
@@ -484,7 +484,7 @@ def add_sub_converter(
 ) -> OperationConverterResult:
     """
     Extension of onnx2torch's Add and Sub conversion, if one input is not
-    an output from other node, then convert to Linear layer with bias
+    an output from other node, then convert to Linear layer with bias.
 
     Parameters
     ----------
@@ -524,7 +524,7 @@ def add_sub_converter(
 class ShapeWithMemory(torch.nn.Module):
     """
     Artificial torch Shape module, returning shape of the input Tensor
-    or, if input is not provided, previously returned value
+    or, if input is not provided, previously returned value.
     """
 
     def __init__(self, start: Optional[int] = None, end: Optional[int] = None):
@@ -550,7 +550,7 @@ def shape_converter(
     node: OnnxNode, graph: OnnxGraph
 ) -> OperationConverterResult:
     """
-    Conversion of Shape to ShapeWithMemory
+    Conversion of Shape to ShapeWithMemory.
 
     Parameters
     ----------
@@ -574,7 +574,7 @@ def fill_none(
     module: torch.nn.Module, *inputs: List[torch.Tensor]
 ) -> List[torch.Tensor]:
     """
-    The function for combining input list from inputs and constants
+    The function for combining input list from inputs and constants.
 
     Parameters
     ----------
@@ -604,7 +604,7 @@ def fill_none(
 class FunctionWrapperForCheckingConst:
     """
     Class wrapping existing onnx2torch converters, for checking
-    constant inputs and converting nodes to OnnxConstant if necessary
+    constant inputs and converting nodes to OnnxConstant if necessary.
     """
 
     # Operation types with different behavior depending on test/eval
@@ -707,7 +707,7 @@ for description, converter in _CONVERTER_REGISTRY.items():
 
 def convert(onnx_model: Union[Path, onnx.ModelProto]):
     """
-    Function for converting model from ONNX framework to PyTorch
+    Function for converting model from ONNX framework to PyTorch.
 
     Parameters
     ----------
@@ -729,7 +729,7 @@ def convert(onnx_model: Union[Path, onnx.ModelProto]):
 
 def restore_default_converters():
     """
-    Restoring default onnx2torch converters
+    Restoring default onnx2torch converters.
     """
     for description, func in _CONVERTER_REGISTRY_BACKUP.items():
         _CONVERTER_REGISTRY[description] = func
@@ -737,7 +737,7 @@ def restore_default_converters():
 
 def restore_custom_converters():
     """
-    Restoring custom converters for NNI pruning
+    Restoring custom converters for NNI pruning.
     """
     import importlib
     from kenning.onnxconverters import onnx2torch

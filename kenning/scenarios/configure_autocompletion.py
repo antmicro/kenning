@@ -70,6 +70,10 @@ CONFIGURE_SHELL = {
 
 
 class ConfigureCompletion(CommandTemplate):
+    """
+    Command template for configuring autocompletion for Kenning.
+    """
+
     parse_all = True
     description = __doc__.strip("\n")
 

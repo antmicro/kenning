@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Collection of methods, classes and structures for
+object detection models and datasets.
+"""
+
 from typing import Optional, Union, List, Dict, Tuple
 from collections import namedtuple
 from pathlib import Path
@@ -245,7 +250,6 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     float :
         IoU value.
     """
-
     mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
     mask_u = np.logical_or(segm_pred.mask, segm_true.mask)
 
@@ -259,6 +263,10 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
 
 
 class ObjectDetectionSegmentationDataset(Dataset):
+    """
+    Base for object detection datasets.
+    """
+
     arguments_structure = {
         "task": {
             "argparse_name": "--task",
@@ -354,7 +362,6 @@ class ObjectDetectionSegmentationDataset(Dataset):
         -------
         Union['DetectObject', 'SegmObject'] : The hashable object.
         """
-
         if self.task == "object_detection":
             hashable = unhashable
         elif self.task == "instance_segmentation":

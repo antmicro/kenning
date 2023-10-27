@@ -4,8 +4,9 @@
 
 """
 A small, very basic OutputCollector-derived class used to test
-handling of multiple OutputCollectors in inference_runner scenario
+handling of multiple OutputCollectors in inference_runner scenario.
 """
+
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 from typing import Any, Union, Dict, Tuple
@@ -14,6 +15,10 @@ from pathlib import Path
 
 
 class NamePrinter(OutputCollector):
+    """
+    Prints detected classes for classification task.
+    """
+
     arguments_structure = {
         "print_type": {
             "argparse_name": "--print-name",

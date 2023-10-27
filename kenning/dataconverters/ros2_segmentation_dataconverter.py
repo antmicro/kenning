@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+
 """
 A DataConverter-derived class used to manipulate the data using the
 SegmentationAction object for compatibility between surronding blocks
@@ -18,6 +19,10 @@ from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 
 
 class ROS2SegmentationDataConverter(DataConverter):
+    """
+    Converts input and output data for Instance Segmentation to ROS 2 topics.
+    """
+
     def __init__(self):
         """
         Initializes the ModelWrapperDataConverter object.

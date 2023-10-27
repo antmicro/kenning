@@ -397,7 +397,6 @@ class Runtime(ArgumentsHandler, ABC):
         io_spec : Dict
             Specification of the input/output layers.
         """
-
         self.input_spec = io_spec["input"]
         self.output_spec = io_spec["output"]
 

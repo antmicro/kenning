@@ -4,7 +4,7 @@
 # PYTHON_ARGCOMPLETE_OK
 
 """
-Module with main logic of Kenning CLI
+Module with main logic of Kenning CLI.
 """
 
 import argparse

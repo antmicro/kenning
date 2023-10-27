@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Pruning optimizer implementation with Neural Network Intelligence
+Pruning optimizer implementation with Neural Network Intelligence.
 """
 import torch
 import nni
@@ -39,6 +39,18 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
+    """
+    Loads the PyTorch model.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    device: torch.device
+        Tells where the model should be loaded
+    **kwargs:
+        Additional arguments
+    """
     loaded = torch.load(str(model_path), map_location=device)
     if not isinstance(loaded, torch.nn.Module):
         raise CompilationError(
@@ -49,6 +61,18 @@ def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
 
 
 def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
+    """
+    Converts the ONNX model to PyTorch.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    device: torch.device
+        Tells where the model should be loaded
+    **kwargs:
+        Additional arguments
+    """
     conversion = PyTorchONNXConversion()
     if conversion.onnx_import(None, model_path) != SupportStatus.SUPPORTED:
         raise CompilationError(
@@ -61,7 +85,7 @@ def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
 
 class AddOperation(torch.nn.Module):
     """
-    PyTorch module for adding and adjusting size of two tensor with masks
+    PyTorch module for adding and adjusting size of two tensor with masks.
     """
 
     def __init__(
@@ -93,7 +117,7 @@ class AddOperation(torch.nn.Module):
 
 def add_replacer(onnx_math_op, masks: Tuple):
     """
-    Function converting Addition to AddOperation
+    Function converting Addition to AddOperation.
     """
     in_masks, out_masks, _ = masks
     return AddOperation(in_masks[0], in_masks[1], out_masks)
@@ -101,7 +125,7 @@ def add_replacer(onnx_math_op, masks: Tuple):
 
 def reshape_replacer(reshape, masks):
     """
-    Function replacing Reshape for pruned model
+    Function replacing Reshape for pruned model.
     """
     in_masks, out_mask, _ = masks
     reshape = copy.deepcopy(reshape)
@@ -116,7 +140,7 @@ def reshape_replacer(reshape, masks):
 
 def expand_conversion(expand, masks):
     """
-    Function replacing Expand for pruned model
+    Function replacing Expand for pruned model.
     """
     in_masks, out_mask, _ = masks
     if hasattr(expand, "const0"):
@@ -133,7 +157,7 @@ def expand_conversion(expand, masks):
 
 class TmpLoss(torch.nn.modules.loss._Loss):
     """
-    Temporary loss for YOLOv4
+    Temporary loss for YOLOv4.
     """
 
     def forward(self, input, target) -> torch.Tensor:
@@ -509,7 +533,7 @@ class NNIPruningOptimizer(Optimizer):
         **kwargs,
     ):
         """
-        The method used for training for one epoch
+        The method used for training for one epoch.
 
         This method is used by TorchEvaluator
 
@@ -569,7 +593,7 @@ class NNIPruningOptimizer(Optimizer):
     def evaluate_model(self, model: torch.nn.Module):
         """
         The method used to evaluate model, by calculating mean of losses
-        on test set
+        on test set.
 
         This method is used by TorchEvaluator
 
@@ -601,7 +625,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def prepare_input_output_data(self, batch_begin: int):
         """
-        The method used to prepare data in batche
+        The method used to prepare data in batche.
 
         Parameters
         ----------
@@ -638,7 +662,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def prepare_dataloader_train_valid(self):
         """
-        The method used to split dataset to train and validation set
+        The method used to split dataset to train and validation set.
         """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
@@ -653,7 +677,7 @@ class NNIPruningOptimizer(Optimizer):
         dummy_input: torch.Tensor,
     ):
         """
-        The method creating evaluator used during pruning
+        The method creating evaluator used during pruning.
 
         Parameters
         ----------
@@ -684,7 +708,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def get_number_of_parameters(self, model: torch.nn.Module) -> int:
         """
-        Get number of parameters in model
+        Get number of parameters in model.
 
         Parameters
         ----------
@@ -702,7 +726,7 @@ class NNIPruningOptimizer(Optimizer):
         self, io_spec: Dict[str, List[Dict]]
     ) -> torch.Tensor:
         """
-        The method to generate dummy input used by pruner
+        The method to generate dummy input used by pruner.
 
         Parameters
         ----------
@@ -732,7 +756,7 @@ class NNIPruningOptimizer(Optimizer):
     def add_exclude_to_config(self, model: torch.nn.Module):
         """
         The method appending config list with name of excluded last
-        linear layer
+        linear layer.
 
         Parameters
         ----------
@@ -752,7 +776,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def set_pruner_class(self, pruner_type):
         """
-        The method used for choosing pruner class based on input string
+        The method used for choosing pruner class based on input string.
 
         Parameters
         ----------
@@ -767,7 +791,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def set_activation_str(self, activation):
         """
-        The method used for selecting pruner activation based on input string
+        The method used for selecting pruner activation based on input string.
 
         Parameters
         ----------
@@ -783,7 +807,7 @@ class NNIPruningOptimizer(Optimizer):
 
     def set_pruner_mode(self, mode):
         """
-        The method used for selecting pruner mode based on input string
+        The method used for selecting pruner mode based on input string.
 
         Parameters
         ----------

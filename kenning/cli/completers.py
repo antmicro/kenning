@@ -40,6 +40,10 @@ ALL_TYPES = (
 
 
 class ClassPathCompleter(BaseCompleter):
+    """
+    Provides autocompletion for Kenning classes.
+    """
+
     def __init__(self, class_type: Optional[str] = None):
         assert class_type is None or class_type in ALL_TYPES
         self.class_type = class_type

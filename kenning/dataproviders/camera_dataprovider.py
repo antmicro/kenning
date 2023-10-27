@@ -17,6 +17,10 @@ from kenning.utils.args_manager import get_parsed_json_dict
 
 
 class CameraDataProvider(DataProvider):
+    """
+    Reads frames from the camera and passes them to Kenning nodes.
+    """
+
     arguments_structure = {
         "video_file_path": {
             "argparse_name": "--video-file-path",
@@ -85,7 +89,6 @@ class CameraDataProvider(DataProvider):
         outputs : Dict[str, str]
             Outputs of this Runner.
         """
-
         self.device_id = str(video_file_path)
 
         self.video_file_path = video_file_path

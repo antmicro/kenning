@@ -58,7 +58,6 @@ def _io_spec_to_struct(
     bytes :
         IO specification structure.
     """
-
     if len(entry_func) > MAX_LENGTH_ENTRY_FUNC_NAME:
         raise ValueError(f"Invalid entry func name: {entry_func}")
     if len(model_name) > MAX_LENGTH_MODEL_NAME:

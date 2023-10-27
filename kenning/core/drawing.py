@@ -276,7 +276,6 @@ def draw_violin_comparison_plot(
     outext : Iterable[str]
         List with files extensions, should be supported by matplotlib.
     """
-
     num_plots = len(xnames)
     legend_lines, legend_labels = [], []
     fig, axs = plt.subplots(num_plots, 1, figsize=(12, 3.5 * num_plots))
@@ -735,7 +734,6 @@ def draw_confusion_matrix_matplotlib(
     outext : Iterable[str]
         List with files extensions, should be supported by matplotlib.
     """
-
     if figsize is None:
         figsize = [15, 15]
 

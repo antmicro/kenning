@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module containing template for creating commands and their names
+Module containing template for creating commands and their names.
 """
 
 import sys
@@ -43,7 +43,7 @@ ArgumentsGroups = Dict[str, argparse._ArgumentGroup]
 
 class CommandTemplate(ABC):
     """
-    A template which make scenarios compatible with Kenning CLI
+    A template which make scenarios compatible with Kenning CLI.
     """
 
     parse_all: bool

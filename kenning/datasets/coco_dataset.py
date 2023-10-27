@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Classes and methods for COCO dataset.
+"""
+
 import cv2
 import numpy as np
 from pathlib import Path

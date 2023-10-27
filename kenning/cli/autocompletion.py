@@ -27,7 +27,10 @@ CLASS_FLAG_NAMES = (
 
 class CustomCompletion(CompletionFinder):
     """
-    Extended default argcomplete class with:
+    Introduces Kenning-specific completion patterns.
+
+    Extends default argcomplete class with:
+
     * Generating completions for dynamically specified class
     * Mutually exclusive groups -- '--json-cfg' and '--*-cls'
     * Completing subcommands only before other flags

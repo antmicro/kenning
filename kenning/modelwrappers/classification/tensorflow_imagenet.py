@@ -19,6 +19,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class TensorFlowImageNet(TensorFlowWrapper):
+    """
+    General-purpose model wrapper for ImageNet models in TensorFlow.
+    """
+
     default_dataset = ImageNetDataset
     pretrained_model_uri = "kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5"  # noqa: E501
     arguments_structure = {

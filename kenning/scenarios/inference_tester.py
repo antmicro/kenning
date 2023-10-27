@@ -81,6 +81,10 @@ ARGS_GROUPS = {
 
 
 class InferenceTester(CommandTemplate):
+    """
+    Command template for running inference benchmarking.
+    """
+
     parse_all = False
     description = {
         TEST: "A script that runs inference and gathers measurements.",

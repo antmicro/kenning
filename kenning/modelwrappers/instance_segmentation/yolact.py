@@ -153,6 +153,10 @@ RATIO = MEANS / STD
 
 
 class YOLACTWrapper(ModelWrapper):
+    """
+    Wrapper for YOLACT-based models.
+    """
+
     default_dataset = COCODataset2017
     arguments_structure = {
         "top_k": {
@@ -235,6 +239,10 @@ class YOLACTWrapper(ModelWrapper):
 
 
 class YOLACTWithPostprocessing(YOLACTWrapper):
+    """
+    Variant of YOLACT implementation with built-in postprocessing in the model.
+    """
+
     pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"  # noqa: E501
 
     def preprocess_input(self, X):
@@ -368,6 +376,10 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
 
 
 class YOLACT(YOLACTWrapper):
+    """
+    Model wrapper for YOLACT model provided in ONNX format.
+    """
+
     pretrained_model_uri = (
         "kenning:///models/instance_segmentation/yolact.onnx"
     )  # noqa: E501
@@ -521,7 +533,6 @@ class YOLACT(YOLACTWrapper):
         Dict[str, numpy.ndarray] :
             Dictionary of detected objects.
         """
-
         # Remove predictions with the background label
         cur_scores = conf_preds[1:, :]
 

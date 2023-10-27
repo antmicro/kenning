@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Runtime implementation for PyTorch models
+Runtime implementation for PyTorch models.
 """
 from typing import Optional, List
 import gc
@@ -45,7 +45,7 @@ class PyTorchRuntime(Runtime):
         skip_jit: bool = False,
     ):
         """
-        Constructs PyTorch runtime
+        Constructs PyTorch runtime.
 
         Parameters
         ----------

@@ -31,6 +31,9 @@ class LiteralInclude(_LiteralInclude):
 
 
 def setup(app: Sphinx):
+    """
+    Installs literalinclude directive in Sphinx.
+    """
     app.add_directive("literalinclude", LiteralInclude, override=True)
     return {
         "version": "0.1",

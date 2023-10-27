@@ -19,6 +19,14 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 def kerasconversion(model_path: PathOrURI):
+    """
+    Loads Keras model.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    """
     model = tf.keras.models.load_model(str(model_path), compile=False)
     return model
 

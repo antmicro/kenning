@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Provides core methods and classes for integrating Kenning
+with Pipeline Manager.
+"""
+
 import itertools
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
@@ -213,7 +218,6 @@ class BaseDataflowHandler:
         Dict :
             Specification ready to be send to Pipeline Manager.
         """
-
         self.spec_builder.metadata_add_param("twoColumn", True)
         self.spec_builder.metadata_add_param("layout", self.autolayout)
 
@@ -364,7 +368,6 @@ class BaseDataflowHandler:
             Otherwise (False, error_message) is returned where error_message
             is an error that occurred during parsing process.
         """
-
         try:
             interface_to_id = {}
             graph = dataflow["graph"]

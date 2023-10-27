@@ -257,7 +257,6 @@ class Optimizer(ArgumentsHandler, ABC):
         ValueError :
             Raised if there is no matching format.
         """
-
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx:

@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module containing functionalities for Kenning dependencies
+Module containing functionalities for Kenning dependencies.
 """
 
 import sys

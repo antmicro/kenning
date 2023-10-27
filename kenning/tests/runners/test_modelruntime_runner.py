@@ -128,7 +128,7 @@ class TestModelRuntimeRunner:
         """
         Scenario testing for valid usage of ModelRuntimeRunner.from_json,
         should create a ModelRuntimeRunner instance, with ModelWrapper and
-        Runtime objects as attributes
+        Runtime objects as attributes.
         """
         if "dataset" in json_dict:
             json_dict["dataset"]["parameters"]["dataset_root"] = str(
@@ -173,7 +173,7 @@ class TestModelRuntimeRunner:
     ):
         """
         Scenario testing for invalid usage of ModelRuntimeRunner.from_json,
-        should raise ValidationError exception and not create an object
+        should raise ValidationError exception and not create an object.
         """
         runner = None
         with expectation:
@@ -191,7 +191,7 @@ class TestModelRuntimeRunner:
     ):
         """
         Scenario testing for invalid usage of ModelRuntimeRunner.from_argparse,
-        should raise ValidationError exception
+        should raise ValidationError exception.
         """
         runner = ModelRuntimeRunner.from_argparse(
             valid_argparse_namespace,
@@ -219,7 +219,7 @@ class TestModelRuntimeRunner:
     ):
         """
         Scenario testing for invalid usage of ModelRuntimeRunner.from_argparse,
-        should raise ValidationError exception and not create an object
+        should raise ValidationError exception and not create an object.
         """
         runner = None
         with pytest.raises(jsonschema.exceptions.ValidationError):

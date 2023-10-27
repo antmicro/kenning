@@ -1955,6 +1955,10 @@ def generate_html_report(
 
 
 class RenderReport(CommandTemplate):
+    """
+    Command-line template for rendering reports.
+    """
+
     parse_all = True
     description = __doc__.split("\n\n")[0]
 

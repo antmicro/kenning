@@ -32,7 +32,7 @@ def create_mocks(mocker, module_name, core_cls):
 def mock_environment(mocker: MockerFixture):
     """
     Creates mocks of every implementation of Kenning's runtime, compiler,
-    modelwrapper and dataset module
+    modelwrapper and dataset module.
     """
     create_mocks(mocker, "kenning.runtimes", Runtime)
     create_mocks(mocker, "kenning.optimizers", Optimizer)

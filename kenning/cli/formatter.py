@@ -20,6 +20,10 @@ from gettext import gettext
 
 # TODO: try to print mutually exclusive groups
 class Formatter(argparse.RawDescriptionHelpFormatter):
+    """
+    Formatter for argparse help.
+    """
+
     def _format_action(self, action):
         # determine the required width and the entry label
         help_position = min(

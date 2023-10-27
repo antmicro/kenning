@@ -22,6 +22,10 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
+    """
+    Model wrapper for pet classification in PyTorch.
+    """
+
     default_dataset = PetDataset
     pretrained_model_uri = (
         "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"

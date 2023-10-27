@@ -31,6 +31,12 @@ else:
 
 
 class YOLOWrapper(ModelWrapper, ABC):
+    """
+    General wrapper for models based on YOLOv3/4.
+
+    Implements NMS, basic preprocessing and postprocessing of data.
+    """
+
     arguments_structure = {
         "class_names": {
             "argparse_name": "--classes",

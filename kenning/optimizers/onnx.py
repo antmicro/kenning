@@ -18,6 +18,18 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 def kerasconversion(model_path: PathOrURI, input_spec, output_names):
+    """
+    Converts Keras model to ONNX.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Dictionary representing inputs
+    output_names: List
+        Names of outputs to include in the final model
+    """
     import tensorflow as tf
     import tf2onnx
 
@@ -35,6 +47,18 @@ def kerasconversion(model_path: PathOrURI, input_spec, output_names):
 
 
 def torchconversion(model_path: PathOrURI, input_spec, output_names):
+    """
+    Converts Torch model to ONNX.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Dictionary representing inputs
+    output_names: List
+        Names of outputs to include in the final model
+    """
     import torch
 
     dev = "cpu"
@@ -67,6 +91,18 @@ def torchconversion(model_path: PathOrURI, input_spec, output_names):
 
 
 def tfliteconversion(model_path: PathOrURI, input_spec, output_names):
+    """
+    Converts TFLite model to ONNX.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Dictionary representing inputs
+    output_names: List
+        Names of outputs to include in the final model
+    """
     import tf2onnx
 
     try:

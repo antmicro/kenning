@@ -46,7 +46,7 @@ def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:
     return False
 
 
-def main(argv):
+def main(argv):  # noqa: D103
     parser = argparse.ArgumentParser(argv[0], add_help=False)
     parser.add_argument(
         "modelwrappercls",

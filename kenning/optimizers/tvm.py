@@ -21,8 +21,25 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 def onnxconversion(
-    compiler: "TVMCompiler", model_path: PathOrURI, input_shapes, dtypes
+    compiler: "TVMCompiler",
+    model_path: PathOrURI,
+    input_shapes: Dict,
+    dtypes: Dict,
 ):
+    """
+    Converts ONNX file to TVM format.
+
+    Parameters
+    ----------
+    compiler: TVMCompiler
+        Compiler used for conversion
+    model_path: PathOrURI
+        Path to the model to convert
+    input_shapes: Dict
+        Mapping from input name to input shape
+    dtypes: Dict
+        Mapping from input name to input dtype
+    """
     try:
         dtype = list(dtypes.values())[0]
     except IndexError:
@@ -35,8 +52,25 @@ def onnxconversion(
 
 
 def kerasconversion(
-    compiler: "TVMCompiler", model_path: PathOrURI, input_shapes, dtypes
+    compiler: "TVMCompiler",
+    model_path: PathOrURI,
+    input_shapes: Dict,
+    dtypes: Dict,
 ):
+    """
+    Converts Keras file to TVM format.
+
+    Parameters
+    ----------
+    compiler: TVMCompiler
+        Compiler used for conversion
+    model_path: PathOrURI
+        Path to the model to convert
+    input_shapes: Dict
+        Mapping from input name to input shape
+    dtypes: Dict
+        Mapping from input name to input dtype
+    """
     import tensorflow as tf
 
     tf.keras.backend.clear_session()
@@ -46,12 +80,32 @@ def kerasconversion(
 
 
 def no_conversion(out_dict):
+    """
+    Passes model as is to the compiler.
+    """
     return out_dict
 
 
 def torchconversion(
-    compiler: "TVMCompiler", model_path: PathOrURI, input_shapes, dtypes
+    compiler: "TVMCompiler",
+    model_path: PathOrURI,
+    input_shapes: Dict,
+    dtypes: Dict,
 ):
+    """
+    Converts Torch file to TVM format.
+
+    Parameters
+    ----------
+    compiler: TVMCompiler
+        Compiler used for conversion
+    model_path: PathOrURI
+        Path to the model to convert
+    input_shapes: Dict
+        Mapping from input name to input shape
+    dtypes: Dict
+        Mapping from input name to input dtype
+    """
     import torch
     import numpy as np
 
@@ -142,8 +196,25 @@ def torchconversion(
 
 
 def darknetconversion(
-    compiler: "TVMCompiler", model_path: PathOrURI, input_shapes, dtypes
+    compiler: "TVMCompiler",
+    model_path: PathOrURI,
+    input_shapes: Dict,
+    dtypes: Dict,
 ):
+    """
+    Converts darknet file to TVM format.
+
+    Parameters
+    ----------
+    compiler: TVMCompiler
+        Compiler used for conversion
+    model_path: PathOrURI
+        Path to the model to convert
+    input_shapes: Dict
+        Mapping from input name to input shape
+    dtypes: Dict
+        Mapping from input name to input dtype
+    """
     try:
         dtype = list(dtypes.values())[0]
     except IndexError:
@@ -172,8 +243,25 @@ def darknetconversion(
 
 
 def tfliteconversion(
-    compiler: "TVMCompiler", model_path: PathOrURI, input_shapes, dtypes
+    compiler: "TVMCompiler",
+    model_path: PathOrURI,
+    input_shapes: Dict,
+    dtypes: Dict,
 ):
+    """
+    Converts TFLite file to TVM format.
+
+    Parameters
+    ----------
+    compiler: TVMCompiler
+        Compiler used for conversion
+    model_path: PathOrURI
+        Path to the model to convert
+    input_shapes: Dict
+        Mapping from input name to input shape
+    dtypes: Dict
+        Mapping from input name to input dtype
+    """
     with open(model_path, "rb") as f:
         tflite_model_buf = f.read()
 

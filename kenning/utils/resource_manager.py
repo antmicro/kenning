@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Provide resource manager responsible for downloading and caching resources
+Provide resource manager responsible for downloading and caching resources.
 """
 import hashlib
 from inspect import getfullargspec
@@ -298,7 +298,7 @@ class ResourceManager(metaclass=Singleton):
 
     def clear_cache(self):
         """
-        Remove all cached files
+        Remove all cached files.
         """
         rmtree(self.cache_dir, ignore_errors=True)
         self.cache_dir.mkdir(parents=True, exist_ok=True)

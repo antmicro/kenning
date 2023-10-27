@@ -10,7 +10,7 @@ Pretrained on COCO dataset.
 
 import numpy as np
 from functools import reduce
-from typing import Optional
+from typing import Optional, Dict, Tuple
 import operator
 
 from kenning.core.dataset import Dataset
@@ -28,6 +28,10 @@ else:
 
 
 class PyTorchCOCOMaskRCNN(PyTorchWrapper):
+    """
+    Model wrapper for Mask-RCNN model implemented in PyTorch.
+    """
+
     default_dataset = COCODataset2017
 
     def __init__(
@@ -162,7 +166,20 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         return self._get_io_specification()
 
 
-def dict_to_tuple(out_dict):
+def dict_to_tuple(out_dict: Dict) -> Tuple:
+    """
+    Converter of instance segmentation predictions into tuple.
+
+    Parameters
+    ----------
+    out_dict: Dict
+        Dictionary with boxes, labels, scores and masks
+
+    Returns
+    -------
+    Tuple:
+        Tuple holding the data from dictionary
+    """
     return (
         out_dict["boxes"],
         out_dict["labels"],

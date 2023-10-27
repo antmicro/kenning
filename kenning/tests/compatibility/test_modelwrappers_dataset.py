@@ -16,7 +16,7 @@ class TestModelWrapperAndDatasetCompatibility:
     )
     def test_deliver_input(self, datasetsamples: Samples, datasetname):
         """
-        Tests dataset functions used by modelwrappers for data delivering
+        Tests dataset functions used by modelwrappers for data delivering.
 
         List of methods that are being tested
         --------------------------------
@@ -29,7 +29,6 @@ class TestModelWrapperAndDatasetCompatibility:
         -------------
         datasetsamples - to get dataset instances.
         """
-
         dataset = datasetsamples.get(datasetname)
 
         Xt, Xv, Yt, Yv = dataset.train_test_split_representations(
@@ -66,7 +65,7 @@ class TestModelWrapperAndDatasetCompatibility:
         modelwrappersamples: Samples,
     ):
         """
-        Tests modelwrapper functions to deliver output to datasets
+        Tests modelwrapper functions to deliver output to datasets.
 
         List of methods that are being tested
         --------------------------------
@@ -78,7 +77,6 @@ class TestModelWrapperAndDatasetCompatibility:
         datasetimages - to get total amount of images.
         modelwrappersamples - to get modelwrapper instances.
         """
-
         wrapper = modelwrappersamples.get(wrappername)
         from kenning.core.measurements import Measurements
 

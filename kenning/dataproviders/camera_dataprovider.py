@@ -131,8 +131,12 @@ class CameraDataProvider(DataProvider):
 
     @classmethod
     def _get_io_specification(
-        cls, input_memory_layout, input_width, input_height, outputs={}
-    ):
+        cls,
+        input_memory_layout: str,
+        input_width: int,
+        input_height: int,
+        outputs: Dict[str, str] = {},
+    ) -> Dict[str, List[Dict]]:
         """
         Creates runner IO specification from chosen parameters.
 

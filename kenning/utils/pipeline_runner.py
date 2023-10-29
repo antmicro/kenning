@@ -111,15 +111,6 @@ class PipelineRunner(object):
         -------
         PipelineRunner
             PipelineRunner created from provided JSON config.
-
-        Raises
-        ------
-        AssertionError :
-            Raised if required blocks are not provided.
-        ValueError :
-            Raised if blocks are connected incorrectly.
-        jsonschema.exceptions.ValidationError :
-            Raised if parameters are incorrect.
         """
         if "runtime" not in json_cfg:
             skip_runtime = True
@@ -184,7 +175,7 @@ class PipelineRunner(object):
         self,
         dataset: Dataset,
         model: ModelWrapper,
-        optimizers: List[Optimizer],
+        optimizers: Union[List[Optimizer], Optimizer],
         protocol: Protocol,
         runtime: Runtime,
         dataconverter: DataConverter,
@@ -360,14 +351,14 @@ class PipelineRunner(object):
         ----------
         output : Optional[Path]
             Path to the output JSON file with measurements.
-        verbosity : Optional[str]
+        verbosity : str
             Verbosity level.
         convert_to_onnx : Optional[Path]
             Before compiling the model, convert it to ONNX and use
             in the inference (provide a path to save here).
         max_target_side_optimizers : int
             Max number of consecutive target-side optimizers.
-        command : Optional[List]
+        command : List
             Command used to run this inference pipeline. It is put in
             the output JSON file.
         run_optimizations : bool
@@ -379,13 +370,6 @@ class PipelineRunner(object):
         -------
         int
             The 0 value if the inference was successful, 1 otherwise.
-
-        Raises
-        ------
-        AssertionError :
-            Raised if required blocks are not provided.
-        ValueError :
-            Raised if blocks are connected incorrectly.
         """
         assert run_optimizations or run_benchmarks, (
             "If both optimizations and benchmarks are skipped, pipeline will "
@@ -630,6 +614,11 @@ class PipelineRunner(object):
         -------
         bool
             True if executed successfully.
+
+        Raises
+        ------
+        RequestFailure
+            Raised when communication protocol is not provided
         """
         if self.protocol is None:
             raise RequestFailure("Protocol is not provided")

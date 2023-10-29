@@ -21,12 +21,13 @@ def try_extracting_input_shape_from_onnx(
 
     Parameters
     ----------
-    model_onnx : ModelProto
+    model_onnx : onnx.ModelProto
         Loaded ONNX model
 
     Returns
     -------
-    List of tensors input shapes or None if extracting was impossible
+    Optional[List[List]]
+        List of tensors input shapes or None if extracting was impossible
     """
     try:
         initializers = set(

@@ -49,7 +49,7 @@ def list_classes(
 
     Parameters
     ----------
-    base_classes : str
+    base_classes : List[str]
         List of Kenning base classes subclasses of which will be listed
     verbosity : str
         Verbosity mode, available options:

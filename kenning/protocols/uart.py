@@ -57,6 +57,11 @@ def _io_spec_to_struct(
     -------
     bytes
         IO specification structure.
+
+    Raises
+    ------
+    ValueError
+        Raised when arguments are invalid
     """
     if len(entry_func) > MAX_LENGTH_ENTRY_FUNC_NAME:
         raise ValueError(f"Invalid entry func name: {entry_func}")
@@ -152,6 +157,11 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     -------
     Dict[str, int]
         Parsed stats.
+
+    Raises
+    ------
+    ValueError
+        Raised when passed argument is of invalid size
     """
     if len(data) != ALLOCATION_STATS_SIZE:
         raise ValueError(f"Invalid allocations stats size: {len(data)}")

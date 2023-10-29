@@ -16,7 +16,7 @@ import argparse
 from collections import defaultdict
 from jinja2 import Template
 from pathlib import Path
-from typing import List
+from typing import List, Tuple, Dict
 from importlib.resources import path
 
 from kenning.core.onnxconversion import ONNXConversion
@@ -27,7 +27,7 @@ from kenning.utils.logger import KLogger
 
 def generate_onnx_support_grid(
     converterslist: List[ONNXConversion], modelsdir: Path
-):
+) -> Tuple[List[str], Dict[str, Dict[str, str]]]:
     """
     Creates support matrix for ONNX import/export functions.
 
@@ -41,7 +41,7 @@ def generate_onnx_support_grid(
 
     Returns
     -------
-    Tuple[List[str], Dict[str, Dict[str, str]]
+    Tuple[List[str], Dict[str, Dict[str, str]]]
         Tuple of list of frameworks and their versions,
         dictionary with models, frameworks and their export/import support.
     """

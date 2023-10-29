@@ -10,6 +10,7 @@ import subprocess
 from pathlib import Path
 from typing import Literal, Optional, Dict, List
 from shutil import which
+import tensorflow as tf
 
 import numpy as np
 
@@ -27,7 +28,7 @@ class EdgeTPUCompilerError(Exception):
     pass
 
 
-def kerasconversion(model_path: PathOrURI):
+def kerasconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     """
     Converts Keras file to TFLite format.
 
@@ -35,15 +36,18 @@ def kerasconversion(model_path: PathOrURI):
     ----------
     model_path: PathOrURI
         Path to the model to convert
-    """
-    import tensorflow as tf
 
+    Returns
+    -------
+    tf.lite.TFLiteConverter
+        TFLite converter for model
+    """
     model = tf.keras.models.load_model(str(model_path), compile=False)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     return converter
 
 
-def tensorflowconversion(model_path: PathOrURI):
+def tensorflowconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     """
     Converts TensorFlow file to TFLite format.
 
@@ -51,14 +55,17 @@ def tensorflowconversion(model_path: PathOrURI):
     ----------
     model_path: PathOrURI
         Path to the model to convert
-    """
-    import tensorflow as tf
 
+    Returns
+    -------
+    tf.lite.TFLiteConverter
+        TFLite converter for model
+    """
     converter = tf.lite.TFLiteConverter.from_saved_model(str(model_path))
     return converter
 
 
-def onnxconversion(model_path: PathOrURI):
+def onnxconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     """
     Converts ONNX file to TFLite format.
 
@@ -66,11 +73,15 @@ def onnxconversion(model_path: PathOrURI):
     ----------
     model_path: PathOrURI
         Path to the model to convert
+
+    Returns
+    -------
+    tf.lite.TFLiteConverter
+        TFLite converter for model
     """
     from datetime import datetime
 
     import onnx
-    import tensorflow as tf
     from onnx_tf.backend import prepare
 
     onnxmodel = onnx.load(str(model_path))
@@ -226,7 +237,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
-        import tensorflow as tf
         import tensorflow_model_optimization as tfmot
 
         if io_spec is None:

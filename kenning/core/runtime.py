@@ -10,7 +10,7 @@ Runtimes implement running and testing deployed models on target devices.
 
 import json
 import time
-from abc import ABC
+from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -174,6 +174,7 @@ class Runtime(ArgumentsHandler, ABC):
             )
             self.statsmeasurements = None
 
+    @abstractmethod
     def prepare_input(self, input_data: bytes) -> bool:
         """
         Loads and converts delivered data to the accelerator for inference.
@@ -196,8 +197,9 @@ class Runtime(ArgumentsHandler, ABC):
         ModelNotLoadedError :
             Raised if model is not loaded.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
         """
         Receives the model to infer from the client in bytes.
@@ -220,7 +222,7 @@ class Runtime(ArgumentsHandler, ABC):
         bool
             True if succeeded.
         """
-        raise NotImplementedError
+        ...
 
     def preprocess_input(self, input_data: bytes) -> List[np.ndarray]:
         """
@@ -241,15 +243,15 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        list[np.ndarray]
+        List[np.ndarray]
             List of inputs for each layer which are ready to be passed to the
             model.
 
         Raises
         ------
-        AttributeError :
+        AttributeError
             Raised if output specification is not loaded.
-        ValueError :
+        ValueError
             Raised if size of input doesn't match the input specification.
         """
         if self.input_spec is None:
@@ -472,6 +474,7 @@ class Runtime(ArgumentsHandler, ABC):
         """
         self.run()
 
+    @abstractmethod
     def run(self):
         """
         Runs inference on prepared input.
@@ -485,8 +488,9 @@ class Runtime(ArgumentsHandler, ABC):
         ModelNotLoadedError :
             Raised if model is not loaded.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def extract_output(self) -> List[Any]:
         """
         Extracts and postprocesses the output of the model.
@@ -496,7 +500,7 @@ class Runtime(ArgumentsHandler, ABC):
         List[Any]
             Postprocessed and reordered outputs of the model.
         """
-        raise NotImplementedError
+        ...
 
     def upload_output(self, input_data: bytes) -> bytes:
         """
@@ -516,11 +520,6 @@ class Runtime(ArgumentsHandler, ABC):
         -------
         bytes
             Data to send to the client.
-
-        Raises
-        ------
-        ModelNotLoadedError :
-            Raised if model is not loaded.
         """
         KLogger.debug("Uploading output")
         results = self.extract_output()

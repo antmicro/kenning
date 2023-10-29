@@ -8,6 +8,7 @@ It contains custom converters to enable pruning with NNI.
 WARNING: importing this module will change onnx2torch default converters,
 to reverte changes see restore_default_converters function.
 """
+
 __all__ = [
     "convert",
     "restore_default_converters",
@@ -82,7 +83,7 @@ def create_linear_from_weights(
     ----------
     weights : torch.Tensor
         Tensor with layer weights
-    bias : torch.Tensor | bool | None
+    bias : Optional[Union[torch.Tensor, bool]]
         Tensor with layer bias or None/False when layer don't have bias
     alpha : float
         Scaling factor for weights
@@ -195,6 +196,11 @@ def gemm_converter(
     -------
     OperationConverterResult
         Scheme for converting Gemm
+
+    Raises
+    ------
+    RuntimeError
+        Raised when weights were not found
     """
     a_name = node.input_values[0]
     b_name = node.input_values[1]
@@ -334,6 +340,11 @@ def dropout_converter(
     -------
     OperationConverterResult
         Scheme for converting Dropout
+
+    Raises
+    ------
+    NotImplementedError
+        Raised when no seeds for Dropout are provided
     """
     if len(node.input_values) > 1:
         KLogger.warning("Number of Dropout inputs reduced to one")
@@ -452,6 +463,11 @@ def max_pool_converter(
     -------
     OperationConverterResult
         Scheme for converting MaxPool
+
+    Raises
+    ------
+    RuntimeError
+        Raised when paddings can't be symmetrical
     """
     padding = extract_value_from_graph(node, graph, "pads")
     if padding is not None:
@@ -705,18 +721,21 @@ for description, converter in _CONVERTER_REGISTRY.items():
     )
 
 
-def convert(onnx_model: Union[Path, onnx.ModelProto]):
+def convert(
+    onnx_model: Union[Path, onnx.ModelProto]
+) -> torch.fx.graph_module.GraphModule:
     """
     Function for converting model from ONNX framework to PyTorch.
 
     Parameters
     ----------
-    onnx_model : Path | ModelProto
+    onnx_model : Union[Path, onnx.ModelProto]
         Path to ONNX model or loaded ONNX model
 
     Returns
     -------
-    Model converted to PyTorch framework
+    torch.fx.graph_module.GraphModule
+        Model converted to PyTorch framework
     """
     global CONST_NODES
     CONST_NODES = dict()

@@ -183,7 +183,7 @@ class ModelRuntimeRunner(Runner):
         return any_from_json(json_dict, dataset=dataset)
 
     @staticmethod
-    def _create_runtime(json_dict) -> Runtime:
+    def _create_runtime(json_dict: Dict) -> Runtime:
         """
         Method used to create runtime based on json dict.
 
@@ -200,7 +200,9 @@ class ModelRuntimeRunner(Runner):
         return any_from_json(json_dict)
 
     @classmethod
-    def _get_io_specification(cls, model_io_spec: Dict[str, List[Dict]]):
+    def _get_io_specification(
+        cls, model_io_spec: Dict[str, List[Dict]]
+    ) -> Dict[str, List[Dict]]:
         """
         Creates runner IO specification from chosen parameters.
 

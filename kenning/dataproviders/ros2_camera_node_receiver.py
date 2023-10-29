@@ -206,7 +206,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
         self._triggered = True
         self._data = msg
 
-    def _detect_image_format(self, encoding: str):
+    def _detect_image_format(self, encoding: str) -> str:
         """
         Detects image format from ROS2 encoding.
 
@@ -217,11 +217,13 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Returns
         -------
-        str : Image format. Possible values: RGB, BGR, GRAY.
+        str
+            Image format. Possible values: RGB, BGR, GRAY.
 
         Raises
         ------
-        ROS2DataproviderException : If encoding is not supported.
+        ROS2DataproviderException
+            If encoding is not supported.
         """
         if encoding == "rgb8":
             return "RGB"
@@ -243,7 +245,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Parameters
         ----------
-        img : numpy.ndarray
+        img : np.ndarray
             Image to be converted.
         src_format : str
             Source image format. Possible values: RGB, BGR, GRAY.
@@ -252,7 +254,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Returns
         -------
-        numpy.ndarray
+        np.ndarray
             Converted image.
         """
         if src_format == dst_format:
@@ -294,7 +296,8 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Returns
         -------
-        Dict[str, List[Dict]] : Runner IO specification.
+        Dict[str, List[Dict]]
+            Runner IO specification.
         """
         channels = 3
         height = -1

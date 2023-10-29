@@ -17,7 +17,7 @@ import logging
 import urllib.request
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Callable, Optional, Type, Union
+from typing import Any, Callable, Optional, Type, Union, List, Dict
 
 import coloredlogs
 from tqdm import tqdm
@@ -140,7 +140,7 @@ class LoggerProgressBar(io.StringIO):
             handler.terminator = terminator
 
 
-def download_url(url, output_path):
+def download_url(url: str, output_path: str):
     """
     Downloads the resource and renders the progress bar.
 
@@ -234,7 +234,7 @@ class TqdmCallback(tqdm):
 
     callbacks = []
 
-    def __init__(self, tag: str, *args, **kwargs):
+    def __init__(self, tag: str, *args: List, **kwargs: Dict):
         """
         Initializes the class with a tag. All registered callbacks of the same
         tag are used.
@@ -243,9 +243,9 @@ class TqdmCallback(tqdm):
         ----------
         tag : str
             Tag of the class.
-        args : Any
+        *args : List
             Arguments passed to tqdm constructor.
-        kwargs : Any
+        **kwargs : Dict
             Keyword arguments passed to tqdm constructor.
         """
         super().__init__(*args, **kwargs)
@@ -281,7 +281,7 @@ class TqdmCallback(tqdm):
         """
         cls.callbacks = [clb for clb in cls.callbacks if clb != callback]
 
-    def update(self, n: Optional[Union[float, int]] = 1) -> bool:
+    def update(self, n: Optional[Union[int, float]] = 1) -> bool:
         """
         Updates the displayed progress bar and checks whether any callback
         should be invoked.

@@ -7,7 +7,7 @@ Wrapper for ONNX deep learning compiler.
 """
 
 import onnx
-from typing import Literal, Optional, Dict, List
+from typing import Literal, Optional, Dict, List, Any
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer
@@ -17,7 +17,9 @@ from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
-def kerasconversion(model_path: PathOrURI, input_spec, output_names):
+def kerasconversion(
+    model_path: PathOrURI, input_spec: Dict, output_names: List
+) -> Any:
     """
     Converts Keras model to ONNX.
 
@@ -29,6 +31,11 @@ def kerasconversion(model_path: PathOrURI, input_spec, output_names):
         Dictionary representing inputs
     output_names: List
         Names of outputs to include in the final model
+
+    Returns
+    -------
+    Any
+        Loaded ONNX model, a variant of ModelProto
     """
     import tensorflow as tf
     import tf2onnx
@@ -46,7 +53,9 @@ def kerasconversion(model_path: PathOrURI, input_spec, output_names):
     return modelproto
 
 
-def torchconversion(model_path: PathOrURI, input_spec, output_names):
+def torchconversion(
+    model_path: PathOrURI, input_spec: Dict, output_names: List
+) -> Any:
     """
     Converts Torch model to ONNX.
 
@@ -58,6 +67,16 @@ def torchconversion(model_path: PathOrURI, input_spec, output_names):
         Dictionary representing inputs
     output_names: List
         Names of outputs to include in the final model
+
+    Returns
+    -------
+    Any
+        Loaded ONNX model, a variant of ModelProto
+
+    Raises
+    ------
+    CompilationError
+        Raised if the input type of the model is not torch.nn.Module
     """
     import torch
 
@@ -90,7 +109,9 @@ def torchconversion(model_path: PathOrURI, input_spec, output_names):
     return onnx_model
 
 
-def tfliteconversion(model_path: PathOrURI, input_spec, output_names):
+def tfliteconversion(
+    model_path: PathOrURI, input_spec: Dict, output_names: List
+) -> Any:
     """
     Converts TFLite model to ONNX.
 
@@ -102,6 +123,16 @@ def tfliteconversion(model_path: PathOrURI, input_spec, output_names):
         Dictionary representing inputs
     output_names: List
         Names of outputs to include in the final model
+
+    Returns
+    -------
+    Any
+        Loaded ONNX model, a variant of ModelProto
+
+    Raises
+    ------
+    ConversionError
+        Raised when model could not be loaded
     """
     import tf2onnx
 

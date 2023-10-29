@@ -6,7 +6,7 @@
 Wrapper for TensorFlowPruning optimizer.
 """
 
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 
 import tensorflow as tf
 from typing import Literal
@@ -18,7 +18,7 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
-def kerasconversion(model_path: PathOrURI):
+def kerasconversion(model_path: PathOrURI) -> Any:
     """
     Loads Keras model.
 
@@ -26,6 +26,11 @@ def kerasconversion(model_path: PathOrURI):
     ----------
     model_path: PathOrURI
         Path to the model to convert
+
+    Returns
+    -------
+    Any
+        Loaded Keras model
     """
     model = tf.keras.models.load_model(str(model_path), compile=False)
     return model

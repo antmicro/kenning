@@ -9,7 +9,7 @@ Wrapper for TVM deep learning compiler.
 import tvm
 import onnx
 import tvm.relay as relay
-from typing import Literal, Optional, Dict, List
+from typing import Literal, Optional, Dict, List, Tuple, Union
 
 from kenning.core.optimizer import Optimizer
 from kenning.core.optimizer import ConversionError
@@ -25,7 +25,7 @@ def onnxconversion(
     model_path: PathOrURI,
     input_shapes: Dict,
     dtypes: Dict,
-):
+) -> Tuple[tvm.IRModule, Union[Dict, str]]:
     """
     Converts ONNX file to TVM format.
 
@@ -39,6 +39,18 @@ def onnxconversion(
         Mapping from input name to input shape
     dtypes: Dict
         Mapping from input name to input dtype
+
+    Returns
+    -------
+    mod: tvm.IRModule
+        The relay module
+    params: Union[Dict, str]
+        Parameters dictionary to be used by relay module
+
+    Raises
+    ------
+    IndexError
+        Raised when no dtype was provided in the IO specification
     """
     try:
         dtype = list(dtypes.values())[0]
@@ -56,7 +68,7 @@ def kerasconversion(
     model_path: PathOrURI,
     input_shapes: Dict,
     dtypes: Dict,
-):
+) -> Tuple[tvm.IRModule, Union[Dict, str]]:
     """
     Converts Keras file to TVM format.
 
@@ -70,6 +82,13 @@ def kerasconversion(
         Mapping from input name to input shape
     dtypes: Dict
         Mapping from input name to input dtype
+
+    Returns
+    -------
+    mod: tvm.IRModule
+        The relay module
+    params: Union[Dict, str]
+        Parameters dictionary to be used by relay module
     """
     import tensorflow as tf
 
@@ -91,7 +110,7 @@ def torchconversion(
     model_path: PathOrURI,
     input_shapes: Dict,
     dtypes: Dict,
-):
+) -> Tuple[tvm.IRModule, Union[Dict, str]]:
     """
     Converts Torch file to TVM format.
 
@@ -105,6 +124,13 @@ def torchconversion(
         Mapping from input name to input shape
     dtypes: Dict
         Mapping from input name to input dtype
+
+    Returns
+    -------
+    mod: tvm.IRModule
+        The relay module
+    params: Union[Dict, str]
+        Parameters dictionary to be used by relay module
     """
     import torch
     import numpy as np
@@ -200,7 +226,7 @@ def darknetconversion(
     model_path: PathOrURI,
     input_shapes: Dict,
     dtypes: Dict,
-):
+) -> Tuple[tvm.IRModule, Union[Dict, str]]:
     """
     Converts darknet file to TVM format.
 
@@ -214,6 +240,20 @@ def darknetconversion(
         Mapping from input name to input shape
     dtypes: Dict
         Mapping from input name to input dtype
+
+    Returns
+    -------
+    mod: tvm.IRModule
+        The relay module
+    params: Union[Dict, str]
+        Parameters dictionary to be used by relay module
+
+    Raises
+    ------
+    ConversionError
+        Raised when libdarknet shared library cannot be loaded.
+    IndexError
+        Raised when no dtype is provided in the IO specification
     """
     try:
         dtype = list(dtypes.values())[0]
@@ -247,7 +287,7 @@ def tfliteconversion(
     model_path: PathOrURI,
     input_shapes: Dict,
     dtypes: Dict,
-):
+) -> Tuple[tvm.IRModule, Union[Dict, str]]:
     """
     Converts TFLite file to TVM format.
 
@@ -261,6 +301,13 @@ def tfliteconversion(
         Mapping from input name to input shape
     dtypes: Dict
         Mapping from input name to input dtype
+
+    Returns
+    -------
+    mod: tvm.IRModule
+        The relay module
+    params: Union[Dict, str]
+        Parameters dictionary to be used by relay module
     """
     with open(model_path, "rb") as f:
         tflite_model_buf = f.read()
@@ -405,7 +452,7 @@ class TVMCompiler(Optimizer):
             Framework of the input model, used to select a proper backend.
         target : str
             Target accelerator on which the model will be executed.
-        target_host : str
+        target_host : Optional[str]
             CPU architecture of the target (used when target has a host).
         opt_level : int
             Optimization level of compilation.

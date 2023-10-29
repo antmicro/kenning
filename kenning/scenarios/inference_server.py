@@ -213,6 +213,11 @@ class InferenceServer(object):
         ----------
         input_data : bytes
             Not used here.
+
+        Returns
+        -------
+        bool
+            True if callback was successful
         """
         from kenning.utils.class_loader import load_class
 
@@ -260,6 +265,11 @@ class InferenceServer(object):
         ----------
         input_data : bytes
             Not used here.
+
+        Returns
+        -------
+        bool
+            True if successful
         """
         prev_block = self.prev_block
         model_path = prev_block.compiled_model_path

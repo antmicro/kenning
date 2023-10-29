@@ -35,8 +35,13 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs : Dict[str, str])
+        outputs : Dict[str, str]
             Outputs of this Runner.
+
+        Raises
+        ------
+        IOCompatibilityError
+            Raised when connections have incompatible types
         """
         self.inputs_sources = inputs_sources
         self.inputs_specs = inputs_specs
@@ -103,12 +108,12 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs : Dict[str, str])
+        outputs : Dict[str, str]
             Outputs of this Runner.
 
         Returns
         -------
-        OutputCollector
+        Runner
             Object of class Runner.
         """
         return super().from_argparse(
@@ -141,7 +146,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
             Input from where data is being retrieved.
         inputs_specs : Dict[str, Dict]
             Specifications of runner's inputs.
-        outputs : Dict[str, str])
+        outputs : Dict[str, str]
             Outputs of this Runner.
 
         Returns
@@ -162,7 +167,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        flow_state : List[Dict[str, np.ndarray]])
+        flow_state : List[Dict[str, Any]]
             Current flow state containing all variables used in flow.
         """
         # retrieves input values from current flow state based on data
@@ -196,4 +201,4 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         Dict[str, Any]
             Output of this block.
         """
-        raise NotImplementedError
+        ...

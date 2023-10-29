@@ -49,7 +49,7 @@ class DataConverter(ArgumentsHandler, ABC):
         Any
             Converted data.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def to_previous_block(self, data: Any) -> Any:
@@ -67,4 +67,4 @@ class DataConverter(ArgumentsHandler, ABC):
         Any
             Converted data.
         """
-        raise NotImplementedError
+        ...

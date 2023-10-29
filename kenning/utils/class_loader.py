@@ -44,8 +44,9 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
 
     Returns
     -------
-    Dict[str, Tuple[str, Type]] dict with keys corresponding to names of
-    groups of modules, values are module paths and base class names
+    Dict[str, Tuple[str, Type]]
+        dict with keys corresponding to names of
+        groups of modules, values are module paths and base class names
     """
     return {
         OPTIMIZERS: ("kenning.optimizers", Optimizer),
@@ -93,6 +94,13 @@ def get_all_subclasses(
         When importing classes: List of all final subclasses of given class.
         When not importing classes: list of tuples with name and module path
         of the class
+
+    Raises
+    ------
+    ModuleNotFoundError, ImportError
+        When modules could not be imported
+    Exception
+        If some unspecified errors occured during imports
     """
     root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]
@@ -246,7 +254,7 @@ def load_class(module_path: str) -> Type:
 
     Returns
     -------
-    type
+    Type
         Loaded class.
     """
     module_name, cls_name = module_path.rsplit(".", 1)
@@ -255,7 +263,7 @@ def load_class(module_path: str) -> Type:
     return cls
 
 
-def get_kenning_submodule_from_path(module_path: str):
+def get_kenning_submodule_from_path(module_path: str) -> str:
     """
     Converts script path to kenning submodule name.
 
@@ -275,7 +283,7 @@ def get_kenning_submodule_from_path(module_path: str):
     return modulename
 
 
-def get_command(argv: List[str] = None, with_slash: bool = True):
+def get_command(argv: List[str] = None, with_slash: bool = True) -> str:
     """
     Creates a string with command.
 

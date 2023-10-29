@@ -8,8 +8,8 @@ Module containing template for creating commands and their names.
 
 import sys
 import argparse
-from abc import abstractstaticmethod, ABC
-from typing import Dict, Optional, List, Union, Tuple
+from abc import abstractmethod, ABC
+from typing import Dict, Optional, List, Union, Tuple, Any
 
 from kenning.cli.parser import Parser, ParserHelpException, HELP_FLAGS
 
@@ -63,7 +63,7 @@ class CommandTemplate(ABC):
 
         Parameters
         ----------
-        parser : argparse.ArgumentParser
+        parser : Optional[argparse.ArgumentParser]
             Parser to which flags and arguments should be added.
         command : Optional[str]
             Name of the command or script used by parser.
@@ -133,6 +133,11 @@ class CommandTemplate(ABC):
         -------
         ArgumentsGroups
             Argument groups with new groups added.
+
+        Raises
+        ------
+        TypeError
+            Rased when given value is of invalid type
         """
         if groups is None:
             groups = dict()
@@ -152,9 +157,10 @@ class CommandTemplate(ABC):
 
         return groups
 
-    @abstractstaticmethod
+    @abstractmethod
+    @staticmethod
     def run(
-        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
+        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs: Any
     ) -> Optional[int]:
         """
         The method containing logic of the scenario.
@@ -173,7 +179,7 @@ class CommandTemplate(ABC):
         Optional[int]
             Status of executed scenario.
         """
-        raise NotImplementedError
+        ...
 
     @classmethod
     def scenario_run(cls, argv: Optional[List[str]] = None) -> Optional[int]:
@@ -191,6 +197,11 @@ class CommandTemplate(ABC):
         -------
         Optional[int]
             Status of executed scenario
+
+        Raises
+        ------
+        ParserHelpException
+            Raised when help is requested in arguments
         """
         if argv is None:
             argv = sys.argv

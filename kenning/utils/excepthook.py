@@ -114,14 +114,14 @@ def _normalize(name: str) -> str:
 
     Replaces '-' with '_' and ensures only lower-case letters are used.
 
-    Parameter
-    ---------
+    Parameters
+    ----------
     name : str
         Any string
 
-    Return
-    ------
-    str :
+    Returns
+    -------
+    str
         Normalized string
     """
     return name.replace("-", "_").lower()

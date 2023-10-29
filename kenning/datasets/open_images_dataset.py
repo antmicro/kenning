@@ -27,7 +27,7 @@ import shutil
 from pathlib import Path
 import re
 import numpy as np
-from typing import Tuple, List, Optional
+from typing import Tuple, List, Optional, Generator
 from collections import defaultdict
 
 from kenning.utils.resource_manager import Resources
@@ -52,7 +52,9 @@ BUCKET_NAME = "open-images-dataset"
 REGEX = r"(test|train|validation|challenge2018)/([a-fA-F0-9]*)"
 
 
-def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
+def check_and_homogenize_one_image(
+    image: str
+) -> Generator[Tuple[str, str], None, None]:
     """
     Subdivides download entry to split type and image ID.
 
@@ -63,26 +65,33 @@ def check_and_homogenize_one_image(image: str) -> Tuple[str, str]:
 
     Yields
     ------
-    Tuple[str, str]:
+    Tuple[str, str]
         Tuple containing split and image ID.
     """
     split, image_id = re.match(REGEX, image).groups()
     yield split, image_id
 
 
-def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
+def check_and_homogenize_image_list(
+    image_list: List[str]
+) -> Generator[Tuple[str, str], None, None]:
     """
     Converts download entries using check_and_homogenize_one_image.
 
     Parameters
     ----------
-    image_list : list[str]
+    image_list : List[str]
         List of download entries.
 
     Yields
     ------
-    Tuple[str, str] :
+    Tuple[str, str]
         Download entries.
+
+    Raises
+    ------
+    ValueError
+        Raised when image path was not found/recognized
     """
     for line_number, image in enumerate(image_list):
         try:
@@ -95,14 +104,17 @@ def check_and_homogenize_image_list(image_list: List[str]) -> Tuple[str, str]:
 
 
 def download_one_image(
-    bucket, split: str, image_id: str, download_folder: Path
+    bucket: boto3.resources.factory.s3.Bucket,
+    split: str,
+    image_id: str,
+    download_folder: Path,
 ):
     """
     Downloads image from a bucket.
 
     Parameters
     ----------
-    bucket : boto3 bucket
+    bucket : boto3.resources.factory.s3.Bucket
         Bucket to download from.
     split : str
         Dataset split.
@@ -132,7 +144,7 @@ def download_all_images(
     ----------
     download_folder : Path
         Path to the target directory.
-    image_list : list[str]
+    image_list : List[str]
         List of images.
     num_processes : int
         Number of threads to use for image download.
@@ -549,19 +561,21 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             result.append(npimg)
         return result
 
-    def prepare_instance_segmentation_output_samples(self, samples):
+    def prepare_instance_segmentation_output_samples(
+        self, samples: List[List[SegmObject]]
+    ) -> List[List[SegmObject]]:
         """
         Loads instance segmentation masks.
 
         Parameters
         ----------
-        samples : list[list[SegmObject]]
+        samples : List[List[SegmObject]]
             List of SegmObjects containing data about masks
             and their path.
 
         Returns
         -------
-        list[list[SegmObject]]
+        List[List[SegmObject]]
             Prepared sample data.
         """
         result = []

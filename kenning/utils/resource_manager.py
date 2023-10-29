@@ -266,7 +266,7 @@ class ResourceManager(metaclass=Singleton):
 
         Parameters
         ----------
-        custom_url_schemes : Dict[str, Optional[Union[Dict, Callable]]]
+        custom_url_schemes : Dict[str, Optional[Union[str, Callable]]]
             Dictionary with custom url schemes entries. Each entry consists of
             schema and corresponding conversion. Conversion can be None, string
             pattern or callable returning string.
@@ -358,6 +358,11 @@ class ResourceManager(metaclass=Singleton):
         -------
         str
             Parsed string.
+
+        Raises
+        ------
+        ValueError
+            Raised when conversion of values of arguments fails
         """
         params = set(self.param_pattern.findall(converter))
 
@@ -443,6 +448,11 @@ class ResourceManager(metaclass=Singleton):
         -------
         str
             Parsed string.
+
+        Raises
+        ------
+        ValueError
+            Raised when invalid parameter name is provided
         """
         callable_arg_spec = getfullargspec(converter)
 
@@ -821,7 +831,7 @@ class Resources(object):
 
         Returns
         -------
-        List[Tuple[str, ...]
+        List[Tuple[str, ...]]
             List of available resources' keys.
         """
         result = []

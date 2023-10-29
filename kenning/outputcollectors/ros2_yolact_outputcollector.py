@@ -137,7 +137,9 @@ class ROS2YolactOutputCollector(OutputCollector):
         )
 
     @classmethod
-    def _get_io_specification(cls, input_memory_layout: str):
+    def _get_io_specification(
+        cls, input_memory_layout: str
+    ) -> Dict[str, List[Dict]]:
         """
         Creates runner IO specification with given parameters.
 
@@ -205,12 +207,13 @@ class ROS2YolactOutputCollector(OutputCollector):
         ----------
         image : np.ndarray
             Image to be converted to ROS2 Image message.
-        y : List[SgmeObject]
+        y : List[SegmObject]
             List of SegmObject to be converted to numpy arrays.
 
         Returns
         -------
-        SegmentationMsg : Filled SegmentationMsg message ready to be published.
+        SegmentationMsg
+            Filled SegmentationMsg message ready to be published.
         """
         yolact_msg = SegmentationMsg()
         yolact_msg.frame = self._create_frame_msg(image)
@@ -228,7 +231,8 @@ class ROS2YolactOutputCollector(OutputCollector):
 
         Returns
         -------
-        sensor_msgs.msg.Image : Image message filled with given image data.
+        sensor_msgs.msg.Image
+            Image message filled with given image data.
         """
         image = image.squeeze()
         if self._input_memory_layout == "NCHW":
@@ -258,7 +262,13 @@ class ROS2YolactOutputCollector(OutputCollector):
 
         Returns
         -------
-        str : Supported ROS2 image encoding.
+        str
+            Supported ROS2 image encoding.
+
+        Raises
+        ------
+        ValueError
+            Raised when unknown color format is provided
         """
         encodings = {
             "RGB": "rgb8",

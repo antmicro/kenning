@@ -38,12 +38,12 @@ def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:
 
     Parameters
     ----------
-    masks : numpy.ndarray
+    masks : np.ndarray
         Array of (H, W, N) elements, (H, W) being the dimension of an image,
         N being number of detected objects. Masks should contain elements
         from [0, 1] range, whether the pixel is a part of detected object
         or not.
-    boxes : numpy.ndarray
+    boxes : np.ndarray
         Boxes should be of (N, 4) shape, each box is defined by four numbers
         (x1, y1, x2, y2), where (x1, y1) are coordinates of northwestern point
         and (x2, y2) is coordinate for southeastern point. The coordinates are
@@ -54,7 +54,7 @@ def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
         Masks for detected objects, each mask is cropped to the bounding box
         (there are no non-zero pixels outside the bbox).
     """
@@ -99,9 +99,9 @@ def sanitize_coordinates(
 
     Parameters
     ----------
-    _x1 : numpy.ndarray
+    _x1 : np.ndarray
         Array of (N,) elements.
-    _x2 : numpy.ndarray
+    _x2 : np.ndarray
         Array of (N,) elements.
     img_size : int
         Upper bound for elements in the resulting array. Conversion from
@@ -113,7 +113,7 @@ def sanitize_coordinates(
 
     Returns
     -------
-    Tuple[numpy.ndarray, numpy.ndarray]
+    Tuple[np.ndarray, np.ndarray]
         Result is (x1, x2), each array has a (N,) shape, elementwise
         each element from both arrays satisfy: 0 <= x1 <= x2 <= img_size.
     """
@@ -133,12 +133,12 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
 
     Parameters
     ----------
-    x : numpy.ndarray
+    x : np.ndarray
         Input array.
 
     Returns
     -------
-    numpy.ndarray
+    np.ndarray
         Result of element wise sigmoid function.
     """
     return np.where(
@@ -484,14 +484,14 @@ class YOLACT(YOLACTWrapper):
 
         Parameters
         ----------
-        loc : numpy.ndarray
+        loc : np.ndarray
             Array of locations.
-        priors : numpy.ndarray
+        priors : np.ndarray
             Array of priors.
 
         Returns
         -------
-        numpy.ndarray
+        np.ndarray
             Array of bounding boxes.
         """
         variances = [0.1, 0.2]
@@ -519,18 +519,18 @@ class YOLACT(YOLACTWrapper):
 
         Parameters
         ----------
-        conf_preds : numpy.ndarray
+        conf_preds : np.ndarray
             Array of confidence predictions.
-        decode_boxes : numpy.ndarray
+        decode_boxes : np.ndarray
             Array of decoded bounding boxes.
-        mask_data : numpy.ndarray
+        mask_data : np.ndarray
             Array of mask data.
         nms_thresh : Optional[float]
             NMS threshold.
 
         Returns
         -------
-        Dict[str, numpy.ndarray]
+        Dict[str, np.ndarray]
             Dictionary of detected objects.
         """
         # Remove predictions with the background label
@@ -588,7 +588,7 @@ class YOLACT(YOLACTWrapper):
 
         Parameters
         ----------
-        y : Dict[str, np.ndarray]
+        y : List[ np.ndarray]
             Dictionary of model outputs.
 
         Returns

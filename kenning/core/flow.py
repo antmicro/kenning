@@ -54,7 +54,7 @@ class KenningFlow:
         self.should_close = False
 
     @classmethod
-    def form_parameterschema(cls):
+    def form_parameterschema(cls) -> Dict:
         """
         Creates schema for the KenningFlow class.
 
@@ -85,7 +85,9 @@ class KenningFlow:
         }
 
     @classmethod
-    def from_json(cls, runners_specifications: List[Dict[str, Any]]):
+    def from_json(
+        cls, runners_specifications: List[Dict[str, Any]]
+    ) -> "KenningFlow":
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -95,13 +97,20 @@ class KenningFlow:
 
         Parameters
         ----------
-        runners_specifications : List
+        runners_specifications : List[Dict[str, Any]]
             List of runners that creates the flow.
 
         Returns
         -------
         KenningFlow
             Object of class KenningFlow.
+
+        Raises
+        ------
+        jsonschema.ValidationError
+            Raised for invalid JSON description
+        Exception
+            Raised for undefined and redefined variables, depending on context
         """
         try:
             jsonschema.validate(

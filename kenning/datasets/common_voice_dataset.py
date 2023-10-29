@@ -121,7 +121,7 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
 
     Returns
     -------
-    str
+    Path
         The string-typed path to the converted file.
     """
     from pydub import AudioSegment

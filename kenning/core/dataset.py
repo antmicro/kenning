@@ -271,6 +271,11 @@ class Dataset(ArgumentsHandler, ABC):
         Tuple[List, List]
             Tuple containing list of input data for inference and output data
             for comparison.
+
+        Raises
+        ------
+        StopIteration
+            Raised when iterations are finished
         """
         if self._dataindex < len(self.dataX):
             prev = self._dataindex
@@ -403,7 +408,7 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return samples
 
-    def set_batch_size(self, batch_size):
+    def set_batch_size(self, batch_size: int):
         """
         Sets the batch size of the data in the iterator batches.
 
@@ -611,6 +616,11 @@ class Dataset(ArgumentsHandler, ABC):
             The fraction of data to use for calibration.
         seed : int
             The seed for random state.
+
+        Yields
+        ------
+        List[Any]
+            List with batch input samples for calibration
         """
         if self.external_calibration_dataset is None:
             X = self.train_test_split_representations(percentage, seed=seed)[1]
@@ -646,7 +656,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[Any]
+        List[Path]
             List of objects that are usable by the ``prepare_input_samples``
             method.
         """
@@ -712,7 +722,7 @@ class Dataset(ArgumentsHandler, ABC):
         raise NotImplementedError
 
     @abstractmethod
-    def evaluate(self, predictions: list, truth: list) -> "Measurements":
+    def evaluate(self, predictions: List, truth: List) -> "Measurements":
         """
         Evaluates the model based on the predictions.
 
@@ -735,8 +745,9 @@ class Dataset(ArgumentsHandler, ABC):
         Measurements
             The dictionary containing the evaluation results.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def get_input_mean_std(self) -> Tuple[Any, Any]:
         """
         Returns mean and std values for input tensors.
@@ -750,8 +761,9 @@ class Dataset(ArgumentsHandler, ABC):
             Tuple of two variables describing mean and
             standardization values for a given train dataset.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def get_class_names(self) -> List[str]:
         """
         Returns list of class names in order of their IDs.
@@ -761,7 +773,7 @@ class Dataset(ArgumentsHandler, ABC):
         List[str]
             List of class names.
         """
-        raise NotImplementedError
+        ...
 
     def _compute_dataset_checksum(self) -> bytes:
         """

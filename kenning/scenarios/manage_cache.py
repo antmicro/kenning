@@ -20,7 +20,7 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceManager
 
 
-def format_size(size: int, unit: str = "B"):
+def format_size(size: int, unit: str = "B") -> str:
     """
     Return string with proper unit.
 

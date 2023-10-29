@@ -33,6 +33,7 @@ import onnx
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 from kenning.utils.resource_manager import PathOrURI
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
 def yolov4_remove_postprocessing(
@@ -105,8 +106,12 @@ class ONNXYOLOV4(YOLOWrapper):
         return self.parse_batches(outputs)
 
     def loss_torch(
-        self, outputs: List, target: List[List], scale_noobj=0.5, eps=1e-7
-    ):
+        self,
+        outputs: List,
+        target: List[List[DetectObject]],
+        scale_noobj: float = 0.5,
+        eps: float = 1e-7,
+    ) -> float:
         """
         Loss function for YOLOv4, implemented to work one batch in form
         of torch.Tensors. YOLOv4 use sum of few losses - CIoU, binary
@@ -114,9 +119,9 @@ class ONNXYOLOV4(YOLOWrapper):
 
         Parameters
         ----------
-        outputs : List[torch.Tensor]
-            One batch of YOLO network output
-        target : List[List[DectObject]]
+        outputs : List
+            One batch of YOLO network output of type torch.Tensor
+        target : List[List[DetectObject]]
             True bounding boxes of object on precessed image
         scale_noobj : float
             Scaling factor of bounding boxes without object error
@@ -125,7 +130,7 @@ class ONNXYOLOV4(YOLOWrapper):
 
         Returns
         -------
-        torch.Tensor
+        float
             Value of loss
         """
         import torch

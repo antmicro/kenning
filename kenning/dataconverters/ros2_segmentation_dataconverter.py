@@ -43,11 +43,6 @@ class ROS2SegmentationDataConverter(DataConverter):
         -------
         SegmentationAction.Goal
             The converted segmentation action goal.
-
-        Raises
-        ------
-        AssertionError :
-            If the input data is not 3-dimensional.
         """
         goal = SegmentationAction.Goal()
         for frame in data:

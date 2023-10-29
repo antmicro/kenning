@@ -146,10 +146,10 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Optional[Dataset]
-            The dataset object to feed to the model.
         json_dict : Dict
             Arguments for the constructor.
+        dataset : Optional[Dataset]
+            The dataset object to feed to the model.
         from_file : bool
             Determines if the model should be loaded from model_path.
 
@@ -175,8 +175,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         It should also set model_prepared field to True
         once the model is prepared.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def load_model(self, model_path: PathOrURI):
         """
         Loads the model from file.
@@ -186,8 +187,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         model_path : PathOrURI
             Path or URI to the model file.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def save_model(self, model_path: PathOrURI):
         """
         Saves the model to file.
@@ -197,8 +199,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         model_path : PathOrURI
             Path or URI to the model file.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def save_to_onnx(self, model_path: PathOrURI):
         """
         Saves the model in the ONNX format.
@@ -208,7 +211,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         model_path : PathOrURI
             Path or URI to the model file.
         """
-        raise NotImplementedError
+        ...
 
     def preprocess_input(self, X: List) -> Any:
         """
@@ -239,7 +242,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        y : List[Any]
+        y : Union[List[Any], np.ndarray]
             The list of output data from the model.
 
         Returns
@@ -253,6 +256,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
     def _postprocess_outputs(self, y):
         return self.postprocess_outputs(y)
 
+    @abstractmethod
     def run_inference(self, X: List) -> Any:
         """
         Runs inference for a given preprocessed input.
@@ -267,7 +271,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         Any
             The results of the inference.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def get_framework_and_version(self) -> Tuple[str, str]:
@@ -279,7 +283,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         Tuple[str, str]
             Framework name and version.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def get_output_formats(self) -> List[str]:
@@ -291,7 +295,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         List[str]
             List of possible output format names.
         """
-        raise NotImplementedError
+        ...
 
     @timemeasurements("target_inference_step")
     def _run_inference(self, X):
@@ -325,6 +329,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         return measurements
 
+    @abstractmethod
     def train_model(
         self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
     ):
@@ -350,7 +355,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         logdir : Path
             Path to the logging directory.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
@@ -373,7 +378,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Dictionary that conveys input and output
             layers specification.
         """
-        raise NotImplementedError
+        ...
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         """
@@ -408,6 +413,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         except (FileNotFoundError, HTTPError):
             return cls.derive_io_spec_from_json_params(parsed_json_dict)
 
+    @abstractmethod
     @classmethod
     def derive_io_spec_from_json_params(
         cls, json_dict: Dict
@@ -431,7 +437,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             Dictionary that conveys input and output
             layers specification.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def convert_input_to_bytes(self, inputdata: Any) -> bytes:
@@ -449,7 +455,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         bytes
             Input data as byte stream.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
@@ -470,4 +476,4 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             List of output data from a model. The converted data should be
             compatible with the ``postprocess_outputs`` method.
         """
-        raise NotImplementedError
+        ...

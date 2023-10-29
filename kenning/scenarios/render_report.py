@@ -101,7 +101,7 @@ def performance_report(
     image_formats: Set[str],
     color_offset: int = 0,
     draw_titles: bool = True,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates performance section of the report.
@@ -122,7 +122,7 @@ def performance_report(
         How many colors from default color list should be skipped.
     draw_titles : bool
         Should titles be drawn on the plot.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -294,7 +294,7 @@ def comparison_performance_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates performance comparison section of report.
@@ -313,7 +313,7 @@ def comparison_performance_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -478,7 +478,7 @@ def classification_report(
     cmap: Optional[Any] = None,
     colors: Optional[List] = None,
     draw_titles: bool = True,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates classification quality section of the report.
@@ -495,13 +495,13 @@ def classification_report(
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
         Collection with formats which should be used to generate plots.
-    cmap : Optional[ListedColormap]
-        Color map to be used in the plots.
+    cmap : Optional[Any]
+        Color map to be used in the plots (matplotlib.colors.ListedColormap)
     colors : Optional[List]
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -580,7 +580,7 @@ def comparison_classification_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates classification comparison section of report.
@@ -599,7 +599,7 @@ def comparison_classification_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -900,7 +900,7 @@ def comparison_detection_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates detection comparison section of report.
@@ -919,7 +919,7 @@ def comparison_detection_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -981,7 +981,7 @@ def renode_stats_report(
     draw_titles: bool = True,
     colors: Optional[List] = None,
     color_offset: int = 0,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates Renode stats section of the report.
@@ -1004,7 +1004,7 @@ def renode_stats_report(
         Colors used for plots.
     color_offset : int
         How many colors from default color list should be skipped.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -1303,14 +1303,14 @@ def renode_stats_report(
 
 
 def comparison_renode_stats_report(
-    measurementsdata: List[Dict],
+    measurementsdata: Dict[str, List],
     imgdir: Path,
     rootdir: Path,
     image_formats: Set[str],
     color_offset: int = 0,
     draw_titles: bool = True,
     colors: Optional[List] = None,
-    **kwargs,
+    **kwargs: Dict,
 ) -> str:
     """
     Creates Renode stats section of the report.
@@ -1321,8 +1321,6 @@ def comparison_renode_stats_report(
         Statistics from the Measurements class.
     imgdir : Path
         Path to the directory for images.
-    imgprefix : str
-        Prefix to the image file name.
     rootdir : Path
         Path to the root of the documentation project involving this report.
     image_formats : Set[str]
@@ -1333,7 +1331,7 @@ def comparison_renode_stats_report(
         Should titles be drawn on the plot.
     colors : Optional[List]
         Colors used for plots.
-    kwargs : Any
+    **kwargs : Dict
         Additional keyword arguments.
 
     Returns
@@ -1725,8 +1723,6 @@ def generate_report(
         It is used to compute relative paths in the document's references.
     image_formats : Set[str]
         Iterable object with extensions, in which images should be generated.
-    image_formats : Set[str]
-        Collection with formats which should be used to generate plots.
     command : List[str]
         Full command used to render this report, split into separate lines.
     cmap : Optional[Any]

@@ -108,7 +108,7 @@ class RenodeRuntime(Runtime):
             Path to the runtime binary.
         platform_resc_path : PathOrURI
             Path to the Renode script.
-        resc_dependencies : List[ResourceURI] = []
+        resc_dependencies : List[ResourceURI]
             Renode script dependencies.
         disable_profiler : bool
             Disables Renode profiler.
@@ -333,7 +333,7 @@ class RenodeRuntime(Runtime):
 
         return stats
 
-    def get_profiler_stats(self) -> Dict[str, Any]:
+    def get_profiler_stats(self) -> Dict[str, List[float]]:
         """
         Parses Renode profiler dump.
 
@@ -341,6 +341,11 @@ class RenodeRuntime(Runtime):
         -------
         Dict[str, List[float]]
             Stats retrieved from Renode profiler dump.
+
+        Raises
+        ------
+        FileNotFoundError
+            Raised when no Renode profiler dump file was found.
         """
         KLogger.info("Parsing Renode profiler dump")
         if (
@@ -440,6 +445,11 @@ class _ProfilerDumpParser(object):
         -------
         Dict[str, Any]
             Dict containing statistics retrieved from the dump file.
+
+        Raises
+        ------
+        Exception
+            Raised when profiler dump could not be parsed
         """
         profiler_timestamps = []
         stats = {
@@ -649,7 +659,7 @@ class _ProfilerDumpParser(object):
 
         Returns
         -------
-        Tuple[Dict[int, str], Dict[str, List[int]]]
+        Tuple[Dict[int, str], Dict[str, Tuple[int, int]]]
             Tuples of dicts containing cpus and peripherals data.
         """
         cpus = {}

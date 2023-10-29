@@ -258,6 +258,11 @@ class PipelineManagerClient(CommandTemplate):
             ----------
             frontend_path : Path
                 The path where the built frontend files should be stored.
+
+            Raises
+            ------
+            RuntimeError:
+                Raised if frontend building failed
             """
             # provided these files exist, do not build the frontend again
             if (

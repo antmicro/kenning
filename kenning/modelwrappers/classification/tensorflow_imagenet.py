@@ -104,6 +104,12 @@ class TensorFlowImageNet(TensorFlowWrapper):
             Number of classes in the model.
         disablebuiltinpreprocessing : bool
             Tells if the input preprocessing should be removed from the model.
+
+        Raises
+        ------
+        ValueError
+            Raised when dataset batch size and ModelWrapper supported
+            sizes do not match
         """
         super().__init__(model_path, dataset, from_file, model_name)
         import tensorflow as tf

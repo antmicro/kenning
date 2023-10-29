@@ -8,7 +8,7 @@ Contains methods for YOLO models for object detection.
 
 import re
 import sys
-from abc import ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -328,7 +328,8 @@ class YOLOWrapper(ModelWrapper, ABC):
         return self._get_io_specification(self.keyparams, self.batch_size)
 
     @classmethod
+    @abstractmethod
     def _get_io_specification(
         cls, keyparams: Dict[str, Any], batch_size: int
     ) -> Dict[str, List[Dict]]:
-        raise NotImplementedError
+        ...

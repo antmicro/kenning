@@ -14,26 +14,38 @@ import numpy as np
 EPS = 1e-8
 
 
-def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]):
+def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]) -> float:
     """
     Computes accuracy of the classifier based on confusion matrix.
 
     Parameters
     ----------
-    confusion_matrix : ArrayLike
+    confusion_matrix : Union[List[List[int]], np.ndarray]
         The Numpy nxn array or nxn list representing confusion matrix.
+
+    Returns
+    -------
+    float
+        Accuracy of the model
     """
     return np.trace(confusion_matrix) / np.sum(confusion_matrix)
 
 
-def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
+def mean_precision(
+    confusion_matrix: Union[List[List[int]], np.ndarray]
+) -> float:
     """
     Computes mean precision for all classes in the confusion matrix.
 
     Parameters
     ----------
-    confusion_matrix : ArrayLike
+    confusion_matrix : Union[List[List[int]], np.ndarray]
         The Numpy nxn array or nxn list representing confusion matrix.
+
+    Returns
+    -------
+    float
+        Precision of the model
     """
     return np.mean(
         np.array(confusion_matrix).diagonal()
@@ -41,14 +53,21 @@ def mean_precision(confusion_matrix: Union[List[List[int]], np.ndarray]):
     )
 
 
-def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
+def mean_sensitivity(
+    confusion_matrix: Union[List[List[int]], np.ndarray]
+) -> float:
     """
     Computes mean sensitivity for all classes in the confusion matrix.
 
     Parameters
     ----------
-    confusion_matrix : ArrayLike
+    confusion_matrix : Union[List[List[int]], np.ndarray]
         The Numpy nxn array or nxn list representing confusion matrix.
+
+    Returns
+    -------
+    float
+        Sensitivity of the model
     """
     return np.mean(
         np.array(confusion_matrix).diagonal()
@@ -56,14 +75,19 @@ def mean_sensitivity(confusion_matrix: Union[List[List[int]], np.ndarray]):
     )
 
 
-def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]):
+def g_mean(confusion_matrix: Union[List[List[int]], np.ndarray]) -> float:
     """
     Computes g-mean metric for the confusion matrix.
 
     Parameters
     ----------
-    confusion_matrix : ArrayLike
+    confusion_matrix : Union[List[List[int]], np.ndarray]
         The Numpy nxn array or nxn list representing confusion matrix.
+
+    Returns
+    -------
+    float
+        G-Mean of the model
     """
     return np.float_power(
         np.prod(
@@ -100,7 +124,7 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Gathered computed metrics.
     """
     computed_metrics = {}
@@ -183,7 +207,7 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Gathered computed metrics.
     """
     # If confusion matrix is not present in the measurementsdata, then
@@ -221,7 +245,7 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Gathered computed metrics.
     """
     from kenning.datasets.helpers.detection_and_segmentation import (
@@ -237,7 +261,7 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     return {}
 
 
-def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
+def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
     """
     Computes Renode metrics based on `measurementsdata` argument.
     If there is no Renode metrics returns an empty dictionary.
@@ -246,12 +270,12 @@ def compute_renode_metrics(measurementsdata: List[Dict]) -> Dict:
 
     Parameters
     ----------
-    measurementsdata : Dict[str, List]
+    measurementsdata : List[Dict[str, List]]
         Statistics from the Measurements class.
 
     Returns
     -------
-    Dict :
+    Dict
         Gathered computed metrics.
     """
     if not any(("opcode_counters" in data for data in measurementsdata)):

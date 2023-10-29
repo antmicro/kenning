@@ -108,7 +108,7 @@ def get_all_sequences(
 
     Yields
     ------
-    List[str] :
+    Tuple[str]
         Sequence of commands
     """
     if prefix is None:
@@ -145,7 +145,7 @@ def create_subcommands(
 
     Returns
     -------
-    Dict[Tuple[str], argparse.ArgumentParser] :
+    Dict[Tuple[str], argparse.ArgumentParser]
         Dictionary of parsers associated with sequence of subcommands
     """
     groups = {}
@@ -188,9 +188,9 @@ def setup_base_parser(
 
     Returns
     -------
-    argparse.ArgumentParser :
+    parser: argparse.ArgumentParser
         Created parser
-    Dict[Tuple[str], argparse.ArgumentParser] :
+    subcommands: Dict[Tuple[str], argparse.ArgumentParser]
         Dictionary of parsers associated with sequence of subcommands
     """
     parser = argparse.ArgumentParser(

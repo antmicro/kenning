@@ -6,6 +6,7 @@
 Sphinx extension for allowing HTML files to be loadable
 in figures.
 """
+
 import copy
 import logging
 from pathlib import Path

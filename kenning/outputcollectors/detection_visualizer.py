@@ -24,7 +24,7 @@ def generate_color() -> Tuple[float, float, float]:
 
     Returns
     -------
-    Tuple[float, float, float] :
+    Tuple[float, float, float]
         Color in (r,g,b) format.
     """
     return colorsys.hsv_to_rgb(np.random.rand(), 1, 1)
@@ -142,7 +142,7 @@ class DetectionVisualizer(OutputCollector):
 
         Returns
         -------
-        Tuple[int, int] :
+        Tuple[int, int]
             Size-based coordinates.
         """
         return (
@@ -167,7 +167,7 @@ class DetectionVisualizer(OutputCollector):
 
         Returns
         -------
-        np.ndarray :
+        np.ndarray
             The modified image with visualizations drawn.
         """
         out_img = input_data
@@ -209,7 +209,7 @@ class DetectionVisualizer(OutputCollector):
         ----------
         input_data : np.ndarray
             The original image.
-        output_data : List[DetectObject]
+        output_data : List[List[DetectObject]]
             List of found objects represented as DetectObjects.
         """
         # TODO: consider adding support for variable batch sizes

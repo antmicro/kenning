@@ -21,7 +21,7 @@ from nni.compression.pytorch.speedup.compress_modules import (
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
 from nni.common.graph_utils import _logger as nni_graph_logger
 import numpy as np
-from typing import Callable, Dict, Literal, Optional, List, Type, Tuple
+from typing import Callable, Dict, Literal, Optional, List, Type, Tuple, Any
 from enum import Enum
 import copy
 import dill
@@ -38,7 +38,9 @@ from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
-def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
+def torchconversion(
+    model_path: PathOrURI, device: torch.device, **kwargs
+) -> torch.nn.Module:
     """
     Loads the PyTorch model.
 
@@ -50,6 +52,16 @@ def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
         Tells where the model should be loaded
     **kwargs:
         Additional arguments
+
+    Returns
+    -------
+    torch.nn.Module
+        Loaded model
+
+    Raises
+    ------
+    CompilationError
+        Raised when loaded model is not of instance torch.nn.Module
     """
     loaded = torch.load(str(model_path), map_location=device)
     if not isinstance(loaded, torch.nn.Module):
@@ -60,7 +72,9 @@ def torchconversion(model_path: PathOrURI, device: torch.device, **kwargs):
     return loaded
 
 
-def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
+def onnxconversion(
+    model_path: PathOrURI, device: torch.device, **kwargs
+) -> torch.nn.Module:
     """
     Converts the ONNX model to PyTorch.
 
@@ -72,6 +86,16 @@ def onnxconversion(model_path: PathOrURI, device: torch.device, **kwargs):
         Tells where the model should be loaded
     **kwargs:
         Additional arguments
+
+    Returns
+    -------
+    torch.nn.Module
+        Loaded model
+
+    Raises
+    ------
+    CompilationError
+        Raised when loaded model is not of instance torch.nn.Module
     """
     conversion = PyTorchONNXConversion()
     if conversion.onnx_import(None, model_path) != SupportStatus.SUPPORTED:
@@ -341,7 +365,7 @@ class NNIPruningOptimizer(Optimizer):
             NNI documentation - Compression Config Specification.
         training_steps : int
             The step number used to collect activation.
-        mode : str
+        mode : Optional[str]
             'normal' or 'dependency_aware' - to select pruner mode.
         criterion : str
             Path to class calculating loss.
@@ -358,7 +382,7 @@ class NNIPruningOptimizer(Optimizer):
             Framework of the input model, used to select proper backend.
         finetuning_epochs: int
             Number of epoch used for fine-tuning model.
-        confidence : int | None
+        confidence : Optional[int]
             The confidence coefficient of the sparsity inference, actually
             used as batch size for NNI model speedup. If not specified, equals
             finetuning_batch_size.
@@ -526,12 +550,12 @@ class NNIPruningOptimizer(Optimizer):
         model: torch.nn.Module,
         optimizer: torch.optim.Optimizer,
         criterion: Callable,
-        lr_scheduler=None,
+        lr_scheduler: Any = None,
         max_steps: Optional[int] = None,
         max_epochs: Optional[int] = None,
-        *args,
-        **kwargs,
-    ):
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
         """
         The method used for training for one epoch.
 
@@ -543,18 +567,18 @@ class NNIPruningOptimizer(Optimizer):
             The PyTorch model to train
         optimizer : torch.optim.Optimizer
             The instance of the optimizer class
-        criterion :
+        criterion : Callable
             The callable object used to calculate loss
-        lr_scheduler :
+        lr_scheduler : Any
             The scheduler for learning rate manipulation
-        max_steps : int | None
+        max_steps : Optional[int]
             The number of maximum steps - one step is equal to processing
             one batch of data
-        max_epochs : int | None
+        max_epochs : Optional[int]
             The number of maximum epochs
-        args : Any
+        *args : Any
             Additional arguments.
-        kwargs : Any
+        **kwargs : Any
             Additional keyword arguments.
         """
         if max_steps is None and max_epochs is None:
@@ -590,7 +614,7 @@ class NNIPruningOptimizer(Optimizer):
                 max_epochs=max_epochs - 1,
             )
 
-    def evaluate_model(self, model: torch.nn.Module):
+    def evaluate_model(self, model: torch.nn.Module) -> float:
         """
         The method used to evaluate model, by calculating mean of losses
         on test set.
@@ -604,7 +628,8 @@ class NNIPruningOptimizer(Optimizer):
 
         Returns
         -------
-        The model evaluation - mean of losses on test set
+        float
+            The model evaluation - mean of losses on test set
         """
         # TODO: For now evaluate mean loss, possible use of additional
         # parameter with modulepath to some torchmetrics or custom function
@@ -623,9 +648,11 @@ class NNIPruningOptimizer(Optimizer):
                 loss_sum += loss.sum(-1)
         return loss_sum / data_len
 
-    def prepare_input_output_data(self, batch_begin: int):
+    def prepare_input_output_data(
+        self, batch_begin: int
+    ) -> Tuple[torch.Tensor, torch.Tensor]:
         """
-        The method used to prepare data in batche.
+        The method used to prepare data in batches.
 
         Parameters
         ----------
@@ -634,7 +661,10 @@ class NNIPruningOptimizer(Optimizer):
 
         Returns
         -------
-        Prepared batch of data and targets
+        data: torch.Tensor
+            Input data
+        label: torch.Tensor
+            Predicted label
         """
         batch_x = self.train_data[0][
             batch_begin : batch_begin + self.finetuning_batch_size
@@ -675,7 +705,7 @@ class NNIPruningOptimizer(Optimizer):
         criterion: Callable,
         optimizer_cls: Type,
         dummy_input: torch.Tensor,
-    ):
+    ) -> TorchEvaluator:
         """
         The method creating evaluator used during pruning.
 
@@ -692,7 +722,8 @@ class NNIPruningOptimizer(Optimizer):
 
         Returns
         -------
-        The instance of TorchEvaluator
+        TorchEvaluator
+            The instance of TorchEvaluator
         """
         traced_optimizer = nni.trace(optimizer_cls)(
             model.parameters(), lr=self.finetuning_learning_rate
@@ -717,7 +748,7 @@ class NNIPruningOptimizer(Optimizer):
 
         Returns
         -------
-        int :
+        int
             Number of parameters of model
         """
         return sum(p.numel() for p in model.parameters())
@@ -735,7 +766,8 @@ class NNIPruningOptimizer(Optimizer):
 
         Returns
         -------
-        The tensor with random data of shape suitable for model's input
+        torch.Tensor
+            The tensor with random data of shape suitable for model's input
         """
         inputs = io_spec["input"]
         assert (
@@ -774,7 +806,7 @@ class NNIPruningOptimizer(Optimizer):
                 "Last Linear layer was not found - cannot be excluded"
             )
 
-    def set_pruner_class(self, pruner_type):
+    def set_pruner_class(self, pruner_type: str):
         """
         The method used for choosing pruner class based on input string.
 
@@ -789,7 +821,7 @@ class NNIPruningOptimizer(Optimizer):
         )
         self.pruner_cls = self.prunertypes[pruner_type]
 
-    def set_activation_str(self, activation):
+    def set_activation_str(self, activation: str):
         """
         The method used for selecting pruner activation based on input string.
 
@@ -805,7 +837,7 @@ class NNIPruningOptimizer(Optimizer):
         )
         self.activation_str = activation
 
-    def set_pruner_mode(self, mode):
+    def set_pruner_mode(self, mode: str):
         """
         The method used for selecting pruner mode based on input string.
 

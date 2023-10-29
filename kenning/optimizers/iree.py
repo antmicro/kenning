@@ -6,7 +6,7 @@
 Wrapper for IREE compiler.
 """
 
-from typing import List, Literal, Optional, Dict
+from typing import List, Literal, Optional, Dict, Tuple
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
 import re
@@ -18,7 +18,9 @@ from kenning.core.dataset import Dataset
 from kenning.utils.resource_manager import PathOrURI
 
 
-def input_shapes_dict_to_list(inputshapes):
+def input_shapes_dict_to_list(
+    inputshapes: Dict[str, Tuple[int, ...]]
+) -> List[Tuple[int, ...]]:
     """
     Turn the dictionary of 'name':'shape' of every input layer to ordered list.
     The order of input layers is inferred from names. It is assumed that the
@@ -32,7 +34,7 @@ def input_shapes_dict_to_list(inputshapes):
 
     Returns
     -------
-    List[Tuple[int, ...]] :
+    List[Tuple[int, ...]]
         Shapes of each input layer in order.
     """
     layer_order = {}
@@ -43,7 +45,7 @@ def input_shapes_dict_to_list(inputshapes):
     return [inputshapes[layer] for layer in ordered_layers]
 
 
-def kerasconversion(model_path: PathOrURI, input_spec: Dict):
+def kerasconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
     """
     Converts the Keras model to IREE.
 
@@ -53,6 +55,11 @@ def kerasconversion(model_path: PathOrURI, input_spec: Dict):
         Path to the model to convert
     input_spec: Dict
         Provides the specification of the inputs
+
+    Returns
+    -------
+    bytes
+        Compiled model
     """
     import tensorflow as tf
     from iree.compiler import tf as ireetf
@@ -80,7 +87,7 @@ def kerasconversion(model_path: PathOrURI, input_spec: Dict):
     )
 
 
-def tensorflowconversion(model_path: PathOrURI, input_spec: Dict):
+def tensorflowconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
     """
     Converts the TensorFlow model to IREE.
 
@@ -90,6 +97,11 @@ def tensorflowconversion(model_path: PathOrURI, input_spec: Dict):
         Path to the model to convert
     input_spec: Dict
         Provides the specification of the inputs
+
+    Returns
+    -------
+    bytes
+        A bytes-like object with the compiled model
     """
     import tensorflow as tf
     from iree.compiler import tf as ireetf
@@ -108,7 +120,7 @@ def tensorflowconversion(model_path: PathOrURI, input_spec: Dict):
     )
 
 
-def tfliteconversion(model_path: PathOrURI, input_spec: Dict):
+def tfliteconversion(model_path: PathOrURI, input_spec: Dict) -> bytes:
     """
     Converts the TFLite model to IREE.
 
@@ -118,6 +130,11 @@ def tfliteconversion(model_path: PathOrURI, input_spec: Dict):
         Path to the model to convert
     input_spec: Dict
         Provides the specification of the inputs
+
+    Returns
+    -------
+    bytes
+        A bytes-like object with the compiled output
     """
     from iree.compiler import tflite as ireetflite
 
@@ -196,7 +213,7 @@ class IREECompiler(Optimizer):
             Backend on which the model will be executed.
         model_framework : str
             Framework of the input model.
-        compiler_args : List[str]
+        compiler_args : Optional[List[str]]
             Additional arguments for the compiler. Every options should be in a
             separate string, which should be formatted like this:
             <option>=<value>, or <option> for flags (example:

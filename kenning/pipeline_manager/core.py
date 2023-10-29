@@ -8,6 +8,7 @@ with Pipeline Manager.
 """
 
 import itertools
+from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 
@@ -49,7 +50,7 @@ class Node(NamedTuple):
     cls_name: str
 
 
-class GraphCreator:
+class GraphCreator(ABC):
     """
     Base class for generating graphs in a particular JSON format.
     """
@@ -76,8 +77,9 @@ class GraphCreator:
         """
         Resets the internal state of graph creator.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def create_node(self, node: Node, parameters: Any) -> str:
         """
         Creates new node in a graph. Graph creator abstracts away the
@@ -95,11 +97,12 @@ class GraphCreator:
 
         Returns
         -------
-        str :
+        str
             ID of newly created graph node.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def find_compatible_io(self, from_id: str, to_id: str) -> Tuple[Any, Any]:
         """
         Some graph formats have inputs/outputs of nodes that have a name, or
@@ -117,14 +120,15 @@ class GraphCreator:
 
         Returns
         -------
-        Tuple[Any, Any] :
+        Tuple[Any, Any]
             Format specific identification of named input and output. First
             element of tuple is name of output port of a starting node,
             second is identification of input of a node where the connection
             ends.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def create_connection(self, from_id: str, to_id: str):
         """
         Creates connection between two nodes.
@@ -136,18 +140,19 @@ class GraphCreator:
         to_id : str
             ID of ending graph node.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def flush_graph(self) -> Any:
         """
         Ends and resets graph creation process.
 
         Returns
         -------
-        Any :
+        Any
             Finalized graph.
         """
-        raise NotImplementedError
+        ...
 
 
 class BaseDataflowHandler:
@@ -210,12 +215,12 @@ class BaseDataflowHandler:
         ----------
         workspace_dir : Path
             Pipeline Manager's workspace directory
-        spec_save_path : Path
+        spec_save_path : Optional[Path]
             Path where the generated specification JSON will be saved.
 
         Returns
         -------
-        Dict :
+        Dict
             Specification ready to be send to Pipeline Manager.
         """
         self.spec_builder.metadata_add_param("twoColumn", True)
@@ -362,7 +367,7 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Tuple[bool, Union[Dict, str]] :
+        Tuple[bool, Union[Dict, str]]
             If parsing is successful then (True, pipeline) is returned where
             pipeline is a valid JSON that can be used to run an inference.
             Otherwise (False, error_message) is returned where error_message
@@ -399,6 +404,7 @@ class BaseDataflowHandler:
             self.dataflow_graph.start_new_graph()
             return False, str(e)
 
+    @abstractmethod
     def parse_json(self, json_cfg: Dict) -> Any:
         """
         Parses incoming JSON dataflow into Kenning objects that can be later
@@ -413,23 +419,23 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Any :
+        Any
             Kenning objects that can be later run with `run_dataflow`.
         """
-        raise NotImplementedError
+        ...
 
     def run_dataflow(self, *args, **kwargs):
         """
         Runs Kenning object created with `parse_json` method.
         """
-        raise NotImplementedError
+        ...
 
     def destroy_dataflow(self, *args, **kwargs):
         """
         Destroys Kenning objects allocated with `parse_json` to free
         the resources allocated during initialization.
         """
-        raise NotImplementedError
+        ...
 
     def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
         """
@@ -452,23 +458,19 @@ class BaseDataflowHandler:
 
         Returns
         -------
-        Dict[str, Union[float, Dict]] :
+        Dict[str, Union[float, Dict]]
             JSON representation of a dataflow in Pipeline Manager format.
             Should not be created directly, but rather should be the result of
             `flush_graph` method from graph creator.
-
-        Raises
-        ------
-        VisualEditorGraphParserError :
-            If the pipeline is not valid or contains unsupported blocks.
         """
-        raise NotImplementedError
+        ...
 
     @staticmethod
+    @abstractmethod
     def get_nodes(
         spec_builder: SpecificationBuilder,
-        nodes: Dict[str, Node] = None,
-        io_mapping: Dict[str, Dict] = None,
+        nodes: Optional[Dict[str, Node]] = None,
+        io_mapping: Optional[Dict[str, Dict]] = None,
     ) -> Tuple[Dict[str, Node], Dict[str, Dict]]:
         """
         Defines specification for the dataflow type that will be managed
@@ -479,30 +481,27 @@ class BaseDataflowHandler:
         spec_builder : SpecificationBuilder
             SpecificationBuilder object that will be used to form the
             specification programmatically
-        nodes : Dict[str, Node], optional
+        nodes : Optional[Dict[str, Node]]
             If None, new nodes list is created, otherwise all items are
             added to the provided argument.
-
-        io_mapping : Dict[str, Dict], optional
+        io_mapping : Optional[Dict[str, Dict]]
             If None, new IO map is created, otherwise all items are
             added to the provided argument.
 
         Returns
         -------
-        Dict[str, Node]:
-            Mapping containing all available items applicable for the chosen
-            dataflow type. Keys are the names of Kenning modules, values are
-            created items. It is checked at the runtime whether the item can
-            be loaded using specific Kenning configuration, all non available
-            items(for example due to lack of needed dependency) are filtered
-            out.
-
-        Dict[str, Dict]:
-            Mapping used by Pipeline Manager to define the inputs and
-            outputs of each node type that will later appear in manager's
-            graph.
+        Tuple[Dict[str, Node], Dict[str, Dict]]
+            * Mapping containing all available items applicable for the chosen
+              dataflow type. Keys are the names of Kenning modules, values are
+              created items. It is checked at the runtime whether the item can
+              be loaded using specific Kenning configuration, all non available
+              items(for example due to lack of needed dependency) are filtered
+              out.
+            * Mapping used by Pipeline Manager to define the inputs and
+              outputs of each node type that will later appear in manager's
+              graph.
         """
-        raise NotImplementedError
+        ...
 
 
 class PipelineManagerGraphCreator(GraphCreator):
@@ -513,7 +512,7 @@ class PipelineManagerGraphCreator(GraphCreator):
     documentation of Pipeline Manager
     """
 
-    def __init__(self, io_mapping: Dict, node_width: int = 300):
+    def __init__(self, io_mapping: Dict[str, Dict], node_width: int = 300):
         """
         Prepares the Graph creator for Pipeline Manager.
 

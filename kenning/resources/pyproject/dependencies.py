@@ -32,7 +32,7 @@ def get_all_dependencies() -> Dict[str, List[str]]:
 
     Returns
     -------
-    Dict[str, List[str]] :
+    Dict[str, List[str]]
         Optional and normal dependencies from pyproject.toml
     """
     global DEPENDENCIES
@@ -47,7 +47,7 @@ def _parse_dependencies() -> Dict[str, List[str]]:
 
     Returns
     -------
-    Dict[str, List[str]] :
+    Dict[str, List[str]]
         Optional and normal dependencies from pyproject.toml
     """
     with path(__package__, PYPROJECT_FILE) as dependencies:

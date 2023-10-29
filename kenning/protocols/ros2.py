@@ -251,7 +251,7 @@ class ROS2Protocol(Protocol):
 
         Returns
         -------
-        bool :
+        bool
             True if the message was sent successfully, False otherwise.
         """
         if self.process_action is None:
@@ -316,7 +316,7 @@ class ROS2Protocol(Protocol):
 
         Returns
         -------
-        Tuple[bool, Optional[GoalHandle]] :
+        Tuple[bool, Optional[GoalHandle]]
             Tuple with status (True if successful)
             and received processing goal handle result.
         """

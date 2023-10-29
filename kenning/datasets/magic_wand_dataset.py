@@ -123,7 +123,7 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        int :
+        int
             The class id.
         """
         return {v: k for k, v in self.classnames.items()}[classname]
@@ -192,7 +192,7 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        List :
+        List
             Neighbor data with noise padding.
         """
         padding = (
@@ -212,7 +212,7 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        List :
+        List
             The padded data frame.
         """
         pre_padding = self._generate_padding(
@@ -271,7 +271,7 @@ class MagicWandDataset(Dataset):
 
         Returns
         -------
-        np.ndarray :
+        np.ndarray
             Data sample split into windows.
         """
         return np.array(

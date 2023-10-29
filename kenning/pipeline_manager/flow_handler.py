@@ -96,7 +96,7 @@ class KenningFlowHandler(BaseDataflowHandler):
 
         Returns
         -------
-        Dict[str, Union[float, Dict]] :
+        Dict[str, Union[float, Dict]]
             JSON representation of a dataflow in Pipeline Manager format.
 
         Raises
@@ -302,7 +302,7 @@ class FlowGraphCreator(GraphCreator):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             IO specification defined by the runner.
         """
         runner_node = self.nodes[node_id]
@@ -326,7 +326,7 @@ class FlowGraphCreator(GraphCreator):
 
         Returns
         -------
-        bool :
+        bool
             Whether IO specification items are compatible with each other.
         """
         if "type" in arg1 and "type" in arg2:

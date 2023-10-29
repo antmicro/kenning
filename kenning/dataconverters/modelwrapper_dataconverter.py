@@ -1,6 +1,7 @@
 # Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
+
 """
 A DataConverter-derived class used to manipulate the data using the
 ModelWrapper object for compatibility with surrounding block
@@ -43,7 +44,7 @@ class ModelWrapperDataConverter(DataConverter):
 
         Returns
         -------
-        bytes :
+        bytes
             The converted data.
         """
         prepX = self.model_wrapper._preprocess_input(data)
@@ -60,7 +61,7 @@ class ModelWrapperDataConverter(DataConverter):
 
         Returns
         -------
-        Any :
+        Any
             The converted data.
         """
         preds = self.model_wrapper.convert_output_from_bytes(data)
@@ -81,7 +82,7 @@ class ModelWrapperDataConverter(DataConverter):
 
         Returns
         -------
-        ModelWrapperDataConverter :
+        ModelWrapperDataConverter
             The created ModelWrapperDataConverter object.
         """
         parameterschema = cls.form_parameterschema()

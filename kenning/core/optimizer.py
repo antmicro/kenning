@@ -104,14 +104,14 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
         args : Namespace
             Arguments from ArgumentParser object.
 
         Returns
         -------
-        Optimizer :
+        Optimizer
             Object of class Optimizer.
         """
         return super().from_argparse(args, dataset=dataset)
@@ -131,14 +131,14 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        dataset : Optional[Dataset]
-            The dataset object that is optionally used for optimization.
         json_dict : Dict
             Arguments for the constructor.
+        dataset : Optional[Dataset]
+            The dataset object that is optionally used for optimization.
 
         Returns
         -------
-        Optimizer :
+        Optimizer
             Object of class Optimizer.
         """
         return super().from_json(json_dict, dataset=dataset)
@@ -195,7 +195,7 @@ class Optimizer(ArgumentsHandler, ABC):
             of dictionaries mapping (property name) -> (property value)
             for the layers.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def get_framework_and_version(self) -> Tuple[str, str]:
@@ -204,10 +204,10 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[str, str] :
+        Tuple[str, str]
             Framework name and version.
         """
-        raise NotImplementedError
+        ...
 
     def get_input_formats(self) -> List[str]:
         """
@@ -215,7 +215,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[str] :
+        List[str]
             Names of possible input formats.
         """
         return list(self.inputtypes.keys())
@@ -226,7 +226,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[str] :
+        List[str]
             List of possible output formats.
         """
         return self.outputtypes
@@ -249,12 +249,12 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        str :
+        str
             Matching format.
 
         Raises
         ------
-        ValueError :
+        ValueError
             Raised if there is no matching format.
         """
         possible_outputs = previous_block.get_output_formats()
@@ -297,7 +297,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        PathOrURI :
+        PathOrURI
             Path to the input/output specification of a given model.
         """
         spec_path = model_path.with_suffix(model_path.suffix + ".json")
@@ -353,7 +353,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Optional[Dict[str, List[Dict]]] :
+        Optional[Dict[str, List[Dict]]]
             Specification of a model saved
             in `model_path` if there is one. None otherwise.
         """

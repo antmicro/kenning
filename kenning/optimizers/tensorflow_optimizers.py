@@ -113,7 +113,7 @@ class TensorFlowOptimizer(Optimizer):
 
         Returns
         -------
-        Tuple :
+        Tuple
             Batched train and validation datasets.
         """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
@@ -134,7 +134,9 @@ class TensorFlowOptimizer(Optimizer):
 
         return traindataset, validdataset
 
-    def train_model(self, model, callbacks: Optional[List] = None):
+    def train_model(
+        self, model: tf.keras.Model, callbacks: Optional[List] = None
+    ) -> tf.keras.Model:
         """
         Compiles and trains the given model.
 
@@ -149,7 +151,7 @@ class TensorFlowOptimizer(Optimizer):
 
         Returns
         -------
-        tf.keras.Model :
+        tf.keras.Model
             Trained keras model.
         """
         traindataset, validdataset = self.prepare_train_validation()

@@ -47,14 +47,14 @@ def get_block_product(block: Dict[str, Any]) -> List:
 
     Parameters
     ----------
-    block : Dict[str, List]
+    block : Dict[str, Any]
         Dictionary with parameters and type keys.
         For parameters, key is the name
         of a parameter and value defines range of values.
 
     Returns
     -------
-    List :
+    List
         Cartesian product of input `block`.
 
     Examples
@@ -125,7 +125,7 @@ def ordered_powerset(iterable: List, min_elements: int = 1) -> List[List]:
 
     Returns
     -------
-    List[List] :
+    List[List]
         Powerset of ordered values.
 
     Examples
@@ -156,7 +156,7 @@ def grid_search(json_cfg: Dict) -> List[Dict]:
 
     Returns
     -------
-    List[Dict] :
+    List[Dict]
         List of pipeline configurations.
 
     Examples
@@ -290,7 +290,7 @@ def replace_paths(pipeline: Dict, id: int) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Pipeline with `compiled_model_path` and `save_model_path` parameters
         changed.
     """
@@ -317,7 +317,7 @@ def filter_invalid_pipelines(pipelines: List[Dict]) -> List[Dict]:
 
     Returns
     -------
-    List[Dict] :
+    List[Dict]
         Valid pipelines from provided pipelines.
     """
     filtered_pipelines = []

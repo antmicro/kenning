@@ -17,7 +17,7 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
-def kerasconversion(model_path: PathOrURI):
+def kerasconversion(model_path: PathOrURI) -> object:
     """
     Loads Keras model.
 
@@ -25,6 +25,11 @@ def kerasconversion(model_path: PathOrURI):
     ----------
     model_path: PathOrURI
         Path to the model to convert
+
+    Returns
+    -------
+    object
+        Keras model
     """
     model = tf.keras.models.load_model(str(model_path), compile=False)
     return model

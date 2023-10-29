@@ -61,10 +61,10 @@ class DataProvider(Runner, ABC):
 
         Returns
         -------
-        Any :
+        Any
             Data to be processed by the model.
         """
-        raise NotImplementedError
+        ...
 
     def preprocess_input(self, data: Any) -> Any:
         """
@@ -77,7 +77,7 @@ class DataProvider(Runner, ABC):
 
         Returns
         -------
-        Any :
+        Any
             Preprocessed data.
         """
         return self.data

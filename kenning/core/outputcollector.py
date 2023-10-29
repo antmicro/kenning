@@ -48,6 +48,7 @@ class OutputCollector(Runner, ABC):
             outputs=outputs,
         )
 
+    @abstractmethod
     def process_output(self, input_data: Any, output_data: Any):
         """
         Returns the inferred data back to the specific place/device/connection.
@@ -62,14 +63,14 @@ class OutputCollector(Runner, ABC):
         output_data : Any
             Data returned from the model.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def detach_from_output(self):
         """
         Detaches from the output during shutdown.
         """
-        raise NotImplementedError
+        ...
 
     @abstractmethod
     def should_close(self) -> bool:
@@ -81,7 +82,7 @@ class OutputCollector(Runner, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if exit condition was reached to break the loop.
         """
-        raise NotImplementedError
+        ...

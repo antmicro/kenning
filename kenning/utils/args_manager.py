@@ -106,7 +106,7 @@ def convert_to_jsontype(v: Any) -> Any:
 
     Returns
     -------
-    Any:
+    Any
         Converted entry to JSON-like format
     """
     if isinstance(v, list):
@@ -139,7 +139,7 @@ jsontype_to_type = {
 }
 
 
-def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
+def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
     """
     Validates the given dictionary with the schema.
     Then it adds default values for missing
@@ -156,7 +156,7 @@ def get_parsed_json_dict(schema, json_dict: Dict) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Validated dictionary with arguments.
     """
     jsonschema.validate(instance=json_dict, schema=schema)
@@ -217,8 +217,13 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
 
     Returns
     -------
-    Dict :
+    Dict
         Dictionary with arguments.
+
+    Raises
+    ------
+    Exception:
+        Raised when default values for arguments are not specified
     """
     # retrieve all arguments from arguments_structure of this class and all of
     # its parent classes
@@ -477,7 +482,7 @@ class ArgumentsHandler(ABC):
 
         Returns
         -------
-        Dict :
+        Dict
             Parameter schema for the class.
         """
         classes = [cls]
@@ -504,7 +509,7 @@ class ArgumentsHandler(ABC):
 
         Returns
         -------
-        Tuple[argparse.ArgumentParser, argparse._ArgumentGroup] :
+        Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]
             Tuple with the argument parser object that can act as parent for
             program's argument parser, and the corresponding arguments' group
             pointer.
@@ -528,20 +533,22 @@ class ArgumentsHandler(ABC):
         return parser, group
 
     @classmethod
-    def from_argparse(cls, args: argparse.Namespace, **kwargs) -> Any:
+    def from_argparse(
+        cls, args: argparse.Namespace, **kwargs: Dict[str, Any]
+    ) -> Any:
         """
         Constructor wrapper that takes the parameters from argparse args.
 
         Parameters
         ----------
-        args : Namespace
+        args : argparse.Namespace
             Arguments from ArgumentParser object.
         **kwargs : Dict[str, Any]
             Additional class-dependent arguments.
 
         Returns
         -------
-        Any :
+        Any
             Instance created from provided args.
         """
         parsed_args_dict = get_parsed_args_dict(cls, args)
@@ -549,7 +556,7 @@ class ArgumentsHandler(ABC):
         return cls(**kwargs, **parsed_args_dict)
 
     @classmethod
-    def from_json(cls, json_dict, **kwargs) -> Any:
+    def from_json(cls, json_dict: Dict, **kwargs: Dict[str, Any]) -> Any:
         """
         Constructor wrapper that takes the parameters from json dict.
 
@@ -566,7 +573,7 @@ class ArgumentsHandler(ABC):
 
         Returns
         -------
-        Any :
+        Any
             Instance created from provided JSON.
         """
         parameterschema = cls.form_parameterschema()
@@ -580,7 +587,7 @@ class ArgumentsHandler(ABC):
 
         Returns
         -------
-        Dict[str, Any] :
+        Dict[str, Any]
             JSON config of given object.
         """
         cls = self.__class__

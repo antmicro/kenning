@@ -7,9 +7,10 @@ Provides an API for ONNX conversions of various models in a given framework.
 """
 
 from collections import namedtuple
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
-from typing import List
+from typing import List, Dict, Callable, Any
 
 import onnx
 
@@ -82,12 +83,12 @@ class SupportStatus(Enum):
         return converter[SupportStatus(self.value)]
 
 
-class ONNXConversion(object):
+class ONNXConversion(ABC):
     """
     Creates ONNX conversion support matrix for given framework and models.
     """
 
-    def __init__(self, framework, version):
+    def __init__(self, framework: str, version: str):
         """
         Prepares structures for ONNX conversion.
 
@@ -106,7 +107,9 @@ class ONNXConversion(object):
         self.version = version
         self.prepare()
 
-    def add_entry(self, name, modelgenerator, **kwargs):
+    def add_entry(
+        self, name: str, modelgenerator: Callable, **kwargs: Dict[str, Any]
+    ):
         """
         Adds new model for verification.
 
@@ -124,7 +127,10 @@ class ONNXConversion(object):
         """
         self.modelslist.append(ModelEntry(name, modelgenerator, kwargs))
 
-    def onnx_export(self, modelentry: ModelEntry, exportpath: Path):
+    @abstractmethod
+    def onnx_export(
+        self, modelentry: ModelEntry, exportpath: Path
+    ) -> SupportStatus:
         """
         Virtual function for exporting the model to ONNX in a given framework.
 
@@ -140,12 +146,15 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus :
+        SupportStatus
             The support status of exporting given model to ONNX.
         """
-        raise NotImplementedError
+        ...
 
-    def onnx_import(self, modelentry: ModelEntry, importpath: Path):
+    @abstractmethod
+    def onnx_import(
+        self, modelentry: ModelEntry, importpath: Path
+    ) -> SupportStatus:
         """
         Virtual function for importing ONNX model to a given framework.
 
@@ -161,11 +170,12 @@ class ONNXConversion(object):
 
         Returns
         -------
-        SupportStatus :
+        SupportStatus
             The support status of importing given model from ONNX.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def prepare(self):
         """
         Virtual function for preparing the ONNX conversion test.
@@ -175,7 +185,7 @@ class ONNXConversion(object):
         It is later called in the constructor to prepare the list of models to
         test.
         """
-        raise NotImplementedError
+        ...
 
     def _onnx_export(self, modelentry: ModelEntry, exportpath: Path):
         try:
@@ -206,7 +216,7 @@ class ONNXConversion(object):
 
         Returns
         -------
-        List[Support] :
+        List[Support]
             List with Support tuples describing support status.
         """
         KLogger.info(f"~~~~> {self.framework} (ver. {self.version})")

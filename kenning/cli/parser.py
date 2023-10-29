@@ -79,7 +79,7 @@ class ParserHelpException(BaseException):
 
         Parameters
         ----------
-        parser : argparse.ArgumentParser
+        parser : Parser
             Base parser of the program
         parents : Optional[List[argparse.ArgumentParser]]
             Other parsers which should be included in help message

@@ -89,7 +89,7 @@ class ModelInserter(Optimizer):
     def consult_model_type(
         self,
         previous_block: Union["ModelWrapper", "Optimizer"],
-        force_onnx=False,
+        force_onnx: bool = False,
     ) -> str:
         """
         Returns the first type supported by the previous block.
@@ -106,8 +106,13 @@ class ModelInserter(Optimizer):
 
         Returns
         -------
-        str :
+        str
             Matching format.
+
+        Raises
+        ------
+        ValueError:
+            Raised when ONNX is not supported for conversion
         """
         possible_outputs = previous_block.get_output_formats()
 

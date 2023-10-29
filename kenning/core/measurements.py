@@ -135,7 +135,7 @@ class Measurements(object):
             The measurement type to be updated.
         value : Any
             The value to add.
-        initialvaluefunc : Callable
+        initialvaluefunc : Callable[[], Any]
             The initial value for the measurement.
         """
         assert isinstance(measurementtype, str)
@@ -154,7 +154,7 @@ class Measurements(object):
 
         Returns
         -------
-        List :
+        List
             List of values for a given measurement type.
         """
         return self.data[measurementtype]
@@ -164,7 +164,7 @@ class Measurements(object):
         measurementtype: str,
         valuetoadd: Any,
         initvaluefunc: Callable[[], Any] = lambda: 0,
-    ) -> List:
+    ):
         """
         Adds given value to a measurement.
 
@@ -232,7 +232,7 @@ class MeasurementsCollector(object):
         cls.measurements.clear()
 
 
-def tagmeasurements(tagname: str):
+def tagmeasurements(tagname: str) -> Callable:
     """
     Decorator for adding tags for measurements and saving their timestamps.
 
@@ -240,6 +240,11 @@ def tagmeasurements(tagname: str):
     ----------
     tagname : str
         The name of tag.
+
+    Returns
+    -------
+    Callable
+        Decorated function.
     """
 
     def statistics_decorator(function):
@@ -286,7 +291,7 @@ def timemeasurements(
 
     Returns
     -------
-    Callable :
+    Callable
         Decorated function.
     """
 
@@ -380,7 +385,7 @@ class SystemStatsCollector(Thread):
 
         Returns
         -------
-        Measurements :
+        Measurements
             Measurements object.
         """
         return self.measurements
@@ -524,7 +529,9 @@ class SystemStatsCollector(Thread):
             self.runningcondition.notify_all()
 
 
-def systemstatsmeasurements(measurementname: str, step: float = 0.5):
+def systemstatsmeasurements(
+    measurementname: str, step: float = 0.5
+) -> Callable:
     """
     Decorator for measuring memory usage of the function.
 
@@ -537,6 +544,11 @@ def systemstatsmeasurements(measurementname: str, step: float = 0.5):
         The name of the measurement type.
     step : float
         The step for the measurements, in seconds.
+
+    Returns
+    -------
+    Callable
+        Decorated function.
     """
 
     def statistics_decorator(function):

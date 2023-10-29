@@ -177,7 +177,7 @@ def dict_to_tuple(out_dict: Dict) -> Tuple:
 
     Returns
     -------
-    Tuple:
+    Tuple
         Tuple holding the data from dictionary
     """
     return (

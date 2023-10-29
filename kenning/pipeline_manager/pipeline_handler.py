@@ -61,15 +61,25 @@ class PipelineHandler(BaseDataflowHandler):
         pass
 
     def create_dataflow(self, pipeline: Dict) -> Dict[str, Union[float, Dict]]:
-        def add_block(kenning_block: dict):
+        def add_block(kenning_block: Dict) -> Dict:
             """
             Adds dataflow node based on the `kenning_block` entry.
 
             Parameters
             ----------
-            kenning_block : dict
+            kenning_block : Dict
                 Dictionary of a block that comes from the definition
                 of the pipeline.
+
+            Returns
+            -------
+            Dict
+                Pipeline Manager node definition
+
+            Raises
+            ------
+            VisualEditorGraphParserError:
+                Raised when provided node type is not available.
             """
             _, kenning_name = kenning_block["type"].rsplit(".", 1)
             if kenning_name not in self.nodes:

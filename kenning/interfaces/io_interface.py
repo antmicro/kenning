@@ -31,14 +31,14 @@ class IOInterface(ABC):
 
         Parameters
         ----------
-        output_spec : Dict[str, List[Dict]])
+        output_spec : Dict[str, List[Dict]]
             Specification of some object's output.
-        input_spec : Dict[str, List[Dict]])
+        input_spec : Dict[str, List[Dict]]
             Specification of some object's input.
 
         Returns
         -------
-        bool :
+        bool
             True if there is no conflict.
         """
         if len(input_spec) > len(output_spec):
@@ -113,11 +113,11 @@ class IOInterface(ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output
             layers specification.
         """
-        return NotImplementedError
+        ...
 
     @classmethod
     def parse_io_specification_from_json(
@@ -142,10 +142,10 @@ class IOInterface(ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output layers specification.
         """
-        return NotImplementedError
+        ...
 
     def save_io_specification(self, path: PathOrURI):
         """
@@ -176,7 +176,7 @@ class IOInterface(ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Loaded IO specification.
         """
         spec_path = path.with_suffix(path.suffix + ".json")
@@ -202,8 +202,14 @@ class IOInterface(ABC):
 
         Returns
         -------
-        Dict[str, Any] :
+        Dict[str, Any]
             Specification of single IO.
+
+        Raises
+        ------
+        IOSpecNotFound
+            Raised when the input/output of given name was not
+            found in the specification
         """
         for spec in io_spec[io_type]:
             if spec["name"] == io_name:
@@ -231,7 +237,7 @@ class IOInterface(ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if there is no conflict.
         """
         if len(output_shape) != len(input_shape):

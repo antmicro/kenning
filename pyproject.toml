@@ -141,7 +141,7 @@ repository = "https://github.com/antmicro/kenning"
 [tool.pydoclint]
 style = "numpy"
 allow-init-docstring = true
-exclude = 'kenning/tests'
+exclude = 'kenning/tests|kenning/utils/sphinx_html_as_figure.py'
 quiet = true
 check-return-types = true
 

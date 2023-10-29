@@ -94,7 +94,7 @@ def compute_ap(
 
     Returns
     -------
-    float :
+    float
         N-point interpolated average precision value.
     """
     return np.mean(
@@ -121,7 +121,7 @@ def get_recall_precision(
 
     Returns
     -------
-    List[Tuple[List[float], List[float]]] :
+    List[Tuple[List[float], List[float]]]
         List with per-class lists of recall and precision values.
     """
     lines = -np.ones(
@@ -182,6 +182,11 @@ def compute_map_per_threshold(
         fields containing number of ground truths and per-class detections.
     scorethresholds : List[float]
         List of threshold values to verify the mAP for.
+
+    Returns
+    -------
+    List[float]
+        Mean Average Precision values per thresholds
     """
     maps = []
     for thresh in scorethresholds:
@@ -213,7 +218,7 @@ def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
 
     Returns
     -------
-    float :
+    float
         IoU value.
     """
     xmn = max(b1.xmin, b2.xmin)
@@ -247,7 +252,7 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
 
     Returns
     -------
-    float :
+    float
         IoU value.
     """
     mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
@@ -360,7 +365,8 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
         Returns
         -------
-        Union['DetectObject', 'SegmObject'] : The hashable object.
+        Union['DetectObject', 'SegmObject']
+            The hashable object.
         """
         if self.task == "object_detection":
             hashable = unhashable
@@ -388,14 +394,14 @@ class ObjectDetectionSegmentationDataset(Dataset):
 
         Parameters
         ----------
-        b1 : DetectObject
+        b1 : Union[DetectObject, SegmObject]
             First bounding box.
-        b2 : DetectObject
+        b2 : Union[DetectObject, SegmObject]
             Second bounding box.
 
         Returns
         -------
-        float :
+        float
             IoU value.
         """
         if self.task == "object_detection":
@@ -403,7 +409,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
         elif self.task == "instance_segmentation":
             return compute_segm_iou(b1, b2)
 
-    def show_dect_eval_images(self, predictions, truth):
+    def show_dect_eval_images(self, predictions: List, truth: List):
         """
         Shows the predictions on screen compared to ground truth.
 
@@ -449,7 +455,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
                 ax.add_patch(rect)
             plt.show()
 
-    def show_segm_eval_images(self, predictions, truth):
+    def show_segm_eval_images(self, predictions: List, truth: List):
         """
         Shows the predictions on screen compared to ground truth.
 
@@ -495,7 +501,7 @@ class ObjectDetectionSegmentationDataset(Dataset):
                 int_img,
             )
 
-    def show_eval_images(self, predictions, truth):
+    def show_eval_images(self, predictions: List, truth: List):
         """
         Shows the predictions on screen compared to ground truth.
 

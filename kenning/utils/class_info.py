@@ -10,7 +10,7 @@ import ast
 import importlib
 import inspect
 import os.path
-from typing import Union, List, Dict, Tuple, Type
+from typing import Union, List, Dict, Tuple, Type, Optional
 
 import astunparse
 from isort import place_module
@@ -96,7 +96,8 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later.
+    str
+        Formatted Markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
         return f"Class: {syntax_node.name}\n\n"
@@ -115,7 +116,8 @@ def get_class_module_docstrings(
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later.
+    str
+        Formatted Markdown-like string to be printed later.
     """
     docstring = ast.get_docstring(syntax_node, clean=True)
 
@@ -145,9 +147,10 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later. Empty strings
-    represent dependencies that were skipped - either they belong to kenning
-    or are provided by the default python distribution
+    str
+        Formatted Markdown-like string to be printed later. Empty strings
+        represent dependencies that were skipped - either they belong to kenning
+        or are provided by the default python distribution
     """
     for dependency in syntax_node.names:
         module_path = ""
@@ -199,7 +202,8 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later.
+    str
+        Formatted Markdown-like string to be printed later.
     """
     input_formats = ""
 
@@ -232,7 +236,8 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
 
     Returns
     -------
-    List[str]: List of formatted Markdown-like strings to be printed later.
+    List[str]
+        List of formatted Markdown-like strings to be printed later.
     """
     # formatted lines to be returned
     resulting_output = []
@@ -274,7 +279,8 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
 
     Returns
     -------
-    List[str]: List of formatted Markdown-like strings to be printed later.
+    List[str]
+        List of formatted Markdown-like strings to be printed later.
     """
     io_spec_function_node = None
 
@@ -317,7 +323,8 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later.
+    str
+        Formatted Markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
         return f"* {output_format.value}\n"
@@ -335,7 +342,8 @@ def clean_variable_name(variable_name: ast.AST) -> str:
 
     Returns
     -------
-    str: Cleaned up variable
+    str
+        Cleaned up variable
     """
     return (
         astunparse.unparse(variable_name)
@@ -359,7 +367,8 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
 
     Returns
     -------
-    str: Formatted Markdown-like string to be printed later.
+    str
+        Formatted Markdown-like string to be printed later.
     """
     output_string = ""
 
@@ -437,13 +446,14 @@ def evaluate_argument_list_of_keys(
     ----------
     argument_list_name: str
         Variable name that the list of keys is assigned to
-    source_path:
+    source_path: str
         Path of the code to be parsed
 
     Returns
     -------
-    Tuple[List[str], str]: tuple with the first argument being the list of
-    evaluated elements and the second being the type as a string
+    Tuple[List[str], str]
+        tuple with the first argument being the list of
+        evaluated elements and the second being the type as a string
     """
     with open(source_path, "r") as file:
         parsed_file = ast.parse(file.read())
@@ -484,13 +494,14 @@ def evaluate_argument_list(
     ----------
     argument_list_name: str
         Variable name that the list of elements is assigned to.
-    source_path:
+    source_path: str
         Path of the code to be parsed
 
     Returns
     -------
-    Tuple[List[str], str]: tuple with the first argument being the list of
-    evaluated elements and the second being the type as a string
+    Tuple[List[str], str]
+        tuple with the first argument being the list of
+        evaluated elements and the second being the type as a string
     """
     with open(source_path) as file:
         parsed_file = ast.parse(file.read())
@@ -550,7 +561,8 @@ def get_args_structure_from_parameterschema(
 
     Returns
     -------
-    List[str]: Formatted Markdown-like string to be printed later.
+    List[str]
+        Formatted Markdown-like string to be printed later.
     """
     resulting_lines = []
 
@@ -609,7 +621,8 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
 
     Return
     ------
-    List[str]: A list of formatted, Markdown-like strings
+    List[str]
+        A list of formatted, Markdown-like strings
     """
     resulting_output = []
 
@@ -658,7 +671,13 @@ def instantiate_object(
 
     Returns
     -------
-    object: An instance of imported_class
+    object
+        An instance of imported_class
+
+    Raises
+    ------
+    ClassInfoInvalidArgument:
+        Raised when invalid name is provided for a class.
     """
     # create a dict of arguments that will be used to create an instance
     parsed_args: Dict = {}
@@ -707,7 +726,13 @@ def instantiate_object_based_on_base_class(
 
     Returns
     -------
-    object: An instance of imported_class
+    object
+        An instance of imported_class
+
+    Raises
+    ------
+    ClassInfoInvalidArgument:
+        Raised when class could not be created or arguments were missing.
     """
     try:
         # create an object based on its base class
@@ -767,13 +792,13 @@ def instantiate_object_based_on_base_class(
 
 def generate_class_info(
     target: str,
-    class_name="",
-    docstrings=True,
-    dependencies=True,
-    input_formats=True,
-    output_formats=True,
-    argument_formats=True,
-    load_class_with_args=None,
+    class_name: str = "",
+    docstrings: bool = True,
+    dependencies: bool = True,
+    input_formats: bool = True,
+    output_formats: bool = True,
+    argument_formats: bool = True,
+    load_class_with_args: Optional[List[str]] = None,
 ) -> List[str]:
     """
     Wrapper function that handles displaying information about a class.
@@ -795,12 +820,13 @@ def generate_class_info(
         Flag whether to display output formats
     argument_formats: bool
         Flag whether to display argument formats
-    load_class_with_args: List[str]
+    load_class_with_args: Optional[List[str]]
         List of arguments provided to load a specific class with arguments
 
     Returns
     -------
-    List[str]: List of formatted, Markdown-like lines to be printed
+    List[str]
+        List of formatted, Markdown-like lines to be printed
     """
     resulting_lines = []
 

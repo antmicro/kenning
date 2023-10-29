@@ -11,7 +11,17 @@ import sys
 from contextlib import contextmanager
 from math import floor, pi
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Union,
+    ArrayLike,
+    Generator,
+)
 
 import matplotlib as mpl
 import numpy as np
@@ -73,7 +83,7 @@ def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
 
     Returns
     -------
-    List[Tuple] :
+    List[Tuple]
         List of colors to use for plotting.
     """
     CMAP_NAME = "nipy_spectral"
@@ -331,8 +341,8 @@ def draw_radar_chart(
     outpath: Optional[Path],
     title: str,
     data: Dict[str, List],
-    labelnames: List,
-    figsize: Tuple = (11, 12),
+    labelnames: List[str],
+    figsize: Optional[Tuple] = (11, 12),
     colors: Optional[List] = None,
     outext: Iterable[str] = ["png"],
 ):
@@ -560,14 +570,14 @@ def _value_to_nondiagonal_color(
 
     Parameters
     ----------
-    value : float | np.ndarray
+    value : Union[float, np.ndarray]
         Values from confusion matrix.
     cmap : Optional[Any]
         Color map associating values with colors.
 
     Returns
     -------
-    np.ndarray :
+    np.ndarray
         Calculated colors.
     """
     color = np.asarray(cmap(1 - np.log2(99 * value + 1) / np.log2(100)))
@@ -576,7 +586,7 @@ def _value_to_nondiagonal_color(
 
 
 def draw_confusion_matrix(
-    confusion_matrix: np.ndarray,
+    confusion_matrix: ArrayLike,
     outpath: Optional[Path],
     title: str,
     class_names: List[str],
@@ -689,11 +699,11 @@ def draw_confusion_matrix(
 
 
 def draw_confusion_matrix_matplotlib(
-    confusion_matrix: np.ndarray,
+    confusion_matrix: ArrayLike,
     confusion_matrix_colors: np.ndarray,
     sensitivity: np.ndarray,
     precision: np.ndarray,
-    accuracy: np.ndarray,
+    accuracy: Union[np.ndarray, float],
     class_names: List[str],
     figsize: Optional[Tuple[int]] = None,
     dpi: Optional[int] = None,
@@ -707,7 +717,7 @@ def draw_confusion_matrix_matplotlib(
 
     Parameters
     ----------
-    confusion_matrix : np.ndarray
+    confusion_matrix : ArrayLike
         Values of confusion matrix, from 0 to 1.
     confusion_matrix_colors : np.ndarray
         Colors for calculated based on confusion matrix.
@@ -715,7 +725,7 @@ def draw_confusion_matrix_matplotlib(
         Ordered values with sensitivity.
     precision : np.ndarray
         Ordered values with precision.
-    accuracy : np.ndarray | float
+    accuracy : Union[np.ndarray, float]
         Overall accuracy.
     class_names : List[str]
         List with names of classes.
@@ -723,10 +733,10 @@ def draw_confusion_matrix_matplotlib(
         Tuple with width and height of figure.
     dpi : Optional[int]
         DPI of the output plot.
-    output_path : str | None
+    output_path : Optional[str]
         Path to the file, where plot will be saved to. If not specified,
         result won't be saved.
-    title : str | None
+    title : Optional[str]
         Title of the plot.
     cmap : Optional[Any]
         Color map which will be used for drawing plot. If not specified,
@@ -980,7 +990,7 @@ def _create_custom_hover_template(
 
     Returns
     -------
-    str :
+    str
         HTML template for tooltip.
     """
     if values is None:
@@ -1007,7 +1017,7 @@ def draw_confusion_matrix_bokeh(
     confusion_matrix_colors: np.ndarray,
     sensitivity: np.ndarray,
     precision: np.ndarray,
-    accuracy: np.ndarray,
+    accuracy: Union[np.ndarray, float],
     class_names: List[str],
     width: Optional[int] = None,
     height: Optional[int] = None,
@@ -1015,7 +1025,7 @@ def draw_confusion_matrix_bokeh(
     title: Optional[str] = None,
     cmap: Optional[Any] = None,
     formats: Tuple[str] = ("html",),
-):
+) -> None:
     """
     Function drawing interactive confusion matrix with bokeh backend.
 
@@ -1029,18 +1039,18 @@ def draw_confusion_matrix_bokeh(
         Ordered values with sensitivity.
     precision : np.ndarray
         Ordered values with precision.
-    accuracy : np.ndarray | float
+    accuracy : Union[np.ndarray, float]
         Overall accuracy.
     class_names : List[str]
         List with names of classes.
-    width : int
+    width : Optional[int]
         Width of the generated plot.
-    height : int
+    height : Optional[int]
         Height of the generated plot.
-    output_path : str | None
+    output_path : Optional[str]
         Path to the file, where plot will be saved to. If not specified,
         result won't be saved.
-    title : str | None
+    title : Optional[str]
         Title of the plot.
     cmap : Optional[Any]
         Color map which will be used for drawing plot. If not specified,
@@ -1389,7 +1399,7 @@ def recall_precision_curves(
         Output path for the plot image. If None, the plot will be displayed.
     title : str
         Title of the plot.
-    lines : List[List[List]]
+    lines : List[Tuple[List, List]]
         Per-class list of tuples with list of recall values and precision
         values.
     class_names : List[str]
@@ -1750,7 +1760,7 @@ def draw_barplot(
         List of x labels for bars.
     ydata : Dict[str, List[Union[int, float]]]
         Dictionary of values.
-    figsize : Tuple
+    figsize : Optional[Tuple]
         The size of the figure.
     colors : Optional[List]
         List with colors which should be used to draw plots.
@@ -1832,7 +1842,7 @@ def draw_barplot_bokeh(
     bar_width: float = 0.0,
     bar_offset: List[float] = [0.0],
     formats: Tuple[str] = ("html",),
-):
+) -> None:
     """
     Draws barplot using bokeh library.
 
@@ -2003,18 +2013,23 @@ def draw_barplot_matplotlib(
 def choose_theme(
     custom_bokeh_theme: Union[bool, str, Path] = False,
     custom_matplotlib_theme: Union[bool, str, Path] = False,
-):
+) -> Generator[None, None, None]:
     """
     Context manager, allowing to temporally set theme.
 
     Parameters
     ----------
-    custom_bokeh_theme : bool | str | Path
+    custom_bokeh_theme : Union[bool, str, Path]
         If True uses BOKEH_THEME_FILE, if str or Path uses file specified
         by this path.
-    custom_matplotlib_theme : bool | str | Path
+    custom_matplotlib_theme : Union[bool, str, Path]
         If True uses MATPLOTLIB_THEME_FILE, if str or Path uses file specified
         by this path.
+
+    Yields
+    ------
+    None
+        Theme context
     """
     # Backup current setups
     if custom_bokeh_theme:
@@ -2041,7 +2056,6 @@ def choose_theme(
             else:
                 filename = custom_matplotlib_theme
             plt.style.use(filename)
-
         yield
     # Cleanup
     if custom_bokeh_theme:

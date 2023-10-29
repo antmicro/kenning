@@ -7,6 +7,7 @@ Classes visualizing in real time outputs of classification, detection
 and instance segmentation models.
 """
 from typing import Dict, Tuple, List, Any
+from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
 import dearpygui.dearpygui as dpg
@@ -29,7 +30,7 @@ _SIDE_PANEL_WIDTH = 512
 _SCORE_COLUMN_WIDTH = 80
 
 
-class BaseRealTimeVisualizer(OutputCollector):
+class BaseRealTimeVisualizer(OutputCollector, ABC):
     """
     A base class for OpenGL-based real time visualizer.
     """
@@ -123,8 +124,11 @@ class BaseRealTimeVisualizer(OutputCollector):
             outputs=outputs,
         )
 
+    @abstractmethod
     @classmethod
-    def _get_io_specification(cls, input_memory_layout):
+    def _get_io_specification(
+        cls, input_memory_layout: str
+    ) -> Dict[str, List[Dict]]:
         """
         Creates runner IO specification from chosen parameters.
 
@@ -135,10 +139,10 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output layers specification.
         """
-        raise NotImplementedError
+        ...
 
     def get_io_specification(self) -> Dict[str, List[Dict]]:
         return self._get_io_specification(self.input_memory_layout)
@@ -302,6 +306,7 @@ class BaseRealTimeVisualizer(OutputCollector):
     def should_close(self) -> bool:
         return not self.process.is_alive()
 
+    @abstractmethod
     def visualize_output(self, img: np.ndarray, output_data: Any):
         """
         Method used to visualize data.
@@ -313,7 +318,7 @@ class BaseRealTimeVisualizer(OutputCollector):
         output_data : Any
             Data used for visualization.
         """
-        raise NotImplementedError
+        ...
 
     def get_output_data(self, inputs: Dict[str, Any]) -> Any:
         """
@@ -326,7 +331,7 @@ class BaseRealTimeVisualizer(OutputCollector):
 
         Returns
         -------
-        Any :
+        Any
             Data specific to visualizer.
         """
         return inputs
@@ -383,7 +388,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
 
         Returns
         -------
-        np.ndarray :
+        np.ndarray
             Image with visualization.
         """
         draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
@@ -431,7 +436,7 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         }
     }
 
-    def __init__(self, score_threshold: float, *args, **kwargs):
+    def __init__(self, score_threshold: float, *args: Any, **kwargs: Any):
         """
         Creates the detection visualizer.
 
@@ -439,9 +444,9 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         ----------
         score_threshold : float
             Score threshold for presenting class.
-        args : Any
+        *args : Any
             Additional arguments passed to base class constructor.
-        kwargs : Any
+        **kwargs : Any
             Additional keyword arguments passed to base class constructor.
         """
         self.layer = None
@@ -482,7 +487,7 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
 
         Returns
         -------
-        np.ndarray :
+        np.ndarray
             Image with visualization.
         """
         draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"
@@ -545,7 +550,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         }
     }
 
-    def __init__(self, top_n: int = 5, *args, **kwargs):
+    def __init__(self, top_n: int = 5, *args: Any, **kwargs: Any):
         """
         Creates the classification visualizer.
 
@@ -553,9 +558,9 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
         ----------
         top_n : int
             Number of classes to be listed.
-        args : Any
+        *args : Any
             Additional arguments passed to base class constructor.
-        kwargs : Any
+        **kwargs : Any
             Additional keyword arguments passed to base class constructor.
         """
         super().__init__(
@@ -634,7 +639,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
 
         Returns
         -------
-        np.ndarray :
+        np.ndarray
             Image with visualization.
         """
         draw_layer_tag = f"draw_layer_{self.id}_{self.draw_layer_index ^ 1}"

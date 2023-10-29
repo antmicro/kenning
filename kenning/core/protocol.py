@@ -7,6 +7,7 @@ Module providing a communication protocol for communication between host and
 the client.
 """
 
+from abc import ABC, abstractmethod
 import json
 import time
 from argparse import Namespace
@@ -48,7 +49,7 @@ def check_request(
 
     Returns
     -------
-    Tuple[bool, Optional[bytes]] :
+    Tuple[bool, Optional[bytes]]
         The request given in the input.
 
     Raises
@@ -101,12 +102,12 @@ class MessageType(Enum):
 
         Parameters
         ----------
-        endianness : str
+        endianness : Literal["little", "big"]
             Possible values are 'little' or 'big'.
 
         Returns
         -------
-        bytes :
+        bytes
             Converted message type.
         """
         return int(self.value).to_bytes(MSG_TYPE_LEN, endianness, signed=False)
@@ -124,12 +125,12 @@ class MessageType(Enum):
         ----------
         value : bytes
             Enum in bytes.
-        endianness : str
+        endianness : Literal["little", "big"]
             Endianness in bytes.
 
         Returns
         -------
-        MessageType :
+        MessageType
             Enum value.
         """
         return MessageType(int.from_bytes(value, endianness, signed=False))
@@ -178,12 +179,12 @@ class Message(object):
         ----------
         data : bytes
             Data to be converted to Message.
-        endianness : str
+        endianness : Literal["little", "big"]
             Endianness of the bytes.
 
         Returns
         -------
-        Tuple[Optional['Message'], int] :
+        Tuple[Optional['Message'], int]
             Message obtained from given bytes and number of bytes used to parse
             the message.
         """
@@ -214,12 +215,12 @@ class Message(object):
 
         Parameters
         ----------
-        endianness : str
+        endianness : Literal["little", "big"]
             Endianness of the bytes.
 
         Returns
         -------
-        bytes :
+        bytes
             Message converted to bytes.
         """
         message_size = self.message_size
@@ -265,7 +266,7 @@ class ServerStatus(Enum):
     DATA_INVALID = 5
 
 
-class Protocol(ArgumentsHandler):
+class Protocol(ArgumentsHandler, ABC):
     """
     The interface for the communication protocol with the target devices.
 
@@ -292,7 +293,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Protocol :
+        Protocol
             Object of class Protocol.
         """
         return super().from_argparse(args)
@@ -313,11 +314,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Protocol :
+        Protocol
             Object of class Protocol.
         """
         return super().from_json(json_dict)
 
+    @abstractmethod
     def initialize_server(self) -> bool:
         """
         Initializes server side of the protocol.
@@ -328,11 +330,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def initialize_client(self) -> bool:
         """
         Initializes client side of the protocol.
@@ -343,11 +346,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def send_message(self, message: Message) -> bool:
         """
         Sends message to the target device.
@@ -359,11 +363,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def receive_message(
         self, timeout: Optional[float] = None
     ) -> Tuple[ServerStatus, Message]:
@@ -384,12 +389,13 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple(ServerStatus, Message) :
+        Tuple[ServerStatus, Message]
             Tuple containing server status and received message. The status is
             NOTHING if message is incomplete and DATA_READY if it is complete.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def send_data(self, data: Any) -> bool:
         """
         Sends data to the target device.
@@ -403,11 +409,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if successful.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def receive_data(
         self, connection: Any, mask: int
     ) -> Tuple[ServerStatus, Optional[Any]]:
@@ -423,11 +430,12 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[ServerStatus, Optional[Any]] :
+        Tuple[ServerStatus, Optional[Any]]
             Status of receive and optionally data that was received.
         """
-        raise NotImplementedError
+        ...
 
+    @abstractmethod
     def gather_data(
         self, timeout: Optional[float] = None
     ) -> Tuple[ServerStatus, Optional[Any]]:
@@ -448,10 +456,10 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[ServerStatus, Optional[Any]] :
+        Tuple[ServerStatus, Optional[Any]]
             Receive status along with received data.
         """
-        raise NotImplementedError
+        ...
 
     def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
         """
@@ -461,7 +469,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[bool, Optional[bytes]] :
+        Tuple[bool, Optional[bytes]]
             True if OK received and attached message data, False otherwise.
         """
         while True:
@@ -499,7 +507,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if ready for inference.
         """
         KLogger.debug("Uploading input")
@@ -527,7 +535,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if model upload finished successfully.
         """
         KLogger.debug("Uploading model")
@@ -557,7 +565,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if data upload finished successfully.
         """
         KLogger.debug("Uploading io specification")
@@ -591,7 +599,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if inference finished successfully.
         """
         KLogger.debug("Requesting processing")
@@ -614,7 +622,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[bool, Optional[bytes]] :
+        Tuple[bool, Optional[bytes]]
             Tuple with download status (True if successful)
             and downloaded data.
         """
@@ -631,7 +639,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Measurements :
+        Measurements
             Inference statistics on target device.
         """
         measurements = Measurements()
@@ -656,7 +664,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if data upload finished successfully.
         """
         KLogger.debug("Uploading optimizers config")
@@ -687,7 +695,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        Tuple[bool, Optional[bytes]] :
+        Tuple[bool, Optional[bytes]]
             First element is equal to True if optimization finished
             successfully and the second element contains compiled model.
         """
@@ -716,7 +724,7 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if sent successfully.
         """
         KLogger.debug("Sending OK")
@@ -731,15 +739,16 @@ class Protocol(ArgumentsHandler):
 
         Returns
         -------
-        bool :
+        bool
             True if sent successfully.
         """
         KLogger.debug("Sending ERROR")
 
         return self.send_message(Message(MessageType.ERROR))
 
+    @abstractmethod
     def disconnect(self):
         """
         Ends connection with the other side.
         """
-        raise NotImplementedError
+        ...

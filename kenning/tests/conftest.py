@@ -69,7 +69,7 @@ class Samples:
 
         Returns
         -------
-        Any :
+        Any
             Object associated with provided sample.
         """
         args, kwargs = self._params[data_name]
@@ -81,7 +81,7 @@ class Samples:
 
         Returns
         -------
-        Samples :
+        Samples
             This object.
         """
         self._data_index = 0
@@ -94,7 +94,7 @@ class Samples:
 
         Returns
         -------
-        Any :
+        Any
             Object sample.
         """
         if self._data_index < len(self._samples):
@@ -175,7 +175,7 @@ def get_tmp_path(suffix: str = "") -> Path:
 
     Returns
     -------
-    Path :
+    Path
         Temporary path.
     """
     candidate = None
@@ -286,7 +286,7 @@ def modelsamples():
 
             Returns
             -------
-            Tuple[str, str] :
+            Tuple[str, str]
                 Tuple with path to model and ModelWrapper name
                 it is compatible with.
             """
@@ -475,7 +475,7 @@ def datasetsamples(datasetimages: DataFolder):
 
             Returns
             -------
-            Dataset :
+            Dataset
                 Class Dataset.
             """
             dataset = load_class(import_path)
@@ -506,7 +506,7 @@ def datasetimages(tmpfolder: Path) -> DataFolder:
 
     Returns
     -------
-    DataFolder :
+    DataFolder
         A DataFolder object that stores path to data and images amount.
     """
     images_amount = 185

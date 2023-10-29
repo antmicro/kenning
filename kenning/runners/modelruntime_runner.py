@@ -158,7 +158,7 @@ class ModelRuntimeRunner(Runner):
 
         Returns
         -------
-        Dataset :
+        Dataset
             Created dataset.
         """
         return any_from_json(json_dict)
@@ -177,7 +177,7 @@ class ModelRuntimeRunner(Runner):
 
         Returns
         -------
-        ModelWrapper :
+        ModelWrapper
             Created model.
         """
         return any_from_json(json_dict, dataset=dataset)
@@ -194,7 +194,7 @@ class ModelRuntimeRunner(Runner):
 
         Returns
         -------
-        Runtime :
+        Runtime
             Created runtime.
         """
         return any_from_json(json_dict)
@@ -211,7 +211,7 @@ class ModelRuntimeRunner(Runner):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output layers specification.
         """
         for io in ("input", "output"):

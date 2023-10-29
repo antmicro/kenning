@@ -80,7 +80,7 @@ def _get_cache_dir(env_var: str) -> Path:
 
     Returns
     -------
-    Path :
+    Path
         Path to the cache.
     """
     cache_dir = os.environ.get(env_var, "")
@@ -169,7 +169,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        Path :
+        Path
             Path to the retrieved resource.
 
         Raises
@@ -282,7 +282,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        List[Path] :
+        List[Path]
             List of cached files.
         """
         result = []
@@ -314,7 +314,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        Union[str, Path] :
+        Union[str, Path]
             Resolved path to resource.
 
         Raises
@@ -356,7 +356,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        str :
+        str
             Parsed string.
         """
         params = set(self.param_pattern.findall(converter))
@@ -441,7 +441,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        str :
+        str
             Parsed string.
         """
         callable_arg_spec = getfullargspec(converter)
@@ -499,7 +499,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        Optional[bool] :
+        Optional[bool]
             None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
@@ -529,7 +529,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        Optional[bool] :
+        Optional[bool]
             None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
@@ -632,7 +632,7 @@ class ResourceManager(metaclass=Singleton):
 
         Returns
         -------
-        str :
+        str
             Computed checksum as in hex format.
         """
         hash_algo = getattr(hashlib, self.HASHING_ALGORITHM)()
@@ -714,7 +714,7 @@ class ResourceURI(Path):
 
         Returns
         -------
-        ResourceURI :
+        ResourceURI
             URI with changed suffix.
         """
         ret = super().with_suffix(suffix)
@@ -732,7 +732,7 @@ class ResourceURI(Path):
 
         Returns
         -------
-        ResourceURI :
+        ResourceURI
             URI with changed name.
         """
         ret = super().with_name(name)
@@ -750,7 +750,7 @@ class ResourceURI(Path):
 
         Returns
         -------
-        ResourceURI :
+        ResourceURI
             URI with changed stem.
         """
         ret = super().with_stem(stem)
@@ -821,7 +821,7 @@ class Resources(object):
 
         Returns
         -------
-        List[Tuple[str, ...] :
+        List[Tuple[str, ...]
             List of available resources' keys.
         """
         result = []

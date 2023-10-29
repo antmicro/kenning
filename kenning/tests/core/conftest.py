@@ -47,7 +47,7 @@ def copy_model_to_tmp(model_path: PathOrURI) -> ResourceURI:
 
     Returns
     -------
-    ResourceURI :
+    ResourceURI
         URI to the model copy.
     """
     tmp_path = get_tmp_path()
@@ -85,7 +85,7 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
 
     Returns
     -------
-    Tuple[Type[Dataset], Type[ModelWrapper]] :
+    Tuple[Type[Dataset], Type[ModelWrapper]]
         Tuple with dataset and model for given framework.
     """
     if framework == "keras":
@@ -200,7 +200,7 @@ def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:
 
     Returns
     -------
-    Path :
+    Path
         Temporary path for dataset download.
     """
     return pytest.test_directory / "datasets" / dataset_cls.__name__
@@ -217,7 +217,7 @@ def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
 
     Returns
     -------
-    Path :
+    Path
         Path to reduced dataset.
     """
     return pytest.test_directory / dataset_cls.__name__
@@ -234,7 +234,7 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
 
     Returns
     -------
-    Dataset :
+    Dataset
         Mock of given dataset class.
     """
     if dataset_cls is PetDataset:

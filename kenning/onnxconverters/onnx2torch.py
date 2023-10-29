@@ -91,7 +91,7 @@ def create_linear_from_weights(
 
     Returns
     -------
-    torch.nn.Linear :
+    torch.nn.Linear
         Created Linear layer
     """
     if bias is False:
@@ -133,7 +133,7 @@ def extract_value_from_graph(
 
     Returns
     -------
-    Optional[torch.Tensor] :
+    Optional[torch.Tensor]
         Extracted value or default_value
     """
     value = None
@@ -193,7 +193,7 @@ def gemm_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting Gemm
     """
     a_name = node.input_values[0]
@@ -251,7 +251,7 @@ def matmul_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting MatMul
     """
     in_name_0 = node.input_values[0]
@@ -304,7 +304,7 @@ def batch_norm_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting BatchNormalization
     """
     if len(node.output_values) > 1:
@@ -332,7 +332,7 @@ def dropout_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting Dropout
     """
     if len(node.input_values) > 1:
@@ -406,7 +406,7 @@ def reshape_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting Reshape
     """
     shape = extract_value_from_graph(node, graph, node.input_values[1])
@@ -450,7 +450,7 @@ def max_pool_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting MaxPool
     """
     padding = extract_value_from_graph(node, graph, "pads")
@@ -495,7 +495,7 @@ def add_sub_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting Add or Sub
     """
     in_name_0 = node.input_values[0]
@@ -561,7 +561,7 @@ def shape_converter(
 
     Returns
     -------
-    OperationConverterResult :
+    OperationConverterResult
         Scheme for converting Shape
     """
     return OperationConverterResult(
@@ -585,7 +585,7 @@ def fill_none(
 
     Returns
     -------
-    List[torch.Tensor] :
+    List[torch.Tensor]
         Completed list of inputs
     """
     i = 0

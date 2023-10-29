@@ -77,7 +77,7 @@ class CommandTemplate(ABC):
 
         Returns
         -------
-        Tuple[argparse.ArgumentParser, ArgumentsGroups] :
+        Tuple[argparse.ArgumentParser, ArgumentsGroups]
             Tuple of configured parser and argument groups
         """
         if parser is None:
@@ -131,7 +131,7 @@ class CommandTemplate(ABC):
 
         Returns
         -------
-        ArgumentsGroups :
+        ArgumentsGroups
             Argument groups with new groups added.
         """
         if groups is None:
@@ -170,7 +170,7 @@ class CommandTemplate(ABC):
 
         Returns
         -------
-        Optional[int] :
+        Optional[int]
             Status of executed scenario.
         """
         raise NotImplementedError
@@ -189,7 +189,7 @@ class CommandTemplate(ABC):
 
         Returns
         -------
-        Optional[int] :
+        Optional[int]
             Status of executed scenario
         """
         if argv is None:

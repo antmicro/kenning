@@ -309,7 +309,7 @@ class RenodeRuntime(Runtime):
 
         Returns
         -------
-        Dict[str, int] :
+        Dict[str, int]
             Dict where the keys are opcodes and the values are counters.
         """
         KLogger.info("Retrieving opcode counters")
@@ -339,7 +339,7 @@ class RenodeRuntime(Runtime):
 
         Returns
         -------
-        Dict[str, List[float]] :
+        Dict[str, List[float]]
             Stats retrieved from Renode profiler dump.
         """
         KLogger.info("Parsing Renode profiler dump")
@@ -391,7 +391,7 @@ class RenodeRuntime(Runtime):
 
         Returns
         -------
-        Dict[str, int] :
+        Dict[str, int]
             Difference between two opcode stats.
         """
         ret = {}
@@ -438,7 +438,7 @@ class _ProfilerDumpParser(object):
 
         Returns
         -------
-        Dict[str, Any] :
+        Dict[str, Any]
             Dict containing statistics retrieved from the dump file.
         """
         profiler_timestamps = []
@@ -649,7 +649,7 @@ class _ProfilerDumpParser(object):
 
         Returns
         -------
-        Tuple[Dict[int, str], Dict[str, List[int]]] :
+        Tuple[Dict[int, str], Dict[str, List[int]]]
             Tuples of dicts containing cpus and peripherals data.
         """
         cpus = {}
@@ -690,7 +690,7 @@ class _ProfilerDumpParser(object):
 
         Returns
         -------
-        Tuple[Any, ...] :
+        Tuple[Any, ...]
             Struct read from file.
         """
         return struct.unpack(

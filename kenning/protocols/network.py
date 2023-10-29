@@ -78,7 +78,7 @@ class NetworkProtocol(BytesBasedProtocol):
 
         Returns
         -------
-        Tuple['ServerStatus', bytes] :
+        Tuple['ServerStatus', bytes]
             Client accepted status and None.
         """
         sock, addr = socket.accept()
@@ -150,7 +150,7 @@ class NetworkProtocol(BytesBasedProtocol):
 
         Returns
         -------
-        int :
+        int
             The number of bytes sent.
         """
         if self.socket is None:

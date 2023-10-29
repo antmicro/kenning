@@ -293,7 +293,7 @@ class TqdmCallback(tqdm):
 
         Returns
         -------
-        bool :
+        bool
             True if a `display()` was triggered.
         """
         if not super().update(n):

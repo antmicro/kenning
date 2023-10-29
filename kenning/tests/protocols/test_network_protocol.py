@@ -233,7 +233,7 @@ class TestNetworkProtocol(TestCoreProtocol):
 
             Returns
             -------
-            Tuple['ServerStatus', bytes] :
+            Tuple['ServerStatus', bytes]
                 Client addition status
             """
             output: ServerStatus

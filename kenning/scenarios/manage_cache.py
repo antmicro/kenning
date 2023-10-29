@@ -33,7 +33,7 @@ def format_size(size: int, unit: str = "B"):
 
     Returns
     -------
-    str :
+    str
         String with properly formatted units.
     """
     for prefix in ("", "K", "M", "G", "T"):

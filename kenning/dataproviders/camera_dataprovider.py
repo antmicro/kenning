@@ -150,7 +150,7 @@ class CameraDataProvider(DataProvider):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output layers specification.
         """
         if input_memory_layout == "NCHW":

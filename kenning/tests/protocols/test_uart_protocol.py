@@ -298,7 +298,7 @@ class TestUARTProtocol(TestCoreProtocol):
 
         Returns
         -------
-        UARTProtocol :
+        UARTProtocol
             Initialized UART protocol client.
         """
         client = self.init_protocol()

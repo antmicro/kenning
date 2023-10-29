@@ -525,7 +525,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
         Returns
         -------
-        str :
+        str
             Path to the image.
         """
         return str(self.root / "img" / f"{image_id}.jpg")
@@ -561,7 +561,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
         Returns
         -------
-        list[list[SegmObject]] :
+        list[list[SegmObject]]
             Prepared sample data.
         """
         result = []

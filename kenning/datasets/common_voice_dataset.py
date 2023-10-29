@@ -32,7 +32,7 @@ def dynamic_levenshtein_distance(a: str, b: str) -> int:
 
     Returns
     -------
-    int :
+    int
         Levenshtein Distance.
     """
     la, lb = len(a), len(b)
@@ -69,7 +69,7 @@ def char_eval(pred: str, gt: str) -> float:
 
     Returns
     -------
-    float :
+    float
         The ratio of the Levenshtein Distance to the ground truth length.
     """
     # sanitize the Ground Truth from punctuation and uppercase letters
@@ -98,7 +98,7 @@ def resample_wave(
 
     Returns
     -------
-    np.ndarray :
+    np.ndarray
         Resampled wave.
     """
     return librosa.resample(
@@ -121,7 +121,7 @@ def convert_mp3_to_wav(abspath: Path, subdir: str) -> Path:
 
     Returns
     -------
-    str :
+    str
         The string-typed path to the converted file.
     """
     from pydub import AudioSegment

@@ -219,7 +219,7 @@ class PetDataset(Dataset):
 
         Returns
         -------
-        Tuple[Any, Any] :
+        Tuple[Any, Any]
             The standardization values for a given train dataset. Tuple of two
             variables describing mean and std values.
         """

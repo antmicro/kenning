@@ -125,7 +125,7 @@ class ONNXYOLOV4(YOLOWrapper):
 
         Returns
         -------
-        torch.Tensor :
+        torch.Tensor
             Value of loss
         """
         import torch

@@ -89,7 +89,7 @@ def get_all_subclasses(
 
     Returns
     -------
-    Union[List[Type], List[Tuple[str, str]]]:
+    Union[List[Type], List[Tuple[str, str]]]
         When importing classes: List of all final subclasses of given class.
         When not importing classes: list of tuples with name and module path
         of the class
@@ -152,7 +152,7 @@ def get_all_subclasses(
 
         Returns
         -------
-        bool :
+        bool
             True if class_def is subclass of cls.
         """
         found_subclass = False
@@ -223,7 +223,7 @@ def any_from_json(json_cfg: Dict[str, Any], **kwargs) -> Optional[Any]:
 
     Returns
     -------
-    Optional[Any] :
+    Optional[Any]
         If a class is available and contains `from_json` method, it
         returns object of this class.
     """
@@ -246,7 +246,7 @@ def load_class(module_path: str) -> Type:
 
     Returns
     -------
-    type :
+    type
         Loaded class.
     """
     module_name, cls_name = module_path.rsplit(".", 1)
@@ -266,7 +266,7 @@ def get_kenning_submodule_from_path(module_path: str):
 
     Returns
     -------
-    str :
+    str
         Normalized module path.
     """
     parts = Path(module_path).parts
@@ -288,7 +288,7 @@ def get_command(argv: List[str] = None, with_slash: bool = True):
 
     Returns
     -------
-    str :
+    str
         Full string with command.
     """
     if argv is None:

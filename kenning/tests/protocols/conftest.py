@@ -15,7 +15,7 @@ def random_network_port() -> Optional[int]:
 
     Returns
     -------
-    Optional[int] :
+    Optional[int]
         Random free port.
     """
     ports = random.sample(range(49152, 65535), k=5)
@@ -42,7 +42,7 @@ def random_byte_data() -> bytes:
 
     Returns
     -------
-    bytes :
+    bytes
         Byte array of random data.
     """
     return bytes(random.choices(range(0, 0xFF), k=random.randint(10, 20)))

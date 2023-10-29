@@ -60,7 +60,7 @@ class KenningFlow:
 
         Returns
         -------
-        Dict :
+        Dict
             Schema for the class.
         """
         return {
@@ -100,7 +100,7 @@ class KenningFlow:
 
         Returns
         -------
-        KenningFlow :
+        KenningFlow
             Object of class KenningFlow.
         """
         try:

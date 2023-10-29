@@ -63,7 +63,7 @@ def list_classes(
 
     Returns
     -------
-    List[str] :
+    List[str]
         List of formatted strings to be printed out later
     """
     kenning_base_classes = get_base_classes_dict()

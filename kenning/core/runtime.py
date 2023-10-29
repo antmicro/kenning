@@ -103,7 +103,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Runtime :
+        Runtime
             Object of class Runtime.
         """
         return super().from_argparse(args)
@@ -124,7 +124,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Runtime :
+        Runtime
             Object of class Runtime.
         """
         return super().from_json(json_dict)
@@ -135,7 +135,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[str] :
+        List[str]
             List of possible input format names.
         """
         return self.inputtypes
@@ -188,7 +188,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
 
         Raises
@@ -217,7 +217,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
         raise NotImplementedError
@@ -241,7 +241,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        list[np.ndarray] :
+        list[np.ndarray]
             List of inputs for each layer which are ready to be passed to the
             model.
 
@@ -339,7 +339,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[np.ndarray] :
+        List[np.ndarray]
             Postprocessed and reordered outputs of the model.
 
         Raises
@@ -421,7 +421,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
         if input_data is None:
@@ -457,7 +457,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Path :
+        Path
             Returns path to the specification.
         """
         spec_path = model_path.with_suffix(model_path.suffix + ".json")
@@ -493,7 +493,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[Any] :
+        List[Any]
             Postprocessed and reordered outputs of the model.
         """
         raise NotImplementedError
@@ -514,7 +514,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bytes :
+        bytes
             Data to send to the client.
 
         Raises
@@ -543,7 +543,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bytes :
+        bytes
             Statistics to be sent to the client.
         """
         KLogger.debug("Uploading stats")
@@ -556,7 +556,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if initialized successfully.
         """
         return self.prepare_model(None) and self.prepare_io_specification(None)
@@ -581,7 +581,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             Obtained values.
         """
         prepX = model_wrapper._preprocess_input(X)
@@ -602,7 +602,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        float :
+        float
             Current timestamp.
         """
         return time.perf_counter()

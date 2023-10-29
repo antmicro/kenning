@@ -41,7 +41,7 @@ class ROS2SegmentationDataConverter(DataConverter):
 
         Returns
         -------
-        SegmentationAction.Goal :
+        SegmentationAction.Goal
             The converted segmentation action goal.
 
         Raises
@@ -84,7 +84,7 @@ class ROS2SegmentationDataConverter(DataConverter):
 
         Returns
         -------
-        List[List[SegmObject]] :
+        List[List[SegmObject]]
             The converted data.
         """
         assert data.success, "Segmentation action failed"

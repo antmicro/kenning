@@ -32,7 +32,7 @@ class TestCoreProtocol:
 
         Returns
         -------
-        Protocol:
+        Protocol
             Initialized protocol object
         """
         return Protocol()
@@ -44,7 +44,7 @@ class TestCoreProtocol:
 
         Returns
         -------
-        Tuple[Protocol, Protocol] :
+        Tuple[Protocol, Protocol]
             A tuple containing initialized server and client objects
         """
         server = self.init_protocol()

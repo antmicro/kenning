@@ -41,7 +41,7 @@ def generate_onnx_support_grid(
 
     Returns
     -------
-    Tuple[List[str], Dict[str, Dict[str, str]] :
+    Tuple[List[str], Dict[str, Dict[str, str]]
         Tuple of list of frameworks and their versions,
         dictionary with models, frameworks and their export/import support.
     """

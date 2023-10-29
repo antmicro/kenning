@@ -46,7 +46,7 @@ class DataConverter(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             Converted data.
         """
         raise NotImplementedError
@@ -64,7 +64,7 @@ class DataConverter(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             Converted data.
         """
         raise NotImplementedError

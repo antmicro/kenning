@@ -97,7 +97,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        PathOrURI :
+        PathOrURI
             Path or URI to the model.
         """
         return self.model_path
@@ -123,7 +123,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        ModelWrapper :
+        ModelWrapper
             Object of class ModelWrapper.
         """
         return super().from_argparse(
@@ -155,7 +155,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        ModelWrapper :
+        ModelWrapper
             Object of class ModelWrapper.
         """
         return super().from_json(
@@ -223,7 +223,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             The preprocessed inputs that are ready to be fed to the model.
         """
         return X
@@ -244,7 +244,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
@@ -264,7 +264,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any :
+        Any
             The results of the inference.
         """
         raise NotImplementedError
@@ -276,7 +276,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[str, str] :
+        Tuple[str, str]
             Framework name and version.
         """
         raise NotImplementedError
@@ -288,7 +288,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[str] :
+        List[str]
             List of possible output format names.
         """
         raise NotImplementedError
@@ -305,7 +305,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Measurements :
+        Measurements
             The inference results.
         """
         from tqdm import tqdm
@@ -369,7 +369,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output
             layers specification.
         """
@@ -388,7 +388,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output
             layers specification.
         """
@@ -427,7 +427,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output
             layers specification.
         """
@@ -446,7 +446,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        bytes :
+        bytes
             Input data as byte stream.
         """
         raise NotImplementedError
@@ -466,7 +466,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[Any] :
+        List[Any]
             List of output data from a model. The converted data should be
             compatible with the ``postprocess_outputs`` method.
         """

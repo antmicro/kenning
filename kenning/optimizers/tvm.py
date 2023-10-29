@@ -135,7 +135,7 @@ def torchconversion(
 
         Returns
         -------
-        int :
+        int
             The size of a 1-dimensional input matching the original shape.
         """
         ret = 1

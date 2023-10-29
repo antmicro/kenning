@@ -31,7 +31,7 @@ def get_all_used_imports() -> Set[str]:
 
     Returns
     -------
-    Set[str] :
+    Set[str]
         Modules imported across whole project
     """
     import kenning

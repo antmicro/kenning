@@ -87,7 +87,7 @@ def get_model_name(filepath: Path) -> str:
 
     Returns
     -------
-    str :
+    str
         Name of the model used when generating the report.
     """
     return str(filepath).replace("/", ".")
@@ -127,7 +127,7 @@ def performance_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
@@ -318,7 +318,7 @@ def comparison_performance_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
@@ -506,7 +506,7 @@ def classification_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from kenning.core.report import create_report_from_measurements
@@ -604,7 +604,7 @@ def comparison_classification_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from kenning.core.report import create_report_from_measurements
@@ -773,7 +773,7 @@ def detection_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from kenning.core.report import create_report_from_measurements
@@ -924,7 +924,7 @@ def comparison_detection_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     KLogger.info("Running comparison_detection_report")
@@ -1009,7 +1009,7 @@ def renode_stats_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
@@ -1338,7 +1338,7 @@ def comparison_renode_stats_report(
 
     Returns
     -------
-    str :
+    str
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
@@ -1822,7 +1822,7 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
 
     Returns
     -------
-    List[str] :
+    List[str]
         List with types of report
     """
     report_types = []
@@ -1867,7 +1867,7 @@ def deduce_report_name(
 
     Returns
     -------
-    str :
+    str
         Report name
     """
     if len(measurements_data) > 1:

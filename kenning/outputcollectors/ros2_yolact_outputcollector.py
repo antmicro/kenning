@@ -148,7 +148,7 @@ class ROS2YolactOutputCollector(OutputCollector):
 
         Returns
         -------
-        Dict[str, List[Dict]] :
+        Dict[str, List[Dict]]
             Dictionary that conveys input and output layers specification.
         """
         return {

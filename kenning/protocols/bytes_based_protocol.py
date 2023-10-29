@@ -105,7 +105,7 @@ class BytesBasedProtocol(Protocol, ABC):
 
         Returns
         -------
-        Message :
+        Message
             Parsed message.
         """
         return Message.from_bytes(message)[0]

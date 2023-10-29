@@ -55,7 +55,7 @@ def _io_spec_to_struct(
 
     Returns
     -------
-    bytes :
+    bytes
         IO specification structure.
     """
     if len(entry_func) > MAX_LENGTH_ENTRY_FUNC_NAME:
@@ -150,7 +150,7 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
 
     Returns
     -------
-    Dict[str, int] :
+    Dict[str, int]
         Parsed stats.
     """
     if len(data) != ALLOCATION_STATS_SIZE:

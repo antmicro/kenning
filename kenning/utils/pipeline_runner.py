@@ -109,7 +109,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        PipelineRunner :
+        PipelineRunner
             PipelineRunner created from provided JSON config.
 
         Raises
@@ -210,7 +210,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        Dict :
+        Dict
             Serialized inference.
         """
 
@@ -317,7 +317,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        bool :
+        bool
             True if the benchmarks were performed successfully,
             False otherwise.
         """
@@ -377,7 +377,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        int :
+        int
             The 0 value if the inference was successful, 1 otherwise.
 
         Raises
@@ -436,7 +436,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        bool :
+        bool
             True if succeeded.
         """
         if not compiled_model_path:
@@ -473,7 +473,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        Optional[Path] :
+        Optional[Path]
             Path to compiled model.
 
         Raises
@@ -628,7 +628,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        bool :
+        bool
             True if executed successfully.
         """
         if self.protocol is None:
@@ -686,7 +686,7 @@ class PipelineRunner(object):
 
         Returns
         -------
-        bool :
+        bool
             True if executed successfully.
         """
         self.model_path = compiled_model_path

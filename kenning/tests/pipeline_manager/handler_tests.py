@@ -24,7 +24,7 @@ def load_json_files(
 
     Returns
     -------
-    Tuple[List[Dict], List[str]] :
+    Tuple[List[Dict], List[str]]
         Tuple containing list of loaded JSON files and list of their names
     """
     path_to_json_files = Path(path_to_json_files)
@@ -55,7 +55,7 @@ def factory_test_create_dataflow(
 
     Returns
     -------
-    Callable :
+    Callable
         Test for `create_dataflow` method.
     """
     pipeline_jsons, pipeline_jsons_names = load_json_files(path_to_json_files)
@@ -84,7 +84,7 @@ def factory_test_equivalence(path_to_json_files: Union[str, Path]) -> Callable:
 
     Returns
     -------
-    Callable :
+    Callable
         Test whether parsing JSON to Pipeline Manager dataflow and back does
         not change underlying pipeline.
     """

@@ -76,7 +76,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if there was some exit indication.
         """
         return False
@@ -108,7 +108,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        OutputCollector :
+        OutputCollector
             Object of class Runner.
         """
         return super().from_argparse(
@@ -146,7 +146,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Runner :
+        Runner
             Object of class Runner.
         """
         return super().from_json(
@@ -193,7 +193,7 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dict[str, Any] :
+        Dict[str, Any]
             Output of this block.
         """
         raise NotImplementedError

@@ -138,7 +138,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Returns
         -------
-        Tuple[np.ndarray, np.ndarray] :
+        Tuple[np.ndarray, np.ndarray]
             Tuple containing transformed image and original image.
         """
         img_orig = np.frombuffer(data.data, dtype=np.uint8)
@@ -252,7 +252,7 @@ class ROS2CameraNodeDataProvider(DataProvider):
 
         Returns
         -------
-        numpy.ndarray :
+        numpy.ndarray
             Converted image.
         """
         if src_format == dst_format:

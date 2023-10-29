@@ -54,7 +54,7 @@ def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray :
+    numpy.ndarray
         Masks for detected objects, each mask is cropped to the bounding box
         (there are no non-zero pixels outside the bbox).
     """
@@ -113,7 +113,7 @@ def sanitize_coordinates(
 
     Returns
     -------
-    Tuple[numpy.ndarray, numpy.ndarray] :
+    Tuple[numpy.ndarray, numpy.ndarray]
         Result is (x1, x2), each array has a (N,) shape, elementwise
         each element from both arrays satisfy: 0 <= x1 <= x2 <= img_size.
     """
@@ -138,7 +138,7 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
 
     Returns
     -------
-    numpy.ndarray :
+    numpy.ndarray
         Result of element wise sigmoid function.
     """
     return np.where(
@@ -491,7 +491,7 @@ class YOLACT(YOLACTWrapper):
 
         Returns
         -------
-        numpy.ndarray :
+        numpy.ndarray
             Array of bounding boxes.
         """
         variances = [0.1, 0.2]
@@ -530,7 +530,7 @@ class YOLACT(YOLACTWrapper):
 
         Returns
         -------
-        Dict[str, numpy.ndarray] :
+        Dict[str, numpy.ndarray]
             Dictionary of detected objects.
         """
         # Remove predictions with the background label
@@ -593,7 +593,7 @@ class YOLACT(YOLACTWrapper):
 
         Returns
         -------
-        Dict[str, np.ndarray] :
+        Dict[str, np.ndarray]
             Dictionary of model outputs with detected objects.
         """
         decode_boxes = self._decode(y[0].squeeze(0), y[3])

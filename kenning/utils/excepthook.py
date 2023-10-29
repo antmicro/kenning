@@ -102,7 +102,7 @@ def _get_pypi_name(name: str) -> str:
 
     Returns
     -------
-    str :
+    str
         Name of module used by `pip`
     """
     return KNOWN_PYPI_NAMES.get(name, name)
@@ -138,7 +138,7 @@ def find_missing_optional_dependency(module_name: str) -> Optional[str]:
 
     Returns
     -------
-    Optional[str] :
+    Optional[str]
         Name of group with optional dependencies which contain missing module
         or None otherwise.
     """

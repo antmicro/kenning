@@ -197,7 +197,7 @@ def execute_script_and_wait(
 
     Returns
     -------
-    bool :
+    bool
         True if the script ended successfully
     """
     success, failure = uuid.uuid4(), uuid.uuid4()
@@ -269,7 +269,7 @@ def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
 
     Returns
     -------
-    Path :
+    Path
         Path to the working directory.
     """
     if markdown in WORKING_DIRS:
@@ -306,7 +306,7 @@ def get_subshell(
 
     Returns
     -------
-    pexpect.spawn :
+    pexpect.spawn
         Interface for communication with subshell.
     """
     if _id in SHELLS[markdown]:
@@ -362,7 +362,7 @@ def create_script(snippet: Snippet, gallery_snippet: bool) -> str:
 
     Returns
     -------
-    str :
+    str
         Prepared script
     """
     script = None
@@ -420,7 +420,7 @@ def factory_test_snippet(
 
     Returns
     -------
-    Callable :
+    Callable
         Parametrized test
     """
     tmpfolder = pytest.test_directory / "tmp"
@@ -525,7 +525,7 @@ def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
 
     Returns
     -------
-    Callable :
+    Callable
         Parametrized test
     """
 

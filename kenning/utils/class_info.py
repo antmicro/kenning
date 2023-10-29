@@ -149,8 +149,8 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
     -------
     str
         Formatted Markdown-like string to be printed later. Empty strings
-        represent dependencies that were skipped - either they belong to kenning
-        or are provided by the default python distribution
+        represent dependencies that were skipped - either they belong to
+        Kenning or are provided by the default python distribution
     """
     for dependency in syntax_node.names:
         module_path = ""

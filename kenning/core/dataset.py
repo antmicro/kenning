@@ -218,7 +218,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dataset :
+        Dataset
             Object of class Dataset.
         """
         return super().from_argparse(args)
@@ -239,7 +239,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dataset :
+        Dataset
             Object of class Dataset.
         """
         return super().from_json(json_dict)
@@ -253,7 +253,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Dataset :
+        Dataset
             This object.
         """
         self._dataindex = 0
@@ -268,7 +268,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[List, List] :
+        Tuple[List, List]
             Tuple containing list of input data for inference and output data
             for comparison.
         """
@@ -289,7 +289,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        int :
+        int
             Number of input samples in a single batch.
         """
         return ceil(len(self.dataX) / self.batch_size)
@@ -309,7 +309,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Iterable[Dataset] :
+        Iterable[Dataset]
             Iterator over the subset of the dataset.
         """
         assert len(dataXsubset) == len(dataYsubset)
@@ -325,7 +325,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Iterable[Dataset] :
+        Iterable[Dataset]
             Iterator over the train data obtained from split.
         """
         split = self.train_test_split_representations()
@@ -339,7 +339,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Iterable[Dataset] :
+        Iterable[Dataset]
             Iterator over the test data obtained from split.
         """
         split = self.train_test_split_representations()
@@ -353,7 +353,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Iterable[Dataset] :
+        Iterable[Dataset]
             Iterator over the validation data obtained from split.
         """
         split = self.train_test_split_representations()
@@ -378,7 +378,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List :
+        List
             Preprocessed input samples.
         """
         return samples
@@ -398,7 +398,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List :
+        List
             Preprocessed output samples.
         """
         return samples
@@ -426,7 +426,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[List, List] :
+        Tuple[List, List]
             The list of data samples.
         """
         return (
@@ -443,7 +443,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[List, List] :
+        Tuple[List, List]
             The list of data samples representations.
         """
         return (self.dataX, self.dataY)
@@ -460,7 +460,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        int :
+        int
             The length of a single batch from a given subset
         """
         return ceil(len(subset) / self.batch_size)
@@ -471,7 +471,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Optional[int] :
+        Optional[int]
             The number of samples in a single batch from the training set or
             None if the dataset has not been split
         """
@@ -485,7 +485,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Optional[int] :
+        Optional[int]
             The number of samples in a single batch from the testing set or
             None if the dataset has not been split
         """
@@ -499,7 +499,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Optional[int] :
+        Optional[int]
             The number of samples in a single batch from the validation set or
             None if the dataset has not been split
         """
@@ -530,7 +530,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[List, ...] :
+        Tuple[List, ...]
             Split data into train, test and optionally validation subsets.
         """
         from sklearn.model_selection import train_test_split
@@ -646,7 +646,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[Any] :
+        List[Any]
             List of objects that are usable by the ``prepare_input_samples``
             method.
         """
@@ -683,7 +683,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bool :
+        bool
             True if dataset is downloaded.
         """
         checksum_file = self.root / "DATASET_CHECKSUM"
@@ -732,7 +732,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Measurements :
+        Measurements
             The dictionary containing the evaluation results.
         """
         raise NotImplementedError
@@ -746,7 +746,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Tuple[Any, Any] :
+        Tuple[Any, Any]
             Tuple of two variables describing mean and
             standardization values for a given train dataset.
         """
@@ -758,7 +758,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[str] :
+        List[str]
             List of class names.
         """
         raise NotImplementedError
@@ -769,7 +769,7 @@ class Dataset(ArgumentsHandler, ABC):
 
         Returns
         -------
-        bytes :
+        bytes
             Dataset checksum.
         """
         checksum_file = self.root / "DATASET_CHECKSUM"

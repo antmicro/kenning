@@ -7,6 +7,7 @@ repos:
   rev: v0.1.2
   hooks:
   - id: ruff
+    args: [--fix, --exit-non-zero-on-fix]
   - id: ruff-format
 - repo: https://github.com/jsh9/pydoclint
   rev: 0.3.4

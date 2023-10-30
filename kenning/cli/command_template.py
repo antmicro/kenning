@@ -156,8 +156,8 @@ class CommandTemplate(ABC):
 
         return groups
 
-    @abstractmethod
     @staticmethod
+    @abstractmethod
     def run(
         args: argparse.Namespace, not_parsed: List[str] = [], **kwargs: Any
     ) -> Optional[int]:

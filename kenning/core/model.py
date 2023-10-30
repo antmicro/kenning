@@ -413,8 +413,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         except (FileNotFoundError, HTTPError):
             return cls.derive_io_spec_from_json_params(parsed_json_dict)
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def derive_io_spec_from_json_params(
         cls, json_dict: Dict
     ) -> Dict[str, List[Dict]]:

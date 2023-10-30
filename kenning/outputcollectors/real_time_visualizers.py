@@ -127,8 +127,8 @@ class BaseRealTimeVisualizer(OutputCollector, ABC):
             outputs=outputs,
         )
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def _get_io_specification(
         cls, input_memory_layout: str
     ) -> Dict[str, List[Dict]]:

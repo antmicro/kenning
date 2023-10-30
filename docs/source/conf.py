@@ -24,11 +24,17 @@ import os
 import sys
 
 from antmicro_sphinx_utils.defaults import (
-    numfig_format as default_numfig_format,
-    extensions as default_extensions,
-    myst_enable_extensions as default_myst_enable_extensions,
     antmicro_html,
     antmicro_latex,
+)
+from antmicro_sphinx_utils.defaults import (
+    extensions as default_extensions,
+)
+from antmicro_sphinx_utils.defaults import (
+    myst_enable_extensions as default_myst_enable_extensions,
+)
+from antmicro_sphinx_utils.defaults import (
+    numfig_format as default_numfig_format,
 )
 
 sys.path.insert(0, os.path.abspath("../.."))

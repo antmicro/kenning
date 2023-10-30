@@ -18,9 +18,9 @@ from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.random_dataset import (
+    RandomizedClassificationDataset,
     RandomizedDetectionSegmentationDataset,
 )
-from kenning.datasets.random_dataset import RandomizedClassificationDataset
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.modelwrappers.classification.tflite_magic_wand import (
     MagicWandModelWrapper,

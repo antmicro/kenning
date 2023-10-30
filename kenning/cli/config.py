@@ -10,41 +10,40 @@ and mapping to classes extending CommandTemplate.
 """
 
 import argparse
-from typing import List, Generator, Dict, Tuple, Type, Optional
+from typing import Dict, Generator, List, Optional, Tuple, Type
 
-from kenning.cli.formatter import Formatter
 from kenning.cli.command_template import (
-    CommandTemplate,
+    CACHE,
     COMPLETION,
     FINE_TUNE,
     FLOW,
-    SEARCH,
     HELP,
     INFO,
     LIST,
     OPTIMIZE,
     REPORT,
+    SEARCH,
     SERVER,
     TEST,
     TRAIN,
-    CACHE,
     VISUAL_EDITOR,
+    CommandTemplate,
 )
+from kenning.cli.formatter import Formatter
 from kenning.scenarios import (
     class_info,
+    configure_autocompletion,
+    fuzzy_search_class,
     inference_server,
     inference_tester,
     json_flow_runner,
     list_classes,
     manage_cache,
+    model_training,
     optimization_runner,
     pipeline_manager_client,
     render_report,
-    model_training,
-    fuzzy_search_class,
-    configure_autocompletion,
 )
-
 
 # Subcommands that can be used in sequence list in structure
 # defining possible order

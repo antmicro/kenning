@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-import tempfile
 import string
-from kenning.datasets.pet_dataset import PetDataset
-from kenning.tests.conftest import DataFolder
+import tempfile
 from pathlib import Path
 from random import choices, randint
+
+import pytest
+
+from kenning.datasets.pet_dataset import PetDataset
+from kenning.tests.conftest import DataFolder
 
 
 def random_string() -> str:

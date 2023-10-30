@@ -16,23 +16,23 @@ from typing import List, Optional, Tuple
 from argcomplete.completers import ChoicesCompleter
 
 from kenning.cli.command_template import (
-    ArgumentsGroups,
-    CommandTemplate,
     GROUP_SCHEMA,
     LIST,
+    ArgumentsGroups,
+    CommandTemplate,
 )
 from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
-    DATASETS,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
+    DATASETS,
     MODEL_WRAPPERS,
     ONNX_CONVERSIONS,
     OPTIMIZERS,
     OUTPUT_COLLECTORS,
     RUNNERS,
-    RUNTIMES,
     RUNTIME_PROTOCOLS,
+    RUNTIMES,
     get_all_subclasses,
     get_base_classes_dict,
 )

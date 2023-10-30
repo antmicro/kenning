@@ -8,7 +8,7 @@ Contains Tensorflow Lite model for the person detection.
 Trained on VisualWakeWords dataset.
 """
 
-from typing import List, Tuple, Optional
+from typing import List, Optional, Tuple
 
 import cv2
 import numpy as np

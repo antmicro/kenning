@@ -6,16 +6,19 @@
 Wrapper for TVM deep learning compiler.
 """
 
-import tvm
-import onnx
-import tvm.relay as relay
-from typing import Literal, Optional, Dict, List, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
-from kenning.core.optimizer import Optimizer
-from kenning.core.optimizer import ConversionError
-from kenning.core.optimizer import CompilationError
-from kenning.core.optimizer import IOSpecificationNotFoundError
+import onnx
+import tvm
+import tvm.relay as relay
+
 from kenning.core.dataset import Dataset
+from kenning.core.optimizer import (
+    CompilationError,
+    ConversionError,
+    IOSpecificationNotFoundError,
+    Optimizer,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -132,8 +135,8 @@ def torchconversion(
     params: Union[Dict, str]
         Parameters dictionary to be used by relay module
     """
-    import torch
     import numpy as np
+    import torch
 
     # This is a model-specific selector of output conversion functions.
     # It defaults to a no_conversion function that just returns its input
@@ -593,7 +596,7 @@ class TVMCompiler(Optimizer):
                 if self.use_tensorrt:
                     from tvm.relay.op.contrib.tensorrt import (
                         partition_for_tensorrt,
-                    )  # noqa: E501
+                    )
 
                     mod = partition_for_tensorrt(mod, params)
                 lib = relay.build(

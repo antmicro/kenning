@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.tests.conftest import DataFolder, Samples
 import pytest
+
+from kenning.tests.conftest import DataFolder, Samples
 
 
 class TestModelWrapperAndDatasetCompatibility:

@@ -6,10 +6,9 @@
 Wrapper for TensorFlowPruning optimizer.
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Literal, Optional
 
 import tensorflow as tf
-from typing import Literal
 import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset

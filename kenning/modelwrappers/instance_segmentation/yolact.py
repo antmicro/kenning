@@ -28,7 +28,9 @@ from kenning.utils.resource_manager import PathOrURI
 pyximport.install(
     setup_args={"include_dirs": np.get_include()}, reload_support=True
 )
-from kenning.modelwrappers.instance_segmentation.cython_nms import nms  # noqa: E402
+from kenning.modelwrappers.instance_segmentation.cython_nms import (  # noqa: E402
+    nms,
+)
 
 
 def crop(masks: np.ndarray, boxes: np.ndarray, padding: int = 1) -> np.ndarray:

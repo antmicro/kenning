@@ -6,13 +6,14 @@
 Mozilla Common Voice Dataset wrapper.
 """
 
-from typing import Any, List, Tuple, Union, Optional
-from pathlib import Path
 import string
+import wave
+from pathlib import Path
+from typing import Any, List, Optional, Tuple, Union
+
+import librosa
 import numpy as np
 import pandas as pd
-import wave
-import librosa
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements

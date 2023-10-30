@@ -6,12 +6,13 @@ Provides implementation of a KenningFlow that allows execution of arbitrary
 flows created from Runners.
 """
 
-from typing import Dict, Any, List
+from typing import Any, Dict, List
+
 import jsonschema
 
 from kenning.core.runner import Runner
-from kenning.utils.logger import KLogger
 from kenning.utils.class_loader import load_class
+from kenning.utils.logger import KLogger
 
 
 class KenningFlow:

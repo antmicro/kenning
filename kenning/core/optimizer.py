@@ -6,11 +6,11 @@
 Provides an API for model compilers.
 """
 
-from pathlib import Path
-from typing import List, Dict, Literal, Tuple, Optional, Union
+import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
-import json
+from pathlib import Path
+from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper

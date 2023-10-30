@@ -10,16 +10,17 @@ A script that generates report files based on Measurements JSON output.
 It requires providing the report type and JSON file to extract data from.
 """
 
-import sys
 import argparse
-from pathlib import Path
-from typing import Dict, List, Set, Optional, Tuple, Callable, Any
-from collections import namedtuple
-import json
-import numpy as np
-import re
 import copy
-from argcomplete import FilesCompleter, DirectoriesCompleter
+import json
+import re
+import sys
+from collections import namedtuple
+from pathlib import Path
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple
+
+import numpy as np
+from argcomplete import DirectoriesCompleter, FilesCompleter
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -27,39 +28,38 @@ else:
     from importlib.resources import path
 
 from kenning.cli.command_template import (
+    DEFAULT_GROUP,
+    GROUP_SCHEMA,
+    REPORT,
+    TEST,
     ArgumentsGroups,
     CommandTemplate,
-    DEFAULT_GROUP,
-    REPORT,
-    GROUP_SCHEMA,
-    TEST,
 )
 from kenning.core.drawing import (
+    IMMATERIAL_COLORS,
+    RED_GREEN_CMAP,
+    choose_theme,
+    draw_barplot,
+    draw_bubble_plot,
     draw_confusion_matrix,
+    draw_plot,
+    draw_radar_chart,
+    draw_violin_comparison_plot,
     recall_precision_curves,
     recall_precision_gradients,
     true_positive_iou_histogram,
     true_positives_per_iou_range_histogram,
-    draw_plot,
-    draw_radar_chart,
-    draw_violin_comparison_plot,
-    draw_bubble_plot,
-    choose_theme,
-    draw_barplot,
-    IMMATERIAL_COLORS,
-    RED_GREEN_CMAP,
 )
 from kenning.core.metrics import (
-    compute_performance_metrics,
     compute_classification_metrics,
     compute_detection_metrics,
+    compute_performance_metrics,
     compute_renode_metrics,
 )
 from kenning.resources import reports
 from kenning.utils.class_loader import get_command
-from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 from kenning.utils.logger import KLogger
-
+from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 
 SERVIS_PLOT_OPTIONS = {
     "figsize": (900, 500),
@@ -131,6 +131,7 @@ def performance_report(
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
+
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
@@ -322,6 +323,7 @@ def comparison_performance_report(
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
+
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info("Running comparison_performance_report")
@@ -778,9 +780,9 @@ def detection_report(
     """
     from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import (
-        get_recall_precision,
         compute_ap,
         compute_map_per_threshold,
+        get_recall_precision,
     )
 
     KLogger.info(
@@ -1013,6 +1015,7 @@ def renode_stats_report(
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
+
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
@@ -1340,6 +1343,7 @@ def comparison_renode_stats_report(
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
+
     from kenning.core.report import create_report_from_measurements
 
     def retrieve_non_zero_profiler_data(
@@ -1906,9 +1910,9 @@ def generate_html_report(
     debug : bool
         Debug mode -- allows to print more information
     """
-    from sphinx.util.docutils import patch_docutils, docutils_namespace
     from sphinx.application import Sphinx
     from sphinx.cmd.build import handle_exception
+    from sphinx.util.docutils import docutils_namespace, patch_docutils
 
     with path(reports, "conf.py") as _conf:
         override_conf = {

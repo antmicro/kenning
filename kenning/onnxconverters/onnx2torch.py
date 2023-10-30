@@ -14,32 +14,34 @@ __all__ = [
     "restore_default_converters",
     "restore_custom_converters",
 ]
-from typing import Union, Tuple, List, Optional
-from pathlib import Path
 import copy
+from pathlib import Path
+from typing import List, Optional, Tuple, Union
+
 import onnx
-import torch
 import onnx2torch
-from onnx2torch.onnx_node import OnnxNode, OnnxTensor
-from onnx2torch.onnx_graph import OnnxGraph
+import torch
 from onnx2torch.node_converters import onnx_mapping_from_node
 from onnx2torch.node_converters.batch_norm import _ as _batch_converter
-from onnx2torch.node_converters.reshape import OnnxReshape
-from onnx2torch.node_converters.matmul import _ as _matmul_converter
-from onnx2torch.node_converters.constant import OnnxConstant
-from onnx2torch.node_converters.max_pool import _ as _max_pool_converter
 from onnx2torch.node_converters.binary_math_operations import (
     _ as _binary_math_converter,
 )
+from onnx2torch.node_converters.constant import OnnxConstant
+from onnx2torch.node_converters.matmul import _ as _matmul_converter
+from onnx2torch.node_converters.max_pool import _ as _max_pool_converter
 from onnx2torch.node_converters.registry import (
-    add_converter,
     _CONVERTER_REGISTRY,
     OperationDescription,
+    add_converter,
 )
+from onnx2torch.node_converters.reshape import OnnxReshape
+from onnx2torch.onnx_graph import OnnxGraph
+from onnx2torch.onnx_node import OnnxNode, OnnxTensor
 from onnx2torch.utils.common import (
-    OperationConverterResult,
     OnnxMapping,
+    OperationConverterResult,
 )
+
 from kenning.utils.logger import KLogger
 
 CONST_NODES = dict()
@@ -759,6 +761,7 @@ def restore_custom_converters():
     Restoring custom converters for NNI pruning.
     """
     import importlib
+
     from kenning.onnxconverters import onnx2torch
 
     importlib.reload(onnx2torch)

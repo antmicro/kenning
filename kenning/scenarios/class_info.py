@@ -13,20 +13,20 @@ More precisely, it displays:
   information one way or the other)
 * node's parameters, with their help and default values
 """
-import sys
 import argparse
 import os.path
-from typing import List, Tuple, Optional
+import sys
+from typing import List, Optional, Tuple
 
 from kenning.cli.command_template import (
-    ArgumentsGroups,
-    CommandTemplate,
     GROUP_SCHEMA,
     INFO,
+    ArgumentsGroups,
+    CommandTemplate,
 )
 from kenning.cli.completers import ClassPathCompleter
-from kenning.utils.logger import KLogger
 from kenning.utils.class_info import generate_class_info
+from kenning.utils.logger import KLogger
 
 
 class ClassInfoRunner(CommandTemplate):

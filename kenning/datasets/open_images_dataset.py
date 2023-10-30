@@ -14,21 +14,22 @@ The downloader part of the script is based on Open Images Dataset V6::
 # - provide images with no detectable objects.
 # - add support for instance segmentation and other scenarios.
 
-from math import floor, ceil
-import cv2
-import sys
-import psutil
-from concurrent import futures
-import botocore
-import tqdm
-import boto3
-import pandas as pd
-import shutil
-from pathlib import Path
 import re
-import numpy as np
-from typing import Tuple, List, Optional, Generator
+import shutil
+import sys
 from collections import defaultdict
+from concurrent import futures
+from math import ceil, floor
+from pathlib import Path
+from typing import Generator, List, Optional, Tuple
+
+import boto3
+import botocore
+import cv2
+import numpy as np
+import pandas as pd
+import psutil
+import tqdm
 
 from kenning.utils.resource_manager import Resources
 
@@ -37,16 +38,15 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 
-from kenning.resources import coco_detection
-from kenning.utils.logger import LoggerProgressBar, download_url
-
 import zipfile
 
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
-    SegmObject,
     ObjectDetectionSegmentationDataset,
+    SegmObject,
 )
+from kenning.resources import coco_detection
+from kenning.utils.logger import LoggerProgressBar, download_url
 
 BUCKET_NAME = "open-images-dataset"
 REGEX = r"(test|train|validation|challenge2018)/([a-fA-F0-9]*)"

@@ -7,8 +7,8 @@ A tool for generating mapping from provided class names to
 Open Images V6 names.
 """
 
-import json
 import argparse
+import json
 from pathlib import Path
 
 

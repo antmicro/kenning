@@ -6,16 +6,16 @@
 ONNXConversion for MXNet models.
 """
 
+from collections import namedtuple
+from pathlib import Path
+from tempfile import TemporaryDirectory
+
 import mxnet
-from mxnet.contrib import onnx as onnx_mxnet
 import numpy as np
 from gluoncv import model_zoo as model_zoo
-from tempfile import TemporaryDirectory
-from pathlib import Path
-from collections import namedtuple
+from mxnet.contrib import onnx as onnx_mxnet
 
-from kenning.core.onnxconversion import ONNXConversion
-from kenning.core.onnxconversion import SupportStatus
+from kenning.core.onnxconversion import ONNXConversion, SupportStatus
 
 Batch = namedtuple("Batch", ["data"])
 

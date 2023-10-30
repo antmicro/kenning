@@ -31,9 +31,9 @@ import numpy as np
 import onnx
 
 from kenning.datasets.coco_dataset import COCODataset2017
+from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
 from kenning.utils.resource_manager import PathOrURI
-from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 
 
 def yolov4_remove_postprocessing(

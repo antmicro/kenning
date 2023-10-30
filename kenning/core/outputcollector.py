@@ -6,8 +6,8 @@
 Provides an API for processing and returning data from models and dataprovider.
 """
 
-from typing import Any, Dict, Tuple
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Tuple
 
 from kenning.core.runner import Runner
 

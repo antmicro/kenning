@@ -7,10 +7,11 @@ A DataProvider-derived class used to interface with a
 camera, video file or a dummy video device
 (consult ffmpeg and v4l2loopback for configuration for dummy video devices).
 """
-from typing import Dict, Tuple, List
+from pathlib import Path
+from typing import Dict, List, Tuple
+
 import cv2
 import numpy as np
-from pathlib import Path
 
 from kenning.core.dataprovider import DataProvider
 from kenning.utils.args_manager import get_parsed_json_dict

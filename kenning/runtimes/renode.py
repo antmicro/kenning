@@ -6,23 +6,25 @@
 Runtime implementation for Renode.
 """
 
-from typing import Dict, Any, List, Tuple, BinaryIO, Optional
-from pathlib import Path
-from collections import defaultdict
-import tempfile
-import struct
 import re
+import struct
+import tempfile
+from collections import defaultdict
+from pathlib import Path
+from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+
 import tqdm
-from kenning.core.protocol import Protocol
 from pyrenode import Pyrenode
 
 from kenning.core.dataset import Dataset
+from kenning.core.measurements import (
+    Measurements,
+    MeasurementsCollector,
+    tagmeasurements,
+)
 from kenning.core.model import ModelWrapper
+from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
-from kenning.core.measurements import Measurements
-from kenning.core.measurements import MeasurementsCollector
-from kenning.core.measurements import tagmeasurements
-from kenning.core.protocol import RequestFailure, check_request
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

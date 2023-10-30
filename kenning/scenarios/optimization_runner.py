@@ -16,12 +16,12 @@ import argparse
 import copy
 import json
 import sys
-from argcomplete.completers import FilesCompleter
 from itertools import chain, combinations, product
 from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional, Tuple
 
+from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (

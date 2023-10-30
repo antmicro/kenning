@@ -5,8 +5,8 @@
 """
 Runtime implementation for PyTorch models.
 """
-from typing import Optional, List
 import gc
+from typing import List, Optional
 
 from kenning.core.runtime import (
     InputNotPreparedError,

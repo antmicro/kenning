@@ -4,13 +4,13 @@
 
 import pytest
 
+from kenning.pipeline_manager.core import VisualEditorGraphParserError
+from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 from kenning.tests.pipeline_manager.handler_tests import (
     HandlerTests,
     factory_test_create_dataflow,
     factory_test_equivalence,
 )
-from kenning.pipeline_manager.pipeline_handler import PipelineHandler
-from kenning.pipeline_manager.core import VisualEditorGraphParserError
 
 PET_DATASET_DATAFLOW_NODE = {
     "name": "PetDataset",

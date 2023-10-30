@@ -6,17 +6,17 @@
 A script helping to configure autocompletion for Kenning CLI.
 """
 
-import sys
 import argparse
-from typing import Optional, List, Tuple
 import subprocess
+import sys
 from pathlib import Path
+from typing import List, Optional, Tuple
 
 from kenning.cli.command_template import (
+    COMPLETION,
+    GROUP_SCHEMA,
     ArgumentsGroups,
     CommandTemplate,
-    GROUP_SCHEMA,
-    COMPLETION,
 )
 
 BASH = "bash"

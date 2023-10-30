@@ -2,13 +2,15 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-from kenning.core.protocol import Protocol
-from kenning.core.model import ModelWrapper
-from kenning.core.runtime import Runtime
-from kenning.core.dataset import Dataset
-from kenning.utils.pipeline_runner import PipelineRunner
-import pytest
 from unittest.mock import Mock
+
+import pytest
+
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.core.protocol import Protocol
+from kenning.core.runtime import Runtime
+from kenning.utils.pipeline_runner import PipelineRunner
 
 
 @pytest.fixture

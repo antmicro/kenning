@@ -5,10 +5,11 @@
 """
 The Tensorflow Magic Wand dataset.
 """
-from typing import Tuple, Any, List, Optional
-from pathlib import Path
 import glob
 import os
+from pathlib import Path
+from typing import Any, List, Optional, Tuple
+
 import numpy as np
 
 from kenning.core.dataset import Dataset

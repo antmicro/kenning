@@ -2,19 +2,22 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-from typing import Final, Dict
 from contextlib import nullcontext as does_not_raise
-import numpy as np
 from copy import deepcopy
+from typing import Dict, Final
+
+import numpy as np
+import pytest
 
 from kenning.core.flow import KenningFlow
 from kenning.dataproviders.camera_dataprovider import CameraDataProvider
+from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.outputcollectors.real_time_visualizers import (
     BaseRealTimeVisualizer,
-)  # noqa: E501
+)
+
+# noqa: E501
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
-from kenning.interfaces.io_interface import IOCompatibilityError
 
 FLOW_STEPS: Final = 4
 

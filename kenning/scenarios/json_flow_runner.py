@@ -6,17 +6,18 @@
 A script for running Kenning Flows.
 """
 
-import sys
 import argparse
 import json
-from typing import Optional, List, Tuple
+import sys
+from typing import List, Optional, Tuple
+
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
+    FLOW,
+    GROUP_SCHEMA,
     ArgumentsGroups,
     CommandTemplate,
-    GROUP_SCHEMA,
-    FLOW,
 )
 from kenning.core.flow import KenningFlow
 from kenning.utils.logger import KLogger

@@ -4,14 +4,14 @@
 
 import shutil
 import tempfile
-from pathlib import Path
-from pytest import Metafunc
-from typing import Generator, Optional
-from random import randint, random
-from PIL import Image
 from dataclasses import dataclass
+from pathlib import Path
+from random import randint, random
+from typing import Generator, Optional
 
 import pytest
+from PIL import Image
+from pytest import Metafunc
 
 import kenning
 from kenning.core.dataset import Dataset

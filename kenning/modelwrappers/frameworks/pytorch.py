@@ -8,8 +8,8 @@ Provides base methods for using PyTorch models in Kenning.
 
 import copy
 from abc import ABC
-from typing import Optional
 from collections import OrderedDict
+from typing import Optional
 
 import numpy as np
 

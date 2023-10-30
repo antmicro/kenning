@@ -7,12 +7,13 @@ A OutputCollector-derived class used to visualize bounding box
 data on input images and display/save them.
 """
 
+import colorsys
+from collections import defaultdict
+from pathlib import Path
+from typing import Dict, List, Tuple
+
 import cv2
 import numpy as np
-import colorsys
-from typing import Tuple, List, Dict
-from pathlib import Path
-from collections import defaultdict
 
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject

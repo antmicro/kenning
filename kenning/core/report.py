@@ -6,9 +6,10 @@
 Functions to generate Markdown reports from templates and Measurements objects.
 """
 
-from jinja2 import Template
 from pathlib import Path
 from typing import Dict, List
+
+from jinja2 import Template
 
 
 def create_report_from_measurements(

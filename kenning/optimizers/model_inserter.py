@@ -7,11 +7,12 @@ An Optimizer-based block for inserting models
 in specified format to an existing flow.
 """
 
+import shutil
+from typing import Dict, List, Literal, Optional, Union
+
+from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
-from kenning.core.dataset import Dataset
-from typing import Literal, Optional, Dict, List, Union
-import shutil
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

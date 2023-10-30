@@ -6,20 +6,19 @@
 Classes and methods for COCO dataset.
 """
 
-import cv2
-import numpy as np
-from pathlib import Path
 from collections import defaultdict
+from pathlib import Path
 from typing import Optional
 
-from kenning.utils.resource_manager import Resources, extract_zip
-
+import cv2
+import numpy as np
 from pycocotools.coco import COCO
 
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     ObjectDetectionSegmentationDataset,
 )
+from kenning.utils.resource_manager import Resources, extract_zip
 
 
 class COCODataset2017(ObjectDetectionSegmentationDataset):

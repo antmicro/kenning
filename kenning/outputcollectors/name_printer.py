@@ -7,11 +7,13 @@ A small, very basic OutputCollector-derived class used to test
 handling of multiple OutputCollectors in inference_runner scenario.
 """
 
+from pathlib import Path
+from typing import Any, Dict, Tuple, Union
+
+import numpy as np
+
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
-from typing import Any, Union, Dict, Tuple
-import numpy as np
-from pathlib import Path
 
 
 class NamePrinter(OutputCollector):

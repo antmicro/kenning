@@ -6,22 +6,25 @@
 Classes visualizing in real time outputs of classification, detection
 and instance segmentation models.
 """
-from typing import Dict, Tuple, List, Any
+import colorsys
+import multiprocessing as mp
+import threading
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from copy import deepcopy
-import dearpygui.dearpygui as dpg
-import multiprocessing as mp
-import numpy as np
+from typing import Any, Dict, List, Tuple
+
 import cv2
-import colorsys
-import threading
+import dearpygui.dearpygui as dpg
+import numpy as np
 from scipy.special import softmax
 
-from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.core.outputcollector import OutputCollector
-from kenning.datasets.helpers.detection_and_segmentation import DetectObject
-from kenning.datasets.helpers.detection_and_segmentation import SegmObject
+from kenning.datasets.helpers.detection_and_segmentation import (
+    DetectObject,
+    SegmObject,
+)
+from kenning.utils.args_manager import get_parsed_json_dict
 
 _FONT_SCALE = 1.5
 _FONT_SIZE = 16

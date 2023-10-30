@@ -5,16 +5,18 @@
 """
 Provides a runner that performs inference.
 """
-from typing import Dict, List, Tuple, Any
 from argparse import Namespace
 from copy import deepcopy
+from typing import Any, Dict, List, Tuple
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.runtime import Runtime
 from kenning.core.runner import Runner
-from kenning.utils.args_manager import get_parsed_json_dict
-from kenning.utils.args_manager import get_parsed_args_dict
+from kenning.core.runtime import Runtime
+from kenning.utils.args_manager import (
+    get_parsed_args_dict,
+    get_parsed_json_dict,
+)
 from kenning.utils.class_loader import any_from_json, load_class
 
 

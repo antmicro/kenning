@@ -9,21 +9,21 @@ The script for training models given in ModelWrapper object with dataset given
 in Dataset object.
 """
 
-import sys
 import argparse
+import sys
 from pathlib import Path
-from typing import Optional, List, Tuple
+from typing import List, Optional, Tuple
 
-from kenning.utils.class_loader import load_class, get_command
-from kenning.cli.completers import ClassPathCompleter, MODEL_WRAPPERS, DATASETS
 from kenning.cli.command_template import (
+    GROUP_SCHEMA,
+    TEST,
+    TRAIN,
     ArgumentsGroups,
     CommandTemplate,
-    TRAIN,
-    TEST,
-    GROUP_SCHEMA,
     ParserHelpException,
 )
+from kenning.cli.completers import DATASETS, MODEL_WRAPPERS, ClassPathCompleter
+from kenning.utils.class_loader import get_command, load_class
 
 
 class TrainModel(CommandTemplate):

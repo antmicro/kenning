@@ -47,7 +47,6 @@ from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
-
 JSON_CONFIG = "Server configuration with JSON"
 FLAG_CONFIG = "Server configuration with flags"
 ARGS_GROUPS = {

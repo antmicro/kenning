@@ -13,16 +13,16 @@ from argcomplete.completers import BaseCompleter
 
 from kenning.scenarios.list_classes import list_classes
 from kenning.utils.class_loader import (
-    DATASETS,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
+    DATASETS,
     MODEL_WRAPPERS,
     ONNX_CONVERSIONS,
     OPTIMIZERS,
     OUTPUT_COLLECTORS,
     RUNNERS,
-    RUNTIMES,
     RUNTIME_PROTOCOLS,
+    RUNTIMES,
 )
 
 ALL_TYPES = (

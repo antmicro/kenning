@@ -2,18 +2,18 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from typing import Tuple, Type
+
 import pytest
-from typing import Type, Tuple
 
-from kenning.core.optimizer import Optimizer
-from kenning.core.optimizer import ConversionError
-from kenning.core.optimizer import CompilationError
 from kenning.core.model import ModelWrapper
-from kenning.utils.class_loader import get_all_subclasses
+from kenning.core.optimizer import CompilationError, ConversionError, Optimizer
 from kenning.tests.conftest import get_tmp_path
-from kenning.tests.core.conftest import get_default_dataset_model
-from kenning.tests.core.conftest import UnknownFramework
-
+from kenning.tests.core.conftest import (
+    UnknownFramework,
+    get_default_dataset_model,
+)
+from kenning.utils.class_loader import get_all_subclasses
 
 OPTIMIZER_SUBCLASSES = get_all_subclasses(
     "kenning.optimizers", Optimizer, raise_exception=True

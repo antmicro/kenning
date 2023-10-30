@@ -3,14 +3,14 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import re
-import pytest
-from isort import stdlibs
-from pathlib import Path
 from glob import glob
+from pathlib import Path
 from typing import Set
 
-from kenning.utils.excepthook import find_missing_optional_dependency
+import pytest
+from isort import stdlibs
 
+from kenning.utils.excepthook import find_missing_optional_dependency
 
 RE_IMPORT_NAME = r"^\s*(import ([^ \.]+))|(from ([^ \.]+)(\.[^ \.]+)* import)"
 # Ignored modules (don't count into the threshold) extended with stdlibs

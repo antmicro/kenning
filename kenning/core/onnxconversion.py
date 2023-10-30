@@ -6,11 +6,11 @@
 Provides an API for ONNX conversions of various models in a given framework.
 """
 
-from collections import namedtuple
 from abc import ABC, abstractmethod
+from collections import namedtuple
 from enum import Enum
 from pathlib import Path
-from typing import List, Dict, Callable, Any
+from typing import Any, Callable, Dict, List
 
 import onnx
 

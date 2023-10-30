@@ -6,21 +6,21 @@
 Provide resource manager responsible for downloading and caching resources.
 """
 import hashlib
-from inspect import getfullargspec
 import os
 import re
 import tarfile
+from inspect import getfullargspec
 from pathlib import Path
 from shutil import copy, rmtree
-from tqdm import tqdm
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
 from urllib.error import URLError
 from urllib.parse import ParseResult, urlparse, uses_params
 from zipfile import ZipFile
 
 import requests
+from tqdm import tqdm
 
-from kenning.utils.logger import download_url, KLogger, LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar, download_url
 from kenning.utils.singleton import Singleton
 
 

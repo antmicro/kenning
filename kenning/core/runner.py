@@ -6,12 +6,11 @@
 Provides a base class for Kenning Flow elements.
 """
 
-from typing import Dict, List, Tuple, Any
 from abc import ABC, abstractmethod
 from argparse import Namespace
+from typing import Any, Dict, List, Tuple
 
-from kenning.interfaces.io_interface import IOInterface
-from kenning.interfaces.io_interface import IOCompatibilityError
+from kenning.interfaces.io_interface import IOCompatibilityError, IOInterface
 from kenning.utils.args_manager import ArgumentsHandler
 
 

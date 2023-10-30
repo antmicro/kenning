@@ -6,14 +6,13 @@
 ONNXConversion for TensorFlow models.
 """
 
-import tensorflow as tf
-import tf2onnx
 import onnx
+import tensorflow as tf
+import tensorflow.keras.applications as apps
+import tf2onnx
 from onnx_tf.backend import prepare
 
-from kenning.core.onnxconversion import ONNXConversion
-from kenning.core.onnxconversion import SupportStatus
-import tensorflow.keras.applications as apps
+from kenning.core.onnxconversion import ONNXConversion, SupportStatus
 
 
 class TensorFlowONNXConversion(ONNXConversion):

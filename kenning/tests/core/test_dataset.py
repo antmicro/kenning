@@ -2,19 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
-from typing import Type
-from pathlib import Path
 import shutil
-import numpy as np
+from pathlib import Path
+from typing import Type
+
 import cv2
+import numpy as np
+import pytest
 
-from kenning.core.dataset import Dataset
-from kenning.core.dataset import CannotDownloadDatasetError
+from kenning.core.dataset import CannotDownloadDatasetError, Dataset
+from kenning.tests.core.conftest import (
+    get_dataset_download_path,
+    get_reduced_dataset_path,
+)
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.tests.core.conftest import get_reduced_dataset_path
-from kenning.tests.core.conftest import get_dataset_download_path
-
 
 DATASET_SUBCLASSES = get_all_subclasses(
     "kenning.datasets", Dataset, raise_exception=True

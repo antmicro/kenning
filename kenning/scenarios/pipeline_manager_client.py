@@ -12,21 +12,22 @@ import json
 import signal
 import sys
 from pathlib import Path
-from typing import Tuple, Dict, Optional, List
+from typing import Dict, List, Optional, Tuple
+
+from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (
-    ArgumentsGroups,
-    CommandTemplate,
     GROUP_SCHEMA,
     VISUAL_EDITOR,
+    ArgumentsGroups,
+    CommandTemplate,
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.excepthook import (
-    find_missing_optional_dependency,
     MissingKenningDependencies,
+    find_missing_optional_dependency,
 )
 from kenning.utils.logger import Callback, KLogger, TqdmCallback
-from jsonschema.exceptions import ValidationError
 
 
 class PipelineManagerShutdownException(Exception):
@@ -108,6 +109,11 @@ class PipelineManagerClient(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
+        from pipeline_manager import frontend_builder
+        from pipeline_manager.backend.run_in_parallel import (
+            start_server_in_parallel,
+            stop_parallel_server,
+        )
         from pipeline_manager_backend_communication.communication_backend import (  # noqa: E501
             CommunicationBackend,
         )
@@ -115,11 +121,7 @@ class PipelineManagerClient(CommandTemplate):
             MessageType,
             Status,
         )
-        from pipeline_manager.backend.run_in_parallel import (
-            start_server_in_parallel,
-            stop_parallel_server,
-        )
-        from pipeline_manager import frontend_builder
+
         from kenning.pipeline_manager.core import BaseDataflowHandler
         from kenning.pipeline_manager.flow_handler import KenningFlowHandler
         from kenning.pipeline_manager.pipeline_handler import PipelineHandler

@@ -17,7 +17,6 @@ import sys
 
 from kenning.utils.excepthook import kenning_missing_import_excepthook
 
-
 # Extend execpthook function to handle ModuleNotFoundError
 if os.environ.get("KENNING_USE_DEFAULT_EXCEPTHOOK", None) is None:
     sys.excepthook = kenning_missing_import_excepthook

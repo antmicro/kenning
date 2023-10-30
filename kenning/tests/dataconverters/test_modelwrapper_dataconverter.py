@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from unittest.mock import patch
+
+from kenning.core.model import ModelWrapper
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
-from kenning.core.model import ModelWrapper
-from unittest.mock import patch
 
 
 class TestModelWRapperDataConverter:

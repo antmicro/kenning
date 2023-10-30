@@ -2,11 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 import os
 import uuid
-from kenning.tests.conftest import Samples
 from pathlib import Path
+
+import pytest
+
+from kenning.tests.conftest import Samples
 
 
 @pytest.mark.slow

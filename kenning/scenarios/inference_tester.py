@@ -45,15 +45,15 @@ from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (
-    ArgumentsGroups,
-    CommandTemplate,
     DEFAULT_GROUP,
     GROUP_SCHEMA,
     OPTIMIZE,
-    ParserHelpException,
     REPORT,
     TEST,
     TRAIN,
+    ArgumentsGroups,
+    CommandTemplate,
+    ParserHelpException,
 )
 from kenning.cli.completers import (
     DATASETS,
@@ -70,7 +70,6 @@ from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
-
 
 JSON_CONFIG = "Inference configuration with JSON"
 FLAG_CONFIG = "Inference configuration with flags"

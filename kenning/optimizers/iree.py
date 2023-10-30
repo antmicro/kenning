@@ -6,15 +6,18 @@
 Wrapper for IREE compiler.
 """
 
-from typing import List, Literal, Optional, Dict, Tuple
+import re
+from typing import Dict, List, Literal, Optional, Tuple
+
 from iree.compiler import tools as ireecmp
 from iree.compiler import version
-import re
 
-from kenning.core.optimizer import Optimizer
-from kenning.core.optimizer import CompilationError
-from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.core.dataset import Dataset
+from kenning.core.optimizer import (
+    CompilationError,
+    IOSpecificationNotFoundError,
+    Optimizer,
+)
 from kenning.utils.resource_manager import PathOrURI
 
 

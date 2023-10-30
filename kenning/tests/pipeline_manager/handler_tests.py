@@ -2,11 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import json
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Callable, Dict, List, Tuple, Union
+
 import pytest
-import json
 
 from kenning.pipeline_manager.core import BaseDataflowHandler
 

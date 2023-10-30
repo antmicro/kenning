@@ -6,11 +6,13 @@
 Runtime implementation for TFLite models.
 """
 
-from typing import Optional, List
+from typing import List, Optional
 
-from kenning.core.runtime import Runtime
-from kenning.core.runtime import ModelNotPreparedError
-from kenning.core.runtime import InputNotPreparedError
+from kenning.core.runtime import (
+    InputNotPreparedError,
+    ModelNotPreparedError,
+    Runtime,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

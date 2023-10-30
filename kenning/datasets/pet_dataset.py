@@ -7,9 +7,10 @@ The Oxford-IIIT Pet Dataset wrapper.
 """
 
 from pathlib import Path
-from PIL import Image
+from typing import Any, Optional, Tuple
+
 import numpy as np
-from typing import Tuple, Any, Optional
+from PIL import Image
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements

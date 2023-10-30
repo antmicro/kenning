@@ -8,9 +8,10 @@ Module with custom autocompletion class and configuration.
 
 import argparse
 from typing import List
+
 from argcomplete.finders import CompletionFinder
 
-from kenning.cli.config import setup_base_parser, AVAILABLE_COMMANDS
+from kenning.cli.config import AVAILABLE_COMMANDS, setup_base_parser
 from kenning.utils.class_loader import load_class
 
 # Subcommands without help

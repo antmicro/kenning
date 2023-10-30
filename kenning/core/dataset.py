@@ -5,24 +5,26 @@
 """
 Provides an API for dataset loading, creation and configuration.
 """
-from math import ceil
-from typing import Tuple, List, Any, Dict, Optional, Generator, Iterable
+import datetime
+import hashlib
+import random
+import shutil
+import struct
 from abc import ABC, abstractmethod
 from argparse import Namespace
-import random
-import hashlib
-import datetime
-import struct
-import shutil
 from binascii import hexlify
 from copy import deepcopy
+from math import ceil
 from pathlib import Path
+from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
+
 from tqdm import tqdm
 
-from .measurements import Measurements
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import Resources
+
+from .measurements import Measurements
 
 
 class Dataset(ArgumentsHandler, ABC):

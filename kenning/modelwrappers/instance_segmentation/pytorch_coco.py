@@ -8,18 +8,19 @@ Load a pre-trained PyTorch Mask R-CNN model.
 Pretrained on COCO dataset.
 """
 
-import numpy as np
-from functools import reduce
-from typing import Optional, Dict, Tuple
 import operator
+import sys
+from functools import reduce
+from typing import Dict, Optional, Tuple
+
+import numpy as np
 
 from kenning.core.dataset import Dataset
+from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.resources import coco_instance_segmentation
 from kenning.utils.resource_manager import PathOrURI
-import sys
 
 if sys.version_info.minor < 9:
     from importlib_resources import path

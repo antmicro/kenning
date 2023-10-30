@@ -8,11 +8,11 @@ Wrapper for TensorFlow Lite deep learning compiler.
 
 import subprocess
 from pathlib import Path
-from typing import Literal, Optional, Dict, List
 from shutil import which
-import tensorflow as tf
+from typing import Dict, List, Literal, Optional
 
 import numpy as np
+import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import IOSpecificationNotFoundError

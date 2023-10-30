@@ -8,9 +8,11 @@ Runtime implementation for IREE models.
 
 from iree import runtime as ireert
 
-from kenning.core.runtime import Runtime
-from kenning.core.runtime import ModelNotPreparedError
-from kenning.core.runtime import InputNotPreparedError
+from kenning.core.runtime import (
+    InputNotPreparedError,
+    ModelNotPreparedError,
+    Runtime,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

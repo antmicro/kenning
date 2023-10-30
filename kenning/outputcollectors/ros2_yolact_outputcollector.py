@@ -9,13 +9,13 @@ Requires 'rclpy' and 'kenning_computer_vision_msgs' packages to be sourced in
 the environment.
 """
 
+from typing import Dict, List, Optional, Tuple
+
 import numpy as np
 import rclpy
 import sensor_msgs.msg
-from kenning_computer_vision_msgs.msg import SegmentationMsg, BoxMsg, MaskMsg
-
+from kenning_computer_vision_msgs.msg import BoxMsg, MaskMsg, SegmentationMsg
 from rclpy.node import Node
-from typing import Dict, Tuple, List, Optional
 
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject

@@ -7,9 +7,9 @@ Module providing a communication protocol for communication between host and
 the client.
 """
 
-from abc import ABC, abstractmethod
 import json
 import time
+from abc import ABC, abstractmethod
 from argparse import Namespace
 from enum import Enum
 from pathlib import Path

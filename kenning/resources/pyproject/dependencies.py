@@ -20,7 +20,6 @@ else:
 
 from kenning.resources.pyproject import PYPROJECT_FILE
 
-
 DEPENDENCIES: Dict[str, List[str]] = None
 
 

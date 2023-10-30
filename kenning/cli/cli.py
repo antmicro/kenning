@@ -12,16 +12,16 @@ import sys
 from typing import Dict
 
 from kenning.cli.autocompletion import configure_autocomplete
-from kenning.cli.parser import (
-    Parser,
-    ParserHelpException,
-    print_help_from_parsers,
-)
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
     SUB_DEST_FORM,
     setup_base_parser,
+)
+from kenning.cli.parser import (
+    Parser,
+    ParserHelpException,
+    print_help_from_parsers,
 )
 from kenning.utils.excepthook import (
     MissingKenningDependencies,

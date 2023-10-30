@@ -6,8 +6,8 @@
 Provides an API for gathering and preparing data from external sources.
 """
 
-from typing import Any, Dict, Tuple
 from abc import ABC, abstractmethod
+from typing import Any, Dict, Tuple
 
 from kenning.core.runner import Runner
 

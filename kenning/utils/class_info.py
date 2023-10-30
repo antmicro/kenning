@@ -10,25 +10,25 @@ import ast
 import importlib
 import inspect
 import os.path
-from typing import Union, List, Dict, Tuple, Type, Optional
+from importlib.util import find_spec
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
-from importlib.util import find_spec
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
+from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
-from kenning.core.protocol import Protocol
 from kenning.utils.args_manager import (
-    to_argparse_name,
-    jsontype_to_type,
     from_argparse_name,
+    jsontype_to_type,
+    to_argparse_name,
 )
 from kenning.utils.excepthook import (
     MissingKenningDependencies,

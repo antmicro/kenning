@@ -6,14 +6,17 @@
 Wrapper for ONNX deep learning compiler.
 """
 
+from typing import Any, Dict, List, Literal, Optional
+
 import onnx
-from typing import Literal, Optional, Dict, List, Any
 
 from kenning.core.dataset import Dataset
-from kenning.core.optimizer import Optimizer
-from kenning.core.optimizer import ConversionError
-from kenning.core.optimizer import CompilationError
-from kenning.core.optimizer import IOSpecificationNotFoundError
+from kenning.core.optimizer import (
+    CompilationError,
+    ConversionError,
+    IOSpecificationNotFoundError,
+    Optimizer,
+)
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 

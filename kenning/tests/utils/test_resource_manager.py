@@ -16,10 +16,9 @@ from kenning.modelwrappers.classification.tflite_person_detection import (
 )
 from kenning.utils.resource_manager import (
     ResourceManager,
-    ResourceURI,
     Resources,
+    ResourceURI,
 )
-
 
 MAGIC_WAND_MODEL_URI = MagicWandModelWrapper.pretrained_model_uri
 PERSON_DETECTION_MODEL_URI = PersonDetectionModelWrapper.pretrained_model_uri

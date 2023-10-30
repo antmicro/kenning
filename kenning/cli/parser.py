@@ -8,10 +8,11 @@ is used and some required arguments are missing.
 """
 
 from __future__ import annotations
-import sys
+
 import argparse
+import sys
 from gettext import gettext
-from typing import Optional, List
+from typing import List, Optional
 
 from kenning.cli.formatter import Formatter
 

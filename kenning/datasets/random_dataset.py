@@ -16,8 +16,8 @@ import numpy as np
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
-    ObjectDetectionSegmentationDataset,
     DetectObject,
+    ObjectDetectionSegmentationDataset,
 )
 
 

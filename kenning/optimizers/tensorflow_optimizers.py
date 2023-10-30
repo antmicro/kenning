@@ -6,10 +6,10 @@
 Wrapper for TensorFlow optimizers.
 """
 
-import tensorflow as tf
 import zipfile
+from typing import List, Literal, Optional, Tuple
 
-from typing import List, Literal, Tuple, Optional
+import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer

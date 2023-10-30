@@ -8,12 +8,12 @@ The ImageNet 2012 wrapper.
 
 import json
 from pathlib import Path
-from PIL import Image
-import numpy as np
 from typing import Optional
 
-from kenning.core.dataset import Dataset
-from kenning.core.dataset import CannotDownloadDatasetError
+import numpy as np
+from PIL import Image
+
+from kenning.core.dataset import CannotDownloadDatasetError, Dataset
 from kenning.core.measurements import Measurements
 
 

@@ -6,11 +6,12 @@
 The Visual Wake Words dataset.
 """
 
-from typing import Optional
-from pathlib import Path
 from collections import defaultdict
-import numpy as np
+from pathlib import Path
+from typing import Optional
+
 import cv2
+import numpy as np
 from pycocotools.coco import COCO
 
 from kenning.core.dataset import Dataset

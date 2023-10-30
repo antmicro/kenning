@@ -10,9 +10,11 @@ in figures.
 import copy
 import logging
 from pathlib import Path
+
 from docutils import nodes
+from sphinx.application import Sphinx
+from sphinx.application import logger as sphinx_logger
 from sphinx.util.docutils import SphinxTranslator
-from sphinx.application import Sphinx, logger as sphinx_logger
 from sphinx.writers.html5 import HTML5Translator
 
 

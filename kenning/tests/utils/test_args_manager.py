@@ -3,20 +3,20 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import argparse
-from pathlib import Path
 from contextlib import nullcontext as does_not_raise
+from pathlib import Path
 from typing import Dict, Type
 
 import jsonschema
 import pytest
-from kenning.utils.resource_manager import ResourceURI
 
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.runtimes.onnx import ONNXRuntime
 from kenning.utils.args_manager import (
-    get_parsed_json_dict,
     get_parsed_args_dict,
+    get_parsed_json_dict,
 )
+from kenning.utils.resource_manager import ResourceURI
 
 
 class TestArgsManagerWrapper:

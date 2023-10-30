@@ -6,8 +6,9 @@
 Provides wrapper for YOLOv4 loss function.
 """
 
-import torch
 from typing import List
+
+import torch
 
 from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 from kenning.utils.resource_manager import ResourceURI

@@ -8,11 +8,13 @@ Runtime implementation for TVM-compiled models.
 
 import tvm
 from tvm.contrib import graph_executor
-from tvm.runtime.vm import VirtualMachine, Executable
+from tvm.runtime.vm import Executable, VirtualMachine
 
-from kenning.core.runtime import Runtime
-from kenning.core.runtime import ModelNotPreparedError
-from kenning.core.runtime import InputNotPreparedError
+from kenning.core.runtime import (
+    InputNotPreparedError,
+    ModelNotPreparedError,
+    Runtime,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

@@ -5,32 +5,33 @@
 """
 Pruning optimizer implementation with Neural Network Intelligence.
 """
-import torch
+import copy
+import logging
+from enum import Enum
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Type
+
+import dill
 import nni
+import numpy as np
+import torch
+from nni.algorithms.compression.v2.pytorch import TorchEvaluator
+from nni.common.graph_utils import _logger as nni_graph_logger
 from nni.compression.pytorch.pruning import (
     ActivationAPoZRankPruner,
     ActivationMeanRankPruner,
     ActivationPruner,
 )
 from nni.compression.pytorch.speedup import ModelSpeedup
-from nni.algorithms.compression.v2.pytorch import TorchEvaluator
 from nni.compression.pytorch.speedup.compress_modules import (
     convert_to_coarse_mask,
     replace_module,
 )
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
-from nni.common.graph_utils import _logger as nni_graph_logger
-import numpy as np
-from typing import Callable, Dict, Literal, Optional, List, Type, Tuple, Any
-from enum import Enum
-import copy
-import dill
-import logging
 from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
 from kenning.core.onnxconversion import SupportStatus
-from kenning.core.optimizer import Optimizer, CompilationError
+from kenning.core.optimizer import CompilationError, Optimizer
 from kenning.onnxconverters.onnx2torch import convert
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class

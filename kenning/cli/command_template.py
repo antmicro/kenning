@@ -6,13 +6,12 @@
 Module containing template for creating commands and their names.
 """
 
-import sys
 import argparse
-from abc import abstractmethod, ABC
-from typing import Dict, Optional, List, Union, Tuple, Any
+import sys
+from abc import ABC, abstractmethod
+from typing import Any, Dict, List, Optional, Tuple, Union
 
-from kenning.cli.parser import Parser, ParserHelpException, HELP_FLAGS
-
+from kenning.cli.parser import HELP_FLAGS, Parser, ParserHelpException
 
 # Subcommands:
 OPTIMIZE = "optimize"

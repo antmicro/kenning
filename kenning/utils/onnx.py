@@ -6,7 +6,7 @@
 Module for ONNX related functions.
 """
 __all__ = ["try_extracting_input_shape_from_onnx"]
-from typing import Optional, List
+from typing import List, Optional
 
 import onnx
 

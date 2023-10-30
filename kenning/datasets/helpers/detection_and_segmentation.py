@@ -7,18 +7,18 @@ Collection of methods, classes and structures for
 object detection models and datasets.
 """
 
-from typing import Optional, Union, List, Dict, Tuple
 from collections import namedtuple
 from pathlib import Path
-import numpy as np
+from typing import Dict, List, Optional, Tuple, Union
+
 import cv2
-from matplotlib import pyplot as plt
+import numpy as np
 from matplotlib import patches as patches
+from matplotlib import pyplot as plt
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
 from kenning.utils.logger import KLogger
-
 
 DetectObject = namedtuple(
     "DetectObject",

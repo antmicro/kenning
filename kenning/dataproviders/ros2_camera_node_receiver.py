@@ -7,16 +7,16 @@ A Dataprovider-derived class used to interface with a
 ROS2 CameraNode.
 """
 
+from typing import Dict, List, Optional, Tuple
+
 import cv2
 import numpy as np
 import rclpy
 import sensor_msgs.msg
-
 from rclpy.node import Node
-from typing import Dict, Tuple, Optional, List
 
-from kenning.utils.args_manager import get_parsed_json_dict
 from kenning.core.dataprovider import DataProvider
+from kenning.utils.args_manager import get_parsed_json_dict
 
 
 class ROS2CameraNodeDataProvider(DataProvider):

@@ -7,12 +7,15 @@ Runtime implementation for ONNX models.
 """
 
 from typing import List
-import onnxruntime as ort
-import numpy as np
 
-from kenning.core.runtime import Runtime
-from kenning.core.runtime import ModelNotPreparedError
-from kenning.core.runtime import InputNotPreparedError
+import numpy as np
+import onnxruntime as ort
+
+from kenning.core.runtime import (
+    InputNotPreparedError,
+    ModelNotPreparedError,
+    Runtime,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 

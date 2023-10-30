@@ -9,18 +9,17 @@ A script for fuzzy search Kenning classes.
 
 import argparse
 import os
-import sys
 import shutil
+import sys
 from typing import List, Optional, Tuple
 
 from kenning.cli.command_template import (
-    ArgumentsGroups,
-    CommandTemplate,
     GROUP_SCHEMA,
     SEARCH,
+    ArgumentsGroups,
+    CommandTemplate,
 )
-
-from kenning.scenarios.list_classes import list_classes, ListClassesRunner
+from kenning.scenarios.list_classes import ListClassesRunner, list_classes
 from kenning.utils.logger import KLogger
 
 

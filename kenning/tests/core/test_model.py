@@ -2,18 +2,20 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import pytest
 from typing import Type
 
-from kenning.core.model import ModelWrapper
-from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import get_all_subclasses
-from kenning.tests.core.conftest import get_tmp_path
-from kenning.tests.core.conftest import remove_file_or_dir
-from kenning.tests.core.conftest import get_dataset_random_mock
-from kenning.tests.core.conftest import copy_model_to_tmp
-from kenning.utils.resource_manager import ResourceURI
+import pytest
 
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
+from kenning.tests.core.conftest import (
+    copy_model_to_tmp,
+    get_dataset_random_mock,
+    get_tmp_path,
+    remove_file_or_dir,
+)
+from kenning.utils.class_loader import get_all_subclasses
+from kenning.utils.resource_manager import ResourceURI
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True

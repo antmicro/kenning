@@ -17,7 +17,7 @@ import logging
 import urllib.request
 from dataclasses import dataclass
 from types import TracebackType
-from typing import Any, Callable, Optional, Type, Union, List, Dict
+from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import coloredlogs
 from tqdm import tqdm

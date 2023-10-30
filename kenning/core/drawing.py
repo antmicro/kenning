@@ -13,14 +13,14 @@ from math import floor, pi
 from pathlib import Path
 from typing import (
     Any,
+    ArrayLike,
     Dict,
+    Generator,
     Iterable,
     List,
     Optional,
     Tuple,
     Union,
-    ArrayLike,
-    Generator,
 )
 
 import matplotlib as mpl

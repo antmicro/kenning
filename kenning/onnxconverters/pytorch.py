@@ -6,12 +6,11 @@
 ONNXConversion for PyTorch models.
 """
 
-import torchvision.models as models
-import torch
 import onnx
+import torch
+import torchvision.models as models
 
-from kenning.core.onnxconversion import ONNXConversion
-from kenning.core.onnxconversion import SupportStatus
+from kenning.core.onnxconversion import ONNXConversion, SupportStatus
 from kenning.utils.logger import KLogger
 from kenning.utils.onnx import try_extracting_input_shape_from_onnx
 

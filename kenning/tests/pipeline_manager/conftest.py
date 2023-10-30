@@ -9,7 +9,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.runtime import Runtime
-
 from kenning.utils.class_loader import get_all_subclasses
 
 

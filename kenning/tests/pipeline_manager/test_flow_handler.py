@@ -4,14 +4,15 @@
 
 import pytest
 
+# noqa: E501
+from kenning.pipeline_manager.core import VisualEditorGraphParserError
+from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 from kenning.tests.pipeline_manager.handler_tests import (
     HandlerTests,
     factory_test_create_dataflow,
     factory_test_equivalence,
-)  # noqa: E501
-from kenning.pipeline_manager.core import VisualEditorGraphParserError
-from kenning.pipeline_manager.flow_handler import KenningFlowHandler
+)
 from kenning.utils.class_loader import load_class
 
 CAMERA_DATAPROVIDER_DATAFLOW_NODE = {

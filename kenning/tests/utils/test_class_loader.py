@@ -4,6 +4,7 @@
 
 import abc
 import inspect
+
 import pytest
 
 import kenning.datasets.pet_dataset

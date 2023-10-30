@@ -17,14 +17,13 @@ It requires implementations of several classes as input:
 
 Each class requires arguments to configure them and provide user settings.
 """
-import sys
 import argparse
+import sys
+from typing import List
 
+from kenning.core.outputcollector import OutputCollector
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
-
-from typing import List
-from kenning.core.outputcollector import OutputCollector
 
 
 def check_closing_conditions(outputcollectors: List[OutputCollector]) -> bool:

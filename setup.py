@@ -2,8 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import setuptools
 import numpy
+import setuptools
 from Cython.Build import cythonize
 
 with open("README.md", "r") as fh:

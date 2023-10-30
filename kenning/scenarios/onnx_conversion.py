@@ -11,17 +11,18 @@ It expects a list of the implemented ONNXConversion classes and generates
 the Markdown file with support matrix table.
 """
 
-import sys
 import argparse
+import sys
 from collections import defaultdict
-from jinja2 import Template
-from pathlib import Path
-from typing import List, Tuple, Dict
 from importlib.resources import path
+from pathlib import Path
+from typing import Dict, List, Tuple
+
+from jinja2 import Template
 
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.resources import reports
-from kenning.utils.class_loader import load_class, get_command
+from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
 
 

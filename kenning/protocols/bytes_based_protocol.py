@@ -6,14 +6,12 @@
 Base class for bytes-based inference communication protocol.
 """
 
+import selectors
 from abc import ABC
 from time import time
 from typing import Optional, Tuple
-import selectors
 
-from kenning.core.protocol import Protocol
-from kenning.core.protocol import ServerStatus
-from kenning.core.protocol import Message
+from kenning.core.protocol import Message, Protocol, ServerStatus
 from kenning.utils.logger import KLogger
 
 

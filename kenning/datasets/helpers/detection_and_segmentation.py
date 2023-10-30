@@ -63,7 +63,7 @@ Attributes
 ----------
 clsname : str
     Class of the object.
-maskpath : Path
+maskpath : Optional[Path]
     Path to mask file.
 xmin,ymin,xmax,ymax : float
     Coordinates of the bounding box.

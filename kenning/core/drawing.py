@@ -13,7 +13,6 @@ from math import floor, pi
 from pathlib import Path
 from typing import (
     Any,
-    ArrayLike,
     Dict,
     Generator,
     Iterable,
@@ -29,6 +28,7 @@ from matplotlib import gridspec, patheffects
 from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
+from numpy.typing import ArrayLike
 from scipy.signal import savgol_filter
 
 if sys.version_info.minor < 9:

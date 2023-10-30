@@ -15,11 +15,13 @@ from kenning.scenarios.inference_server import InferenceServer
 
 
 @pytest.fixture
+@patch.multiple(Runtime, __abstractmethods__=set())
 def runtime():
     return Runtime()
 
 
 @pytest.fixture
+@patch.multiple(Protocol, __abstractmethods__=set())
 def protocol():
     return Protocol()
 

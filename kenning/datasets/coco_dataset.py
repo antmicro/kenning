@@ -8,7 +8,7 @@ Classes and methods for COCO dataset.
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -195,3 +195,6 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
                     ],
                 )
         return measurements
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError

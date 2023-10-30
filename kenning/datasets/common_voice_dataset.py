@@ -466,3 +466,9 @@ class CommonVoiceDataset(Dataset):
             seed=seed,
             stratify=False,
         )
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError
+
+    def get_class_names(self) -> List[str]:
+        raise NotImplementedError

@@ -8,7 +8,7 @@ The ImageNet 2012 wrapper.
 
 import json
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -200,3 +200,6 @@ class ImageNetDataset(Dataset):
 
     def get_class_names(self):
         return self.classnames
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError

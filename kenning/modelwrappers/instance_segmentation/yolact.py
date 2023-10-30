@@ -10,8 +10,9 @@ Pretrained on COCO dataset.
 
 import operator
 import shutil
+from abc import ABC
 from functools import reduce
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -154,9 +155,9 @@ FACTOR = 255.0 / STD
 RATIO = MEANS / STD
 
 
-class YOLACTWrapper(ModelWrapper):
+class YOLACTWrapper(ModelWrapper, ABC):
     """
-    Wrapper for YOLACT-based models.
+    Abstract wrapper for YOLACT-based models.
     """
 
     default_dataset = COCODataset2017
@@ -375,6 +376,9 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                 {"name": "segmentation_output", "type": "List[SegmObject]"}
             ],
         }
+
+    def run_inference(self, X: List) -> Any:
+        raise NotImplementedError
 
 
 class YOLACT(YOLACTWrapper):
@@ -631,3 +635,6 @@ class YOLACT(YOLACTWrapper):
                 {"name": "segmentation_output", "type": "List[SegmObject]"}
             ],
         }
+
+    def run_inference(self, X: List) -> Any:
+        raise NotImplementedError

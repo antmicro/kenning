@@ -2,6 +2,8 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from unittest.mock import patch
+
 import pytest
 
 from kenning.core.protocol import MessageType, Protocol
@@ -26,13 +28,14 @@ class TestMessageType:
 
 @pytest.mark.fast
 class TestCoreProtocol:
+    @patch.multiple(Protocol, __abstractmethods__=set())
     def init_protocol(self) -> Protocol:
         """
         Initializes protocol object.
 
         Returns
         -------
-        Protocol
+        TestProtocol
             Initialized protocol object
         """
         return Protocol()
@@ -58,41 +61,3 @@ class TestCoreProtocol:
         yield server, client
         client.disconnect()
         server.disconnect()
-
-    def test_download_statistics(self):
-        """
-        Tests the `Protocol.download_statistics()` method.
-        """
-        client = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            client.download_statistics()
-
-    def test_initialize_server(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.initialize_server()
-
-    def test_initialize_client(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.initialize_client()
-
-    def test_request_processing(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.request_processing()
-
-    def test_request_success(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.request_success()
-
-    def test_request_failure(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.request_failure()
-
-    def test_disconnect(self):
-        protocol = self.init_protocol()
-        with pytest.raises(NotImplementedError):
-            protocol.disconnect()

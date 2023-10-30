@@ -616,3 +616,6 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
 
     def get_class_names(self):
         return self.classnames
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError

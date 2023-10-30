@@ -8,7 +8,7 @@ Module with Dataset generating random data for benchmark purposes.
 
 from pathlib import Path
 from random import shuffle
-from typing import Any, List, Type
+from typing import Any, List, Tuple, Type
 
 import cv2
 import numpy as np
@@ -260,3 +260,6 @@ class RandomizedDetectionSegmentationDataset(
 
     def evaluate(self, predictions, truth):
         return Measurements()
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError

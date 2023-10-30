@@ -7,6 +7,7 @@ Collection of methods, classes and structures for
 object detection models and datasets.
 """
 
+from abc import ABC
 from collections import namedtuple
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple, Union
@@ -267,7 +268,7 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     return align
 
 
-class ObjectDetectionSegmentationDataset(Dataset):
+class ObjectDetectionSegmentationDataset(Dataset, ABC):
     """
     Base for object detection datasets.
     """

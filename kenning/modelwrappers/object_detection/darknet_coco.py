@@ -47,3 +47,12 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
 
     def get_framework_and_version(self):
         return ("darknet", "alexeyab")
+
+    def save_to_onnx(self, model_path):
+        raise NotImplementedError
+
+    def run_inference(self, X):
+        raise NotImplementedError
+
+    def save_model(self, model_path):
+        raise NotImplementedError

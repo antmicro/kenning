@@ -329,7 +329,6 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         return measurements
 
-    @abstractmethod
     def train_model(
         self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
     ):
@@ -354,8 +353,13 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             The number of epochs for training.
         logdir : Path
             Path to the logging directory.
+
+        Raises
+        ------
+        NotImplementedError
+            Raised when method is not implemented
         """
-        ...
+        raise NotImplementedError
 
     @abstractmethod
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:

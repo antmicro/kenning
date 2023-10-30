@@ -25,7 +25,7 @@ After this, to remove the embedded processing of outputs, run in Python shell::
 import math
 import shutil
 from pathlib import Path
-from typing import List
+from typing import Any, List
 
 import numpy as np
 import onnx
@@ -388,3 +388,14 @@ class ONNXYOLOV4(YOLOWrapper):
 
     def save_to_onnx(self, model_path: PathOrURI):
         shutil.copy(self.model_path, model_path)
+
+    def run_inference(self, X: List) -> Any:
+        raise NotImplementedError
+
+    def save_model(self, model_path: PathOrURI):
+        raise NotImplementedError
+
+    def train_model(
+        self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
+    ):
+        raise NotImplementedError

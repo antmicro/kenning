@@ -7,6 +7,7 @@ Wrapper for TensorFlow optimizers.
 """
 
 import zipfile
+from abc import ABC
 from typing import List, Literal, Optional, Tuple
 
 import tensorflow as tf
@@ -17,7 +18,7 @@ from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
-class TensorFlowOptimizer(Optimizer):
+class TensorFlowOptimizer(Optimizer, ABC):
     """
     The TensorFlow optimizer.
     """

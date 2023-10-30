@@ -149,6 +149,7 @@ check-return-types = true
 preview = true
 line-length = 79
 select = [
+    "I",      # enable isort
     "D",      # docstring errors
     "E",      # PEP8 errors
     "E261",   # At least two spaces before inline comment
@@ -166,6 +167,9 @@ ignore = [
     "D401",  # First line of docstring should be in imperative mood
     "D407",  # Missing argument description in the docstring (handled by pydoclint)
 ]
+
+[tool.ruff.isort]
+extra-standard-library = ["pathlib"]
 
 [tool.ruff.pydocstyle]
 convention = "numpy"

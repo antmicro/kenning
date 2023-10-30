@@ -408,6 +408,18 @@ class RenodeRuntime(Runtime):
             )
         return ret
 
+    def extract_output(self) -> List[Any]:
+        raise NotImplementedError
+
+    def prepare_input(self, input_data: bytes) -> bool:
+        raise NotImplementedError
+
+    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+        raise NotImplementedError
+
+    def run(self):
+        raise NotImplementedError
+
 
 class _ProfilerDumpParser(object):
     ENTRY_TYPE_INSTRUCTIONS = b"\x00"

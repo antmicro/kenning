@@ -8,7 +8,8 @@ Contains Tensorflow Lite model for the person detection.
 Trained on VisualWakeWords dataset.
 """
 
-from typing import List, Optional, Tuple
+from pathlib import Path
+from typing import Any, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -212,3 +213,20 @@ class PersonDetectionModelWrapper(ModelWrapper):
         dtype = np.dtype(io_spec["output"][0]["prequantized_dtype"])
 
         return [(output.astype(dtype) - zero_point) * scale for output in y]
+
+    def load_model(self, model_path: PathOrURI):
+        raise NotImplementedError
+
+    def save_model(self, model_path: PathOrURI):
+        raise NotImplementedError
+
+    def save_to_onnx(self, model_path: PathOrURI):
+        raise NotImplementedError
+
+    def train_model(
+        self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
+    ):
+        raise NotImplementedError
+
+    def run_inference(self, X: List) -> Any:
+        raise NotImplementedError

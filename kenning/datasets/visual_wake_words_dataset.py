@@ -8,7 +8,7 @@ The Visual Wake Words dataset.
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -202,3 +202,6 @@ class VisualWakeWordsDataset(Dataset):
         )
         measurements.accumulate("total", len(predictions), lambda: 0)
         return measurements
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError

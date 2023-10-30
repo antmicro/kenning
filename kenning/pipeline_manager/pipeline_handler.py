@@ -7,7 +7,7 @@ A module for parsing the Kenning scenarios provided via JSON or command-line.
 """
 
 from pathlib import Path
-from typing import Dict, Tuple, Union
+from typing import Any, Dict, Tuple, Union
 
 from pipeline_manager import specification_builder
 
@@ -331,3 +331,6 @@ class PipelineGraphCreator(GraphCreator):
         pipeline["optimizers"] = optimizers
         self.start_new_graph()
         return pipeline
+
+    def find_compatible_io(self, from_id: str, to_id: str) -> Tuple[Any, Any]:
+        raise NotImplementedError

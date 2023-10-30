@@ -21,7 +21,7 @@ from collections import defaultdict
 from concurrent import futures
 from math import ceil, floor
 from pathlib import Path
-from typing import Generator, List, Optional, Tuple
+from typing import Any, Generator, List, Optional, Tuple
 
 import boto3
 import botocore
@@ -104,7 +104,7 @@ def check_and_homogenize_image_list(
 
 
 def download_one_image(
-    bucket: boto3.resources.factory.s3.Bucket,
+    bucket: Any,
     split: str,
     image_id: str,
     download_folder: Path,
@@ -114,8 +114,8 @@ def download_one_image(
 
     Parameters
     ----------
-    bucket : boto3.resources.factory.s3.Bucket
-        Bucket to download from.
+    bucket : Any
+        Bucket to download from (boto3.resources.factory.s3.Bucket).
     split : str
         Dataset split.
     image_id : str

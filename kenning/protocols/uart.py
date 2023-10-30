@@ -274,3 +274,6 @@ class UARTProtocol(BytesBasedProtocol):
         if status and isinstance(data, bytes) and len(data) > 0:
             measurements += _parse_allocation_stats(data)
         return measurements
+
+    def initialize_server(self) -> bool:
+        raise NotImplementedError

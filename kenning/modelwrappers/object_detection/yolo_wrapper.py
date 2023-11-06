@@ -163,10 +163,10 @@ class YOLOWrapper(ModelWrapper, ABC):
             # new_coords = (chunk_coords + out_coords) / out_resolution
             x = (box[3] + data[box[0]][box[1], 0, box[2], box[3]]) / data[
                 box[0]
-            ].shape[2]  # noqa: E501
+            ].shape[2]
             y = (box[2] + data[box[0]][box[1], 1, box[2], box[3]]) / data[
                 box[0]
-            ].shape[3]  # noqa: E501
+            ].shape[3]
 
             # width and height are computed using following formula:
             # w = anchor_w * exp(out_w) / input_w
@@ -175,17 +175,17 @@ class YOLOWrapper(ModelWrapper, ABC):
             maskid = self.perlayerparams["mask"][box[0]][box[1]]
             anchors = self.perlayerparams["anchors"][box[0]][
                 2 * maskid : 2 * maskid + 2
-            ]  # noqa: E501
+            ]
             w = (
                 anchors[0]
                 * np.exp(data[box[0]][box[1], 2, box[2], box[3]])
                 / self.keyparams["width"]
-            )  # noqa: E501
+            )
             h = (
                 anchors[1]
                 * np.exp(data[box[0]][box[1], 3, box[2], box[3]])
                 / self.keyparams["height"]
-            )  # noqa: E501
+            )
 
             # get objectness score
             objectness = data[box[0]][box[1], 4, box[2], box[3]]
@@ -196,7 +196,7 @@ class YOLOWrapper(ModelWrapper, ABC):
             # compute final class score (objectness * class probability)
             score = (
                 objectness * data[box[0]][box[1], classid + 5, box[2], box[3]]
-            )  # noqa: E501
+            )
 
             bboxes.append([x, y, w, h, classid, score])
 
@@ -207,7 +207,7 @@ class YOLOWrapper(ModelWrapper, ABC):
             self.convert_to_dectobject(b)
             for b in bboxes
             if b[5] / self.maxscore > self.finthresh
-        ]  # noqa: E501
+        ]
 
         # group bboxes by class to perform NMS sorting
         grouped_bboxes = defaultdict(list)
@@ -230,7 +230,7 @@ class YOLOWrapper(ModelWrapper, ABC):
                     if (
                         compute_dect_iou(clsbboxes[i], clsbboxes[j])
                         > self.iouthresh
-                    ):  # noqa: E501
+                    ):
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 

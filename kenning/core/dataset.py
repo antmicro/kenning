@@ -192,7 +192,7 @@ class Dataset(ArgumentsHandler, ABC):
             None
             if external_calibration_dataset is None
             else Path(external_calibration_dataset)
-        )  # noqa: E501
+        )
         self.split_fraction_test = split_fraction_test
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
@@ -665,7 +665,7 @@ class Dataset(ArgumentsHandler, ABC):
         data = [
             x
             for x in self.external_calibration_dataset.rglob("*")
-            if x.is_file()  # noqa: E501
+            if x.is_file()
         ]
         random.Random(seed).shuffle(data)
         return data[: int(percentage * len(data) + 0.5)]

@@ -112,10 +112,10 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
     with expectation:
         compiled_model_path_tflite = (
             tmpfolder / f"model-magicwand-{batch_size}.tflite"
-        )  # noqa: E501
+        )
         compiled_model_path_tvm = (
             tmpfolder / f"model-magicwand-{batch_size}.tar"
-        )  # noqa: E501
+        )
 
         dataset = MagicWandDataset(
             root=get_reduced_dataset_path(MagicWandDataset),

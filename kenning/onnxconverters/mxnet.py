@@ -92,7 +92,7 @@ class MXNetONNXConversion(ONNXConversion):
             inp
             for inp in sym.list_inputs()
             if inp not in arg and inp not in aux
-        ]  # noqa: E501
+        ]
         mod = mxnet.mod.Module(
             symbol=sym, data_names=data_names, label_names=None
         )

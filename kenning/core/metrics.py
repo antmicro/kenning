@@ -175,10 +175,10 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
         ]
         computed_metrics[
             "session_utilization_cpus_percent_avg"
-        ] = cpus_percent_avg  # noqa: E501
+        ] = cpus_percent_avg
         compute_metrics(
             "session_utilization_cpus_percent_avg", cpus_percent_avg
-        )  # noqa: E501
+        )
 
     # gpu_mem
     if "session_utilization_gpu_mem_utilization" in measurementsdata:

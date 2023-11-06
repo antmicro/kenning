@@ -35,7 +35,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
         self.device = torch.device(
             "cuda" if torch.cuda.is_available() else "cpu"
-        )  # noqa: E501
+        )
 
     def load_weights(self, weights: OrderedDict):
         """

@@ -68,7 +68,7 @@ def get_all_subclasses(
     raise_exception: bool = False,
     import_classes: bool = True,
     show_warnings: bool = True,
-) -> Union[List[Type], List[Tuple[str, str]]]:  # noqa: E501
+) -> Union[List[Type], List[Tuple[str, str]]]:
     """
     Retrieves all subclasses of given class. Filters classes that are not
     final.
@@ -100,7 +100,7 @@ def get_all_subclasses(
     ModuleNotFoundError, ImportError
         When modules could not be imported
     Exception
-        If some unspecified errors occured during imports
+        If some unspecified errors occurred during imports
     """
     root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]

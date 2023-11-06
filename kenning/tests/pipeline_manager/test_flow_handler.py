@@ -4,7 +4,6 @@
 
 import pytest
 
-# noqa: E501
 from kenning.pipeline_manager.core import VisualEditorGraphParserError
 from kenning.pipeline_manager.flow_handler import KenningFlowHandler
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner

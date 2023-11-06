@@ -253,7 +253,7 @@ class ListClassesRunner(CommandTemplate):
         resulting_output = list_classes(
             args.base_classes
             if len(args.base_classes) > 0
-            else ListClassesRunner.base_class_arguments,  # noqa: E501
+            else ListClassesRunner.base_class_arguments,
             verbosity=verbosity,
         )
 

@@ -148,7 +148,7 @@ class RandomizedClassificationDataset(Dataset):
 
 class RandomizedDetectionSegmentationDataset(
     ObjectDetectionSegmentationDataset
-):  # noqa: E501
+):
     """
     Creates a sample randomized detection dataset.
 

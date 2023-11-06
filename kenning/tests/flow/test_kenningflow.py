@@ -15,8 +15,6 @@ from kenning.interfaces.io_interface import IOCompatibilityError
 from kenning.outputcollectors.real_time_visualizers import (
     BaseRealTimeVisualizer,
 )
-
-# noqa: E501
 from kenning.runners.modelruntime_runner import ModelRuntimeRunner
 
 FLOW_STEPS: Final = 4
@@ -181,7 +179,7 @@ FLOW_SCENARIO_VALID = FLOW_SCENARIO_DETECTION
 MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON = deepcopy(MDL_RT_RUNNER_YOLOV4_JSON)
 MDL_RT_RUNNER_YOLOV4_REDEF_VAR_JSON["outputs"][
     "detection_output"
-] = "cam_frame"  # noqa: E501
+] = "cam_frame"
 
 FLOW_SCENARIO_REDEF_VARIABLE = [
     CAMERA_DATA_PROVIDER_NCHW_JSON,

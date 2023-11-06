@@ -219,7 +219,7 @@ class ONNXCompiler(Optimizer):
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError(
                 "No input/output specification found"
-            )  # noqa: E501
+            )
 
         try:
             output_names = [spec["name"] for spec in output_spec]

@@ -52,7 +52,7 @@ def generate_onnx_support_grid(
 
     frameworkheaders = [
         f"{x.framework} (ver. {x.version})" for x in converterslist
-    ]  # noqa: E501
+    ]
 
     supportgrid = defaultdict(dict)
 

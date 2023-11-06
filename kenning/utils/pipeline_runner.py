@@ -149,7 +149,7 @@ class PipelineRunner(object):
         dataconverter = (
             any_from_json(json_cfg["runtime"]["data_converter"])
             if json_cfg.get("runtime", {}).get("data_converter", None)
-            else None  # noqa: E501
+            else None
         )
 
         assert (
@@ -224,7 +224,7 @@ class PipelineRunner(object):
                 "protocol",
                 "runtime",
                 "data_converter",
-            ],  # noqa: E501
+            ],
         ):
             if obj:
                 serialized_dict[name] = obj.to_json()
@@ -477,7 +477,7 @@ class PipelineRunner(object):
 
         assert (
             self.model_wrapper
-        ), "Model wrapper is required for optimizations"  # noqa: E501
+        ), "Model wrapper is required for optimizations"
         model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
@@ -634,7 +634,7 @@ class PipelineRunner(object):
                 ):
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
-                    )(X)  # noqa: E501
+                    )(X)
                     check_request(
                         self.protocol.upload_input(prepX), "send input"
                     )
@@ -650,7 +650,7 @@ class PipelineRunner(object):
                     KLogger.debug("Received output")
                     posty = tagmeasurements("postprocessing")(
                         self.dataconverter.to_previous_block
-                    )(preds)  # noqa: E501
+                    )(preds)
                     measurements += self.dataset.evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -685,7 +685,7 @@ class PipelineRunner(object):
             self.runtime.inference_session_start()
             assert (
                 self.runtime.prepare_local()
-            ), "Cannot prepare local environment"  # noqa: E501
+            ), "Cannot prepare local environment"
             with LoggerProgressBar() as logger_progress_bar:
                 for X, y in TqdmCallback(
                     "runtime",
@@ -694,7 +694,7 @@ class PipelineRunner(object):
                 ):
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
-                    )(X)  # noqa: E501
+                    )(X)
                     succeed = self.runtime.prepare_input(prepX)
                     if not succeed:
                         return False
@@ -702,7 +702,7 @@ class PipelineRunner(object):
                     preds = self.runtime.extract_output()
                     posty = tagmeasurements("postprocessing")(
                         self.model_wrapper._postprocess_outputs
-                    )(preds)  # noqa: E501
+                    )(preds)
                     measurements += self.dataset.evaluate(posty, y)
         except KeyboardInterrupt:
             KLogger.info("Stopping benchmark...")

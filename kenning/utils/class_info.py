@@ -188,7 +188,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
             return (
                 f"* {dependency_path} - Not available (Reason: {e})\n    {err}"
-            )  # noqa: E501
+            )
 
 
 def get_input_specification(syntax_node: ast.Assign) -> str:
@@ -549,7 +549,7 @@ def evaluate_argument_list(
 
 def get_args_structure_from_parameterschema(
     parameterschema: Dict
-) -> List[str]:  # noqa: E501
+) -> List[str]:
     """
     Returns argument structure in the form of Markdown-like strings based on
     the provided parameterschema.
@@ -933,7 +933,7 @@ def generate_class_info(
         if input_formats or output_formats:
             if imported_class and hasattr(
                 class_object, "get_io_specification"
-            ):  # noqa: E501
+            ):
                 # object has been created - detailed i/o specification found
                 found_io_specification = True
                 resulting_lines.append("Input/output specification:\n")

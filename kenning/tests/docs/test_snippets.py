@@ -495,7 +495,7 @@ def factory_test_snippet(
             if subshell.logfile_read:
                 subshell.logfile_read.write(
                     f'\n\n{"-" * 32}\n\n{script}\n\n{"-" * 32}\n\n'
-                )  # noqa: E501
+                )
             success = execute_script_and_wait(subshell, script, timeout)
             if not success:
                 pytest.fail(reason=f"'{script}' returned non-zero code")

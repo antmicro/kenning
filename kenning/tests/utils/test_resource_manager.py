@@ -269,7 +269,7 @@ class TestResourceManager:
             (
                 {
                     "test": "http://{netloc[1]}.{netloc[0]}/{path[2:0:-1]}?{query}"
-                },  # noqa: E501
+                },
                 "test://test.loc/path_a/path_b/path_c?a=1&b=2&c=3",
                 "http://loc.test/path_c/path_b?a=1&b=2&c=3",
             ),

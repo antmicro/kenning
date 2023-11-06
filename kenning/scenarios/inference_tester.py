@@ -335,7 +335,7 @@ class InferenceTester(CommandTemplate):
         )
         optimizers = (
             [compilercls.from_argparse(dataset, args)] if compilercls else []
-        )  # noqa: E501
+        )
         protocol = protocolcls.from_argparse(args) if protocolcls else None
         runtime = runtimecls.from_argparse(args) if runtimecls else None
 

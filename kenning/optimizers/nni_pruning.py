@@ -328,7 +328,7 @@ class NNIPruningOptimizer(Optimizer):
         pruner_type: str = list(prunertypes.keys())[0],
         config_list: List[Dict] = [
             {"sparsity_per_layer": 0.1, "op_types": ["Conv2d", "Linear"]}
-        ],  # noqa: E501
+        ],
         training_steps: int = 1,
         mode: Optional[str] = Modes.NORMAL.value,
         criterion: str = "torch.nn.CrossEntropyLoss",

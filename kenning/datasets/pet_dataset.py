@@ -200,7 +200,7 @@ class PetDataset(Dataset):
                 1
                 if np.argmax(label) in np.argsort(prediction)[::-1][:5]
                 else 0
-            )  # noqa: E501
+            )
         measurements = Measurements()
         measurements.accumulate(
             "eval_confusion_matrix",
@@ -242,7 +242,7 @@ class PetDataset(Dataset):
         # return np.array([0.48136492, 0.44937421, 0.39576963]), np.array([0.22781384, 0.22496867, 0.22693157])  # noqa: E501
         return np.array([0.485, 0.456, 0.406], dtype="float32"), np.array(
             [0.229, 0.224, 0.225], dtype="float32"
-        )  # noqa: E501
+        )
 
     def get_class_names(self):
         return [val for val in self.classnames.values()]

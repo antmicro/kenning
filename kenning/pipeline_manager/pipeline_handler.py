@@ -36,7 +36,7 @@ class PipelineHandler(BaseDataflowHandler):
     def __init__(self, **kwargs):
         self.spec_builder = specification_builder.SpecificationBuilder(
             SPECIFICATION_VERSION
-        )  # noqa: E501
+        )
         nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
         super().__init__(
             nodes,

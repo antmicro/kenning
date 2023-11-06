@@ -144,14 +144,14 @@ class TensorFlowImageNet(TensorFlowWrapper):
                     "shape": inputshape,
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {
                     "name": modeloutputname,
                     "shape": outputshape,
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
         }
 
     @classmethod

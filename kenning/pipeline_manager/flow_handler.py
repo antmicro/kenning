@@ -36,10 +36,10 @@ class KenningFlowHandler(BaseDataflowHandler):
     def __init__(self, **kwargs):
         self.spec_builder = specification_builder.SpecificationBuilder(
             SPECIFICATION_VERSION
-        )  # noqa: E501
+        )
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(
             self.spec_builder
-        )  # noqa: E501
+        )
 
         # Nodes from PipelineHandler are used only as arguments for
         # different runners. Therefore they should have no inputs and

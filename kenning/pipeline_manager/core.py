@@ -384,7 +384,7 @@ class BaseDataflowHandler:
                     if not (
                         isinstance(parameter["value"], str)
                         and parameter["value"] == ""
-                    )  # noqa: E501
+                    )
                 }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node, parameters

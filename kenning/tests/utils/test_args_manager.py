@@ -208,7 +208,7 @@ class TestArgsManagerWrapper:
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters": {
                 "save_model_path": "kenning:///models/object_detection/yolov4.onnx"
-            },  # noqa: E501
+            },
         },
     }
 

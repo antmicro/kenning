@@ -296,7 +296,7 @@ class ONNXYOLOV4(YOLOWrapper):
                     torch.atan(ratio_target) - torch.atan(ratio_detect)
                 )
                 ** 2
-            )  # noqa: E501
+            )
             alpha = ratio_consistency / (1 - iou + ratio_consistency + eps)
 
             ciou += (
@@ -342,7 +342,7 @@ class ONNXYOLOV4(YOLOWrapper):
                     ),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {
                     "name": "output",
@@ -353,7 +353,7 @@ class ONNXYOLOV4(YOLOWrapper):
                         keyparams["height"] // (8 * 2**0),
                     ),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
                 {
                     "name": "output.3",
                     "shape": (
@@ -363,7 +363,7 @@ class ONNXYOLOV4(YOLOWrapper):
                         keyparams["height"] // (8 * 2**1),
                     ),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
                 {
                     "name": "output.7",
                     "shape": (
@@ -373,7 +373,7 @@ class ONNXYOLOV4(YOLOWrapper):
                         keyparams["height"] // (8 * 2**2),
                     ),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
             ],
             "processed_output": [
                 {"name": "detection_output", "type": "List[DetectObject]"}

@@ -388,7 +388,7 @@ def draw_radar_chart(
     linestyles = ["-", "--", "-.", ":"]
     for i, (color, (samplename, sample)) in enumerate(
         zip(colors, data.items())
-    ):  # noqa: E501
+    ):
         sample += sample[:1]
         ax.plot(
             angles,
@@ -525,7 +525,7 @@ def draw_bubble_plot(
         bubblemarkers.append(bubblemarker)
         bubblelabels.append(
             f"{(minsize + i / 100 * (maxsize - minsize)) / 1024 ** 2:.4f} MB"
-        )  # noqa: E501
+        )
     bubblelegend = ax.legend(
         bubblemarkers,
         bubblelabels,

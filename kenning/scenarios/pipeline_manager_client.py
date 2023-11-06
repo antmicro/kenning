@@ -206,7 +206,7 @@ class PipelineManagerClient(CommandTemplate):
                 elif message_type == MessageType.RUN:
                     feedback_msg = (
                         f"Successfully run. Output saved in {output_file_path}"
-                    )  # noqa: E501
+                    )
                 elif message_type == MessageType.EXPORT:
                     feedback_msg = f"Successfully exported. Output saved in {output_file_path}"  # noqa: E501
 

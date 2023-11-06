@@ -129,7 +129,7 @@ class ROS2Protocol(Protocol):
         self.measurements_service_type_str = measurements_service_type_str
         self._measurements_service_type = load_class(
             measurements_service_type_str
-        )  # noqa: E501
+        )
 
         # Last message's future
         self.future = None

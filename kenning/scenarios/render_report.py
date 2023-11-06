@@ -830,7 +830,7 @@ def detection_report(
             measurementsdata[f"eval_det/{i}"]
             if f"eval_det/{i}" in measurementsdata
             else []
-        )  # noqa: E501
+        )
         det_tp_iou = [i[2] for i in dets if i[1]]
         if len(det_tp_iou) > 0:
             tp_iou.append(sum(det_tp_iou) / len(det_tp_iou))
@@ -887,7 +887,7 @@ def detection_report(
     measurementsdata["max_mAP"] = max(mapvalues)
     measurementsdata["max_mAP_index"] = thresholds[np.argmax(mapvalues)].round(
         2
-    )  # noqa: E501
+    )
 
     with path(reports, "detection.md") as reporttemplate:
         return create_report_from_measurements(
@@ -1986,7 +1986,7 @@ class RenderReport(CommandTemplate):
                 f" created with {TEST} subcommand"
                 if run_in_sequence
                 else ". If more than one file is provided, model comparison will be generated."  # noqa: E501
-            )  # noqa: E501
+            )
             + " It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
             type=Path,
             nargs=1 if run_in_sequence else "*",

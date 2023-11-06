@@ -29,7 +29,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     default_dataset = PetDataset
     pretrained_model_uri = (
         "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"
-    )  # noqa: E501
+    )
     arguments_structure = {
         "class_count": {
             "argparse_name": "--num-classes",
@@ -63,14 +63,14 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     "shape": (batch_size, 3, 224, 224),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {
                     "name": "548",
                     "shape": (batch_size, numclasses),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
         }
 
     @classmethod

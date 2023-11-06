@@ -111,7 +111,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
     def prepare(self):
         annotationspath = (
             self.root / f"annotations/instances_{self.dataset_type}.json"
-        )  # noqa: E501
+        )
         self.coco = COCO(annotationspath)
         self.classmap = {}
         self.classnames = []

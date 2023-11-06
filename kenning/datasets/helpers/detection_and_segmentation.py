@@ -134,14 +134,14 @@ def get_recall_precision(
             measurementsdata[f"eval_gtcount/{cls}"]
             if f"eval_gtcount/{cls}" in measurementsdata
             else 0
-        )  # noqa: E501
+        )
         if gt_count == 0:
             continue
         dets = (
             measurementsdata[f"eval_det/{cls}"]
             if f"eval_det/{cls}" in measurementsdata
             else []
-        )  # noqa: E501
+        )
         dets = [d for d in dets if d[0] >= scorethresh]
         dets.sort(key=lambda d: -d[0])
         tps = np.array([entry[1] != 0.0 for entry in dets])
@@ -431,7 +431,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         for pred, gt in zip(predictions, truth):
             img = self.prepare_input_samples(
                 [self.dataX[self._dataindex - 1]]
-            )[0]  # noqa: E501
+            )[0]
             fig, ax = plt.subplots()
             ax.imshow(img.transpose(1, 2, 0))
             for bbox in pred:
@@ -479,7 +479,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         for pred, gt in zip(predictions, truth):
             img = self.prepare_input_samples(
                 [self.dataX[self._dataindex - 1]]
-            )[0]  # noqa: E501
+            )[0]
             if self.image_memory_layout == "NCHW":
                 img = img.transpose(1, 2, 0)
             int_img = np.multiply(img, 255).astype("uint8")

@@ -38,7 +38,7 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
                     ),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [],
         }
 

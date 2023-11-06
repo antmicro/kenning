@@ -245,7 +245,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         if not io_spec or not io_spec["output"] or not io_spec["input"]:
             raise IOSpecificationNotFoundError(
                 "No input/ouput specification found"
-            )  # noqa: E501
+            )
 
         from copy import deepcopy
 
@@ -270,7 +270,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 quant_aware_annotate_model,
                 tfmot.experimental.combine.Default8BitClusterPreserveQuantizeScheme(
                     preserve_sparsity=True
-                ),  # noqa: E501
+                ),
             )
 
             pcqat_model = self.train_model(pcqat_model)
@@ -350,12 +350,12 @@ class TFLiteCompiler(TensorFlowOptimizer):
             signature.get_input_details(),
             interpreter.get_input_details(),
             "input",
-        )  # noqa: E501
+        )
         update_io_spec(
             signature.get_output_details(),
             interpreter.get_output_details(),
             "output",
-        )  # noqa: E501
+        )
 
         self.save_io_specification(input_model_path, io_spec)
 

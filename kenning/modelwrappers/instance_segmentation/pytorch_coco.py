@@ -146,7 +146,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                     "shape": (1, 3, 416, 416),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {"name": "boxes", "shape": (-1, 4), "dtype": "float32"},
                 {"name": "labels", "shape": (-1,), "dtype": "int64"},
@@ -155,7 +155,7 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                     "name": "masks",
                     "shape": (-1, 1, 416, 416),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
             ],
         }
 

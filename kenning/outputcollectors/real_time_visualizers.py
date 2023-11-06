@@ -620,7 +620,7 @@ class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
                     "shape": (1, -1),
                     "dtype": "float32",
                 },
-            ],  # noqa: E501
+            ],
             "output": [],
         }
 

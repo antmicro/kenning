@@ -487,13 +487,13 @@ class TVMCompiler(Optimizer):
         """
         assert not (
             use_fp16_precision and use_int8_precision
-        ), "Compilation cannot use both FP16 and INT8 conversion"  # noqa: E501
+        ), "Compilation cannot use both FP16 and INT8 conversion"
         assert not (
             use_tensorrt and (use_fp16_precision or use_int8_precision)
         ), "TensorRT usage with FP16 or INT8 passes is not supported"  # noqa: E501
         assert not (
             use_tensorrt and ("cuda" not in target)
-        ), "TensorRT is only supported with CUDA target"  # noqa: E501
+        ), "TensorRT is only supported with CUDA target"
         self.model_framework = model_framework
 
         self.target = target
@@ -635,7 +635,7 @@ class TVMCompiler(Optimizer):
             for id in range(len(io_spec["output"])):
                 io_spec["output"][id]["prequantized_dtype"] = io_spec[
                     "output"
-                ][id]["dtype"]  # noqa: E501
+                ][id]["dtype"]
                 io_spec["output"][id]["dtype"] = output_dtype
         self.save_io_specification(input_model_path, io_spec)
 

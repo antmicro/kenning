@@ -360,7 +360,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                     "shape": (1, 3, 550, 550),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {"name": "output_0", "shape": (-1, 4), "dtype": "float32"},
                 {"name": "output_1", "shape": (-1, 32), "dtype": "float32"},
@@ -370,7 +370,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                     "name": "output_4",
                     "shape": (138, 138, 32),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
             ],
             "processed_output": [
                 {"name": "segmentation_output", "type": "List[SegmObject]"}
@@ -388,7 +388,7 @@ class YOLACT(YOLACTWrapper):
 
     pretrained_model_uri = (
         "kenning:///models/instance_segmentation/yolact.onnx"
-    )  # noqa: E501
+    )
 
     def preprocess_input(self, X):
         if len(X) > 1:
@@ -619,7 +619,7 @@ class YOLACT(YOLACTWrapper):
                     "shape": (1, 3, 550, 550),
                     "dtype": "float32",
                 }
-            ],  # noqa: E501
+            ],
             "output": [
                 {"name": "output_0", "shape": (1, -1, 4), "dtype": "float32"},
                 {"name": "output_1", "shape": (1, -1, 81), "dtype": "float32"},
@@ -629,7 +629,7 @@ class YOLACT(YOLACTWrapper):
                     "name": "output_4",
                     "shape": (1, 138, 138, 32),
                     "dtype": "float32",
-                },  # noqa: E501
+                },
             ],
             "processed_output": [
                 {"name": "segmentation_output", "type": "List[SegmObject]"}

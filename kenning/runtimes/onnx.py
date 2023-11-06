@@ -112,7 +112,7 @@ class ONNXRuntime(Runtime):
                                 s if isinstance(s, int) else -1
                                 for s in input.shape
                             ]
-                        ),  # noqa: E501
+                        ),
                         "dtype": onnx_to_np_dtype(input.type),
                     }
                 )

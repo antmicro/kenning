@@ -29,7 +29,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
     default_dataset = VisualWakeWordsDataset
     pretrained_model_uri = (
         "kenning:///models/classification/person_detect.tflite"
-    )  # noqa: E501
+    )
     arguments_structure = {
         "central_fraction": {
             "argparse_name": "--central-fraction",

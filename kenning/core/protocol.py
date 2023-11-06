@@ -708,7 +708,7 @@ class Protocol(ArgumentsHandler, ABC):
 
         ret, compiled_model_data = timemeasurements(
             "protocol_model_optimization", get_time_func
-        )(self.receive_confirmation)()  # noqa: E501
+        )(self.receive_confirmation)()
         if not ret:
             return False, None
         return ret, compiled_model_data

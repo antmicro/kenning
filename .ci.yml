@@ -12,6 +12,7 @@ image: $CI_BASE_IMAGE
 variables:
     GIT_STRATEGY: clone
     GIT_SUBMODULE_STRATEGY: recursive
+    DOCS_DIR: './docs'
 
 stages:
     - lint
@@ -36,11 +37,12 @@ pytest:
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
     script:
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report html:cov-report
+        - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
     artifacts:
         paths:
             - log.json
             - log_docs/*.log
+            - $DOCS_DIR/source/generated/coverage/*
         when: always
 
 .pytest-docs: &pytest-docs
@@ -55,13 +57,13 @@ pytest:
         - dockerd -s fuse-overlayfs --add-runtime=crun=/usr/bin/crun --default-runtime=crun --config-file="" > /dev/null 2> /dev/null &
         - while ! test -S /var/run/docker.sock; do echo "Waiting for Docker..." && sleep 1; done; docker info
         - trap "kill $(cat /var/run/docker.pid)" EXIT
+        - pip install -e ".[test]"
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning/tests/docs/test_snippets.py -m $TESTS_SCOPE -n=4 --test-docs-log-dir $TESTS_SCOPE
     artifacts:
         paths:
             - log.json
-            - log_gallery/*.log
-            - cov-report
+            - $TESTS_SCOPE/*.log
         when: always
 
 docs-tests:
@@ -159,9 +161,8 @@ docs:
     <<: *common_only
     stage: docs
     dependencies:
+        - pytest
         - sample-compilation
-    variables:
-        DOCS_DIR: './docs'
     script:
         - cd $DOCS_DIR
         - echo -en "\nhtml_js_files = [ '$ANNOTANT' ]" >> source/conf.py
@@ -182,8 +183,6 @@ linkcheck:
     stage: docs
     dependencies:
         - sample-compilation
-    variables:
-        DOCS_DIR: './docs'
     script:
         - cd $DOCS_DIR
         - make linkcheck

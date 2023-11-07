@@ -101,6 +101,12 @@ master_doc = "index"
 
 language = "en"
 
+# A list of paths that contain extra files not directly related to the
+# documentation, such as robots.txt or .htaccess. Relative paths are taken as
+# relative to the configuration directory. They are copied to the output
+# directory. They will overwrite any existing file of the same name.
+html_extra_path = ["generated"]
+
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.

@@ -14,7 +14,7 @@ import tensorflow as tf
 from kenning.core.dataset import Dataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
-from kenning.utils.logger import KLogger
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -139,7 +139,6 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             self.model.load_weights(self.model_path)
             self.model_prepared = True
         else:
-            self.train_model()
             self.model_prepared = True
             self.save_model(self.model_path)
 
@@ -186,21 +185,25 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             batch_size
         )
 
-        self.model.fit(
-            train_dataset,
-            epochs=epochs,
-            validation_data=val_dataset,
-            steps_per_epoch=1000,
-            validation_steps=int((len(val_data) - 1) / batch_size + 1),
-            callbacks=[tf.keras.callbacks.TensorBoard(log_dir=logdir)],
-        )
+        with LoggerProgressBar(capture_stdout=True):
+            self.model.fit(
+                train_dataset,
+                epochs=epochs,
+                validation_data=val_dataset,
+                steps_per_epoch=1000,
+                validation_steps=int((len(val_data) - 1) / batch_size + 1),
+                callbacks=[tf.keras.callbacks.TensorBoard(log_dir=logdir)],
+            )
+
         loss, acc = self.model.evaluate(test_dataset)
-        pred = np.argmax(self.model.predict(test_dataset), axis=1)
+        with LoggerProgressBar(capture_stdout=True):
+            pred = np.argmax(self.model.predict(test_dataset), axis=1)
+
         confusion = tf.math.confusion_matrix(
-            labels=tf.constant(test_labels),
+            labels=tf.constant(np.argmax(test_labels, axis=1)),
             predictions=tf.constant(pred),
             num_classes=4,
         )
-        KLogger.info(confusion)
+        KLogger.info(f"confusion matrix:\n {confusion}")
         KLogger.info(f"loss: {loss}, accuracy: {acc}")
         self.model.save(self.model_path)

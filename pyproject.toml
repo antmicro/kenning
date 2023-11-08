@@ -191,3 +191,40 @@ markers = [
 log_cli = true
 log_level = "DEBUG"
 log_format = "[%(asctime)-15s %(filename)s:%(lineno)s] [%(levelname)s] %(message)s"
+
+[tool.coverage.run]
+branch = true
+omit = [
+    "**/__init__.py",
+    "**/__main__.py",
+    "kenning/tests/*",
+    "docs/*",
+]
+
+[tool.coverage.report]
+# Regexes for lines to exclude from consideration
+exclude_also = [
+    # Don't complain about missing debug-only code:
+    "def __repr__",
+    "if self\\.debug",
+
+    # Don't complain if tests don't hit defensive assertion code:
+    "raise AssertionError",
+    "raise NotImplementedError",
+
+    # Don't complain if non-runnable code isn't run:
+    "if 0:",
+    "if __name__ == .__main__.:",
+
+    # Don't complain about abstract methods, they aren't run:
+    "@(abc\\.)?abstractmethod",
+
+    # Don't complain about pass statements":
+    "pass",
+    "\\.\\.\\.",
+]
+
+ignore_errors = true
+
+[tool.coverage.html]
+directory = "docs/source/generated/coverage"

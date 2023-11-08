@@ -18,6 +18,7 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.interfaces.io_interface import IOInterface
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
+from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -194,9 +195,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             metrics=[tf.keras.metrics.CategoricalAccuracy()],
         )
 
-        self.model.fit(
-            traindataset,
-            epochs=epochs,
-            callbacks=[tensorboard_callback, model_checkpoint_callback],
-            validation_data=validdataset,
-        )
+        with LoggerProgressBar(capture_stdout=True):
+            self.model.fit(
+                traindataset,
+                epochs=epochs,
+                callbacks=[tensorboard_callback, model_checkpoint_callback],
+                validation_data=validdataset,
+            )

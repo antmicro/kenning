@@ -236,11 +236,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         for epoch in range(epochs):
             self.model.train()
+            loss_sum = torch.zeros(1).to(self.device)
+            loss_count = 0
             with LoggerProgressBar() as logger_progress_bar:
                 bar = tqdm(trainloader, file=logger_progress_bar)
-                losssum = torch.zeros(1).to(self.device)
-                losscount = 0
-                for i, (images, labels) in enumerate(bar):
+                for images, labels in bar:
                     images = images.to(self.device)
                     labels = labels.to(self.device)
                     opt.zero_grad()
@@ -251,11 +251,15 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     loss.backward()
                     opt.step()
 
-                    losssum += loss
-                    losscount += 1
-                    bar.set_description(f"train epoch: {epoch:3}")
+                    loss_sum += loss
+                    loss_count += 1
+                    bar.set_description(
+                        f"train epoch: {epoch:3d} loss: "
+                        f"{loss_sum.data.cpu().numpy().sum() / loss_count:.3f}"
+                    )
+
             writer.add_scalar(
-                "Loss/train", losssum.data.cpu().numpy() / losscount, epoch
+                "Loss/train", loss_sum.data.cpu().numpy() / loss_count, epoch
             )
 
             self.model.eval()
@@ -269,8 +273,13 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     outputs = self.model(images)
                     _, predicted = torch.max(outputs.data, 1)
                     total += labels.size(0)
+                    _, labels = torch.max(labels, 1)
                     correct += (predicted == labels).sum().item()
-                    bar.set_description(f"valid epoch: {epoch:3}")
+                    bar.set_description(
+                        f"valid epoch: {epoch:3d} "
+                        f"accuracy: {correct / total:.3f}"
+                    )
+
                 acc = 100 * correct / total
                 writer.add_scalar("Accuracy/valid", acc, epoch)
 

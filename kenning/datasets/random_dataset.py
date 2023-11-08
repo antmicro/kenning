@@ -116,6 +116,8 @@ class RandomizedClassificationDataset(Dataset):
         ]
         self.dataY = [j % self.numclasses for j in range(self.samplescount)]
         shuffle(self.dataY)
+        if not self.integer_classes:
+            self.dataY = [np.eye(self.numclasses)[y] for y in self.dataY]
 
         (self.root / "images").mkdir(parents=True, exist_ok=True)
         samples = self.prepare_input_samples(self.dataX)
@@ -132,9 +134,7 @@ class RandomizedClassificationDataset(Dataset):
         return result
 
     def prepare_output_samples(self, samples):
-        if self.integer_classes:
-            return samples
-        return list(np.eye(self.numclasses)[samples])
+        return samples
 
     def evaluate(self, predictions, truth):
         return Measurements()

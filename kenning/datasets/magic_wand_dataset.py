@@ -236,7 +236,7 @@ class MagicWandDataset(Dataset):
         measurements = Measurements()
         if truth is not None:
             confusion_matrix = np.zeros((self.numclasses, self.numclasses))
-            for prediction, label in zip(predictions[0], truth):
+            for prediction, label in zip(predictions, truth):
                 confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             measurements.accumulate(
                 "eval_confusion_matrix",

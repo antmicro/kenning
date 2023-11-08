@@ -14,6 +14,8 @@ tqdm instances of the same tags are going to use those callbacks.
 
 import io
 import logging
+import re
+import sys
 import urllib.request
 from dataclasses import dataclass
 from types import TracebackType
@@ -105,12 +107,18 @@ class LoggerProgressBar(io.StringIO):
     Prepares IO stream for TQDM progress bar to run in logging.
     """
 
-    def __init__(self, suppress_new_line=True):
+    def __init__(
+        self, suppress_new_line: bool = True, capture_stdout: bool = False
+    ):
         super().__init__()
         self.buf = ""
         self.suppress_new_line = suppress_new_line
+        self.capture_stdout = capture_stdout
 
     def __enter__(self) -> "LoggerProgressBar":
+        if self.capture_stdout:
+            self.prev_stdout = sys.stdout
+            sys.stdout = self
         return self
 
     def __exit__(
@@ -119,12 +127,20 @@ class LoggerProgressBar(io.StringIO):
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> bool:
+        if self.capture_stdout:
+            sys.stdout = self.prev_stdout
+
         _KLogger().info(self.buf)
 
         return False
 
     def write(self, buf):
-        self.buf = buf.strip("\r\n\t ")
+        buf = buf.lstrip("\r\n\t\x08 ")
+        for newline in re.finditer(r"\r?\n", buf):
+            _KLogger().info(buf[: newline.start()])
+            buf = buf[newline.end() :]
+
+        self.buf = buf
 
     def flush(self):
         prev_terminators = []

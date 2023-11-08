@@ -109,6 +109,7 @@ class TrainModel(CommandTemplate):
 
         args.logdir.mkdir(parents=True, exist_ok=True)
 
+        model.prepare_model()
         model.train_model(
             args.batch_size, args.learning_rate, args.num_epochs, args.logdir
         )

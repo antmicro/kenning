@@ -21,14 +21,16 @@ from tqdm import tqdm
 
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
-    ObjectDetectionSegmentationDataset,
     SegmObject,
 )
-from kenning.utils.logger import KLogger, LoggerProgressBar
+from kenning.datasets.helpers.video_detection_and_segmentation import (
+    VideoObjectDetectionSegmentationDataset,
+)
+from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import ResourceManager, Resources
 
 
-class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
+class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
     """
     The Lindenthal Camera Traps dataset.
 
@@ -159,7 +161,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
                     ymin=bbox[1] / height,
                     xmax=(bbox[0] + bbox[2]) / width,
                     ymax=(bbox[1] + bbox[3]) / height,
-                    mask=self.coco.annToMask(anndata),
+                    mask=self.coco.annToMask(anndata) * 255,
                     score=1.0,
                     iscrowd=anndata["iscrowd"] == 1,
                 )
@@ -205,10 +207,10 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         return result
 
     def evaluate(self, predictions, truth):
-        measurements = Measurements()
+        measurements = super().evaluate(predictions, truth)
         currindex = self._dataindex - len(predictions)
         for sequence, groundtruth in zip(predictions, truth):
-            seq_measurements = super().evaluate(sequence, groundtruth)
+            seq_measurements = Measurements()
             for idx, frame in enumerate(sequence):
                 cocoid = self.imgstokeys[self.dataX[currindex][idx]]
                 width = self.coco.imgs[cocoid]["width"]
@@ -243,14 +245,6 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         return self.classnames
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
-
-    # TODO: Implement
-    def show_segm_eval_images(self, predictions, truth):
-        raise NotImplementedError
-
-    # TODO: Implement
-    def show_dect_eval_images(self, predictions, truth):
         raise NotImplementedError
 
     @staticmethod
@@ -293,71 +287,3 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
                         str(rosbag_dir / f"{str(counter).zfill(6)}.png"), img
                     )
                     counter += 1
-
-    @staticmethod
-    def frame_sampling(
-        sequence: List[Path],
-        num_segments: Optional[int] = None,
-        frames_per_segment: int = 1,
-    ) -> List[Path]:
-        """
-        Samples frames from the sequence into segments of equal length.
-
-        The frame index range is divided into `num_segments` segments.
-        From each segment, a random start-index is sampled from which
-        `frames_per_segment` consecutive indices are loaded.
-        This results in `num_segments`*`frames_per_segment` chosen indices,
-        whose images paths are saved for latter processing.
-
-        If the number of frames in the sequence is lower to product of
-        number of frames per segment and number of segments, the whole
-        sequence is returned.
-
-        Parameters
-        ----------
-        sequence : List[Path]
-            List of paths to the frames in the sequence.
-        num_segments : Optional[int]
-            Number of segments to split the sequence into.
-            If None, the whole sequence is returned.
-        frames_per_segment : int
-            Number of frames to sample from each segment.
-
-        Returns
-        -------
-        List[Path]
-            List of paths to the sampled frames with length equal to
-            `num_segments * frames_per_segment`.
-
-        Raises
-        ------
-        ValueError :
-            If the number of segments or frames per segment is lower than 1.
-        """
-        if num_segments is None or num_segments * frames_per_segment >= len(
-            sequence
-        ):
-            return sequence
-        if num_segments < 1 or frames_per_segment < 1:
-            KLogger.error(
-                "Number of segments and frames per segment must be "
-                "greater than 0."
-            )
-            raise ValueError
-
-        segments = np.linspace(
-            0,
-            len(sequence) - 1,
-            num_segments + 1,
-            dtype=int,
-            endpoint=True,
-        )
-        sampled_indices = []
-        for i in range(num_segments):
-            start_point = np.random.randint(
-                segments[i], segments[i + 1] - frames_per_segment
-            )
-            sampled_indices.extend(
-                range(start_point, start_point + frames_per_segment)
-            )
-        return np.array(sequence)[sampled_indices].tolist()

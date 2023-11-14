@@ -8,8 +8,10 @@ Wrappers for drawing plots for reports.
 
 import itertools
 import sys
+from abc import abstractmethod
 from contextlib import contextmanager
-from math import floor, pi
+from dataclasses import dataclass
+from math import pi
 from pathlib import Path
 from typing import (
     Any,
@@ -29,17 +31,30 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
 from numpy.typing import ArrayLike
-from scipy.signal import savgol_filter
+
+from kenning.resources import reports
+from kenning.scenarios.manage_cache import format_size
+from kenning.utils.logger import KLogger
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
 
-from kenning.resources import reports
 
 BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
 MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
+MATPLOTLIB_DPI = 100
+DEFAULT_PLOT_SIZE = 900
+MATPLOTLIB_FONT_SIZE = 12
+
+plt.rc("font", size=MATPLOTLIB_FONT_SIZE)  # default text sizes
+plt.rc("axes", titlesize=MATPLOTLIB_FONT_SIZE)  # axes title
+plt.rc("axes", labelsize=1.5 * MATPLOTLIB_FONT_SIZE)  # x and y labels
+plt.rc("xtick", labelsize=MATPLOTLIB_FONT_SIZE)  # x tick labels
+plt.rc("ytick", labelsize=MATPLOTLIB_FONT_SIZE)  # y tick labels
+plt.rc("legend", fontsize=MATPLOTLIB_FONT_SIZE)  # legend
+plt.rc("figure", titlesize=2 * MATPLOTLIB_FONT_SIZE)  # figure title
 
 RED = "#d52a2a"
 GREEN = "#1c7d4d"
@@ -51,7 +66,9 @@ for channel in range(3):
         int(RED[pos : pos + 2], 16), int(GREEN[pos : pos + 2], 16), 256
     )
 cmap_values[:, :3] /= 255
-RED_GREEN_CMAP = ListedColormap(cmap_values, name="red_green_colormap")
+RED_GREEN_CMAP = ListedColormap(
+    cmap_values.tolist(), name="red_green_colormap"
+)
 
 IMMATERIAL_COLORS = [
     "#ef5552",  # red
@@ -71,1942 +88,1894 @@ IMMATERIAL_COLORS = [
 ]
 
 
-def get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
+@dataclass
+class Plot(object):
     """
-    Creates default color schema to use for comparison plots (such as violin
-    plot, bubble chart etc.).
+    Generic plot class.
 
     Parameters
     ----------
-    n_colors : int
-        Number of colors to return.
-
-    Returns
-    -------
-    List[Tuple]
-        List of colors to use for plotting.
-    """
-    CMAP_NAME = "nipy_spectral"
-    cmap = plt.get_cmap(CMAP_NAME)
-    return [cmap(i) for i in np.linspace(0.0, 1.0, n_colors)]
-
-
-def time_series_plot(
-    outpath: Optional[Path],
-    title: str,
-    xtitle: str,
-    xunit: str,
-    ytitle: str,
-    yunit: str,
-    xdata: List,
-    ydata: List,
-    trimxvalues: bool = True,
-    skipfirst: bool = False,
-    figsize: Tuple = (15, 8.5),
-    bins: int = 20,
-):
-    """
-    Draws time series plot.
-
-    Used i.e. for timeline of resource usage.
-
-    It also draws the histogram of values that appeared throughout the
-    experiment.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
+    width : int
+        Width of the plot.
+    height : int
+        Height of the plot.
+    title : Optional[str]
         Title of the plot.
-    xtitle : str
-        Name of the X axis.
-    xunit : str
-        Unit for the X axis.
-    ytitle : str
-        Name of the Y axis.
-    yunit : str
-        Unit for the Y axis.
-    xdata : List
-        The values for X dimension.
-    ydata : List
-        The values for Y dimension.
-    trimxvalues : bool
-        True if all values for the X dimension should be subtracted by
-        the minimal value on this dimension.
-    skipfirst : bool
-        True if the first entry should be removed from plotting.
-    figsize : Tuple
-        The size of the figure.
-    bins : int
-        Number of bins for value histograms.
-    """
-    start = 1 if skipfirst else 0
-    xdata = np.array(xdata[start:], copy=True)
-    ydata = np.array(ydata[start:], copy=True)
-    if trimxvalues:
-        minx = min(xdata)
-        xdata = [x - minx for x in xdata]
-    fig, (axplot, axhist) = plt.subplots(
-        ncols=2,
-        tight_layout=True,
-        figsize=figsize,
-        sharey=True,
-        gridspec_kw={"width_ratios": (8, 3)},
-    )
-    if title:
-        fig.suptitle(title, fontsize="x-large")
-    axplot.scatter(xdata, ydata, c="purple", alpha=0.5)
-    xlabel = xtitle
-    if xunit is not None:
-        xlabel += f" [{xunit}]"
-    ylabel = ytitle
-    if yunit is not None:
-        ylabel += f" [{yunit}]"
-    axplot.set_xlabel(xlabel, fontsize="large")
-    axplot.set_ylabel(ylabel, fontsize="large")
-    axplot.grid()
-
-    axhist.hist(ydata, bins=bins, orientation="horizontal", color="purple")
-    axhist.set_xscale("log")
-    axhist.set_xlabel("Value histogram", fontsize="large")
-    axhist.grid(which="both")
-    plt.setp(axhist.get_yticklabels(), visible=False)
-
-    if outpath is None:
-        plt.show()
-    else:
-        plt.savefig(outpath)
-    plt.close()
-
-
-def draw_multiple_time_series(
-    outpath: Optional[Path],
-    title: str,
-    xdata: Dict[str, List],
-    xtitle: str,
-    ydata: Dict[str, List],
-    ytitle: str,
-    skipfirst: bool = False,
-    smooth: Optional[int] = None,
-    figsize: Tuple = (11, 8.5),
-    colors: Optional[List] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws multiple time series plots.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Path where the plot will be saved. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xdata : Dict[str, List]
-        Mapping between name of the model and x coordinates of samples.
-    xtitle : str
-        Name of the X axis.
-    ydata : Dict[str, List]
-        Mapping between name of the model and y coordinates of samples.
-    ytitle : str
-        Name of the Y axis.
-    skipfirst : bool
-        True if the first entry should be removed from plotting.
-    smooth : Optional[int]
-        If None, raw point coordinates are plotted in a line plot.
-        If int, samples are plotted in a scatter plot in a background,
-        and smoothing is performed with Savitzky–Golay filter to the line,
-        where `smooth` is the window size parameter.
-    figsize : Tuple
-        The size of the figure.
     colors : Optional[List]
         List with colors which should be used to draw plots.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    start = 1 if skipfirst else 0
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
-    if title:
-        fig.suptitle(title, fontsize="x-large")
-    if colors is None:
-        colors = get_comparison_color_scheme(len(xdata))
-    for color, (samplename, sample) in zip(colors, ydata.items()):
-        x_sample = xdata[samplename][start:]
-        x_sample = np.array(x_sample)
-        x_sample -= np.min(x_sample)
-        y_sample = sample[start:]
-        if smooth is None:
-            ax.plot(x_sample, y_sample, label=samplename, color=color)
-        else:
-            ax.scatter(
-                x_sample, y_sample, alpha=0.15, marker=".", s=10, color=color
-            )
-            smoothed = savgol_filter(y_sample, smooth, 3)
-            ax.plot(
-                x_sample, smoothed, label=samplename, linewidth=3, color=color
-            )
-
-    ax.set_xlabel(xtitle)
-    ax.set_ylabel(ytitle)
-    plt.legend()
-    plt.grid()
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(f"{outpath}.{ext}")
-    plt.close()
-
-
-def draw_violin_comparison_plot(
-    outpath: Optional[Path],
-    title: str,
-    xnames: List[str],
-    data: Dict[str, List],
-    colors: Optional[List] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws violin plots comparing different metrics.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Path where the plot will be saved without extension. If None,
-        the plot will be displayed.
-    title : str
-        Title of the plot.
-    xnames : List[str]
-        Names of the metrics in order.
-    data : Dict[str, List]
-        Map between name of the model and list of metrics to visualize.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    num_plots = len(xnames)
-    legend_lines, legend_labels = [], []
-    fig, axs = plt.subplots(num_plots, 1, figsize=(12, 3.5 * num_plots))
-    if num_plots == 1:
-        axs = np.array([axs])
-    axs = axs.flatten()
-    bbox_extra = []
-    if title:
-        bbox_extra.append(fig.suptitle(title, fontsize="x-large"))
-    if colors is None:
-        colors = get_comparison_color_scheme(len(data))
-
-    for i, (samplename, samples) in enumerate(data.items()):
-        for ax, metric_sample in zip(axs, samples):
-            vp = ax.violinplot(metric_sample, positions=[i], vert=False)
-            for body in vp["bodies"]:
-                body.set_color(colors[i])
-            vp["cbars"].set_color(colors[i])
-            vp["cmins"].set_color(colors[i])
-            vp["cmaxes"].set_color(colors[i])
-        # dummy plot used to create a legend
-        (line,) = plt.plot([], label=samplename, color=colors[i])
-        legend_lines.append(line)
-        legend_labels.append(samplename)
-
-    for ax, metricname in zip(axs, xnames):
-        ax.set_title(metricname)
-        ax.tick_params(axis="y", which="both", left=False, labelleft=False)
-
-    bbox_extra.append(
-        fig.legend(
-            legend_lines,
-            legend_labels,
-            loc="lower center",
-            fontsize="large",
-            ncol=2,
-        )
-    )
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=bbox_extra,
-                bbox_inches="tight",
-            )
-    plt.close()
-
-
-def draw_radar_chart(
-    outpath: Optional[Path],
-    title: str,
-    data: Dict[str, List],
-    labelnames: List[str],
-    figsize: Optional[Tuple] = (11, 12),
-    colors: Optional[List] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws radar plot.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Path where the plot will be saved. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    data : Dict[str, List]
-        Map between name of the model and list of metrics to visualize.
-    labelnames : List[str]
-        Names of the labels in order.
-    figsize : Optional[Tuple]
-        The size of the plot.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    n_categories = len(labelnames)
-
-    angles = [n / n_categories * 2 * pi for n in range(n_categories)]
-    fig, ax = plt.subplots(
-        1, 1, figsize=figsize, subplot_kw={"projection": "polar"}
-    )
-    ax.set_theta_offset(pi / 2)
-    ax.set_theta_direction(-1)
-    ax.set_xticks(angles, labelnames)
-    ax.set_rlabel_position(1 / (n_categories * 2) * 2 * pi)
-    ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
-    ax.set_ylim((0, 1.0))
-    bbox_extra = []
-    if title:
-        bbox_extra.append(fig.suptitle(title, fontsize="x-large"))
-    if colors is None:
-        colors = get_comparison_color_scheme(len(data))
-
-    angles += [0]
-    linestyles = ["-", "--", "-.", ":"]
-    for i, (color, (samplename, sample)) in enumerate(
-        zip(colors, data.items())
-    ):
-        sample += sample[:1]
-        ax.plot(
-            angles,
-            sample,
-            label=samplename,
-            color=color,
-            alpha=0.5,
-            linestyle=linestyles[i % len(linestyles)],
-        )
-        ax.fill(angles, sample, alpha=0.1, color=color)
-    bbox_extra.append(
-        plt.legend(
-            fontsize="large",
-            bbox_to_anchor=[0.50, -0.05],
-            loc="upper center",
-            ncol=2,
-        )
-    )
-
-    angles = np.array(angles)
-    angles[np.cos(angles) <= -1e-5] += pi
-    angles = np.rad2deg(angles)
-    for i in range(n_categories):
-        label = ax.get_xticklabels()[i]
-        labelname, angle = labelnames[i], angles[i]
-        x, y = label.get_position()
-        lab = ax.text(
-            x,
-            y,
-            labelname,
-            transform=label.get_transform(),
-            ha=label.get_ha(),
-            va=label.get_va(),
-        )
-        lab.set_rotation(-angle)
-        lab.set_fontsize("large")
-        bbox_extra.append(lab)
-    ax.set_xticklabels([])
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=bbox_extra,
-                bbox_inches="tight",
-            )
-    plt.close()
-
-
-def draw_bubble_plot(
-    outpath: Optional[Path],
-    title: str,
-    xdata: List[float],
-    xlabel: str,
-    ydata: List[float],
-    ylabel: str,
-    bubblesize: List[float],
-    bubblename: List[str],
-    figsize: Tuple = (11, 10),
-    colors: Optional[List] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws bubble plot.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Path where the plot will be saved. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xdata : List[float]
-        The values for X dimension.
-    xlabel : str
-        Name of the X axis.
-    ydata : List[float]
-        The values for Y dimension.
-    ylabel : str
-        Name of the Y axis.
-    bubblesize : List[float]
-        Sizes of subsequent bubbles.
-    bubblename : List[str]
-        Labels for consecutive bubbles.
-    figsize : Tuple
-        The size of the plot.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    fig, ax = plt.subplots(1, 1, figsize=figsize)
-    if colors is None:
-        colors = get_comparison_color_scheme(len(xdata))
-    markers = []
-    bbox_extra = []
-    maxsize = max(bubblesize)
-    minsize = min(bubblesize)
-    for x, y, bsize, label, c in zip(
-        xdata, ydata, bubblesize, bubblename, colors
-    ):
-        size = (bsize - minsize) / (maxsize - minsize + 1) * 100
-        marker = ax.scatter(
-            x,
-            y,
-            s=(15 + size**1.75),
-            label=label,
-            color=c,
-            alpha=0.5,
-            edgecolors="black",
-        )
-        markers.append(marker)
-    legend = ax.legend(
-        loc="upper center",
-        handles=markers,
-        bbox_to_anchor=[0.5, -0.08],
-        ncol=2,
-    )
-    for handler in legend.legendHandles:
-        handler.set_sizes([40.0])
-    ax.add_artist(legend)
-    bbox_extra.append(legend)
-
-    bubblemarkers, bubblelabels = [], []
-    for i in [0, 25, 50, 75, 100]:
-        bubblemarker = ax.scatter(
-            [],
-            [],
-            s=(15 + i**1.75),
-            color="None",
-            edgecolors=mpl.rcParams["legend.labelcolor"],
-        )
-        bubblemarkers.append(bubblemarker)
-        bubblelabels.append(
-            f"{(minsize + i / 100 * (maxsize - minsize)) / 1024 ** 2:.4f} MB"
-        )
-    bubblelegend = ax.legend(
-        bubblemarkers,
-        bubblelabels,
-        handletextpad=3,
-        labelspacing=4.5,
-        borderpad=3,
-        title="Model size",
-        frameon=False,
-        bbox_to_anchor=[1.05, 0.5],
-        loc="center left",
-    )
-    bubblelegend._legend_box.sep = 20
-    ax.add_artist(bubblelegend)
-    bbox_extra.append(bubblelegend)
-
-    box = ax.get_position()
-    ax.set_position(
-        [box.x0, box.y0 + 0.05, box.width * 0.85, box.height - 0.05]
-    )
-
-    if title:
-        bbox_extra.append(fig.suptitle(title))
-    ax.set_xlabel(xlabel)
-    ax.set_ylabel(ylabel)
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=bbox_extra,
-                bbox_inches="tight",
-            )
-    plt.close()
-
-
-def _value_to_nondiagonal_color(
-    value: Union[float, np.ndarray], cmap: Optional[Any]
-) -> np.ndarray:
-    """
-    Calculates colors of non-diagonal cells in confusion matrix.
-
-    Parameters
-    ----------
-    value : Union[float, np.ndarray]
-        Values from confusion matrix.
-    cmap : Optional[Any]
-        Color map associating values with colors.
-
-    Returns
-    -------
-    np.ndarray
-        Calculated colors.
-    """
-    color = np.asarray(cmap(1 - np.log2(99 * value + 1) / np.log2(100)))
-    color[..., 3] = np.log2(99 * value + 1) / np.log2(100)
-    return color
-
-
-def draw_confusion_matrix(
-    confusion_matrix: ArrayLike,
-    outpath: Optional[Path],
-    title: str,
-    class_names: List[str],
-    cmap: Optional[Any] = None,
-    figsize: Optional[Tuple] = None,
-    dpi: Optional[int] = None,
-    backend: str = "matplotlib",
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Creates a confusion matrix plot.
-
-    Parameters
-    ----------
-    confusion_matrix : ArrayLike
-        Square numpy matrix containing the confusion matrix.
-        0-th axis stands for ground truth, 1-st axis stands for predictions.
-    outpath : Optional[Path]
-        Path where the plot will be saved. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    class_names : List[str]
-        List of the class names.
+    color_offset : int
+        How many colors from default color list should be skipped.
     cmap : Optional[Any]
         Color map for the plot.
-    figsize : Optional[Tuple]
-        The size of the plot.
-    dpi : Optional[int]
-        The dpi of the plot.
-    backend : str
-        Which library should be used to generate plot - bokeh or matplotlib.
-    outext : Iterable[str]
-        List with files extensions, should be supported by chosen backend.
     """
-    available_backends = ("matplotlib", "bokeh")
-    assert (
-        backend in available_backends
-    ), f"Backend has to be one of: {' '.join(available_backends)}"
-    if cmap is None:
-        if len(class_names) < 50:
-            cmap = plt.get_cmap("BuPu")
-        else:
-            cmap = plt.get_cmap("nipy_spectral_r")
 
-    confusion_matrix = np.array(confusion_matrix, dtype=np.float32, copy=True)
+    width: int
+    height: int
+    title: Optional[str] = None
+    colors: Optional[List] = None
+    cmap: Optional[Any] = None
 
-    # compute sensitivity
-    correctactual = confusion_matrix.diagonal() / confusion_matrix.sum(axis=1)
-    correctactual = correctactual.reshape(1, len(class_names))
+    def plot(
+        self,
+        output_path: Optional[Path] = None,
+        output_formats: Iterable[str] = ("png",),
+        backend: str = "matplotlib",
+    ):
+        """
+        Display or export plot.
 
-    # compute precision
-    correctpredicted = confusion_matrix.diagonal() / confusion_matrix.sum(
-        axis=0
-    )
-    correctpredicted = correctpredicted.reshape(len(class_names), 1)
-    # change nan to 0
-    correctpredicted[np.isnan(correctpredicted)] = 0.0
-
-    # compute overall accuracy
-    accuracy = np.trace(confusion_matrix) / np.sum(confusion_matrix)
-
-    # normalize confusion matrix
-    confusion_matrix /= confusion_matrix.sum(axis=0)
-    confusion_matrix = confusion_matrix.transpose()
-    # change nan to 0
-    confusion_matrix[np.isnan(confusion_matrix)] = 0.0
-
-    # Calculate colors for confusion matrix
-    colors = np.zeros(confusion_matrix.shape + (4,))
-    for i in range(confusion_matrix.shape[0]):
-        for j in range(confusion_matrix.shape[1]):
-            if i == j:
-                colors[i, j] = cmap(confusion_matrix[i, j])
-            else:
-                colors[i, j] = _value_to_nondiagonal_color(
-                    confusion_matrix[i, j], cmap
+        Parameters
+        ----------
+        output_path : Optional[Path]
+            Path where the plot will be saved without extension. If None,
+            the plot will be displayed.
+        output_formats : Iterable[str]
+            Iterable with files extensions, should be supported by given
+            framework.
+        backend : str
+            Which library should be used to generate plot - bokeh or
+            matplotlib.
+        """
+        if backend == "bokeh" or "html" in output_formats:
+            try:
+                self.plot_bokeh(
+                    output_path,
+                    output_formats if backend == "bokeh" else ("html",),
                 )
+            except ImportError as e:
+                KLogger.error(f"bokeh backend is not available: {e}")
+            except NotImplementedError:
+                KLogger.error(
+                    "bokeh rendering not implemented for this plot type"
+                )
+            output_formats = set(output_formats)
+            output_formats.discard("html")
 
-    if backend == "bokeh" or "html" in outext:
-        draw_confusion_matrix_bokeh(
-            output_path=outpath,
-            class_names=class_names,
-            confusion_matrix=confusion_matrix,
-            confusion_matrix_colors=colors,
-            sensitivity=correctactual,
-            precision=correctpredicted,
-            accuracy=accuracy,
-            width=figsize[0] if figsize else None,
-            height=figsize[1] if figsize else None,
-            title=title,
-            cmap=cmap,
-            formats=outext if backend == "bokeh" else ["html"],
-        )
-        outext = set(outext)
-        outext.discard("html")
-    draw_confusion_matrix_matplotlib(
-        output_path=outpath,
-        class_names=class_names,
-        confusion_matrix=confusion_matrix,
-        confusion_matrix_colors=colors,
-        sensitivity=correctactual,
-        precision=correctpredicted,
-        accuracy=accuracy,
-        figsize=figsize,
-        dpi=dpi,
-        title=title,
-        cmap=cmap,
-        outext=outext,
-    )
+        self.plot_matplotlib(output_path, output_formats)
 
-
-def draw_confusion_matrix_matplotlib(
-    confusion_matrix: ArrayLike,
-    confusion_matrix_colors: np.ndarray,
-    sensitivity: np.ndarray,
-    precision: np.ndarray,
-    accuracy: Union[np.ndarray, float],
-    class_names: List[str],
-    figsize: Optional[Tuple[int]] = None,
-    dpi: Optional[int] = None,
-    output_path: Optional[str] = None,
-    title: Optional[str] = None,
-    cmap: Optional[Any] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Function drawing interactive confusion matrix with bokeh backend.
-
-    Parameters
-    ----------
-    confusion_matrix : ArrayLike
-        Values of confusion matrix, from 0 to 1.
-    confusion_matrix_colors : np.ndarray
-        Colors for calculated based on confusion matrix.
-    sensitivity : np.ndarray
-        Ordered values with sensitivity.
-    precision : np.ndarray
-        Ordered values with precision.
-    accuracy : Union[np.ndarray, float]
-        Overall accuracy.
-    class_names : List[str]
-        List with names of classes.
-    figsize : Optional[Tuple[int]]
-        Tuple with width and height of figure.
-    dpi : Optional[int]
-        DPI of the output plot.
-    output_path : Optional[str]
-        Path to the file, where plot will be saved to. If not specified,
-        result won't be saved.
-    title : Optional[str]
-        Title of the plot.
-    cmap : Optional[Any]
-        Color map which will be used for drawing plot. If not specified,
-        'RdYlGn' color map from matplotlib will be chosen.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    if figsize is None:
-        figsize = [15, 15]
-
-    if dpi is None:
-        dpi = 216
-
-    base_font_size = 18
-    percent_font_size = min(12, 12 * 20 / confusion_matrix.shape[0])
-
-    # create axes
-    fig = plt.figure(figsize=figsize, dpi=dpi)
-    vectors = 1
-    if len(class_names) >= 50:
-        vectors = 0
-    gs = gridspec.GridSpec(
-        len(class_names) + vectors, len(class_names) + vectors
-    )
-    axConfMatrix = fig.add_subplot(
-        gs[0 : len(class_names), 0 : len(class_names)]
-    )
-    plots = [axConfMatrix]
-    if len(class_names) < 50:
-        axPredicted = fig.add_subplot(
-            gs[len(class_names), 0 : len(class_names)], sharex=axConfMatrix
-        )
-        axActual = fig.add_subplot(
-            gs[0 : len(class_names), len(class_names)], sharey=axConfMatrix
-        )
-        axTotal = fig.add_subplot(
-            gs[len(class_names), len(class_names)],
-            sharex=axActual,
-            sharey=axPredicted,
-        )
-        plots = [axPredicted, axConfMatrix, axActual, axTotal]
-    # define ticks for classes
-    ticks = np.arange(len(class_names))
-
-    # configure and draw confusion matrix
-    if len(class_names) < 50:
-        axConfMatrix.set_xticks(ticks)
-        axConfMatrix.set_xticklabels(
-            class_names,
-            fontsize=base_font_size,
-            rotation=90,
-            fontweight="bold",
-        )
-        axConfMatrix.set_yticks(ticks)
-        axConfMatrix.set_yticklabels(
-            class_names, fontsize=base_font_size, fontweight="bold"
-        )
-        axConfMatrix.xaxis.set_ticks_position("top")
-    else:
-        # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
-        # plt.setp(axConfMatrix.get_xticklabels(), visible=False)
-        axConfMatrix.tick_params(
-            top=False,
-            bottom=False,
-            left=False,
-            right=False,
-            labelleft=False,
-            labelbottom=False,
-        )
-    axConfMatrix.xaxis.set_label_position("top")
-    axConfMatrix.set_xlabel(
-        "Actual class", fontsize=base_font_size * 1.2, fontweight="bold"
-    )
-    axConfMatrix.set_ylabel(
-        "Predicted class", fontsize=base_font_size * 1.2, fontweight="bold"
-    )
-    img = axConfMatrix.imshow(
-        confusion_matrix_colors,
-        # norm=colors.PowerNorm(0.5),
-        interpolation="nearest",
-        cmap=cmap,
-        aspect="auto",
-        vmin=0.0,
-        vmax=1.0,
-    )
-
-    if len(class_names) < 50:
-        # add percentages for confusion matrix
-        for i, j in itertools.product(
-            range(len(class_names)), range(len(class_names))
-        ):
-            txt = axConfMatrix.text(
-                j,
-                i,
-                (
-                    "100"
-                    if confusion_matrix[i, j] == 1.0
-                    else f"{100.0 * confusion_matrix[i, j]:3.1f}"
-                ),
-                ha="center",
-                va="center",
-                color="black",
-                fontsize=percent_font_size,
-            )
-            txt.set_path_effects(
-                [patheffects.withStroke(linewidth=5, foreground="w")]
-            )
-
-        # configure and draw sensitivity percentages
-        axPredicted.set_xticks(ticks)
-        axPredicted.set_yticks([0])
-        axPredicted.set_xlabel(
-            "Sensitivity", fontsize=base_font_size, fontweight="bold"
-        )
-        axPredicted.imshow(
-            sensitivity,
-            interpolation="nearest",
-            cmap="RdYlGn" if cmap is None else cmap,
-            aspect="auto",
-            vmin=0.0,
-            vmax=1.0,
-        )
-        for i in range(len(class_names)):
-            txt = axPredicted.text(
-                i,
-                0,
-                (
-                    "100"
-                    if sensitivity[0, i] == 1.0
-                    else f"{100.0 * sensitivity[0, i]:3.1f}"
-                ),
-                ha="center",
-                va="center",
-                color="black",
-                fontsize=percent_font_size,
-            )
-            txt.set_path_effects(
-                [patheffects.withStroke(linewidth=5, foreground="w")]
-            )
-
-        # configure and draw precision percentages
-        axActual.set_xticks([0])
-        axActual.set_yticks(ticks)
-        axActual.set_ylabel(
-            "Precision", fontsize=base_font_size, fontweight="bold"
-        )
-        axActual.yaxis.set_label_position("right")
-        axActual.imshow(
-            precision,
-            interpolation="nearest",
-            cmap="RdYlGn" if cmap is None else cmap,
-            aspect="auto",
-            vmin=0.0,
-            vmax=1.0,
-        )
-        for i in range(len(class_names)):
-            txt = axActual.text(
-                0,
-                i,
-                (
-                    "100"
-                    if precision[i, 0] == 1.0
-                    else f"{100.0 * precision[i, 0]:3.1f}"
-                ),
-                ha="center",
-                va="center",
-                color="black",
-                fontsize=percent_font_size,
-            )
-            txt.set_path_effects(
-                [patheffects.withStroke(linewidth=5, foreground="w")]
-            )
-
-        # configure and draw total accuracy
-        axTotal.set_xticks([0])
-        axTotal.set_yticks([0])
-        axTotal.set_xlabel(
-            "Accuracy", fontsize=base_font_size, fontweight="bold"
-        )
-        axTotal.imshow(
-            np.array([[accuracy]]),
-            interpolation="nearest",
-            cmap="RdYlGn" if cmap is None else cmap,
-            aspect="auto",
-            vmin=0.0,
-            vmax=1.0,
-        )
-        txt = axTotal.text(
-            0,
-            0,
-            f"{100 * accuracy:3.1f}",
-            ha="center",
-            va="center",
-            color="black",
-            fontsize=percent_font_size,
-        )
-        txt.set_path_effects(
-            [patheffects.withStroke(linewidth=5, foreground="w")]
+    def _plt_figsize(
+        self, ratio: Tuple[float, float] = (1, 1)
+    ) -> Tuple[float, float]:
+        return (
+            ratio[0] * self.width / MATPLOTLIB_DPI,
+            ratio[1] * self.height / MATPLOTLIB_DPI,
         )
 
-        # disable axes for other matrices than confusion matrix
-        for a in (axPredicted, axActual, axTotal):
-            plt.setp(a.get_yticklabels(), visible=False)
-            plt.setp(a.get_xticklabels(), visible=False)
-
-    # draw colorbar for confusion matrix
-    cbar = fig.colorbar(
-        img, ax=plots, shrink=0.5, ticks=np.linspace(0.0, 1.0, 11), pad=0.1
-    )
-    cbar.ax.set_yticks(
-        np.linspace(0.0, 1.0, 11), labels=list(range(0, 101, 10))
-    )
-    for t in cbar.ax.get_yticklabels():
-        t.set_fontsize("medium")
-    suptitlehandle = None
-    if title:
-        suptitlehandle = fig.suptitle(
-            f"{title} (ACC={accuracy:.5f})", fontsize=base_font_size * 1.4
-        )
-    if output_path is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{output_path}.{ext}",
-                dpi=dpi,
-                bbox_inches="tight",
-                bbox_extra_artists=[suptitlehandle]
-                if suptitlehandle
-                else None,
-                pad_inches=0.1,
-            )
-    plt.close()
-
-
-def _create_custom_hover_template(
-    names: List[str], values: List[str] = None, units: List[str] = None
-) -> str:
-    """
-    Function creating custom template for tooltip displaying when hover
-    event occurs. This tooltip is part of bokeh features.
-
-    Parameters
-    ----------
-    names : List[str]
-        List with names, displayed before values.
-    values : List[str]
-        List with names of fields (in source object) containing values.
-    units : List[str]
-        List with units, displayed after values.
-
-    Returns
-    -------
-    str
-        HTML template for tooltip.
-    """
-    if values is None:
-        values = names
-    if units is None:
-        units = ["" for _ in names]
-    else:
-        units = ["" if unit is None else unit for unit in units]
-    template = """
-    <tr class="bk-tooltip-entry">
-        <td class="bk-tt-entry-name">%s</td>
-        <td class="bk-tt-entry-value">@{%s}%s</td>
-    </tr>
-    """
-    result = "<table>"
-    for name, value, unit in zip(names, values, units):
-        result += template % (name, value, unit)
-    result += "</table>"
-    return result
-
-
-def draw_confusion_matrix_bokeh(
-    confusion_matrix: np.ndarray,
-    confusion_matrix_colors: np.ndarray,
-    sensitivity: np.ndarray,
-    precision: np.ndarray,
-    accuracy: Union[np.ndarray, float],
-    class_names: List[str],
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    output_path: Optional[str] = None,
-    title: Optional[str] = None,
-    cmap: Optional[Any] = None,
-    formats: Tuple[str] = ("html",),
-) -> None:
-    """
-    Function drawing interactive confusion matrix with bokeh backend.
-
-    Parameters
-    ----------
-    confusion_matrix : np.ndarray
-        Values of confusion matrix, from 0 to 1.
-    confusion_matrix_colors : np.ndarray
-        Colors for calculated based on confusion matrix.
-    sensitivity : np.ndarray
-        Ordered values with sensitivity.
-    precision : np.ndarray
-        Ordered values with precision.
-    accuracy : Union[np.ndarray, float]
-        Overall accuracy.
-    class_names : List[str]
-        List with names of classes.
-    width : Optional[int]
-        Width of the generated plot.
-    height : Optional[int]
-        Height of the generated plot.
-    output_path : Optional[str]
-        Path to the file, where plot will be saved to. If not specified,
-        result won't be saved.
-    title : Optional[str]
-        Title of the plot.
-    cmap : Optional[Any]
-        Color map which will be used for drawing plot. If not specified,
-        'RdYlGn' color map from matplotlib will be chosen.
-    formats : Tuple[str]
-        Tuple with formats names.
-    """
-    from bokeh.io import export_png, export_svg
-    from bokeh.layouts import Spacer, gridplot
-    from bokeh.models import ColumnDataSource, FactorRange, HoverTool, Range1d
-    from bokeh.plotting import figure, output_file, row, save, show
-
-    if cmap is None:
-        cmap = plt.get_cmap("RdYlGn")
-
-    if width is None:
-        width = 900
-    if height is None:
-        height = 778
-
-    # === Confusion Matrix ===
-
-    # Calculate confusion matrix sizes
-    cm_width = int(width / (1 + 1 / 15 + 1 / 13 + 1 / 11))
-    cm_height = int(height / (1 + 1 / 15))
-
-    # Prepare figure
-    confusion_matrix_fig = figure(
-        title=None,
-        x_range=FactorRange(factors=class_names, bounds=(0, len(class_names))),
-        y_range=FactorRange(
-            factors=class_names[::-1], bounds=(0, len(class_names))
-        ),
-        tools="pan,box_zoom,wheel_zoom,reset,save",
-        toolbar_location=None,
-        x_axis_location="above",
-        width=cm_width,
-        height=cm_height,
-        output_backend="webgl",
-    )
-
-    # Preprocess data
-    confusion_matrix_colors = np.rot90(confusion_matrix_colors, k=-1).reshape(
-        (-1, 4)
-    )
-    coords = np.array(
-        list(itertools.product(class_names, class_names)), dtype=str
-    )
-    coords[:, 1] = coords[::-1, 1]
-    percentage = np.rot90(confusion_matrix, k=-1).flatten() * 100
-    source = ColumnDataSource(
-        data={
-            "Actual class": coords[:, 0],
-            "Predicted class": coords[:, 1],
-            "color": confusion_matrix_colors,
-            "Percentage": percentage,
-        }
-    )
-
-    # Draw confusion matrix
-    confusion_matrix_fig.rect(
-        x="Actual class",
-        y="Predicted class",
-        color="color",
-        line_color=None,
-        width=1,
-        height=1,
-        source=source,
-    )
-
-    # Set labels and styles
-    confusion_matrix_fig.xaxis.axis_label = "Actual class"
-    confusion_matrix_fig.yaxis.axis_label = "Predicted class"
-    if len(class_names) < 50:
-        confusion_matrix_fig.xaxis.major_label_orientation = "vertical"
-    else:
-        confusion_matrix_fig.xaxis.major_label_text_alpha = 0.0
-        confusion_matrix_fig.yaxis.major_label_text_alpha = 0.0
-        confusion_matrix_fig.xaxis.major_tick_line_alpha = 0.0
-        confusion_matrix_fig.yaxis.major_tick_line_alpha = 0.0
-    confusion_matrix_fig.xaxis.axis_line_alpha = 0.0
-    confusion_matrix_fig.yaxis.axis_line_alpha = 0.0
-    confusion_matrix_fig.grid.visible = False
-
-    # Set custom tooltips
-    confusion_matrix_fig.add_tools(
-        HoverTool(
-            tooltips=_create_custom_hover_template(
-                ["Actual class", "Predicted class", "Percentage"],
-                units=[None, None, "%"],
-            )
-        )
-    )
-
-    # === Sensitivity ===
-
-    # Prepare figure
-    sensitivity_fig = figure(
-        title=None,
-        x_range=confusion_matrix_fig.x_range,
-        y_range=FactorRange(factors=["Sensitivity"], bounds=(0, 1)),
-        width=confusion_matrix_fig.width,
-        height=confusion_matrix_fig.height // 15,
-        toolbar_location=None,
-        output_backend="webgl",
-    )
-
-    # Preprocess data
-    cc = cmap(sensitivity).reshape((-1, 4))
-    sensitivity_source = ColumnDataSource(
-        data={
-            "y": ["Sensitivity" for _ in class_names],
-            "Class": class_names,
-            "color": cc,
-            "Sensitivity": sensitivity.flatten() * 100,
-        }
-    )
-
-    # Draw sensitivity
-    sensitivity_fig.rect(
-        x="Class",
-        y="y",
-        color="color",
-        source=sensitivity_source,
-        line_color="black",
-        line_width=0.1,
-        width=1,
-        height=1,
-    )
-
-    # Add label and custom tooltip
-    sensitivity_fig.xaxis.axis_label = "Sensitivity"
-    sensitivity_fig.add_tools(
-        HoverTool(
-            tooltips=_create_custom_hover_template(
-                ["Class", "Sensitivity"], units=[None, "%"]
-            ),
-            attachment="above",
-        )
-    )
-
-    # === Precision ===
-
-    # Prepare figure
-    precision_fig = figure(
-        title=None,
-        x_range=FactorRange(factors=["Precision"], bounds=(0, 1)),
-        y_range=confusion_matrix_fig.y_range,
-        width=confusion_matrix_fig.width // 15,
-        height=confusion_matrix_fig.height,
-        toolbar_location=None,
-        y_axis_location="right",
-        output_backend="webgl",
-    )
-
-    # Preprocess data
-    cc2 = cmap(precision).reshape((-1, 4))
-    precision_source = ColumnDataSource(
-        data={
-            "x": ["Precision" for _ in class_names],
-            "Class": class_names,
-            "color": cc2,
-            "Precision": precision.flatten() * 100,
-        }
-    )
-
-    # Draw sensitivity
-    precision_fig.rect(
-        x="x",
-        y="Class",
-        color="color",
-        source=precision_source,
-        height=1,
-        width=1,
-        line_color="black",
-        line_width=0.1,
-    )
-
-    # Add label and custom tooltip
-    precision_fig.yaxis.axis_label = "Precision"
-    precision_fig.add_tools(
-        HoverTool(
-            tooltips=_create_custom_hover_template(
-                ["Class", "Precision"], units=[None, "%"]
-            ),
-            attachment="left",
-        )
-    )
-
-    # === Accuracy ===
-
-    # Prepare figure
-    accuracy_fig = figure(
-        title=None,
-        x_range=FactorRange(factors=["x"], bounds=(0, 1)),
-        y_range=FactorRange(factors=["y"], bounds=(0, 1)),
-        width=precision_fig.width,
-        height=sensitivity_fig.height,
-        toolbar_location=None,
-        output_backend="webgl",
-    )
-
-    # Preprocess data
-    c = cmap(accuracy)
-    color_str = (
-        f"#{int(255 * c[0]):02X}{int(255 * c[1]):02X}" f"{int(255 * c[2]):02X}"
-    )
-    accuracy_source = ColumnDataSource(
-        data={
-            "x": ["x"],
-            "y": ["y"],
-            "Accuracy": [float(accuracy) * 100],
-        }
-    )
-
-    # Draw sensitivity
-    accuracy_fig.rect(
-        x="x",
-        y="y",
-        color=color_str,
-        source=accuracy_source,
-        width=1,
-        height=1,
-        line_color="black",
-        line_width=0.1,
-    )
-
-    # Add label and custom tooltip
-    accuracy_fig.xaxis.axis_label = "ACC"
-    accuracy_fig.add_tools(
-        HoverTool(
-            tooltips=_create_custom_hover_template(["Accuracy"], units=["%"]),
-            attachment="above",
-        )
-    )
-
-    # Set style for Sensitivity, Precision and Accuracy
-    for fig in (sensitivity_fig, precision_fig, accuracy_fig):
-        fig.yaxis.major_label_text_alpha = 0.0
-        fig.xaxis.major_label_text_alpha = 0.0
-        fig.yaxis.major_tick_line_alpha = 0.0
-        fig.xaxis.major_tick_line_alpha = 0.0
-        fig.xaxis.axis_line_alpha = 0.0
-        fig.yaxis.axis_line_alpha = 0.0
-        fig.grid.visible = False
-
-    # === Scale ===
-
-    # Prepare figure
-    scale_fig = figure(
-        title=None,
-        x_range=["color"],
-        y_range=Range1d(0.0, 100.0),
-        width=confusion_matrix_fig.width // 11,
-        height=height // 2,
-        tools="",
-        toolbar_location=None,
-        x_axis_location="above",
-        y_axis_location="right",
-        margin=(height // 4, 0, height // 4, 0),
-        output_backend="webgl",
-    )
-    # Draw scale
-    scale_fig.hbar(
-        y=np.linspace(0.0, 100.0, 256),
-        left=[0.0] * 256,
-        right=[1.0] * 256,
-        color=cmap(np.linspace(0.0, 1.0, 256)),
-    )
-
-    # Set styles for scale
-    scale_fig.xaxis.major_tick_line_alpha = 0.0
-    scale_fig.yaxis.major_tick_line_alpha = 0.0
-    scale_fig.yaxis.minor_tick_line_alpha = 0.0
-    scale_fig.xaxis.axis_line_alpha = 0.0
-    scale_fig.yaxis.axis_line_alpha = 0.0
-    scale_fig.xaxis.major_label_text_alpha = 0.0
-
-    # === Saving to file ===
-
-    grid_fig = gridplot(
-        [
-            [
-                confusion_matrix_fig,
-                precision_fig,
-            ],
-            [
-                sensitivity_fig,
-                accuracy_fig,
-            ],
-        ],
-        merge_tools=True,
-        toolbar_location="above",
-        toolbar_options={"logo": None},
-    )
-    plot_with_scale = row(
-        grid_fig,
-        Spacer(width=confusion_matrix_fig.width // 13),
-        scale_fig,
-    )
-    if output_path is None:
-        show(plot_with_scale)
-        return
-
-    if "html" in formats:
-        output_file(f"{output_path}.html", mode="inline")
-        save(plot_with_scale)
-
-    grid_fig = gridplot(
-        [
-            [
-                confusion_matrix_fig,
-                precision_fig,
-            ],
-            [
-                sensitivity_fig,
-                accuracy_fig,
-            ],
-        ]
-    )
-    plot_with_scale = row(
-        grid_fig,
-        Spacer(width=confusion_matrix_fig.width // 13),
-        scale_fig,
-    )
-    if "png" in formats:
-        export_png(plot_with_scale, f"{output_path}.png")
-    if "svg" in formats:
-        export_svg(plot_with_scale, f"{output_path}.svg")
-
-
-def recall_precision_curves(
-    outpath: Optional[Path],
-    title: str,
-    lines: List[Tuple[List, List]],
-    class_names: List[str],
-    figsize: Tuple = (15, 15),
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws Recall-Precision curves for AP measurements.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    lines : List[Tuple[List, List]]
-        Per-class list of tuples with list of recall values and precision
-        values.
-    class_names : List[str]
-        List of the class names.
-    figsize : Tuple
-        The size of the figure.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(111)
-    colormap = plt.cm.nipy_spectral
-    colors = [colormap(i) for i in np.linspace(0, 1, len(class_names))]
-    linestyles = ["-", "--", "-.", ":"]
-    for i, (cls, line) in enumerate(zip(class_names, lines)):
-        ax.plot(
-            line[0],
-            line[1],
-            label=cls,
-            c=colors[i],
-            linewidth=3,
-            linestyle=linestyles[i % len(linestyles)],
-            alpha=0.8,
-        )
-    legendhandle = ax.legend(
-        bbox_to_anchor=(0.5, -0.3), loc="lower center", ncol=10
-    )
-    ax.set_xlabel("recall")
-    ax.set_ylabel("precision")
-    ax.set_xlim((0.0, 1.01))
-    ax.set_ylim((0.0, 1.01))
-    ax.grid("on")
-    ax.set_xticks(np.arange(0, 1.1, 0.1))
-    ax.set_yticks(np.arange(0, 1.1, 0.1))
-    ax.set_title(title)
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            fig.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=[legendhandle],
-                bbox_inches="tight",
-            )
-    plt.close()
-
-
-def true_positive_iou_histogram(
-    outpath: Optional[Path],
-    title: str,
-    lines: List[float],
-    class_names: List[str],
-    figsize: Tuple = (10, 25),
-    colors: Optional[List] = None,
-    color_offset: int = 0,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws per-class True Positive IoU precision plot.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    lines : List[float]
-        Per-class list of floats with IoU values.
-    class_names : List[str]
-        List of the class names.
-    figsize : Tuple
-        The size of the figure.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    color_offset : int
-        How many colors from default color list should be skipped.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    if colors is None:
-        color = "purple"
-    else:
-        color = colors[color_offset]
-    plt.figure(figsize=figsize)
-    plt.barh(
-        class_names, np.array(lines), orientation="horizontal", color=color
-    )
-    plt.ylim((-1, len(class_names)))
-    plt.yticks(np.arange(0, len(class_names)))
-    plt.xticks(np.arange(0, 1.1, 0.1))
-    plt.xlabel("IoU precision")
-    plt.ylabel("classes")
-    if title:
-        plt.title(f"{title}")
-    plt.tight_layout()
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(f"{outpath}.{ext}")
-    plt.close()
-
-
-def true_positives_per_iou_range_histogram(
-    outpath: Optional[Path],
-    title: str,
-    lines: List[float],
-    range_fraction: float = 0.05,
-    figsize: Tuple = (10, 10),
-    colors: Optional[List] = None,
-    color_offset: int = 0,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws histogram of True Positive IoU values.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    lines : List[float]
-        All True Positive IoU values.
-    range_fraction : float
-        Fraction by which the range should be divided (1/number_of_segments).
-    figsize : Tuple
-        The size of the figure.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    color_offset : int
-        How many colors from default color list should be skipped.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    if colors is None:
-        color = "purple"
-    else:
-        color = colors[color_offset]
-    lower_bound = floor(10 * min(lines)) / 10
-    x_range = np.arange(lower_bound, 1.01, (1 - lower_bound) * range_fraction)
-    plt.figure(figsize=figsize)
-    plt.hist(lines, x_range, color=color)
-    plt.xlabel("IoU ranges")
-    plt.xticks(x_range, rotation=45)
-    plt.ylabel("Number of masks in IoU range")
-    if title:
-        plt.title(f"{title}")
-    plt.tight_layout()
-
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(f"{outpath}.{ext}")
-    plt.close()
-
-
-def recall_precision_gradients(
-    outpath: Optional[Path],
-    title: str,
-    lines: List[Tuple[List, List]],
-    class_names: List[str],
-    aps: List[float],
-    map: float,
-    figsize: Tuple = (10, 25),
-    cmap: Optional[Any] = None,
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws per-class gradients of precision dependent to recall.
-
-    Provides per-class AP and mAP values.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    lines : List[Tuple[List, List]]
-        Per-class list of tuples with list of recall values and precision
-        values.
-    class_names : List[str]
-        List of the class names.
-    aps : List[float]
-        Per-class AP values.
-    map : float
-        The mAP value.
-    figsize : Tuple
-        The size of the figure.
-    cmap : Optional[Any]
-        Color map for the plot.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    """
-    if cmap is None:
-        cmap = plt.get_cmap("RdYlGn")
-    plt.figure(figsize=figsize)
-    clsticks = []
-    for i, (cls, line, averageprecision) in enumerate(
-        zip(class_names, lines, aps)
+    @abstractmethod
+    def plot_bokeh(
+        self,
+        output_path: Optional[Path],
+        output_formats: Iterable[str],
     ):
-        clscoords = np.ones(len(line[0])) * i
-        points = np.array([line[0], clscoords]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap=cmap, norm=plt.Normalize(0, 1.0))
-        lc.set_array(line[1])
-        lc.set_linewidth(10)
-        plt.gca().add_collection(lc)
-        clsticks.append(f"{cls} (AP={averageprecision:.4f})")
-    plt.ylim((-1, len(class_names)))
-    plt.yticks(np.arange(0, len(clsticks)), labels=clsticks)
-    plt.xticks(np.arange(0, 1.1, 0.1))
-    plt.xlabel("recall")
-    plt.ylabel("classes")
-    plt.colorbar(
-        plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap=cmap),
-        orientation="horizontal",
-        label="precision",
-        fraction=0.1,
-        pad=0.05,
-    )
-    if title:
-        plt.title(f"{title} (mAP={map})")
-    plt.tight_layout()
+        """
+        Create plot using bokeh backend.
 
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(f"{outpath}.{ext}")
-    plt.close()
+        Parameters
+        ----------
+        output_path : Optional[Path]
+            Path where the plot will be saved without extension. If None,
+            the plot will be displayed.
+        output_formats : Iterable[str]
+            Iterable with files extensions, should be supported by bokeh.
+        """
+        ...
+
+    @abstractmethod
+    def plot_matplotlib(
+        self,
+        output_path: Optional[Path],
+        output_formats: Iterable[str],
+    ):
+        """
+        Create plot using matplotlib backend.
+
+        Parameters
+        ----------
+        output_path : Optional[Path]
+            Path where the plot will be saved without extension. If None,
+            the plot will be displayed.
+        output_formats : Iterable[str]
+            List Iterable files extensions, should be supported by matplotlib.
+        """
+        ...
+
+    @staticmethod
+    def _output_bokeh_figure(
+        bokeh_figure: Any,
+        output_path: Optional[Path] = None,
+        formats: Iterable[str] = ("html",),
+    ) -> None:
+        """
+        Shows or exports bokeh figure.
+
+        Parameters
+        ----------
+        bokeh_figure : Any
+            Bokeh figure.
+        output_path : Optional[Path]
+            Path where figure should be saved.
+        formats : Iterable[str]
+            Iterable with formats names.
+        """
+        from bokeh.io import export_png, export_svg
+        from bokeh.plotting import output_file, save, show
+
+        if output_path is None:
+            show(bokeh_figure)
+            return
+
+        if "html" in formats:
+            output_file(f"{output_path}.html", mode="inline")
+            save(bokeh_figure)
+        if "png" in formats:
+            export_png(bokeh_figure, filename=f"{output_path}.png")
+        if "svg" in formats:
+            export_svg(bokeh_figure, filename=f"{output_path}.svg")
+
+    @staticmethod
+    def _output_matplotlib_figure(
+        bbox_extra: List[Any],
+        output_path: Optional[Path] = None,
+        formats: Iterable[str] = ("html",),
+    ) -> None:
+        """
+        Shows or exports matplotlib figure.
+
+        Parameters
+        ----------
+        bbox_extra : List[Any]
+            Extra artist to be included.
+        output_path : Optional[Path]
+            Path where figure should be saved.
+        formats : Iterable[str]
+            Iterable with formats names.
+        """
+        if output_path is None:
+            plt.show()
+        else:
+            for ext in formats:
+                plt.savefig(
+                    f"{output_path}.{ext}",
+                    dpi=MATPLOTLIB_DPI,
+                    bbox_extra_artists=bbox_extra,
+                    bbox_inches="tight",
+                )
+        plt.close()
+
+    @staticmethod
+    def _get_comparison_color_scheme(n_colors: int) -> List[Tuple]:
+        """
+        Creates default color schema to use for comparison plots (such as
+        violin plot, bubble chart etc.).
+
+        Parameters
+        ----------
+        n_colors : int
+            Number of colors to return.
+
+        Returns
+        -------
+        List[Tuple]
+            List of colors to use for plotting.
+        """
+        cmap = plt.get_cmap("nipy_spectral")
+        return [cmap(i) for i in np.linspace(0.0, 1.0, n_colors)]
+
+    @staticmethod
+    def _create_custom_hover_template(
+        names: List[str],
+        values: Optional[List[str]] = None,
+        units: Optional[List[Optional[str]]] = None,
+    ) -> str:
+        """
+        Function creating custom template for tooltip displaying when hover
+        event occurs. This tooltip is part of bokeh features.
+
+        Parameters
+        ----------
+        names : List[str]
+            List with names, displayed before values.
+        values : Optional[List[str]]
+            List with names of fields (in source object) containing values.
+        units : Optional[List[Optional[str]]]
+            List with units, displayed after values.
+
+        Returns
+        -------
+        str
+            HTML template for tooltip.
+        """
+        if values is None:
+            values = [f"{name}" for name in names]
+        if units is None:
+            units = ["" for _ in names]
+        else:
+            units = ["" if unit is None else unit for unit in units]
+        template = """
+        <tr class="bk-tooltip-entry">
+            <td class="bk-tt-entry-name">%s</td>
+            <td class="bk-tt-entry-value">@{%s}%s</td>
+        </tr>
+        """
+        result = "<table>"
+        for name, value, unit in zip(names, values, units):
+            result += template % (name, value, unit)
+        result += "</table>"
+        return result
+
+    @staticmethod
+    def _matplotlib_color_to_bokeh(
+        color: Tuple[float, float, float, float]
+    ) -> Tuple[int, int, int, float]:
+        """
+        Converts color from matplotlib format to bokeh format.
+
+        Parameters
+        ----------
+        color : Tuple[float, float, float, float]
+            Color in matplotlib format.
+
+        Returns
+        -------
+        Tuple[int, int, int, float]
+            Color in bokeh format.
+        """
+        return (
+            int(color[0] * 255),
+            int(color[1] * 255),
+            int(color[2] * 255),
+            color[3],
+        )
 
 
-def draw_plot(
-    outpath: Optional[Path],
-    title: str,
-    xtitle: str,
-    xunit: str,
-    ytitle: str,
-    yunit: str,
-    lines: List[Tuple[List, List]],
-    linelabels: Optional[List[str]] = None,
-    figsize: Tuple = (15, 15),
-    colors: Optional[List] = None,
-    color_offset: int = 0,
-    outext: Iterable[str] = ["png"],
-):
+class ViolinComparisonPlot(Plot):
     """
-    Draws plot.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xtitle : str
-        Name of the X axis.
-    xunit : str
-        Unit for the X axis.
-    ytitle : str
-        Name of the Y axis.
-    yunit : str
-        Unit for the Y axis.
-    lines : List[Tuple[List, List]]
-        Per-class list of tuples with list of recall values and precision
-        values.
-    linelabels : Optional[List[str]]
-        Optional list of labels naming each line.
-    figsize : Tuple
-        The size of the figure.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    color_offset : int
-        How many colors from default color list should be skipped.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
+    Violin plots comparing different metrics.
     """
-    plt.figure(figsize=figsize)
 
-    bbox_extra = []
-    if colors is None:
-        color = "purple"
-    else:
-        color = colors[color_offset]
-    for color, line in zip(colors, lines):
-        plt.plot(line[0], line[1], c=color, linewidth=3)
-    xlabel = xtitle
-    if xunit is not None:
-        xlabel += f" [{xunit}]"
-    ylabel = ytitle
-    if yunit is not None:
-        ylabel += f" [{yunit}]"
-    plt.xlabel(xlabel, fontsize="large")
-    plt.ylabel(ylabel, fontsize="large")
-    plt.grid()
-    if title:
-        bbox_extra.append(plt.title(title))
-    if linelabels is not None:
+    def __init__(
+        self,
+        metric_data: Dict[str, List],
+        metric_labels: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE // 3,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Violin plots comparing different metrics.
+
+        Parameters
+        ----------
+        metric_data : Dict[str, List]
+            Map between name of the model and list of metrics to visualize.
+        metric_labels : List[str]
+            Names of the metrics in order.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(
+                len(metric_data) + color_offset
+            )
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.metric_data = metric_data
+        self.metric_labels = metric_labels
+
+    def plot_matplotlib(
+        self, output_path: Path, output_formats: Iterable[str]
+    ):
+        num_plots = len(self.metric_labels)
+        legend_lines, legend_labels = [], []
+        fig, axs = plt.subplots(
+            num_plots,
+            1,
+            figsize=self._plt_figsize((1, num_plots)),
+            dpi=MATPLOTLIB_DPI,
+        )
+        if num_plots == 1:
+            axs = np.array([axs])
+        axs = axs.flatten()
+
+        bbox_extra = []
+        if self.title:
+            bbox_extra.append(fig.suptitle(self.title))
+
+        for i, (color, (sample_name, samples)) in enumerate(
+            zip(self.colors, self.metric_data.items())
+        ):
+            for ax, metric_sample in zip(axs, samples):
+                vp = ax.violinplot(metric_sample, positions=[i], vert=False)
+                for body in vp["bodies"]:
+                    body.set_color(color)
+                vp["cbars"].set_color(color)
+                vp["cmins"].set_color(color)
+                vp["cmaxes"].set_color(color)
+            # dummy plot used to create a legend
+            (line,) = plt.plot([], label=sample_name, color=color)
+            legend_lines.append(line)
+            legend_labels.append(sample_name)
+
+        for ax, metric_name in zip(axs, self.metric_labels):
+            ax.set_title(metric_name)
+            ax.tick_params(axis="y", which="both", left=False, labelleft=False)
+
+        bbox_extra.append(
+            fig.legend(
+                legend_lines,
+                legend_labels,
+                loc="upper center",
+                bbox_to_anchor=[0.5, 0],
+                ncol=2,
+            )
+        )
+        plt.tight_layout()
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
+        raise NotImplementedError
+
+
+class RadarChart(Plot):
+    """
+    Radar chart comparing different metrics.
+    """
+
+    def __init__(
+        self,
+        metric_data: Dict[str, List],
+        metric_labels: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Radar chart comparing different metrics.
+
+        Parameters
+        ----------
+        metric_data : Dict[str, List]
+            Map between name of the model and list of metrics to visualize.
+        metric_labels : List[str]
+            Names of the metrics in order.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(
+                len(metric_data) + color_offset
+            )
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.metric_data = metric_data
+        self.metric_labels = metric_labels
+
+    def plot_matplotlib(
+        self, output_path: Path, output_formats: Iterable[str]
+    ):
+        n_metrics = len(self.metric_labels)
+
+        angles = [n / n_metrics * 2 * pi for n in range(n_metrics)]
+        fig, ax = plt.subplots(
+            1,
+            1,
+            figsize=self._plt_figsize(),
+            dpi=MATPLOTLIB_DPI,
+            subplot_kw={"projection": "polar"},
+        )
+        ax.set_theta_offset(pi / 2)
+        ax.set_theta_direction(-1)
+        ax.set_xticks(angles, self.metric_labels)
+        ax.set_rlabel_position(1 / (n_metrics * 2) * 2 * pi)
+        ax.set_yticks([0.25, 0.5, 0.75], ["25%", "50%", "75%"])
+        ax.set_ylim((0, 1.0))
+        bbox_extra = []
+        if self.title:
+            bbox_extra.append(fig.suptitle(self.title))
+
+        angles += [0]
+        linestyles = ["-", "--", "-.", ":"]
+        for i, (color, (sample_name, sample)) in enumerate(
+            zip(self.colors, self.metric_data.items())
+        ):
+            sample += sample[:1]
+            ax.plot(
+                angles,
+                sample,
+                label=sample_name,
+                color=color,
+                linestyle=linestyles[i % len(linestyles)],
+            )
+            ax.fill(
+                angles,
+                sample,
+                color=color,
+                alpha=0.25,
+            )
         bbox_extra.append(
             plt.legend(
-                linelabels,
+                bbox_to_anchor=[0.50, -0.05],
                 loc="upper center",
-                bbox_to_anchor=[0.5, -0.06],
-                ncols=2,
+                ncol=2,
             )
         )
 
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=bbox_extra,
-                bbox_inches="tight",
+        angles = np.array(angles)
+        angles[np.cos(angles) <= -1e-5] += pi
+        angles = np.rad2deg(angles)
+        for i in range(n_metrics):
+            label = ax.get_xticklabels()[i]
+            labelname, angle = self.metric_labels[i], angles[i]
+            x, y = label.get_position()
+            lab = ax.text(
+                x,
+                y,
+                labelname,
+                transform=label.get_transform(),
+                ha=label.get_ha(),
+                va=label.get_va(),
             )
-    plt.close()
+            lab.set_rotation(-angle)
+            lab.set_fontsize("large")
+            bbox_extra.append(lab)
+        ax.set_xticklabels([])
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
+        raise NotImplementedError
 
 
-def draw_barplot(
-    outpath: Optional[Path],
-    title: str,
-    xtitle: str,
-    xunit: str,
-    ytitle: str,
-    yunit: str,
-    xdata: List[Any],
-    ydata: Dict[str, List[Union[int, float]]],
-    figsize: Optional[Tuple] = None,
-    colors: Optional[List] = None,
-    backend: str = "matplotlib",
-    outext: Iterable[str] = ["png"],
-    max_bars_matplotlib: Optional[int] = None,
-):
+class BubblePlot(Plot):
     """
-    Draws barplot.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xtitle : str
-        Name of the X axis.
-    xunit : str
-        Unit for the X axis.
-    ytitle : str
-        Name of the Y axis.
-    yunit : str
-        Unit for the Y axis.
-    xdata : List[Any]
-        List of x labels for bars.
-    ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values.
-    figsize : Optional[Tuple]
-        The size of the figure.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    backend : str
-        Which library should be used to generate plot - bokeh or matplotlib.
-    outext : Iterable[str]
-        List with files extensions, should be supported by matplotlib.
-    max_bars_matplotlib : Optional[int]
-        Max number of bars for matplotlib backend.
+    Bubble plot comparing three metrics.
     """
-    xlabel = xtitle
-    if xunit is not None:
-        xlabel += f" [{xunit}]"
-    ylabel = ytitle
-    if yunit is not None:
-        ylabel += f" [{yunit}]"
 
-    bar_width = 0.8 / len(ydata)
-    if len(ydata) == 1:
-        bar_offset = [0.0]
-    else:
-        bar_offset = np.linspace(
-            -0.4 + bar_width / 2, 0.4 - bar_width / 2, len(ydata)
+    def __init__(
+        self,
+        x_data: List[float],
+        x_label: str,
+        y_data: List[float],
+        y_label: str,
+        size_data: List[float],
+        size_label: str,
+        bubble_labels: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Create bubble plot.
+
+        Parameters
+        ----------
+        x_data : List[float]
+            The values for X dimension.
+        x_label : str
+            Name of the X axis.
+        y_data : List[float]
+            The values for Y dimension.
+        y_label : str
+            Name of the Y axis.
+        size_data : List[float]
+            Sizes of subsequent bubbles.
+        size_label : str
+            Name of the size values.
+        bubble_labels : List[str]
+            Labels for consecutive bubbles.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(
+                len(x_data) + color_offset
+            )
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.x_data = x_data
+        self.x_label = x_label
+        self.y_data = y_data
+        self.y_label = y_label
+        self.size_data = size_data
+        self.size_label = size_label
+        self.bubble_labels = bubble_labels
+
+        x_range = max(x_data) - min(x_data) + 1e-9
+        y_range = max(y_data) - min(y_data) + 1e-9
+
+        self.x_lim = (
+            min(x_data) - 0.15 * x_range,
+            max(x_data) + 0.15 * x_range,
+        )
+        self.y_lim = (
+            min(y_data) - 0.15 * y_range,
+            max(y_data) + 0.15 * y_range,
+        )
+
+        max_size = max(size_data)
+        min_size = min(size_data)
+
+        self.bubble_size = (
+            (np.array(size_data) - min_size) / (max_size - min_size + 1) * 100
         ).tolist()
 
-    if colors is None:
-        colors = get_comparison_color_scheme(len(ydata))
-
-    if backend == "bokeh" or "html" in outext:
-        draw_barplot_bokeh(
-            outpath=outpath,
-            title=title,
-            xlabel=xlabel,
-            ylabel=ylabel,
-            xdata=xdata,
-            ydata=ydata,
-            width=figsize[0] if figsize else None,
-            height=figsize[1] if figsize else None,
-            colors=colors,
-            bar_width=bar_width,
-            bar_offset=bar_offset,
-            formats=outext if backend == "bokeh" else ["html"],
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        fig, ax = plt.subplots(
+            1,
+            1,
+            figsize=self._plt_figsize(),
+            dpi=MATPLOTLIB_DPI,
         )
-        outext = set(outext)
-        outext.discard("html")
 
-    if max_bars_matplotlib is not None:
-        xdata = xdata[:max_bars_matplotlib]
-        ydata = {
-            name: values[:max_bars_matplotlib]
-            for name, values in ydata.items()
-        }
+        markers = []
+        bbox_extra = []
+        for x, y, size, label, color in zip(
+            self.x_data,
+            self.y_data,
+            self.bubble_size,
+            self.bubble_labels,
+            self.colors,
+        ):
+            marker = ax.scatter(
+                x,
+                y,
+                s=15 + size**1.75,
+                label=label,
+                color=color,
+                alpha=0.5,
+                edgecolors="black",
+            )
+            markers.append(marker)
 
-    draw_barplot_matplotlib(
-        outpath=outpath,
-        title=title,
-        xlabel=xlabel,
-        ylabel=ylabel,
-        xdata=xdata,
-        ydata=ydata,
-        figsize=figsize,
-        colors=colors,
-        bar_width=bar_width,
-        bar_offset=bar_offset,
-        outext=outext,
-    )
-
-
-def draw_barplot_bokeh(
-    outpath: Optional[Path],
-    title: str,
-    xlabel: str,
-    ylabel: str,
-    xdata: List[Any],
-    ydata: Dict[str, List[Union[int, float]]],
-    width: Optional[int] = None,
-    height: Optional[int] = None,
-    colors: Optional[List] = None,
-    bar_width: float = 0.0,
-    bar_offset: List[float] = [0.0],
-    formats: Tuple[str] = ("html",),
-) -> None:
-    """
-    Draws barplot using bokeh library.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xlabel : str
-        Label of the X axis.
-    ylabel : str
-        Label of the Y axis.
-    xdata : List[Any]
-        List of x labels for bars.
-    ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values.
-    width : Optional[int]
-        Width of the plot.
-    height : Optional[int]
-        Height of the plot.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    bar_width : float
-        Width of the single bar.
-    bar_offset : List[float]
-        Offsets of the bars from different groups.
-    formats : Tuple[str]
-        Tuple with formats names.
-    """
-    from bokeh.io import export_png, export_svg
-    from bokeh.models import HoverTool, Range1d
-    from bokeh.plotting import figure, output_file, save, show
-    from bokeh.transform import dodge
-
-    if width is None:
-        width = 900
-    if height is None:
-        height = 778
-
-    barplot_fig = figure(
-        title=title,
-        x_range=xdata,
-        y_range=Range1d(0, max([max(y) for y in ydata.values()])),
-        tools="pan,box_zoom,wheel_zoom,reset,save",
-        toolbar_location="above",
-        width=width,
-        height=height,
-        x_axis_label=xlabel,
-        y_axis_label=ylabel,
-        output_backend="webgl",
-    )
-
-    data = dict(ydata, xdata=xdata)
-
-    for i, label in enumerate(ydata.keys()):
-        vbar = barplot_fig.vbar(
-            x=dodge("xdata", bar_offset[i], range=barplot_fig.x_range),
-            top=label,
-            source=data,
-            bottom=0,
-            fill_color=colors[i],
-            width=bar_width,
+        legend = ax.legend(
+            loc="upper center",
+            handles=markers,
+            bbox_to_anchor=[0.5, -0.08],
+            ncol=2,
         )
-        tooltips = [(xlabel, "@xdata"), (ylabel, f"@{{{label}}}")]
-        if len(ydata) > 1:
-            tooltips.insert(0, ("File", label))
-        barplot_fig.add_tools(
+        for handler in legend.legendHandles:
+            handler.set_sizes([40.0])
+        ax.add_artist(legend)
+        bbox_extra.append(legend)
+
+        maxsize = max(self.size_data)
+        minsize = min(self.size_data)
+        bubblemarkers, bubblelabels = [], []
+        for i in [0, 25, 50, 75, 100]:
+            bubblemarker = ax.scatter(
+                [],
+                [],
+                s=(15 + i**1.75),
+                color="None",
+                edgecolors=mpl.rcParams["legend.labelcolor"],
+            )
+            bubblemarkers.append(bubblemarker)
+            bubblelabels.append(
+                format_size(minsize + i / 100 * (maxsize - minsize))
+            )
+        bubblelegend = ax.legend(
+            bubblemarkers,
+            bubblelabels,
+            handletextpad=3,
+            labelspacing=4.5,
+            borderpad=3,
+            title=self.size_label,
+            frameon=False,
+            bbox_to_anchor=[1.05, 0.5],
+            loc="center left",
+        )
+        bubblelegend._legend_box.sep = 20
+        ax.add_artist(bubblelegend)
+        bbox_extra.append(bubblelegend)
+
+        box = ax.get_position()
+        ax.set_position(
+            [box.x0, box.y0 + 0.05, box.width * 0.85, box.height - 0.05]
+        )
+
+        if self.title:
+            bbox_extra.append(fig.suptitle(self.title))
+
+        ax.set_xlim(*self.x_lim)
+        ax.set_ylim(*self.y_lim)
+        ax.set_xlabel(self.x_label)
+        ax.set_ylabel(self.y_label)
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class ConfusionMatrixPlot(Plot):
+    """
+    Confusion matrix plot.
+    """
+
+    def __init__(
+        self,
+        confusion_matrix: ArrayLike,
+        class_names: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        cmap: Optional[Any] = None,
+    ):
+        """
+        Create a confusion matrix plot.
+
+        Parameters
+        ----------
+        confusion_matrix : ArrayLike
+            Square numpy matrix containing the confusion matrix. 0-th axis
+            stands for ground truth, 1-st axis stands for predictions.
+        class_names : List[str]
+            List of the class names.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        cmap : Optional[Any]
+            Color map for the plot.
+        """
+        if cmap is None:
+            if len(class_names) < 50:
+                cmap = plt.get_cmap("BuPu")
+            else:
+                cmap = plt.get_cmap("nipy_spectral_r")
+
+        super().__init__(width, height, title, cmap=cmap)
+
+        self.class_names = class_names
+
+        confusion_matrix = np.array(confusion_matrix, dtype=np.float32)
+
+        # compute sensitivity
+        sensitivity = confusion_matrix.diagonal() / confusion_matrix.sum(
+            axis=1
+        )
+        sensitivity = sensitivity.reshape(1, len(class_names))
+
+        # compute precision
+        precision = confusion_matrix.diagonal() / confusion_matrix.sum(axis=0)
+        precision = precision.reshape(len(class_names), 1)
+        # change nan to 0
+        precision[np.isnan(precision)] = 0.0
+
+        # compute overall accuracy
+        accuracy = np.trace(confusion_matrix) / np.sum(confusion_matrix)
+
+        # normalize confusion matrix
+        confusion_matrix /= confusion_matrix.sum(axis=0)
+        confusion_matrix = confusion_matrix.transpose()
+        # change nan to 0
+        confusion_matrix[np.isnan(confusion_matrix)] = 0.0
+
+        def _value_to_nondiagonal_color(
+            value: Union[float, np.ndarray], cmap: Optional[Any]
+        ) -> np.ndarray:
+            """
+            Calculates colors of non-diagonal cells in confusion matrix.
+
+            Parameters
+            ----------
+            value : Union[float, np.ndarray]
+                Values from confusion matrix.
+            cmap : Optional[Any]
+                Color map associating values with colors.
+
+            Returns
+            -------
+            np.ndarray
+                Calculated colors.
+            """
+            color = np.asarray(
+                cmap(1 - np.log2(99 * value + 1) / np.log2(100))
+            )
+            color[..., 3] = np.log2(99 * value + 1) / np.log2(100)
+            return color
+
+        # Cal[culate colors for confusion matrix
+        colors = np.zeros(confusion_matrix.shape + (4,))
+        for i in range(confusion_matrix.shape[0]):
+            for j in range(confusion_matrix.shape[1]):
+                if i == j:
+                    colors[i, j] = cmap(confusion_matrix[i, j])
+                else:
+                    colors[i, j] = _value_to_nondiagonal_color(
+                        confusion_matrix[i, j], cmap
+                    )
+
+        self.confusion_matrix = confusion_matrix
+        self.confusion_matrix_colors = colors
+        self.sensitivity = sensitivity
+        self.accuracy = accuracy
+        self.precision = precision
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        fig = plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+
+        percent_font_size = (
+            0.8
+            * MATPLOTLIB_FONT_SIZE
+            * min(1, 20 / self.confusion_matrix.shape[0])
+        )
+
+        vectors = 1
+        if len(self.class_names) >= 50:
+            vectors = 0
+        gs = gridspec.GridSpec(
+            len(self.class_names) + vectors, len(self.class_names) + vectors
+        )
+        axConfMatrix = fig.add_subplot(
+            gs[0 : len(self.class_names), 0 : len(self.class_names)]
+        )
+        plots = [axConfMatrix]
+        if len(self.class_names) < 50:
+            axPredicted = fig.add_subplot(
+                gs[len(self.class_names), 0 : len(self.class_names)],
+                sharex=axConfMatrix,
+            )
+            axActual = fig.add_subplot(
+                gs[0 : len(self.class_names), len(self.class_names)],
+                sharey=axConfMatrix,
+            )
+            axTotal = fig.add_subplot(
+                gs[len(self.class_names), len(self.class_names)],
+                sharex=axActual,
+                sharey=axPredicted,
+            )
+            plots = [axPredicted, axConfMatrix, axActual, axTotal]
+        # define ticks for classes
+        ticks = np.arange(len(self.class_names))
+
+        # configure and draw confusion matrix
+        if len(self.class_names) < 50:
+            axConfMatrix.set_xticks(ticks)
+            axConfMatrix.set_xticklabels(
+                self.class_names,
+                rotation=90,
+                fontweight="bold",
+            )
+            axConfMatrix.set_yticks(ticks)
+            axConfMatrix.set_yticklabels(
+                self.class_names,
+                fontweight="bold",
+            )
+            axConfMatrix.xaxis.set_ticks_position("top")
+        else:
+            # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
+            # plt.setp(axConfMatrix.get_xticklabels(), visible=False)
+            axConfMatrix.tick_params(
+                top=False,
+                bottom=False,
+                left=False,
+                right=False,
+                labelleft=False,
+                labelbottom=False,
+            )
+        axConfMatrix.xaxis.set_label_position("top")
+        axConfMatrix.set_xlabel(
+            "Actual class",
+            fontweight="bold",
+        )
+        axConfMatrix.set_ylabel(
+            "Predicted class",
+            fontweight="bold",
+        )
+        img = axConfMatrix.imshow(
+            self.confusion_matrix_colors,
+            # norm=colors.PowerNorm(0.5),
+            interpolation="nearest",
+            cmap=self.cmap,
+            aspect="auto",
+            vmin=0.0,
+            vmax=1.0,
+        )
+
+        if len(self.class_names) < 50:
+            # add percentages for confusion matrix
+            for i, j in itertools.product(
+                range(len(self.class_names)), range(len(self.class_names))
+            ):
+                txt = axConfMatrix.text(
+                    j,
+                    i,
+                    (
+                        "100"
+                        if self.confusion_matrix[i, j] == 1.0
+                        else f"{100.0 * self.confusion_matrix[i, j]:3.1f}"
+                    ),
+                    ha="center",
+                    va="center",
+                    color="black",
+                    fontsize=percent_font_size,
+                )
+                txt.set_path_effects(
+                    [patheffects.withStroke(linewidth=2, foreground="w")]
+                )
+
+            # configure and draw sensitivity percentages
+            axPredicted.set_xticks(ticks)
+            axPredicted.set_yticks([0])
+            axPredicted.set_xlabel("Sensitivity", fontweight="bold")
+            axPredicted.imshow(
+                self.sensitivity,
+                interpolation="nearest",
+                cmap="RdYlGn" if self.cmap is None else self.cmap,
+                aspect="auto",
+                vmin=0.0,
+                vmax=1.0,
+            )
+            for i in range(len(self.class_names)):
+                txt = axPredicted.text(
+                    i,
+                    0,
+                    (
+                        "100"
+                        if self.sensitivity[0, i] == 1.0
+                        else f"{100.0 * self.sensitivity[0, i]:3.1f}"
+                    ),
+                    ha="center",
+                    va="center",
+                    color="black",
+                    fontsize=percent_font_size,
+                )
+                txt.set_path_effects(
+                    [patheffects.withStroke(linewidth=2, foreground="w")]
+                )
+
+            # configure and draw precision percentages
+            axActual.set_xticks([0])
+            axActual.set_yticks(ticks)
+            axActual.set_ylabel("Precision", fontweight="bold")
+            axActual.yaxis.set_label_position("right")
+            axActual.imshow(
+                self.precision,
+                interpolation="nearest",
+                cmap="RdYlGn" if self.cmap is None else self.cmap,
+                aspect="auto",
+                vmin=0.0,
+                vmax=1.0,
+            )
+            for i in range(len(self.class_names)):
+                txt = axActual.text(
+                    0,
+                    i,
+                    (
+                        "100"
+                        if self.precision[i, 0] == 1.0
+                        else f"{100.0 * self.precision[i, 0]:3.1f}"
+                    ),
+                    ha="center",
+                    va="center",
+                    color="black",
+                    fontsize=percent_font_size,
+                )
+                txt.set_path_effects(
+                    [patheffects.withStroke(linewidth=2, foreground="w")]
+                )
+
+            # configure and draw total accuracy
+            axTotal.set_xticks([0])
+            axTotal.set_yticks([0])
+            axTotal.set_xlabel("Accuracy", fontweight="bold")
+            axTotal.imshow(
+                np.array([[self.accuracy]]),
+                interpolation="nearest",
+                cmap="RdYlGn" if self.cmap is None else self.cmap,
+                aspect="auto",
+                vmin=0.0,
+                vmax=1.0,
+            )
+            txt = axTotal.text(
+                0,
+                0,
+                f"{100 * self.accuracy:3.1f}",
+                ha="center",
+                va="center",
+                color="black",
+                fontsize=percent_font_size,
+            )
+            txt.set_path_effects(
+                [patheffects.withStroke(linewidth=2, foreground="w")]
+            )
+
+            # disable axes for other matrices than confusion matrix
+            for a in (axPredicted, axActual, axTotal):
+                plt.setp(a.get_yticklabels(), visible=False)
+                plt.setp(a.get_xticklabels(), visible=False)
+
+        # draw colorbar for confusion matrix
+        cbar = fig.colorbar(
+            img, ax=plots, shrink=0.5, ticks=np.linspace(0.0, 1.0, 11), pad=0.1
+        )
+        cbar.ax.set_yticks(
+            np.linspace(0.0, 1.0, 11), labels=list(range(0, 101, 10))
+        )
+        for t in cbar.ax.get_yticklabels():
+            t.set_fontsize("medium")
+        suptitlehandle = None
+        if self.title:
+            suptitlehandle = fig.suptitle(
+                f"{self.title} (ACC={self.accuracy:.5f})",
+            )
+
+        self._output_matplotlib_figure(
+            [suptitlehandle] if suptitlehandle else [],
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        from bokeh.layouts import Spacer, gridplot
+        from bokeh.models import (
+            ColumnDataSource,
+            FactorRange,
+            HoverTool,
+            Range1d,
+        )
+        from bokeh.plotting import figure, row
+
+        # Calculate confusion matrix sizes
+        cm_width = int(self.width / (1 + 1 / 15 + 1 / 13 + 1 / 11))
+        cm_height = int(self.height / (1 + 1 / 15))
+
+        # Prepare figure
+        confusion_matrix_fig = figure(
+            title=self.title,
+            x_range=FactorRange(
+                factors=self.class_names, bounds=(0, len(self.class_names))
+            ),
+            y_range=FactorRange(
+                factors=self.class_names[::-1],
+                bounds=(0, len(self.class_names)),
+            ),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location=None,
+            x_axis_location="above",
+            width=cm_width,
+            height=cm_height,
+            output_backend="webgl",
+        )
+
+        # Preprocess data
+        confusion_matrix_colors = np.rot90(
+            self.confusion_matrix_colors, k=-1
+        ).reshape((-1, 4))
+        coords = np.array(
+            list(itertools.product(self.class_names, self.class_names)),
+            dtype=str,
+        )
+        coords[:, 1] = coords[::-1, 1]
+        percentage = np.rot90(self.confusion_matrix, k=-1).flatten() * 100
+        source = ColumnDataSource(
+            data={
+                "Actual class": coords[:, 0],
+                "Predicted class": coords[:, 1],
+                "color": confusion_matrix_colors,
+                "Percentage": percentage,
+            }
+        )
+
+        # Draw confusion matrix
+        confusion_matrix_fig.rect(
+            x="Actual class",
+            y="Predicted class",
+            color="color",
+            line_color=None,
+            width=1,
+            height=1,
+            source=source,
+        )
+
+        # Set labels and styles
+        confusion_matrix_fig.xaxis.axis_label = "Actual class"
+        confusion_matrix_fig.yaxis.axis_label = "Predicted class"
+        if len(self.class_names) < 50:
+            confusion_matrix_fig.xaxis.major_label_orientation = "vertical"
+        else:
+            confusion_matrix_fig.xaxis.major_label_text_alpha = 0.0
+            confusion_matrix_fig.yaxis.major_label_text_alpha = 0.0
+            confusion_matrix_fig.xaxis.major_tick_line_alpha = 0.0
+            confusion_matrix_fig.yaxis.major_tick_line_alpha = 0.0
+        confusion_matrix_fig.xaxis.axis_line_alpha = 0.0
+        confusion_matrix_fig.yaxis.axis_line_alpha = 0.0
+        confusion_matrix_fig.grid.visible = False
+
+        # Set custom tooltips
+        confusion_matrix_fig.add_tools(
             HoverTool(
-                renderers=[vbar],
-                tooltips=tooltips,
+                tooltips=self._create_custom_hover_template(
+                    ["Actual class", "Predicted class", "Percentage"],
+                    units=[None, None, "%"],
+                )
             )
         )
 
-    barplot_fig.xaxis.major_label_orientation = "vertical"
+        # === Sensitivity ===
 
-    if outpath is None:
-        show(barplot_fig)
-        return
-
-    if "html" in formats:
-        output_file(f"{outpath}.html", mode="inline")
-        save(barplot_fig)
-    if "png" in formats:
-        export_png(barplot_fig, filename=f"{outpath}.png")
-    if "svg" in formats:
-        export_svg(barplot_fig, filename=f"{outpath}.svg")
-
-
-def draw_barplot_matplotlib(
-    outpath: Optional[Path],
-    title: str,
-    xlabel: str,
-    ylabel: str,
-    xdata: List[Any],
-    ydata: Dict[str, List[Union[int, float]]],
-    figsize: Tuple = (15, 15),
-    colors: Optional[List] = None,
-    bar_width: float = 0.0,
-    bar_offset: List[float] = [0.0],
-    outext: Iterable[str] = ["png"],
-):
-    """
-    Draws barplot using matplotlib library.
-
-    Parameters
-    ----------
-    outpath : Optional[Path]
-        Output path for the plot image. If None, the plot will be displayed.
-    title : str
-        Title of the plot.
-    xlabel : str
-        Label of the X axis.
-    ylabel : str
-        Label of the Y axis.
-    xdata : List[Any]
-        List of x labels for bars.
-    ydata : Dict[str, List[Union[int, float]]]
-        Dictionary of values.
-    figsize : Tuple
-        The size of the figure.
-    colors : Optional[List]
-        List with colors which should be used to draw plots.
-    bar_width : float
-        Width of the single bar.
-    bar_offset : List[float]
-        Offsets of the bars from different groups.
-    outext : Iterable[str]
-        List with files extensions.
-    """
-    plt.figure(figsize=figsize)
-
-    x_range = np.arange(0, len(xdata))
-
-    bbox_extra = []
-    for i, (label, values) in enumerate(ydata.items()):
-        plt.bar(
-            x_range + bar_offset[i],
-            values,
-            width=bar_width,
-            color=colors[i],
-            label=label,
+        # Prepare figure
+        sensitivity_fig = figure(
+            title=None,
+            x_range=confusion_matrix_fig.x_range,
+            y_range=FactorRange(factors=["Sensitivity"], bounds=(0, 1)),
+            width=confusion_matrix_fig.width,
+            height=confusion_matrix_fig.height // 15,
+            toolbar_location=None,
+            output_backend="webgl",
         )
 
-    plt.xticks(x_range, xdata, rotation=90)
-    plt.xlabel(xlabel, fontsize="large")
-    plt.ylabel(ylabel, fontsize="large")
-    plt.ticklabel_format(style="plain", axis="y")
-    if len(ydata) > 1:
-        plt.legend()
-    plt.grid()
-    if title:
-        bbox_extra.append(plt.title(title))
+        # Preprocess data
+        sensitivity_color = self.cmap(self.sensitivity).reshape((-1, 4))
+        sensitivity_source = ColumnDataSource(
+            data={
+                "y": ["Sensitivity" for _ in self.class_names],
+                "Class": self.class_names,
+                "color": sensitivity_color,
+                "Sensitivity": self.sensitivity.flatten() * 100,
+            }
+        )
 
-    if outpath is None:
-        plt.show()
-    else:
-        for ext in outext:
-            plt.savefig(
-                f"{outpath}.{ext}",
-                bbox_extra_artists=bbox_extra,
-                bbox_inches="tight",
+        # Draw sensitivity
+        sensitivity_fig.rect(
+            x="Class",
+            y="y",
+            color="color",
+            source=sensitivity_source,
+            line_color="black",
+            line_width=0.1,
+            width=1,
+            height=1,
+        )
+
+        # Add label and custom tooltip
+        sensitivity_fig.xaxis.axis_label = "Sensitivity"
+        sensitivity_fig.add_tools(
+            HoverTool(
+                tooltips=self._create_custom_hover_template(
+                    ["Class", "Sensitivity"], units=[None, "%"]
+                ),
+                attachment="above",
             )
-    plt.close()
+        )
+
+        # === Precision ===
+
+        # Prepare figure
+        precision_fig = figure(
+            title=None,
+            x_range=FactorRange(factors=["Precision"], bounds=(0, 1)),
+            y_range=confusion_matrix_fig.y_range,
+            width=confusion_matrix_fig.width // 15,
+            height=confusion_matrix_fig.height,
+            toolbar_location=None,
+            y_axis_location="right",
+            output_backend="webgl",
+        )
+
+        # Preprocess data
+        precision_color = self.cmap(self.precision).reshape((-1, 4))
+        precision_source = ColumnDataSource(
+            data={
+                "x": ["Precision" for _ in self.class_names],
+                "Class": self.class_names,
+                "color": precision_color,
+                "Precision": self.precision.flatten() * 100,
+            }
+        )
+
+        # Draw sensitivity
+        precision_fig.rect(
+            x="x",
+            y="Class",
+            color="color",
+            source=precision_source,
+            height=1,
+            width=1,
+            line_color="black",
+            line_width=0.1,
+        )
+
+        # Add label and custom tooltip
+        precision_fig.yaxis.axis_label = "Precision"
+        precision_fig.add_tools(
+            HoverTool(
+                tooltips=self._create_custom_hover_template(
+                    ["Class", "Precision"], units=[None, "%"]
+                ),
+                attachment="left",
+            )
+        )
+
+        # === Accuracy ===
+
+        # Prepare figure
+        accuracy_fig = figure(
+            title=None,
+            x_range=FactorRange(factors=["x"], bounds=(0, 1)),
+            y_range=FactorRange(factors=["y"], bounds=(0, 1)),
+            width=precision_fig.width,
+            height=sensitivity_fig.height,
+            toolbar_location=None,
+            output_backend="webgl",
+        )
+
+        # Preprocess data
+        accuracy_color = self.cmap(self.accuracy)
+        color_str = (
+            f"#{int(255 * accuracy_color[0]):02X}"
+            f"{int(255 * accuracy_color[1]):02X}"
+            f"{int(255 * accuracy_color[2]):02X}"
+        )
+        accuracy_source = ColumnDataSource(
+            data={
+                "x": ["x"],
+                "y": ["y"],
+                "Accuracy": [float(self.accuracy) * 100],
+            }
+        )
+
+        # Draw sensitivity
+        accuracy_fig.rect(
+            x="x",
+            y="y",
+            color=color_str,
+            source=accuracy_source,
+            width=1,
+            height=1,
+            line_color="black",
+            line_width=0.1,
+        )
+
+        # Add label and custom tooltip
+        accuracy_fig.xaxis.axis_label = "ACC"
+        accuracy_fig.add_tools(
+            HoverTool(
+                tooltips=self._create_custom_hover_template(
+                    ["Accuracy"], units=["%"]
+                ),
+                attachment="above",
+            )
+        )
+
+        # Set style for Sensitivity, Precision and Accuracy
+        for fig in (sensitivity_fig, precision_fig, accuracy_fig):
+            fig.yaxis.major_label_text_alpha = 0.0
+            fig.xaxis.major_label_text_alpha = 0.0
+            fig.yaxis.major_tick_line_alpha = 0.0
+            fig.xaxis.major_tick_line_alpha = 0.0
+            fig.xaxis.axis_line_alpha = 0.0
+            fig.yaxis.axis_line_alpha = 0.0
+            fig.grid.visible = False
+
+        # === Scale ===
+
+        # Prepare figure
+        scale_fig = figure(
+            title=None,
+            x_range=["color"],
+            y_range=Range1d(0.0, 100.0),
+            width=confusion_matrix_fig.width // 11,
+            height=self.height // 2,
+            tools="",
+            toolbar_location=None,
+            x_axis_location="above",
+            y_axis_location="right",
+            margin=(self.height // 4, 0, self.height // 4, 0),
+            output_backend="webgl",
+        )
+        # Draw scale
+        scale_fig.hbar(
+            y=np.linspace(0.0, 100.0, 256),
+            left=[0.0] * 256,
+            right=[1.0] * 256,
+            color=self.cmap(np.linspace(0.0, 1.0, 256)),
+        )
+
+        # Set styles for scale
+        scale_fig.xaxis.major_tick_line_alpha = 0.0
+        scale_fig.yaxis.major_tick_line_alpha = 0.0
+        scale_fig.yaxis.minor_tick_line_alpha = 0.0
+        scale_fig.xaxis.axis_line_alpha = 0.0
+        scale_fig.yaxis.axis_line_alpha = 0.0
+        scale_fig.xaxis.major_label_text_alpha = 0.0
+
+        # === Saving to file ===
+
+        grid_fig = gridplot(
+            [
+                [
+                    confusion_matrix_fig,
+                    precision_fig,
+                ],
+                [
+                    sensitivity_fig,
+                    accuracy_fig,
+                ],
+            ],
+            merge_tools=True,
+            toolbar_location="above",
+            toolbar_options={"logo": None},
+        )
+        plot_with_scale = row(
+            grid_fig,
+            Spacer(width=confusion_matrix_fig.width // 13),
+            scale_fig,
+        )
+
+        self._output_bokeh_figure(
+            plot_with_scale,
+            output_path,
+            output_formats,
+        )
+
+
+class RecallPrecisionCurvesPlot(Plot):
+    """
+    Recall-Precision curves for AP measurements.
+    """
+
+    def __init__(
+        self,
+        lines: List[Tuple[List, List]],
+        class_names: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        cmap: Optional[Any] = None,
+    ):
+        """
+        Create Recall-Precision curves for AP measurements.
+
+        Parameters
+        ----------
+        lines : List[Tuple[List, List]]
+            Per-class list of tuples with list of recall values and precision
+            values.
+        class_names : List[str]
+            List of the class names.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        cmap : Optional[Any]
+            Color map for the plot.
+        """
+        if cmap is None:
+            cmap = plt.get_cmap("nipy_spectral_r")
+
+        super().__init__(width, height, title, cmap=cmap)
+
+        self.lines = lines
+        self.class_names = class_names
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        fig = plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+        ax = fig.add_subplot(111)
+        colors = [
+            self.cmap(i) for i in np.linspace(0, 1, len(self.class_names))
+        ]
+        linestyles = ["-", "--", "-.", ":"]
+        for i, (cls, line) in enumerate(zip(self.class_names, self.lines)):
+            ax.plot(
+                line[0],
+                line[1],
+                label=cls,
+                c=colors[i],
+                linewidth=3,
+                linestyle=linestyles[i % len(linestyles)],
+                alpha=0.8,
+            )
+        legendhandle = ax.legend(
+            bbox_to_anchor=(0.5, -0.45), loc="lower center", ncol=6
+        )
+        ax.set_aspect("equal")
+        ax.set_xlabel("recall")
+        ax.set_ylabel("precision")
+        ax.set_xlim((0.0, 1.01))
+        ax.set_ylim((0.0, 1.01))
+        ax.grid("on")
+        ax.set_xticks(np.arange(0, 1.1, 0.1))
+        ax.set_yticks(np.arange(0, 1.1, 0.1))
+        ax.set_title(self.title)
+
+        self._output_matplotlib_figure(
+            [legendhandle],
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class TruePositiveIoUHistogram(Plot):
+    """
+    Per-class True Positive IoU precision plot.
+    """
+
+    def __init__(
+        self,
+        iou_data: List[float],
+        class_names: List[str],
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE * 5 // 2,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Create per-class True Positive IoU precision plot.
+
+        Parameters
+        ----------
+        iou_data : List[float]
+            Per-class list of floats with IoU values.
+        class_names : List[str]
+            List of the class names.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(1 + color_offset)
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.iou_data = iou_data
+        self.class_names = class_names
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+        plt.barh(
+            self.class_names,
+            np.array(self.iou_data),
+            orientation="horizontal",
+            color=self.colors[0],
+        )
+        plt.ylim((-1, len(self.class_names)))
+        plt.yticks(np.arange(0, len(self.class_names)))
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.xlabel("IoU precision")
+        plt.ylabel("classes")
+        if self.title:
+            plt.title(f"{self.title}")
+
+        self._output_matplotlib_figure(
+            [],
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class TruePositivesPerIoURangeHistogram(Plot):
+    """
+    Histogram of True Positive IoU values.
+    """
+
+    def __init__(
+        self,
+        iou_data: List[float],
+        range_fraction: float = 0.05,
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Create histogram of True Positive IoU values.
+
+        Parameters
+        ----------
+        iou_data : List[float]
+            All True Positive IoU values.
+        range_fraction : float
+            Fraction by which the range should be divided
+            (1/number_of_segments).
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(color_offset)
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.iou_data = iou_data
+        self.range_fraction = range_fraction
+        self.x_range = np.arange(0, 1.1, 0.1)
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        plt.figure(
+            figsize=self._plt_figsize(),
+            dpi=MATPLOTLIB_DPI,
+        )
+        plt.hist(self.iou_data, self.x_range, color=self.colors[0])
+        plt.xlabel("IoU ranges")
+        plt.xticks(self.x_range, rotation=45)
+        plt.ylabel("Number of masks in IoU range")
+        if self.title:
+            plt.title(f"{self.title}")
+
+        self._output_matplotlib_figure([], output_path, output_formats)
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class RecallPrecisionGradients(Plot):
+    """
+    Per-class gradients of precision dependent to recall.
+    """
+
+    def __init__(
+        self,
+        lines: List[Tuple[List, List]],
+        class_names: List[str],
+        avg_precisions: List[float],
+        mean_avg_precision: float,
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE * 5 // 2,
+        cmap: Optional[Any] = None,
+    ):
+        """
+        Create per-class gradients of precision dependent to recall.
+
+        Provide per-class AP and mAP values.
+
+        Parameters
+        ----------
+        lines : List[Tuple[List, List]]
+            Per-class list of tuples with list of recall values and precision
+            values.
+        class_names : List[str]
+            List of the class names.
+        avg_precisions : List[float]
+            Per-class AP values.
+        mean_avg_precision : float
+            The mAP value.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        cmap : Optional[Any]
+            Color map for the plot.
+        """
+        if cmap is None:
+            cmap = plt.get_cmap("RdYlGn")
+
+        super().__init__(width, height, title, cmap=cmap)
+
+        self.lines = lines
+        self.class_names = class_names
+        self.avg_precisions = avg_precisions
+        self.mean_avg_precision = mean_avg_precision
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+        clsticks = []
+        for i, (cls, line, averageprecision) in enumerate(
+            zip(self.class_names, self.lines, self.avg_precisions)
+        ):
+            clscoords = np.ones(len(line[0])) * i
+            points = np.array([line[0], clscoords]).T.reshape(-1, 1, 2)
+            segments = np.concatenate([points[:-1], points[1:]], axis=1)
+            lc = LineCollection(
+                segments, cmap=self.cmap, norm=plt.Normalize(0, 1.0)
+            )
+            lc.set_array(line[1])
+            lc.set_linewidth(10)
+            plt.gca().add_collection(lc)
+            clsticks.append(f"{cls} (AP={averageprecision:.4f})")
+        plt.ylim((-1, len(self.class_names)))
+        plt.yticks(np.arange(0, len(clsticks)), labels=clsticks)
+        plt.xticks(np.arange(0, 1.1, 0.1))
+        plt.xlabel("recall")
+        plt.ylabel("classes")
+        plt.colorbar(
+            plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap=self.cmap),
+            orientation="horizontal",
+            label="precision",
+            fraction=0.1,
+            pad=0.05,
+        )
+        if self.title:
+            plt.title(f"{self.title} (mAP={self.mean_avg_precision})")
+
+        self._output_matplotlib_figure(
+            [],
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class LinePlot(Plot):
+    """
+    Line plot.
+    """
+
+    def __init__(
+        self,
+        lines: List[Tuple[List, List]],
+        x_label: str,
+        y_label: str,
+        x_unit: Optional[str] = None,
+        y_unit: Optional[str] = None,
+        lines_labels: Optional[List[str]] = None,
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Create line plot.
+
+        Parameters
+        ----------
+        lines : List[Tuple[List, List]]
+            Per-class list of tuples with list of recall values and precision
+            values.
+        x_label : str
+            Name of the X axis.
+        y_label : str
+            Name of the Y axis.
+        x_unit : Optional[str]
+            Unit for the X axis.
+        y_unit : Optional[str]
+            Unit for the Y axis.
+        lines_labels : Optional[List[str]]
+            Optional list of labels naming each line.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(
+                len(lines) + color_offset
+            )
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.x_label = x_label if x_unit is None else f"{x_label} [{x_unit}]"
+        self.y_label = y_label if y_unit is None else f"{y_label} [{y_unit}]"
+        self.lines = lines
+        self.lines_labels = lines_labels
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+
+        bbox_extra = []
+
+        for color, (x, y) in zip(self.colors, self.lines):
+            plt.plot(x, y, c=color, linewidth=3)
+
+        plt.xlabel(self.x_label)
+        plt.ylabel(self.y_label)
+        plt.grid()
+        if self.title:
+            bbox_extra.append(plt.title(self.title))
+        if self.lines_labels is not None:
+            bbox_extra.append(
+                plt.legend(
+                    self.lines_labels,
+                    loc="upper center",
+                    bbox_to_anchor=[0.5, -0.06],
+                    ncols=2,
+                )
+            )
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        raise NotImplementedError
+
+
+class Barplot(Plot):
+    """
+    Barplot.
+    """
+
+    def __init__(
+        self,
+        x_data: List[Any],
+        y_data: Dict[str, List[Union[int, float]]],
+        x_label: str,
+        y_label: str,
+        x_unit: Optional[str] = None,
+        y_unit: Optional[str] = None,
+        max_bars_matplotlib: Optional[int] = None,
+        title: Optional[str] = None,
+        width: int = DEFAULT_PLOT_SIZE,
+        height: int = DEFAULT_PLOT_SIZE * 5 // 6,
+        colors: Optional[List] = None,
+        color_offset: int = 0,
+    ):
+        """
+        Create barplot.
+
+        Parameters
+        ----------
+        x_data : List[Any]
+            List of x labels for bars.
+        y_data : Dict[str, List[Union[int, float]]]
+            Dictionary of values.
+        x_label : str
+            Name of the X axis.
+        y_label : str
+            Name of the Y axis.
+        x_unit : Optional[str]
+            Unit for the X axis.
+        y_unit : Optional[str]
+            Unit for the Y axis.
+        max_bars_matplotlib : Optional[int]
+            Max number of bars for matplotlib backend.
+        title : Optional[str]
+            Title of the plot.
+        width : int
+            Width of the plot.
+        height : int
+            Height of the plot.
+        colors : Optional[List]
+            List with colors which should be used to draw plots.
+        color_offset : int
+            How many colors from default color list should be skipped.
+        """
+        if colors is None:
+            colors = self._get_comparison_color_scheme(
+                len(y_data) + color_offset
+            )
+
+        super().__init__(width, height, title, colors=colors[color_offset:])
+
+        self.x_label = x_label if x_unit is None else f"{x_label} [{x_unit}]"
+        self.y_label = y_label if y_unit is None else f"{y_label} [{y_unit}]"
+        self.x_data = x_data
+        self.y_data = y_data
+        self.max_bars_matplotlib = max_bars_matplotlib
+        self.bar_width = 0.8 / len(self.y_data)
+        if len(self.y_data) == 1:
+            self.bar_offset = [0.0]
+        else:
+            self.bar_offset = np.linspace(
+                -0.4 + self.bar_width / 2,
+                0.4 - self.bar_width / 2,
+                len(self.y_data),
+            ).tolist()
+
+    def plot_matplotlib(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        x_data = self.x_data
+        y_data = self.y_data
+        if self.max_bars_matplotlib is not None:
+            x_data = self.x_data[: self.max_bars_matplotlib]
+            y_data = {
+                name: values[: self.max_bars_matplotlib]
+                for name, values in self.y_data.items()
+            }
+
+        plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
+
+        x_range = np.arange(0, len(x_data))
+
+        bbox_extra = []
+        for i, (label, values) in enumerate(y_data.items()):
+            plt.bar(
+                x_range + self.bar_offset[i],
+                values,
+                width=self.bar_width,
+                color=self.colors[i],
+                label=label,
+            )
+
+        plt.xticks(x_range, x_data, rotation=90)
+        plt.xlabel(self.x_label)
+        plt.ylabel(self.y_label)
+        plt.ticklabel_format(style="plain", axis="y")
+        plt.grid()
+        if self.title:
+            bbox_extra.append(plt.title(self.title))
+        if len(y_data) > 1:
+            bbox_extra.append(
+                plt.legend(
+                    list(self.y_data.keys()),
+                    loc="upper center",
+                    bbox_to_anchor=[0.5, -0.2],
+                    ncols=2,
+                )
+            )
+
+        self._output_matplotlib_figure(
+            bbox_extra,
+            output_path,
+            output_formats,
+        )
+
+    def plot_bokeh(
+        self, output_path: Optional[Path], output_formats: Iterable[str]
+    ):
+        from bokeh.models import HoverTool, Range1d
+        from bokeh.plotting import figure
+        from bokeh.transform import dodge
+
+        barplot_fig = figure(
+            title=self.title,
+            x_range=self.x_data,
+            y_range=Range1d(0, max([max(y) for y in self.y_data.values()])),
+            tools="pan,box_zoom,wheel_zoom,reset,save",
+            toolbar_location="above",
+            width=self.width,
+            height=self.height,
+            x_axis_label=self.x_label,
+            y_axis_label=self.y_label,
+            output_backend="webgl",
+        )
+
+        data = dict(self.y_data, xdata=self.x_data)
+
+        for i, label in enumerate(self.y_data.keys()):
+            vbar = barplot_fig.vbar(
+                x=dodge(
+                    "xdata", self.bar_offset[i], range=barplot_fig.x_range
+                ),
+                top=label,
+                source=data,
+                bottom=0,
+                fill_color=self.colors[i],
+                width=self.bar_width,
+            )
+            tooltips = [(self.x_label, "xdata"), (self.y_label, f"{label}")]
+            if len(self.y_data) > 1:
+                tooltips.insert(0, ("File", label))
+
+            barplot_fig.add_tools(
+                HoverTool(
+                    renderers=[vbar],
+                    tooltips=self._create_custom_hover_template(
+                        [t[0] for t in tooltips],
+                        values=[t[1] for t in tooltips],
+                    ),
+                )
+            )
+
+        barplot_fig.xaxis.major_label_orientation = "vertical"
+
+        self._output_bokeh_figure(barplot_fig, output_path, output_formats)
 
 
 @contextmanager

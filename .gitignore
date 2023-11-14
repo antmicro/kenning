@@ -147,3 +147,6 @@ kenning:///models/object_detection/yolov3.weights
 
 # VSCode project settings
 .vscode/
+
+# Cython-generated code
+kenning/modelwrappers/instance_segmentation/cython_nms.c

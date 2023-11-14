@@ -317,8 +317,8 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         task: str = "object_detection",
         image_memory_layout: str = "NCHW",
         show_on_eval: bool = False,
-        image_width: int = 416,
-        image_height: int = 416,
+        image_width: Optional[int] = 416,
+        image_height: Optional[int] = 416,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.task = task

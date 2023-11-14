@@ -15,8 +15,6 @@ from zipfile import ZipFile
 import cv2
 import numpy as np
 from pycocotools.coco import COCO
-from rosbags.rosbag1 import Reader
-from rosbags.serde import deserialize_cdr, ros1_to_cdr
 from tqdm import tqdm
 
 from kenning.core.measurements import Measurements
@@ -26,8 +24,13 @@ from kenning.datasets.helpers.detection_and_segmentation import (
 from kenning.datasets.helpers.video_detection_and_segmentation import (
     VideoObjectDetectionSegmentationDataset,
 )
-from kenning.utils.logger import LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import ResourceManager, Resources
+
+try:
+    import rosbags
+except ImportError:
+    rosbags = None
 
 
 class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
@@ -71,14 +74,10 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         task: str = "instance_segmentation",
         image_memory_layout: str = "NHWC",
         show_on_eval: bool = False,
-        image_width: int = 848,
-        image_height: int = 480,
-        num_segments: Optional[int] = None,
-        frames_per_segment: int = 1,
+        image_width: Optional[int] = None,
+        image_height: Optional[int] = None,
     ):
         self.num_classes = 4
-        self.num_segments = num_segments
-        self.frames_per_segment = frames_per_segment
         super().__init__(
             root=root,
             batch_size=batch_size,
@@ -105,7 +104,6 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         # Set max cache size to 220 GB to allow dataset download
         ResourceManager().set_max_cache_size(220 * 10**9)
 
-        # TODO: Add annotations download
         with LoggerProgressBar() as logger_progress_bar, ZipFile(
             self.resources["images"],
             "r",
@@ -168,9 +166,6 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
             )
 
         for i, sequence in enumerate(self.dataX):
-            self.dataX[i] = self.frame_sampling(
-                sequence, self.num_segments, self.frames_per_segment
-            )
             self.dataY.append(
                 [annotations[imgpath] for imgpath in self.dataX[i]]
             )
@@ -193,7 +188,15 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
                 Preprocessed image.
             """
             img = cv2.imread(str(imgpath))
-            img = cv2.resize(img, (self.image_width, self.image_height))
+
+            if all([self.image_width, self.image_height]):
+                img = cv2.resize(img, (self.image_width, self.image_height))
+            elif any([self.image_width, self.image_height]):
+                KLogger.warning(
+                    "Only one of image_width and image_height is set. "
+                    "The image will not be resized."
+                )
+
             img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
             npimg = np.array(img, dtype=np.float32) / 255.0
             if self.image_memory_layout == "NCHW":
@@ -267,15 +270,27 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
             Path to the output directory.
         topics : List[str]
             List of topics to convert to images.
+
+        Raises
+        ------
+        ImportError
+            If `rosbags` package is not installed.
         """
+        if rosbags is None:
+            error_message = (
+                "rosbags package is not installed. "
+                "Please install it with `pip install kenning[ros2]`"
+            )
+            KLogger.critical(error_message)
+            raise ImportError(error_message)
         counter = 1
         rosbag_dir = output / bagfile.stem
         rosbag_dir.mkdir(parents=True, exist_ok=True)
-        with Reader(bagfile) as reader:
+        with rosbags.rosbag1.Reader(bagfile) as reader:
             for connection, timestamp, rawdata in reader.messages():
                 if connection.topic in topics:
-                    msg = deserialize_cdr(
-                        ros1_to_cdr(rawdata, connection.msgtype),
+                    msg = rosbags.serde.deserialize_cdr(
+                        rosbags.serde.ros1_to_cdr(rawdata, connection.msgtype),
                         connection.msgtype,
                     )
                     img = np.frombuffer(msg.data, dtype=np.uint8).reshape(

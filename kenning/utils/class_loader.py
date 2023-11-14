@@ -283,7 +283,7 @@ def get_kenning_submodule_from_path(module_path: str) -> str:
     return modulename
 
 
-def get_command(argv: List[str] = None, with_slash: bool = True) -> str:
+def get_command(argv: List[str] = None, with_slash: bool = True) -> List[str]:
     """
     Creates a string with command.
 
@@ -296,7 +296,7 @@ def get_command(argv: List[str] = None, with_slash: bool = True) -> str:
 
     Returns
     -------
-    str
+    List[str]
         Full string with command.
     """
     if argv is None:

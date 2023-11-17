@@ -44,8 +44,8 @@ else:
 
 BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
 MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
-MATPLOTLIB_DPI = 100
-DEFAULT_PLOT_SIZE = 900
+MATPLOTLIB_DPI = 120
+DEFAULT_PLOT_SIZE = 1200
 MATPLOTLIB_FONT_SIZE = 12
 
 plt.rc("font", size=MATPLOTLIB_FONT_SIZE)  # default text sizes
@@ -870,7 +870,7 @@ class ConfusionMatrixPlot(Plot):
         fig = plt.figure(figsize=self._plt_figsize(), dpi=MATPLOTLIB_DPI)
 
         percent_font_size = (
-            0.8
+            0.6
             * MATPLOTLIB_FONT_SIZE
             * min(1, 20 / self.confusion_matrix.shape[0])
         )

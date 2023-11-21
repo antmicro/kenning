@@ -387,6 +387,7 @@ class YOLACT(YOLACTWrapper):
     """
 
     pretrained_model_uri = (
+        # YOLACT with ResNet50 backbone
         "kenning:///models/instance_segmentation/yolact.onnx"
     )
 

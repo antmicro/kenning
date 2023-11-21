@@ -305,7 +305,7 @@ def timemeasurements(
         def statistics_wrapper(*args, **kwargs):
             start = get_time_func()
             returnvalue = function(*args, **kwargs)
-            duration = time.perf_counter() - start
+            duration = get_time_func() - start
             KLogger.debug(f"{function.__name__} time:  {duration * 1000} ms")
             MeasurementsCollector.measurements += {
                 measurementname: [duration],

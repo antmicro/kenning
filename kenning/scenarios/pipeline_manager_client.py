@@ -8,6 +8,7 @@ A script for connecting Kenning with Pipeline Manager server.
 """
 
 import argparse
+import asyncio
 import json
 import signal
 import sys
@@ -23,10 +24,6 @@ from kenning.cli.command_template import (
     CommandTemplate,
 )
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.excepthook import (
-    MissingKenningDependencies,
-    find_missing_optional_dependency,
-)
 from kenning.utils.logger import Callback, KLogger, TqdmCallback
 
 
@@ -119,128 +116,168 @@ class PipelineManagerClient(CommandTemplate):
         )
         from pipeline_manager_backend_communication.misc_structures import (
             MessageType,
-            Status,
         )
 
         from kenning.pipeline_manager.core import BaseDataflowHandler
         from kenning.pipeline_manager.flow_handler import KenningFlowHandler
         from kenning.pipeline_manager.pipeline_handler import PipelineHandler
 
-        def parse_message(
-            dataflow_handler: BaseDataflowHandler,
-            message_type: MessageType,
-            data: bytes,
-            output_file_path: Path,
-        ) -> Tuple[MessageType, bytes]:
-            """
-            Uses dataflow_handler to parse the incoming data from Pipeline
-            Manager according to the action that is to be performed.
+        class PipelineManagerRPC:
+            def __init__(
+                self,
+                dataflow_handler: BaseDataflowHandler,
+                output_file_path: Path,
+            ):
+                self.dataflow_handler = dataflow_handler
+                self.output_file_path = output_file_path
 
-            Parameters
-            ----------
-            dataflow_handler : BaseDataflowHandler
-                Used to convert to and from Pipeline Manager JSON formats,
-                create and run dataflows defined in manager.
-            message_type : MessageType
-                Action requested by the Pipeline Manager to perform.
-            data : bytes
-                Data send by Manager.
-            output_file_path : Path
-                Path where the optional output will be saved.
+            def dataflow_import(
+                self, external_application_dataflow: Dict
+            ) -> Dict:
+                """
+                Imports Kenning scenario to Pipeline Manager.
 
-            Returns
-            -------
-            Tuple[MessageType, bytes]
-                Return answer to send to the Manager.
-            """
-            from pipeline_manager_backend_communication.misc_structures import (  # noqa: E501
-                MessageType,
-            )
+                Parameters
+                ----------
+                external_application_dataflow: Dict
+                    Scenario in Kenning format
 
-            if message_type == MessageType.SPECIFICATION:
+                Returns
+                -------
+                Dict
+                    Pipeline Manager graph representing the scenario
+                """
+                graph_repr = self.dataflow_handler.create_dataflow(
+                    external_application_dataflow
+                )
+                return {"type": MessageType.OK.value, "content": graph_repr}
+
+            def specification_get(self) -> Dict:
+                """
+                Returns the specification of available Kenning classes.
+
+                Returns
+                -------
+                Dict
+                    Method's response
+                """
                 if not PipelineManagerClient.specification:
                     KLogger.info(
-                        "SpecificationBuilder: Generate nodes specification"
+                        "SpecificationBuilder: Generating specification..."
                     )
                     PipelineManagerClient.specification = (
-                        dataflow_handler.get_specification(
+                        self.dataflow_handler.get_specification(
                             workspace_dir=args.workspace_dir,
                             spec_save_path=args.save_specification_path,
                         )
                     )
+                return {
+                    "type": MessageType.OK.value,
+                    "content": PipelineManagerClient.specification,
+                }
 
-                feedback_msg = json.dumps(PipelineManagerClient.specification)
+            async def dataflow_run(self, dataflow: Dict) -> Dict:
+                """
+                Runs the given Kenning scenario.
 
-            elif (
-                message_type == MessageType.VALIDATE
-                or message_type == MessageType.RUN
-                or message_type == MessageType.EXPORT
-            ):
-                dataflow = json.loads(data)
-                successful, msg = dataflow_handler.parse_dataflow(dataflow)
+                Parameters
+                ----------
+                dataflow : Dict
+                    Content of the request.
 
-                if not successful:
-                    return MessageType.ERROR, msg.encode()
+                Returns
+                -------
+                Dict
+                    Method's response
+                """
+                status, msg = self.dataflow_handler.parse_dataflow(dataflow)
+                if not status:
+                    return {"type": MessageType.ERROR.value, "content": msg}
                 try:
-                    prepared_runner = dataflow_handler.parse_json(msg)
+                    runner = self.dataflow_handler.parse_json(msg)
+                    MeasurementsCollector.clear()
 
-                    if message_type == MessageType.RUN:
-                        MeasurementsCollector.clear()
-                        dataflow_handler.run_dataflow(
-                            prepared_runner, output_file_path
+                    def dataflow_runner(runner):
+                        self.dataflow_handler.run_dataflow(
+                            runner, self.output_file_path
                         )
-                    else:
-                        if message_type == MessageType.EXPORT:
-                            with open(output_file_path, "w") as f:
-                                json.dump(msg, f, indent=4)
 
-                        # runner is created without processing it through
-                        # 'run_dataflow', it should be destroyed manually.
-                        dataflow_handler.destroy_dataflow(prepared_runner)
+                    task = asyncio.to_thread(dataflow_runner, runner)
+                    await asyncio.gather(task)
                 except Exception as ex:
                     KLogger.error(ex, stack_info=True)
-                    return MessageType.ERROR, str(ex).encode()
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": str(ex),
+                    }
+                return {
+                    "type": MessageType.OK.value,
+                    "content": f"Successfully finished processing. Measurements are saved in {self.output_file_path}",  # noqa: E501
+                }
 
-                if message_type == MessageType.VALIDATE:
-                    feedback_msg = "Successfully validated"
-                elif message_type == MessageType.RUN:
-                    feedback_msg = (
-                        f"Successfully run. Output saved in {output_file_path}"
-                    )
-                elif message_type == MessageType.EXPORT:
-                    feedback_msg = f"Successfully exported. Output saved in {output_file_path}"  # noqa: E501
+            def dataflow_validate(self, dataflow: Dict) -> Dict:
+                """
+                Validates the graph in terms of compatibility of classes.
 
-            elif message_type == MessageType.IMPORT:
+                Parameters
+                ----------
+                dataflow : Dict
+                    Current graph representing the scenario.
+
+                Returns
+                -------
+                Dict
+                    Method's response
+                """
+                status, msg = self.dataflow_handler.parse_dataflow(dataflow)
+                if not status:
+                    return {"type": MessageType.ERROR.value, "content": msg}
                 try:
-                    pipeline = json.loads(data)
-                    dataflow = dataflow_handler.create_dataflow(pipeline)
-                    feedback_msg = json.dumps(dataflow)
+                    runner = self.dataflow_handler.parse_json(msg)
+                    self.dataflow_handler.destroy_dataflow(runner)
                 except Exception as ex:
                     KLogger.error(ex, stack_info=True)
-                    return MessageType.ERROR, str(ex).encode()
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": str(ex),
+                    }
+                return {
+                    "type": MessageType.OK.value,
+                    "content": "The graph is valid.",
+                }
 
-            return MessageType.OK, feedback_msg.encode(encoding="UTF-8")
+            def dataflow_export(self, dataflow: Dict) -> Dict:
+                """
+                Export the graph to Kenning's scenario format.
 
-        def send_progress(state: Dict, client: CommunicationBackend):
-            """
-            Sends progress message to Pipeline Manager.
+                Parameters
+                ----------
+                dataflow : Dict
+                    Current graph representing the scenario.
 
-            Parameters
-            ----------
-            state : Dict
-                The `format_dict` that comes from tqdm. It is used to determine
-                the progress of the inference.
-            client : CommunicationBackend
-                Client used to send the message.
-            """
-            from pipeline_manager_backend_communication.misc_structures import (  # noqa: E501
-                MessageType,
-            )
-
-            progress = int(state["n"] / state["total"] * 100)
-            client.send_message(
-                MessageType.PROGRESS, str(progress).encode("UTF-8")
-            )
+                Returns
+                -------
+                Dict
+                    Method's response
+                """
+                status, msg = self.dataflow_handler.parse_dataflow(dataflow)
+                if not status:
+                    return {"type": MessageType.ERROR.value, "content": msg}
+                try:
+                    runner = self.dataflow_handler.parse_json(msg)
+                    with open(self.output_file_path, "w") as f:
+                        json.dump(msg, f, indent=4)
+                    self.dataflow_handler.destroy_dataflow(runner)
+                except Exception as ex:
+                    KLogger.error(ex, stack_info=True)
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": str(ex),
+                    }
+                return {
+                    "type": MessageType.OK.value,
+                    "content": f"The graph is saved to {self.output_file_path}.",  # noqa: E501
+                }
 
         default_sigint_handler = signal.getsignal(signal.SIGINT)
 
@@ -289,94 +326,88 @@ class PipelineManagerClient(CommandTemplate):
 
         build_frontend(frontend_path=frontend_files_path)
 
-        client = CommunicationBackend(args.host, args.port)
-        start_server_in_parallel(frontend_path=frontend_files_path)
+        def send_progress(
+            state: Dict,
+            client: CommunicationBackend,
+            loop: asyncio.base_events.BaseEventLoop,
+        ):
+            """
+            Sends progress message to Pipeline Manager.
 
-        try:
-            if args.spec_type == "pipeline":
-                dataflow_handler = PipelineHandler(
-                    layout_algorithm=args.layout
+            Parameters
+            ----------
+            state : Dict
+                The `format_dict` that comes from tqdm. It is used to determine
+                the progress of the inference.
+            client : CommunicationBackend
+                Client used to send the message.
+            loop : asyncio.base_events.BaseEventLoop
+                main asyncio loop
+            """
+            progress = int(state["n"] / state["total"] * 100)
+
+            async def progress_wrapper(client):
+                await client.notify("progress_change", {"progress": progress})
+
+            asyncio.run_coroutine_threadsafe(progress_wrapper(client), loop)
+
+        async def run_client():
+            server_id = await start_server_in_parallel(
+                frontend_path=frontend_files_path
+            )
+            await asyncio.sleep(1)
+
+            client = CommunicationBackend(host=args.host, port=args.port)
+
+            callback_percent = Callback(
+                "runtime", send_progress, 0.5, client, asyncio.get_event_loop()
+            )
+
+            try:
+                if args.spec_type == "pipeline":
+                    dataflow_handler = PipelineHandler(
+                        layout_algorithm=args.layout
+                    )
+                elif args.spec_type == "flow":
+                    dataflow_handler = KenningFlowHandler(
+                        layout_algorithm=args.layout
+                    )
+                else:
+                    raise RuntimeError(
+                        f"Unrecognized f{args.spec_type} spec_type"
+                    )
+
+                rpchandler = PipelineManagerRPC(
+                    dataflow_handler, args.file_path
                 )
-            elif args.spec_type == "flow":
-                dataflow_handler = KenningFlowHandler(
-                    layout_algorithm=args.layout
+                TqdmCallback.register_callback(callback_percent)
+                await client.initialize_client(rpchandler)
+                await client.start_json_rpc_client()
+            except ValidationError as ex:
+                KLogger.error(f"Failed to load JSON file:\n{ex}")
+                return 1
+            except RuntimeError as ex:
+                KLogger.error(f"Server runtime error:\n{ex}")
+                return 1
+            except ConnectionRefusedError as ex:
+                KLogger.error(
+                    f"Could not connect to the Pipeline Manager server: {ex}"
                 )
-            else:
-                raise RuntimeError(f"Unrecognized f{args.spec_type} spec_type")
+                return ex.errno
+            except PipelineManagerShutdownException:
+                KLogger.info("Closing the Visual Editor...")
+            except Exception as ex:
+                KLogger.error(f"Unexpected exception:\n{ex}")
+                raise
+            finally:
+                await client.disconnect()
+                stop_parallel_server(server_id)
+                TqdmCallback.unregister_callback(callback_percent)
+                signal.signal(signal.SIGINT, default_sigint_handler)
+                KLogger.info("Closed the Visual Editor")
+            return 0
 
-            client.initialize_client()
-
-            callback_percent = Callback("runtime", send_progress, 1.0, client)
-            TqdmCallback.register_callback(callback_percent)
-
-            while client.client_socket:
-                status, message = client.wait_for_message()
-                if status == Status.DATA_READY:
-                    message_type, data = message
-
-                    try:
-                        return_status, return_message = parse_message(
-                            dataflow_handler,
-                            message_type,
-                            data,
-                            args.file_path,
-                        )
-                    except ModuleNotFoundError as e:
-                        extras = find_missing_optional_dependency(e.name)
-                        error_message = MissingKenningDependencies(
-                            name=e.name,
-                            path=e.path,
-                            optional_dependencies=extras,
-                        )
-                        client.send_message(
-                            MessageType.ERROR,
-                            bytes(str(error_message), "utf-8"),
-                        )
-                        continue
-
-                    client.send_message(return_status, return_message)
-        except ValidationError as ex:
-            KLogger.error(f"Failed to load JSON file:\n{ex}")
-            client.send_message(
-                MessageType.ERROR,
-                bytes(f"Failed to load JSON file:\n{ex}", "utf-8"),
-            )
-            return 1
-        except RuntimeError as ex:
-            KLogger.error(f"Server runtime error:\n{ex}")
-            client.send_message(
-                MessageType.ERROR,
-                bytes(f"Server runtime error:\n{ex}", "utf-8"),
-            )
-            return 1
-        except ConnectionRefusedError as ex:
-            KLogger.error(
-                f"Could not connect to the Pipeline Manager server: {ex}"
-            )
-            client.send_message(
-                MessageType.ERROR,
-                bytes(
-                    f"Could not connect to the Pipeline Manager server: {ex}",
-                    "utf-8",
-                ),
-            )
-            return ex.errno
-        except PipelineManagerShutdownException:
-            KLogger.info("Closing the Visual Editor...")
-        except Exception as ex:
-            KLogger.error(f"Unexpected exception:\n{ex}")
-            client.send_message(
-                MessageType.ERROR,
-                bytes(f"Unexpected exception:\n{ex}", "utf-8"),
-            )
-            raise
-        finally:
-            client.disconnect()
-            stop_parallel_server()
-            TqdmCallback.unregister_callback(callback_percent)
-            signal.signal(signal.SIGINT, default_sigint_handler)
-            KLogger.info("Closed the Visual Editor")
-        return 0
+        return asyncio.run(run_client())
 
 
 if __name__ == "__main__":

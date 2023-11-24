@@ -78,6 +78,7 @@ class PipelineRunner(object):
         self.optimizers = optimizers
         self.runtime = runtime
         self.protocol = protocol
+        self.should_cancel = False
 
     @classmethod
     def from_json_cfg(
@@ -632,6 +633,8 @@ class PipelineRunner(object):
                 for X, y in tqdm(
                     self.dataset.iter_test(), file=logger_progress_bar
                 ):
+                    if self.should_cancel:
+                        break
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
                     )(X)
@@ -656,6 +659,9 @@ class PipelineRunner(object):
             measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
             KLogger.fatal(ex)
+            return False
+        except KeyboardInterrupt:
+            KLogger.info("Stopping benchmark...")
             return False
         else:
             MeasurementsCollector.measurements += measurements
@@ -692,6 +698,8 @@ class PipelineRunner(object):
                     self.dataset.iter_test(),
                     file=logger_progress_bar,
                 ):
+                    if self.should_cancel:
+                        break
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
                     )(X)

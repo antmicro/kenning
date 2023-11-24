@@ -16,6 +16,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from jsonrpc.exceptions import JSONRPCDispatchException
 from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (
@@ -26,14 +27,6 @@ from kenning.cli.command_template import (
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.logger import Callback, KLogger, TqdmCallback
-
-
-class PipelineManagerShutdownException(Exception):
-    """
-    Raised when Pipeline Manager ends its work.
-    """
-
-    pass
 
 
 class PipelineManagerClient(CommandTemplate):
@@ -165,8 +158,17 @@ class PipelineManagerClient(CommandTemplate):
                         "type": MessageType.OK.value,
                         "content": graph_repr,
                     }
-                except asyncio.exceptions.CancelledError:
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
                     KLogger.warning("Cancelling import job")
+                except (ValidationError, RuntimeError) as ex:
+                    KLogger.error(f"Failed to load JSON file:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Failed to load scenario:\n{ex}",  # noqa: E501
+                    }
                 finally:
                     async with self.current_task_lock:
                         self.current_task = None
@@ -195,8 +197,17 @@ class PipelineManagerClient(CommandTemplate):
                         "type": MessageType.OK.value,
                         "content": PipelineManagerClient.specification,
                     }
-                except asyncio.exceptions.CancelledError:
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
                     KLogger.warning("Cancelling specification building")
+                except (ValidationError, RuntimeError) as ex:
+                    KLogger.error(f"Failed to generate specification:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Failed to generate specification:\n{ex}",  # noqa: E501
+                    }
 
             async def dataflow_run(self, dataflow: Dict) -> Dict:
                 """
@@ -258,8 +269,17 @@ class PipelineManagerClient(CommandTemplate):
                         "type": MessageType.OK.value,
                         "content": f"Successfully finished processing. Measurements are saved in {self.output_file_path}",  # noqa: E501
                     }
-                except asyncio.exceptions.CancelledError:
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
                     KLogger.warning("Cancelling run job")
+                except (ValidationError, RuntimeError) as ex:
+                    KLogger.error(f"Failed to run the pipeline:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Failed to run the pipeline:\n{ex}",  # noqa: E501
+                    }
                 finally:
                     async with self.current_task_lock:
                         self.current_task = None
@@ -309,8 +329,17 @@ class PipelineManagerClient(CommandTemplate):
                         "type": MessageType.OK.value,
                         "content": "The graph is valid.",
                     }
-                except asyncio.exceptions.CancelledError:
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
                     KLogger.warning("Cancelling validate job")
+                except (ValidationError, RuntimeError) as ex:
+                    KLogger.error(f"Validation error:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Validation error:\n{ex}",  # noqa: E501
+                    }
                 finally:
                     async with self.current_task_lock:
                         self.current_task = None
@@ -360,8 +389,17 @@ class PipelineManagerClient(CommandTemplate):
                         "type": MessageType.OK.value,
                         "content": f"The graph is saved to {self.output_file_path}.",  # noqa: E501
                     }
-                except asyncio.exceptions.CancelledError:
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
                     KLogger.warning("Cancelling export job")
+                except (ValidationError, RuntimeError) as ex:
+                    KLogger.error(f"Failed to save the scenario:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Failed to save the scenario:\n{ex}",  # noqa: E501
+                    }
                 finally:
                     async with self.current_task_lock:
                         self.current_task = None
@@ -440,17 +478,10 @@ class PipelineManagerClient(CommandTemplate):
 
             async def exit_handler(signal, loop):
                 KLogger.info("Closing the Visual Editor...")
-                await client.disconnect()
-                stop_parallel_server(server_id)
                 TqdmCallback.unregister_callback(callback_percent)
-                tasks = [
-                    t
-                    for t in asyncio.all_tasks()
-                    if t is not asyncio.current_task()
-                ]
-                [task.cancel() for task in tasks]
-                await asyncio.gather(*tasks, return_exceptions=True)
-                loop.stop()
+                if client.client_transport:
+                    client.client_transport.abort()
+                stop_parallel_server(server_id)
                 KLogger.info("Closed the Visual Editor")
 
             loop.add_signal_handler(
@@ -482,27 +513,14 @@ class PipelineManagerClient(CommandTemplate):
                 TqdmCallback.register_callback(callback_percent)
                 await client.initialize_client(rpchandler)
                 await client.start_json_rpc_client()
-            except ValidationError as ex:
-                KLogger.error(f"Failed to load JSON file:\n{ex}")
-                return 1
-            except RuntimeError as ex:
-                KLogger.error(f"Server runtime error:\n{ex}")
-                return 1
             except ConnectionRefusedError as ex:
                 KLogger.error(
                     f"Could not connect to the Pipeline Manager server: {ex}"
                 )
                 return ex.errno
-            except PipelineManagerShutdownException:
-                KLogger.info("Closing the Visual Editor...")
             except Exception as ex:
                 KLogger.error(f"Unexpected exception:\n{ex}")
-                raise
-            finally:
-                await client.disconnect()
-                stop_parallel_server(server_id)
-                TqdmCallback.unregister_callback(callback_percent)
-                KLogger.info("Closed the Visual Editor")
+                return ex.errno
             return 0
 
         return asyncio.run(run_client())

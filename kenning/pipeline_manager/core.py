@@ -200,6 +200,18 @@ class BaseDataflowHandler:
         self.dataflow_graph = graph_creator
         self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
+        self.navBarActions = [
+            {
+                "name": "Run",
+                "iconName": "Run",
+                "procedureName": "dataflow_run",
+            },
+            {
+                "name": "Validate",
+                "iconName": "Validate",
+                "procedureName": "dataflow_validate",
+            },
+        ]
 
     def get_specification(
         self, workspace_dir: Path, spec_save_path: Optional[Path] = None
@@ -224,6 +236,7 @@ class BaseDataflowHandler:
         """
         self.spec_builder.metadata_add_param("twoColumn", True)
         self.spec_builder.metadata_add_param("layout", self.autolayout)
+        self.spec_builder.metadata_add_param("navbarItems", self.navBarActions)
 
         def strip_io(io_list: list, direction) -> list:
             """

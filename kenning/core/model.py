@@ -90,6 +90,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         self.dataset = dataset
         self.from_file = from_file
         self.model_prepared = False
+        self.should_cancel = False
 
     def get_path(self) -> PathOrURI:
         """
@@ -318,6 +319,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             for X, y in TqdmCallback(
                 "runtime", self.dataset.iter_test(), file=logger_progress_bar
             ):
+                if self.should_cancel:
+                    break
                 prepX = self._preprocess_input(X)
                 preds = self._run_inference(prepX)
                 posty = self._postprocess_outputs(preds)

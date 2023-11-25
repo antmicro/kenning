@@ -57,7 +57,6 @@ from kenning.core.metrics import (
     compute_performance_metrics,
     compute_renode_metrics,
 )
-from kenning.core.report import create_report_from_measurements
 from kenning.resources import reports
 from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
@@ -155,6 +154,8 @@ def performance_report(
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
+
+    from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
         f'Running performance_report for {measurementsdata["model_name"]}'
@@ -341,6 +342,8 @@ def comparison_performance_report(
     """
     from servis import render_multiple_time_series_plot
 
+    from kenning.core.report import create_report_from_measurements
+
     KLogger.info("Running comparison_performance_report")
 
     metric_names = {
@@ -521,6 +524,8 @@ def classification_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.report import create_report_from_measurements
+
     KLogger.info(
         f'Running classification report for {measurementsdata["model_name"]}'
     )
@@ -612,6 +617,8 @@ def comparison_classification_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.report import create_report_from_measurements
+
     KLogger.info("Running comparison_classification_report")
     # HTML plots format unsupported, removing html
 
@@ -770,6 +777,7 @@ def detection_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import (
         compute_ap,
         compute_map_per_threshold,
@@ -917,6 +925,7 @@ def comparison_detection_report(
     """
     KLogger.info("Running comparison_detection_report")
 
+    from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import (
         compute_map_per_threshold,
     )
@@ -998,6 +1007,8 @@ def renode_stats_report(
         Content of the report in MyST format.
     """
     from servis import render_time_series_plot_with_histogram
+
+    from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
         f'Running renode_stats_report for {measurementsdata["model_name"]}'
@@ -1300,6 +1311,8 @@ def comparison_renode_stats_report(
         Content of the report in MyST format.
     """
     from servis import render_multiple_time_series_plot
+
+    from kenning.core.report import create_report_from_measurements
 
     def retrieve_non_zero_profiler_data(
         measurementsdata: List[Dict], keys: List[str] = []
@@ -1667,6 +1680,8 @@ def generate_report(
     smaller_header : bool
         Use H2 header instead of H1.
     """
+    from kenning.core.report import create_report_from_measurements
+
     reptypes = {
         PERFORMANCE: performance_report,
         CLASSIFICATION: classification_report,

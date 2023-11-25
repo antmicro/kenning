@@ -16,7 +16,6 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from jsonrpc.exceptions import JSONRPCDispatchException
 from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (
@@ -100,6 +99,7 @@ class PipelineManagerClient(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
+        from jsonrpc.exceptions import JSONRPCDispatchException
         from pipeline_manager import frontend_builder
         from pipeline_manager.backend.run_in_parallel import (
             start_server_in_parallel,

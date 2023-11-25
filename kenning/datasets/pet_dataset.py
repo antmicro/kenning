@@ -194,7 +194,28 @@ class PetDataset(Dataset):
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))
         top_5_count = 0
-        for prediction, label in zip(predictions[0], truth):
+        while hasattr(predictions, "__len__"):
+            if len(predictions) == 1:
+                predictions = predictions[0]
+            else:
+                break
+        shape = []
+        lastlist = predictions
+        while hasattr(lastlist, "__len__"):
+            shape.append(len(lastlist))
+            lastlist = lastlist[0]
+        if len(shape) == 1:
+            assert self.batch_size == 1
+            assert shape[0] == self.numclasses
+            predictions = [predictions]
+        elif len(shape) > 1:
+            assert shape[0] == self.batch_size
+        for prediction, label in zip(predictions, truth):
+            # some compilers/frameworks wrap the output in an
+            # additional dimension
+            while len(prediction) != self.numclasses:
+                assert len(prediction) == 1
+                prediction = prediction[0]
             confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             top_5_count += (
                 1

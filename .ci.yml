@@ -51,11 +51,7 @@ pytest:
     before_script:
         - /scripts/prepare_environment.sh .
         # Prepare Docker
-        - apt-get update --allow-releaseinfo-change -y > /dev/null 2> /dev/null
-        - apt-get -qqy --no-install-recommends install docker.io cgroupfs-mount crun fuse-overlayfs pigz ca-certificates > /dev/null
-        - cgroupfs-mount
-        - dockerd -s fuse-overlayfs --add-runtime=crun=/usr/bin/crun --default-runtime=crun --config-file="" > /dev/null 2> /dev/null &
-        - while ! test -S /var/run/docker.sock; do echo "Waiting for Docker..." && sleep 1; done; docker info
+        - /scripts/prepare_docker.sh
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         - pip install -e ".[test]"
     script:
@@ -144,7 +140,6 @@ sample-client-server-scenario:
     script:
         - /scripts/prepare_environment.sh .
         - apt-get update && apt-get install -y procps
-        - sed -i 's/10.9.8.7/localhost/g' ./scripts/jsonconfigs/tflite-tvm-classification-client-server.json
         - ./scripts/json-tflite-tvm-classification-server.sh &
         - PID=$!
         - ./scripts/json-tflite-tvm-classification-client.sh || CLIENT_RET=$?

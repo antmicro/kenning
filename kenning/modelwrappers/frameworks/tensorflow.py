@@ -54,7 +54,7 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         if hasattr(self, "model") and self.model is not None:
             del self.model
         self.model = tf.keras.models.load_model(str(model_path))
-        print(self.model.summary())
+        self.model.summary()
 
     def save_model(self, model_path: PathOrURI):
         self.prepare_model()

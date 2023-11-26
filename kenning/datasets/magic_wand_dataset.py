@@ -234,9 +234,28 @@ class MagicWandDataset(Dataset):
 
     def evaluate(self, predictions: List, truth: Optional[List] = None):
         measurements = Measurements()
+        while hasattr(predictions, "__len__"):
+            if len(predictions) == 1:
+                predictions = predictions[0]
+            else:
+                break
+        shape = []
+        lastlist = predictions
+        while hasattr(lastlist, "__len__"):
+            shape.append(len(lastlist))
+            lastlist = lastlist[0]
+        if len(shape) == 1:
+            assert self.batch_size == 1
+            assert shape[0] == self.numclasses
+            predictions = [predictions]
+        elif len(shape) > 1:
+            assert shape[0] == self.batch_size
         if truth is not None:
             confusion_matrix = np.zeros((self.numclasses, self.numclasses))
             for prediction, label in zip(predictions, truth):
+                while len(prediction) != self.numclasses:
+                    assert len(prediction) == 1
+                    prediction = prediction[0]
                 confusion_matrix[np.argmax(label), np.argmax(prediction)] += 1
             measurements.accumulate(
                 "eval_confusion_matrix",
@@ -246,6 +265,9 @@ class MagicWandDataset(Dataset):
         else:
             predictions_vector = np.zeros(self.numclasses)
             for prediction in predictions:
+                while len(prediction) != self.numclasses:
+                    assert len(prediction) == 1
+                    prediction = prediction[0]
                 predictions_vector[np.argmax(prediction)] += 1
             measurements.accumulate(
                 "predictions",

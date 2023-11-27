@@ -175,7 +175,7 @@ class RenodeRuntime(Runtime):
                 # prepare iterator for inference
                 iterable = (
                     range(self.batches_count)
-                    if self.sensor is None
+                    if self.sensor is not None
                     else dataset.iter_test()
                 )
 

@@ -149,10 +149,8 @@ def sigmoid(x: np.ndarray) -> np.ndarray:
     )
 
 
-MEANS = np.array([103.94, 116.78, 123.68], dtype=np.float32).reshape(-1, 1, 1)
-STD = np.array([57.38, 57.12, 58.40], dtype=np.float32).reshape(-1, 1, 1)
-FACTOR = 255.0 / STD
-RATIO = MEANS / STD
+MEANS = np.array([103.94, 116.78, 123.68], dtype=np.float32)[:, None, None]
+STD = np.array([57.38, 57.12, 58.40], dtype=np.float32)[:, None, None]
 
 
 class YOLACTWrapper(ModelWrapper, ABC):
@@ -219,6 +217,43 @@ class YOLACTWrapper(ModelWrapper, ABC):
     def save_model(self, model_path: PathOrURI):
         shutil.copy(self.original_model_path, model_path)
 
+    def preprocess_input(self, X: List[np.ndarray]) -> np.ndarray:
+        """
+        Preprocesses input image to be compatible with the model.
+
+        Uses Z-score normalization with the mean and standard deviation
+        of the MS COCO dataset.
+
+        Assumes that the input is in RGB format with NCHW layout.
+
+        Parameters
+        ----------
+        X : List[np.ndarray]
+            A single image in a batch.
+
+        Returns
+        -------
+        np.ndarray
+            Preprocessed image.
+
+        Raises
+        ------
+        RuntimeError
+            If the batch size is not 1.
+        """
+        if len(X) != 1:
+            raise RuntimeError(
+                "YOLACT model expects only single image in a batch."
+            )
+        _, self.w, self.h = X[0].shape
+        X = np.transpose(X[0], (1, 2, 0))
+        if X.max() > 1:
+            X = X / 255.0
+        X = cv2.resize(X, (550, 550))
+        X = np.transpose(X, (2, 0, 1))
+        X = (X * 255.0 - MEANS) / STD
+        return X[None, [2, 1, 0], ...].astype(np.float32)
+
     def get_framework_and_version(self):
         return ("onnx", onnx.__version__)
 
@@ -247,19 +282,6 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
     """
 
     pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"  # noqa: E501
-
-    def preprocess_input(self, X):
-        if len(X) > 1:
-            raise RuntimeError(
-                "YOLACT model expects only single image in a batch."
-            )
-        _, self.w, self.h = X[0].shape
-
-        X = np.transpose(X[0], (1, 2, 0))
-        X = cv2.resize(X, (550, 550))
-        X = np.transpose(X, (2, 0, 1))
-        X = (X * 255.0 - MEANS) / STD
-        return X[None, ...].astype(np.float32)
 
     def postprocess_outputs(self, y):
         # The signature of the y input
@@ -390,22 +412,6 @@ class YOLACT(YOLACTWrapper):
         # YOLACT with ResNet50 backbone
         "kenning:///models/instance_segmentation/yolact.onnx"
     )
-
-    def preprocess_input(self, X):
-        if len(X) != 1:
-            raise RuntimeError(
-                "YOLACT model expects only single image in a batch."
-            )
-        X = X[0]
-        if X.shape[0] == 3:
-            X = X.transpose(1, 2, 0)
-        self.h, self.w, _ = X.shape
-        X = cv2.resize(X, (550, 550), interpolation=cv2.INTER_LINEAR)
-        if X.dtype == np.uint8:
-            X = X.astype(np.float32) / 255.0
-        X = X.transpose(2, 0, 1)
-        X = np.expand_dims(X, 0)
-        return X * FACTOR - RATIO
 
     def postprocess_outputs(self, y):
         if not y:

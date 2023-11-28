@@ -37,12 +37,17 @@ def main():
     Creates and manages parsers, runs subcommands, and handle errors.
     """
     verbosity = "WARNING"
-    if (
-        "--verbosity" in sys.argv
-        and len(sys.argv) > sys.argv.index("--verbosity") + 1
-    ):
-        verbosity = sys.argv[sys.argv.index("--verbosity") + 1]
-    KLogger.configure()
+    for i, arg in enumerate(sys.argv):
+        if arg.startswith("--verbosity"):
+            if "=" in arg:
+                _, verbosity = arg.split("=")
+            elif len(sys.argv) > i + 1:
+                verbosity = sys.argv[i + 1]
+            else:
+                raise ValueError(
+                    f"Argument {arg} requires a value, e.g. --verbosity=INFO"
+                )
+            break
     KLogger.set_verbosity(level=verbosity)
     configure_autocomplete()
     parser, parsers = setup_base_parser()

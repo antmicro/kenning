@@ -47,36 +47,6 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             level="NOTSET",
             fmt=_KLogger.FORMAT.format(package="kenning"),
         )
-        self.configure()
-
-    def configure(self):
-        """
-        Configure logging formats.
-        """
-        # set format for existing loggers
-        loggers = [
-            logging.getLogger(name) for name in logging.root.manager.loggerDict
-        ]
-        for logger in loggers:
-            coloredlogs.install(
-                logger=logger,
-                level=logger.level,
-                fmt=_KLogger.FORMAT.format(package=logger.name),
-            )
-
-        # set format for new loggers
-        logging_getLogger = logging.getLogger
-
-        def getLogger(name: Optional[str] = None):
-            logger = logging_getLogger(name)
-            coloredlogs.install(
-                logger=logger,
-                level=logger.level,
-                fmt=_KLogger.FORMAT.format(package=logger.name),
-            )
-            return logger
-
-        logging.getLogger = getLogger
 
     def set_verbosity(self, level: str):
         """
@@ -89,10 +59,6 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         """
         self.setLevel(level)
         coloredlogs.adjust_level(self, level)
-        for name in logging.root.manager.loggerDict:
-            logger = logging.getLogger(name)
-            logger.setLevel(level)
-            coloredlogs.adjust_level(logger, level)
 
 
 KLogger = _KLogger()

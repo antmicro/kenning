@@ -425,7 +425,7 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         return img
 
 
-class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
+class RealTimeSegmentationVisualizer(BaseRealTimeVisualizer):
     """
     Visualizes output of segmentation showing masks, class names and scores.
     """
@@ -539,7 +539,7 @@ class RealTimeSegmentationVisualization(BaseRealTimeVisualizer):
         return img
 
 
-class RealTimeClassificationVisualization(BaseRealTimeVisualizer):
+class RealTimeClassificationVisualizer(BaseRealTimeVisualizer):
     """
     Visualizes output of classification showing list of classes and scores.
     """

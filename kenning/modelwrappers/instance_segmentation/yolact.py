@@ -392,12 +392,19 @@ class YOLACT(YOLACTWrapper):
     )
 
     def preprocess_input(self, X):
-        if len(X) > 1:
+        if len(X) != 1:
             raise RuntimeError(
                 "YOLACT model expects only single image in a batch."
             )
-        _, self.h, self.w = X[0].shape
-        X = np.resize(X[0].astype(np.float32), (1, 3, 550, 550))
+        X = X[0]
+        if X.shape[0] == 3:
+            X = X.transpose(1, 2, 0)
+        self.h, self.w, _ = X.shape
+        X = cv2.resize(X, (550, 550), interpolation=cv2.INTER_LINEAR)
+        if X.dtype == np.uint8:
+            X = X.astype(np.float32) / 255.0
+        X = X.transpose(2, 0, 1)
+        X = np.expand_dims(X, 0)
         return X * FACTOR - RATIO
 
     def postprocess_outputs(self, y):

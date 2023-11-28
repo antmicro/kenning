@@ -2002,8 +2002,6 @@ class RenderReport(CommandTemplate):
     def run(args, **kwargs):
         command = get_command()
 
-        KLogger.set_verbosity(args.verbosity)
-
         if args.to_html:
             if not isinstance(args.to_html, (str, Path)):
                 args.to_html = Path(args.report_path).with_suffix("")

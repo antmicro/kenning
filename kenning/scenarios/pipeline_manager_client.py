@@ -436,8 +436,6 @@ class PipelineManagerClient(CommandTemplate):
             if build_status != 0:
                 raise RuntimeError("Build error")
 
-        KLogger.set_verbosity(args.verbosity)
-
         frontend_files_path = args.workspace_dir / "frontend/dist"
 
         build_frontend(frontend_path=frontend_files_path)

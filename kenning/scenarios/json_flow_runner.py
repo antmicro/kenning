@@ -55,8 +55,6 @@ class FlowRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        KLogger.set_verbosity(args.verbosity)
-
         with open(args.json_cfg, "r") as f:
             json_cfg = json.load(f)
 

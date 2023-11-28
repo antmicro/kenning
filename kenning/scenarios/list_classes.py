@@ -36,7 +36,6 @@ from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
 )
-from kenning.utils.logger import KLogger
 
 
 def list_classes(
@@ -236,8 +235,6 @@ class ListClassesRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        KLogger.set_verbosity(args.verbosity)
-
         for base_class in args.base_classes:
             if base_class not in ListClassesRunner.base_class_arguments:
                 print(f"{base_class} is not a valid base class argument")

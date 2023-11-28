@@ -12,6 +12,7 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 from kenning.cli.parser import HELP_FLAGS, Parser, ParserHelpException
+from kenning.utils.logger import KLogger
 
 # Subcommands:
 OPTIMIZE = "optimize"
@@ -214,6 +215,7 @@ class CommandTemplate(ABC):
             else:
                 args, not_parsed = parser.parse_known_args(argv[1:])
 
+            KLogger.set_verbosity(args.verbosity)
             return cls.run(args, not_parsed=not_parsed)
         except ParserHelpException as ex:
             ex.print(parser)

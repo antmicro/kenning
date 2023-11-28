@@ -350,8 +350,6 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        KLogger.set_verbosity(args.verbosity)
-
         flag_config_names = ("runtime_cls", "protocol_cls")
         flag_config_not_none = [
             getattr(args, name, None) is not None for name in flag_config_names

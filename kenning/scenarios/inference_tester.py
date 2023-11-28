@@ -190,8 +190,6 @@ class InferenceTester(CommandTemplate):
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
 
-        KLogger.set_verbosity(args.verbosity)
-
         flag_config_names = (
             "modelwrapper_cls",
             "dataset_cls",

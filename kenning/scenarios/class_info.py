@@ -26,7 +26,6 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.completers import ClassPathCompleter
 from kenning.utils.class_info import generate_class_info
-from kenning.utils.logger import KLogger
 
 
 class ClassInfoRunner(CommandTemplate):
@@ -94,8 +93,6 @@ class ClassInfoRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
-        KLogger.set_verbosity(args.verbosity)
-
         args_dict = {
             k: v
             for k, v in vars(args).items()

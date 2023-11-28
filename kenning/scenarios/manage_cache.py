@@ -16,7 +16,6 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
 )
-from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceManager
 
 
@@ -84,8 +83,6 @@ class ManageCacheRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        KLogger.set_verbosity(args.verbosity)
-
         resource_manager = ResourceManager()
 
         if "list_files" == args.action:

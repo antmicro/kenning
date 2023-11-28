@@ -108,7 +108,7 @@ RT_DECT_VISUALIZER_JSON = {
 
 # base real time segmentation visualizer runner
 RT_SEGM_VISUALIZER_JSON = {
-    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualization",  # noqa: E501
+    "type": "kenning.outputcollectors.real_time_visualizers.RealTimeSegmentationVisualizer",  # noqa: E501
     "parameters": {
         "viewer_width": 512,
         "viewer_height": 512,

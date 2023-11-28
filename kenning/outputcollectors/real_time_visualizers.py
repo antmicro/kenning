@@ -279,9 +279,9 @@ class BaseRealTimeVisualizer(OutputCollector, ABC):
             List of data used for visualization.
         """
         assert len(input_data) == 1
-        assert len(output_data) == 1
         img = input_data[0]
-        output_data = output_data[0]
+        if output_data:
+            output_data = output_data[0]
 
         if self.input_memory_layout == "NCHW":
             img = img.transpose(1, 2, 0)

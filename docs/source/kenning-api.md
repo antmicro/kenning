@@ -356,9 +356,9 @@ Example implementations:
 * [BaseRealTimeVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py) base class for real time visualizers:
    * [RealTimeDetectionVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
       for visualizing detection model outputs,
-   * [RealTimeSegmentationVisualization](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
+   * [RealTimeSegmentationVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
       for visualizing segmentation model outputs,
-   * [RealTimeClassificationVisualization](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
+   * [RealTimeClassificationVisualizer](https://github.com/antmicro/kenning/blob/main/kenning/outputcollectors/real_time_visualizers.py)
       for visualizing classification model outputs.
 
 

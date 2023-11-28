@@ -24,7 +24,7 @@
         "type": "kenning.runtimes.onnx.ONNXRuntime",
         "parameters":
         {
-          "save_model_path": "./build/yolov4.onnx",
+          "save_model_path": "kenning:///models/object_detection/yolov4.onnx",
           "execution_providers": ["CUDAExecutionProvider"]
         }
       }

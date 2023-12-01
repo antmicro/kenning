@@ -26,3 +26,9 @@ Kenning CLI does not require custom `sys.excepthook`, so it will not be affected
 `KENNING_DOCS_VENV` defines path to the virtual environment used for tests marked as `docs`.
 If is not defined, system's default environment will be used.
 
+## `KENNING_ENABLE_ALL_LOGS`
+
+If `KENNING_ENABLE_ALL_LOGS` environmental variable is defined, logs from other libraries will be enabled.
+Passes verbosity of Kenning logs to other libraries.
+
+This is useful for debugging purposes, but it may cause a lot of noise in the logs.

@@ -294,68 +294,9 @@ class VideoObjectDetectionSegmentationDataset(
             int_img = np.multiply(img, 255).astype("uint8")
             int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
             int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
-            height, width = int_img.shape[0], int_img.shape[1]
+            int_img = self.apply_predictions(int_img, pred, gt)
 
-            # Add bounding boxes to the image
-            for truth_i, pred_i in zip(gt, pred):
-                cv2.rectangle(
-                    int_img,
-                    (int(truth_i.xmin * width), int(truth_i.ymin * height)),
-                    (int(truth_i.xmax * width), int(truth_i.ymax * height)),
-                    (0, 255, 0),
-                    2,
-                )
-                cv2.rectangle(
-                    int_img,
-                    (int(pred_i.xmin * width), int(pred_i.ymin * height)),
-                    (int(pred_i.xmax * width), int(pred_i.ymax * height)),
-                    (0, 0, 255),
-                    2,
-                )
-
-            # Add segmentation masks to the image
-            if self.task == "instance_segmentation":
-
-                def apply_mask(
-                    image: np.array, mask: np.array, color: np.array
-                ) -> np.array:
-                    """
-                    Applies the mask to the image.
-
-                    Parameters
-                    ----------
-                    image : np.array
-                        The image to which the mask should be applied.
-                    mask : np.array
-                        The mask to be applied.
-                    color : np.array
-                        The color of the mask.
-
-                    Returns
-                    -------
-                    np.array
-                        The image with the mask applied.
-                    """
-                    mask_img = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
-                    mask_img = mask_img.astype("float32") / 255.0
-                    mask_img *= np.array(color)
-                    mask_img = np.multiply(mask_img, 255).astype("uint8")
-                    image = cv2.addWeighted(image, 1, mask_img, 0.7, 0)
-                    return image
-
-                for truth_i, pred_i in zip(gt, pred):
-                    int_img = apply_mask(
-                        int_img, truth_i.mask, np.array([0.1, 0.1, 0.5])
-                    )
-                    int_img = apply_mask(
-                        int_img, truth_i.mask, np.array([0.1, 0.5, 0.1])
-                    )
-
-            cv2.imshow(
-                "evaluated image",
-                int_img,
-            )
-
+            cv2.imshow("evaluated image", int_img)
             while True:
                 c = cv2.waitKey(100)
                 if (

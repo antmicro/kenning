@@ -15,7 +15,6 @@ from typing import Dict, List, Optional, Tuple, Union
 import cv2
 import numpy as np
 from matplotlib import patches as patches
-from matplotlib import pyplot as plt
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -410,98 +409,6 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         elif self.task == "instance_segmentation":
             return compute_segm_iou(b1, b2)
 
-    def show_dect_eval_images(self, predictions: List, truth: List):
-        """
-        Shows the predictions on screen compared to ground truth.
-
-        It is meant for object detection.
-
-        The method runs a preview of inference results during
-        evaluation process.
-
-        Parameters
-        ----------
-        predictions : List
-            The list of predictions from the model.
-        truth : List
-            The ground truth for given batch.
-        """
-        KLogger.info(f"\ntruth\n{truth}")
-        KLogger.info(f"\npredictions\n{predictions}")
-        for pred, gt in zip(predictions, truth):
-            img = self.prepare_input_samples(
-                [self.dataX[self._dataindex - 1]]
-            )[0]
-            fig, ax = plt.subplots()
-            ax.imshow(img.transpose(1, 2, 0))
-            for bbox in pred:
-                rect = patches.Rectangle(
-                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                    (bbox.xmax - bbox.xmin) * img.shape[1],
-                    (bbox.ymax - bbox.ymin) * img.shape[2],
-                    linewidth=3,
-                    edgecolor="r",
-                    facecolor="none",
-                )
-                ax.add_patch(rect)
-            for bbox in gt:
-                rect = patches.Rectangle(
-                    (bbox.xmin * img.shape[1], bbox.ymin * img.shape[2]),
-                    (bbox.xmax - bbox.xmin) * img.shape[1],
-                    (bbox.ymax - bbox.ymin) * img.shape[2],
-                    linewidth=2,
-                    edgecolor="g",
-                    facecolor="none",
-                )
-                ax.add_patch(rect)
-            plt.show()
-
-    def show_segm_eval_images(self, predictions: List, truth: List):
-        """
-        Shows the predictions on screen compared to ground truth.
-
-        It is meant for instance segmentation.
-
-        The method runs a preview of inference results during
-        evaluation process.
-
-        Parameters
-        ----------
-        predictions : List
-            The list of predictions from the model.
-        truth : List
-            The ground truth for given batch.
-        """
-        KLogger.info(f"\ntruth\n{truth}")
-        KLogger.info(f"\npredictions\n{predictions}")
-        evaldir = self.root / "eval"
-        evaldir.mkdir(parents=True, exist_ok=True)
-        for pred, gt in zip(predictions, truth):
-            img = self.prepare_input_samples(
-                [self.dataX[self._dataindex - 1]]
-            )[0]
-            if self.image_memory_layout == "NCHW":
-                img = img.transpose(1, 2, 0)
-            int_img = np.multiply(img, 255).astype("uint8")
-            int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
-            int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
-            for i in gt:
-                mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
-                mask_img = mask_img.astype("float32") / 255.0
-                mask_img *= np.array([0.1, 0.1, 0.5])
-                mask_img = np.multiply(mask_img, 255).astype("uint8")
-                int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
-            for i in pred:
-                mask_img = cv2.cvtColor(i.mask, cv2.COLOR_GRAY2RGB)
-                mask_img = mask_img.astype("float32") / 255.0
-                mask_img *= np.array([0.1, 0.5, 0.1])
-                mask_img = np.multiply(mask_img, 255).astype("uint8")
-                int_img = cv2.addWeighted(int_img, 1, mask_img, 0.7, 0)
-            cv2.imwrite(
-                str(evaldir / self.dataX[self._dataindex - 1]) + ".jpg",
-                int_img,
-            )
-
     def show_eval_images(self, predictions: List, truth: List):
         """
         Shows the predictions on screen compared to ground truth.
@@ -518,10 +425,106 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         truth : List
             The ground truth for given batch.
         """
-        if self.task == "object_detection":
-            self.show_dect_eval_images(predictions, truth)
-        elif self.task == "instance_segmentation":
-            self.show_segm_eval_images(predictions, truth)
+        KLogger.debug(f"\ntruth\n{truth}")
+        KLogger.debug(f"\npredictions\n{predictions}")
+        for pred, gt in zip(predictions, truth):
+            img = self.prepare_input_samples(
+                [self.dataX[self._dataindex - 1]]
+            )[0]
+            if self.image_memory_layout == "NCHW":
+                img = img.transpose(1, 2, 0)
+            int_img = np.multiply(img, 255).astype("uint8")
+            int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
+            int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
+            int_img = self.apply_predictions(int_img, pred, gt)
+
+            cv2.imshow("evaluatedimage", int_img)
+            while True:
+                c = cv2.waitKey(100)
+                is_alive = cv2.getWindowProperty(
+                    "evaluated image", cv2.WND_PROP_VISIBLE
+                )
+                if is_alive < 1 or c != -1:
+                    break
+
+    def apply_predictions(
+        self, image: np.ndarray, predictions: List, ground_truth: List
+    ) -> np.ndarray:
+        """
+        Applies predictions on the image.
+
+        Parameters
+        ----------
+        image : np.ndarray
+            The image to apply predictions on.
+        predictions : List
+            The list of predictions from the model.
+        ground_truth : List
+            The ground truth for given batch.
+
+        Returns
+        -------
+        np.ndarray
+            The image with predictions applied.
+        """
+        height, width = image.shape[0], image.shape[1]
+        # Apply bounding boxes
+        for truth_bb in ground_truth:
+            cv2.rectangle(
+                image,
+                (int(truth_bb.xmin * width), int(truth_bb.ymin * height)),
+                (int(truth_bb.xmax * width), int(truth_bb.ymax * height)),
+                (0, 255, 0),
+                2,
+            )
+        for pred_bb in predictions:
+            cv2.rectangle(
+                image,
+                (int(pred_bb.xmin * width), int(pred_bb.ymin * height)),
+                (int(pred_bb.xmax * width), int(pred_bb.ymax * height)),
+                (0, 255, 0),
+                2,
+            )
+
+        # Apply segmentation masks
+        if self.task == "instance_segmentation":
+
+            def apply_mask(
+                image: np.array, mask: np.array, color: np.array
+            ) -> np.array:
+                """
+                Applies the mask to the image.
+
+                Parameters
+                ----------
+                image : np.array
+                    The image to which the mask should be applied.
+                mask : np.array
+                    The mask to be applied.
+                color : np.array
+                    The color of the mask.
+
+                Returns
+                -------
+                np.array
+                    The image with the mask applied.
+                """
+                mask_img = cv2.cvtColor(mask, cv2.COLOR_GRAY2RGB)
+                mask_img = mask_img.astype("float32") / 255.0
+                mask_img *= np.array(color)
+                mask_img = np.multiply(mask_img, 255).astype("uint8")
+                image = cv2.addWeighted(image, 1, mask_img, 0.7, 0)
+                return image
+
+            for truth_mask in ground_truth:
+                image = apply_mask(
+                    image, truth_mask.mask, np.array([0.1, 0.1, 0.5])
+                )
+            for pred_mask in predictions:
+                image = apply_mask(
+                    image, pred_mask.mask, np.array([0.1, 0.5, 0.1])
+                )
+        return image
 
     def evaluate(self, predictions, truth):
         MIN_IOU = 0.5

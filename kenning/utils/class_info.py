@@ -16,6 +16,7 @@ from typing import Dict, List, Optional, Tuple, Type, Union
 import astunparse
 from isort import place_module
 from jsonschema.exceptions import ValidationError
+from rst_to_myst.mdformat_render import rst_to_myst
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
@@ -54,25 +55,25 @@ class Argument:
         self.enum: List[str] = []
 
     def __repr__(self):
-        lines = [f"* {self.name}"]
+        lines = [f"* `{self.name}`"]
 
-        if self.argparse_name:
-            lines.append(f"  * argparse name: {self.argparse_name}")
-        if self.type:
-            lines.append(f"  * type: {self.type}")
         if self.description:
             lines.append(f"  * description: {self.description}")
+        if self.argparse_name:
+            lines.append(f"  * argparse flag: `{self.argparse_name}``")
+        if self.type:
+            lines.append(f"  * type: `{self.type}`")
         if self.required:
-            lines.append(f"  * required: {self.required}")
+            lines.append(f"  * required: `{self.required}`")
         if self.default:
-            lines.append(f"  * default: {self.default}")
+            lines.append(f"  * default value: `{self.default}`")
         if self.nullable:
-            lines.append(f"  * nullable: {self.nullable}")
+            lines.append(f"  * Can be undefined: `{self.nullable}`")
 
         if len(self.enum) != 0:
-            lines.append("  * enum")
+            lines.append("  * `allowed values`:")
         for element in self.enum:
-            lines.append(f"    * {element}")
+            lines.append(f"    * `{element}`")
 
         return "\n".join(lines)
 
@@ -100,7 +101,7 @@ def get_class_module_name(syntax_node: Union[ast.ClassDef, ast.Module]) -> str:
         Formatted Markdown-like string to be printed later.
     """
     if isinstance(syntax_node, ast.ClassDef):
-        return f"Class: {syntax_node.name}\n\n"
+        return f"# {syntax_node.name}\n\n"
 
 
 def get_class_module_docstrings(
@@ -122,17 +123,17 @@ def get_class_module_docstrings(
     docstring = ast.get_docstring(syntax_node, clean=True)
 
     if not docstring:
-        return f"Class: {syntax_node.name}\n\n"
+        return f"# Class {syntax_node.name}\n\n"
 
-    docstring = "\n".join(
-        ["    " + docstr for docstr in docstring.strip("\n").split("\n")]
-    )
+    docstring = rst_to_myst(docstring).text
+
+    docstring = f"\n## Description\n{docstring}"
 
     if isinstance(syntax_node, ast.ClassDef):
-        return f"Class: {syntax_node.name}\n\n{docstring}\n\n"
+        return f"# Class {syntax_node.name}\n\n{docstring}\n\n"
 
     if isinstance(syntax_node, ast.Module):
-        return f"Module description:\n\n{docstring}\n\n"
+        return f"# Module description\n{docstring}\n"
 
 
 def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
@@ -175,7 +176,7 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
             if place_module(module_path) == "STDLIB":
                 return ""
 
-            return "* " + dependency_path + "\n"
+            return f"* `{dependency_path}`\n"
         except (ImportError, ModuleNotFoundError, Exception) as e:
             err = MissingKenningDependencies(
                 name=module_path,
@@ -184,11 +185,9 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
             )
 
             if find_missing_optional_dependency(e.name) is None:
-                return f"* {dependency_path} - Not available (Reason: {e})\n"
+                return f"* `{dependency_path}` - Not available (Reason: {e})\n"
 
-            return (
-                f"* {dependency_path} - Not available (Reason: {e})\n    {err}"
-            )
+            return f"* `{dependency_path}` - Not available (Reason: {e})\n    {err}"  # noqa: E501
 
 
 def get_input_specification(syntax_node: ast.Assign) -> str:
@@ -215,11 +214,11 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
 
     if isinstance(syntax_node.value, ast.List):
         for input_format in syntax_node.value.elts:
-            input_formats += f"* {input_format.value}\n"
+            input_formats += f"* `{input_format.value}`\n"
         return input_formats
 
     for input_format in syntax_node.value.keys:
-        input_formats += f"* {input_format.value}\n"
+        input_formats += f"* `{input_format.value}`\n"
 
     return input_formats
 
@@ -248,21 +247,21 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     dict_elements = []
     for key, value in zip(dict_node.keys, dict_node.values):
         if not isinstance(value, ast.List):
-            resulting_output.append(f"* {key.value}: {value.value}")
+            resulting_output.append(f"* `{key.value}`: `{value.value}`")
             continue
 
         dict_elements.extend(value.elts)
 
     for dict_element in dict_elements:
         if isinstance(dict_element.values[0], ast.Constant):
-            resulting_output.append(f"* {dict_element.values[0].value}\n")
+            resulting_output.append(f"* `{dict_element.values[0].value}`\n")
         else:
             # if the first value (name) is not a string, use the variable name
-            resulting_output.append(f"* {dict_element.values[0].id}\n")
+            resulting_output.append(f"* `{dict_element.values[0].id}`\n")
 
         for key, value in zip(dict_element.keys[1:], dict_element.values[1:]):
             resulting_output.append(
-                f"  * {key.value}: " f"{clean_variable_name(value)}\n"
+                f"  * `{key.value}`: " f"`{clean_variable_name(value)}`\n"
             )
 
     return resulting_output
@@ -327,7 +326,7 @@ def get_output_specification(syntax_node: ast.Assign) -> str:
         Formatted Markdown-like string to be printed later.
     """
     for output_format in syntax_node.value.elts:
-        return f"* {output_format.value}\n"
+        return f"* `{output_format.value}`\n"
 
 
 def clean_variable_name(variable_name: ast.AST) -> str:
@@ -422,7 +421,7 @@ def get_arguments_structure(syntax_node: ast.Assign, source_path: str) -> str:
                 argument_object.type = argument_type
 
                 if argument_type == "Error":
-                    return f"Error: {enum_list[0]}"
+                    return f"*Error*: `{enum_list[0]}`"
 
             else:
                 key_str = clean_variable_name(key)
@@ -576,35 +575,38 @@ def get_args_structure_from_parameterschema(
         return [""]
 
     for arg_name, arg_dict in args_structure.items():
-        resulting_lines.append(f"* {arg_name}\n")
+        resulting_lines.append(f"### `{arg_name}`\n")
+
+        if "description" in arg_dict:
+            resulting_lines.append(f"  * {arg_dict['description']}\n")
 
         resulting_lines.append(
-            f"  * argparse_name: " f"{to_argparse_name(arg_name)}\n"
+            f"  * argparse flag: `{to_argparse_name(arg_name)}`\n"
         )
 
         for key, value in arg_dict.items():
             # skip real_name as it is the same as arg_name
-            if key == "real_name":
+            if key in ["real_name", "description"]:
                 continue
 
             # expand enums (lists)
             if isinstance(value, list):
                 resulting_lines.append(f"  * {key}\n")
                 for elt in value:
-                    resulting_lines.append(f"    * {elt}\n")
+                    resulting_lines.append(f"    * `{elt}`\n")
                 continue
 
             # extract qualified class name if value is a class
             if inspect.isclass(value):
                 resulting_lines.append(
-                    f"  * {key}: {value.__module__}." f"{value.__qualname__}\n"
+                    f"  * {key}: `{value.__module__}.{value.__qualname__}`\n"
                 )
                 continue
 
-            resulting_lines.append(f"  * {key}: {value}\n")
+            resulting_lines.append(f"  * {key}: `{value}`\n")
 
         if arg_name in required_args:
-            resulting_lines.append("  * required: True\n")
+            resulting_lines.append("  * required: `True`\n")
 
     return resulting_lines
 
@@ -632,23 +634,24 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
         return [""]
 
     for key, value in dictionary.items():
+        resulting_output.append(f"### {key}\n\n")
         if not isinstance(value, list):
-            resulting_output.append(f"* {key}: {value}\n")
+            resulting_output.append(f"* `{key}`: `{value}`\n")
 
         [dict_elements.append(elt) for elt in value]
 
     for dict_element in dict_elements:
-        resulting_output.append(f'* {dict_element["name"]}\n')
+        resulting_output.append(f'* `{dict_element["name"]}`\n')
         dict_element.pop("name", None)
 
         for key, value in dict_element.items():
             if isinstance(value, list):
-                resulting_output.append(f"  * {key}\n")
+                resulting_output.append(f"  * `{key}`\n")
                 for elt in value:
-                    resulting_output.append(f"    * {elt}\n")
+                    resulting_output.append(f"    * `{elt}`\n")
                 continue
 
-            resulting_output.append(f"  * {key}: {value}\n")
+            resulting_output.append(f"  * `{key}`: `{value}`\n")
 
     return resulting_output
 
@@ -936,7 +939,7 @@ def generate_class_info(
             ):
                 # object has been created - detailed i/o specification found
                 found_io_specification = True
-                resulting_lines.append("Input/output specification:\n")
+                resulting_lines.append("## Block input/output formats\n\n")
                 io_spec = class_object.get_io_specification()
                 resulting_lines += parse_io_spec_dict_to_str(io_spec)
                 resulting_lines.append("\n")
@@ -944,12 +947,12 @@ def generate_class_info(
             elif node in io_specification_lines:
                 # no object, but i/o specification found - extract statically
                 # from source code
-                resulting_lines.append("Input/output specification:\n")
+                resulting_lines.append("## Block input/output formats\n")
                 resulting_lines += io_specification_lines[node]
                 resulting_lines.append("\n")
 
     if dependencies:
-        resulting_lines.append("Dependencies:\n")
+        resulting_lines.append("## Dependencies\n\n")
         dependencies: List[str] = []
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "2"
         for node in dependency_nodes:
@@ -964,8 +967,10 @@ def generate_class_info(
         os.environ["TF_CPP_MIN_LOG_LEVEL"] = "0"
         resulting_lines.append("\n")
 
+    if input_formats or output_formats and not found_io_specification:
+        resulting_lines.append("## Block input/output formats\n\n")
     if input_formats and not found_io_specification:
-        resulting_lines.append("Input formats:\n")
+        resulting_lines.append("### Input formats\n")
         if input_specification_node:
             data = get_input_specification(input_specification_node)
             resulting_lines.append(data if data else "No inputs")
@@ -974,7 +979,7 @@ def generate_class_info(
         resulting_lines.append("\n\n")
 
     if output_formats and not found_io_specification:
-        resulting_lines.append("Output formats:\n")
+        resulting_lines.append("### Output formats\n")
         if output_specification_node:
             data = get_output_specification(output_specification_node)
             resulting_lines.append(data if data else "No outputs")
@@ -983,7 +988,7 @@ def generate_class_info(
         resulting_lines.append("\n\n")
 
     if argument_formats:
-        resulting_lines.append("Arguments specification:\n")
+        resulting_lines.append("## Arguments' specification\n\n")
         if parameterschema:
             resulting_lines += get_args_structure_from_parameterschema(
                 parameterschema

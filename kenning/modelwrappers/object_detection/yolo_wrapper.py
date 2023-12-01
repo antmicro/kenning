@@ -19,7 +19,7 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper, VariableBatchSizeNotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
-    compute_dect_iou,
+    compute_detect_iou,
 )
 from kenning.resources import coco_detection
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -121,7 +121,7 @@ class YOLOWrapper(ModelWrapper, ABC):
     def preprocess_input(self, X):
         return np.array(X)
 
-    def convert_to_dectobject(self, entry):
+    def convert_to_detectobject(self, entry):
         # array x, y, w, h, classid, score
         x1 = entry[0] - entry[2] / 2
         x2 = entry[0] + entry[2] / 2
@@ -204,7 +204,7 @@ class YOLOWrapper(ModelWrapper, ABC):
         bboxes.sort(key=lambda x: x[5], reverse=True)
 
         bboxes = [
-            self.convert_to_dectobject(b)
+            self.convert_to_detectobject(b)
             for b in bboxes
             if b[5] / self.maxscore > self.finthresh
         ]
@@ -228,7 +228,7 @@ class YOLOWrapper(ModelWrapper, ABC):
                 # and IoU exceeding specified threshold
                 for j in range(i + 1, len(clsbboxes)):
                     if (
-                        compute_dect_iou(clsbboxes[i], clsbboxes[j])
+                        compute_detect_iou(clsbboxes[i], clsbboxes[j])
                         > self.iouthresh
                     ):
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
@@ -246,7 +246,7 @@ class YOLOWrapper(ModelWrapper, ABC):
         # - actual YOLOv3 output
         # - masks IDs
         # - anchors
-        # - 6 integers holding number of dects per cluster, actual output
+        # - 6 integers holding number of detections per cluster, actual output
         #   number of channels, actual output height and width, number of
         #   classes and unused parameter
 

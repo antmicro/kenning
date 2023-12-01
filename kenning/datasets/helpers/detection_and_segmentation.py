@@ -197,7 +197,7 @@ def compute_map_per_threshold(
     return np.array(maps, dtype=np.float32)
 
 
-def compute_dect_iou(b1: DetectObject, b2: DetectObject) -> float:
+def compute_detect_iou(b1: DetectObject, b2: DetectObject) -> float:
     """
     Computes the IoU between two bounding boxes.
 
@@ -405,7 +405,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             IoU value.
         """
         if self.task == "object_detection":
-            return compute_dect_iou(b1, b2)
+            return compute_detect_iou(b1, b2)
         elif self.task == "instance_segmentation":
             return compute_segm_iou(b1, b2)
 

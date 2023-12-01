@@ -132,6 +132,9 @@ nni = [
     "nni~=2.10.0",
     "tensorboard~=2.11.1",
 ]
+ros2 = [
+    "rosbags"
+]
 
 [project.scripts]
 kenning = "kenning.cli.cli:main"

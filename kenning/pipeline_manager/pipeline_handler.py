@@ -20,6 +20,7 @@ from kenning.pipeline_manager.core import (
     VisualEditorGraphParserError,
 )
 from kenning.pipeline_manager.node_utils import add_node, get_category_name
+from kenning.utils.class_info import generate_class_info
 from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
@@ -180,8 +181,12 @@ class PipelineHandler(BaseDataflowHandler):
                     layer=base_type_names[base_type],
                 )
                 if kenning_class.__doc__ is not None:
+                    info = generate_class_info(
+                        target=kenning_class.__module__,
+                        class_name=kenning_class.__name__,
+                    )
                     spec_builder.add_node_description(
-                        name=node_name, description=str(kenning_class.__doc__)
+                        name=node_name, description="".join(info)
                     )
                 add_node(
                     nodes,

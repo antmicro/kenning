@@ -14,6 +14,7 @@ tqdm instances of the same tags are going to use those callbacks.
 
 import io
 import logging
+import os
 import re
 import sys
 import urllib.request
@@ -47,6 +48,38 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             level="NOTSET",
             fmt=_KLogger.FORMAT.format(package="kenning"),
         )
+        if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
+            self.configure()
+
+    @staticmethod
+    def configure():
+        """
+        Configures logging formats for all loggers.
+        """
+        loggers = [
+            logging.getLogger(name) for name in logging.root.manager.loggerDict
+        ]
+
+        for logger in loggers:
+            coloredlogs.install(
+                logger=logger,
+                level=logger.level,
+                fmt=_KLogger.FORMAT.format(package=logger.name),
+            )
+
+        # set format for new loggers
+        logging_getLogger = logging.getLogger
+
+        def getLogger(name: Optional[str] = None):
+            logger = logging_getLogger(name)
+            coloredlogs.install(
+                logger=logger,
+                level=logger.level,
+                fmt=_KLogger.FORMAT.format(package=logger.name),
+            )
+            return logger
+
+        logging.getLogger = getLogger
 
     def set_verbosity(self, level: str):
         """
@@ -59,6 +92,11 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         """
         self.setLevel(level)
         coloredlogs.adjust_level(self, level)
+        if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
+            for name in logging.root.manager.loggerDict:
+                logger = logging.getLogger(name)
+                logger.setLevel(level)
+                coloredlogs.adjust_level(logger, level)
 
 
 KLogger = _KLogger()

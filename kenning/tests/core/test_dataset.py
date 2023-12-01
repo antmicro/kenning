@@ -391,6 +391,8 @@ class TestDataset:
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
+        elif "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -464,6 +466,8 @@ class TestDataset:
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -506,6 +510,8 @@ class TestDataset:
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")
@@ -548,6 +554,8 @@ class TestDataset:
         """
         if "Random" in dataset_cls.__name__:
             pytest.skip("random dataset does not have files")
+        if "Lindenthal" in dataset_cls.__name__:
+            pytest.xfail("Lindenthal dataset does not have files downloaded")
 
         dataset_path = get_reduced_dataset_path(dataset_cls)
         dataset_path = dataset_path.with_name(dataset_path.name + "_test")

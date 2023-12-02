@@ -568,6 +568,7 @@ class YOLACT(YOLACTWrapper):
         # Apply NMS to boxes for each class separately
         idx_lst, cls_lst, scr_lst = [], [], []
 
+        boxes = boxes * 550
         for _cls in range(scores.shape[0]):
             cls_scores = scores[_cls, :]
             conf_mask = cls_scores > self.score_threshold
@@ -589,7 +590,7 @@ class YOLACT(YOLACTWrapper):
         scores, idx2 = np.sort(scores)[::-1], np.argsort(scores)[::-1]
         idx = idx[idx2]
         return {
-            "box": boxes[idx],
+            "box": boxes[idx] / 550,
             "mask": masks[idx],
             "class": classes[idx2],
             "score": scores,

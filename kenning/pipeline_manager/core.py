@@ -154,7 +154,7 @@ class GraphCreator(ABC):
         ...
 
 
-class BaseDataflowHandler:
+class BaseDataflowHandler(ABC):
     """
     Base class used for interpretation of graphs coming from Pipeline
     manager. Subclasses are used to define specifics of one of the Kenning

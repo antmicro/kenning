@@ -223,7 +223,7 @@ def get_input_specification(syntax_node: ast.Assign) -> str:
     return input_formats
 
 
-def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
+def parse_io_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     """
     Parses an ast.Dict to a nicely formatted list of strings in Markdown
     format.
@@ -244,25 +244,32 @@ def parse_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
     if not isinstance(dict_node, ast.Dict):
         return [""]
 
-    dict_elements = []
     for key, value in zip(dict_node.keys, dict_node.values):
         if not isinstance(value, ast.List):
             resulting_output.append(f"* `{key.value}`: `{value.value}`")
             continue
+        dict_elements = value.elts
 
-        dict_elements.extend(value.elts)
+        if len(dict_elements) > 0:
+            resulting_output.append(f"### {key.value}\n\n")
 
-    for dict_element in dict_elements:
-        if isinstance(dict_element.values[0], ast.Constant):
-            resulting_output.append(f"* `{dict_element.values[0].value}`\n")
-        else:
-            # if the first value (name) is not a string, use the variable name
-            resulting_output.append(f"* `{dict_element.values[0].id}`\n")
+        for dict_element in dict_elements:
+            if isinstance(dict_element.values[0], ast.Constant):
+                resulting_output.append(
+                    f"* `{dict_element.values[0].value}`\n"
+                )
+            else:
+                # if the first value (name) is not a string,
+                # use the variable name
+                resulting_output.append(f"* `{dict_element.values[0].id}`\n")
 
-        for key, value in zip(dict_element.keys[1:], dict_element.values[1:]):
-            resulting_output.append(
-                f"  * `{key.value}`: " f"`{clean_variable_name(value)}`\n"
-            )
+            for key, value in zip(
+                dict_element.keys[1:], dict_element.values[1:]
+            ):  # noqa: E501
+                resulting_output.append(
+                    f"    * `{key.value}`: "
+                    f"`{clean_variable_name(value)}`\n"  # noqa: E501
+                )
 
     return resulting_output
 
@@ -308,7 +315,7 @@ def get_io_specification(class_node: ast.ClassDef) -> List[str]:
     if io_spec_dict_node is None:
         return []
 
-    return parse_dict_node_to_string(io_spec_dict_node)
+    return parse_io_dict_node_to_string(io_spec_dict_node)
 
 
 def get_output_specification(syntax_node: ast.Assign) -> str:

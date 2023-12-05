@@ -58,20 +58,20 @@ class Argument:
         lines = [f"* `{self.name}`"]
 
         if self.description:
-            lines.append(f"  * description: {self.description}")
+            lines.append(f"* description: {self.description}")
         if self.argparse_name:
-            lines.append(f"  * argparse flag: `{self.argparse_name}``")
+            lines.append(f"* argparse flag: `{self.argparse_name}``")
         if self.type:
-            lines.append(f"  * type: `{self.type}`")
+            lines.append(f"* type: `{self.type}`")
         if self.required:
-            lines.append(f"  * required: `{self.required}`")
+            lines.append(f"* required: `{self.required}`")
         if self.default:
-            lines.append(f"  * default value: `{self.default}`")
+            lines.append(f"* default value: `{self.default}`")
         if self.nullable:
-            lines.append(f"  * Can be undefined: `{self.nullable}`")
+            lines.append(f"* Can be undefined: `{self.nullable}`")
 
         if len(self.enum) != 0:
-            lines.append("  * `allowed values`:")
+            lines.append("* `allowed values`:")
         for element in self.enum:
             lines.append(f"    * `{element}`")
 
@@ -578,20 +578,24 @@ def get_args_structure_from_parameterschema(
         resulting_lines.append(f"### `{arg_name}`\n")
 
         if "description" in arg_dict:
-            resulting_lines.append(f"  * {arg_dict['description']}\n")
+            resulting_lines.append(f"* {arg_dict['description']}\n")
 
         resulting_lines.append(
-            f"  * argparse flag: `{to_argparse_name(arg_name)}`\n"
+            f"* argparse flag: `{to_argparse_name(arg_name)}`\n"
         )
 
         for key, value in arg_dict.items():
             # skip real_name as it is the same as arg_name
+            # skip description, as it has been already handled
             if key in ["real_name", "description"]:
                 continue
 
             # expand enums (lists)
             if isinstance(value, list):
-                resulting_lines.append(f"  * {key}\n")
+                if len(value) == 1:
+                    resulting_lines.append(f"* {key}: `{value[0]}`\n")
+                    continue
+                resulting_lines.append(f"* {key}\n")
                 for elt in value:
                     resulting_lines.append(f"    * `{elt}`\n")
                 continue
@@ -599,14 +603,14 @@ def get_args_structure_from_parameterschema(
             # extract qualified class name if value is a class
             if inspect.isclass(value):
                 resulting_lines.append(
-                    f"  * {key}: `{value.__module__}.{value.__qualname__}`\n"
+                    f"* {key}: `{value.__module__}.{value.__qualname__}`\n"
                 )
                 continue
 
-            resulting_lines.append(f"  * {key}: `{value}`\n")
+            resulting_lines.append(f"* {key}: `{value}`\n")
 
         if arg_name in required_args:
-            resulting_lines.append("  * required: `True`\n")
+            resulting_lines.append("* required: `True`\n")
 
     return resulting_lines
 
@@ -646,12 +650,12 @@ def parse_io_spec_dict_to_str(dictionary: Dict) -> List[str]:
 
         for key, value in dict_element.items():
             if isinstance(value, list):
-                resulting_output.append(f"  * `{key}`\n")
+                resulting_output.append(f"    * `{key}`\n")
                 for elt in value:
-                    resulting_output.append(f"    * `{elt}`\n")
+                    resulting_output.append(f"        * `{elt}`\n")
                 continue
 
-            resulting_output.append(f"  * `{key}`: `{value}`\n")
+            resulting_output.append(f"    * `{key}`: `{value}`\n")
 
     return resulting_output
 
@@ -926,7 +930,7 @@ def generate_class_info(
         if docstrings:
             if len(class_nodes) == 0:
                 resulting_lines.append(
-                    f"Class {class_name}" f" has not been found"
+                    f"Class {class_name} has not been found"
                 )
                 return resulting_lines
             resulting_lines.append(get_class_module_docstrings(node))

@@ -8,7 +8,7 @@ Wrappers for drawing plots for reports.
 
 import itertools
 import sys
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from contextlib import contextmanager
 from dataclasses import dataclass
 from math import pi
@@ -90,7 +90,7 @@ IMMATERIAL_COLORS = [
 
 
 @dataclass
-class Plot(object):
+class Plot(ABC, object):
     """
     Generic plot class.
 

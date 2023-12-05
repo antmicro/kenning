@@ -8,7 +8,7 @@ handling of multiple OutputCollectors in inference_runner scenario.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
 
@@ -90,3 +90,9 @@ class NamePrinter(OutputCollector):
                 )
             print()
         self.frame_counter += 1
+
+    def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
+        pass
+
+    def get_io_specification(self) -> Dict[str, List[Dict]]:
+        pass

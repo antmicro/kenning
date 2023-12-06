@@ -308,3 +308,15 @@ class VideoObjectDetectionSegmentationDataset(
                     return
                 if c != -1:
                     break
+
+    def prepare(self):
+        raise NotImplementedError
+
+    def download_dataset_fun(self):
+        raise NotImplementedError
+
+    def get_input_mean_std(self):
+        raise NotImplementedError
+
+    def get_class_names(self):
+        raise NotImplementedError

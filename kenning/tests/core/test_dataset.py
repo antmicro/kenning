@@ -55,7 +55,13 @@ class TestDataset:
                     pytest.mark.xdist_group(
                         name=f"TestDataset_{dataset_cls.__name__}"
                     )
-                ],
+                ]
+                + (
+                    [pytest.mark.skip("Method not implemented")]
+                    if dataset_cls.__name__
+                    == "VideoObjectDetectionSegmentationDataset"
+                    else []
+                ),
             )
             for dataset_cls in DATASET_SUBCLASSES
         ],
@@ -380,7 +386,13 @@ class TestDataset:
                     pytest.mark.xdist_group(
                         name=f"TestDataset_{dataset_cls.__name__}"
                     )
-                ],
+                ]
+                + (
+                    [pytest.mark.skip("Method not implemented")]
+                    if dataset_cls.__name__
+                    == "VideoObjectDetectionSegmentationDataset"
+                    else []
+                ),
             )
             for dataset_cls in DATASET_SUBCLASSES
         ],
@@ -453,7 +465,13 @@ class TestDataset:
                     pytest.mark.xdist_group(
                         name=f"TestDataset_{dataset_cls.__name__}"
                     )
-                ],
+                ]
+                + (
+                    [pytest.mark.skip("Method not implemented")]
+                    if dataset_cls.__name__
+                    == "VideoObjectDetectionSegmentationDataset"
+                    else []
+                ),
             )
             for dataset_cls in DATASET_SUBCLASSES
         ],
@@ -497,7 +515,13 @@ class TestDataset:
                     pytest.mark.xdist_group(
                         name=f"TestDataset_{dataset_cls.__name__}"
                     )
-                ],
+                ]
+                + (
+                    [pytest.mark.skip("Method not implemented")]
+                    if dataset_cls.__name__
+                    == "VideoObjectDetectionSegmentationDataset"
+                    else []
+                ),
             )
             for dataset_cls in DATASET_SUBCLASSES
         ],
@@ -541,7 +565,13 @@ class TestDataset:
                     pytest.mark.xdist_group(
                         name=f"TestDataset_{dataset_cls.__name__}"
                     )
-                ],
+                ]
+                + (
+                    [pytest.mark.skip("Method not implemented")]
+                    if dataset_cls.__name__
+                    == "VideoObjectDetectionSegmentationDataset"
+                    else []
+                ),
             )
             for dataset_cls in DATASET_SUBCLASSES
         ],

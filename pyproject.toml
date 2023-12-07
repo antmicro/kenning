@@ -233,3 +233,7 @@ ignore_errors = true
 
 [tool.coverage.html]
 directory = "docs/source/generated/coverage"
+
+[tool.typos.default.extend-identifiers]
+__Pyx_LocalBuf_ND = "__Pyx_LocalBuf_ND"
+nd = "nd"

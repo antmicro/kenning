@@ -13,3 +13,7 @@ repos:
   rev: 0.3.4
   hooks:
   - id: pydoclint
+- repo: https://github.com/crate-ci/typos
+  rev: v1.16.23
+  hooks:
+    - id: typos

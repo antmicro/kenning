@@ -20,6 +20,7 @@ from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
     systemstatsmeasurements,
+    tagmeasurements,
     timemeasurements,
 )
 from kenning.interfaces.io_interface import IOInterface
@@ -232,6 +233,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return X
 
+    @timemeasurements("input_preprocess_step")
+    @tagmeasurements("preprocess")
     def _preprocess_input(self, X):
         return self.preprocess_input(X)
 
@@ -254,6 +257,8 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return y
 
+    @timemeasurements("output_postprocess_step")
+    @tagmeasurements("postprocess")
     def _postprocess_outputs(self, y):
         return self.postprocess_outputs(y)
 

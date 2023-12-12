@@ -85,8 +85,6 @@ class TFLiteRuntime(Runtime):
         if input_data:
             with open(self.model_path, "wb") as outmodel:
                 outmodel.write(input_data)
-        else:
-            self.model_path
         delegates = None
         if self.delegates:
             delegates = [

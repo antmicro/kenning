@@ -8,10 +8,11 @@ SegmentationAction object for compatibility between surronding blocks
 during runtime.
 """
 
-from typing import List
+from typing import List, Union
 
 import numpy as np
 from kenning_computer_vision_msgs.action import SegmentationAction
+from kenning_computer_vision_msgs.msg import VideoMsg
 from sensor_msgs.msg import Image
 
 from kenning.core.dataconverter import DataConverter
@@ -29,14 +30,16 @@ class ROS2SegmentationDataConverter(DataConverter):
         """
         super().__init__()
 
-    def to_next_block(self, data: List[np.ndarray]) -> SegmentationAction.Goal:
+    def to_next_block(
+        self, data: Union[List[np.ndarray], List[List[np.ndarray]]]
+    ) -> SegmentationAction.Goal:
         """
         Converts input frames to segmentation action goal.
         Assumes that input data has BGR8 encoding.
 
         Parameters
         ----------
-        data : List[np.ndarray]
+        data: Union[List[np.ndarray], List[List[np.ndarray]]]
             The input data to be converted.
 
         Returns
@@ -45,32 +48,40 @@ class ROS2SegmentationDataConverter(DataConverter):
             The converted segmentation action goal.
         """
         goal = SegmentationAction.Goal()
-        for frame in data:
-            assert (
-                len(frame.shape) == 3
-            ), "Input data must be 3-dimensional and have BGR8 encoding"
+        if data:
+            if isinstance(data[0], np.ndarray):
+                data = [data]
+            for seq in data:
+                sequence = VideoMsg()
+                for frame in seq:
+                    assert (
+                        len(frame.shape) == 3
+                    ), "Input data must be 3-dimensional and have BGR8 encoding"  # noqa: E501
 
-            if frame.shape[2] > frame.shape[0]:
-                frame = np.transpose(frame, (1, 2, 0))
-            if frame.dtype != np.uint8:
-                if frame.max() <= 1.0:
-                    frame *= 255
-                frame = frame.astype(np.uint8)
+                    if frame.shape[2] > frame.shape[0]:
+                        frame = np.transpose(frame, (1, 2, 0))
+                    if frame.dtype != np.uint8:
+                        if frame.max() <= 1.0:
+                            frame *= 255
+                        frame = frame.astype(np.uint8)
 
-            img = Image()
-            img._height = frame.shape[0]
-            img._width = frame.shape[1]
-            img._encoding = "bgr8"
-            img._step = frame.shape[1] * frame.shape[2]
-            img._data = frame.tobytes()
-            goal._input.append(img)
+                    img = Image()
+                    img._height = frame.shape[0]
+                    img._width = frame.shape[1]
+                    img._encoding = "bgr8"
+                    img._step = frame.shape[1] * frame.shape[2]
+                    img._data = frame.tobytes()
+                    sequence._frames.append(img)
+                goal._input.append(sequence)
         return goal
 
     def to_previous_block(
         self, data: SegmentationAction.Result
-    ) -> List[List[SegmObject]]:
+    ) -> Union[List[List[SegmObject]], List[List[List[SegmObject]]]]:
         """
         Converts segmentation action result to SegmObject list.
+        Assumes that if more than one frame is present, the output is for
+        sequence of frames.
 
         Parameters
         ----------
@@ -79,37 +90,45 @@ class ROS2SegmentationDataConverter(DataConverter):
 
         Returns
         -------
-        List[List[SegmObject]]
+        Union[List[List[SegmObject]], List[List[List[SegmObject]]]]
             The converted data.
         """
         assert data.success, "Segmentation action failed"
         result = []
-        for frame in data.output:
-            tmp_res = []
-            for i in range(len(frame.classes)):
-                clsname = frame.classes[i]
-                score = frame.scores[i]
-                box = frame.boxes[i]
-                xmin = box.xmin
-                ymin = box.ymin
-                xmax = box.xmax
-                ymax = box.ymax
-                mask = np.frombuffer(frame.masks[i]._data, dtype=np.uint8)
-                mask = mask.reshape(
-                    frame.masks[i].dimension[0], frame.masks[i].dimension[1]
-                )
-                tmp_res.append(
-                    SegmObject(
-                        clsname,
-                        None,
-                        xmin,
-                        ymin,
-                        xmax,
-                        ymax,
-                        mask,
-                        score,
-                        False,
+        sequences_num = len(data.output)
+        for sequence in data.output:
+            sequence_res = []
+            for frame in sequence.data:
+                frame_res = []
+                for i in range(len(frame.classes)):
+                    clsname = frame.classes[i]
+                    score = frame.scores[i]
+                    box = frame.boxes[i]
+                    xmin = box.xmin
+                    ymin = box.ymin
+                    xmax = box.xmax
+                    ymax = box.ymax
+                    mask = np.frombuffer(frame.masks[i]._data, dtype=np.uint8)
+                    mask = mask.reshape(
+                        frame.masks[i].dimension[0],
+                        frame.masks[i].dimension[1],
                     )
-                )
-            result.append(tmp_res)
+                    frame_res.append(
+                        SegmObject(
+                            clsname,
+                            None,
+                            xmin,
+                            ymin,
+                            xmax,
+                            ymax,
+                            mask,
+                            score,
+                            False,
+                        )
+                    )
+                sequence_res.append(frame_res)
+            if len(sequence_res) == 1 and sequences_num == 1:
+                result.append(sequence_res[0])
+            else:
+                result.append(sequence_res)
         return result

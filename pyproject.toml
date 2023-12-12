@@ -20,9 +20,9 @@ classifiers = [
 ]
 readme = "README.md"
 dependencies = [
-    "argcomplete",
+    "argcomplete>=0.7",
     "astunparse>=1.6.3",
-    "coloredlogs",
+    "coloredlogs>=0.5",
     "importlib_resources>=5.1.4; python_version<'3.9'",
     "isort>=5.12.0",
     "jsonschema>=4.16.0",
@@ -60,8 +60,8 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch~=1.5.4",
-    "torch~=1.13.0",
-    "torchvision~=0.14.0",
+    "torch~=2.1",
+    "torchvision~=0.16.0",
 ]
 mxnet = [
     "gluoncv>=0.10.2",
@@ -142,6 +142,14 @@ ros2 = [
 ]
 albumentations = [
     "albumentations",
+]
+
+llm = [
+    "autoawq~=0.1.7",
+    "datasets~=2.15.0",
+    "rouge-score~=0.1.2",
+    "transformers~=4.35.2",
+    "vllm~=0.2.1",
 ]
 
 [project.scripts]

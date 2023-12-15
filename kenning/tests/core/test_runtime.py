@@ -140,9 +140,8 @@ class TestRuntime:
         for _ in range(8):
             X, _ = next(dataset)
             prepX = model.preprocess_input(X)
-            prepX = model.convert_input_to_bytes(prepX)
 
-            assert runtime.prepare_input(prepX)
+            assert runtime.load_input(prepX)
             runtime.run()
 
         assert runtime.statsmeasurements is None
@@ -188,9 +187,8 @@ class TestRuntime:
         for _ in range(8):
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)
-            prepX = model.convert_input_to_bytes(prepX)
 
-            assert runtime.prepare_input(prepX)
+            assert runtime.load_input(prepX)
             runtime._run()
             sleep(0.01)
 
@@ -261,9 +259,47 @@ class TestRuntime:
             for runtime_cls, inputtype in RUNTIME_INPUTTYPES
         ],
     )
-    def test_prepare_input(self, runtime_cls: Type[Runtime], inputtype: str):
+    def test_load_input(self, runtime_cls: Type[Runtime], inputtype: str):
         """
-        Tests the `prepare_input` method.
+        Tests the `load_input` method.
+        """
+        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
+
+        assert runtime.prepare_local()
+
+        X, _ = next(dataset)
+        prepX = model._preprocess_input(X)
+
+        assert runtime.load_input(prepX)
+
+        assert not runtime.load_input([])
+
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "runtime_cls,inputtype",
+        [
+            pytest.param(
+                runtime_cls,
+                inputtype,
+                marks=[
+                    pytest.mark.dependency(
+                        depends=[
+                            f"test_initializer[{runtime_cls.__name__}-{inputtype}]"
+                        ]
+                    ),
+                    pytest.mark.xdist_group(
+                        name=f"TestRuntime_{runtime_cls.__name__}"
+                    ),
+                ],
+            )
+            for runtime_cls, inputtype in RUNTIME_INPUTTYPES
+        ],
+    )
+    def test_load_input_from_bytes(
+        self, runtime_cls: Type[Runtime], inputtype: str
+    ):
+        """
+        Tests the `load_input` method.
         """
         runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
 
@@ -273,9 +309,9 @@ class TestRuntime:
         prepX = model._preprocess_input(X)
         prepX = model.convert_input_to_bytes(prepX)
 
-        assert runtime.prepare_input(prepX)
+        assert runtime.load_input_from_bytes(prepX)
 
-        assert not runtime.prepare_input(b"")
+        assert not runtime.load_input_from_bytes(b"")
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -309,9 +345,8 @@ class TestRuntime:
 
         X, _ = next(dataset)
         prepX = model._preprocess_input(X)
-        prepX = model.convert_input_to_bytes(prepX)
 
-        assert runtime.prepare_input(prepX)
+        assert runtime.load_input(prepX)
 
         runtime.run()
 
@@ -356,9 +391,8 @@ class TestRuntime:
 
         X, _ = next(dataset)
         prepX = model._preprocess_input(X)
-        prepX = model.convert_input_to_bytes(prepX)
 
-        assert runtime.prepare_input(prepX)
+        assert runtime.load_input(prepX)
 
         runtime.run()
 

@@ -7,6 +7,7 @@ Base class for video object detection and segmentation datasets.
 Contains common methods for video datasets.
 """
 
+from abc import ABC
 from typing import Any, List, Optional
 
 import cv2
@@ -20,7 +21,7 @@ from kenning.utils.logger import KLogger
 
 
 class VideoObjectDetectionSegmentationDataset(
-    ObjectDetectionSegmentationDataset
+    ObjectDetectionSegmentationDataset, ABC
 ):
     """
     Base for video object detection and segmentation datasets.
@@ -308,15 +309,3 @@ class VideoObjectDetectionSegmentationDataset(
                     return
                 if c != -1:
                     break
-
-    def prepare(self):
-        raise NotImplementedError
-
-    def download_dataset_fun(self):
-        raise NotImplementedError
-
-    def get_input_mean_std(self):
-        raise NotImplementedError
-
-    def get_class_names(self):
-        raise NotImplementedError

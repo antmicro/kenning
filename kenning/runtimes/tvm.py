@@ -97,8 +97,12 @@ class TVMRuntime(Runtime):
 
         input = {}
         try:
-            ordered_input = self.preprocess_input(input_data)
-            for spec, inp in zip(self.input_spec, ordered_input):
+            for spec, inp in zip(self.input_spec, input_data):
+                # quantization
+                if "prequantized_dtype" in spec:
+                    scale = spec["scale"]
+                    zero_point = spec["zero_point"]
+                    inp = (inp / scale + zero_point).astype(spec["dtype"])
                 input[spec["name"]] = tvm.nd.array(inp)
 
             if self.use_tvm_vm:
@@ -108,7 +112,7 @@ class TVMRuntime(Runtime):
             KLogger.debug("Inputs are ready")
             self._input_prepared = True
             return True
-        except (TypeError, ValueError, tvm.TVMError) as ex:
+        except (TypeError, tvm.TVMError) as ex:
             KLogger.error(f"Failed to load input: {ex}", stack_info=True)
             return False
 

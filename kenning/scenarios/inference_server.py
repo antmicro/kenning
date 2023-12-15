@@ -125,6 +125,7 @@ class InferenceServer(object):
         input_data : bytes
             Input data for the model.
         """
+        input_data = self.runtime.load_input_from_bytes(input_data)
         if self.runtime.prepare_input(input_data):
             self.protocol.request_success()
         else:

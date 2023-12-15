@@ -104,21 +104,21 @@ class TFLiteRuntime(Runtime):
         if self.interpreter is None:
             raise ModelNotPreparedError
 
-        try:
-            ordered_input = self.preprocess_input(input_data)
+        for i, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
+            # quantization
+            if "prequantized_dtype" in spec:
+                scale = spec["scale"]
+                zero_point = spec["zero_point"]
+                input_data[i] = (inp / scale + zero_point).astype(
+                    spec["dtype"]
+                )
 
             # resize tensors to handle batched inputs correctly
-            for i, spec in enumerate(self.input_spec):
-                self.interpreter.resize_tensor_input(i, spec["shape"])
-            self.interpreter.allocate_tensors()
+            self.interpreter.resize_tensor_input(i, spec["shape"])
+        self.interpreter.allocate_tensors()
 
-            for det, inp in zip(
-                self.interpreter.get_input_details(), ordered_input
-            ):
-                self.interpreter.set_tensor(det["index"], inp)
-        except ValueError as ex:
-            KLogger.error(f"Failed to load input: {ex}", stack_info=True)
-            return False
+        for det, inp in zip(self.interpreter.get_input_details(), input_data):
+            self.interpreter.set_tensor(det["index"], inp)
         self._input_prepared = True
         return True
 

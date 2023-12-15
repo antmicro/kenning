@@ -72,14 +72,14 @@ class ONNXRuntime(Runtime):
         if self.session is None:
             raise ModelNotPreparedError
 
-        try:
-            ordered_input = self.preprocess_input(input_data)
-        except ValueError as ex:
-            KLogger.error(f"Failed to load input: {ex}", stack_info=True)
-            return False
-
         self.input = {}
-        for spec, inp in zip(self.input_spec, ordered_input):
+        for spec, inp in zip(self.input_spec, input_data):
+            # quantization
+            if "prequantized_dtype" in spec:
+                scale = spec["scale"]
+                zero_point = spec["zero_point"]
+                inp = (inp / scale + zero_point).astype(spec["dtype"])
+
             self.input[spec["name"]] = inp
         return True
 

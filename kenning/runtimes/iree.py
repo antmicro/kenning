@@ -71,11 +71,15 @@ class IREERuntime(Runtime):
         if self.model is None:
             raise ModelNotPreparedError
 
-        try:
-            self.input = self.preprocess_input(input_data)
-        except ValueError as ex:
-            KLogger.error(f"Failed to load input: {ex}", stack_info=True)
-            return False
+        # quantization
+        for idx, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
+            if "prequantized_dtype" in spec:
+                scale = spec["scale"]
+                zero_point = spec["zero_point"]
+                input_data[idx] = (inp / scale + zero_point).astype(
+                    spec["dtype"]
+                )
+        self.input = input_data
         return True
 
     def prepare_model(self, input_data):

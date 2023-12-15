@@ -701,7 +701,7 @@ class PipelineRunner(object):
                     if self.should_cancel:
                         break
                     prepX = tagmeasurements("preprocessing")(
-                        self.dataconverter.to_next_block
+                        self.model_wrapper._preprocess_input
                     )(X)
                     succeed = self.runtime.prepare_input(prepX)
                     if not succeed:

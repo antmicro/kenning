@@ -175,7 +175,7 @@ class Runtime(ArgumentsHandler, ABC):
             self.statsmeasurements = None
 
     @abstractmethod
-    def prepare_input(self, input_data: bytes) -> bool:
+    def prepare_input(self, input_data: List[np.ndarray]) -> bool:
         """
         Loads and converts delivered data to the accelerator for inference.
 
@@ -184,7 +184,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        input_data : bytes
+        input_data : List[np.ndarray]
             Input data in bytes delivered by the client, preprocessed.
 
         Returns
@@ -224,10 +224,10 @@ class Runtime(ArgumentsHandler, ABC):
         """
         ...
 
-    def preprocess_input(self, input_data: bytes) -> List[np.ndarray]:
+    def load_input_from_bytes(self, input_data: bytes) -> List[np.ndarray]:
         """
-        The method accepts `input_data` in bytes and preprocesses it
-        so that it can be passed to the model.
+        The method accepts `input_data` in bytes and loads it
+        according to the input specification.
 
         It creates `np.ndarray` for every input layer using the metadata
         in `self.input_spec` and quantizes the data if needed.
@@ -244,8 +244,8 @@ class Runtime(ArgumentsHandler, ABC):
         Returns
         -------
         List[np.ndarray]
-            List of inputs for each layer which are ready to be passed to the
-            model.
+            List of inputs for each layer which are ready to be quantized
+            or passed to the model.
 
         Raises
         ------
@@ -299,12 +299,6 @@ class Runtime(ArgumentsHandler, ABC):
             input.resize(np.prod(shape))
             input = input.reshape(shape)
 
-            # quantization
-            if "prequantized_dtype" in spec:
-                scale = spec["scale"]
-                zero_point = spec["zero_point"]
-                input = (input / scale + zero_point).astype(spec["dtype"])
-
             inputs.append(input)
             input_data = input_data[expected_size:]
 
@@ -313,8 +307,8 @@ class Runtime(ArgumentsHandler, ABC):
             raise ValueError("Received more data than model expected")
 
         # retrieving original order
-        reordered_inputs = [None] * len(inputs)
         if is_reordered:
+            reordered_inputs = [None] * len(inputs)
             for order, spec in enumerate(self.input_spec):
                 reordered_inputs[order] = inputs[spec["order"]]
         else:

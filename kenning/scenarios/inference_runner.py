@@ -110,19 +110,14 @@ def main(argv):  # noqa: D103
             unconverted_inp = dataprovider.fetch_input()
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)
 
-            KLogger.debug("Converting to bytes and setting up model input")
-            inp = model.convert_input_to_bytes(
-                model.preprocess_input(preprocessed_input)
-            )
-            runtime.prepare_input(inp)
+            KLogger.debug("Setting up model input")
+            runtime.prepare_input(model.preprocess_input(preprocessed_input))
 
             KLogger.debug("Running inference")
             runtime.run()
 
-            KLogger.debug("Converting output from bytes")
-            res = model.postprocess_outputs(
-                model.convert_output_from_bytes(runtime.upload_output(inp))
-            )
+            KLogger.debug("Postprocessing output")
+            res = model.postprocess_outputs(runtime.extract_output())
 
             KLogger.debug("Sending data to collectors")
             for i in outputcollectors:

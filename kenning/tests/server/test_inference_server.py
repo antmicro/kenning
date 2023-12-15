@@ -148,32 +148,32 @@ class TestInferenceServerRunner:
 
         with (
             patch.object(
-                runtime, "prepare_input"
-            ) as runtime_prepare_input_mock,
+                runtime, "load_input_from_bytes"
+            ) as runtime_load_input_mock,
             patch.object(
                 protocol, "request_success"
             ) as protocol_request_success_mock,
         ):
-            runtime_prepare_input_mock.return_value = True
+            runtime_load_input_mock.return_value = True
 
             inference_server.callbacks[MessageType.DATA](data)
 
-            runtime_prepare_input_mock.assert_called_once_with(data)
+            runtime_load_input_mock.assert_called_once_with(data)
             protocol_request_success_mock.assert_called_once()
 
         with (
             patch.object(
-                runtime, "prepare_input"
-            ) as runtime_prepare_input_mock,
+                runtime, "load_input_from_bytes"
+            ) as runtime_load_input_mock,
             patch.object(
                 protocol, "request_failure"
             ) as protocol_request_failure_mock,
         ):
-            runtime_prepare_input_mock.return_value = False
+            runtime_load_input_mock.return_value = False
 
             inference_server.callbacks[MessageType.DATA](data)
 
-            runtime_prepare_input_mock.assert_called_once_with(data)
+            runtime_load_input_mock.assert_called_once_with(data)
             protocol_request_failure_mock.assert_called_once()
 
     def test_model_callback(self, runtime: Runtime, protocol: Protocol):

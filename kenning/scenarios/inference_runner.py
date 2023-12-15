@@ -111,7 +111,7 @@ def main(argv):  # noqa: D103
             preprocessed_input = dataprovider.preprocess_input(unconverted_inp)
 
             KLogger.debug("Setting up model input")
-            runtime.prepare_input(model.preprocess_input(preprocessed_input))
+            runtime.load_input(model.preprocess_input(preprocessed_input))
 
             KLogger.debug("Running inference")
             runtime.run()

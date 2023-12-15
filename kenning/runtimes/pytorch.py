@@ -131,8 +131,11 @@ class PyTorchRuntime(Runtime):
         KLogger.info("Model loading ended successfully")
         return True
 
-    def prepare_input(self, input_data: bytes):
-        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
+    def load_input(self, input_data: bytes):
+        KLogger.debug(f"Loading inputs of size {len(input_data)}")
+        if not input_data:
+            KLogger.error("Received empty input data")
+            return False
         import torch
 
         self.input = input_data

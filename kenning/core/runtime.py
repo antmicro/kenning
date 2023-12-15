@@ -51,7 +51,7 @@ class InputNotPreparedError(Exception):
 
     def __init__(
         self,
-        msg="Make sure to run prepare_input method before running the model.",
+        msg="Make sure to run load_input method before running the model.",
         *args,
         **kwargs,
     ):
@@ -175,7 +175,7 @@ class Runtime(ArgumentsHandler, ABC):
             self.statsmeasurements = None
 
     @abstractmethod
-    def prepare_input(self, input_data: List[np.ndarray]) -> bool:
+    def load_input(self, input_data: List[np.ndarray]) -> bool:
         """
         Loads and converts delivered data to the accelerator for inference.
 
@@ -224,7 +224,7 @@ class Runtime(ArgumentsHandler, ABC):
         """
         ...
 
-    def load_input_from_bytes(self, input_data: bytes) -> List[np.ndarray]:
+    def load_input_from_bytes(self, input_data: bytes) -> bool:
         """
         The method accepts `input_data` in bytes and loads it
         according to the input specification.
@@ -243,16 +243,14 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[np.ndarray]
-            List of inputs for each layer which are ready to be quantized
-            or passed to the model.
+        bool
+            Output of the `load_input` method indicating if the operation
+            succeeded.
 
         Raises
         ------
         AttributeError
             Raised if output specification is not loaded.
-        ValueError
-            Raised if size of input doesn't match the input specification.
         """
         if self.input_spec is None:
             raise AttributeError(
@@ -269,7 +267,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         if not input_data:
             KLogger.error("Received empty data payload")
-            raise ValueError("Received empty data payload")
+            return False
 
         # reading input
         inputs = []
@@ -285,10 +283,7 @@ class Runtime(ArgumentsHandler, ABC):
                     "Received input data that is not a multiple of the sample "
                     "size"
                 )
-                raise ValueError(
-                    "Received input data that is not a multiple of the sample "
-                    "size"
-                )
+                return False
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
 
@@ -304,7 +299,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         if input_data:
             KLogger.error("Received more data than model expected")
-            raise ValueError("Received more data than model expected")
+            return False
 
         # retrieving original order
         if is_reordered:
@@ -314,7 +309,7 @@ class Runtime(ArgumentsHandler, ABC):
         else:
             reordered_inputs = inputs
 
-        return reordered_inputs
+        return self.load_input(reordered_inputs)
 
     def postprocess_output(
         self, results: List[np.ndarray]
@@ -475,7 +470,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         The input should be introduced in runtime's model representation, or
         it should be delivered using a variable that was assigned in
-        prepare_input method.
+        load_input method.
 
         Raises
         ------
@@ -578,8 +573,7 @@ class Runtime(ArgumentsHandler, ABC):
             Obtained values.
         """
         prepX = model_wrapper._preprocess_input(X)
-        prepX = model_wrapper.convert_input_to_bytes(prepX)
-        succeed = self.prepare_input(prepX)
+        succeed = self.load_input(prepX)
         if not succeed:
             return False
         self._run()

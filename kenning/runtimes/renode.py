@@ -403,13 +403,13 @@ class RenodeRuntime(Runtime):
             )
         return ret
 
-    def extract_output(self) -> List[Any]:
+    def extract_output(self):
         raise NotImplementedError
 
-    def prepare_input(self, input_data: bytes) -> bool:
+    def load_input(self, input_data):
         raise NotImplementedError
 
-    def prepare_model(self, input_data: Optional[bytes]) -> bool:
+    def prepare_model(self, input_data):
         raise NotImplementedError
 
     def run(self):

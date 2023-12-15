@@ -66,10 +66,13 @@ class IREERuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-    def prepare_input(self, input_data):
-        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
+    def load_input(self, input_data):
+        KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.model is None:
             raise ModelNotPreparedError
+        if not input_data:
+            KLogger.error("Received empty input data")
+            return False
 
         # quantization
         for idx, (spec, inp) in enumerate(zip(self.input_spec, input_data)):

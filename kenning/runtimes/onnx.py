@@ -67,10 +67,13 @@ class ONNXRuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-    def prepare_input(self, input_data):
-        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
+    def load_input(self, input_data):
+        KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.session is None:
             raise ModelNotPreparedError
+        if not input_data:
+            KLogger.error("Received empty input data")
+            return False
 
         self.input = {}
         for spec, inp in zip(self.input_spec, input_data):

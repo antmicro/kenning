@@ -99,10 +99,13 @@ class TFLiteRuntime(Runtime):
         KLogger.info("Model loading ended successfully")
         return True
 
-    def prepare_input(self, input_data):
-        KLogger.debug(f"Preparing inputs of size {len(input_data)}")
+    def load_input(self, input_data):
+        KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.interpreter is None:
             raise ModelNotPreparedError
+        if not input_data:
+            KLogger.error("Received empty input data")
+            return False
 
         for i, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
             # quantization

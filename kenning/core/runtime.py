@@ -224,6 +224,38 @@ class Runtime(ArgumentsHandler, ABC):
         """
         ...
 
+    def preprocess_input(
+        self, input_data: List[np.ndarray]
+    ) -> List[np.ndarray]:
+        """
+        Reshapes input data to the format expected by the model.
+        Applies quantization if needed.
+
+        Parameters
+        ----------
+        input_data : List[np.ndarray]
+            Input data to be preprocessed.
+
+        Returns
+        -------
+        List[np.ndarray]
+            List of preprocessed input data.
+        """
+        for idx, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
+            if "prequantized_dtype" in spec:
+                scale = spec["scale"]
+                zero_point = spec["zero_point"]
+                inp = (inp / scale + zero_point).astype(spec["dtype"])
+            if np.prod(inp.shape) != np.prod(spec["shape"]):
+                # fill input with zeroes to match expected shape
+                # the data needs to be copied because otherwise the array
+                # does not own its data - which is needed for resizing
+                diff = np.prod(spec["shape"]) - np.prod(inp.shape)
+                inp = np.resize(inp, np.prod(spec["shape"]))
+                inp[-diff:] = 0
+            input_data[idx] = inp.reshape(spec["shape"])
+        return input_data
+
     def load_input_from_bytes(self, input_data: bytes) -> bool:
         """
         The method accepts `input_data` in bytes and loads it
@@ -286,13 +318,6 @@ class Runtime(ArgumentsHandler, ABC):
                 return False
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
-
-            # fill input with zeroes to match expected shape
-            # the data needs to be copied because otherwise the array does not
-            # own its data - which is needed for resizing
-            input = input.copy()
-            input.resize(np.prod(shape))
-            input = input.reshape(shape)
 
             inputs.append(input)
             input_data = input_data[expected_size:]

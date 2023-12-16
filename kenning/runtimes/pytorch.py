@@ -138,13 +138,8 @@ class PyTorchRuntime(Runtime):
             return False
         import torch
 
-        self.input = input_data
+        self.input = self.preprocess_input(input_data)
         for id, (spec, inp) in enumerate(zip(self.input_spec, self.input)):
-            # quantization
-            if "prequantized_dtype" in spec:
-                scale = spec["scale"]
-                zero_point = spec["zero_point"]
-                inp = (inp / scale + zero_point).astype(spec["dtype"])
             self.input[id] = torch.from_numpy(inp.copy()).to(self.device)
         return True
 

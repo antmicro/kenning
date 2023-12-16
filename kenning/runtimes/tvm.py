@@ -100,12 +100,8 @@ class TVMRuntime(Runtime):
 
         input = {}
         try:
+            input_data = self.preprocess_input(input_data)
             for spec, inp in zip(self.input_spec, input_data):
-                # quantization
-                if "prequantized_dtype" in spec:
-                    scale = spec["scale"]
-                    zero_point = spec["zero_point"]
-                    inp = (inp / scale + zero_point).astype(spec["dtype"])
                 input[spec["name"]] = tvm.nd.array(inp)
 
             if self.use_tvm_vm:

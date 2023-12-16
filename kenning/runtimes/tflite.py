@@ -107,16 +107,8 @@ class TFLiteRuntime(Runtime):
             KLogger.error("Received empty input data")
             return False
 
-        for i, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
-            # quantization
-            if "prequantized_dtype" in spec:
-                scale = spec["scale"]
-                zero_point = spec["zero_point"]
-                input_data[i] = (inp / scale + zero_point).astype(
-                    spec["dtype"]
-                )
-
-            # resize tensors to handle batched inputs correctly
+        input_data = self.preprocess_input(input_data)
+        for i, spec in enumerate(self.input_spec):
             self.interpreter.resize_tensor_input(i, spec["shape"])
         self.interpreter.allocate_tensors()
 

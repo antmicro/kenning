@@ -75,14 +75,9 @@ class ONNXRuntime(Runtime):
             KLogger.error("Received empty input data")
             return False
 
+        input_data = self.preprocess_input(input_data)
         self.input = {}
         for spec, inp in zip(self.input_spec, input_data):
-            # quantization
-            if "prequantized_dtype" in spec:
-                scale = spec["scale"]
-                zero_point = spec["zero_point"]
-                inp = (inp / scale + zero_point).astype(spec["dtype"])
-
             self.input[spec["name"]] = inp
         return True
 

@@ -598,7 +598,7 @@ class Runtime(ArgumentsHandler, ABC):
             Obtained values.
         """
         prepX = model_wrapper._preprocess_input(X)
-        succeed = self.load_input(prepX)
+        succeed = self.load_input([prepX])
         if not succeed:
             return False
         self._run()

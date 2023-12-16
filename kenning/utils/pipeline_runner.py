@@ -703,7 +703,7 @@ class PipelineRunner(object):
                     prepX = tagmeasurements("preprocessing")(
                         self.model_wrapper._preprocess_input
                     )(X)
-                    succeed = self.runtime.load_input(prepX)
+                    succeed = self.runtime.load_input([prepX])
                     if not succeed:
                         return False
                     self.runtime._run()

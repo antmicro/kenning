@@ -6,10 +6,11 @@
 The Lindenthal Camera Traps wrapper.
 """
 
+import random
 import shutil
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
 
 import cv2
@@ -31,6 +32,267 @@ try:
     import rosbags
 except ImportError:
     rosbags = None
+
+
+class LindenthalCameraTrapsAugmentation:
+    """
+    The Lindenthal Camera Traps data augmentation class.
+
+    It's a simple class that provides augmentation methods for
+    Lindenthal Camera Traps dataset.
+    """
+
+    def __init__(self):
+        """
+        Initializes the augmentation class.
+        """
+        # Replay transform used to apply the same transform to sequence
+        # of images
+        self.transform = None
+
+    def prepare(self):
+        """
+        Prepares the augmentation transforms.
+
+        Raises
+        ------
+        ImportError
+            If the albumentations package is not installed.
+        """
+        try:
+            import albumentations as A
+        except ImportError:
+            raise ImportError(
+                "The albumentations package is required for "
+                "augmentation transforms. Please install it using "
+                "`pip install albumentations`."
+            )
+        self.transform = A.ReplayCompose(
+            [
+                A.HorizontalFlip(p=0.5),
+                A.OneOf(
+                    [
+                        A.RandomCrop(width=512, height=480),
+                        A.RandomCrop(width=256, height=256),
+                        A.RandomCrop(width=420, height=240),
+                        A.RandomCrop(width=640, height=360),
+                        A.RandomCrop(width=590, height=259),
+                        A.RandomCrop(width=384, height=186),
+                    ],
+                    p=0.5,
+                ),
+                A.RandomFog(fog_coef_lower=0, fog_coef_upper=0.3, p=0.5),
+                A.RandomBrightnessContrast(brightness_by_max=False, p=0.5),
+                A.Sharpen(p=0.5),
+                A.ChannelShuffle(p=0.5),
+                A.Downscale(scale_min=0.45, scale_max=0.85, p=0.5),
+                A.RandomScale(scale_limit=[-0.2, 0.3], p=0.5),
+                A.OneOf(
+                    [
+                        A.PixelDropout(dropout_prob=0.02),
+                        A.MultiplicativeNoise(multiplier=(0.9, 1.2)),
+                    ],
+                    p=0.5,
+                ),
+                A.OneOf(
+                    [
+                        A.Rotate(limit=[-20, 20], border_mode=0),
+                        A.ElasticTransform(
+                            alpha=0.5,
+                            sigma=20,
+                            alpha_affine=12,
+                            interpolation=1,
+                            border_mode=0,
+                            mask_value=0,
+                            value=0,
+                            approximate=True,
+                        ),
+                    ],
+                    p=0.5,
+                ),
+            ],
+            bbox_params=A.BboxParams(
+                format="coco",
+                label_fields=["clsname", "maskpath", "score", "iscrowd"],
+                min_visibility=0.2,
+            ),
+        )
+
+    @staticmethod
+    def get_dummy_data(height: int, width: int) -> Dict[str, List]:
+        """
+        Returns dummy data for replay transform.
+
+        Parameters
+        ----------
+        height : int
+            Height of the image.
+        width : int
+            Width of the image.
+
+        Returns
+        -------
+        Dict[str, List]
+            Dictionary of dummy data. Not includes image.
+        """
+        return {
+            "image": np.zeros((height, width, 3), dtype=np.float32),
+            "masks": [np.zeros((height, width), dtype=np.uint8)],
+            "bboxes": [[0, 0, 100, 100]],
+            "clsname": ["dummy"],
+            "maskpath": ["dummy"],
+            "score": [0.0],
+            "iscrowd": [0],
+        }
+
+    def __call__(
+        self,
+        X: List[List[np.ndarray]],
+        y: List[List[List[SegmObject]]],
+        seed: Optional[int] = None,
+    ) -> Tuple[List[List[np.ndarray]], List[List[List[SegmObject]]]]:
+        """
+        Augment the input sequences with random transformations.
+
+        Parameters
+        ----------
+        X : List[List[np.ndarray]]
+            List of preprocessed input sequences.
+        y : List[List[List[SegmObject]]]
+            List of ground truth sequences.
+        seed : Optional[int]
+            Random seed, by default None
+
+        Returns
+        -------
+        Tuple[List[List[np.ndarray]], List[List[List[SegmObject]]]]
+            Tuple of augmented input sequences and ground truth sequences.
+        """
+        random.seed(seed)
+
+        # Iterate over all sequences
+        for i, (video, labels) in enumerate(zip(X, y)):
+            # Save replay data for the whole sequence
+            height, width = video[0].shape[:2]
+            replay_data = self.transform(**self.get_dummy_data(height, width))[
+                "replay"
+            ]
+
+            # Iterate over all frames in the sequence
+            for idx, (frame, gt) in enumerate(zip(video, labels)):
+                is_dummy, frame_gt = self.extract_ground_truth(
+                    gt, height, width
+                )
+                augmented = self.transform.replay(
+                    replay_data,
+                    image=frame,
+                    **frame_gt,
+                )
+                video[idx] = augmented["image"]
+                segmentations = []
+                if not is_dummy:
+                    segmentations = self.pack_augmentations(augmented)
+                labels[idx] = segmentations
+            X[i] = video
+            y[i] = labels
+        return X, y
+
+    @staticmethod
+    def extract_ground_truth(
+        ground_truth: List[SegmObject], height: int, width: int
+    ) -> Tuple[bool, Dict[str, List]]:
+        """
+        Extract ground truth values from the list of `SegmObject`s.
+
+        Parameters
+        ----------
+        ground_truth : List[SegmObject]
+            List of `SegmObject`s.
+        height : int
+            Image height.
+        width : int
+            Image width.
+
+        Returns
+        -------
+        Tuple[bool, Dict[str, List]]
+            Tuple of data from list of `SegmObject` and `bool` flag indicating
+            whether the ground truth is empty.
+            If yes, then the returned dictionary is filled with dummy data.
+            Does not include image.
+        """
+        ret = {
+            "masks": [],
+            "bboxes": [],
+            "clsname": [],
+            "maskpath": [],
+            "score": [],
+            "iscrowd": [],
+        }
+        for obj in ground_truth:
+            ret["clsname"].append(obj.clsname)
+            ret["maskpath"].append(obj.maskpath)
+            xmin = obj.xmin * width
+            ymin = obj.ymin * height
+            xmax = obj.xmax * width
+            ymax = obj.ymax * height
+            ret["bboxes"].append([xmin, ymin, xmax - xmin, ymax - ymin])
+            ret["masks"].append(obj.mask)
+            ret["score"].append(obj.score)
+            ret["iscrowd"].append(obj.iscrowd)
+        if len(ret["clsname"]) == 0:
+            ret = LindenthalCameraTrapsAugmentation.get_dummy_data(
+                height, width
+            )
+            ret.pop("image")
+            return True, ret
+        return False, ret
+
+    @staticmethod
+    def pack_augmentations(augmented_data: Dict[str, Any]) -> List[SegmObject]:
+        """
+        Pack augmented data into list of `SegmObject`s.
+
+        Parameters
+        ----------
+        augmented_data : Dict[str, Any]
+            Augmented data.
+
+        Returns
+        -------
+        List[SegmObject]
+            List of `SegmObject`s.
+        """
+        segmentations = []
+        aug_height, aug_width = augmented_data["image"].shape[:2]
+        for clsname, mask, bbox, maskpath, score, iscrowd in zip(
+            augmented_data["clsname"],
+            augmented_data["masks"],
+            augmented_data["bboxes"],
+            augmented_data["maskpath"],
+            augmented_data["score"],
+            augmented_data["iscrowd"],
+        ):
+            xmin, ymin, xmax, ymax = (
+                bbox[0] / aug_width,
+                bbox[1] / aug_height,
+                (bbox[0] + bbox[2]) / aug_width,
+                (bbox[1] + bbox[3]) / aug_height,
+            )
+            segmentations.append(
+                SegmObject(
+                    clsname=clsname,
+                    mask=mask,
+                    maskpath=maskpath,
+                    score=score,
+                    iscrowd=iscrowd,
+                    xmin=xmin,
+                    ymin=ymin,
+                    xmax=xmax,
+                    ymax=ymax,
+                ),
+            )
+        return segmentations
 
 
 class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
@@ -76,8 +338,11 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         show_on_eval: bool = False,
         image_width: Optional[int] = None,
         image_height: Optional[int] = None,
+        augment: bool = False,
     ):
         self.num_classes = 4
+        self.augment = augment
+
         super().__init__(
             root=root,
             batch_size=batch_size,
@@ -123,7 +388,17 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
                 (self.root / f).unlink()
         shutil.rmtree((self.root / "lindenthal-camera-traps"))
 
+    def __next__(self):
+        X, y = super().__next__()
+        if self.augment:
+            X, y = self.augmentation(X, y)
+        return X, y
+
     def prepare(self):
+        if self.augment:
+            self.augmentation = LindenthalCameraTrapsAugmentation()
+            self.augmentation.prepare()
+
         annotationspath = self.root / "annotations.json"
         self.coco = COCO(annotationspath)
 

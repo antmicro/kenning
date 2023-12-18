@@ -455,16 +455,14 @@ class CommonVoiceDataset(Dataset):
 
     def train_test_split_representations(
         self,
-        test_fraction: Optional[float] = None,
-        val_fraction: Optional[float] = None,
-        seed: Optional[int] = None,
+        *args,
         stratify: bool = True,
+        **kwargs,
     ) -> Tuple[List, ...]:
         return super().train_test_split_representations(
-            test_fraction=test_fraction,
-            val_fraction=val_fraction,
-            seed=seed,
+            *args,
             stratify=False,
+            **kwargs,
         )
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:

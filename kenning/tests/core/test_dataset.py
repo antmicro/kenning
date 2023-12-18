@@ -139,6 +139,7 @@ class TestDataset:
     def test_iterator(self, dataset: Type[Dataset]):
         """
         Tests dataset iteration.
+        Verifies that indexes are generated and used.
         """
         for i, (x, y) in enumerate(dataset):
             assert x is not None
@@ -147,6 +148,101 @@ class TestDataset:
                 break
 
         assert len(dataset) > 0
+        assert len(dataset._dataindices) > 0
+        assert dataset._dataindex == (i + 1) * dataset.batch_size
+
+    @pytest.mark.parametrize(
+        "dataset",
+        [
+            pytest.param(
+                dataset_cls,
+                marks=[
+                    pytest.mark.xdist_group(
+                        name=f"TestDataset_{dataset_cls.__name__}"
+                    )
+                ],
+            )
+            for dataset_cls in DATASET_SUBCLASSES
+        ],
+        indirect=True,
+    )
+    def test_iter_train(self, dataset: Type[Dataset]):
+        """
+        Tests dataset iteration over training set.
+        Verifies that indexes are generated and used.
+        """
+        for i, (x, y) in enumerate(dataset.iter_train()):
+            assert x is not None
+            assert y is not None
+            if i > 10:
+                break
+
+        assert len(dataset) > 0
+        assert len(dataset._dataindices) > 0
+        assert dataset._dataindex == (i + 1) * dataset.batch_size
+
+    @pytest.mark.parametrize(
+        "dataset",
+        [
+            pytest.param(
+                dataset_cls,
+                marks=[
+                    pytest.mark.xdist_group(
+                        name=f"TestDataset_{dataset_cls.__name__}"
+                    )
+                ],
+            )
+            for dataset_cls in DATASET_SUBCLASSES
+        ],
+        indirect=True,
+    )
+    def test_iter_test(self, dataset: Type[Dataset]):
+        """
+        Tests dataset iteration over test set.
+        Verifies that indexes are generated and used.
+        """
+        dataset.split_fraction_test = 0.2
+        for i, (x, y) in enumerate(dataset.iter_test()):
+            assert x is not None
+            assert y is not None
+            if i > 10:
+                break
+
+        assert len(dataset) > 0
+        assert len(dataset._dataindices) > 0
+        assert dataset._dataindex == (i + 1) * dataset.batch_size
+
+    @pytest.mark.parametrize(
+        "dataset",
+        [
+            pytest.param(
+                dataset_cls,
+                marks=[
+                    pytest.mark.xdist_group(
+                        name=f"TestDataset_{dataset_cls.__name__}"
+                    )
+                ],
+            )
+            for dataset_cls in DATASET_SUBCLASSES
+        ],
+        indirect=True,
+    )
+    def test_iter_val(self, dataset: Type[Dataset]):
+        """
+        Tests dataset iteration over validation set.
+        Verifies that indexes are generated and used.
+        """
+        dataset.split_fraction_test = 0.2
+        dataset.split_fraction_val = 0.2
+        for i, (x, y) in enumerate(dataset.iter_val()):
+            assert x is not None
+            assert y is not None
+            if i > 10:
+                break
+
+        assert len(dataset) > 0
+        assert len(dataset._dataindices) > 0
+        assert dataset._dataindex == (i + 1) * dataset.batch_size
 
     @pytest.mark.parametrize(
         "dataset",

@@ -13,10 +13,9 @@ import struct
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from binascii import hexlify
-from copy import deepcopy
 from math import ceil
 from pathlib import Path
-from typing import Any, Dict, Generator, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Generator, List, Optional, Tuple
 
 from tqdm import tqdm
 
@@ -25,6 +24,42 @@ from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import Resources
 
 from .measurements import Measurements
+
+
+class DatasetIterator:
+    """
+    Provides an iterator for dataset samples.
+
+    This class is used by Dataset objects to provide data samples for
+    inference, training and validation.
+    """
+
+    def __init__(self, dataset: "Dataset", indices: List[int]):
+        """
+        Initializes the iterator.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset object that provides the data samples.
+        indices : List[int]
+            The list of indices of samples to be provided by the iterator.
+        """
+        self.dataset = dataset
+        self.indices = indices
+
+    def __iter__(self) -> "Dataset":
+        """
+        Returns the iterator object.
+
+        Returns
+        -------
+        Dataset
+            The iterator object.
+        """
+        self.dataset._dataindex = 0
+        self.dataset._dataindices = self.indices
+        return self.dataset
 
 
 class Dataset(ArgumentsHandler, ABC):
@@ -177,6 +212,7 @@ class Dataset(ArgumentsHandler, ABC):
         assert batch_size > 0
         self.root = Path(root)
         self._dataindex = 0
+        self._dataindices = []
         self.dataX = []
         self.dataY = []
         self.dataXtrain = []
@@ -259,6 +295,7 @@ class Dataset(ArgumentsHandler, ABC):
             This object.
         """
         self._dataindex = 0
+        self._dataindices = list(range(len(self.dataX)))
         return self
 
     def __next__(self) -> Tuple[List, List]:
@@ -279,14 +316,19 @@ class Dataset(ArgumentsHandler, ABC):
         StopIteration
             Raised when iterations are finished
         """
-        if self._dataindex < len(self.dataX):
+        # Handle the case when the next method is called without the iterator
+        if self._dataindex == 0 and not self._dataindices:
+            self._dataindices = list(range(len(self.dataX)))
+
+        if self._dataindex < len(self._dataindices):
             prev = self._dataindex
             self._dataindex += self.batch_size
+            samples = self._dataindices[prev : self._dataindex]
+            dataX = [self.dataX[i] for i in samples]
+            dataY = [self.dataY[i] for i in samples]
             return (
-                self.prepare_input_samples(self.dataX[prev : self._dataindex]),
-                self.prepare_output_samples(
-                    self.dataY[prev : self._dataindex]
-                ),
+                self.prepare_input_samples(dataX),
+                self.prepare_output_samples(dataY),
             )
         raise StopIteration
 
@@ -301,73 +343,45 @@ class Dataset(ArgumentsHandler, ABC):
         """
         return ceil(len(self.dataX) / self.batch_size)
 
-    def _iter_subset(
-        self, dataXsubset: List[Any], dataYsubset: List[Any]
-    ) -> Iterable["Dataset"]:
-        """
-        Iterates over subset of the dataset.
-
-        Parameters
-        ----------
-        dataXsubset : List[Any]
-            Subset of the dataX.
-        dataYsubset : List[Any]
-            Subset of the dataY.
-
-        Returns
-        -------
-        Iterable[Dataset]
-            Iterator over the subset of the dataset.
-        """
-        assert len(dataXsubset) == len(dataYsubset)
-
-        subset = deepcopy(self)
-        subset.dataX = dataXsubset
-        subset.dataY = dataYsubset
-        return iter(subset)
-
-    def iter_train(self) -> Iterable["Dataset"]:
+    def iter_train(self) -> "DatasetIterator":
         """
         Iterates over train data obtained from split.
 
         Returns
         -------
-        Iterable[Dataset]
-            Iterator over the train data obtained from split.
+        DatasetIterator
+            Iterator over data samples.
         """
-        split = self.train_test_split_representations()
-        dataXtrain = split[0]
-        dataYtrain = split[2]
-        return self._iter_subset(dataXtrain, dataYtrain)
+        split = self.train_test_split_representations(append_index=True)
+        indices = split[4]
+        return DatasetIterator(self, indices)
 
-    def iter_test(self) -> Iterable["Dataset"]:
+    def iter_test(self) -> "DatasetIterator":
         """
         Iterates over test data obtained from split.
 
         Returns
         -------
-        Iterable[Dataset]
-            Iterator over the test data obtained from split.
+        DatasetIterator
+            Iterator over data samples.
         """
-        split = self.train_test_split_representations()
-        dataXtest = split[1]
-        dataYtest = split[3]
-        return self._iter_subset(dataXtest, dataYtest)
+        split = self.train_test_split_representations(append_index=True)
+        indices = split[5]
+        return DatasetIterator(self, indices)
 
-    def iter_val(self) -> Iterable["Dataset"]:
+    def iter_val(self) -> "DatasetIterator":
         """
         Iterates over validation data obtained from split.
 
         Returns
         -------
-        Iterable[Dataset]
-            Iterator over the validation data obtained from split.
+        DatasetIterator
+            Iterator over data samples.
         """
-        split = self.train_test_split_representations()
-        assert len(split) == 6, "No validation data in split"
-        dataXval = split[4]
-        dataYval = split[5]
-        return self._iter_subset(dataXval, dataYval)
+        split = self.train_test_split_representations(append_index=True)
+        assert len(split) == 9, "No validation data in split"
+        indices = split[8]
+        return DatasetIterator(self, indices)
 
     def prepare_input_samples(self, samples: List) -> List:
         """
@@ -520,6 +534,7 @@ class Dataset(ArgumentsHandler, ABC):
         val_fraction: Optional[float] = None,
         seed: Optional[int] = None,
         stratify: bool = True,
+        append_index: bool = False,
     ) -> Tuple[List, ...]:
         """
         Splits the data representations into train dataset and test dataset.
@@ -534,6 +549,12 @@ class Dataset(ArgumentsHandler, ABC):
             The seed for random state.
         stratify : bool
             Whether to stratify the split.
+        append_index : bool
+            Whether to return the indices of the split. If True, the returned
+            tuple will have indices appended at the end.
+            For example, if the split is (X_train, X_test, y_train, y_test),
+            the returned tuple will be (X_train, X_test, y_train, y_test,
+            train_indices, test_indices).
 
         Returns
         -------
@@ -564,14 +585,26 @@ class Dataset(ArgumentsHandler, ABC):
             self.dataXtest,
             self.dataYtrain,
             self.dataYtest,
+            dataItrain,
+            dataItest,
         ) = train_test_split(
             self.dataX,
             self.dataY,
+            range(len(self.dataX)),
             test_size=test_fraction,
             random_state=seed,
             shuffle=True,
             stratify=stratify_arg,
         )
+
+        ret = (
+            self.dataXtrain,
+            self.dataXtest,
+            self.dataYtrain,
+            self.dataYtest,
+        )
+        if append_index:
+            ret += (dataItrain, dataItest)
 
         if val_fraction is not None and val_fraction != 0:
             if stratify:
@@ -583,15 +616,18 @@ class Dataset(ArgumentsHandler, ABC):
                 self.dataXval,
                 self.dataYtrain,
                 self.dataYval,
+                dataItrain,
+                dataIval,
             ) = train_test_split(
                 self.dataXtrain,
                 self.dataYtrain,
+                dataItrain,
                 test_size=val_fraction / (1 - test_fraction),
                 random_state=seed,
                 shuffle=True,
                 stratify=stratify_arg,
             )
-            return (
+            ret = (
                 self.dataXtrain,
                 self.dataXtest,
                 self.dataYtrain,
@@ -599,12 +635,10 @@ class Dataset(ArgumentsHandler, ABC):
                 self.dataXval,
                 self.dataYval,
             )
-        return (
-            self.dataXtrain,
-            self.dataXtest,
-            self.dataYtrain,
-            self.dataYtest,
-        )
+            if append_index:
+                ret += (dataItrain, dataItest, dataIval)
+
+        return ret
 
     def calibration_dataset_generator(
         self, percentage: float = 0.25, seed: int = 12345

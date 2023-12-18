@@ -256,7 +256,9 @@ class VideoObjectDetectionSegmentationDataset(
                     )
             if self.show_on_eval:
                 self.show_eval_images(
-                    sequence_preds, sequence_truth, curr_index
+                    sequence_preds,
+                    sequence_truth,
+                    self._dataindices[curr_index],
                 )
 
             # TODO: Add per-sequence metrics

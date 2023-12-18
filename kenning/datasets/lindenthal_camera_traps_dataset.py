@@ -215,7 +215,9 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         for sequence, groundtruth in zip(predictions, truth):
             seq_measurements = Measurements()
             for idx, frame in enumerate(sequence):
-                cocoid = self.imgstokeys[self.dataX[currindex][idx]]
+                cocoid = self.imgstokeys[
+                    self.dataX[self._dataindices[currindex]][idx]
+                ]
                 width = self.coco.imgs[cocoid]["width"]
                 height = self.coco.imgs[cocoid]["height"]
                 for pred in frame:
@@ -226,7 +228,9 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
                     w = xmax - xmin
                     h = ymax - ymin
                     image_name = "/".join(
-                        self.dataX[currindex][idx].split("/")[-2:]
+                        self.dataX[self._dataindices[currindex]][idx].split(
+                            "/"
+                        )[-2:]
                     )
                     seq_measurements.add_measurement(
                         "predictions",

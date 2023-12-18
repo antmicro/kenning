@@ -444,7 +444,9 @@ class CommonVoiceDataset(Dataset):
                         "true_text": gt,
                         "predicted_text": pred,
                         "audio_path": str(
-                            Path(self.dataX[currindex]).relative_to(self.root)
+                            Path(
+                                self.dataX[self._indexes[currindex]]
+                            ).relative_to(self.root)
                         ),
                     }
                 ],

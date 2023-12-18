@@ -427,7 +427,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         KLogger.debug(f"\npredictions\n{predictions}")
         for pred, gt in zip(predictions, truth):
             img = self.prepare_input_samples(
-                [self.dataX[self._dataindex - 1]]
+                [self.dataX[self._dataindices[self._dataindex - 1]]]
             )[0]
             if self.image_memory_layout == "NCHW":
                 img = img.transpose(1, 2, 0)

@@ -172,7 +172,9 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         currindex = self._dataindex - len(predictions)
         for pred, groundtruth in zip(predictions, truth):
             for p in pred:
-                cocoid = self.imgstokeys[self.dataX[currindex]]
+                cocoid = self.imgstokeys[
+                    self.dataX[self._dataindices[currindex]]
+                ]
                 width = self.coco.imgs[cocoid]["width"]
                 height = self.coco.imgs[cocoid]["height"]
                 xmin = max(min(p.xmin * width, width), 0)
@@ -186,7 +188,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
                     [
                         {
                             "image_name": self.imgstokeys[
-                                self.dataX[currindex]
+                                self.dataX[self._dataindices[currindex]]
                             ],
                             "category": p.clsname,
                             "bbox": [xmin, ymin, w, h],

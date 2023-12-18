@@ -294,9 +294,20 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         masks = y[4] @ y[1].T
         masks = sigmoid(masks)
         masks = crop(masks, y[0])
-        masks = cv2.resize(
-            masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
-        ).transpose(2, 0, 1)
+        # Resize masks to original image size in batches of 512 to avoid OOM
+        masks = [
+            cv2.resize(
+                masks[:, :, i : i + 512],
+                (self.w, self.h),
+                interpolation=cv2.INTER_LINEAR,
+            )
+            for i in range(0, masks.shape[2], 512)
+        ]
+        masks = [
+            np.expand_dims(m, axis=2) if len(m.shape) == 2 else m
+            for m in masks
+        ]
+        masks = np.concatenate(masks, axis=2).transpose(2, 0, 1)
         y[1] = (masks >= 0.5).astype(np.float32) * 255.0
 
         boxes = y[0]
@@ -429,11 +440,20 @@ class YOLACT(YOLACTWrapper):
 
         masks = sigmoid(y["proto"] @ y["mask"].T)
         masks = crop(masks, y["box"])
-        masks = cv2.resize(
-            masks, (self.w, self.h), interpolation=cv2.INTER_LINEAR
-        )
-        if len(masks.shape) == 2:
-            masks = masks[:, :, None]
+        # Resize masks to original image size in batches of 512 to avoid OOM
+        masks = [
+            cv2.resize(
+                masks[:, :, i : i + 512],
+                (self.w, self.h),
+                interpolation=cv2.INTER_LINEAR,
+            )
+            for i in range(0, masks.shape[2], 512)
+        ]
+        masks = [
+            np.expand_dims(m, axis=2) if len(m.shape) == 2 else m
+            for m in masks
+        ]
+        masks = np.concatenate(masks, axis=2)
         y["mask"] = ((masks >= 0.5).astype(np.uint8) * 255).transpose(2, 0, 1)
 
         boxes = y["box"]

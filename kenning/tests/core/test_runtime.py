@@ -139,7 +139,7 @@ class TestRuntime:
 
         for _ in range(8):
             X, _ = next(dataset)
-            prepX = model._preprocess_input(X)
+            prepX = model.preprocess_input(X)
             prepX = model.convert_input_to_bytes(prepX)
 
             assert runtime.prepare_input(prepX)

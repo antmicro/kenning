@@ -136,6 +136,9 @@ nni = [
 ros2 = [
     "rosbags"
 ]
+albumentations = [
+    "albumentations",
+]
 
 [project.scripts]
 kenning = "kenning.cli.cli:main"

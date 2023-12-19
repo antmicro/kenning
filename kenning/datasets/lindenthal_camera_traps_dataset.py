@@ -65,7 +65,7 @@ class LindenthalCameraTrapsAugmentation:
             raise ImportError(
                 "The albumentations package is required for "
                 "augmentation transforms. Please install it using "
-                "`pip install albumentations`."
+                "`pip install kenning[albumentations]`."
             )
         self.transform = A.ReplayCompose(
             [

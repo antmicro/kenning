@@ -20,7 +20,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
-    tagmeasurements,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol, RequestFailure, check_request
@@ -187,9 +186,7 @@ class RenodeRuntime(Runtime):
                         if self.sensor is None:
                             # provide data to runtime
                             X, _ = sample
-                            prepX = tagmeasurements("preprocessing")(
-                                modelwrapper._preprocess_input
-                            )(X)
+                            prepX = modelwrapper._preprocess_input(X)
                             prepX = modelwrapper.convert_input_to_bytes(prepX)
                             check_request(
                                 protocol.upload_input(prepX), "send input"
@@ -205,9 +202,7 @@ class RenodeRuntime(Runtime):
                         )
 
                         preds = modelwrapper.convert_output_from_bytes(preds)
-                        posty = tagmeasurements("postprocessing")(
-                            modelwrapper._postprocess_outputs
-                        )(preds)
+                        posty = modelwrapper._postprocess_outputs(preds)
 
                         if self.sensor is not None:
                             measurements += dataset.evaluate(posty, None)

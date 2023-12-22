@@ -323,6 +323,19 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         }
     )
 
+    arguments_structure = {
+        "image_width": {
+            "description": "Width of the input images",
+            "type": int,
+            "default": 0,
+        },
+        "image_height": {
+            "description": "Height of the input images",
+            "type": int,
+            "default": 0,
+        },
+    }
+
     def __init__(
         self,
         root: Path,
@@ -336,8 +349,8 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
         task: str = "instance_segmentation",
         image_memory_layout: str = "NHWC",
         show_on_eval: bool = False,
-        image_width: Optional[int] = None,
-        image_height: Optional[int] = None,
+        image_width: int = 0,
+        image_height: int = 0,
         augment: bool = False,
     ):
         self.num_classes = 4

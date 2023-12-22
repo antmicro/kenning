@@ -367,7 +367,7 @@ def add_parameterschema_argument(
     Note that the function modifies the given schema.
 
     If argument with name 'argschema_name' already exists in the
-    schema the existing argument is overridden with the new one.
+    schema, the argument will be skipped.
 
     Parameters
     ----------
@@ -415,12 +415,9 @@ def add_parameterschema_argument(
             if p["real_name"] == name and k != argschema_name:
                 raise KeyError(f"{p} already has a property name: {name}")
 
-        # If the property is going to be overridden it has to be removed
-        # from the list of required properties
-        try:
-            schema["required"].remove(argschema_name)
-        except (KeyError, ValueError):
-            pass
+        # Continue if parameter already present in schema
+        if argschema_name in schema["properties"]:
+            continue
 
         schema["properties"][argschema_name] = {}
         keywords = schema["properties"][argschema_name]

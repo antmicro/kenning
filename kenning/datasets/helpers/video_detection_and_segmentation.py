@@ -7,7 +7,7 @@ Base class for video object detection and segmentation datasets.
 Contains common methods for video datasets.
 """
 
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any, List, Optional
 
 import cv2
@@ -16,6 +16,7 @@ import numpy as np
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
     ObjectDetectionSegmentationDataset,
+    compute_map_per_threshold,
 )
 from kenning.utils.logger import KLogger
 
@@ -26,6 +27,23 @@ class VideoObjectDetectionSegmentationDataset(
     """
     Base for video object detection and segmentation datasets.
     """
+
+    @abstractmethod
+    def get_recording_name(self, recording: Any) -> str:
+        """
+        Returns unique name of the recording within the dataset.
+
+        Parameters
+        ----------
+        recording : Any
+            Recording object.
+
+        Returns
+        -------
+        str
+            Name of the recording.
+        """
+        ...
 
     @staticmethod
     def form_subsequences(
@@ -191,7 +209,6 @@ class VideoObjectDetectionSegmentationDataset(
         min_iou: float = 0.5,
         max_dets: int = 100,
     ) -> Measurements:
-        measurements = Measurements()
         """
         Evaluates the model based on the predictions.
 
@@ -215,14 +232,24 @@ class VideoObjectDetectionSegmentationDataset(
         Measurements
             The dictionary containing the evaluation results.
         """
+        measurements = Measurements()
         curr_index = self._dataindex - len(predictions)
         for sequence_preds, sequence_truth in zip(predictions, truth):
             seq_measurements = Measurements()
+            seq_data = {}
+            seq_data["IoU"] = []
+
+            seq_data["name"] = self.get_recording_name(
+                self.dataX[self._dataindices[curr_index]]
+            )
+
             for preds, groundtruths in zip(sequence_preds, sequence_truth):
+                frame_measurements = Measurements()
                 matchedgt = np.zeros([len(groundtruths)], dtype=np.int32)
                 preds.sort(key=lambda x: -x.score)
                 preds = preds[:max_dets]
 
+                # Add measurements for predictions
                 for predid, pred in enumerate(preds):
                     bestiou = 0.0
                     bestgt = -1
@@ -232,28 +259,55 @@ class VideoObjectDetectionSegmentationDataset(
                         if matchedgt[gtid] > 0 and not gt.iscrowd:
                             continue
                         iou = self.compute_iou(pred, gt)
-                        if iou < bestiou:
+                        if iou <= bestiou:
                             continue
                         bestiou = iou
                         bestgt = gtid
-                    if bestgt == -1 or bestiou < min_iou:
-                        seq_measurements.add_measurement(
-                            f"eval_det/{pred.clsname}",
-                            [[float(pred.score), float(0), float(bestiou)]],
-                            lambda: list(),
-                        )
-                        continue
-                    seq_measurements.add_measurement(
+
+                    # Don't append 0.0 IoU for gt if have any predictions
+                    if bestgt != -1:
+                        matchedgt[bestgt] = 1
+
+                    frame_measurements.add_measurement(
                         f"eval_det/{pred.clsname}",
-                        [[float(pred.score), float(1), float(bestiou)]],
+                        [
+                            [
+                                float(pred.score),
+                                float(bestiou >= min_iou),
+                                float(bestiou),
+                            ]
+                        ],
                         lambda: list(),
                     )
-                    matchedgt[bestgt] = 1
 
-                for gt in groundtruths:
-                    seq_measurements.accumulate(
+                # Add measurements for not-matched groundtruths
+                for gtid, gt in enumerate(groundtruths):
+                    frame_measurements.accumulate(
                         f"eval_gtcount/{gt.clsname}", 1, lambda: 0
                     )
+
+                    if matchedgt[gtid] == 0:
+                        frame_measurements.add_measurement(
+                            f"eval_det/{gt.clsname}",
+                            [[float(0), float(0), float(0)]],
+                            lambda: list(),
+                        )
+
+                # Calculate mean IoU for each class in frame
+                ious = {}
+                for key in frame_measurements.data.keys():
+                    if not key.startswith("eval_det"):
+                        continue
+                    class_name = key.split("/")[1]
+                    mean_iou = np.array(
+                        [x[2] for x in frame_measurements.data[key]]
+                    ).mean()
+                    ious[class_name] = mean_iou
+                seq_data["IoU"].append(ious)
+
+                seq_measurements += frame_measurements
+
+            # Display frame with predictions
             if self.show_on_eval:
                 self.show_eval_images(
                     sequence_preds,
@@ -261,7 +315,30 @@ class VideoObjectDetectionSegmentationDataset(
                     self._dataindices[curr_index],
                 )
 
-            # TODO: Add per-sequence metrics
+            # Calculate mAP for the whole sequence
+            thresholds = np.arange(0.2, 1.05, 0.05)
+            maps = compute_map_per_threshold(
+                {
+                    "class_names": self.get_class_names(),
+                    **seq_measurements.data,
+                },
+                thresholds,
+            )
+
+            # Total is calculated as mean of [0.5, 0.95] thresholds
+            seq_data["mAP"] = {
+                "total": maps[-11:][:10].mean(),
+                "values": maps,
+                "thresholds": thresholds,
+            }
+
+            # Update measurements
+            seq_measurements.add_measurement(
+                "eval/recordings",
+                [seq_data],
+                lambda: list(),
+            )
+
             measurements += seq_measurements
             curr_index += 1
         return measurements

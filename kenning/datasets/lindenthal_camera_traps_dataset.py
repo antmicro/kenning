@@ -539,6 +539,10 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
     def get_class_names(self):
         return self.classnames
 
+    def get_recording_name(self, recording):
+        first_frame_key = self.imgstokeys[recording[0]]
+        return self.coco.imgs[first_frame_key]["seq_id"]
+
     def get_input_mean_std(self) -> Tuple[Any, Any]:
         raise NotImplementedError
 

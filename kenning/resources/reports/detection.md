@@ -31,6 +31,30 @@ align: center
 mAP values depending on threshold
 ```
 
+{% if "map_best_recordings" in data %}
+```{figure} {{data["map_best_recordings"]}}
+---
+name: {{basename}}_map_best_recordings
+alt: mAP values depending on threshold for the most detected recordings
+align: center
+---
+
+mAP values depending on threshold for the most detected recordings
+```
+{% endif %}
+
+{% if "map_worst_recordings" in data %}
+```{figure} {{data["map_worst_recordings"]}}
+---
+name: {{basename}}_map_worst_recordings
+alt: mAP values depending on threshold for the least detected recordings
+align: center
+---
+
+mAP values depending on threshold for the least detected recordings
+```
+{% endif %}
+
 * *Mean Average Precision* for threshold 0.5: {{data['mAP']}}
 * Best *Mean Average Precision* occurs at threshold {{data['max_mAP_index']}}  and it is: {{data['max_mAP']}}
 

@@ -103,23 +103,6 @@ class Measurements(object):
                 else:
                     self.data[k] += other[k]
 
-    def add_measurements_list(self, measurementtype: str, valueslist: List):
-        """
-        Adds new values to a given measurement type.
-
-        Parameters
-        ----------
-        measurementtype : str
-            The measurement type to be updated.
-        valueslist : List
-            The list of values to add.
-        """
-        assert isinstance(valueslist, list)
-        assert isinstance(measurementtype, str)
-        if measurementtype not in self.data:
-            self.data[measurementtype] = list()
-        self.data[measurementtype] += valueslist
-
     def add_measurement(
         self,
         measurementtype: str,

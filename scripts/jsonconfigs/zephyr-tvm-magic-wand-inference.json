@@ -1,0 +1,39 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
+        "parameters": {
+            "dataset_root": "./build/MagicWandDataset"
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
+        "parameters": {
+            "model_path": "kenning:///models/classification/magic_wand.h5"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.optimizers.tvm.TVMCompiler",
+            "parameters":
+            {
+                "compiled_model_path": "./build/microtvm-magic-wand.graph_data",
+                "model_framework": "keras",
+                "target": "zephyr",
+                "target_microtvm_board": "stm32f746g_disco"
+            }
+        }
+    ],
+    "runtime": {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+		    "parameters": {}
+    },
+    "protocol": {
+        "type": "kenning.protocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/dev/ttyUSB1",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

@@ -10,6 +10,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import onnx
 import tvm
+import tvm.micro.testing
 import tvm.relay as relay
 
 from kenning.core.dataset import Dataset
@@ -355,6 +356,11 @@ class TVMCompiler(Optimizer):
             "description": "The kind or tag of the target device",
             "default": "llvm",
         },
+        "target_microtvm_board": {
+            "description": "The target board",
+            "default": None,
+            "nullable": True,
+        },
         "target_host": {
             "description": "The kind or tag of the host (CPU) target device",
             "type": str,
@@ -427,6 +433,7 @@ class TVMCompiler(Optimizer):
         location: Literal["host", "target"] = "host",
         model_framework: str = "onnx",
         target: str = "llvm",
+        target_microtvm_board: Optional[str] = None,
         target_host: Optional[str] = None,
         opt_level: int = 2,
         libdarknet_path: str = "/usr/local/lib/libdarknet.so",
@@ -455,6 +462,8 @@ class TVMCompiler(Optimizer):
             Framework of the input model, used to select a proper backend.
         target : str
             Target accelerator on which the model will be executed.
+        target_microtvm_board : Optional[str]
+            Target board on which the model will be executed
         target_host : Optional[str]
             CPU architecture of the target (used when target has a host).
         opt_level : int
@@ -497,7 +506,13 @@ class TVMCompiler(Optimizer):
         self.model_framework = model_framework
 
         self.target = target
-        self.target_obj = tvm.target.Target(target)
+        self.target_microtvm_board = target_microtvm_board
+
+        self.target_obj = (
+            tvm.micro.testing.get_target(target, target_microtvm_board)
+            if target_microtvm_board
+            else tvm.target.Target(target)
+        )
 
         self.target_host = target_host
         self.target_host_obj = (
@@ -591,7 +606,15 @@ class TVMCompiler(Optimizer):
                     file.write(bytecode)
                 lib.export_library(str(outputpath) + ".so")
         else:
-            with tvm.transform.PassContext(opt_level=self.opt_level):
+            pass_config = {}
+            if self.target == "zephyr":
+                pass_config["tir.disable_vectorize"] = True
+
+            with tvm.transform.PassContext(
+                opt_level=3,
+                config=pass_config,
+                disabled_pass=["AlterOpLayout"],
+            ):
                 mod = additional_opts(mod)
                 if self.use_tensorrt:
                     from tvm.relay.op.contrib.tensorrt import (
@@ -605,7 +628,26 @@ class TVMCompiler(Optimizer):
                     target_host=self.target_host_obj,
                     params=params,
                 )
-            lib.export_library(outputpath)
+
+            if self.target_microtvm_board:
+                graph_json = lib.get_graph_json().encode()
+                params = tvm.runtime.params.save_param_dict(lib.get_params())
+
+                graph_data = b""
+
+                graph_data += len(graph_json).to_bytes(
+                    4, "little", signed=False
+                )
+                graph_data += len(params).to_bytes(4, "little", signed=False)
+
+                graph_data += graph_json
+                graph_data += params
+
+                with open(outputpath, "wb") as graph_f:
+                    graph_f.write(graph_data)
+
+            else:
+                lib.export_library(outputpath)
 
     def compile(
         self,

@@ -29,7 +29,9 @@ MAX_LENGTH_MODEL_NAME = 20
 
 MODEL_STRUCT_SIZE = 160
 
-ALLOCATION_STATS_SIZE = 24
+BARE_METAL_IREE_ALLOCATION_STATS_SIZE = 24
+RUNTIME_STAT_NAME_MAX_LEN = 32
+RUNTIME_STAT_VALUE_BITS = 8
 
 
 def _io_spec_to_struct(
@@ -163,18 +165,34 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     ValueError
         Raised when passed argument is of invalid size
     """
-    if len(data) != ALLOCATION_STATS_SIZE:
+    STAT_SIZE = RUNTIME_STAT_NAME_MAX_LEN + RUNTIME_STAT_VALUE_BITS
+    if len(data) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE:
+        stats = np.frombuffer(data, dtype=np.uint32, count=6)
+        stats_json = {
+            "host_bytes_peak": int(stats[0]),
+            "host_bytes_allocated": int(stats[1]),
+            "host_bytes_freed": int(stats[2]),
+            "device_bytes_peak": int(stats[3]),
+            "device_bytes_allocated": int(stats[4]),
+            "device_bytes_freed": int(stats[5]),
+        }
+    elif len(data) % STAT_SIZE == 0:
+        stats_json = dict()
+
+        for i in range(0, len(data), STAT_SIZE):
+            stat_name = (
+                data[i : i + RUNTIME_STAT_NAME_MAX_LEN].strip(b"\x00").decode()
+            )
+            stat_value = int.from_bytes(
+                data[i + RUNTIME_STAT_NAME_MAX_LEN : i + STAT_SIZE],
+                "little",
+                signed=False,
+            )
+
+            stats_json[stat_name] = stat_value
+    else:
         raise ValueError(f"Invalid allocations stats size: {len(data)}")
 
-    stats = np.frombuffer(data, dtype=np.uint32, count=6)
-    stats_json = {
-        "host_bytes_peak": int(stats[0]),
-        "host_bytes_allocated": int(stats[1]),
-        "host_bytes_freed": int(stats[2]),
-        "device_bytes_peak": int(stats[3]),
-        "device_bytes_allocated": int(stats[4]),
-        "device_bytes_freed": int(stats[5]),
-    }
     return stats_json
 
 
@@ -272,7 +290,7 @@ class UARTProtocol(BytesBasedProtocol):
         status, data = self.receive_confirmation()
         measurements = Measurements()
         if status and isinstance(data, bytes) and len(data) > 0:
-            measurements += _parse_allocation_stats(data)
+            measurements += {"allocation_stats": _parse_allocation_stats(data)}
         return measurements
 
     def initialize_server(self) -> bool:

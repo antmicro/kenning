@@ -60,7 +60,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch~=1.5.4",
-    "torch~=2.1",
+    "torch~=1.13.0",
     "torchvision~=0.16.0",
 ]
 mxnet = [
@@ -145,11 +145,13 @@ albumentations = [
 ]
 
 llm = [
-    "autoawq~=0.1.7",
+    "autoawq~=0.1.8",
+    "auto_gptq~=0.5.1",
     "datasets~=2.15.0",
     "rouge-score~=0.1.2",
-    "transformers~=4.35.2",
-    "vllm~=0.2.1",
+    "torch~=2.1",
+    "transformers~=4.36.2",
+    "vllm~=0.2.6",
 ]
 
 [project.scripts]

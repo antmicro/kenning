@@ -8,6 +8,8 @@ import os
 import time
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
+from random import choices, randint
+from string import ascii_lowercase
 from typing import Any, Dict, Tuple
 
 import numpy as np
@@ -17,13 +19,14 @@ import serial
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Message, MessageType, ServerStatus
 from kenning.protocols.uart import (
-    ALLOCATION_STATS_SIZE,
+    BARE_METAL_IREE_ALLOCATION_STATS_SIZE,
     MAX_LENGTH_ENTRY_FUNC_NAME,
     MAX_LENGTH_MODEL_NAME,
     MAX_MODEL_INPUT_DIM,
     MAX_MODEL_INPUT_NUM,
     MAX_MODEL_OUTPUTS,
     MODEL_STRUCT_SIZE,
+    RUNTIME_STAT_NAME_MAX_LEN,
     UARTProtocol,
     _io_spec_to_struct,
     _parse_allocation_stats,
@@ -59,11 +62,34 @@ def valid_io_spec() -> Dict[str, Any]:
 
 
 @pytest.fixture
-def valid_stats() -> bytes:
+def valid_iree_stats() -> bytes:
     stats = np.random.randint(
         np.iinfo(np.uint32).min, np.iinfo(np.uint32).max, 6, np.uint32
     )
     return stats.tobytes()
+
+
+@pytest.fixture
+def valid_generic_stats() -> bytes:
+    stats_names = [
+        "".join(
+            choices(
+                ascii_lowercase + "_",
+                k=randint(1, RUNTIME_STAT_NAME_MAX_LEN - 1),
+            )
+        )
+        for _ in range(4)
+    ]
+    stats_values = np.random.randint(
+        np.iinfo(np.uint64).min, np.iinfo(np.uint64).max, 4, np.uint64
+    )
+
+    stats = b""
+    for name, value in zip(stats_names, stats_values):
+        stats += name.encode().ljust(RUNTIME_STAT_NAME_MAX_LEN, b"\x00")
+        stats += value.tobytes()
+
+    return stats
 
 
 def mock_serial() -> Tuple[Path, Path]:
@@ -250,10 +276,22 @@ class TestIOSpecToStruct:
 
 
 class TestParseAllocationStats:
-    def test_parse_valid_stats(self, valid_stats: bytes):
-        stats_json = _parse_allocation_stats(valid_stats)
+    def test_parse_valid_iree_stats(self, valid_iree_stats: bytes):
+        stats_json = _parse_allocation_stats(valid_iree_stats)
 
-        assert len(stats_json) == ALLOCATION_STATS_SIZE // 4
+        assert len(stats_json) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE // 4
+        assert all(
+            [isinstance(stat_name, str) for stat_name in stats_json.keys()]
+        )
+        assert all([isinstance(stat, int) for stat in stats_json.values()])
+        assert json.loads(json.dumps(stats_json)) == stats_json
+
+    def test_parse_valid_generic_stats(self, valid_generic_stats: bytes):
+        stats_json = _parse_allocation_stats(valid_generic_stats)
+
+        assert len(stats_json) == len(valid_generic_stats) / (
+            RUNTIME_STAT_NAME_MAX_LEN + 8
+        )
         assert all(
             [isinstance(stat_name, str) for stat_name in stats_json.keys()]
         )
@@ -263,20 +301,37 @@ class TestParseAllocationStats:
     @pytest.mark.parametrize(
         "invalid_size",
         [
-            0,
-            ALLOCATION_STATS_SIZE - 4,
-            ALLOCATION_STATS_SIZE - 1,
-            ALLOCATION_STATS_SIZE + 1,
-            ALLOCATION_STATS_SIZE + 4,
-            ALLOCATION_STATS_SIZE + 100,
+            BARE_METAL_IREE_ALLOCATION_STATS_SIZE - 4,
+            BARE_METAL_IREE_ALLOCATION_STATS_SIZE - 1,
+            BARE_METAL_IREE_ALLOCATION_STATS_SIZE + 1,
+            BARE_METAL_IREE_ALLOCATION_STATS_SIZE + 4,
+            BARE_METAL_IREE_ALLOCATION_STATS_SIZE + 100,
         ],
     )
     def test_parse_stats_with_invalid_size(
-        self, valid_stats: bytes, invalid_size: int
+        self, valid_iree_stats: bytes, invalid_size: int
     ):
         invalid_stats = (
-            valid_stats * (invalid_size // len(valid_stats))
-            + valid_stats[: invalid_size % len(valid_stats)]
+            valid_iree_stats * (invalid_size // len(valid_iree_stats))
+            + valid_iree_stats[: invalid_size % len(valid_iree_stats)]
+        )
+
+        with pytest.raises(ValueError):
+            _ = _parse_allocation_stats(invalid_stats)
+
+    @pytest.mark.parametrize(
+        "invalid_string",
+        [
+            b"abc\xffd",
+            b"\xff\xff",
+            b"\xab\xcd",
+        ],
+    )
+    def test_parse_invalid_generic_stats(
+        self, valid_generic_stats: bytes, invalid_string: bytes
+    ):
+        invalid_stats = (
+            invalid_string + valid_generic_stats[len(invalid_string) :]
         )
 
         with pytest.raises(ValueError):
@@ -613,13 +668,13 @@ class TestUARTProtocol(TestCoreProtocol):
         assert message.payload == b""
 
     def test_download_statistics(
-        self, client: UARTProtocol, valid_stats: bytes
+        self, client: UARTProtocol, valid_iree_stats: bytes
     ):
         """
         Test client download_statistics method.
         """
         thread_send = multiprocessing.Process(
-            target=self.mock_send_response(MessageType.STATS, valid_stats)
+            target=self.mock_send_response(MessageType.STATS, valid_iree_stats)
         )
         thread_send.start()
 
@@ -627,4 +682,6 @@ class TestUARTProtocol(TestCoreProtocol):
 
         thread_send.join()
 
-        assert _parse_allocation_stats(valid_stats) == statistics.data
+        assert {
+            "allocation_stats": _parse_allocation_stats(valid_iree_stats)
+        } == statistics.data

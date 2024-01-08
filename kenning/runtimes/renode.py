@@ -219,6 +219,11 @@ class RenodeRuntime(Runtime):
                             pre_opcode_stats, post_opcode_stats
                         )
                     }
+
+                MeasurementsCollector.measurements += (
+                    protocol.download_statistics()
+                )
+
             except RequestFailure as ex:
                 KLogger.fatal(ex)
                 return False

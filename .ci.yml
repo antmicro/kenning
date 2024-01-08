@@ -36,6 +36,7 @@ pytest:
         - /scripts/prepare_environment.sh .
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
+        - pip install -e ".[llm]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
     script:

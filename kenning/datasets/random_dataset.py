@@ -6,9 +6,10 @@
 Module with Dataset generating random data for benchmark purposes.
 """
 
+import random
 from pathlib import Path
-from random import shuffle
-from typing import Any, List, Tuple, Type
+from string import ascii_letters
+from typing import Any, List, Optional, Tuple, Type
 
 import cv2
 import numpy as np
@@ -23,7 +24,8 @@ from kenning.datasets.helpers.detection_and_segmentation import (
 
 class RandomizedClassificationDataset(Dataset):
     """
-    Creates a sample randomized classification dataset.
+    Creates a sample randomized classification dataset and
+    stores it in `root` directory.
 
     It is a mock dataset with randomized inputs and outputs.
 
@@ -71,7 +73,7 @@ class RandomizedClassificationDataset(Dataset):
         Parameters
         ----------
         root : Path
-            Deprecated argument, not used in this dataset.
+            Directory, where the randomized dataset is stored.
         batch_size : int
             The size of batches of data delivered during inference.
         download_dataset : bool
@@ -115,7 +117,7 @@ class RandomizedClassificationDataset(Dataset):
             f"{self.root}/images/{i}.jpg" for i in range(self.samplescount)
         ]
         self.dataY = [j % self.numclasses for j in range(self.samplescount)]
-        shuffle(self.dataY)
+        random.shuffle(self.dataY)
         if not self.integer_classes:
             self.dataY = [np.eye(self.numclasses)[y] for y in self.dataY]
 
@@ -227,7 +229,7 @@ class RandomizedDetectionSegmentationDataset(
         self.dataY = []
 
         classes = [i % self.numclasses for i in range(self.samplescount)]
-        shuffle(classes)
+        random.shuffle(classes)
         for i in range(self.samplescount):
             x_rand = np.random.random((2,))
             y_rand = np.random.random((2,))
@@ -263,3 +265,144 @@ class RandomizedDetectionSegmentationDataset(
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
         raise NotImplementedError
+
+
+class RandomizedTextDataset(Dataset):
+    """
+    Creates randomized dataset consisting of text sentences and
+    stores it in `root` directory.
+
+    It is a mock dataset with randomized inputs and outputs.
+
+    It can be used only for speed and utilization metrics, no quality metrics.
+    """
+
+    arguments_structure = {
+        "samplescount": {
+            "argparse_name": "--num-samples",
+            "description": "Number of samples to process",
+            "type": int,
+            "default": 32,
+        },
+        "text_length": {
+            "argparse_name": "--text-length",
+            "description": "Length of sample sentences",
+            "type": int,
+            "default": 255,
+        },
+    }
+
+    def __init__(
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        force_download_dataset: bool = False,
+        external_calibration_dataset: Optional[Path] = None,
+        split_fraction_test: float = 0.2,
+        split_fraction_val: Optional[float] = None,
+        split_seed: int = 1234,
+        samplescount: int = 32,
+        text_length: int = 32,
+    ):
+        """
+        Creates randomized dataset.
+
+        Parameters
+        ----------
+        root : Path
+            Directory, where the randomized dataset is stored.
+        batch_size : int
+            The batch size.
+        download_dataset : bool
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again.
+        force_download_dataset : bool
+            Forces dataset download.
+        external_calibration_dataset : Optional[Path]
+            Path to the external calibration dataset that can be used for
+            quantizing the model. If it is not provided, the calibration
+            dataset is generated from the actual dataset.
+        split_fraction_test : float
+            Default fraction of data to leave for model testing.
+        split_fraction_val : Optional[float]
+            Default fraction of data to leave for model validation.
+        split_seed : int
+            Default seed used for dataset split.
+        samplescount : int
+            The number of samples in the dataset.
+        text_length : int
+            Length of sample sentences
+        """
+        self.samplescount = samplescount
+        self.text_length = text_length
+
+        super().__init__(
+            root,
+            batch_size,
+            download_dataset,
+            force_download_dataset,
+            external_calibration_dataset,
+            split_fraction_test,
+            split_fraction_val,
+            split_seed,
+        )
+
+    def get_class_names(self) -> List[str]:
+        raise NotImplementedError
+
+    def get_input_mean_std(self) -> Tuple[Any, Any]:
+        raise NotImplementedError
+
+    def train_test_split_representations(
+        self,
+        test_fraction: Optional[float] = None,
+        val_fraction: Optional[float] = None,
+        seed: Optional[int] = None,
+        stratify: bool = True,
+        append_index: bool = False,
+    ) -> Tuple[List, ...]:
+        return super().train_test_split_representations(
+            test_fraction,
+            val_fraction,
+            seed,
+            False,
+            append_index,
+        )
+
+    def prepare(self):
+        self.dataX = [
+            f"{self.root}/sentences/{i}.txt" for i in range(self.samplescount)
+        ]
+
+        samples = []
+        for _ in range(self.samplescount):
+            samples.append(
+                "".join(
+                    random.choices(ascii_letters + " ", k=self.text_length)
+                )
+            )
+
+        (self.root / "sentences").mkdir(parents=True, exist_ok=True)
+        for txt_path, txt_data in zip(self.dataX, samples):
+            with open(txt_path, "w") as f:
+                f.write(txt_data)
+
+        self.dataY = [i for i in range(self.samplescount)]
+
+    def download_dataset_fun(self):
+        pass
+
+    def prepare_input_samples(self, samples):
+        result = []
+        for txt_path in samples:
+            with open(txt_path, "r") as f:
+                result.append(f.read())
+
+        return result
+
+    def prepare_output_samples(self, samples):
+        return samples
+
+    def evaluate(self, predictions, truth):
+        return Measurements()

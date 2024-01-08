@@ -13,6 +13,7 @@ from torch import save as torch_save
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
@@ -20,6 +21,7 @@ from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.random_dataset import (
     RandomizedClassificationDataset,
     RandomizedDetectionSegmentationDataset,
+    RandomizedTextDataset,
 )
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.modelwrappers.classification.tflite_magic_wand import (
@@ -282,6 +284,10 @@ def get_dataset_random_mock(
             samplescount=10,
             numclasses=2,
             inputdims=(480, 320, 3),
+        )
+    if dataset_cls is CNNDailymailDataset:
+        return RandomizedTextDataset(
+            get_tmp_path(),
         )
     raise NotImplementedError
 

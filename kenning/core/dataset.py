@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,7 @@ from math import ceil
 from pathlib import Path
 from typing import Any, Dict, Generator, List, Optional, Tuple
 
+import numpy as np
 from tqdm import tqdm
 
 from kenning.utils.args_manager import ArgumentsHandler
@@ -56,7 +57,11 @@ class DatasetIterator:
         -------
         Dataset
             The iterator object.
+            If the indices list is empty, an empty iterator is returned.
         """
+        if len(self.indices) == 0:
+            return iter([])
+
         self.dataset._dataindex = 0
         self.dataset._dataindices = self.indices
         return self.dataset
@@ -570,6 +575,26 @@ class Dataset(ArgumentsHandler, ABC):
         if seed is None:
             seed = self.split_seed
 
+        indices = list(range(len(self.dataX)))
+        np.random.seed(seed)
+        np.random.shuffle(indices)
+
+        if not val_fraction:
+            # All data is for testing
+            if test_fraction == 1.0:
+                ret = ([], self.dataX, [], self.dataY)
+                if append_index:
+                    ret += ([], indices)
+                return ret
+
+            # All data is for training
+            elif test_fraction == 0.0:
+                ret = (self.dataX, [], self.dataY, [])
+                if append_index:
+                    ret += (indices, [])
+                return ret
+
+        # Verify fraction sizes
         if val_fraction is not None:
             assert test_fraction + val_fraction < 1.0
         else:
@@ -590,7 +615,7 @@ class Dataset(ArgumentsHandler, ABC):
         ) = train_test_split(
             self.dataX,
             self.dataY,
-            range(len(self.dataX)),
+            indices,
             test_size=test_fraction,
             random_state=seed,
             shuffle=True,

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -244,11 +244,17 @@ class RenodeRuntime(Runtime):
                     preds = modelwrapper.convert_output_from_bytes(preds)
                     posty = modelwrapper._postprocess_outputs(preds)
 
+                    out_spec = (
+                        self.processed_output_spec
+                        if self.processed_output_spec
+                        else self.output_spec
+                    )
+
                     if self.sensor is not None:
-                        measurements += dataset.evaluate(posty, None)
+                        measurements += dataset.evaluate(posty, None, out_spec)
                     else:
                         _, y = sample
-                        measurements += dataset.evaluate(posty, y)
+                        measurements += dataset.evaluate(posty, y, out_spec)
 
                     if self.runtime_log_uart is not None:
                         self.runtime_logs += (

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -654,7 +654,7 @@ class PipelineRunner(object):
                     posty = tagmeasurements("postprocessing")(
                         self.dataconverter.to_previous_block
                     )(preds)
-                    measurements += self.dataset.evaluate(posty, y)
+                    measurements += self.dataset._evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
         except RequestFailure as ex:
@@ -711,7 +711,13 @@ class PipelineRunner(object):
                     posty = tagmeasurements("postprocessing")(
                         self.model_wrapper._postprocess_outputs
                     )(preds)
-                    measurements += self.dataset.evaluate(posty, y)
+                    measurements += self.dataset._evaluate(
+                        posty,
+                        y,
+                        self.runtime.processed_output_spec
+                        if self.runtime.processed_output_spec
+                        else self.runtime.output_spec,
+                    )
         except KeyboardInterrupt:
             KLogger.info("Stopping benchmark...")
             return False

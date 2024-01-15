@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from kenning.core.dataset import Dataset
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
@@ -33,6 +34,25 @@ from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
 
 
+def truncate_test_fraction(dataset: Dataset, batch_size: int):
+    """
+    Set size of dataset's test fraction to match used batch size.
+
+    Parameters
+    ----------
+    dataset : Dataset
+        Dataset object where fraction will be set
+    batch_size : int
+        Size of the batch
+    """
+    dataset.split_fraction_test = (
+        int(len(dataset.dataX) * dataset.split_fraction_test)
+        // batch_size
+        * batch_size
+        / len(dataset.dataX)
+    )
+
+
 @pytest.mark.xdist_group(name="use_resources")
 @pytest.mark.parametrize(
     "batch_size,expectation",
@@ -51,6 +71,7 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
             batch_size=batch_size,
             standardize=False,
         )
+        truncate_test_fraction(dataset, batch_size)
 
         tmp_model_path = tmpfolder / f"model-{batch_size}.tflite"
 
@@ -122,6 +143,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
             batch_size=batch_size,
             download_dataset=False,
         )
+        truncate_test_fraction(dataset, batch_size)
 
         model_path = ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
 
@@ -163,10 +185,10 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
         assert compiler_tflite.dataset.batch_size == batch_size
         assert compiler_tvm.dataset.batch_size == batch_size
 
-        for model_input_spec in model.io_specification["input"]:
+        for model_input_spec in model.io_specification["processed_input"]:
             assert model_input_spec["shape"][0] == batch_size
 
-        for runtime_input_spec in runtime.input_spec:
+        for runtime_input_spec in runtime.processed_input_spec:
             assert runtime_input_spec["shape"][0] == batch_size
 
 
@@ -191,6 +213,7 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
             batch_size=batch_size,
             download_dataset=False,
         )
+        truncate_test_fraction(dataset, batch_size)
 
         model_path = ResourceURI(
             PersonDetectionModelWrapper.pretrained_model_uri

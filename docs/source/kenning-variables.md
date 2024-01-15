@@ -32,3 +32,11 @@ If `KENNING_ENABLE_ALL_LOGS` environmental variable is defined, logs from other 
 Passes verbosity of Kenning logs to other libraries.
 
 This is useful for debugging purposes, but it may cause a lot of noise in the logs.
+
+## `KENNING_DISABLE_IO_VALIDATION`
+
+By default Kenning, before and after each inference, validates received data with defined specification.
+Similar check is done before evaluation.
+
+These validations can be disabled defining `KENNING_DISABLE_IO_VALIDATION` variable.
+

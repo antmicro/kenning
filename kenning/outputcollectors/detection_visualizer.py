@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -254,7 +254,14 @@ class DetectionVisualizer(OutputCollector):
                     "shape": [(1, -1, -1, 3), (1, 3, -1, -1)],
                     "dtype": "float32",
                 },
-                {"name": "detection_data", "type": "List[DetectObject]"},
+                {
+                    "name": "detection_data",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.DetectObject",  # noqa: E501
+                    },
+                },
             ],
             "output": [],
         }

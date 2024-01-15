@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -58,6 +58,16 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     def _get_io_specification(cls, numclasses, batch_size=1):
         return {
             "input": [
+                {
+                    "name": "input.1",
+                    "shape": [
+                        (batch_size, 3, 224, 224),
+                        (batch_size, 224, 224, 3),
+                    ],
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
                 {
                     "name": "input.1",
                     "shape": (batch_size, 3, 224, 224),

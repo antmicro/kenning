@@ -73,7 +73,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             "input": [
                 {
                     "name": "input_1",
-                    "shape": (batch_size, window_size, 3),
+                    "shape": [
+                        (batch_size, window_size, 3),
+                        (batch_size, window_size, 3, 1),
+                    ],
                     "dtype": "float32",
                 }
             ],
@@ -115,7 +118,9 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
     def preprocess_input(self, X):
         X = super().preprocess_input(X)
-        return np.resize(X, (*X.shape, 1))
+        if X.shape[-1] != 1:
+            return np.resize(X, (*X.shape, 1))
+        return X
 
     def prepare_model(self):
         if self.model_prepared:

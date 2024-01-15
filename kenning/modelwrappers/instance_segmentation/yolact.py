@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -390,6 +390,13 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
             "input": [
                 {
                     "name": "input",
+                    "shape": (1, 3, -1, -1),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input",
                     "shape": (1, 3, 550, 550),
                     "dtype": "float32",
                 }
@@ -406,7 +413,14 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                 },
             ],
             "processed_output": [
-                {"name": "segmentation_output", "type": "List[SegmObject]"}
+                {
+                    "name": "segmentation_output",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.SegmObject",  # noqa: E501
+                    },
+                }
             ],
         }
 
@@ -651,6 +665,13 @@ class YOLACT(YOLACTWrapper):
             "input": [
                 {
                     "name": "input",
+                    "shape": (1, 3, -1, -1),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input",
                     "shape": (1, 3, 550, 550),
                     "dtype": "float32",
                 }
@@ -667,7 +688,14 @@ class YOLACT(YOLACTWrapper):
                 },
             ],
             "processed_output": [
-                {"name": "segmentation_output", "type": "List[SegmObject]"}
+                {
+                    "name": "segmentation_output",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.SegmObject",  # noqa: E501
+                    },
+                }
             ],
         }
 

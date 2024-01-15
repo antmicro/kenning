@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -6,6 +6,7 @@
 Classes visualizing in real time outputs of classification, detection
 and instance segmentation models.
 """
+
 import colorsys
 import multiprocessing as mp
 import threading
@@ -368,7 +369,14 @@ class RealTimeDetectionVisualizer(BaseRealTimeVisualizer):
         return {
             "input": [
                 {"name": "frame", "shape": frame_shape, "dtype": "float32"},
-                {"name": "detection_data", "type": "List[DetectObject]"},
+                {
+                    "name": "detection_data",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.DetectObject",  # noqa: E501
+                    },
+                },
             ],
             "output": [],
         }
@@ -467,7 +475,14 @@ class RealTimeSegmentationVisualizer(BaseRealTimeVisualizer):
         return {
             "input": [
                 {"name": "frame", "shape": frame_shape, "dtype": "float32"},
-                {"name": "segmentation_data", "type": "List[SegmObject]"},
+                {
+                    "name": "segmentation_data",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.SegmObject",  # noqa: E501
+                    },
+                },
             ],
             "output": [],
         }

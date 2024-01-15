@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -148,14 +148,30 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                 }
             ],
             "output": [
-                {"name": "boxes", "shape": (-1, 4), "dtype": "float32"},
-                {"name": "labels", "shape": (-1,), "dtype": "int64"},
-                {"name": "scores", "shape": (-1,), "dtype": "float32"},
                 {
-                    "name": "masks",
-                    "shape": (-1, 1, 416, 416),
-                    "dtype": "float32",
+                    "type": "List",
+                    "dtype": {
+                        "type": "Dict",
+                        "fields": {
+                            "boxes": {"shape": (-1, 4), "dtype": "float32"},
+                            "labels": {"shape": (-1,), "dtype": "int64"},
+                            "scores": {"shape": (-1,), "dtype": "float32"},
+                            "masks": {
+                                "shape": (-1, 1, 416, 416),
+                                "dtype": "float32",
+                            },
+                        },
+                    },
                 },
+            ],
+            "processed_output": [
+                {
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.SegmObject",  # noqa: E501
+                    },
+                }
             ],
         }
 

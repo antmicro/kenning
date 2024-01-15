@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -99,6 +99,13 @@ class PersonDetectionModelWrapper(ModelWrapper):
             "input": [
                 {
                     "name": "input_1",
+                    "shape": (batch_size, -1, -1, 3),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input_1",
                     "shape": (batch_size, img_width, img_height, 1),
                     "dtype": "int8",
                     "prequantized_dtype": "float32",
@@ -179,9 +186,10 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
     def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()
-        zero_point = io_spec["input"][0]["zero_point"]
-        scale = io_spec["input"][0]["scale"]
-        dtype = np.dtype(io_spec["input"][0]["dtype"])
+        processed_input_spec = io_spec["processed_input"]
+        zero_point = processed_input_spec[0]["zero_point"]
+        scale = processed_input_spec[0]["scale"]
+        dtype = np.dtype(processed_input_spec[0]["dtype"])
 
         result = []
         for img in X:

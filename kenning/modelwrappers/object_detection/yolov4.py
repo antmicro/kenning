@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -376,7 +376,14 @@ class ONNXYOLOV4(YOLOWrapper):
                 },
             ],
             "processed_output": [
-                {"name": "detection_output", "type": "List[DetectObject]"}
+                {
+                    "name": "detection_output",
+                    "type": "List",
+                    "dtype": {
+                        "type": "List",
+                        "dtype": "kenning.datasets.helpers.detection_and_segmentation.DetectObject",  # noqa: E501
+                    },
+                }
             ],
         }
 

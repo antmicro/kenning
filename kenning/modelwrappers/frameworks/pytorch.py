@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -74,10 +74,16 @@ class PyTorchWrapper(ModelWrapper, ABC):
     def save_to_onnx(self, model_path: PathOrURI):
         import torch
 
+        self.get_io_specification()
+        input_spec = self.io_specification[
+            "processed_input"
+            if "processed_input" in self.io_specification
+            else "input"
+        ]
+
         self.prepare_model()
         x = tuple(
-            torch.randn(spec["shape"], device="cpu")
-            for spec in self.get_io_specification()["input"]
+            torch.randn(spec["shape"], device="cpu") for spec in input_spec
         )
 
         torch.onnx.export(

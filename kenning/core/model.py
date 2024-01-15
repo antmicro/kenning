@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -233,10 +233,19 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return X
 
-    @timemeasurements("input_preprocess_step")
-    @tagmeasurements("preprocess")
     def _preprocess_input(self, X):
-        return self.preprocess_input(X)
+        spec = self.get_io_specification()
+        IOInterface.assert_data_format(X, spec["input"])
+
+        preprocessed_x = timemeasurements("input_preprocess_step")(
+            tagmeasurements("preprocess")(self.preprocess_input)
+        )(X)
+
+        IOInterface.assert_data_format(
+            preprocessed_x,
+            spec["processed_input" if "processed_input" in spec else "input"],
+        )
+        return preprocessed_x
 
     def postprocess_outputs(self, y: Union[List[Any], np.ndarray]) -> Any:
         """
@@ -257,10 +266,21 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return y
 
-    @timemeasurements("output_postprocess_step")
-    @tagmeasurements("postprocess")
     def _postprocess_outputs(self, y):
-        return self.postprocess_outputs(y)
+        spec = self.get_io_specification()
+        not IOInterface.assert_data_format(y, spec["output"])
+
+        processed_y = timemeasurements("output_postprocess_step")(
+            tagmeasurements("postprocess")(self.postprocess_outputs)
+        )(y)
+
+        IOInterface.assert_data_format(
+            processed_y,
+            spec[
+                "processed_output" if "processed_output" in spec else "output"
+            ],
+        )
+        return processed_y
 
     @abstractmethod
     def run_inference(self, X: List) -> Any:
@@ -329,7 +349,13 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                 prepX = self._preprocess_input(X)
                 preds = self._run_inference(prepX)
                 posty = self._postprocess_outputs(preds)
-                measurements += self.dataset.evaluate(posty, y)
+                measurements += self.dataset._evaluate(
+                    posty,
+                    y,
+                    self.io_specification["processed_output"]
+                    if "processed_output" in self.io_specification
+                    else self.io_specification["output"],
+                )
 
         MeasurementsCollector.measurements += measurements
 

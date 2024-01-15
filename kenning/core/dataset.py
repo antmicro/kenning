@@ -5,6 +5,7 @@
 """
 Provides an API for dataset loading, creation and configuration.
 """
+
 import datetime
 import hashlib
 import random
@@ -20,6 +21,7 @@ from typing import Any, Dict, Generator, List, Optional, Tuple
 import numpy as np
 from tqdm import tqdm
 
+from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import Resources
@@ -807,6 +809,19 @@ class Dataset(ArgumentsHandler, ABC):
             The dictionary containing the evaluation results.
         """
         ...
+
+    def _evaluate(
+        self,
+        predictions: List,
+        truth: List,
+        specification: Optional[Dict] = None,
+    ) -> Measurements:
+        if specification:
+            IOInterface.assert_data_format(
+                predictions,
+                specification,
+            )
+        return self.evaluate(predictions, truth)
 
     @abstractmethod
     def get_input_mean_std(self) -> Tuple[Any, Any]:

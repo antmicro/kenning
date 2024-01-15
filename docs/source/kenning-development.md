@@ -74,7 +74,11 @@ A sample metadata JSON file may look as follows (for the YOLOv4 detection model)
     "processed_output": [
         {
             "name": "detection_output",
-            "type": "List[DetectObject]"
+            "type": "List",
+            "dtype": {
+                "type": "List",
+                "dtype": "kenning.datasets.helpers.detection_and_segmentation.DetectObject"
+            }
         }
     ]
 }
@@ -82,10 +86,10 @@ A sample metadata JSON file may look as follows (for the YOLOv4 detection model)
 
 In general, the metadata file consist of four fields:
 
-* `input` is a specification of data passed to model wrapper,
-* `processed_input` is a specification of input data preprocessed for wrapped model,
-* `output` is a specification of data returned by wrapped model,
-* `processed_output` is a specification of output data postprocessed by model wrapper.
+* `input` is a specification of input data received by model wrapper (before preprocessing),
+* `processed_input` is a specification of data passed to wrapped model (after preprocessing),
+* `output` is a specification of data returned by wrapped model (before postprocessing),
+* `processed_output` is a specification of output data returned by model wrapper (after postprocessing).
 
 If `processed_input` or `processed_output` is not specified we assume that there is no processing and it is the same as `input` or `output` respectively.
 Each array consist of dictionaries describing model inputs and outputs.
@@ -93,11 +97,11 @@ Each array consist of dictionaries describing model inputs and outputs.
 Parameters common to all fields:
 
 * `name` - input/output name,
-
-Parameters specific to `input` and `output`:
-
-* `shape` - input/output tensor shape,
+* `shape` - input/output tensor shape, if `processed_input` is present, `input` can have list of valid shapes,
 * `dtype` - input/output type,
+
+Parameters specific to `processed_input` and `output`:
+
 * `order` - some of the runtimes/optimizers allow accessing inputs and outputs by id.
   This field describes the id of the current input/output,
 * `scale` - scale parameter for the quantization purposes.
@@ -118,8 +122,27 @@ Parameters specific to `output` and `processed_output`:
 * `class_name` - list of class names from the dataset.
   It is used by output collectors to present the data in a human-readable way.
 
-Parameters specific to `processed_input` and `processed_output`:
-* `type` - input/output type if different than `np.ndarray` (i.e. `List[SegmObject]` in segmentation model postprocessed output).
+Parameters specific to all fields which data is not compatible with `np.ndarray`:
+* `type` - can be either `List`, `Dict` or `Any`.
+* `dtype` - if `type` is `List`, it can specify type of elements, should be represented as whole path which can be imported (i.e. `kenning.datasets.helpers.detection_and_segmentation.SegmObject` for segmentation results).
+It can also receive dictionary with specification of list items.
+* `fields` - if `type` is `Dict`, it should be a dictionary with names as keys and values as dictionary matching `input` and `output` specification.
+Example from `PyTorchCOCOMaskRCNN`:
+
+```json
+{
+    "type": "Dict",
+    "fields": {
+        "boxes": {"shape": [-1, 4], "dtype": "float32"},
+        "labels": {"shape": [-1,], "dtype": "int64"},
+        "scores": {"shape": [-1,], "dtype": "float32"},
+        "masks": {
+            "shape": [-1, 1, 416, 416],
+            "dtype": "float32",
+        },
+    },
+}
+```
 
 The model metadata is used by all classes in Kenning in order to understand the format of the inputs and outputs.
 

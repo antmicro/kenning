@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -73,6 +73,13 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             "input": [
                 {
                     "name": "input_1",
+                    "shape": (batch_size, window_size, 3),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input_1",
                     "shape": (batch_size, window_size, 3, 1),
                     "dtype": "float32",
                 }
@@ -105,6 +112,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         return self._get_io_specification(
             self.window_size, self.numclasses, self.class_names
         )
+
+    def preprocess_input(self, X):
+        X = super().preprocess_input(X)
+        return np.resize(X, (*X.shape, 1))
 
     def prepare_model(self):
         if self.model_prepared:

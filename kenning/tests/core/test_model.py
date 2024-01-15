@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -31,7 +31,7 @@ def prepare_models_io_specs():
         ):
             continue
         dataset_cls = model_cls.default_dataset
-        dataset = get_dataset_random_mock(dataset_cls)
+        dataset = get_dataset_random_mock(dataset_cls, model_cls)
 
         model_path = ResourceURI(model_cls.pretrained_model_uri)
 
@@ -57,7 +57,7 @@ def model(request):
     model_cls = request.param
 
     dataset_cls = model_cls.default_dataset
-    dataset = get_dataset_random_mock(dataset_cls)
+    dataset = get_dataset_random_mock(dataset_cls, model_cls)
 
     return create_model(model_cls, dataset)
 
@@ -107,7 +107,7 @@ class TestModelWrapper:
         Tests model initialization with specified dataset.
         """
         dataset_cls = model_cls.default_dataset
-        dataset = get_dataset_random_mock(dataset_cls)
+        dataset = get_dataset_random_mock(dataset_cls, model_cls)
         _ = create_model(model_cls, dataset)
 
     @pytest.mark.xdist_group(name="use_resources")

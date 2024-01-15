@@ -1,11 +1,11 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import os
 import shutil
 from pathlib import Path
-from typing import Tuple, Type, Union
+from typing import Optional, Tuple, Type, Union
 
 import pytest
 from tensorflow.keras.models import load_model as load_keras_model
@@ -27,6 +27,9 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (
 )
 from kenning.modelwrappers.object_detection.darknet_coco import (
     TVMDarknetCOCOYOLOV3,
+)
+from kenning.modelwrappers.object_detection.yolov4 import (
+    ONNXYOLOV4,
 )
 from kenning.onnxconverters import onnx2torch
 from kenning.optimizers.iree import IREECompiler
@@ -223,7 +226,10 @@ def get_reduced_dataset_path(dataset_cls: Type[Dataset]) -> Path:
     return pytest.test_directory / dataset_cls.__name__
 
 
-def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
+def get_dataset_random_mock(
+    dataset_cls: Type[Dataset],
+    modelwrapper_cls: Optional[Type[ModelWrapper]] = None,
+) -> Dataset:
     """
     Return a mock for given dataset class.
 
@@ -260,11 +266,15 @@ def get_dataset_random_mock(dataset_cls: Type[Dataset]) -> Dataset:
         )
         return dataset
     if dataset_cls is COCODataset2017:
+        if modelwrapper_cls is ONNXYOLOV4:
+            inputdims = (3, 608, 608)
+        else:
+            inputdims = (3, 416, 416)
         return RandomizedDetectionSegmentationDataset(
             get_tmp_path(),
             samplescount=8,
             numclasses=80,
-            inputdims=(3, 608, 608),
+            inputdims=inputdims,
         )
     if dataset_cls is VisualWakeWordsDataset:
         return RandomizedClassificationDataset(

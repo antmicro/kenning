@@ -458,8 +458,9 @@ class PipelineManagerClient(CommandTemplate):
             loop : asyncio.base_events.BaseEventLoop
                 main asyncio loop
             """
-            progress = int(state["n"] / state["total"] * 100)
-
+            progress = -1
+            if state["total"] is not None:
+                progress = int(state["n"] / state["total"] * 100)
             asyncio.run_coroutine_threadsafe(
                 client.notify("progress_change", {"progress": progress}), loop
             )

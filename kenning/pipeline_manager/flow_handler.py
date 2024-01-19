@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -8,11 +8,12 @@ Provides classes for managing Kenning applications from Pipeline Manager.
 
 import itertools
 from collections import defaultdict
-from typing import Any, Dict, Iterable, List, Union
+from typing import Dict, Iterable, List, Union
 
 from pipeline_manager import specification_builder
 
 from kenning.core.flow import KenningFlow
+from kenning.interfaces.io_interface import IOInterface
 from kenning.pipeline_manager.core import (
     SPECIFICATION_VERSION,
     BaseDataflowHandler,
@@ -311,38 +312,6 @@ class FlowGraphCreator(GraphCreator):
             runner_node["parameters"]
         )
 
-    def _is_match(self, arg1: Dict[str, Any], arg2: Dict[str, Any]) -> bool:
-        """
-        Checks two IO specification items whether they are
-        compatible with each other (there is possible connection
-        between them).
-
-        Parameters
-        ----------
-        arg1 : Dict[str, Any]
-            First IO spec.
-        arg2 : Dict[str, Any]
-            Second IO spec.
-
-        Returns
-        -------
-        bool
-            Whether IO specification items are compatible with each other.
-        """
-        if "type" in arg1 and "type" in arg2:
-            return arg1["type"] == arg2["type"]
-        if "shape" in arg1 and "shape" in arg2:
-            if arg1["dtype"] != arg2["dtype"]:
-                return False
-            shape1, shape2 = arg1["shape"], arg2["shape"]
-            if len(shape1) != len(shape2):
-                return False
-            for dim1, dim2 in zip(shape1, shape2):
-                if dim1 != -1 and dim2 != -1 and dim1 != dim2:
-                    return False
-            return True
-        return False
-
     def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
@@ -358,7 +327,7 @@ class FlowGraphCreator(GraphCreator):
             input_key = "input"
         to_args = to_runner_io[input_key]
         for arg1, arg2 in itertools.product(from_args, to_args):
-            if self._is_match(arg1, arg2):
+            if IOInterface.validate({"*": arg1}, {"*": arg2}):
                 return arg1["name"], arg2["name"]
         from_name = self.nodes[from_id]["type"].split(".")[-1]
         to_name = self.nodes[to_id]["type"].split(".")[-1]

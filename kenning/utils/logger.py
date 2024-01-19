@@ -12,6 +12,7 @@ Callbacks are registered and unregistered globally for specific tags and only
 tqdm instances of the same tags are going to use those callbacks.
 """
 
+import asyncio
 import io
 import logging
 import os
@@ -19,6 +20,7 @@ import re
 import sys
 import urllib.request
 from dataclasses import dataclass
+from io import TextIOBase
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
@@ -31,6 +33,38 @@ CUSTOM_LEVEL_STYLES = {
     "renode": {"color": "blue"},
     "verbose": {"color": "cyan"},
 }
+
+
+class _DuplicateStream(TextIOBase):
+    def __init__(self, stream=sys.stderr):
+        super().__init__()
+        self.stream = stream
+        self.client = None
+
+    def set_client(self, client):
+        self.client = client
+
+    def write(self, s, /):
+        if self.client is not None:
+            request = {
+                "name": "Kenning Terminal",
+                "message": s.replace("\n", "\r\n"),
+            }
+            try:
+                # if an error is thrown by the coroutine
+                # and not an invalid get(),
+                # there will be a warning about an unawaited coroutine
+                loop = asyncio.get_event_loop()
+                asyncio.run_coroutine_threadsafe(
+                    self.client.notify("terminal_write", request),
+                    loop,
+                )
+            except RuntimeError:
+                asyncio.run(self.client.notify("terminal_write", request))
+        return self.stream.write(s)
+
+
+DuplicateStream = _DuplicateStream()
 
 
 class _KLogger(logging.Logger, metaclass=Singleton):
@@ -55,6 +89,8 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             level_styles=dict(
                 coloredlogs.DEFAULT_LEVEL_STYLES, **CUSTOM_LEVEL_STYLES
             ),
+            stream=DuplicateStream,
+            isatty=True,
         )
         if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
             self.configure()

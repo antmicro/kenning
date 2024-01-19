@@ -25,7 +25,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
 )
 from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.logger import Callback, KLogger, TqdmCallback
+from kenning.utils.logger import Callback, KLogger, TqdmCallback, DuplicateStream
 
 
 class PipelineManagerClient(CommandTemplate):
@@ -474,6 +474,7 @@ class PipelineManagerClient(CommandTemplate):
             client = CommunicationBackend(host=args.host, port=args.port)
 
             loop = asyncio.get_event_loop()
+            DuplicateStream.set_client(client)
 
             async def exit_handler(signal, loop):
                 KLogger.info("Closing the Visual Editor...")

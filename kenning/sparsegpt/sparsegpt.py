@@ -218,13 +218,14 @@ class SparseGPT:
             W[:, i2:] -= Err1.matmul(Hinv[i1:i2, i2:])
 
         torch.cuda.synchronize()
-        self.logger.debug(f"Error: {torch.sum(Losses).item()}")
 
         if isinstance(self.layer, transformers.Conv1D):
             W = W.t()
         self.layer.weight.data = W.reshape(self.layer.weight.shape).to(
             self.layer.weight.data.dtype
         )
+
+        return torch.sum(Losses).item()
 
     def free(self):
         self.H = None

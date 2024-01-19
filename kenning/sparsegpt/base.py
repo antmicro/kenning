@@ -297,6 +297,8 @@ class BaseSparseGPTForCausalML(nn.Module):
         use_cache = self.model.config.use_cache
         self.model.config.use_cache = False
 
+        pruning_tick = time.time()
+
         # Preprocessing modules have to be moved to the same device
         # as the calibration dataset
         for name in self.inside_layer_modules:
@@ -446,7 +448,10 @@ class BaseSparseGPTForCausalML(nn.Module):
                     )
                     gpts[name].free()
 
-                    self.logger.debug("Elapsed %.2f s" % (time.time() - tick))
+                    self.logger.debug(
+                        "Layer pruning took: %.2f s" % (time.time() - tick)
+                    )
+                    self.logger.debug(f"Layer error: {error}")
 
             for j in range(self.pruning_config.n_samples):
                 outs[j] = layer(
@@ -461,6 +466,11 @@ class BaseSparseGPTForCausalML(nn.Module):
             inps, outs = outs, inps
 
         self.model.config.use_cache = use_cache
+
+        self.logger.debug("-------------------------")
+        self.logger.debug("Pruning finished")
+        self.logger.debug("Elapsed %.2f s" % (time.time() - pruning_tick))
+        self.logger.debug("-------------------------")
 
     def save_pruned_model(self, path: str):
         """

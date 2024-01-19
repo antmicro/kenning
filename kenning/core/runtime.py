@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Iterable, List, Optional
 
 import numpy as np
 
@@ -24,6 +24,7 @@ from kenning.core.measurements import (
     timemeasurements,
 )
 from kenning.core.model import ModelWrapper
+from kenning.interfaces.io_interface import IOSpecWrongFormat
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -90,6 +91,8 @@ class Runtime(ArgumentsHandler, ABC):
         )
         self.input_spec = None
         self.output_spec = None
+        self.processed_input_spec = None
+        self.processed_output_spec = None
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> "Runtime":
@@ -241,8 +244,18 @@ class Runtime(ArgumentsHandler, ABC):
         List[np.ndarray]
             List of preprocessed input data.
         """
-        for idx, (spec, inp) in enumerate(zip(self.input_spec, input_data)):
-            if "prequantized_dtype" in spec:
+        for idx, (spec, inp) in enumerate(
+            zip(
+                self.processed_input_spec
+                if self.processed_input_spec
+                else self.input_spec,
+                input_data,
+            )
+        ):
+            # Check if dtype is valid and if it should be quantized
+            if "prequantized_dtype" in spec and inp.dtype != np.dtype(
+                spec["dtype"]
+            ):
                 scale = spec["scale"]
                 zero_point = spec["zero_point"]
                 inp = (inp / scale + zero_point).astype(spec["dtype"])
@@ -284,18 +297,23 @@ class Runtime(ArgumentsHandler, ABC):
         AttributeError
             Raised if output specification is not loaded.
         """
-        if self.input_spec is None:
+        input_spec = (
+            self.processed_input_spec
+            if self.processed_input_spec
+            else self.input_spec
+        )
+        if input_spec is None:
             raise AttributeError(
                 "You must load the input specification first."
             )
 
-        is_reordered = any(["order" in spec for spec in self.input_spec])
+        is_reordered = any(["order" in spec for spec in input_spec])
         if is_reordered:
             reordered_input_spec = sorted(
-                self.input_spec, key=lambda spec: spec["order"]
+                input_spec, key=lambda spec: spec["order"]
             )
         else:
-            reordered_input_spec = self.input_spec
+            reordered_input_spec = input_spec
 
         if not input_data:
             KLogger.error("Received empty data payload")
@@ -329,7 +347,7 @@ class Runtime(ArgumentsHandler, ABC):
         # retrieving original order
         if is_reordered:
             reordered_inputs = [None] * len(inputs)
-            for order, spec in enumerate(self.input_spec):
+            for order, spec in enumerate(input_spec):
                 reordered_inputs[order] = inputs[spec["order"]]
         else:
             reordered_inputs = inputs
@@ -390,7 +408,11 @@ class Runtime(ArgumentsHandler, ABC):
         else:
             reordered_results = results
 
-        return reordered_results
+        return (
+            reordered_results
+            if len(reordered_results) > 1
+            else reordered_results[0]
+        )
 
     def read_io_specification(self, io_spec: Dict):
         """
@@ -412,9 +434,37 @@ class Runtime(ArgumentsHandler, ABC):
         ----------
         io_spec : Dict
             Specification of the input/output layers.
+
+        Raises
+        ------
+        IOSpecWrongFormat
+            Raised if preprocessed input data has more
+            than one available shape.
         """
         self.input_spec = io_spec["input"]
         self.output_spec = io_spec["output"]
+        self.processed_input_spec = (
+            io_spec["processed_input"]
+            if "processed_input" in io_spec
+            else None
+        )
+        self.processed_output_spec = (
+            io_spec["processed_output"]
+            if "processed_output" in io_spec
+            else None
+        )
+        # Check if model input specification contains only one possible shape
+        if any(
+            "shape" in spec and isinstance(spec["shape"][0], Iterable)
+            for spec in (
+                self.processed_input_spec
+                if self.processed_input_spec
+                else self.input_spec
+            )
+        ):
+            raise IOSpecWrongFormat(
+                "Specification of input data after preprocessing has to have only one possible shape"  # noqa: E501
+            )
 
     def prepare_io_specification(self, input_data: Optional[bytes]) -> bool:
         """

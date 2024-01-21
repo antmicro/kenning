@@ -2044,7 +2044,7 @@ class RecallPrecisionGradients(Plot):
         mean_avg_precision: float,
         title: Optional[str] = None,
         width: int = DEFAULT_PLOT_SIZE,
-        height: int = DEFAULT_PLOT_SIZE * 5 // 2,
+        height: Optional[int] = None,
         cmap: Optional[Any] = None,
     ):
         """
@@ -2067,13 +2067,16 @@ class RecallPrecisionGradients(Plot):
             Title of the plot.
         width : int
             Width of the plot.
-        height : int
-            Height of the plot.
+        height : Optional[int]
+            Height of the plot. If None, height is calculated based on
+            the amount of classes.
         cmap : Optional[Any]
             Color map for the plot.
         """
         if cmap is None:
             cmap = plt.get_cmap("RdYlGn")
+        if height is None:
+            height = 200 + 15 * len(class_names)
 
         super().__init__(width, height, title, cmap=cmap)
 

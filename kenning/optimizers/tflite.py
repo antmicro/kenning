@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -346,10 +346,12 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 new_spec.append(spec)
             io_spec[key] = new_spec
 
+        if "processed_input" not in io_spec:
+            io_spec["processed_input"] = deepcopy(io_spec["input"])
         update_io_spec(
             signature.get_input_details(),
             interpreter.get_input_details(),
-            "input",
+            "processed_input",
         )
         update_io_spec(
             signature.get_output_details(),

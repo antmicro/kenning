@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -214,7 +214,11 @@ class ONNXCompiler(Optimizer):
 
             io_spec = deepcopy(io_spec)
 
-            input_spec = io_spec["input"]
+            input_spec = (
+                io_spec["processed_input"]
+                if "processed_input" in io_spec
+                else io_spec["input"]
+            )
             output_spec = io_spec["output"]
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError(

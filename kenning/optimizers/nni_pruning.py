@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -677,7 +677,11 @@ class NNIPruningOptimizer(Optimizer):
         label = self.dataset.prepare_output_samples(batch_y)
 
         assert list(data.shape[1:]) == list(
-            self.io_spec["input"][0]["shape"][1:]
+            self.io_spec[
+                "processed_input"
+                if "processed_input" in self.io_spec
+                else "input"
+            ][0]["shape"][1:]
         ), (
             f"Input data in shape {data.shape[1:]}, but only "
             f"{self.io_spec['input'][0]['shape'][1:]} shape supported"
@@ -770,7 +774,11 @@ class NNIPruningOptimizer(Optimizer):
         torch.Tensor
             The tensor with random data of shape suitable for model's input
         """
-        inputs = io_spec["input"]
+        inputs = (
+            io_spec["processed_input"]
+            if "processed_input" in io_spec
+            else io_spec["input"]
+        )
         assert (
             len(inputs) <= 1
         ), "NNI pruners only support dummy_input in form of one Tensor"

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -22,7 +22,7 @@ from kenning.utils.resource_manager import PathOrURI
 
 
 def input_shapes_dict_to_list(
-    inputshapes: Dict[str, Tuple[int, ...]]
+    inputshapes: Dict[str, Tuple[int, ...]],
 ) -> List[Tuple[int, ...]]:
     """
     Turn the dictionary of 'name':'shape' of every input layer to ordered list.
@@ -256,7 +256,11 @@ class IREECompiler(Optimizer):
             io_spec = self.load_io_specification(input_model_path)
 
         try:
-            input_spec = io_spec["input"]
+            input_spec = (
+                io_spec["processed_input"]
+                if "processed_input" in io_spec
+                else io_spec["input"]
+            )
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
 

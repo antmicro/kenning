@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -101,7 +101,12 @@ class TVMRuntime(Runtime):
         input = {}
         try:
             input_data = self.preprocess_input(input_data)
-            for spec, inp in zip(self.input_spec, input_data):
+            for spec, inp in zip(
+                self.processed_input_spec
+                if self.processed_input_spec
+                else self.input_spec,
+                input_data,
+            ):
                 input[spec["name"]] = tvm.nd.array(inp)
 
             if self.use_tvm_vm:

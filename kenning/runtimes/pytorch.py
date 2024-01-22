@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -139,7 +139,7 @@ class PyTorchRuntime(Runtime):
         import torch
 
         self.input = self.preprocess_input(input_data)
-        for id, (spec, inp) in enumerate(zip(self.input_spec, self.input)):
+        for id, inp in enumerate(self.input):
             if isinstance(inp, torch.Tensor):
                 self.input[id] = inp.to(self.device)
             else:

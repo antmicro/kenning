@@ -476,12 +476,15 @@ class ViolinComparisonPlot(Plot):
             zip(self.colors, self.metric_data.items())
         ):
             for name, sample in zip(self.metric_labels, samples):
-                kde = gaussian_kde(sample)
                 x_min = min(sample)
                 x_max = max(sample)
                 x = np.linspace(x_min, x_max, 1000)
-                y = kde.pdf(x)
-                y *= 0.45 / max(y)
+                if x_min == x_max:
+                    y = np.full(x.shape, 0.45)
+                else:
+                    kde = gaussian_kde(sample)
+                    y = kde.pdf(x)
+                    y *= 0.45 / max(y)
                 renderer = violin_figs[name].add_glyph(
                     ColumnDataSource(
                         data=dict(

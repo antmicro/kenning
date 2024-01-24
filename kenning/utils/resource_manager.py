@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -9,12 +9,14 @@ import hashlib
 import os
 import re
 import tarfile
+from importlib.metadata import version
 from inspect import getfullargspec
 from pathlib import Path
 from shutil import copy, rmtree
 from typing import Any, Callable, Dict, List, Optional, Tuple, Union
-from urllib.error import URLError
+from urllib.error import HTTPError, URLError
 from urllib.parse import ParseResult, urlparse, uses_params
+from urllib.request import urlopen
 from zipfile import ZipFile
 
 import requests
@@ -122,6 +124,8 @@ class ResourceManager(metaclass=Singleton):
         "file": lambda uri: Path(uri.path).expanduser().resolve(),
     }
 
+    KENNING_RESOURCES_VERSION_URL = "kenning:///VERSION"
+
     def __init__(self):
         """
         Initialize ResourceManager.
@@ -149,6 +153,32 @@ class ResourceManager(metaclass=Singleton):
         self.params_any_index_pattern = re.compile(
             r"(\{([a-zA-Z][a-zA-Z0-9_]+)(?:\[[^\[\]]*\])?\})"
         )
+
+        self.kenning_resources_version_validated = False
+
+    def validate_resources_version(self):
+        """
+        Retrieve Kenning resources version
+        and check if it is compatible with currently used Kenning.
+        """
+        # Validate version only at the first call
+        if self.kenning_resources_version_validated:
+            return
+        self.kenning_resources_version_validated = True
+        uri = self._resolve_uri(
+            urlparse(ResourceManager.KENNING_RESOURCES_VERSION_URL)
+        )
+        try:
+            with urlopen(uri) as request:
+                resources_version = request.readline().decode("utf-8")
+        except HTTPError:
+            KLogger.error("Kenning resources version cannot be validated")
+            return
+        if resources_version != version("kenning"):
+            KLogger.error(
+                "The newer version of Kenning is available, "
+                "some resources may not be compatible with current one"
+            )
 
     def get_resource(
         self, uri: str, output_path: Optional[Path] = None
@@ -179,6 +209,8 @@ class ResourceManager(metaclass=Singleton):
         """
         # check if file is already cached
         parsed_uri = urlparse(uri)
+        if parsed_uri.scheme == "kenning":
+            self.validate_resources_version()
 
         # no scheme in URI - treat as path string
         if "" == parsed_uri.scheme:

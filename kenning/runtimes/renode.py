@@ -11,10 +11,12 @@ import struct
 import tempfile
 from collections import defaultdict
 from pathlib import Path
+from time import perf_counter, sleep
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
 import tqdm
 from pyrenode import Pyrenode
+from serial import Serial
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import (
@@ -53,6 +55,35 @@ class RenodeRuntime(Runtime):
             "type": ResourceURI,
             "is_list": True,
         },
+        "post_start_commands": {
+            "argparse_name": "--post-start-commands",
+            "description": (
+                "Renode commands executed after starting the machine"
+            ),
+            "type": str,
+            "is_list": True,
+            "default": [],
+        },
+        "runtime_log_uart": {
+            "argparse_name": "--runtime-log-uart",
+            "description": (
+                "Path to UART from which runtime logs should be read. If not "
+                "specified, then the logs are read from Renode logs"
+            ),
+            "type": Path,
+            "nullable": True,
+        },
+        "runtime_log_init_msg": {
+            "argparse_name": "--runtime-log-init-msg",
+            "description": (
+                "Log message produced by runtime after successful "
+                "initialization. If specified, Kenning will wait for "
+                "such message before starting inference"
+            ),
+            "type": str,
+            "nullable": True,
+            "default": None,
+        },
         "disable_profiler": {
             "argparse_name": "--disable-profiler",
             "description": "Disables Renode profiler",
@@ -74,8 +105,10 @@ class RenodeRuntime(Runtime):
         },
         "sensor": {
             "argparse_name": "--sensor",
-            "description": "Name of the sensor to be used as input. If none "
-            "then no sensor is used",
+            "description": (
+                "Name of the sensor to be used as input. If none then no "
+                "sensor is used"
+            ),
             "type": str,
             "nullable": True,
             "default": None,
@@ -93,6 +126,9 @@ class RenodeRuntime(Runtime):
         runtime_binary_path: PathOrURI,
         platform_resc_path: PathOrURI,
         resc_dependencies: List[ResourceURI] = [],
+        post_start_commands: List[str] = [],
+        runtime_log_uart: Optional[Path] = None,
+        runtime_log_init_msg: Optional[str] = None,
         disable_profiler: bool = False,
         profiler_dump_path: Optional[Path] = None,
         profiler_interval_step: float = 10.0,
@@ -111,6 +147,14 @@ class RenodeRuntime(Runtime):
             Path to the Renode script.
         resc_dependencies : List[ResourceURI]
             Renode script dependencies.
+        post_start_commands : List[str]
+            Renode commands executed after starting the machine.
+        runtime_log_uart : Optional[Path]
+            Path to UART from which runtime logs should be read. If not
+            specified, then the logs are read from Renode logs.
+        runtime_log_init_msg : Optional[str]
+            Log produced by runtime after initialization. If specified, Kenning
+            will wait for such message before starting inference.
         disable_profiler : bool
             Disables Renode profiler.
         profiler_dump_path : Optional[Path]
@@ -131,6 +175,9 @@ class RenodeRuntime(Runtime):
         for dependency in resc_dependencies:
             assert dependency.is_file(), f"Dependency {dependency} not found"
         self.resc_dependencies = resc_dependencies
+        self.post_start_commands = post_start_commands
+        self.runtime_log_uart = runtime_log_uart
+        self.runtime_log_init_msg = runtime_log_init_msg
         self.disable_profiler = disable_profiler
         if profiler_dump_path is not None:
             profiler_dump_path = profiler_dump_path.resolve()
@@ -142,6 +189,7 @@ class RenodeRuntime(Runtime):
         self.virtual_time_regex = re.compile(
             r"Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)"
         )
+        self.runtime_logs = ""
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )
@@ -210,6 +258,11 @@ class RenodeRuntime(Runtime):
                             _, y = sample
                             measurements += dataset.evaluate(posty, y)
 
+                        if self.runtime_log_uart is not None:
+                            self.runtime_logs += (
+                                self.runtime_log_uart.read_all().decode()
+                            )
+
                 # get opcode stats after inference
                 if not self.disable_performance_measurements:
                     post_opcode_stats = self.get_opcode_stats()
@@ -231,6 +284,14 @@ class RenodeRuntime(Runtime):
                 MeasurementsCollector.measurements += measurements
             finally:
                 KLogger.info(self.renode_handler.read_from_renode())
+                if self.runtime_log_uart is not None:
+                    while True:
+                        logs = self.runtime_log_uart.read_all()
+                        if not len(logs):
+                            break
+                        self.runtime_logs += logs.decode()
+
+                    KLogger.info(f"Runtime logs:\n{self.runtime_logs}")
                 self.renode_handler = None
 
         if (
@@ -288,7 +349,6 @@ class RenodeRuntime(Runtime):
         self.renode_handler.run_robot_keyword(
             "ExecuteCommand", f"i @{self.platform_resc_path}"
         )
-        self.renode_handler.run_robot_keyword("ExecuteCommand", "start")
         if (
             not self.disable_performance_measurements
             and not self.disable_profiler
@@ -298,12 +358,36 @@ class RenodeRuntime(Runtime):
                 f"machine EnableProfiler @{self.profiler_dump_path}",
             )
             KLogger.info(f"Profiler dump path: {self.profiler_dump_path}")
-        self.renode_handler.run_robot_keyword(
-            "ExecuteCommand", "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
-        )
-        self.renode_handler.run_robot_keyword(
-            "WaitForLogEntry", r".*Runtime started.*", treatAsRegex=True
-        )
+
+        if self.runtime_log_uart is not None:
+            self.runtime_log_uart = Serial(str(self.runtime_log_uart), 115200)
+
+        self.renode_handler.run_robot_keyword("ExecuteCommand", "start")
+        for cmd in self.post_start_commands:
+            self.renode_handler.run_robot_keyword("ExecuteCommand", cmd)
+
+        if self.runtime_log_init_msg is not None:
+            KLogger.info("Waiting for runtime init")
+            if self.runtime_log_uart is not None:
+                timeout = perf_counter() + 30
+                while self.runtime_log_init_msg not in self.runtime_logs:
+                    self.runtime_logs += (
+                        self.runtime_log_uart.read_all().decode()
+                    )
+                    if perf_counter() > timeout:
+                        KLogger.debug(f"Runtime logs:\n{self.runtime_logs}")
+                        raise TimeoutError(
+                            "Runtime did not initialize in 30 seconds"
+                        )
+                    sleep(0.2)
+
+            else:
+                self.renode_handler.run_robot_keyword(
+                    "WaitForLogEntry",
+                    rf".*{self.runtime_log_init_msg}.*",
+                    treatAsRegex=True,
+                )
+        KLogger.info("Renode initialized")
 
     def get_opcode_stats(self) -> Dict[str, int]:
         """

@@ -56,7 +56,7 @@ ARGS_GROUPS = {
     ),
     FLAG_CONFIG: (
         "Configuration with flags. This section is not compatible with "
-        f"'{JSON_CONFIG}'. Arguments with '*' are required.",
+        f"'{JSON_CONFIG}'. Arguments with '*' are required."
     ),
 }
 

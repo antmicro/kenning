@@ -39,8 +39,12 @@
             "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok.resc;branch=main",
             "resc_dependencies": [
                 "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main",
-                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=24140ce0"
+                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule"
             ],
+            "start_commands": [
+                "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
+            ],
+            "runtime_log_init_msg": "Runtime started",
             "profiler_dump_path": "build/profiler.dump"
         }
     },

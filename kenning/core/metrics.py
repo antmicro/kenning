@@ -379,3 +379,37 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
             )
 
     return ret
+
+
+def compute_text_summarization_metrics(
+    measurementsdata: List[Dict[str, List]]
+) -> Dict:
+    """
+    Computes text summarization metrics based on `measurementsdata` argument.
+    If there is no text summarization metrics returns an empty dictionary.
+
+    Computes rouge values.
+
+    Parameters
+    ----------
+    measurementsdata : List[Dict[str, List]]
+        Statistics from the Measurements class.
+
+    Returns
+    -------
+    Dict
+        Gathered computed metrics.
+    """
+    metrics = {}
+    if "total" not in measurementsdata:
+        return metrics
+
+    rouge_metrics = [
+        key for key in measurementsdata.keys() if key.startswith("rouge")
+    ]
+
+    for metric in rouge_metrics:
+        metrics[metric] = (
+            measurementsdata[metric] / measurementsdata["total"] * 100
+        )
+    return metrics

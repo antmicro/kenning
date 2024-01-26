@@ -196,9 +196,11 @@ Cumulative count of raised exceptions during benchmark
        data['compiled_model_size'] %}
 ### Memory allocation stats
 
+{%- if 'allocation_stats' in data %}
 {%- for stat_name, stat_value in data['allocation_stats'].items() %}
 * *{{ stat_name.replace('_', ' ').capitalize() }}*: **{{ stat_value }}**
 {%- endfor %}
+{%- endif %}
 {%- if data['compiled_model_size'] %}
 * *Compiled model size*: **{{ data['compiled_model_size'] }}**
 {%- endif %}

@@ -10,7 +10,6 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import onnx
 import tvm
-import tvm.micro.testing
 import tvm.relay as relay
 
 from kenning.core.dataset import Dataset
@@ -508,11 +507,14 @@ class TVMCompiler(Optimizer):
         self.target = target
         self.target_microtvm_board = target_microtvm_board
 
-        self.target_obj = (
-            tvm.micro.testing.get_target(target, target_microtvm_board)
-            if target_microtvm_board
-            else tvm.target.Target(target)
-        )
+        if self.target_microtvm_board:
+            import tvm.micro.testing as mtvmt
+
+            self.target_obj = mtvmt.micro.testing.get_target(
+                target, target_microtvm_board
+            )
+        else:
+            self.target_obj = tvm.target.Target(target)
 
         self.target_host = target_host
         self.target_host_obj = (

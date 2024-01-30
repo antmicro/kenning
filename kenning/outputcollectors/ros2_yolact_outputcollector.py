@@ -278,3 +278,6 @@ class ROS2YolactOutputCollector(OutputCollector):
         if color_format not in encodings:
             raise ValueError("Unknown color format")
         return encodings[color_format]
+
+    def process_output(self, input_data, output_data):
+        raise NotImplementedError

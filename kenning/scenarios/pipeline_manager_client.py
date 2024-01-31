@@ -13,6 +13,8 @@ import asyncio
 import json
 import signal
 import sys
+import os
+import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -67,7 +69,7 @@ class PipelineManagerClient(CommandTemplate):
         ve_group.add_argument(
             "--file-path",
             type=Path,
-            help="Path where results of model benchmarking will be stored (pipeline mode only)",  # noqa: E501
+            help="Path to a directory where results of model benchmarking will be stored (pipeline mode only)",  # noqa: E501
             required=True,
         )
         ve_group.add_argument(
@@ -243,9 +245,15 @@ class PipelineManagerClient(CommandTemplate):
                         runner = self.dataflow_handler.parse_json(msg)
                         MeasurementsCollector.clear()
 
+                        if not os.path.exists(self.output_file_path):
+                            os.mkdir(self.output_file_path)
+                        current_time = datetime.datetime.now()
+                        timestamp = current_time.strftime("%Y%m%d_%H%M%S")
+                        filename = f"run_{timestamp}.json"
+
                         def dataflow_runner(runner):
                             self.dataflow_handler.run_dataflow(
-                                runner, self.output_file_path
+                                runner, self.output_file_path / filename
                             )
                             KLogger.warning("Finished run")
 

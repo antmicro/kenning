@@ -510,9 +510,7 @@ class TVMCompiler(Optimizer):
         if self.target_microtvm_board:
             import tvm.micro.testing as mtvmt
 
-            self.target_obj = mtvmt.micro.testing.get_target(
-                target, target_microtvm_board
-            )
+            self.target_obj = mtvmt.get_target(target, target_microtvm_board)
         else:
             self.target_obj = tvm.target.Target(target)
 

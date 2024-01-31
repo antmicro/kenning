@@ -211,6 +211,11 @@ class BaseDataflowHandler(ABC):
                 "iconName": "Validate",
                 "procedureName": "dataflow_validate",
             },
+            {
+                "name": "Report",
+                "iconName": "Report",
+                "procedureName": "custom_dataflow_report",
+            },
         ]
 
     def get_specification(

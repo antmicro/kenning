@@ -28,6 +28,15 @@ from kenning.cli.command_template import (
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.utils.logger import Callback, KLogger, TqdmCallback, DuplicateStream
+from kenning.scenarios.render_report import generate_report, get_model_name, SERVIS_PLOT_OPTIONS, deduce_report_name
+from kenning.scenarios.render_report import UNOPTIMIZED_MEASUREMENTS
+import json
+import re
+from kenning.core.drawing import (
+    DEFAULT_PLOT_SIZE,
+    IMMATERIAL_COLORS,
+    RED_GREEN_CMAP,
+)
 
 
 class PipelineManagerClient(CommandTemplate):
@@ -249,11 +258,11 @@ class PipelineManagerClient(CommandTemplate):
                             os.mkdir(self.output_file_path)
                         current_time = datetime.datetime.now()
                         timestamp = current_time.strftime("%Y%m%d_%H%M%S")
-                        filename = f"run_{timestamp}.json"
+                        self.filename = f"run_{timestamp}.json"
 
                         def dataflow_runner(runner):
                             self.dataflow_handler.run_dataflow(
-                                runner, self.output_file_path / filename
+                                runner, self.output_file_path / self.filename
                             )
                             KLogger.warning("Finished run")
 
@@ -351,6 +360,75 @@ class PipelineManagerClient(CommandTemplate):
                 finally:
                     async with self.current_task_lock:
                         self.current_task = None
+
+            async def custom_dataflow_report(self, dataflow: Dict) -> Dict:
+                async with self.current_task_lock:
+                    if self.current_task is not None:
+                        return {
+                            "type": MessageType.ERROR.value,
+                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
+                        }
+                    self.current_task = "reporting"
+                try:
+                    measurementsdata = []
+                    with open(self.output_file_path / self.filename, 'r') as f:
+                        measurements = json.load(f)
+                        if "model_name" not in measurements:
+                            measurements["model_name"] = get_model_name(
+                                self.output_file_path / self.filename
+                            )
+                        measurements["model_name"] = measurements["model_name"].replace(
+                            " ", "_"
+                        )
+                        if "report_name" not in measurements:
+                            measurements["report_name"] = deduce_report_name(
+                                [measurements],
+                                ["performance"]
+                            )
+                        measurements["report_name_simple"] = re.sub(
+                            r"[\W]",
+                            "",
+                            measurements["report_name"].lower().replace(" ", "_"),
+                        )
+                        measurementsdata.append(measurements)
+                        SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
+                        cmap = RED_GREEN_CMAP
+                        colors = IMMATERIAL_COLORS
+                        output_path = self.output_file_path.parent / "report"
+                        if not os.path.exists(output_path):
+                            os.mkdir(output_path)
+                        if not os.path.exists(output_path / "imgs"):
+                            os.mkdir(output_path / "imgs")
+                        generate_report(
+                            "Pipeline Manager Run Report",
+                            measurementsdata,
+                            output_path / "report.md",
+                            output_path / "imgs",
+                            ["performance"],
+                            output_path,
+                            set(["png"]),
+                            cmap=cmap,
+                            colors=colors
+                        )
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
+                    KLogger.warning("Cancelling reporting job")
+                except Exception as ex:
+                    KLogger.error(f"Reporting error:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Reporting error:\n{ex}",
+                    }
+                finally:
+                    async with self.current_task_lock:
+                        self.current_task = None
+                    return {
+                        "type": MessageType.OK.value,
+                        "content": "The report is generated.",
+                    }
+
 
             async def dataflow_export(self, dataflow: Dict) -> Dict:
                 """

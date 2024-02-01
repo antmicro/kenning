@@ -6,7 +6,6 @@
 Runtime implementation for Renode.
 """
 
-import re
 import struct
 import tempfile
 from collections import defaultdict
@@ -15,7 +14,6 @@ from time import perf_counter, sleep
 from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 
 import tqdm
-from pyrenode import Pyrenode
 from serial import Serial
 
 from kenning.core.dataset import Dataset
@@ -185,14 +183,13 @@ class RenodeRuntime(Runtime):
         self.profiler_interval_step = profiler_interval_step
         self.sensor = sensor
         self.batches_count = batches_count
-        self.renode_handler = None
-        self.virtual_time_regex = re.compile(
-            r"Elapsed Virtual Time: (\d{2}):(\d{2}):(\d{2}\.\d*)"
-        )
         self.runtime_logs = ""
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )
+
+        # add pyrenode3 setup here
+        self.machine = None
 
     def run_client(
         self,
@@ -201,98 +198,93 @@ class RenodeRuntime(Runtime):
         protocol: Protocol,
         compiled_model_path: PathOrURI,
     ):
-        with Pyrenode() as renode_handler:
-            self.renode_handler = renode_handler
-            self.init_renode()
+        self.init_renode()
 
-            protocol.initialize_client()
+        protocol.initialize_client()
 
-            try:
-                spec_path = self.get_io_spec_path(compiled_model_path)
-                if spec_path.exists():
-                    protocol.upload_io_specification(spec_path)
-                protocol.upload_model(compiled_model_path)
+        try:
+            spec_path = self.get_io_spec_path(compiled_model_path)
+            if spec_path.exists():
+                protocol.upload_io_specification(spec_path)
+            protocol.upload_model(compiled_model_path)
 
-                measurements = Measurements()
+            measurements = Measurements()
 
-                # get opcode stats before inference
-                if not self.disable_performance_measurements:
-                    pre_opcode_stats = self.get_opcode_stats()
+            # get opcode stats before inference
+            if not self.disable_performance_measurements:
+                pre_opcode_stats = self.get_opcode_stats()
 
-                # prepare iterator for inference
-                iterable = (
-                    range(self.batches_count)
-                    if self.sensor is not None
-                    else dataset.iter_test()
-                )
+            # prepare iterator for inference
+            iterable = (
+                range(self.batches_count)
+                if self.sensor is not None
+                else dataset.iter_test()
+            )
 
-                # inference loop
-                with LoggerProgressBar() as logger_progress_bar:
-                    for sample in tqdm.tqdm(
-                        iterable, file=logger_progress_bar
-                    ):
-                        if self.sensor is None:
-                            # provide data to runtime
-                            X, _ = sample
-                            prepX = modelwrapper._preprocess_input(X)
-                            prepX = modelwrapper.convert_input_to_bytes(prepX)
-                            check_request(
-                                protocol.upload_input(prepX), "send input"
-                            )
-                            check_request(
-                                protocol.request_processing(self.get_time),
-                                "inference",
-                            )
-
-                        # get inference output
-                        _, preds = check_request(
-                            protocol.download_output(), "receive output"
+            # inference loop
+            with LoggerProgressBar() as logger_progress_bar:
+                for sample in tqdm.tqdm(iterable, file=logger_progress_bar):
+                    if self.sensor is None:
+                        # provide data to runtime
+                        X, _ = sample
+                        prepX = modelwrapper._preprocess_input(X)
+                        prepX = modelwrapper.convert_input_to_bytes(prepX)
+                        check_request(
+                            protocol.upload_input(prepX), "send input"
+                        )
+                        check_request(
+                            protocol.request_processing(self.get_time),
+                            "inference",
                         )
 
-                        preds = modelwrapper.convert_output_from_bytes(preds)
-                        posty = modelwrapper._postprocess_outputs(preds)
+                    # get inference output
+                    _, preds = check_request(
+                        protocol.download_output(), "receive output"
+                    )
 
-                        if self.sensor is not None:
-                            measurements += dataset.evaluate(posty, None)
-                        else:
-                            _, y = sample
-                            measurements += dataset.evaluate(posty, y)
+                    preds = modelwrapper.convert_output_from_bytes(preds)
+                    posty = modelwrapper._postprocess_outputs(preds)
 
-                        if self.runtime_log_uart is not None:
-                            self.runtime_logs += (
-                                self.runtime_log_uart.read_all().decode()
-                            )
+                    if self.sensor is not None:
+                        measurements += dataset.evaluate(posty, None)
+                    else:
+                        _, y = sample
+                        measurements += dataset.evaluate(posty, y)
 
-                # get opcode stats after inference
-                if not self.disable_performance_measurements:
-                    post_opcode_stats = self.get_opcode_stats()
-
-                    MeasurementsCollector.measurements += {
-                        "opcode_counters": self._opcode_stats_diff(
-                            pre_opcode_stats, post_opcode_stats
+                    if self.runtime_log_uart is not None:
+                        self.runtime_logs += (
+                            self.runtime_log_uart.read_all().decode()
                         )
-                    }
 
-                MeasurementsCollector.measurements += (
-                    protocol.download_statistics()
-                )
+            # get opcode stats after inference
+            if not self.disable_performance_measurements:
+                post_opcode_stats = self.get_opcode_stats()
 
-            except RequestFailure as ex:
-                KLogger.fatal(ex)
-                return False
-            else:
-                MeasurementsCollector.measurements += measurements
-            finally:
-                KLogger.info(self.renode_handler.read_from_renode())
-                if self.runtime_log_uart is not None:
-                    while True:
-                        logs = self.runtime_log_uart.read_all()
-                        if not len(logs):
-                            break
-                        self.runtime_logs += logs.decode()
+                MeasurementsCollector.measurements += {
+                    "opcode_counters": self._opcode_stats_diff(
+                        pre_opcode_stats, post_opcode_stats
+                    )
+                }
 
-                    KLogger.info(f"Runtime logs:\n{self.runtime_logs}")
-                self.renode_handler = None
+            MeasurementsCollector.measurements += (
+                protocol.download_statistics()
+            )
+
+        except RequestFailure as ex:
+            KLogger.fatal(ex)
+            return False
+        else:
+            MeasurementsCollector.measurements += measurements
+        finally:
+            self.clear_renode()
+            if self.runtime_log_uart is not None:
+                while True:
+                    logs = self.runtime_log_uart.read_all()
+                    if not len(logs):
+                        break
+                    self.runtime_logs += logs.decode()
+
+                KLogger.info(f"Runtime logs:\n{self.runtime_logs}")
 
         if (
             not self.disable_performance_measurements
@@ -303,30 +295,25 @@ class RenodeRuntime(Runtime):
         return True
 
     def get_time(self):
-        if self.renode_handler is None:
+        if self.machine is None:
             return 0
 
-        elapsed_time_str = self.renode_handler.run_robot_keyword(
-            "ExecuteCommand", "machine ElapsedVirtualTime"
-        )
-        match = self.virtual_time_regex.search(elapsed_time_str)
-        if match is None:
-            return 0
+        return self.machine.ElapsedVirtualTime.TimeElapsed.TotalSeconds
 
-        groups = match.groups()
+    def clear_renode(self):
+        from pyrenode3.wrappers import Emulation
 
-        h = int(groups[0])
-        m = int(groups[1])
-        s = float(groups[2])
-
-        return 3600 * h + 60 * m + s
+        self.machine = None
+        Emulation().PauseAll()
+        Emulation().clear()
 
     def init_renode(self):
         """
         Initializes Renode process and starts runtime.
         """
-        if self.renode_handler is None:
-            raise ValueError("Renode handler not initialized")
+        from pyrenode3.wrappers import Emulation, Monitor  # isort: skip
+        from Antmicro.Renode.Logging import Logger
+        from Antmicro.Renode.RobotFramework import LogTester
 
         if (
             not self.disable_performance_measurements
@@ -335,36 +322,41 @@ class RenodeRuntime(Runtime):
             self.profiler_dump_path = Path(
                 tempfile.mktemp(prefix="renode_profiler_", suffix=".dump")
             )
-        self.renode_handler.initialize(read_renode_stdout=True)
-        self.renode_handler.run_robot_keyword("CreateLogTester", timeout=5.0)
-        self.renode_handler.run_robot_keyword(
-            "ExecuteCommand", f"$bin=@{self.runtime_binary_path}"
-        )
+
+        emu = Emulation()
+        monitor = Monitor()
+
+        log_tester = LogTester(10)
+        Logger.AddBackend(log_tester, "logTester")
+
+        monitor.execute(f"$bin=@{self.runtime_binary_path}")
+
         for dep in self.resc_dependencies:
             dep_name = dep.name.lower().replace(".", "_")
             dep_path = str(dep.resolve())
-            self.renode_handler.run_robot_keyword(
-                "ExecuteCommand", f"${dep_name}=@{dep_path}"
-            )
-        self.renode_handler.run_robot_keyword(
-            "ExecuteCommand", f"i @{self.platform_resc_path}"
-        )
+            monitor.execute(f"${dep_name}=@{dep_path}")
+
+        _, err = monitor.execute_script(str(self.platform_resc_path))
+
+        if err:
+            raise Exception("RESC execution error: " + err)
+
+        self.machine = next(iter(emu))
+
         if (
             not self.disable_performance_measurements
             and not self.disable_profiler
         ):
-            self.renode_handler.run_robot_keyword(
-                "ExecuteCommand",
-                f"machine EnableProfiler @{self.profiler_dump_path}",
-            )
+            self.machine.EnableProfiler(str(self.profiler_dump_path))
             KLogger.info(f"Profiler dump path: {self.profiler_dump_path}")
 
         if self.runtime_log_uart is not None:
             self.runtime_log_uart = Serial(str(self.runtime_log_uart), 115200)
 
-        self.renode_handler.run_robot_keyword("ExecuteCommand", "start")
+        emu.StartAll()
+
         for cmd in self.post_start_commands:
-            self.renode_handler.run_robot_keyword("ExecuteCommand", cmd)
+            monitor.execute(cmd)
 
         if self.runtime_log_init_msg is not None:
             KLogger.info("Waiting for runtime init")
@@ -382,11 +374,12 @@ class RenodeRuntime(Runtime):
                     sleep(0.2)
 
             else:
-                self.renode_handler.run_robot_keyword(
-                    "WaitForLogEntry",
+                log_tester.WaitForEntry(
                     rf".*{self.runtime_log_init_msg}.*",
                     treatAsRegex=True,
                 )
+
+        Logger.RemoveBackend(log_tester)
         KLogger.info("Renode initialized")
 
     def get_opcode_stats(self) -> Dict[str, int]:
@@ -401,21 +394,15 @@ class RenodeRuntime(Runtime):
         KLogger.info("Retrieving opcode counters")
 
         # retrieve opcode counters
-        stats_raw = self.renode_handler.run_robot_keyword(
-            "ExecuteCommand", "sysbus.cpu GetAllOpcodesCounters"
-        )
-        # remove double newlines
-        stats_raw = stats_raw.replace("\n\n", "\n")
-        lines = stats_raw.split("\n")
-        # skip the header
-        lines = lines[3:]
+        stats_raw = self.machine.sysbus.cpu.GetAllOpcodesCounters()
         stats = {}
-        for line in lines:
-            line_split = line.split("|")
-            if len(line_split) != 4:
-                continue
-            _, opcode, counter, _ = line.split("|")
-            stats[opcode.strip()] = int(counter.strip())
+        i = 1
+        while True:
+            try:
+                stats[stats_raw[i, 0]] = int(stats_raw[i, 1])
+            except IndexError:
+                break
+            i += 1
 
         return stats
 

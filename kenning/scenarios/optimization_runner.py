@@ -21,7 +21,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional, Tuple
 
-from argcomplete.completers import FilesCompleter
+from argcomplete.completers import DirectoriesCompleter, FilesCompleter
 from jsonschema.exceptions import ValidationError
 
 from kenning.cli.command_template import (
@@ -367,7 +367,12 @@ class OptimizationRunner(CommandTemplate):
             type=Path,
             required=True,
         ).completer = FilesCompleter("*.json")
-
+        command_group.add_argument(
+            "--generate-scenarios",
+            help="Generate JSON scenarios for the given JSON configuration without actually running them",  # noqa: E501
+            type=Path,
+            default=None,
+        ).completer = DirectoriesCompleter()
         return parser, groups
 
     @staticmethod
@@ -391,6 +396,18 @@ class OptimizationRunner(CommandTemplate):
 
         pipelines_num = len(pipelines)
         pipelines_scores = []
+
+        if args.generate_scenarios is not None:
+            Path(args.generate_scenarios).mkdir(parents=True, exist_ok=True)
+
+            for pipeline_idx, pipeline in enumerate(pipelines):
+                pipeline = replace_paths(pipeline, pipeline_idx)
+                with open(
+                    args.generate_scenarios / f"scenario_{pipeline_idx}.json",
+                    "w",
+                ) as f:
+                    json.dump(pipeline, f, indent=4)
+            return
 
         KLogger.info(f"Finding {policy} for {metric}")
         for pipeline_idx, pipeline in enumerate(pipelines):

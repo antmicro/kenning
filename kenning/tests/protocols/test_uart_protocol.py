@@ -47,6 +47,7 @@ MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC = [
     for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES
     if hasattr(modelwrapper_cls, "pretrained_model_uri")
     and modelwrapper_cls.pretrained_model_uri is not None
+    and not modelwrapper_cls.pretrained_model_uri.startswith("hf://")
 ]
 
 

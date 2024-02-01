@@ -3,5 +3,5 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module containing tests written in pytest.
+Module containing tests for Kenning framework.
 """

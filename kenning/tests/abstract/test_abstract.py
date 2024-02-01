@@ -146,6 +146,8 @@ class TestAbstract:
             return
         rel_path = Path(file_path).relative_to(Path(kenning.__file__).parent)
         module = get_kenning_submodule_from_path(file_path)
+        if "kenning.onnxconverters" in module:
+            pytest.xfail("Module kenning.onnxconverters is a legacy code")
         try:
             cls = load_class(f"{module}.{class_ast.name}")
         except ModuleNotFoundError as e:

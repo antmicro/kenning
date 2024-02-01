@@ -171,7 +171,14 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
         model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-
+    elif framework in [
+        "safetensors-native",
+        "safetensors-awq",
+        "safetensors-gptq",
+    ]:
+        raise UnknownFramework(
+            f"LLM frameworks are not supported yet - {framework}"
+        )
     else:
         raise UnknownFramework(f"Unknown framework: {framework}")
 

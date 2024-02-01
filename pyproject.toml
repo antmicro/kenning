@@ -124,7 +124,7 @@ uart = [
     "pyserial",
 ]
 renode = [
-    "pyrenode @ git+https://github.com/antmicro/pyrenode.git",
+    "pyrenode3 @ git+https://github.com/antmicro/pyrenode3.git",
     "renode-run @ git+https://github.com/antmicro/renode-run.git",
 ]
 nni = [

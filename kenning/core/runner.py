@@ -52,13 +52,17 @@ class Runner(IOInterface, ArgumentsHandler, ABC):
         for local_name, (_, global_name) in self.inputs_sources.items():
             for spec in runner_io_spec["input"]:
                 if spec["name"] == local_name:
-                    runner_input_spec[global_name] = spec
+                    runner_input_spec[global_name] = (
+                        [spec] if isinstance(spec, Dict) else spec
+                    )
                     break
 
         # get provided inputs spec mapped to global variables
         outputs_specs = {}
         for local_name, (_, global_name) in self.inputs_sources.items():
             outputs_specs[global_name] = self.inputs_specs[local_name]
+            if not isinstance(outputs_specs[global_name], List):
+                outputs_specs[global_name] = [outputs_specs[global_name]]
 
         if not IOInterface.validate(outputs_specs, runner_input_spec):
             self.cleanup()

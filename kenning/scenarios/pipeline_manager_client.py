@@ -37,6 +37,7 @@ from kenning.core.drawing import (
     IMMATERIAL_COLORS,
     RED_GREEN_CMAP,
 )
+from kenning.scenarios.optimization_runner import OptimizationRunner
 
 
 class PipelineManagerClient(CommandTemplate):
@@ -429,6 +430,58 @@ class PipelineManagerClient(CommandTemplate):
                         "content": "The report is generated.",
                     }
 
+            async def custom_dataflow_optimize(self, dataflow: Dict) -> Dict:
+                async with self.current_task_lock:
+                    if self.current_task is not None:
+                        return {
+                            "type": MessageType.ERROR.value,
+                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
+                        }
+                    self.current_task = "optimizing"
+                    status, msg = self.dataflow_handler.parse_dataflow(
+                        dataflow
+                    )
+                    if not status:
+                        return {
+                            "type": MessageType.ERROR.value,
+                            "content": msg,
+                        }
+                try:
+                    runner = self.dataflow_handler.parse_json(msg)
+                    def dataflow_optimizer(runner):
+                        self.dataflow_handler.optimize_dataflow(
+                            runner
+                        )
+                        KLogger.warning("Finished optimizing")
+                    runner_coro = asyncio.to_thread(
+                        dataflow_optimizer, runner
+                    )
+                    runner_task = asyncio.create_task(runner_coro)
+                    await runner_task
+                except Exception as ex:
+                    KLogger.error(ex, stack_info=True)
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": str(ex),
+                    }
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
+                    KLogger.warning("Cancelling optimizing job")
+                except Exception as ex:
+                    KLogger.error(f"Optimizing error:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Optimizing error:\n{ex}",
+                    }
+                finally:
+                    async with self.current_task_lock:
+                        self.current_task = None
+                    return {
+                        "type": MessageType.OK.value,
+                        "content": "Optimization complete.",
+                    }
 
             async def dataflow_export(self, dataflow: Dict) -> Dict:
                 """

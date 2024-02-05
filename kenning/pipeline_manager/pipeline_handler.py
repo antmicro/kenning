@@ -55,6 +55,9 @@ class PipelineHandler(BaseDataflowHandler):
     ) -> int:
         return pipeline_runner.run(output=output_file)
 
+    def optimize_dataflow(self, pipeline_runner: PipelineRunner) -> int:
+        return pipeline_runner.run(run_benchmarks=False)
+
     def destroy_dataflow(self, *args, **kwargs):
         # There is no explicit method for cleanup of Kenning objects (such as
         # runtimes, optimizers etc.), so this method doesn't need to do

@@ -213,8 +213,13 @@ class BaseDataflowHandler(ABC):
             },
             {
                 "name": "Report",
-                "iconName": "Report",
+                "iconName": "Run",
                 "procedureName": "custom_dataflow_report",
+            },
+            {
+                "name": "Optimize",
+                "iconName": "Run",
+                "procedureName": "custom_dataflow_optimize",
             },
         ]
 

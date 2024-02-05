@@ -7,7 +7,7 @@ A module for parsing the Kenning scenarios provided via JSON or command-line.
 """
 
 from pathlib import Path
-from typing import Any, Dict, Tuple, Union
+from typing import Any, Dict, List, Tuple, Union
 
 from pipeline_manager import specification_builder
 
@@ -104,35 +104,76 @@ class PipelineHandler(BaseDataflowHandler):
         supported_blocks = block_names + ["optimizers"]
         for name, block in pipeline.items():
             if name not in supported_blocks:
+                if name == "optimization_parameters":
+                    continue
                 raise VisualEditorGraphParserError(
                     f"The node type {name} is not available in the "
                     "Visual Editor."
                 )
             elif name in block_names:
-                node_ids[name] = add_block(block)
+                # For optimization flows, this handles a list of runtimes
+                if isinstance(block, List):
+                    node_ids[name] = []
+                    for instance in pipeline.get(name, []):
+                        node_ids[name].append(add_block(instance))
+                else:
+                    node_ids[name] = add_block(block)
 
         node_ids["optimizer"] = []
         for optimizer in pipeline.get("optimizers", []):
             node_ids["optimizer"].append(add_block(optimizer))
 
-        def create_if_exists(from_, to):
+        def create_if_exists(from_, to, unwrap=False):
             if from_ in node_ids and to in node_ids:
                 from_, to = node_ids[from_], node_ids[to]
-                self.pm_graph.create_connection(from_, to)
+                # for optimizer connection of modelwrappers
+                if len(to) > 0 and unwrap:
+                    for i in to:
+                        self.pm_graph.create_connection(from_, i)
+                else:
+                    self.pm_graph.create_connection(from_, to)
 
-        create_if_exists("dataset", "model_wrapper")
-        create_if_exists("model_wrapper", "runtime")
-        create_if_exists("protocol", "runtime")
+        if "runtime" not in node_ids or not isinstance(
+            node_ids["runtime"], List
+        ):
+            create_if_exists("dataset", "model_wrapper")
+            create_if_exists("model_wrapper", "runtime")
+            create_if_exists("protocol", "runtime")
+        else:
+            create_if_exists("dataset", "model_wrapper")
+            create_if_exists("model_wrapper", "optimizer", True)
 
+        iter = 0
         if len(node_ids["optimizer"]) > 0:
             previous_id = node_ids["model_wrapper"]
-            for opt_id in node_ids["optimizer"]:
-                self.pm_graph.create_connection(previous_id, opt_id)
-                previous_id = opt_id
-            if "runtime" in node_ids:
-                self.pm_graph.create_connection(
-                    node_ids["optimizer"][-1], node_ids["runtime"]
-                )
+            if "runtime" in node_ids and isinstance(node_ids["runtime"], List):
+                for id in node_ids["runtime"]:
+                    for oid in node_ids["optimizer"]:
+                        bundle = enumerate(
+                            zip(
+                                self.pm_graph.nodes[id]["name"],
+                                self.pm_graph.nodes[oid]["name"],
+                            )
+                        )
+                        corelation = next(
+                            (
+                                i
+                                for i, (char1, char2) in bundle
+                                if char1 != char2
+                            ),
+                            None,
+                        )
+                        if corelation > 2:
+                            self.pm_graph.create_connection(oid, id)
+                    iter += 1
+            else:
+                for opt_id in node_ids["optimizer"]:
+                    self.pm_graph.create_connection(previous_id, opt_id)
+                    previous_id = opt_id
+                if "runtime" in node_ids:
+                    self.pm_graph.create_connection(
+                        node_ids["optimizer"][-1], node_ids["runtime"]
+                    )
 
         return self.pm_graph.flush_graph()
 

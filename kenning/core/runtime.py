@@ -13,7 +13,7 @@ import time
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Union
 
 import numpy as np
 
@@ -93,6 +93,7 @@ class Runtime(ArgumentsHandler, ABC):
         self.output_spec = None
         self.processed_input_spec = None
         self.processed_output_spec = None
+        self.misc_io_metadata = None
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> "Runtime":
@@ -212,7 +213,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         ``input_data`` stores the model representation in bytes.
         If ``input_data`` is None, the model is extracted from another source
-        (i.e. from existing file).
+        (i.e. from existing file or directory).
 
         Parameters
         ----------
@@ -414,6 +415,27 @@ class Runtime(ArgumentsHandler, ABC):
             else reordered_results[0]
         )
 
+    def preprocess_model_to_upload(self, path: PathOrURI) -> PathOrURI:
+        """
+        The method preprocesses the model to be uploaded to the client and
+        returns a new path to it.
+
+        The method is used to prepare the model to be sent to the client.
+        It can be used to change the model representation, for example,
+        to compress it.
+
+        Parameters
+        ----------
+        path : PathOrURI
+            Path to the model to preprocess.
+
+        Returns
+        -------
+        PathOrURI
+            Path to the preprocessed model.
+        """
+        return path
+
     def read_io_specification(self, io_spec: Dict):
         """
         Saves input/output specification so that it can be used during
@@ -453,6 +475,13 @@ class Runtime(ArgumentsHandler, ABC):
             if "processed_output" in io_spec
             else None
         )
+        self.misc_io_metadata = {
+            k: v
+            for k, v in io_spec.items()
+            if k
+            not in ["input", "output", "processed_input", "processed_output"]
+        }
+
         # Check if model input specification contains only one possible shape
         if any(
             "shape" in spec and isinstance(spec["shape"][0], Iterable)
@@ -586,10 +615,15 @@ class Runtime(ArgumentsHandler, ABC):
             Data to send to the client.
         """
         KLogger.debug("Uploading output")
-        results = self.extract_output()
+        results: List[Union(np.ndarray, str)] = self.extract_output()
         output_bytes = bytes()
         for result in results:
-            output_bytes += result.tobytes()
+            if isinstance(result, str):
+                # Length is added to the beginning of the string
+                # to allow proper decoding
+                output_bytes += f"{len(result)} {result}".encode("utf-8")
+            else:
+                output_bytes += result.tobytes()
         return output_bytes
 
     def upload_stats(self, input_data: bytes) -> bytes:
@@ -622,7 +656,7 @@ class Runtime(ArgumentsHandler, ABC):
         bool
             True if initialized successfully.
         """
-        return self.prepare_model(None) and self.prepare_io_specification(None)
+        return self.prepare_io_specification(None) and self.prepare_model(None)
 
     def infer(
         self,

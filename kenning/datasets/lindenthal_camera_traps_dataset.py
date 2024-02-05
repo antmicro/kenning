@@ -9,6 +9,7 @@ The Lindenthal Camera Traps wrapper.
 import random
 import shutil
 from collections import defaultdict
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from zipfile import ZipFile
@@ -20,10 +21,8 @@ from tqdm import tqdm
 
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
+    ObjectDetectionSegmentationDataset,
     SegmObject,
-)
-from kenning.datasets.helpers.video_detection_and_segmentation import (
-    VideoObjectDetectionSegmentationDataset,
 )
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import ResourceManager, Resources
@@ -295,7 +294,7 @@ class LindenthalCameraTrapsAugmentation:
         return segmentations
 
 
-class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
+class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
     """
     The Lindenthal Camera Traps dataset.
 
@@ -414,31 +413,43 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
 
         annotationspath = self.root / "annotations.json"
         self.coco = COCO(annotationspath)
+        coco_keys = list(self.coco.imgs.keys())
 
+        # Load classes
         self.classmap = {}
         self.classnames = []
+        self.imgstokeys = dict()
         for classid in self.coco.cats.keys():
             self.classmap[classid] = self.coco.cats[classid]["name"]
             self.classnames.append(self.coco.cats[classid]["name"])
 
-        coco_keys = list(self.coco.imgs.keys())
-        sequences = defaultdict(list)
         keystoimgs = dict()
-        self.imgstokeys = dict()
+        filepaths = []
 
-        for key, imgdata in zip(coco_keys, self.coco.loadImgs(coco_keys)):
+        annotations = defaultdict(list)
+        # Annotations classes per recording
+        classes_by_recording = defaultdict(list)
+        # Image idx per recording
+        recording_to_idx = defaultdict(list)
+
+        # Retrieve images
+        for idx, (key, imgdata) in enumerate(
+            zip(coco_keys, self.coco.loadImgs(coco_keys))
+        ):
             filepath = str(self.root / "images" / imgdata["file_name"])
             self.imgstokeys[filepath] = key
             keystoimgs[key] = filepath
-            sequences[imgdata["seq_id"]].append(filepath)
-        self.dataX = list(sequences.values())
-        self.dataY = []
+            filepaths.append(Path(filepath))
+            recording_to_idx[imgdata["seq_id"]].append(idx)
 
-        annotations = defaultdict(list)
+        # Retrieve annotations
         for annkey, anndata in self.coco.anns.items():
             bbox = anndata["bbox"]
             width = self.coco.imgs[anndata["image_id"]]["width"]
             height = self.coco.imgs[anndata["image_id"]]["height"]
+            classes_by_recording[
+                self.coco.imgs[anndata["image_id"]]["seq_id"]
+            ].append(self.classmap[anndata["category_id"]])
             annotations[keystoimgs[anndata["image_id"]]].append(
                 SegmObject(
                     clsname=self.classmap[anndata["category_id"]],
@@ -453,14 +464,29 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
                 )
             )
 
-        for i, sequence in enumerate(self.dataX):
-            self.dataY.append(
-                [annotations[imgpath] for imgpath in self.dataX[i]]
-            )
+        # Get the majority class for each recording
+        for key, value in classes_by_recording.items():
+            classes_by_recording[key] = {
+                "majority": max(set(value), key=value.count),
+                "ids": recording_to_idx[key],
+            }
+        self.recording_to_idx = [
+            x["ids"] for x in classes_by_recording.values()
+        ]
+        self.stratify_arg = [
+            x["majority"] for x in classes_by_recording.values()
+        ]
+
+        self.dataX = [
+            filepaths[idx]
+            for recording in self.recording_to_idx
+            for idx in recording
+        ]
+        self.dataY = [annotations[str(imgpath)] for imgpath in self.dataX]
 
     def prepare_input_samples(
-        self, samples: List[List[Path]]
-    ) -> List[List[np.ndarray]]:
+        self, samples: List[Path]
+    ) -> List[Dict[str, Any]]:
         def prepare_image(imgpath: Path) -> np.ndarray:
             """
             Loads and preprocesses the image.
@@ -492,55 +518,205 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
             return npimg
 
         result = [
-            [prepare_image(imgpath) for imgpath in sequence]
-            for sequence in samples
+            {
+                "data": prepare_image(imgpath),
+                "video_id": imgpath.parent.name,
+                "frame_id": int(imgpath.stem),
+            }
+            for imgpath in samples
         ]
         return result
 
-    def evaluate(self, predictions, truth):
-        measurements = super().evaluate(predictions, truth)
-        currindex = self._dataindex - len(predictions)
-        for sequence, groundtruth in zip(predictions, truth):
-            seq_measurements = Measurements()
-            for idx, frame in enumerate(sequence):
-                cocoid = self.imgstokeys[
-                    self.dataX[self._dataindices[currindex]][idx]
+    def train_test_split_representations(
+        self,
+        test_fraction: Optional[float] = None,
+        val_fraction: Optional[float] = None,
+        seed: Optional[int] = None,
+        stratify: bool = True,
+        append_index: bool = False,
+    ) -> Tuple[List, ...]:
+        from sklearn.model_selection import train_test_split
+
+        if test_fraction is None:
+            test_fraction = self.split_fraction_test
+        if val_fraction is None:
+            val_fraction = self.split_fraction_val
+        if seed is None:
+            seed = self.split_seed
+
+        indices = list(range(len(self.recording_to_idx)))
+
+        np.random.seed(seed)
+        np.random.shuffle(indices)
+
+        if not val_fraction:
+            # All data is for testing
+            if test_fraction == 1.0:
+                indices = [
+                    unroll
+                    for idx in indices
+                    for unroll in self.recording_to_idx[idx]
                 ]
-                width = self.coco.imgs[cocoid]["width"]
-                height = self.coco.imgs[cocoid]["height"]
-                for pred in frame:
-                    xmin = max(min(pred.xmin * width, width), 0)
-                    xmax = max(min(pred.xmax * width, width), 0)
-                    ymin = max(min(pred.ymin * height, height), 0)
-                    ymax = max(min(pred.ymax * height, height), 0)
-                    w = xmax - xmin
-                    h = ymax - ymin
-                    image_name = "/".join(
-                        self.dataX[self._dataindices[currindex]][idx].split(
-                            "/"
-                        )[-2:]
-                    )
-                    seq_measurements.add_measurement(
-                        "predictions",
-                        [
-                            {
-                                "image_name": image_name,
-                                "category": pred.clsname,
-                                "bbox": [xmin, ymin, w, h],
-                                "score": pred.score,
-                            }
-                        ],
-                    )
-            # TODO: Add sequence-level metrics (e.g. mAP, IoU, etc.)
-            currindex += 1
-            measurements += seq_measurements
+                testX = [self.dataX[idx] for idx in indices]
+                testY = [self.dataY[idx] for idx in indices]
+                ret = ([], testX, [], testY)
+                if append_index:
+                    ret += ([], indices)
+                return ret
+
+            # All data is for training
+            elif test_fraction == 0.0:
+                indices = [
+                    unroll
+                    for idx in indices
+                    for unroll in self.recording_to_idx[idx]
+                ]
+                trainX = [self.dataX[idx] for idx in indices]
+                trainY = [self.dataY[idx] for idx in indices]
+                ret = (trainX, [], trainY, [])
+                if append_index:
+                    ret += (indices, [])
+                return ret
+
+            # Assert test_fraction is less than 1.0
+            assert test_fraction < 1.0
+        else:
+            # Assert test_fraction + val_fraction is less than 1.0
+            assert test_fraction + val_fraction < 1.0
+
+        if stratify:
+            stratify_arg = self.stratify_arg
+        else:
+            stratify_arg = None
+
+        dataItrain, dataItest = train_test_split(
+            indices,
+            test_size=test_fraction,
+            random_state=seed,
+            shuffle=True,
+            stratify=stratify_arg,
+        )
+
+        dataIval = None
+        if val_fraction is not None and val_fraction != 0:
+            if stratify:
+                stratify_arg = [self.stratify_arg[idx] for idx in dataItrain]
+            else:
+                stratify_arg = None
+            dataItrain, dataIval = train_test_split(
+                dataItrain,
+                test_size=val_fraction / (1 - test_fraction),
+                random_state=seed,
+                shuffle=True,
+                stratify=stratify_arg,
+            )
+
+        dataItrain = [
+            unroll
+            for idx in dataItrain
+            for unroll in self.recording_to_idx[idx]
+        ]
+        self.dataXtrain = [self.dataX[idx] for idx in dataItrain]
+        self.dataYtrain = [self.dataY[idx] for idx in dataItrain]
+        dataItest = [
+            unroll
+            for idx in dataItest
+            for unroll in self.recording_to_idx[idx]
+        ]
+        self.dataXtest = [self.dataX[idx] for idx in dataItest]
+        self.dataYtest = [self.dataY[idx] for idx in dataItest]
+        indices = [dataItrain, dataItest]
+        ret = (
+            self.dataXtrain,
+            self.dataXtest,
+            self.dataYtrain,
+            self.dataYtest,
+        )
+        if dataIval is not None:
+            dataIval = [
+                unroll
+                for idx in dataIval
+                for unroll in self.recording_to_idx[idx]
+            ]
+            self.dataXval = [self.dataX[idx] for idx in dataIval]
+            self.dataYval = [self.dataY[idx] for idx in dataIval]
+            indices.append(dataIval)
+            ret += (self.dataXval, self.dataYval)
+
+        if append_index:
+            ret = ret + (*indices,)
+        return ret
+
+    def evaluate(self, predictions, truth, **kwargs):
+        measurements = Measurements()
+        self._dataindex -= len(truth) - 1
+        for preds, groundtruths in zip(predictions, truth):
+            frame_measurements = super().evaluate(
+                [preds], [groundtruths], **kwargs
+            )
+
+            current_frame_idx = self._dataindices[self._dataindex - 1]
+            recording_name = self.get_recording_name(current_frame_idx)
+
+            self._dataindex += 1
+
+            # Accamulate measurements per video
+            video_measurements = Measurements()
+            video_measurements.add_measurement(
+                f"eval_video/{recording_name}",
+                [
+                    {
+                        **deepcopy(frame_measurements.data),
+                    }
+                ],
+                lambda: list(),
+            )
+
+            measurements += frame_measurements
+            measurements += video_measurements
         return measurements
+
+    def show_eval_images(self, predictions, truth):
+        KLogger.debug(f"\ntruth\n{truth}")
+        KLogger.debug(f"\npredictions\n{predictions}")
+        for pred, gt in zip(predictions, truth):
+            img = self.prepare_input_samples(
+                [self.dataX[self._dataindices[self._dataindex - 1]]]
+            )[0]["data"]
+            if self.image_memory_layout == "NCHW":
+                img = img.transpose(1, 2, 0)
+            int_img = np.multiply(img, 255).astype("uint8")
+            int_img = cv2.cvtColor(int_img, cv2.COLOR_BGR2GRAY)
+            int_img = cv2.cvtColor(int_img, cv2.COLOR_GRAY2RGB)
+            int_img = self.apply_predictions(int_img, pred, gt)
+
+            cv2.imshow("evaluatedimage", int_img)
+            while True:
+                c = cv2.waitKey(100)
+                is_alive = cv2.getWindowProperty(
+                    "evaluated image", cv2.WND_PROP_VISIBLE
+                )
+                if is_alive < 1 or c != -1:
+                    break
 
     def get_class_names(self):
         return self.classnames
 
-    def get_recording_name(self, recording):
-        first_frame_key = self.imgstokeys[recording[0]]
+    def get_recording_name(self, frame_index: int) -> str:
+        """
+        Returns the name of the recording that the frame belongs to.
+
+        Parameters
+        ----------
+        frame_index : int
+            The index of the frame.
+
+        Returns
+        -------
+        str
+            The name of the recording.
+        """
+        first_frame_key = self.imgstokeys[str(self.dataX[frame_index])]
         return self.coco.imgs[first_frame_key]["seq_id"]
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
@@ -598,3 +774,160 @@ class LindenthalCameraTrapsDataset(VideoObjectDetectionSegmentationDataset):
                         str(rosbag_dir / f"{str(counter).zfill(6)}.png"), img
                     )
                     counter += 1
+
+    @staticmethod
+    def form_subsequences(
+        sequence: List[Any],
+        policy: str = "subsequence",
+        num_segments: int = 1,
+        window_size: int = 1,
+    ) -> List[List[Any]]:
+        """
+        Split a given sequence into subsequences according to defined `policy`.
+
+        Parameters
+        ----------
+        sequence : List[Any]
+            List of frames making up the sequence.
+        policy : str
+            The policy for splitting the sequence. Can be one of:
+            * subsequence: splits the sequence into `num_segments` subsequences
+            of equal length,
+            * window: splits the sequence into subsequences
+            of `window_size` length with stride equal to `1`. Next,
+            `num_segments` subsequences are sampled from the list of
+            windows on an equal stride basis.
+            Defaults to subsequence.
+        num_segments : int
+            Number of segments to split the sequence into.
+        window_size : int
+            Size of the sliding window when using `sliding_window` policy.
+
+        Returns
+        -------
+        List[List[Any]]
+            List of subsequences.
+
+        Raises
+        ------
+        ValueError
+            If the policy is unknown.
+        """
+        if policy == "subsequence":
+            segments = np.linspace(
+                0,
+                len(sequence),
+                num_segments + 1,
+                dtype=int,
+                endpoint=True,
+            )
+            return [
+                sequence[segments[i] : segments[i + 1]]
+                for i in range(num_segments)
+            ]
+        elif policy == "window":
+            windows = np.lib.stride_tricks.sliding_window_view(
+                sequence, window_size
+            )
+            windows_indices = np.linspace(
+                0,
+                len(windows) - 1,
+                num_segments,
+                dtype=int,
+                endpoint=True,
+            )
+            return windows[windows_indices].tolist()
+
+        else:
+            KLogger.error(f"Unknown policy: {policy}")
+            raise ValueError
+
+    @staticmethod
+    def sample_items(
+        segments: List[List[Any]],
+        policy: str = "consecutive",
+        items_per_segment: int = 1,
+        seed: Optional[int] = None,
+    ) -> List[Any]:
+        """
+        Samples items from segments into a single list of items.
+        In total, `len(num_segments) * items_per_segment` items are sampled.
+
+        For the `consecutive` policy, from each segment, a random start-index
+        is sampled from which `items_per_segment` consecutive items are
+        returned.
+
+        For the `step` policy, from each segment `items_per_segment` items
+        are sampled with the equal stride.
+
+        If the number of items in the segment is lower than
+        `items_per_segment`, the whole segment is returned.
+
+        Parameters
+        ----------
+        segments : List[List[Any]]
+            List of segments, each containing a list of items.
+        policy : str
+            The policy for sampling the frames. Can be one of:
+            * consecutive: samples `frames_per_segment` consecutive frames
+            with random start index from each segment,
+            * step: samples `frames_per_segment` frames with equal stride
+            from each segment.
+            Defaults to consecutive.
+        items_per_segment : int
+            Number of items to sample from each segment.
+        seed : Optional[int]
+            Seed for the random number generator.
+
+        Returns
+        -------
+        List[Any]
+            List of sampled items.
+
+        Raises
+        ------
+        ValueError
+            If the policy is unknown or the number of items per segment
+            is lower than 1.
+        """
+        if items_per_segment < 1:
+            KLogger.error(
+                f"Number of items per segment must be greater than 0, "
+                f"got {items_per_segment}"
+            )
+            raise ValueError
+        sampled_items = []
+        if policy == "consecutive":
+            if seed is not None:
+                np.random.seed(seed)
+            for segment in segments:
+                items_length = len(segment)
+                if items_length < items_per_segment:
+                    sampled_items.extend(segment)
+                    continue
+
+                start_index = np.random.randint(
+                    0, items_length - items_per_segment + 1
+                )
+                sampled_items.extend(
+                    segment[start_index : start_index + items_per_segment]
+                )
+        elif policy == "step":
+            for segment in segments:
+                items_length = len(segment)
+                if items_length < items_per_segment:
+                    sampled_items.extend(segment)
+                    continue
+
+                item_indices = np.linspace(
+                    0,
+                    items_length,
+                    items_per_segment,
+                    dtype=int,
+                    endpoint=False,
+                )
+                sampled_items.extend(np.array(segment)[item_indices].tolist())
+        else:
+            KLogger.error(f"Unknown policy: {policy}")
+            raise ValueError
+        return sampled_items

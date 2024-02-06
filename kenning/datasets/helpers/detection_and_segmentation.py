@@ -514,10 +514,12 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
                 image = cv2.addWeighted(image, 1, mask_img, 0.7, 0)
                 return image
 
+            # Red
             for truth_mask in ground_truth:
                 image = apply_mask(
                     image, truth_mask.mask, np.array([0.1, 0.1, 0.5])
                 )
+            # Green
             for pred_mask in predictions:
                 image = apply_mask(
                     image, pred_mask.mask, np.array([0.1, 0.5, 0.1])

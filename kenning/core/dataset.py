@@ -339,9 +339,10 @@ class Dataset(ArgumentsHandler, ABC):
             self._dataindices = list(range(len(self.dataX)))
 
         if self._dataindex < len(self._dataindices):
-            prev = self._dataindex
-            self._dataindex += self.batch_size
-            samples = self._dataindices[prev : self._dataindex]
+            samples = self._dataindices[
+                self._dataindex : self._dataindex + self.batch_size
+            ]
+            self._dataindex += len(samples)
             dataX = [self.dataX[i] for i in samples]
             dataY = [self.dataY[i] for i in samples]
             return (

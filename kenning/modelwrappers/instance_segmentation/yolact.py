@@ -298,7 +298,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         masks = [
             cv2.resize(
                 masks[:, :, i : i + 512],
-                (self.w, self.h),
+                (self.h, self.w),
                 interpolation=cv2.INTER_LINEAR,
             )
             for i in range(0, masks.shape[2], 512)
@@ -458,7 +458,7 @@ class YOLACT(YOLACTWrapper):
         masks = [
             cv2.resize(
                 masks[:, :, i : i + 512],
-                (self.w, self.h),
+                (self.h, self.w),
                 interpolation=cv2.INTER_LINEAR,
             )
             for i in range(0, masks.shape[2], 512)

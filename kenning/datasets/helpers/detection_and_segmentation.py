@@ -425,10 +425,9 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         """
         KLogger.debug(f"\ntruth\n{truth}")
         KLogger.debug(f"\npredictions\n{predictions}")
-        for pred, gt in zip(predictions, truth):
-            img = self.prepare_input_samples(
-                [self.dataX[self._dataindices[self._dataindex - 1]]]
-            )[0]
+        for idx, (pred, gt) in enumerate(zip(predictions, truth)):
+            img_idx = self._dataindices[self._dataindex - len(truth) + idx]
+            img = self.prepare_input_samples([self.dataX[img_idx]])[0]
             if self.image_memory_layout == "NCHW":
                 img = img.transpose(1, 2, 0)
             int_img = np.multiply(img, 255).astype("uint8")
@@ -467,19 +466,19 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         """
         height, width = image.shape[0], image.shape[1]
         # Apply bounding boxes
-        for truth_bb in ground_truth:
-            cv2.rectangle(
-                image,
-                (int(truth_bb.xmin * width), int(truth_bb.ymin * height)),
-                (int(truth_bb.xmax * width), int(truth_bb.ymax * height)),
-                (0, 255, 0),
-                2,
-            )
         for pred_bb in predictions:
             cv2.rectangle(
                 image,
                 (int(pred_bb.xmin * width), int(pred_bb.ymin * height)),
                 (int(pred_bb.xmax * width), int(pred_bb.ymax * height)),
+                (0, 0, 255),
+                2,
+            )
+        for truth_bb in ground_truth:
+            cv2.rectangle(
+                image,
+                (int(truth_bb.xmin * width), int(truth_bb.ymin * height)),
+                (int(truth_bb.xmax * width), int(truth_bb.ymax * height)),
                 (0, 255, 0),
                 2,
             )
@@ -515,14 +514,14 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
                 return image
 
             # Red
-            for truth_mask in ground_truth:
-                image = apply_mask(
-                    image, truth_mask.mask, np.array([0.1, 0.1, 0.5])
-                )
-            # Green
             for pred_mask in predictions:
                 image = apply_mask(
-                    image, pred_mask.mask, np.array([0.1, 0.5, 0.1])
+                    image, pred_mask.mask, np.array([0.1, 0.1, 0.5])
+                )
+            # Green
+            for truth_mask in ground_truth:
+                image = apply_mask(
+                    image, truth_mask.mask, np.array([0.1, 0.5, 0.1])
                 )
         return image
 

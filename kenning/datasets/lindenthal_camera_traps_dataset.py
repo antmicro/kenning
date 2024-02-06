@@ -679,10 +679,9 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
     def show_eval_images(self, predictions, truth):
         KLogger.debug(f"\ntruth\n{truth}")
         KLogger.debug(f"\npredictions\n{predictions}")
-        for pred, gt in zip(predictions, truth):
-            img = self.prepare_input_samples(
-                [self.dataX[self._dataindices[self._dataindex - 1]]]
-            )[0]["data"]
+        for idx, (pred, gt) in enumerate(zip(predictions, truth)):
+            img_idx = self._dataindices[self._dataindex - len(truth) + idx]
+            img = self.prepare_input_samples([self.dataX[img_idx]])[0]["data"]
             if self.image_memory_layout == "NCHW":
                 img = img.transpose(1, 2, 0)
             int_img = np.multiply(img, 255).astype("uint8")

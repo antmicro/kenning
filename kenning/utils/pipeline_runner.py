@@ -485,6 +485,10 @@ class PipelineRunner(object):
                 self.protocol.upload_io_specification(spec_path)
             else:
                 KLogger.info("No Input/Output specification found")
+
+        compiled_model_path = self.runtime.preprocess_model_to_upload(
+            compiled_model_path
+        )
         return self.protocol.upload_model(compiled_model_path)
 
     def handle_runtime_builder(

@@ -26,7 +26,6 @@ if sys.version_info.minor < 9:
     from importlib_resources import path
 else:
     from importlib.resources import path
-
 from kenning.cli.command_template import (
     DEFAULT_GROUP,
     GROUP_SCHEMA,
@@ -35,6 +34,7 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
 )
+from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
     compute_classification_metrics,
     compute_detection_metrics,
@@ -876,28 +876,44 @@ def detection_report(
         2
     )
 
-    if "eval/recordings" in measurementsdata:
-        # Find index of sequence with the best, worst, and average mAP
-        total_mAPs = np.array(
-            [x["mAP"]["total"] for x in measurementsdata["eval/recordings"]]
-        )
+    # Find all the keys that have eval_video/* structure
+    video_measurements_keys = [
+        key for key in measurementsdata.keys() if key.startswith("eval_video/")
+    ]
+    if video_measurements_keys:
+        # Calculate mAP for all the recordings
+        total_mAPs = {}
+        thresholds = np.arange(0.2, 1.05, 0.05)
+        for key in video_measurements_keys:
+            video_measurements = Measurements()
+            for item in measurementsdata[key]:
+                video_measurements += item
+            mapvalues = compute_map_per_threshold(
+                {
+                    "class_names": measurementsdata["class_names"],
+                    **video_measurements.data,
+                },
+                thresholds,
+            )
+            video_name = key.split("/")[-1]
+            total_mAPs[video_name] = {
+                "total": mapvalues[-11:][:10].mean(),
+                "values": mapvalues,
+            }
+
+        # Get items of up to 5 best and worst recordings
         num_plots_to_draw = min(5, len(total_mAPs))
-        sorted_mAP_idxs = np.argsort(total_mAPs)
-        min_mAP_idxs = sorted_mAP_idxs[:num_plots_to_draw]
-        max_mAP_idxs = sorted_mAP_idxs[-num_plots_to_draw:]
+        sorted_mAPs = sorted(total_mAPs.items(), key=lambda x: x[1]["total"])
+        min_mAPs = sorted_mAPs[:num_plots_to_draw]
+        max_mAPs = sorted_mAPs[-num_plots_to_draw:]
 
         # Line plot for top `n` worst recordings
         map_path = imgdir / f"{imgprefix}map_worst_recordings"
         lines = []
-        for index in min_mAP_idxs:
-            mAP_data = measurementsdata["eval/recordings"][index]["mAP"]
-            mAP_values = [
-                float(x) for x in mAP_data["values"][1:-1].strip().split()
-            ]
-            mAP_thresholds = [
-                float(x) for x in mAP_data["thresholds"][1:-1].strip().split()
-            ]
-            lines.append((mAP_thresholds, mAP_values))
+        labels = []
+        for recording_name, mAP in min_mAPs:
+            lines.append((thresholds, mAP["values"]))
+            labels.append(recording_name)
         LinePlot(
             title=f"mAP for {num_plots_to_draw} worst recordings"
             if draw_titles
@@ -905,10 +921,7 @@ def detection_report(
             x_label="threshold",
             y_label="mAP",
             lines=lines,
-            lines_labels=[
-                measurementsdata["eval/recordings"][idx]["name"]
-                for idx in min_mAP_idxs
-            ],
+            lines_labels=labels,
             colors=colors,
         ).plot(map_path, image_formats)
         measurementsdata["map_worst_recordings"] = get_plot_wildcard_path(
@@ -918,15 +931,10 @@ def detection_report(
         # Line plot for top `n` best recordings
         map_path = imgdir / f"{imgprefix}map_best_recordings"
         lines = []
-        for index in max_mAP_idxs:
-            mAP_data = measurementsdata["eval/recordings"][index]["mAP"]
-            mAP_values = [
-                float(x) for x in mAP_data["values"][1:-1].strip().split()
-            ]
-            mAP_thresholds = [
-                float(x) for x in mAP_data["thresholds"][1:-1].strip().split()
-            ]
-            lines.append((mAP_thresholds, mAP_values))
+        labels = []
+        for recording_name, mAP in max_mAPs:
+            lines.append((thresholds, mAP["values"]))
+            labels.append(recording_name)
         LinePlot(
             title=f"mAP for {num_plots_to_draw} best recordings"
             if draw_titles
@@ -934,10 +942,7 @@ def detection_report(
             x_label="threshold",
             y_label="mAP",
             lines=lines,
-            lines_labels=[
-                measurementsdata["eval/recordings"][idx]["name"]
-                for idx in max_mAP_idxs
-            ],
+            lines_labels=labels,
             colors=colors,
         ).plot(map_path, image_formats)
         measurementsdata["map_best_recordings"] = get_plot_wildcard_path(

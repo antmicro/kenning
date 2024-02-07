@@ -166,6 +166,41 @@ class TestDataset:
         ],
         indirect=True,
     )
+    def test_iterator_last_batch(self, dataset: Type[Dataset]):
+        """
+        Tests dataset's internal index after the last batch with different
+        length than the batch size.
+        Verifies that indexes are tracked correctly.
+        """
+        assert len(dataset) > 0
+        assert len(dataset._dataindices) == 0
+        for _ in dataset:
+            break
+        dataset.batch_size = 10
+        dataset._dataindex = dataset._dataindices[-3]
+        x, y = dataset.__next__()
+        assert x is not None
+        assert y is not None
+        assert len(x) == len(y) == 3
+        assert dataset._dataindex == len(dataset.dataX)
+        with pytest.raises(StopIteration):
+            dataset.__next__()
+
+    @pytest.mark.parametrize(
+        "dataset",
+        [
+            pytest.param(
+                dataset_cls,
+                marks=[
+                    pytest.mark.xdist_group(
+                        name=f"TestDataset_{dataset_cls.__name__}"
+                    )
+                ],
+            )
+            for dataset_cls in DATASET_SUBCLASSES
+        ],
+        indirect=True,
+    )
     def test_iter_train(self, dataset: Type[Dataset]):
         """
         Tests dataset iteration over training set.

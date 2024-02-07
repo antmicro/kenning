@@ -533,25 +533,48 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
                 )
         return image
 
-    def evaluate(self, predictions, truth):
-        MIN_IOU = 0.5
-        MAX_DETS = 100
-        measurements = Measurements()
+    def evaluate(
+        self,
+        predictions: List,
+        truth: List,
+        min_iou: float = 0.5,
+        max_dets: int = 100,
+    ) -> Measurements:
+        """
+        Evaluates the model based on the predictions.
 
-        # TODO add support for specifying ground truth area ranges
-        # TODO add support for specifying IoU ranges
+        Computes the IoU metric for predictions and ground truth.
+        Evaluation results are stored in the measurements object.
+
+        Parameters
+        ----------
+        predictions : List
+            The list of predictions from the model.
+        truth : List
+            The ground truth for given batch.
+        min_iou : float
+            The minimum IoU value for which the prediction is considered
+            correct. Defaults to 0.5.
+        max_dets : int
+            The maximum number of detections to consider. Defaults to 100.
+
+        Returns
+        -------
+        Measurements
+            The dictionary containing the evaluation results.
+        """
+        measurements = Measurements()
 
         for preds, groundtruths in zip(predictions, truth):
             # operate on a single image
             # first, let's sort predictions by score
             preds.sort(key=lambda x: -x.score)
-
-            preds = preds[:MAX_DETS]
+            preds = preds[:max_dets]
 
             # store array of matched ground truth bounding boxes
             matchedgt = np.zeros([len(groundtruths)], dtype=np.int32)
 
-            # for each prediction
+            # Add measurements for predictions
             for predid, pred in enumerate(preds):
                 # store index of best-matching ground truth
                 bestiou = 0.0
@@ -566,28 +589,39 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
                     if matchedgt[gtid] > 0 and not gt.iscrowd:
                         continue
                     iou = self.compute_iou(pred, gt)
-                    if iou < bestiou:
+                    if iou <= bestiou:
                         continue
                     bestiou = iou
                     bestgt = gtid
-                if bestgt == -1 or bestiou < MIN_IOU:
-                    measurements.add_measurement(
-                        f"eval_det/{pred.clsname}",
-                        [[float(pred.score), float(0), float(bestiou)]],
-                        lambda: list(),
-                    )
-                    continue
+
+                # Don't append 0.0 IoU for gt if have any predictions
+                if bestgt != -1:
+                    matchedgt[bestgt] = 1
+
                 measurements.add_measurement(
                     f"eval_det/{pred.clsname}",
-                    [[float(pred.score), float(1), float(bestiou)]],
+                    [
+                        [
+                            float(pred.score),
+                            float(bestiou >= min_iou),
+                            float(bestiou),
+                        ]
+                    ],
                     lambda: list(),
                 )
-                matchedgt[bestgt] = 1
 
-            for gt in groundtruths:
+            # Add measurements for not-matched groundtruths
+            for gtid, gt in enumerate(groundtruths):
                 measurements.accumulate(
                     f"eval_gtcount/{gt.clsname}", 1, lambda: 0
                 )
+
+                if matchedgt[gtid] == 0:
+                    measurements.add_measurement(
+                        f"eval_det/{gt.clsname}",
+                        [[float(0), float(0), float(0)]],
+                        lambda: list(),
+                    )
 
         if self.show_on_eval:
             self.show_eval_images(predictions, truth)

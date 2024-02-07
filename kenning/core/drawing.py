@@ -2276,13 +2276,19 @@ class LinePlot(Plot):
         plt.grid()
         if self.title:
             bbox_extra.append(plt.title(self.title))
+        ncols = 2
+        bbox_to_anchor = [0.5, -0.06]
+        if self.lines_labels is not None:
+            bbox_to_anchor[1] = -(
+                np.ceil(len(self.lines_labels) / ncols) - 1
+            ) * 0.04
         if self.lines_labels is not None:
             bbox_extra.append(
                 plt.legend(
                     self.lines_labels,
                     loc="upper center",
-                    bbox_to_anchor=[0.5, -0.06],
-                    ncols=2,
+                    bbox_to_anchor=bbox_to_anchor,
+                    ncols=ncols,
                 )
             )
 

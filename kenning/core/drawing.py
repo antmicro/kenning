@@ -2079,7 +2079,7 @@ class RecallPrecisionGradients(Plot):
         if cmap is None:
             cmap = plt.get_cmap("RdYlGn")
         if height is None:
-            height = 200 + 15 * len(class_names)
+            height = 200 + 30 * len(class_names)
 
         super().__init__(width, height, title, cmap=cmap)
 
@@ -2113,7 +2113,7 @@ class RecallPrecisionGradients(Plot):
         plt.ylabel("classes")
         plt.colorbar(
             plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap=self.cmap),
-            orientation="horizontal",
+            orientation="vertical",
             label="precision",
             fraction=0.1,
             pad=0.05,

@@ -1809,7 +1809,7 @@ class TruePositiveIoUHistogram(Plot):
         class_names: List[str],
         title: Optional[str] = None,
         width: int = DEFAULT_PLOT_SIZE,
-        height: int = DEFAULT_PLOT_SIZE * 5 // 2,
+        height: Optional[int] = None,
         colors: Optional[List] = None,
         color_offset: int = 0,
     ):
@@ -1826,13 +1826,16 @@ class TruePositiveIoUHistogram(Plot):
             Title of the plot.
         width : int
             Width of the plot.
-        height : int
-            Height of the plot.
+        height : Optional[int]
+            Height of the plot, if None, it will be calculated based on the
+            number of classes.
         colors : Optional[List]
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
         """
+        if height is None:
+            height = 200 + 30 * len(class_names)
         if colors is None:
             colors = self._get_comparison_color_scheme(1 + color_offset)
 

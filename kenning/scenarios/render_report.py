@@ -2046,11 +2046,6 @@ class RenderReport(CommandTemplate):
             action="store_true",
         )
         report_group.add_argument(
-            "--use-default-theme",
-            help="If this flag is specified, custom theme (defining colors for e.g. labels, backgrounds or gird) won't be used and plots' colors won't be adjusted to documentation theme",  # noqa: E501
-            action="store_true",
-        )
-        report_group.add_argument(
             "--skip-unoptimized-model",
             help="Do not use measurements of unoptimized model",
             action="store_true",
@@ -2177,17 +2172,13 @@ class RenderReport(CommandTemplate):
                 measurements["report_name"].lower().replace(" ", "_"),
             )
 
-        cmap, colors = None, None
-        if not args.use_default_theme:
-            SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
-            cmap = RED_GREEN_CMAP
-            colors = IMMATERIAL_COLORS
-        elif "colormap" in SERVIS_PLOT_OPTIONS:
-            del SERVIS_PLOT_OPTIONS["colormap"]
+        SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
+        cmap = RED_GREEN_CMAP
+        colors = IMMATERIAL_COLORS
 
         with choose_theme(
-            custom_bokeh_theme=not args.use_default_theme,
-            custom_matplotlib_theme=not args.use_default_theme,
+            custom_bokeh_theme=True,
+            custom_matplotlib_theme=True,
         ):
             generate_report(
                 report_name,
@@ -2200,7 +2191,7 @@ class RenderReport(CommandTemplate):
                 command,
                 cmap=cmap,
                 colors=colors,
-                draw_titles=args.use_default_theme,
+                draw_titles=False,
                 smaller_header=args.smaller_header,
             )
 

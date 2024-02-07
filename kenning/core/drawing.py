@@ -1860,7 +1860,9 @@ class TruePositiveIoUHistogram(Plot):
             color=self.colors[0],
         )
         plt.ylim((-1, len(self.class_names)))
-        plt.yticks(np.arange(0, len(self.class_names)))
+        plt.yticks(
+            np.arange(0, len(self.class_names)), labels=self.class_names
+        )
         plt.xticks(np.arange(0, 1.1, 0.1))
         plt.xlabel("IoU precision")
         plt.ylabel("classes")

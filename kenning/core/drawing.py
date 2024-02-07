@@ -1722,8 +1722,13 @@ class RecallPrecisionCurvesPlot(Plot):
                 linestyle=linestyles[i % len(linestyles)],
                 alpha=0.8,
             )
+        ncol = 6
+        bbox_to_anchor = (
+            0.5,
+            -0.15 - (np.ceil(len(self.class_names) / ncol) - 1) * 0.04,
+        )
         legendhandle = ax.legend(
-            bbox_to_anchor=(0.5, -0.45), loc="lower center", ncol=6
+            bbox_to_anchor=bbox_to_anchor, loc="lower center", ncol=ncol
         )
         ax.set_aspect("equal")
         ax.set_xlabel("recall")

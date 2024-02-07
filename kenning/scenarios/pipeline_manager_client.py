@@ -10,11 +10,12 @@ A script for connecting Kenning with Pipeline Manager server.
 
 import argparse
 import asyncio
+import datetime
 import json
+import os
+import re
 import signal
 import sys
-import os
-import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
@@ -26,18 +27,23 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
 )
-from kenning.core.measurements import MeasurementsCollector
-from kenning.utils.logger import Callback, KLogger, TqdmCallback, DuplicateStream
-from kenning.scenarios.render_report import generate_report, get_model_name, SERVIS_PLOT_OPTIONS, deduce_report_name
-from kenning.scenarios.render_report import UNOPTIMIZED_MEASUREMENTS
-import json
-import re
 from kenning.core.drawing import (
-    DEFAULT_PLOT_SIZE,
     IMMATERIAL_COLORS,
     RED_GREEN_CMAP,
+    SERVIS_PLOT_OPTIONS,
 )
-from kenning.scenarios.optimization_runner import OptimizationRunner
+from kenning.core.measurements import MeasurementsCollector
+from kenning.scenarios.render_report import (
+    deduce_report_name,
+    generate_report,
+    get_model_name,
+)
+from kenning.utils.logger import (
+    Callback,
+    DuplicateStream,
+    KLogger,
+    TqdmCallback,
+)
 
 
 class PipelineManagerClient(CommandTemplate):
@@ -372,24 +378,25 @@ class PipelineManagerClient(CommandTemplate):
                     self.current_task = "reporting"
                 try:
                     measurementsdata = []
-                    with open(self.output_file_path / self.filename, 'r') as f:
+                    with open(self.output_file_path / self.filename, "r") as f:
                         measurements = json.load(f)
                         if "model_name" not in measurements:
                             measurements["model_name"] = get_model_name(
                                 self.output_file_path / self.filename
                             )
-                        measurements["model_name"] = measurements["model_name"].replace(
-                            " ", "_"
-                        )
+                        measurements["model_name"] = measurements[
+                            "model_name"
+                        ].replace(" ", "_")
                         if "report_name" not in measurements:
                             measurements["report_name"] = deduce_report_name(
-                                [measurements],
-                                ["performance"]
+                                [measurements], ["performance"]
                             )
                         measurements["report_name_simple"] = re.sub(
                             r"[\W]",
                             "",
-                            measurements["report_name"].lower().replace(" ", "_"),
+                            measurements["report_name"]
+                            .lower()
+                            .replace(" ", "_"),
                         )
                         measurementsdata.append(measurements)
                         SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
@@ -409,7 +416,7 @@ class PipelineManagerClient(CommandTemplate):
                             output_path,
                             set(["png"]),
                             cmap=cmap,
-                            colors=colors
+                            colors=colors,
                         )
                 except (
                     asyncio.exceptions.CancelledError,
@@ -448,14 +455,12 @@ class PipelineManagerClient(CommandTemplate):
                         }
                 try:
                     runner = self.dataflow_handler.parse_json(msg)
+
                     def dataflow_optimizer(runner):
-                        self.dataflow_handler.optimize_dataflow(
-                            runner
-                        )
+                        self.dataflow_handler.optimize_dataflow(runner)
                         KLogger.warning("Finished optimizing")
-                    runner_coro = asyncio.to_thread(
-                        dataflow_optimizer, runner
-                    )
+
+                    runner_coro = asyncio.to_thread(dataflow_optimizer, runner)
                     runner_task = asyncio.create_task(runner_coro)
                     await runner_task
                 except Exception as ex:
@@ -481,6 +486,66 @@ class PipelineManagerClient(CommandTemplate):
                     return {
                         "type": MessageType.OK.value,
                         "content": "Optimization complete.",
+                    }
+
+            async def custom_dataflow_test(self, dataflow: Dict) -> Dict:
+                async with self.current_task_lock:
+                    if self.current_task is not None:
+                        return {
+                            "type": MessageType.ERROR.value,
+                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
+                        }
+                    self.current_task = "testing"
+                    status, msg = self.dataflow_handler.parse_dataflow(
+                        dataflow
+                    )
+                    if not status:
+                        return {
+                            "type": MessageType.ERROR.value,
+                            "content": msg,
+                        }
+                try:
+                    runner = self.dataflow_handler.parse_json(msg)
+                    MeasurementsCollector.clear()
+
+                    if not os.path.exists(self.output_file_path):
+                        os.mkdir(self.output_file_path)
+                    current_time = datetime.datetime.now()
+                    timestamp = current_time.strftime("%Y%m%d_%H%M%S")
+                    self.filename = f"run_{timestamp}.json"
+
+                    def dataflow_tester(runner):
+                        self.dataflow_handler.test_dataflow(
+                            runner, self.output_file_path / self.filename
+                        )
+                        KLogger.warning("Finished testing")
+
+                    runner_coro = asyncio.to_thread(dataflow_tester, runner)
+                    runner_task = asyncio.create_task(runner_coro)
+                    await runner_task
+                except Exception as ex:
+                    KLogger.error(ex, stack_info=True)
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": str(ex),
+                    }
+                except (
+                    asyncio.exceptions.CancelledError,
+                    JSONRPCDispatchException,
+                ):
+                    KLogger.warning("Cancelling testing job")
+                except Exception as ex:
+                    KLogger.error(f"Testing error:\n{ex}")
+                    return {
+                        "type": MessageType.ERROR.value,
+                        "content": f"Testing error:\n{ex}",
+                    }
+                finally:
+                    async with self.current_task_lock:
+                        self.current_task = None
+                    return {
+                        "type": MessageType.OK.value,
+                        "content": "Testing complete.",
                     }
 
             async def dataflow_export(self, dataflow: Dict) -> Dict:

@@ -212,14 +212,19 @@ class BaseDataflowHandler(ABC):
                 "procedureName": "dataflow_validate",
             },
             {
+                "name": "Optimize",
+                "iconName": "Cogwheel",
+                "procedureName": "custom_dataflow_optimize",
+            },
+            {
+                "name": "Test",
+                "iconName": "Run",
+                "procedureName": "custom_dataflow_test",
+            },
+            {
                 "name": "Report",
                 "iconName": "Run",
                 "procedureName": "custom_dataflow_report",
-            },
-            {
-                "name": "Optimize",
-                "iconName": "Run",
-                "procedureName": "custom_dataflow_optimize",
             },
         ]
 

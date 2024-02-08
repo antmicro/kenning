@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -126,7 +126,7 @@ class TestPipelineRunnerRun:
         protocol_mock.request_processing.return_value = True
         protocol_mock.download_output.return_value = True
         dataset_mock.iter_test.return_value = [([1, 2], 3)]
-        dataset_mock.evaluate.return_value = {}
+        dataset_mock._evaluate.return_value = {}
         dataconverter_mock.to_next_block = lambda x: x
         dataconverter_mock.to_previous_block = lambda x: x
         runner.dataconverter = dataconverter_mock

@@ -25,6 +25,12 @@ Then, create and open the environment with the project dependencies installed us
 docker run --rm -v $(pwd):/data -w /data -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
 
+Download [Renode Arch package](https://builds.renode.io/renode-latest.pkg.tar.xz) and set `PYRENODE_ARCH_PKG` to its location:
+```bash
+wget https://builds.renode.io/renode-latest.pkg.tar.xz
+export PYRENODE_ARCH_PKG=`pwd`/renode-latest.pkg.tar.xz
+```
+
 ## Evaluating the model in Kenning
 
 Kenning can evaluate the runtime running on a device simulated in Renode. This allows us to:

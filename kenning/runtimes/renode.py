@@ -188,7 +188,6 @@ class RenodeRuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-        # add pyrenode3 setup here
         self.machine = None
 
     def run_client(
@@ -311,9 +310,17 @@ class RenodeRuntime(Runtime):
         """
         Initializes Renode process and starts runtime.
         """
-        from pyrenode3.wrappers import Emulation, Monitor  # isort: skip
-        from Antmicro.Renode.Logging import Logger
-        from Antmicro.Renode.RobotFramework import LogTester
+        try:
+            from pyrenode3.wrappers import Emulation, Monitor  # isort: skip
+            from Antmicro.Renode.Logging import Logger
+            from Antmicro.Renode.RobotFramework import LogTester
+        except ImportError as e:
+            msg = (
+                "Couldn't initialize pyrenode3. "
+                "Ensure that Renode is installed according "
+                "to the instructions at https://github.com/antmicro/pyrenode3."
+            )
+            raise Exception(msg) from e
 
         if (
             not self.disable_performance_measurements

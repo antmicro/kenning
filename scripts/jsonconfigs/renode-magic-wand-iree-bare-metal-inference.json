@@ -41,7 +41,7 @@
                 "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main",
                 "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule"
             ],
-            "start_commands": [
+            "post_start_commands": [
                 "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
             ],
             "runtime_log_init_msg": "Runtime started",

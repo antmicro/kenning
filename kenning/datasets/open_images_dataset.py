@@ -291,6 +291,8 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         download_seed: int = 12345,
         image_width: int = 416,
         image_height: int = 416,
+        min_iou: float = 0.5,
+        max_preds: int = 100,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.classes = classes

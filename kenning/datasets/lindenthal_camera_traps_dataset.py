@@ -350,6 +350,8 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         show_on_eval: bool = False,
         image_width: int = 0,
         image_height: int = 0,
+        min_iou: float = 0.5,
+        max_preds: int = 100,
         augment: bool = False,
     ):
         self.num_classes = 4

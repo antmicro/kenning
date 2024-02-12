@@ -309,6 +309,20 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             "type": int,
             "default": 416,
         },
+        "min_iou": {
+            "description": "The minimum IoU value for which the prediction "
+            "during the evaluation is considered correct. If the best matching"
+            "IoU is lower, the prediction is considered a false positive",
+            "type": float,
+            "default": 0.5,
+        },
+        "max_preds": {
+            "description": "The maximum number of predictions to consider "
+            "during the evaluation. Predictions with the lowest scores are "
+            "discarded",
+            "type": int,
+            "default": 100,
+        },
     }
 
     def __init__(
@@ -326,6 +340,8 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         show_on_eval: bool = False,
         image_width: Optional[int] = 416,
         image_height: Optional[int] = 416,
+        min_iou: float = 0.5,
+        max_preds: int = 100,
     ):
         assert image_memory_layout in ["NHWC", "NCHW"]
         self.task = task
@@ -333,6 +349,8 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         self.image_memory_layout = image_memory_layout
         self.image_width = image_width
         self.image_height = image_height
+        self.min_iou = min_iou
+        self.max_preds = max_preds
         self.classnames = []
         self.show_on_eval = show_on_eval
         super().__init__(
@@ -537,8 +555,6 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         self,
         predictions: List,
         truth: List,
-        min_iou: float = 0.5,
-        max_dets: int = 100,
     ) -> Measurements:
         """
         Evaluates the model based on the predictions.
@@ -552,11 +568,6 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             The list of predictions from the model.
         truth : List
             The ground truth for given batch.
-        min_iou : float
-            The minimum IoU value for which the prediction is considered
-            correct. Defaults to 0.5.
-        max_dets : int
-            The maximum number of detections to consider. Defaults to 100.
 
         Returns
         -------
@@ -569,7 +580,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
             # operate on a single image
             # first, let's sort predictions by score
             preds.sort(key=lambda x: -x.score)
-            preds = preds[:max_dets]
+            preds = preds[: self.max_preds]
 
             # store array of matched ground truth bounding boxes
             matchedgt = np.zeros([len(groundtruths)], dtype=np.int32)
@@ -603,7 +614,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
                     [
                         [
                             float(pred.score),
-                            float(bestiou >= min_iou),
+                            float(bestiou >= self.min_iou),
                             float(bestiou),
                         ]
                     ],

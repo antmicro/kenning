@@ -465,13 +465,15 @@ class ViolinComparisonPlot(Plot):
         from bokeh.models import ColumnDataSource, Div, Legend, Patch
         from bokeh.plotting import figure
 
+        # legend_glyph_size * entries
+        legend_height = 20 * len(self.metric_data.keys())
         violin_figs = {
             metric_label: figure(
                 title=metric_label,
                 tools="pan,box_zoom,wheel_zoom,reset,save",
                 toolbar_location=None,
                 width=self.width,
-                height=self.height,
+                height=self.height + legend_height,
                 output_backend="webgl",
             )
             for metric_label in self.metric_labels
@@ -523,10 +525,10 @@ class ViolinComparisonPlot(Plot):
             items=[
                 (name, renderers) for name, renderers in legend_items.items()
             ],
-            orientation="horizontal",
+            location="top_left",
+            orientation="vertical",
             label_text_font="Lato",
             click_policy="mute",
-            location="center",
         )
         violin_figs[self.metric_labels[-1]].add_layout(legend, "below")
 

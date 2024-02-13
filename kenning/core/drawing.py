@@ -461,19 +461,17 @@ class ViolinComparisonPlot(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        from bokeh.layouts import gridplot
+        from bokeh.layouts import column, gridplot
         from bokeh.models import ColumnDataSource, Div, Legend, Patch
         from bokeh.plotting import figure
 
-        # legend_glyph_size * entries
-        legend_height = 20 * len(self.metric_data.keys())
         violin_figs = {
             metric_label: figure(
                 title=metric_label,
                 tools="pan,box_zoom,wheel_zoom,reset,save",
                 toolbar_location=None,
                 width=self.width,
-                height=self.height + legend_height,
+                height=self.height,
                 output_backend="webgl",
             )
             for metric_label in self.metric_labels
@@ -514,23 +512,57 @@ class ViolinComparisonPlot(Plot):
                     ([x_min, x_min], [i - 0.2, i + 0.2]),
                     ([x_max, x_max], [i - 0.2, i + 0.2]),
                 ):
-                    violin_figs[name].line(
+                    renderer = violin_figs[name].line(
                         line_start,
                         line_end,
                         color=color,
                         line_width=2,
                     )
+                    legend_items[sample_name].append(renderer)
 
-        legend = Legend(
-            items=[
-                (name, renderers) for name, renderers in legend_items.items()
-            ],
-            location="top_left",
-            orientation="vertical",
-            label_text_font="Lato",
-            click_policy="mute",
+        # Patch + margin + padding + word length
+        legend_data = list(legend_items.items())
+        legend_length = [
+            11 + 20 + 10 + 6 * len(x) for x in legend_items.keys()
+        ]
+
+        # Iterate over length of labels to find the number of columns
+        # that would fit under the plot
+        legend_columns = len(legend_length)
+        for i in range(len(legend_length) - 1):
+            for j in range(i + 1, len(legend_length)):
+                if sum(legend_length[i:j]) > self.width:
+                    if legend_columns > j - i - 1:
+                        legend_columns = j - i - 1
+                    break
+        legend_columns = max(1, legend_columns)
+
+        # Creating fake figure for legend
+        legend_fig = figure(
+            min_border_left=0,
+            frame_width=0,
+            frame_height=11 * len(legend_data),
+            toolbar_location=None,
         )
-        violin_figs[self.metric_labels[-1]].add_layout(legend, "below")
+        # Creating few columns with legends
+        legends = []
+        for offset in range(legend_columns):
+            legends.append(
+                Legend(
+                    items=legend_data[offset::legend_columns],
+                    orientation="vertical",
+                    location="center",
+                    click_policy="hide",
+                )
+            )
+
+        legend_fig.xaxis.visible = False
+        legend_fig.yaxis.visible = False
+        legend_fig.outline_line_alpha = 0.0
+        legend_fig.renderers += [
+            legend_item[1][0] for legend_item in legend_data
+        ]
+        [legend_fig.add_layout(legend, place="right") for legend in legends]
 
         if self.title is not None:
             violin_figs[self.metric_labels[0]].add_layout(
@@ -544,7 +576,11 @@ class ViolinComparisonPlot(Plot):
             toolbar_options={"logo": None},
         )
 
-        self._output_bokeh_figure(grid_fig, output_path, output_formats)
+        self._output_bokeh_figure(
+            column(children=[grid_fig, legend_fig]),
+            output_path,
+            output_formats,
+        )
 
 
 class RadarChart(Plot):

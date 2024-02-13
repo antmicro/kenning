@@ -36,6 +36,8 @@ pytest:
         - /scripts/prepare_environment.sh .
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
+        - wget https://builds.renode.io/renode-latest.pkg.tar.xz
+        - export PYRENODE_ARCH_PKG=$(realpath renode-latest.pkg.tar.xz)
     script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
     artifacts:

@@ -98,13 +98,14 @@ onnxruntime = [
     "onnxruntime",
 ]
 test = [
+    "pexpect",
+    "pytest",
     "pytest-cov",
     "pytest-dependency",
     "pytest-mock",
     "pytest-order",
     "pytest-reportlog",
     "pytest-xdist",
-    "pytest",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
 ]
 real_time_visualization = [

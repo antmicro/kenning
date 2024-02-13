@@ -2342,7 +2342,7 @@ class LinePlot(Plot):
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
         from bokeh.models import Legend
-        from bokeh.plotting import figure
+        from bokeh.plotting import column, figure
 
         plot_fig = figure(
             title=self.title,
@@ -2355,26 +2355,61 @@ class LinePlot(Plot):
             output_backend="webgl",
         )
 
-        line_renderers = []
-        for color, (x, y) in zip(self.colors, self.lines):
-            line_renderers.append(
-                plot_fig.line(x, y, color=color, line_width=2.0)
-            )
+        renderers = [
+            plot_fig.line(x, y, color=color, line_width=2.0)
+            for color, (x, y) in zip(self.colors, self.lines)
+        ]
 
         if self.lines_labels is not None:
-            legend = Legend(
-                items=[
-                    (label, [renderer])
-                    for label, renderer in zip(
-                        self.lines_labels, line_renderers
-                    )
-                ],
-                orientation="horizontal",
-                label_text_font="Lato",
-                click_policy="mute",
-                location="center",
+            legend_data = [
+                (label, [renderer])
+                for label, renderer in zip(self.lines_labels, renderers)
+            ]
+            # Line width + margin + padding + label width
+            legend_length = [20 + 20 + 10 + 6 * len(x[0]) for x in legend_data]
+
+            # Iterate over length of labels to find the number of columns
+            # that would fit under the plot
+            legend_columns = len(legend_length)
+            for i in range(len(legend_length) - 1):
+                for j in range(i + 1, len(legend_length)):
+                    if sum(legend_length[i:j]) > self.width:
+                        if legend_columns > j - i - 1:
+                            legend_columns = j - i - 1
+                        break
+            legend_columns = max(1, legend_columns)
+
+            # Creating fake figure for legend
+            legend_fig = figure(
+                min_border_left=0,
+                frame_width=0,
+                frame_height=11 * len(legend_data),
+                toolbar_location=None,
             )
-            plot_fig.add_layout(legend, "below")
+            # Creating few columns with legends
+            legends = []
+            for offset in range(legend_columns):
+                legends.append(
+                    Legend(
+                        items=legend_data[offset::legend_columns],
+                        orientation="vertical",
+                        location="center",
+                        click_policy="hide",
+                    )
+                )
+
+            legend_fig.xaxis.visible = False
+            legend_fig.yaxis.visible = False
+            legend_fig.outline_line_alpha = 0.0
+            legend_fig.renderers += [
+                legend_item[1][0] for legend_item in legend_data
+            ]
+            [
+                legend_fig.add_layout(legend, place="right")
+                for legend in legends
+            ]
+
+            plot_fig = column(children=[plot_fig, legend_fig])
 
         self._output_bokeh_figure(plot_fig, output_path, output_formats)
 

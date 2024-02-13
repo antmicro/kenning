@@ -178,15 +178,18 @@ def get_dependency(syntax_node: Union[ast.Import, ast.ImportFrom]) -> str:
 
             return f"* `{dependency_path}`\n"
         except (ImportError, ModuleNotFoundError, Exception) as e:
+            if (
+                not hasattr(e, "name")
+                or e.name is None
+                or find_missing_optional_dependency(e.name) is None
+            ):
+                return f"* `{dependency_path}` - Not available (Reason: {e})\n"
+
             err = MissingKenningDependencies(
                 name=module_path,
                 path=dependency_path,
                 optional_dependencies=find_missing_optional_dependency(e.name),
             )
-
-            if find_missing_optional_dependency(e.name) is None:
-                return f"* `{dependency_path}` - Not available (Reason: {e})\n"
-
             return f"* `{dependency_path}` - Not available (Reason: {e})\n    {err}"  # noqa: E501
 
 

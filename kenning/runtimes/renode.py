@@ -251,10 +251,12 @@ class RenodeRuntime(Runtime):
                     )
 
                     if self.sensor is not None:
-                        measurements += dataset.evaluate(posty, None, out_spec)
+                        measurements += dataset._evaluate(
+                            posty, None, out_spec
+                        )
                     else:
                         _, y = sample
-                        measurements += dataset.evaluate(posty, y, out_spec)
+                        measurements += dataset._evaluate(posty, y, out_spec)
 
                     if self.runtime_log_uart is not None:
                         self.runtime_logs += (

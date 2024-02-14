@@ -15,7 +15,7 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
         },
         "runtime_location": {
             "description": "Specifies where built runtime should be stored",
-            "type": PathOrURI,
+            "type": Path,
             "required": True,
         },
         "model_framework": {

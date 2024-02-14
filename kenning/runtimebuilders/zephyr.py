@@ -27,7 +27,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         },
         "zephyr_base": {
             "description": "The path to the Zephyr base",
-            "type": PathOrURI,
+            "type": Path,
             "default": None,
             "nullable": True,
         },

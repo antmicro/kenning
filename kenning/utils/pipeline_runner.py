@@ -24,6 +24,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
+from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
@@ -53,6 +54,7 @@ class PipelineRunner(object):
         runtime: Runtime,
         protocol: Optional[Protocol] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        runtime_builder: Optional[RuntimeBuilder] = None,
     ):
         """
         Initializes the PipelineRunner object.
@@ -78,6 +80,7 @@ class PipelineRunner(object):
         self.optimizers = optimizers
         self.runtime = runtime
         self.protocol = protocol
+        self.runtime_builder = runtime_builder
         self.should_cancel = False
 
     @classmethod
@@ -147,6 +150,12 @@ class PipelineRunner(object):
             else None
         )
 
+        runtime_builder = (
+            any_from_json(json_cfg["runtime_builder"])
+            if "runtime_builder" in json_cfg
+            else None
+        )
+
         dataconverter = (
             any_from_json(json_cfg["runtime"]["data_converter"])
             if json_cfg.get("runtime", {}).get("data_converter", None)
@@ -170,6 +179,7 @@ class PipelineRunner(object):
             runtime=runtime,
             protocol=protocol,
             model_wrapper=model_wrapper,
+            runtime_builder=runtime_builder,
         )
 
     def serialize_inference(
@@ -180,6 +190,7 @@ class PipelineRunner(object):
         protocol: Protocol,
         runtime: Runtime,
         dataconverter: DataConverter,
+        runtime_builder: RuntimeBuilder,
     ) -> Dict:
         """
         Serializes the given objects into a dictionary which
@@ -218,6 +229,7 @@ class PipelineRunner(object):
                 protocol,
                 runtime,
                 dataconverter,
+                runtime_builder,
             ],
             [
                 "dataset",
@@ -225,6 +237,7 @@ class PipelineRunner(object):
                 "protocol",
                 "runtime",
                 "data_converter",
+                "runtime_builder",
             ],
         ):
             if obj:
@@ -271,6 +284,7 @@ class PipelineRunner(object):
                 protocol=self.protocol,
                 runtime=self.runtime,
                 dataconverter=self.dataconverter,
+                runtime_builder=self.runtime_builder,
             ),
         }
 
@@ -400,6 +414,10 @@ class PipelineRunner(object):
         model_path = self.handle_optimizations(
             convert_to_onnx, run_optimizations
         )
+
+        if self.runtime_builder is not None:
+            self.handle_runtime_builder(None)
+
         if output:
             self.add_scenario_configuration_to_measurements(
                 command, model_path
@@ -447,6 +465,13 @@ class PipelineRunner(object):
             else:
                 KLogger.info("No Input/Output specification found")
         return self.protocol.upload_model(compiled_model_path)
+
+    def handle_runtime_builder(
+        self,
+        model_framework: Optional[str],
+    ) -> Path:
+        self.runtime_builder.set_input_framework(model_framework)
+        self.runtime_builder.build()
 
     def handle_optimizations(
         self,

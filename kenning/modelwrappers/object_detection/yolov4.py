@@ -73,7 +73,7 @@ class ONNXYOLOV4(YOLOWrapper):
     Model wrapper for YOLOv4 model in ONNX format.
     """
 
-    pretrained_model_uri = "kenning:///models/object_detection/yolov4.onnx"
+    pretrained_model_uri = "kenning:///models/detection/yolov4.onnx"
     default_dataset = COCODataset2017
     arguments_structure = {}
 

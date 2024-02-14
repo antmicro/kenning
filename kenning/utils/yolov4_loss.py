@@ -21,7 +21,7 @@ class YOLOv4Loss(object):
 
     def __init__(self):
         self.model_wrapper = ONNXYOLOV4(
-            ResourceURI("kenning:///models/object_detection/yolov4.onnx"), None
+            ResourceURI("kenning:///models/detection/yolov4.onnx"), None
         )
 
     def __call__(self, output: List[torch.Tensor], target: List):

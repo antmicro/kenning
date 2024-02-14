@@ -59,7 +59,7 @@ ONNXYOLO_DATAFLOW_NODE = {
         {
             "name": "model_path",
             "id": "8",
-            "value": "kenning:///models/object_detection/yolov4.onnx",
+            "value": "kenning:///models/detection/yolov4.onnx",
         },
     ],
 }
@@ -77,7 +77,7 @@ ONNXRUNTIME_DATAFLOW_NODE = {
         {
             "name": "save_model_path",
             "id": "11",
-            "value": "kenning:///models/object_detection/yolov4.onnx",
+            "value": "kenning:///models/detection/yolov4.onnx",
         },
         {
             "name": "execution_providers",

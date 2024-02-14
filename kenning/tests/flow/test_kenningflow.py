@@ -38,13 +38,13 @@ MDL_RT_RUNNER_YOLOV4_JSON = {
         "model_wrapper": {
             "type": "kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4",
             "parameters": {
-                "model_path": "kenning:///models/object_detection/yolov4.onnx"
+                "model_path": "kenning:///models/detection/yolov4.onnx"
             },
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters": {
-                "save_model_path": "kenning:///models/object_detection/yolov4.onnx",  # noqa: E501
+                "save_model_path": "kenning:///models/detection/yolov4.onnx",
                 "execution_providers": ["CPUExecutionProvider"],
             },
         },

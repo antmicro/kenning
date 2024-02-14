@@ -20,7 +20,7 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
     Model wrapper for TVM-compiled YOLOv3 model.
     """
 
-    pretrained_model_uri = "kenning:///models/object_detection/yolov3.cfg"
+    pretrained_model_uri = "kenning:///models/detection/yolov3.cfg"
     default_dataset = COCODataset2017
     arguments_structure = {}
 

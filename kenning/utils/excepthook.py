@@ -127,21 +127,26 @@ def _normalize(name: str) -> str:
     return name.replace("-", "_").lower()
 
 
-def find_missing_optional_dependency(module_name: str) -> Optional[str]:
+def find_missing_optional_dependency(
+    module_name: Optional[str]
+) -> Optional[str]:
     """
     Checks which group of optional dependencies contains missing module.
 
     Parameters
     ----------
-    module_name : str
-        Name of the missing module
+    module_name : Optional[str]
+        Name of the missing module. It can be None
 
     Returns
     -------
     Optional[str]
         Name of group with optional dependencies which contain missing module
         or None otherwise.
+        If the module_name is None, method returns None.
     """
+    if module_name is None:
+        return None
     found = None
     dependencies = get_all_dependencies()
     for extra, modules in dependencies.items():

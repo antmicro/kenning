@@ -70,7 +70,8 @@ def _io_spec_to_struct(
     if len(model_name) > MAX_LENGTH_MODEL_NAME:
         raise ValueError(f"Invalid model name: {model_name}")
 
-    input_shape = [inp["shape"] for inp in io_spec["input"]]
+    input_key = "processed_input" if "processed_input" in io_spec else "input"
+    input_shape = [inp["shape"] for inp in io_spec[input_key]]
     output_length = [int(np.prod(outp["shape"])) for outp in io_spec["output"]]
     dtype = io_spec["input"][0]["dtype"]
 

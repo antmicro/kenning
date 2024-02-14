@@ -68,25 +68,25 @@ def _load_class(class_path: str) -> Type:
 
 
 def disable_when_defined(
-    variable: Optional[Any],
+    should_disable: Optional[Any],
 ) -> Callable[[Callable], Callable]:
     """
     Function creating decorator, which disables function
-    when specified variable is defined.
+    when specified `should_disable` evaluates to `True`.
 
     Parameters
     ----------
-    variable : Optional[Any]
-        Object, is defined when `bool(variable)` is True.
+    should_disable : Optional[Any]
+        Object, is defined when `bool(should_disable)` is True.
 
     Returns
     -------
     Callable[[Callable], Callable]
-        Decorator returning empty function when variable is defined.
+        Decorator returning empty function when should_disable is defined.
     """
 
     def _decorator(func: Callable):
-        if not variable:
+        if not should_disable:
             return func
 
         def noop(*args, **kwargs):

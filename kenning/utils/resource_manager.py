@@ -9,7 +9,7 @@ import hashlib
 import os
 import re
 import tarfile
-from importlib.metadata import version
+from importlib.metadata import PackageNotFoundError, version
 from inspect import getfullargspec
 from pathlib import Path
 from shutil import copy, rmtree
@@ -165,6 +165,18 @@ class ResourceManager(metaclass=Singleton):
         if self.kenning_resources_version_validated:
             return
         self.kenning_resources_version_validated = True
+        current_version = None
+        try:
+            current_version = version("kenning")
+        except PackageNotFoundError:
+            try:
+                import pkg_resources
+
+                current_version = pkg_resources.get_distribution(
+                    "kenning"
+                ).version
+            except ModuleNotFoundError:
+                pass
         uri = self._resolve_uri(
             urlparse(ResourceManager.KENNING_RESOURCES_VERSION_URL)
         )
@@ -174,7 +186,7 @@ class ResourceManager(metaclass=Singleton):
         except HTTPError:
             KLogger.error("Kenning resources version cannot be validated")
             return
-        if resources_version != version("kenning"):
+        if resources_version.rstrip("\n") != current_version:
             KLogger.error(
                 "The newer version of Kenning is available, "
                 "some resources may not be compatible with current one"

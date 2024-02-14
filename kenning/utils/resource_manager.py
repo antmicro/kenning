@@ -9,7 +9,6 @@ import hashlib
 import os
 import re
 import tarfile
-from importlib.metadata import PackageNotFoundError, version
 from inspect import getfullargspec
 from pathlib import Path
 from shutil import copy, rmtree
@@ -22,6 +21,7 @@ from zipfile import ZipFile
 import requests
 from tqdm import tqdm
 
+import kenning
 from kenning.utils.logger import KLogger, LoggerProgressBar, download_url
 from kenning.utils.singleton import Singleton
 
@@ -165,18 +165,8 @@ class ResourceManager(metaclass=Singleton):
         if self.kenning_resources_version_validated:
             return
         self.kenning_resources_version_validated = True
-        current_version = None
-        try:
-            current_version = version("kenning")
-        except PackageNotFoundError:
-            try:
-                import pkg_resources
-
-                current_version = pkg_resources.get_distribution(
-                    "kenning"
-                ).version
-            except ModuleNotFoundError:
-                pass
+        if not kenning.__version__:
+            return
         uri = self._resolve_uri(
             urlparse(ResourceManager.KENNING_RESOURCES_VERSION_URL)
         )
@@ -186,7 +176,7 @@ class ResourceManager(metaclass=Singleton):
         except HTTPError:
             KLogger.error("Kenning resources version cannot be validated")
             return
-        if resources_version.rstrip("\n") != current_version:
+        if resources_version.rstrip("\n") != kenning.__version__:
             KLogger.error(
                 "The newer version of Kenning is available, "
                 "some resources may not be compatible with current one"

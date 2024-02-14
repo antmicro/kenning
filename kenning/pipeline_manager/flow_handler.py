@@ -327,7 +327,7 @@ class FlowGraphCreator(GraphCreator):
             input_key = "input"
         to_args = to_runner_io[input_key]
         for arg1, arg2 in itertools.product(from_args, to_args):
-            if IOInterface.validate({"*": arg1}, {"*": arg2}):
+            if IOInterface.validate({"*": [arg1]}, {"*": [arg2]}):
                 return arg1["name"], arg2["name"]
         from_name = self.nodes[from_id]["type"].split(".")[-1]
         to_name = self.nodes[to_id]["type"].split(".")[-1]

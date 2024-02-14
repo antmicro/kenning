@@ -150,8 +150,10 @@ class HandlerTests(ABC):
         Test for `parse_dataflow`. Does not check the validity of output,
         only if the parsing ended successfully.
         """
-        status, _ = handler.parse_dataflow(dataflow_json)
-        assert status
+        status, pipeline_or_error_message = handler.parse_dataflow(
+            dataflow_json
+        )
+        assert status, pipeline_or_error_message
 
     @pytest.mark.xdist_group(name="use_resources")
     def test_validate_dataflow(self, dataflow_json, handler):

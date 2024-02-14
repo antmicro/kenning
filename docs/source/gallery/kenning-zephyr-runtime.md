@@ -59,11 +59,11 @@ pip install --upgrade pip
 pip install "kenning[tvm,tensorflow,reports,renode] @ git+https://github.com/antmicro/kenning.git"
 ```
 
-To use Renode, either follow [Renode documentation](https://renode.readthedocs.io/en/latest/introduction/installing.html) or download a package for Renode and set `PYRENODE_ARCH_PKG` variable for [pyrenode3](https://github.com/antmicro/pyrenode3) package:
+To use Renode, either follow [Renode documentation](https://renode.readthedocs.io/en/latest/introduction/installing.html) or download a package for Renode and set `PYRENODE_PKG` variable for [pyrenode3](https://github.com/antmicro/pyrenode3) package:
 
 ```bash
 wget https://builds.renode.io/renode-latest.pkg.tar.xz
-export PYRENODE_ARCH_PKG=$(realpath renode-latest.pkg.tar.xz)
+export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
 ```
 
 ## Building and evaluating Magic Wand model using TFLite backend

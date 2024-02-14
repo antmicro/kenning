@@ -84,7 +84,7 @@ def setup_dataset_mock(dataset_mock: Mock):
     dataset_mock.classnames = ["class1", "class2"]
     dataset_mock.get_class_names.return_value = dataset_mock.classnames
     dataset_mock.iter_test.return_value = [([1, 2], 3)]
-    dataset_mock.evaluate.return_value = {}
+    dataset_mock._evaluate.return_value = {}
 
 
 def setup_dataconverter_mock(dataconverter_mock: Mock):

@@ -378,6 +378,8 @@ class PipelineRunner(object):
         )
         KLogger.set_verbosity(verbosity)
 
+        MeasurementsCollector.clear()
+
         self.assert_io_formats(
             self.model_wrapper, self.optimizers, self.runtime
         )

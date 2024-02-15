@@ -73,7 +73,7 @@ def _io_spec_to_struct(
     input_key = "processed_input" if "processed_input" in io_spec else "input"
     input_shape = [inp["shape"] for inp in io_spec[input_key]]
     output_length = [int(np.prod(outp["shape"])) for outp in io_spec["output"]]
-    dtype = io_spec["input"][0]["dtype"]
+    dtype = io_spec[input_key][0]["dtype"]
 
     dtype_size = re.findall(r"\d+", dtype)
     if (

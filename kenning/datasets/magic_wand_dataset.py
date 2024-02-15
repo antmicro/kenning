@@ -159,7 +159,8 @@ class MagicWandDataset(Dataset):
         self.dataY = []
         for data, label in zip(tmp_dataX, tmp_dataY):
             padded_data = np.array(
-                self.split_sample_to_windows(self.generate_padding(data))
+                self.split_sample_to_windows(self.generate_padding(data)),
+                dtype="float32",
             )
             for sample in padded_data:
                 self.dataX.append(sample)

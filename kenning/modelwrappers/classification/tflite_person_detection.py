@@ -123,6 +123,13 @@ class PersonDetectionModelWrapper(ModelWrapper):
                     "scale": 0.00390625,
                 }
             ],
+            "processed_output": [
+                {
+                    "name": "out_layer",
+                    "shape": (batch_size, 2),
+                    "dtype": "float32",
+                }
+            ],
         }
         if class_names is not None:
             io_spec["output"][0]["class_names"] = class_names

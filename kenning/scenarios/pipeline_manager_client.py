@@ -636,6 +636,8 @@ class PipelineManagerClient(CommandTemplate):
                 build_type="server-app",
                 workspace_directory=args.workspace_dir,
                 editor_title="Kenning Visual Editor",
+                assets_directory=Path(__file__).parent.parent
+                / "resources/visual_editor_resources/",
             )
             if build_status != 0:
                 raise RuntimeError("Build error")

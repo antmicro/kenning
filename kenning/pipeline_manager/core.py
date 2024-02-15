@@ -223,7 +223,7 @@ class BaseDataflowHandler(ABC):
             },
             {
                 "name": "Report",
-                "iconName": "Run",
+                "iconName": "datasheet.svg",
                 "procedureName": "custom_dataflow_report",
             },
         ]

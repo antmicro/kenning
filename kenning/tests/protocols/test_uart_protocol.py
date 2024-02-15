@@ -185,7 +185,12 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_inputs_num(
         self, valid_io_spec: Dict[str, Any], inputs_num, expectation
     ):
-        valid_io_spec["input"] = inputs_num * [valid_io_spec["input"][0]]
+        input_key = (
+            "processed_input"
+            if "processed_input" in valid_io_spec
+            else "input"
+        )
+        valid_io_spec[input_key] = inputs_num * [valid_io_spec[input_key][0]]
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
@@ -204,11 +209,16 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_input_dim(
         self, valid_io_spec: Dict[str, Any], input_dim, expectation
     ):
-        dims = (input_dim - len(valid_io_spec["input"][0]["shape"])) * [
+        input_key = (
+            "processed_input"
+            if "processed_input" in valid_io_spec
+            else "input"
+        )
+        dims = (input_dim - len(valid_io_spec[input_key][0]["shape"])) * [
             1,
         ]
-        valid_io_spec["input"][0]["shape"] = (
-            *valid_io_spec["input"][0]["shape"],
+        valid_io_spec[input_key][0]["shape"] = (
+            *valid_io_spec[input_key][0]["shape"],
             *dims,
         )
 

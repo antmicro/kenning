@@ -56,7 +56,6 @@ class ClassPathCompleter(BaseCompleter):
         parser: argparse.ArgumentParser,
         parsed_args: argparse.Namespace,
     ) -> Dict[str, str]:
-        self.class_type
         paths = list_classes(
             [self.class_type] if self.class_type else ALL_TYPES,
             "autocomplete",

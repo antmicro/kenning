@@ -21,7 +21,7 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
 )
-from kenning.utils.class_info import generate_class_info
+from kenning.utils.class_info import generate_class_info, get_class_description
 from kenning.utils.class_loader import (
     DATA_CONVERTERS,
     DATA_PROVIDERS,
@@ -105,33 +105,19 @@ def list_classes(
             class_name = subclass.split(".")[-1]
 
             if verbosity == "autocomplete":
-                resulting_output.append(
-                    (
-                        subclass,
-                        " ".join(
-                            tuple(
-                                filter(
-                                    lambda x: x.startswith(
-                                        f"Class: {class_name}"
-                                    ),
-                                    generate_class_info(
-                                        target=module_path,
-                                        class_name=class_name,
-                                        docstrings=True,
-                                        dependencies=False,
-                                        input_formats=False,
-                                        output_formats=False,
-                                        argument_formats=False,
-                                    ),
-                                )
-                            )[0]
-                            .split("\n\n", 1)[1]
-                            .replace("\n", "")
-                            .strip()
-                            .split()
-                        ),
-                    )
+                extracted_description = get_class_description(
+                    target=module_path, class_name=class_name
                 )
+                description_lines = extracted_description.strip().split("\n")
+                abbrev_description = []
+                for line in description_lines:
+                    if len(line) == 0:
+                        break
+                    abbrev_description.append(line)
+                abbrev_description = " ".join(abbrev_description)
+                if len(abbrev_description) == 0:
+                    abbrev_description = class_name
+                resulting_output.append((subclass, abbrev_description))
 
             elif verbosity == "list":
                 resulting_output.append(f"    {subclass}\n")

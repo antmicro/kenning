@@ -73,6 +73,8 @@ class PipelineRunner(object):
             Protocol object that provides the communication protocol.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper object that wraps the model.
+        runtime_builder : Optional[RuntimeBuilder]
+            RuntimeBuilder object that builds the runtime.
         """
         self.dataset = dataset
         self.dataconverter = dataconverter
@@ -210,6 +212,8 @@ class PipelineRunner(object):
             Runtime to serialize.
         dataconverter : DataConverter
             DataConverter to serialize.
+        runtime_builder : RuntimeBuilder
+            RuntimeBuilder to serialize.
 
         Returns
         -------

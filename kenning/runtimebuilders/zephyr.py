@@ -1,3 +1,11 @@
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+Wrapper for west.
+"""
+
 import logging
 import os
 import subprocess
@@ -6,10 +14,13 @@ from typing import Optional
 
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import PathOrURI
 
 
 class ZephyrRuntimeBuilder(RuntimeBuilder):
+    """
+    RuntimeBuilder for the kenning-zephyr-runtime.
+    """
+
     arguments_structure = {
         "board": {
             "description": "Zephyr board",
@@ -42,21 +53,49 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def __init__(
         self,
         workspace: Path,
-        runtime_location: PathOrURI,
+        runtime_location: Path,
         board: str,
         model_framework: Optional[str] = None,
         application_dir: Path = Path("./app"),
         build_dir: Path = Path("./build"),
-        zephyr_base: Optional[PathOrURI] = None,
+        zephyr_base: Optional[Path] = None,
     ):
+        """
+        RuntimeBuilder for the kenning-zephyr-runtime.
+
+        Parameters
+        ----------
+        workspace: Path
+            Location of the project directory.
+        runtime_location: Path
+            Destination of the built runtime
+        board: str
+            Name of the target board.
+        model_framework: Optional[str]
+            Selected model framework
+        application_dir: Path
+            Path to the project's application directory.
+            In the kenning-zephyr-runtime it's always './app'.
+        build_dir: Path
+            Path to the project's build directory.
+        zephyr_base: Optional[Path]
+            Path to the Zephyr base.
+
+        Raises
+        ------
+        FileNotFoundError
+            If the application directory doesn't exist.
+        """
         self.board = board
         self.workspace = workspace.resolve()
 
         self.application_dir = self._fix_relative(workspace, application_dir)
         if not self.application_dir.exists():
-            raise FileNotFoundError(
-                f'Application source directory "{self.application_dir}" doesn\'t exist.'
+            msg = (
+                "Application source directory "
+                f'"{self.application_dir}" doesn\'t exist.'
             )
+            raise FileNotFoundError(msg)
 
         self.build_dir = self._fix_relative(workspace, build_dir)
         self.build_dir.mkdir(exist_ok=True)
@@ -160,9 +199,11 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         try:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
-            raise Exception(
-                f'Zephyr build failed. Try removing "{self.build_dir}" and try again.'
-            ) from e
+            msg = (
+                "Zephyr build failed. Try removing"
+                f'"{self.build_dir}" and try again.'
+            )
+            raise Exception(msg) from e
 
     @property
     def _subprocess_cfg(self):

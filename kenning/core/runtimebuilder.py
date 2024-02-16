@@ -1,12 +1,23 @@
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+"""
+Provides an API for runtime builders.
+"""
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.resource_manager import PathOrURI
 
 
 class RuntimeBuilder(ArgumentsHandler, ABC):
+    """
+    Builds the given model for a selected model framework.
+    """
+
     arguments_structure = {
         "workspace": {
             "description": "The path to the runtime source",
@@ -31,9 +42,22 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
     def __init__(
         self,
         workspace: Path,
-        runtime_location: PathOrURI,
+        runtime_location: Path,
         model_framework: Optional[str] = None,
     ):
+        """
+        Prepares the RuntimeBuilder object.
+
+        Parameters
+        ----------
+        workspace: Path
+            Location of the project directory.
+        runtime_location: Path
+            Destination of the built runtime
+
+        model_framework: Optional[str]
+            Selected model framework
+        """
         self.workspace = workspace
         self.runtime_location = runtime_location
 

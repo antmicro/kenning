@@ -807,6 +807,53 @@ def instantiate_object_based_on_base_class(
     return None
 
 
+def get_class_description(target: str, class_name: str) -> str:
+    """
+    Extracts short description for the given class.
+    Returns empty string if no description is provided.
+
+    Parameters
+    ----------
+    target: str
+        Target module-like path e.g.
+        `kenning.modelwrappers.object_detection.yolov4.ONNXYOLOV4`
+    class_name: str
+        Name of a specific class to display information about
+
+    Returns
+    -------
+    str
+        List of formatted, Markdown-like lines to be printed
+    """
+    # if target contains a class, split to path and class name
+    split_target = target.split(".")
+    if split_target[-1][0].isupper():
+        class_name = split_target[-1]
+        split_target = split_target[:-1]
+
+    target = ".".join(split_target)
+
+    target_path = find_spec(target).origin
+
+    if not os.path.exists(target_path):
+        return ""
+
+    with open(target_path, "r") as file:
+        parsed_file = ast.parse(file.read())
+
+    syntax_nodes = ast.walk(parsed_file)
+    for node in syntax_nodes:
+        if not isinstance(node, ast.ClassDef):
+            continue
+        if node.name != class_name:
+            continue
+        docstring = ast.get_docstring(node, clean=True)
+        if not docstring:
+            return ""
+        return docstring
+    return ""
+
+
 def generate_class_info(
     target: str,
     class_name: str = "",

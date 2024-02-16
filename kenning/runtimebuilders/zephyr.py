@@ -1,3 +1,4 @@
+import logging
 import os
 import subprocess
 from pathlib import Path
@@ -93,6 +94,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self._build_project(f"{self.model_framework}.conf")
         self.runtime_location.unlink(missing_ok=True)
         self.runtime_location.symlink_to(self.build_dir / "zephyr/zephyr.elf")
+        KLogger.info("Built runtime")
 
     def _fix_relative(self, base: Path, p: Path) -> Path:
         if p.is_relative_to(base):
@@ -113,7 +115,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def _init_zephyr(self):
         try:
             subprocess.run(
-                ["west", "init", "-l", str(self.workspace)]
+                ["west", "init", "-l", str(self.workspace)],
+                **self._subprocess_cfg,
             ).check_returncode()
             # subprocess.run(["west", "zephyr-export"]).check_returncode()
         except subprocess.CalledProcessError as e:
@@ -123,14 +126,18 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
     def _update_zephyr(self):
         try:
-            subprocess.run(["west", "update"]).check_returncode()
+            subprocess.run(
+                ["west", "update"], **self._subprocess_cfg
+            ).check_returncode()
         except subprocess.CalledProcessError as e:
             raise Exception("west update failed.") from e
 
     def _prepare_modules(self):
         try:
             subprocess.run(
-                ["./scripts/prepare_modules.sh"], cwd=self.workspace
+                ["./scripts/prepare_modules.sh"],
+                cwd=self.workspace,
+                **self._subprocess_cfg,
             )
         except subprocess.CalledProcessError as e:
             raise Exception("failed to prepare modules") from e
@@ -151,8 +158,16 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         ]
 
         try:
-            subprocess.run(cmd).check_returncode()
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
             raise Exception(
                 f'Zephyr build failed. Try removing "{self.build_dir}" and try again.'
             ) from e
+
+    @property
+    def _subprocess_cfg(self):
+        stream = None if KLogger.level <= logging.DEBUG else subprocess.DEVNULL
+        return {
+            "stdout": stream,
+            "stderr": stream,
+        }

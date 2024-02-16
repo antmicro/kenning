@@ -166,7 +166,12 @@ class TestIOSpecToStruct:
     def test_parse_io_spec_with_different_dtypes(
         self, valid_io_spec: Dict[str, Any], dtype: str, expectation
     ):
-        valid_io_spec["input"][0]["dtype"] = dtype
+        input_key = (
+            "processed_input"
+            if "processed_input" in valid_io_spec
+            else "input"
+        )
+        valid_io_spec[input_key][0]["dtype"] = dtype
 
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)

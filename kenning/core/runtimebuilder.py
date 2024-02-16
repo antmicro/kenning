@@ -38,12 +38,18 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
         self.runtime_location = runtime_location
 
         self.model_framework = None
-        self.set_input_framework(model_framework)
+        if model_framework is not None:
+            self.set_input_framework(model_framework)
 
     @abstractmethod
     def build(self):
         ...
 
-    def set_input_framework(self, model_framework):
-        if model_framework in self.allowed_frameworks:
-            self.model_framework = model_framework
+    def set_input_framework(self, model_framework, force=False):
+        if model_framework not in self.allowed_frameworks and (
+            self.model_framework is None or force
+        ):
+            msg = f"Unsupported input type '{model_framework}.'"
+            raise ValueError(msg)
+
+        self.model_framework = model_framework

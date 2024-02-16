@@ -411,12 +411,15 @@ class PipelineRunner(object):
             )
         ):
             check_request(self.protocol.initialize_client(), "prepare client")
+
         model_path = self.handle_optimizations(
             convert_to_onnx, run_optimizations
         )
 
         if self.runtime_builder is not None:
-            self.handle_runtime_builder(None)
+            self.handle_runtime_builder(
+                self._guess_model_framework(convert_to_onnx, run_optimizations)
+            )
 
         if output:
             self.add_scenario_configuration_to_measurements(
@@ -436,6 +439,20 @@ class PipelineRunner(object):
         if ret:
             return 0
         return 1
+
+    def _guess_model_framework(self, convert_to_onnx, run_optimizations):
+        def first_not_onnx(x):
+            for fmt in x.get_output_formats():
+                if fmt != "onnx":
+                    return fmt
+
+        if not run_optimizations or len(self.optimizers) == 0:
+            if convert_to_onnx:
+                return "onnx"
+
+            return first_not_onnx(self.model_wrapper)
+
+        return first_not_onnx(self.optimizers[-1])
 
     def upload_essentials(
         self, compiled_model_path: Optional[PathOrURI]

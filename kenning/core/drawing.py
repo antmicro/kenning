@@ -48,6 +48,12 @@ MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
 MATPLOTLIB_DPI = 120
 DEFAULT_PLOT_SIZE = 1000
 MATPLOTLIB_FONT_SIZE = 12
+SERVIS_PLOT_OPTIONS = {
+    "figsize": (DEFAULT_PLOT_SIZE, DEFAULT_PLOT_SIZE * 2 // 3),
+    "plottype": "scatter",
+    "backend": "matplotlib",
+}
+
 
 plt.rc("font", size=MATPLOTLIB_FONT_SIZE)  # default text sizes
 plt.rc("axes", titlesize=MATPLOTLIB_FONT_SIZE)  # axes title

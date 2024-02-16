@@ -35,22 +35,6 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
 )
-from kenning.core.drawing import (
-    DEFAULT_PLOT_SIZE,
-    IMMATERIAL_COLORS,
-    RED_GREEN_CMAP,
-    Barplot,
-    BubblePlot,
-    ConfusionMatrixPlot,
-    LinePlot,
-    RadarChart,
-    RecallPrecisionCurvesPlot,
-    RecallPrecisionGradients,
-    TruePositiveIoUHistogram,
-    TruePositivesPerIoURangeHistogram,
-    ViolinComparisonPlot,
-    choose_theme,
-)
 from kenning.core.metrics import (
     compute_classification_metrics,
     compute_detection_metrics,
@@ -61,12 +45,6 @@ from kenning.resources import reports
 from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
-
-SERVIS_PLOT_OPTIONS = {
-    "figsize": (DEFAULT_PLOT_SIZE, DEFAULT_PLOT_SIZE * 2 // 3),
-    "plottype": "scatter",
-    "backend": "matplotlib",
-}
 
 # REPORT_TYPES:
 PERFORMANCE = "performance"
@@ -155,6 +133,7 @@ def performance_report(
     """
     from servis import render_time_series_plot_with_histogram
 
+    from kenning.core.drawing import SERVIS_PLOT_OPTIONS
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
@@ -342,6 +321,11 @@ def comparison_performance_report(
     """
     from servis import render_multiple_time_series_plot
 
+    from kenning.core.drawing import (
+        SERVIS_PLOT_OPTIONS,
+        RadarChart,
+        ViolinComparisonPlot,
+    )
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info("Running comparison_performance_report")
@@ -524,6 +508,7 @@ def classification_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.drawing import Barplot, ConfusionMatrixPlot
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
@@ -617,6 +602,7 @@ def comparison_classification_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.drawing import Barplot, BubblePlot, RadarChart
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info("Running comparison_classification_report")
@@ -777,6 +763,13 @@ def detection_report(
     str
         Content of the report in MyST format.
     """
+    from kenning.core.drawing import (
+        LinePlot,
+        RecallPrecisionCurvesPlot,
+        RecallPrecisionGradients,
+        TruePositiveIoUHistogram,
+        TruePositivesPerIoURangeHistogram,
+    )
     from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import (
         compute_ap,
@@ -993,6 +986,7 @@ def comparison_detection_report(
     """
     KLogger.info("Running comparison_detection_report")
 
+    from kenning.core.drawing import LinePlot
     from kenning.core.report import create_report_from_measurements
     from kenning.datasets.helpers.detection_and_segmentation import (
         compute_map_per_threshold,
@@ -1076,6 +1070,7 @@ def renode_stats_report(
     """
     from servis import render_time_series_plot_with_histogram
 
+    from kenning.core.drawing import SERVIS_PLOT_OPTIONS, Barplot, LinePlot
     from kenning.core.report import create_report_from_measurements
 
     KLogger.info(
@@ -1380,6 +1375,7 @@ def comparison_renode_stats_report(
     """
     from servis import render_multiple_time_series_plot
 
+    from kenning.core.drawing import SERVIS_PLOT_OPTIONS, Barplot, LinePlot
     from kenning.core.report import create_report_from_measurements
 
     def retrieve_non_zero_profiler_data(
@@ -2068,6 +2064,13 @@ class RenderReport(CommandTemplate):
 
     @staticmethod
     def run(args, **kwargs):
+        from kenning.core.drawing import (
+            IMMATERIAL_COLORS,
+            RED_GREEN_CMAP,
+            SERVIS_PLOT_OPTIONS,
+            choose_theme,
+        )
+
         command = get_command()
 
         if args.to_html:

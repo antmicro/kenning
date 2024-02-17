@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -14,7 +14,6 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import cv2
 import numpy as np
-from matplotlib import patches as patches
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -255,6 +254,15 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     float
         IoU value.
     """
+    # Mask shapes must be equal
+    if segm_pred.mask.shape != segm_true.mask.shape:
+        KLogger.warn(
+            "Segmentation masks have different shapes "
+            f"({segm_pred.mask.shape} != {segm_true.mask.shape}). "
+            "Returning 0.0"
+        )
+        return 0.0
+
     mask_i = np.logical_and(segm_pred.mask, segm_true.mask)
     mask_u = np.logical_or(segm_pred.mask, segm_true.mask)
 

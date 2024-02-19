@@ -53,8 +53,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def __init__(
         self,
         workspace: Path,
-        runtime_location: Path,
         board: str,
+        runtime_location: Optional[Path] = None,
         model_framework: Optional[str] = None,
         application_dir: Path = Path("./app"),
         build_dir: Path = Path("./build"),
@@ -67,10 +67,10 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         ----------
         workspace: Path
             Location of the project directory.
-        runtime_location: Path
-            Destination of the built runtime
         board: str
             Name of the target board.
+        runtime_location: Optional[Path]
+            Destination of the built runtime
         model_framework: Optional[str]
             Selected model framework
         application_dir: Path
@@ -129,11 +129,18 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             model_framework=model_framework,
         )
 
-    def build(self):
+    def build(self) -> Path:
         self._build_project(f"{self.model_framework}.conf")
-        self.runtime_location.unlink(missing_ok=True)
-        self.runtime_location.symlink_to(self.build_dir / "zephyr/zephyr.elf")
         KLogger.info("Built runtime")
+
+        runtime_elf = self.build_dir / "zephyr/zephyr.elf"
+
+        if self.runtime_location is not None:
+            self.runtime_location.unlink(missing_ok=True)
+            self.runtime_location.symlink_to(runtime_elf)
+            return self.runtime_location
+
+        return runtime_elf
 
     def _fix_relative(self, base: Path, p: Path) -> Path:
         if p.is_relative_to(base):

@@ -17,6 +17,145 @@ from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
 
 
+class _WestRun:
+    def __init__(
+        self, workspace=None, zephyr_base=None, venv_dir=None
+    ) -> None:
+        self._venv_dir = venv_dir
+        self._zephyr_base = zephyr_base
+        self._workspace = Path.cwd() if workspace is None else workspace
+
+    def init(self):
+        cmd = [
+            self._west_exe,
+            "init",
+            "-l",
+            str(self._workspace),
+        ]
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError as e:
+            raise Exception("west init failed.") from e
+
+    def update(self):
+        self._ensure_zephyr_base()
+
+        cmd = [self._west_exe, "update"]
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError as e:
+            raise Exception("west update failed.") from e
+
+    def build(
+        self,
+        board,
+        application_dir,
+        build_dir=None,
+        extra_conf_file=None,
+        pristine=True,
+    ):
+        self._ensure_zephyr_base()
+        self._ensure_venv()
+
+        cmd = [
+            self._west_exe,
+            "build",
+            "--pristine",
+            "always" if pristine else "auto",
+            "--board",
+            board,
+        ]
+
+        if build_dir is not None:
+            cmd.extend(["--build-dir", str(build_dir)])
+
+        cmd.append(str(application_dir))
+
+        if extra_conf_file is not None:
+            cmd.extend(["--", f"-DEXTRA_CONF_FILE={extra_conf_file}"])
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError as e:
+            msg = (
+                "Zephyr build failed. Try removing"
+                f"'{build_dir}' and try again."
+            )
+            raise Exception(msg) from e
+
+    def has_zephyr_base(self) -> bool:
+        try:
+            self._ensure_zephyr_base()
+        except Exception:
+            return False
+        return True
+
+    def _ensure_zephyr_base(self):
+        if self._zephyr_base is not None:
+            return
+
+        self._zephyr_base = self._search_for_zephyr_base()
+        if self._zephyr_base is None:
+            raise Exception("zephyr base not found")
+
+        os.environ["ZEPHYR_BASE"] = str(self._zephyr_base)
+
+    def _ensure_venv(self):
+        self._ensure_zephyr_base()
+
+        if self._venv_dir is None:
+            self._venv_dir = self._zephyr_base.parent / ".west-venv"
+
+        if (self._venv_dir / "bin/west").exists():
+            return
+
+        self._prepare_venv()
+
+    def _prepare_venv(self):
+        self._ensure_zephyr_base()
+
+        venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
+
+        cmd = [
+            str(self._venv_dir / "bin/pip"),
+            "install",
+            "-r",
+            str(self._zephyr_base / "scripts/requirements.txt"),
+        ]
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError:
+            raise Exception("venv setup failed")
+
+    def _search_for_zephyr_base(self):
+        if (p := os.environ.get("ZEPHYR_BASE", None)) is not None:
+            return Path(p)
+
+        for p in [self._workspace, *self._workspace.parents]:
+            if (p / ".west").exists():
+                return p / "zephyr"
+
+    @property
+    def _west_exe(self):
+        west_path = self._venv_dir / "bin/west"
+
+        if (west_path).exists():
+            return str(west_path)
+
+        return "west"
+
+    @property
+    def _subprocess_cfg(self):
+        stream = None if KLogger.level <= logging.DEBUG else subprocess.DEVNULL
+        return {
+            "stdout": stream,
+            "stderr": stream,
+        }
+
+
 class ZephyrRuntimeBuilder(RuntimeBuilder):
     """
     RuntimeBuilder for the kenning-zephyr-runtime.
@@ -62,9 +201,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         board: str,
         runtime_location: Optional[Path] = None,
         model_framework: Optional[str] = None,
-        application_dir: Path = Path("./app"),
-        build_dir: Path = Path("./build"),
-        venv_dir: Path = Path("./venv"),
+        application_dir: Path = Path("app"),
+        build_dir: Path = Path("build"),
+        venv_dir: Path = Path(".west-venv"),
         zephyr_base: Optional[Path] = None,
     ):
         """
@@ -95,56 +234,47 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         FileNotFoundError
             If the application directory doesn't exist.
         """
-        self.board = board
-        self.workspace = workspace.resolve()
-
-        self.application_dir = self._fix_relative(workspace, application_dir)
-        if not self.application_dir.exists():
-            msg = (
-                "Application source directory "
-                f'"{self.application_dir}" doesn\'t exist.'
-            )
-            raise FileNotFoundError(msg)
-
-        self.build_dir = self._fix_relative(workspace, build_dir)
-        self.build_dir.mkdir(exist_ok=True)
-
-        self.venv_dir = self._fix_relative(workspace, venv_dir)
-
-        self.model_framework = model_framework
-
-        self.zephyr_base = None
-
-        if zephyr_base is not None:
-            self.zephyr_base = Path(zephyr_base)
-
-        if self.zephyr_base is None:
-            self.zephyr_base = self._search_for_zephyr_base()
-            KLogger.info(f"Found Zephyr at {self.zephyr_base}")
-
-        if self.zephyr_base is None:
-            self.zephyr_base = self._init_zephyr()
-            KLogger.info(f"Initialized Zephyr at {self.zephyr_base}")
-
-        os.environ["ZEPHYR_BASE"] = str(self.zephyr_base)
-
-        self._update_zephyr()
-        KLogger.info("Updated Zephyr")
-
-        self._prepare_venv()
-        KLogger.info("Prepared venv")
-
-        self._prepare_modules()
-        KLogger.info("Prepared modules")
-
         super().__init__(
-            workspace=workspace,
+            workspace=workspace.resolve(),
             runtime_location=runtime_location,
             model_framework=model_framework,
         )
 
+        self.board = board
+
+        self.application_dir = self._fix_relative(application_dir)
+        if not self.application_dir.exists():
+            msg = (
+                "Application source directory "
+                f"'{self.application_dir}' doesn't exist."
+            )
+            raise FileNotFoundError(msg)
+
+        self.build_dir = self._fix_relative(build_dir)
+        self.build_dir.mkdir(exist_ok=True)
+
+        self.venv_dir = self._fix_relative(venv_dir)
+
+        self._westrun = _WestRun(workspace, zephyr_base, self.venv_dir)
+
+        if not self._westrun.has_zephyr_base():
+            self._westrun.init()
+
+        self._westrun.update()
+        KLogger.info("Updated Zephyr")
+
+        self._prepare_modules()
+        KLogger.info("Prepared modules")
+
     def build(self) -> Path:
-        self._build_project(f"{self.model_framework}.conf")
+        self._westrun.build(
+            self.board,
+            self.application_dir,
+            self.build_dir,
+            f"{self.model_framework}.conf",
+            True,
+        )
+
         KLogger.info("Built runtime")
 
         runtime_elf = self.build_dir / "zephyr/zephyr.elf"
@@ -156,101 +286,21 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         return runtime_elf
 
-    def _fix_relative(self, base: Path, p: Path) -> Path:
-        if p.is_relative_to(base):
-            p = p.relative_to(base)
+    def _fix_relative(self, p: Path) -> Path:
+        if p.is_relative_to(self.workspace):
+            p = p.relative_to(self.workspace)
         else:
-            p = base / p
+            p = self.workspace / p
 
         return p
-
-    def _search_for_zephyr_base(self):
-        if (p := os.environ.get("ZEPHYR_BASE", None)) is not None:
-            return Path(p)
-
-        for p in self.workspace.parents:
-            if (p / ".west").exists():
-                return p / "zephyr"
-
-    def _init_zephyr(self):
-        try:
-            subprocess.run(
-                [self._west_path, "init", "-l", str(self.workspace)],
-                **self._subprocess_cfg,
-            ).check_returncode()
-        except subprocess.CalledProcessError as e:
-            raise Exception("west init failed.") from e
-
-        return self.workspace.parent / "zephyr"
-
-    def _update_zephyr(self):
-        try:
-            subprocess.run(
-                [self._west_path, "update"], **self._subprocess_cfg
-            ).check_returncode()
-        except subprocess.CalledProcessError as e:
-            raise Exception("west update failed.") from e
 
     def _prepare_modules(self):
         try:
             subprocess.run(
                 ["./scripts/prepare_modules.sh"],
                 cwd=self.workspace,
-                **self._subprocess_cfg,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
             raise Exception("failed to prepare modules") from e
-
-    def _build_project(self, extra_conf_file, pristine=True):
-        cmd = [
-            self._west_path,
-            "build",
-            "--pristine",
-            "always" if pristine else "auto",
-            "--board",
-            self.board,
-            "--build-dir",
-            self.build_dir,
-            self.application_dir,
-            "--",
-            f"-DEXTRA_CONF_FILE={extra_conf_file}",
-        ]
-
-        try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
-        except subprocess.CalledProcessError as e:
-            msg = (
-                "Zephyr build failed. Try removing"
-                f'"{self.build_dir}" and try again.'
-            )
-            raise Exception(msg) from e
-
-    def _prepare_venv(self):
-        venv.EnvBuilder(clear=True, with_pip=True).create(self.venv_dir)
-
-        cmd = [
-            str(self.venv_dir / "bin/pip"),
-            "install",
-            "-r",
-            str(self.zephyr_base / "scripts/requirements.txt"),
-        ]
-
-        try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
-        except subprocess.CalledProcessError:
-            raise Exception("venv setup failed")
-
-    @property
-    def _west_path(self):
-        if (self.venv_dir / "bin/west").exists():
-            return str(self.venv_dir / "bin/west")
-
-        return "west"
-
-    @property
-    def _subprocess_cfg(self):
-        stream = None if KLogger.level <= logging.DEBUG else subprocess.DEVNULL
-        return {
-            "stdout": stream,
-            "stderr": stream,
-        }

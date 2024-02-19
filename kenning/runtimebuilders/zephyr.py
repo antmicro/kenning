@@ -9,6 +9,7 @@ Wrapper for west.
 import logging
 import os
 import subprocess
+import venv
 from pathlib import Path
 from typing import Optional
 
@@ -37,6 +38,11 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "type": Path,
             "default": Path("./build"),
         },
+        "venv_dir": {
+            "description": "venv directory for west",
+            "type": Path,
+            "default": Path("./venv"),
+        },
         "zephyr_base": {
             "description": "The path to the Zephyr base",
             "type": Path,
@@ -58,6 +64,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         model_framework: Optional[str] = None,
         application_dir: Path = Path("./app"),
         build_dir: Path = Path("./build"),
+        venv_dir: Path = Path("./venv"),
         zephyr_base: Optional[Path] = None,
     ):
         """
@@ -78,6 +85,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             In the kenning-zephyr-runtime it's always './app'.
         build_dir: Path
             Path to the project's build directory.
+        venv_dir: Path
+            Venv for west
         zephyr_base: Optional[Path]
             Path to the Zephyr base.
 
@@ -100,6 +109,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.build_dir = self._fix_relative(workspace, build_dir)
         self.build_dir.mkdir(exist_ok=True)
 
+        self.venv_dir = self._fix_relative(workspace, venv_dir)
+
         self.model_framework = model_framework
 
         self.zephyr_base = None
@@ -119,6 +130,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         self._update_zephyr()
         KLogger.info("Updated Zephyr")
+
+        self._prepare_venv()
+        KLogger.info("Prepared venv")
 
         self._prepare_modules()
         KLogger.info("Prepared modules")
@@ -161,10 +175,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def _init_zephyr(self):
         try:
             subprocess.run(
-                ["west", "init", "-l", str(self.workspace)],
+                [self._west_path, "init", "-l", str(self.workspace)],
                 **self._subprocess_cfg,
             ).check_returncode()
-            # subprocess.run(["west", "zephyr-export"]).check_returncode()
         except subprocess.CalledProcessError as e:
             raise Exception("west init failed.") from e
 
@@ -173,7 +186,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def _update_zephyr(self):
         try:
             subprocess.run(
-                ["west", "update"], **self._subprocess_cfg
+                [self._west_path, "update"], **self._subprocess_cfg
             ).check_returncode()
         except subprocess.CalledProcessError as e:
             raise Exception("west update failed.") from e
@@ -190,7 +203,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
     def _build_project(self, extra_conf_file, pristine=True):
         cmd = [
-            "west",
+            self._west_path,
             "build",
             "--pristine",
             "always" if pristine else "auto",
@@ -211,6 +224,28 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
                 f'"{self.build_dir}" and try again.'
             )
             raise Exception(msg) from e
+
+    def _prepare_venv(self):
+        venv.EnvBuilder(clear=True, with_pip=True).create(self.venv_dir)
+
+        cmd = [
+            str(self.venv_dir / "bin/pip"),
+            "install",
+            "-r",
+            str(self.zephyr_base / "scripts/requirements.txt"),
+        ]
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError:
+            raise Exception("venv setup failed")
+
+    @property
+    def _west_path(self):
+        if (self.venv_dir / "bin/west").exists():
+            return str(self.venv_dir / "bin/west")
+
+        return "west"
 
     @property
     def _subprocess_cfg(self):

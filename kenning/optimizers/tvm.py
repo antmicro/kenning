@@ -368,7 +368,7 @@ class TVMCompiler(Optimizer):
         },
         "opt_level": {
             "description": "The optimization level of the compilation",
-            "default": 2,
+            "default": 3,
             "type": int,
         },
         "libdarknet_path": {
@@ -434,7 +434,7 @@ class TVMCompiler(Optimizer):
         target: str = "llvm",
         target_microtvm_board: Optional[str] = None,
         target_host: Optional[str] = None,
-        opt_level: int = 2,
+        opt_level: int = 3,
         libdarknet_path: str = "/usr/local/lib/libdarknet.so",
         use_tvm_vm: bool = False,
         conversion_func: str = "default",
@@ -595,7 +595,7 @@ class TVMCompiler(Optimizer):
 
         if self.use_tvm_vm:
             with tvm.transform.PassContext(
-                opt_level=3, disabled_pass=["FoldScaleAxis"]
+                opt_level=self.opt_level, disabled_pass=["FoldScaleAxis"]
             ):
                 mod = additional_opts(mod)
                 vm_exec = relay.vm.compile(
@@ -611,7 +611,7 @@ class TVMCompiler(Optimizer):
                 pass_config["tir.disable_vectorize"] = True
 
             with tvm.transform.PassContext(
-                opt_level=3,
+                opt_level=self.opt_level,
                 config=pass_config,
                 disabled_pass=["AlterOpLayout"],
             ):
@@ -645,6 +645,9 @@ class TVMCompiler(Optimizer):
 
                 with open(outputpath, "wb") as graph_f:
                     graph_f.write(graph_data)
+
+                with open(outputpath.with_suffix(".c"), "w") as ops_f:
+                    ops_f.write(lib.get_lib().get_source())
 
             else:
                 lib.export_library(outputpath)

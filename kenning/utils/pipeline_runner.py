@@ -385,7 +385,17 @@ class PipelineRunner(object):
         )
 
         ret = True
-        if self.protocol and not isinstance(self.runtime, RenodeRuntime):
+        if (
+            self.protocol
+            and not isinstance(self.runtime, RenodeRuntime)
+            and (
+                run_benchmarks
+                or any(
+                    optimizer.location == "target"
+                    for optimizer in self.optimizers
+                )
+            )
+        ):
             check_request(self.protocol.initialize_client(), "prepare client")
         model_path = self.handle_optimizations(
             convert_to_onnx, run_optimizations

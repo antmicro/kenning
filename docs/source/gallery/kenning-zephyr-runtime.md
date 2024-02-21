@@ -30,17 +30,11 @@ git clone https://github.com/antmicro/kenning-zephyr-runtime
 cd kenning-zephyr-runtime
 ```
 
-Now create Python's virtual environment and install [west](https://github.com/zephyrproject-rtos/west) - Zephyr's command line tool:
-```bash
-python3 -m venv venv
-source venv/bin/activate
-pip install west cmake
-```
-
-Then, initialize Zephyr workspace and ensure that latest Zephyr SDK is installed:
+Then, initialize Zephyr workspace, ensure that latest Zephyr SDK is installed, and prepare a Python's virtual environment with:
 
 ```bash
 ./scripts/prepare_zephyr_env.sh
+source .venv/bin/activate
 ```
 
 Finally, prepare additional modules:

@@ -27,6 +27,11 @@ from tqdm import tqdm
 
 from kenning.utils.singleton import Singleton
 
+CUSTOM_LEVEL_STYLES = {
+    "renode": {"color": "blue"},
+    "verbose": {"color": "cyan"},
+}
+
 
 class _KLogger(logging.Logger, metaclass=Singleton):
     """
@@ -47,6 +52,9 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             logger=self,
             level="NOTSET",
             fmt=_KLogger.FORMAT.format(package="kenning"),
+            level_styles=dict(
+                coloredlogs.DEFAULT_LEVEL_STYLES, **CUSTOM_LEVEL_STYLES
+            ),
         )
         if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
             self.configure()
@@ -97,6 +105,43 @@ class _KLogger(logging.Logger, metaclass=Singleton):
                 logger = logging.getLogger(name)
                 logger.setLevel(level)
                 coloredlogs.adjust_level(logger, level)
+
+    def add_custom_level(self, level_num: int, level_name: str):
+        """
+        Add custom logging level.
+
+        Parameters
+        ----------
+        level_num : int
+            Integer representing the level.
+        level_name : str
+            New log level name.
+
+        Raises
+        ------
+        AttributeError
+            Raised if level is already defined.
+        """
+        if hasattr(logging, level_name):
+            raise AttributeError(f"{level_name} already defined")
+        if hasattr(logging, level_name.lower()):
+            raise AttributeError(f"{level_name.lower()} already defined")
+        if hasattr(self, level_name.lower()):
+            raise AttributeError(
+                f"{level_name.lower()} already defined in KLogger"
+            )
+
+        def custom_log(self, message, *args, **kwargs):
+            if self.isEnabledFor(level_num):
+                self._log(level_num, message, args, **kwargs)
+
+        def custom_log_root(message, *args, **kwargs):
+            logging.log(level_num, message, *args, **kwargs)
+
+        logging.addLevelName(level_num, level_name)
+        setattr(logging, level_name, level_num)
+        setattr(self.__class__, level_name.lower(), custom_log)
+        setattr(logging, level_name.lower(), custom_log_root)
 
 
 KLogger = _KLogger()

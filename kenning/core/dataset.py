@@ -68,6 +68,17 @@ class DatasetIterator:
         self.dataset._dataindices = self.indices
         return self.dataset
 
+    def __len__(self) -> int:
+        """
+        Returns iterator length.
+
+        Returns
+        -------
+        int
+            The length of the iterator.
+        """
+        return len(self.indices)
+
 
 class Dataset(ArgumentsHandler, ABC):
     """

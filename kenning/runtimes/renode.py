@@ -6,6 +6,7 @@
 Runtime implementation for Renode.
 """
 
+import logging
 import struct
 import tempfile
 from collections import defaultdict
@@ -17,15 +18,14 @@ import tqdm
 from serial import Serial
 
 from kenning.core.dataset import Dataset
-from kenning.core.measurements import (
-    Measurements,
-    MeasurementsCollector,
-)
+from kenning.core.measurements import Measurements, MeasurementsCollector
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
+KLogger.add_custom_level(logging.INFO + 1, "RENODE")
 
 
 class RenodeRuntime(Runtime):
@@ -183,7 +183,11 @@ class RenodeRuntime(Runtime):
         self.profiler_interval_step = profiler_interval_step
         self.sensor = sensor
         self.batches_count = batches_count
-        self.runtime_logs = ""
+        self.renode_log_file = None
+        self.renode_log_file_name = None
+        self.renode_log_buffer = ""
+        self.uart_log_buffer = ""
+        self.renode_logs = []
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )
@@ -258,10 +262,7 @@ class RenodeRuntime(Runtime):
                         _, y = sample
                         measurements += dataset._evaluate(posty, y, out_spec)
 
-                    if self.runtime_log_uart is not None:
-                        self.runtime_logs += (
-                            self.runtime_log_uart.read_all().decode()
-                        )
+                    self.handle_renode_logs()
 
             # get opcode stats after inference
             if not self.disable_performance_measurements:
@@ -284,15 +285,7 @@ class RenodeRuntime(Runtime):
             MeasurementsCollector.measurements += measurements
         finally:
             self.clear_renode()
-            if self.runtime_log_uart is not None:
-                while True:
-                    logs = self.runtime_log_uart.read_all()
-                    if not len(logs):
-                        break
-                    self.runtime_logs += logs.decode()
-
-                KLogger.info(f"Runtime logs:\n{self.runtime_logs}")
-
+            self.handle_renode_logs()
         if (
             not self.disable_performance_measurements
             and not self.disable_profiler
@@ -300,6 +293,38 @@ class RenodeRuntime(Runtime):
             MeasurementsCollector.measurements += self.get_profiler_stats()
 
         return True
+
+    def handle_renode_logs(self):
+        """
+        Captures log from UART and Renode console.
+        """
+        # capture Renode console logs
+        if not self.renode_log_file.closed and self.renode_log_file.readable():
+            while True:
+                logs = self.renode_log_file.read()
+                if not len(logs):
+                    break
+                self.renode_log_buffer += logs
+
+            *new_logs, self.renode_log_buffer = self.renode_log_buffer.split(
+                "\n"
+            )
+            self.renode_logs.extend(new_logs)
+            for new_log in new_logs:
+                KLogger.renode(new_log)
+
+        # capture UART logs
+        if self.runtime_log_uart is not None:
+            while True:
+                logs = self.runtime_log_uart.read_all()
+                if not len(logs):
+                    break
+                self.uart_log_buffer += logs.decode()
+
+            *new_logs, self.uart_log_buffer = self.uart_log_buffer.split("\n")
+            self.renode_logs.extend(new_logs)
+            for new_log in new_logs:
+                KLogger.renode(new_log)
 
     def get_time(self):
         if self.machine is None:
@@ -313,6 +338,14 @@ class RenodeRuntime(Runtime):
         self.machine = None
         Emulation().PauseAll()
         Emulation().clear()
+
+        if (
+            self.renode_log_file is not None
+            and not self.renode_log_file.closed
+        ):
+            self.renode_log_file.close()
+        if self.log_file_path is not None:
+            self.log_file_path.unlink()
 
     def init_renode(self):
         """
@@ -344,6 +377,10 @@ class RenodeRuntime(Runtime):
         log_tester = LogTester(10)
         Logger.AddBackend(log_tester, "logTester")
 
+        self.log_file_path = Path(tempfile.mktemp(prefix="renode_log_"))
+
+        monitor.execute(f"logFile @{self.log_file_path.resolve()}")
+        self.renode_log_file = open(self.log_file_path, "r")
         monitor.execute(f"$bin=@{self.runtime_binary_path}")
 
         for dep in self.resc_dependencies:
@@ -375,24 +412,27 @@ class RenodeRuntime(Runtime):
 
         if self.runtime_log_init_msg is not None:
             KLogger.info("Waiting for runtime init")
-            if self.runtime_log_uart is not None:
-                timeout = perf_counter() + 30
-                while self.runtime_log_init_msg not in self.runtime_logs:
-                    self.runtime_logs += (
-                        self.runtime_log_uart.read_all().decode()
-                    )
-                    if perf_counter() > timeout:
-                        KLogger.debug(f"Runtime logs:\n{self.runtime_logs}")
-                        raise TimeoutError(
-                            "Runtime did not initialize in 30 seconds"
-                        )
-                    sleep(0.2)
+            timeout = perf_counter() + 30
+            log_idx = 0
+            while True:
+                self.handle_renode_logs()
+                initialized = False
+                while log_idx < len(self.renode_logs):
+                    if self.runtime_log_init_msg in self.renode_logs[log_idx]:
+                        initialized = True
+                        break
+                    log_idx += 1
 
-            else:
-                log_tester.WaitForEntry(
-                    rf".*{self.runtime_log_init_msg}.*",
-                    treatAsRegex=True,
-                )
+                if initialized:
+                    break
+
+                if perf_counter() > timeout:
+                    KLogger.debug(f"Runtime logs:\n{self.renode_logs}")
+                    raise TimeoutError(
+                        "Runtime did not initialize in 30 seconds"
+                    )
+
+                sleep(0.2)
 
         Logger.RemoveBackend(log_tester)
         KLogger.info("Renode initialized")

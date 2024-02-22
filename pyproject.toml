@@ -128,6 +128,9 @@ renode = [
     "pyrenode3 @ git+https://github.com/antmicro/pyrenode3.git",
     "renode-run @ git+https://github.com/antmicro/renode-run.git",
 ]
+zephyr = [
+    "west",
+]
 nni = [
     "kenning[torch]",
     "dill~=0.3.6",

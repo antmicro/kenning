@@ -299,6 +299,10 @@ class RenodeRuntime(Runtime):
         Captures log from UART and Renode console.
         """
         # capture Renode console logs
+        from Antmicro.Renode.Logging import Logger
+
+        Logger.Flush()
+
         if not self.renode_log_file.closed and self.renode_log_file.readable():
             while True:
                 logs = self.renode_log_file.read()

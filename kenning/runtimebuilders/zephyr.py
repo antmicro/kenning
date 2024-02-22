@@ -255,7 +255,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         self.venv_dir = self._fix_relative(venv_dir)
 
-        self._westrun = _WestRun(workspace, zephyr_base, self.venv_dir)
+        self._westrun = _WestRun(self.workspace, zephyr_base, self.venv_dir)
 
         if not self._westrun.has_zephyr_base():
             self._westrun.init()
@@ -288,11 +288,12 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
     def _fix_relative(self, p: Path) -> Path:
         if p.is_relative_to(self.workspace):
-            p = p.relative_to(self.workspace)
-        else:
-            p = self.workspace / p
+            return p
+        if not p.is_absolute():
+            return self.workspace / p
 
-        return p
+        msg = f"Invalid path: '{p}'"
+        raise ValueError(msg)
 
     def _prepare_modules(self):
         try:

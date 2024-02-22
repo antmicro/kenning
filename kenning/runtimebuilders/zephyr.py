@@ -36,7 +36,8 @@ class _WestRun:
         try:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
-            raise Exception("west init failed.") from e
+            msg = "Zephyr Workspace initialization failed."
+            raise Exception(msg) from e
 
     def update(self):
         self._ensure_zephyr_base()
@@ -46,7 +47,8 @@ class _WestRun:
         try:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
-            raise Exception("west update failed.") from e
+            msg = "Zephyr Workspace update failed."
+            raise Exception(msg) from e
 
     def build(
         self,
@@ -80,7 +82,7 @@ class _WestRun:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
             msg = (
-                "Zephyr build failed. Try removing"
+                "Zephyr build failed. Try removing "
                 f"'{build_dir}' and try again."
             )
             raise Exception(msg) from e
@@ -98,7 +100,8 @@ class _WestRun:
 
         self._zephyr_base = self._search_for_zephyr_base()
         if self._zephyr_base is None:
-            raise Exception("zephyr base not found")
+            msg = "Couldn't find Zephyr base."
+            raise Exception(msg)
 
         os.environ["ZEPHYR_BASE"] = str(self._zephyr_base)
 
@@ -128,7 +131,8 @@ class _WestRun:
         try:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError:
-            raise Exception("venv setup failed")
+            msg = "Setting up virtual environment for west failed."
+            raise Exception(msg)
 
     def _search_for_zephyr_base(self):
         if (p := os.environ.get("ZEPHYR_BASE", None)) is not None:
@@ -163,27 +167,27 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
     arguments_structure = {
         "board": {
-            "description": "Zephyr board",
+            "description": "Zephyr name of the target board",
             "type": str,
             "required": True,
         },
         "application_dir": {
-            "description": "Application source directory",
+            "description": "Workspace relative path to the app directory",
             "type": Path,
-            "default": Path("./app"),
+            "default": Path("app"),
         },
         "build_dir": {
-            "description": "Build directory",
+            "description": "Workspace relative path to the build directory",
             "type": Path,
-            "default": Path("./build"),
+            "default": Path("build"),
         },
         "venv_dir": {
-            "description": "venv directory for west",
+            "description": "Workspace relative path to west's venv",
             "type": Path,
-            "default": Path("./venv"),
+            "default": Path(".west-venv"),
         },
         "zephyr_base": {
-            "description": "The path to the Zephyr base",
+            "description": "Path to the Zephyr base",
             "type": Path,
             "default": None,
             "nullable": True,
@@ -245,7 +249,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.application_dir = self._fix_relative(application_dir)
         if not self.application_dir.exists():
             msg = (
-                "Application source directory "
+                "Application directory "
                 f"'{self.application_dir}' doesn't exist."
             )
             raise FileNotFoundError(msg)
@@ -261,7 +265,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             self._westrun.init()
 
         self._westrun.update()
-        KLogger.info("Updated Zephyr")
+        KLogger.info(f"Updated Zephyr workspace in '{self.workspace}'")
 
         self._prepare_modules()
         KLogger.info("Prepared modules")
@@ -275,15 +279,21 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             True,
         )
 
-        KLogger.info("Built runtime")
-
         runtime_elf = self.build_dir / "zephyr/zephyr.elf"
 
         if self.runtime_location is not None:
             self.runtime_location.unlink(missing_ok=True)
             self.runtime_location.symlink_to(runtime_elf)
+            KLogger.info(
+                "Zephyr Runtime was build and "
+                f"symlinked to '{self.runtime_location.absolute()}'"
+            )
             return self.runtime_location
 
+        KLogger.info(
+            "Zephyr Runtime was build and "
+            f"is located in '{runtime_elf.absolute()}'"
+        )
         return runtime_elf
 
     def _fix_relative(self, p: Path) -> Path:
@@ -304,4 +314,4 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
                 stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
-            raise Exception("failed to prepare modules") from e
+            raise Exception("Module preparation failed") from e

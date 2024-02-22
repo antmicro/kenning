@@ -20,7 +20,7 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
 
     arguments_structure = {
         "workspace": {
-            "description": "The path to the runtime source",
+            "description": "Path to the runtime source",
             "type": Path,
             "required": True,
         },
@@ -31,7 +31,7 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
             "nullable": True,
         },
         "model_framework": {
-            "description": "Model framework",
+            "description": "Name of the target model framework",
             "type": str,
             "default": None,
             "nullable": True,

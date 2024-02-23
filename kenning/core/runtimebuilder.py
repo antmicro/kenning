@@ -66,7 +66,11 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
             self.set_input_framework(model_framework)
 
     @abstractmethod
-    def build(self):
+    def build(self) -> Path:
+        """
+        Builds the runtime for the selected model framework
+        and stores the result in the chosen location.
+        """
         ...
 
     def set_input_framework(self, model_framework, force=False):

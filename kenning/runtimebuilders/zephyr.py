@@ -18,6 +18,14 @@ from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
 
 
+class WestExecutionError(Exception):
+    """
+    Exception raised when West fails.
+    """
+
+    ...
+
+
 class _WestRun:
     def __init__(
         self, workspace=None, zephyr_base=None, venv_dir=None
@@ -54,7 +62,7 @@ class _WestRun:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
             msg = "Zephyr Workspace initialization failed."
-            raise Exception(msg) from e
+            raise WestExecutionError(msg) from e
 
     @ensure_zephyr_base
     def update(self):
@@ -64,7 +72,7 @@ class _WestRun:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError as e:
             msg = "Zephyr Workspace update failed."
-            raise Exception(msg) from e
+            raise WestExecutionError(msg) from e
 
     @ensure_zephyr_base
     @ensure_venv
@@ -100,12 +108,12 @@ class _WestRun:
                 "Zephyr build failed. Try removing "
                 f"'{build_dir}' and try again."
             )
-            raise Exception(msg) from e
+            raise WestExecutionError(msg) from e
 
     def has_zephyr_base(self) -> bool:
         try:
             self._ensure_zephyr_base()
-        except Exception:
+        except FileNotFoundError:
             return False
         return True
 
@@ -116,7 +124,7 @@ class _WestRun:
         self._zephyr_base = self._search_for_zephyr_base()
         if self._zephyr_base is None:
             msg = "Couldn't find Zephyr base."
-            raise Exception(msg)
+            raise FileNotFoundError(msg)
 
         os.environ["ZEPHYR_BASE"] = str(self._zephyr_base)
 
@@ -145,7 +153,7 @@ class _WestRun:
             subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
         except subprocess.CalledProcessError:
             msg = "Setting up virtual environment for west failed."
-            raise Exception(msg)
+            raise RuntimeError(msg)
 
     def _search_for_zephyr_base(self):
         if (p := os.environ.get("ZEPHYR_BASE", None)) is not None:
@@ -327,4 +335,4 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
                 stderr=subprocess.DEVNULL,
             )
         except subprocess.CalledProcessError as e:
-            raise Exception("Module preparation failed") from e
+            raise RuntimeError("Module preparation failed") from e

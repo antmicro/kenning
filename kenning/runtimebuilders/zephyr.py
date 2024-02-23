@@ -26,13 +26,32 @@ class WestExecutionError(Exception):
     ...
 
 
-class _WestRun:
+class WestRun:
+    """
+    Allows for easy execution of West commands.
+    """
+
     def __init__(
-        self, workspace=None, zephyr_base=None, venv_dir=None
+        self,
+        workspace: "Optional[os.PathLike[str] | str]" = None,
+        zephyr_base: "Optional[os.PathLike[str] | str]" = None,
+        venv_dir: "Optional[os.PathLike[str] | str]" = None,
     ) -> None:
-        self._venv_dir = venv_dir
-        self._zephyr_base = zephyr_base
-        self._workspace = Path.cwd() if workspace is None else workspace
+        """
+        Prepares the WestRun object.
+
+        Parameters
+        ----------
+        workspace : Optional[os.PathLike[str] | str]
+            Path to the Zephyr workspace
+        zephyr_base : Optional[os.PathLike[str] | str]
+            Path to the Zephyr base
+        venv_dir : Optional[os.PathLike[str] | str]
+            Path to where the venv should be placed
+        """
+        self._venv_dir = None if venv_dir is None else Path(venv_dir)
+        self._zephyr_base = None if zephyr_base is None else Path(zephyr_base)
+        self._workspace = Path.cwd() if workspace is None else Path(workspace)
 
     def ensure_zephyr_base(func):
         @wraps(func)
@@ -280,7 +299,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         self.venv_dir = self._fix_relative(venv_dir)
 
-        self._westrun = _WestRun(self.workspace, zephyr_base, self.venv_dir)
+        self._westrun = WestRun(self.workspace, zephyr_base, self.venv_dir)
 
         if not self._westrun.has_zephyr_base():
             self._westrun.init()

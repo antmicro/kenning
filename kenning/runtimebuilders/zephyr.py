@@ -10,6 +10,7 @@ import logging
 import os
 import subprocess
 import venv
+from functools import wraps
 from pathlib import Path
 from typing import Optional
 
@@ -25,6 +26,22 @@ class _WestRun:
         self._zephyr_base = zephyr_base
         self._workspace = Path.cwd() if workspace is None else workspace
 
+    def ensure_zephyr_base(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self._ensure_zephyr_base()
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
+    def ensure_venv(func):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            self._ensure_venv()
+            return func(self, *args, **kwargs)
+
+        return wrapper
+
     def init(self):
         cmd = [
             self._west_exe,
@@ -39,9 +56,8 @@ class _WestRun:
             msg = "Zephyr Workspace initialization failed."
             raise Exception(msg) from e
 
+    @ensure_zephyr_base
     def update(self):
-        self._ensure_zephyr_base()
-
         cmd = [self._west_exe, "update"]
 
         try:
@@ -50,6 +66,8 @@ class _WestRun:
             msg = "Zephyr Workspace update failed."
             raise Exception(msg) from e
 
+    @ensure_zephyr_base
+    @ensure_venv
     def build(
         self,
         board,
@@ -58,9 +76,6 @@ class _WestRun:
         extra_conf_file=None,
         pristine=True,
     ):
-        self._ensure_zephyr_base()
-        self._ensure_venv()
-
         cmd = [
             self._west_exe,
             "build",
@@ -105,9 +120,8 @@ class _WestRun:
 
         os.environ["ZEPHYR_BASE"] = str(self._zephyr_base)
 
+    @ensure_zephyr_base
     def _ensure_venv(self):
-        self._ensure_zephyr_base()
-
         if self._venv_dir is None:
             self._venv_dir = self._zephyr_base.parent / ".west-venv"
 
@@ -116,9 +130,8 @@ class _WestRun:
 
         self._prepare_venv()
 
+    @ensure_zephyr_base
     def _prepare_venv(self):
-        self._ensure_zephyr_base()
-
         venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
 
         cmd = [

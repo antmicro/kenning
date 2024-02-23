@@ -8,6 +8,7 @@ Wrapper for west.
 
 import logging
 import os
+import shutil
 import subprocess
 import venv
 from functools import wraps
@@ -323,10 +324,11 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         if self.runtime_location is not None:
             self.runtime_location.unlink(missing_ok=True)
-            self.runtime_location.symlink_to(runtime_elf)
+            shutil.copy(runtime_elf, self.runtime_location)
+
             KLogger.info(
                 "Zephyr Runtime was build and "
-                f"symlinked to '{self.runtime_location.absolute()}'"
+                f"copied to '{self.runtime_location.absolute()}'"
             )
             return self.runtime_location
 

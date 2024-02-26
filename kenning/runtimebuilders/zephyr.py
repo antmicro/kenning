@@ -54,7 +54,7 @@ class WestRun:
         self._zephyr_base = None if zephyr_base is None else Path(zephyr_base)
         self._workspace = Path.cwd() if workspace is None else Path(workspace)
 
-    def ensure_zephyr_base(func):
+    def _ensure_zephyr_base(func):
         """
         Ensures that Zephyr base is found before the decorated
         function is called.
@@ -62,12 +62,12 @@ class WestRun:
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            self._ensure_zephyr_base()
+            self._ensure_zephyr_base_helper()
             return func(self, *args, **kwargs)
 
         return wrapper
 
-    def ensure_venv(func):
+    def _ensure_venv(func):
         """
         Ensures that virtual environment for West is created before
         the decorated function is called.
@@ -75,7 +75,7 @@ class WestRun:
 
         @wraps(func)
         def wrapper(self, *args, **kwargs):
-            self._ensure_venv()
+            self._ensure_venv_helper()
             return func(self, *args, **kwargs)
 
         return wrapper
@@ -86,15 +86,15 @@ class WestRun:
         """
         self._subprocess_west_run(["init", "-l", str(self._workspace)])
 
-    @ensure_zephyr_base
+    @_ensure_zephyr_base
     def update(self):
         """
         Wrapper for 'west update'.
         """
         self._subprocess_west_run(["update"])
 
-    @ensure_zephyr_base
-    @ensure_venv
+    @_ensure_zephyr_base
+    @_ensure_venv
     def build(
         self,
         board: str,
@@ -141,12 +141,12 @@ class WestRun:
         Checks if Zephyr base exists.
         """
         try:
-            self._ensure_zephyr_base()
+            self._ensure_zephyr_base_helper()
         except FileNotFoundError:
             return False
         return True
 
-    def _ensure_zephyr_base(self):
+    def _ensure_zephyr_base_helper(self):
         if self._zephyr_base is not None:
             return
 
@@ -157,8 +157,8 @@ class WestRun:
 
         os.environ["ZEPHYR_BASE"] = str(self._zephyr_base)
 
-    @ensure_zephyr_base
-    def _ensure_venv(self):
+    @_ensure_zephyr_base
+    def _ensure_venv_helper(self):
         if self._venv_dir is None:
             self._venv_dir = self._zephyr_base.parent / ".west-venv"
 
@@ -167,7 +167,7 @@ class WestRun:
 
         self._prepare_venv()
 
-    @ensure_zephyr_base
+    @_ensure_zephyr_base
     def _prepare_venv(self):
         venv.EnvBuilder(clear=True, with_pip=True).create(self._venv_dir)
 

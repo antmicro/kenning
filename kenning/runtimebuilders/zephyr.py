@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Wrapper for west.
+Provides a runtime builder capable of compiling the Kenning Zephyr runtime.
 """
 
 import logging
@@ -55,6 +55,11 @@ class WestRun:
         self._workspace = Path.cwd() if workspace is None else Path(workspace)
 
     def ensure_zephyr_base(func):
+        """
+        Ensures that Zephyr base is found before the decorated
+        function is called.
+        """
+
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             self._ensure_zephyr_base()
@@ -63,6 +68,11 @@ class WestRun:
         return wrapper
 
     def ensure_venv(func):
+        """
+        Ensures that virtual environment for West is created before
+        the decorated function is called.
+        """
+
         @wraps(func)
         def wrapper(self, *args, **kwargs):
             self._ensure_venv()
@@ -71,42 +81,47 @@ class WestRun:
         return wrapper
 
     def init(self):
-        cmd = [
-            self._west_exe,
-            "init",
-            "-l",
-            str(self._workspace),
-        ]
-
-        try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
-        except subprocess.CalledProcessError as e:
-            msg = "Zephyr Workspace initialization failed."
-            raise WestExecutionError(msg) from e
+        """
+        Wrapper for 'west init'.
+        """
+        self._subprocess_west_run(["init", "-l", str(self._workspace)])
 
     @ensure_zephyr_base
     def update(self):
-        cmd = [self._west_exe, "update"]
-
-        try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
-        except subprocess.CalledProcessError as e:
-            msg = "Zephyr Workspace update failed."
-            raise WestExecutionError(msg) from e
+        """
+        Wrapper for 'west update'.
+        """
+        self._subprocess_west_run(["update"])
 
     @ensure_zephyr_base
     @ensure_venv
     def build(
         self,
-        board,
-        application_dir,
-        build_dir=None,
-        extra_conf_file=None,
-        pristine=True,
+        board: str,
+        application_dir: "os.PathLike[str] | Path",
+        build_dir: "Optional[os.PathLike[str] | Path]" = None,
+        extra_conf_file: "Optional[str]" = None,
+        pristine: bool = True,
     ):
-        cmd = [
-            self._west_exe,
+        """
+        Wrapper for 'west build'.
+
+        Parameters
+        ----------
+        board : str
+            Name of the board passed to '--board'
+        application_dir : os.PathLike[str] | Path
+            Path to the application dir (usually './app')
+        build_dir : Optional[os.PathLike[str] | Path]
+            Path to where the build directory should be located
+        extra_conf_file : Optional[str]
+            Name of the additional .conf file
+        pristine : bool
+            If '-p always' should be used
+        """
+        params = [
             "build",
+            str(application_dir),
             "--pristine",
             "always" if pristine else "auto",
             "--board",
@@ -114,23 +129,17 @@ class WestRun:
         ]
 
         if build_dir is not None:
-            cmd.extend(["--build-dir", str(build_dir)])
-
-        cmd.append(str(application_dir))
+            params.extend(["--build-dir", str(build_dir)])
 
         if extra_conf_file is not None:
-            cmd.extend(["--", f"-DEXTRA_CONF_FILE={extra_conf_file}"])
+            params.extend(["--", f"-DEXTRA_CONF_FILE={extra_conf_file}"])
 
-        try:
-            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
-        except subprocess.CalledProcessError as e:
-            msg = (
-                "Zephyr build failed. Try removing "
-                f"'{build_dir}' and try again."
-            )
-            raise WestExecutionError(msg) from e
+        self._subprocess_west_run(params)
 
     def has_zephyr_base(self) -> bool:
+        """
+        Checks if Zephyr base exists.
+        """
         try:
             self._ensure_zephyr_base()
         except FileNotFoundError:
@@ -183,8 +192,7 @@ class WestRun:
             if (p / ".west").exists():
                 return p / "zephyr"
 
-    @property
-    def _west_exe(self):
+    def _get_west_executable(self):
         west_path = self._venv_dir / "bin/west"
 
         if (west_path).exists():
@@ -192,13 +200,24 @@ class WestRun:
 
         return "west"
 
+    def _subprocess_west_run(self, params):
+        cmd = [self._get_west_executable(), *params]
+
+        try:
+            subprocess.run(cmd, **self._subprocess_cfg).check_returncode()
+        except subprocess.CalledProcessError as e:
+            msg = f"Command: '{' '.join(cmd)}' failed"
+            if e.stderr is not None:
+                msg += f" with a message:\n\n{e.stderr.decode()}"
+            raise WestExecutionError(msg) from e
+
     @property
     def _subprocess_cfg(self):
-        stream = None if KLogger.level <= logging.DEBUG else subprocess.DEVNULL
-        return {
-            "stdout": stream,
-            "stderr": stream,
-        }
+        cfg = {}
+        if KLogger.level > logging.DEBUG:
+            cfg["capture_output"] = True
+
+        return cfg
 
 
 class ZephyrRuntimeBuilder(RuntimeBuilder):
@@ -223,7 +242,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "default": Path("build"),
         },
         "venv_dir": {
-            "description": "Workspace relative path to west's venv",
+            "description": "Workspace relative path to West's venv",
             "type": Path,
             "default": Path(".west-venv"),
         },
@@ -270,7 +289,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         build_dir: Path
             Path to the project's build directory.
         venv_dir: Path
-            Venv for west
+            Virtual environment for West
         zephyr_base: Optional[Path]
             Path to the Zephyr base.
 

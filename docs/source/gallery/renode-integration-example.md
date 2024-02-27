@@ -1,10 +1,6 @@
 # Bare-metal IREE runtime simulated using Renode
 
-IREE can convert and optimize models into efficient bare-metal runtimes.
-Here we use [Renode](https://renode.io/) to simulate a Springbok platform - a RISC-V-based
-accelerator, which employs [IREE](https://github.com/openxla/iree) as its machine learning compiler, which
-in turn utilizes LLVM to compile the model using RISC-V Vector Extensions to
-reduce the number of instructions needed for computationally expensive algebra operations.
+This tutorial shows how to compile models with [IREE](https://github.com/openxla/iree) and evaluate them using the [bare-metal IREE runtime](https://github.com/antmicro/kenning-bare-metal-iree-runtime) working in [Renode](https://renode.io).
 
 ## Setup
 

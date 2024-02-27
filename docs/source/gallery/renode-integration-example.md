@@ -4,18 +4,9 @@ This tutorial shows how to compile models with [IREE](https://github.com/openxla
 
 ## Setup
 
-Clone the repository using `git` and `git-lfs`:
-
-```bash
-git clone --recursive https://github.com/antmicro/kenning-bare-metal-iree-runtime
-cd kenning-bare-metal-iree-runtime
-git lfs install
-git lfs pull
-```
-
 Use `docker` to open the environment with the project dependencies installed. Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md#installing-the-dependencies-in-the-system):
 ```bash
-docker run --rm -v $(pwd):/data -w /data -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
+docker run --rm -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
 
 Kenning uses the [pyrenode3](https://github.com/antmicro/pyrenode3/) package, which requires Renode to work. To install it, download the latest Renode Arch package and store its location in `PYRENODE_PKG`:
@@ -61,7 +52,7 @@ Evaluate the model in Renode using the created scenario, and generate a report w
 
 ```bash
 kenning optimize test report \
-    --json-cfg kenning-scenarios/renode-magic-wand-iree-bare-metal-inference-prebuilt.json \
+    --json-cfg https://raw.githubusercontent.com/antmicro/kenning/main/scripts/jsonconfigs/renode-magic-wand-iree-bare-metal-inference.json \
     --measurements ./results.json \
     --report-types performance classification renode_stats \
     --report-path ./reports/springbok-magic-wand.md \

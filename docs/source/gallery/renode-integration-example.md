@@ -4,7 +4,7 @@ This tutorial shows how to compile models with [IREE](https://github.com/openxla
 
 ## Setup
 
-Use `docker` to open the environment with the project dependencies installed. Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md#installing-the-dependencies-in-the-system):
+Use `docker` to open the environment with the project dependencies installed. Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
 ```bash
 docker run --rm -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
@@ -14,7 +14,7 @@ Kenning uses the [pyrenode3](https://github.com/antmicro/pyrenode3/) package, wh
 wget https://builds.renode.io/renode-latest.pkg.tar.xz
 export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
 ```
-For other configuration options check [pyrenode3 README.md](https://github.com/antmicro/pyrenode3/blob/main/README.md#using-pyrenode3-with-different-renode-configurations).
+For other configuration options check [pyrenode3 README.md](https://github.com/antmicro/pyrenode3/blob/main/README.md).
 
 ## Evaluating the model in Kenning
 

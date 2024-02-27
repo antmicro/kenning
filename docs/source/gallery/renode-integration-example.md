@@ -8,9 +8,7 @@ reduce the number of instructions needed for computationally expensive algebra o
 
 ## Setup
 
-This section describes how to prepare the environment for evaluating models on the Springbok accelerator working in Renode.
-
-First, clone the repository using `git` and `git-lfs`:
+Clone the repository using `git` and `git-lfs`:
 
 ```bash
 git clone --recursive https://github.com/antmicro/kenning-bare-metal-iree-runtime
@@ -19,17 +17,17 @@ git lfs install
 git lfs pull
 ```
 
-Then, create and open the environment with the project dependencies installed using [Docker](https://docs.docker.com/engine/reference/commandline/container_run/):
-
+Use `docker` to open the environment with the project dependencies installed. Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md#installing-the-dependencies-in-the-system):
 ```bash
 docker run --rm -v $(pwd):/data -w /data -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
 
-Download [Renode Arch package](https://builds.renode.io/renode-latest.pkg.tar.xz) and set `PYRENODE_ARCH_PKG` to its location:
+Kenning uses the [pyrenode3](https://github.com/antmicro/pyrenode3/) package, which requires Renode to work. To install it, download the latest Renode Arch package and store its location in `PYRENODE_PKG`:
 ```bash
 wget https://builds.renode.io/renode-latest.pkg.tar.xz
-export PYRENODE_ARCH_PKG=`pwd`/renode-latest.pkg.tar.xz
+export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
 ```
+For other configuration options check [pyrenode3 README.md](https://github.com/antmicro/pyrenode3/blob/main/README.md#using-pyrenode3-with-different-renode-configurations).
 
 ## Evaluating the model in Kenning
 

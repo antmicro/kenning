@@ -41,70 +41,9 @@ Kenning can evaluate the runtime running on a device simulated in Renode. This a
 ### Creating the scenario
 
 The scenario used for evaluating the model on Springbok AI accelerator in Renode looks as follows:
-```json
-{
-    "dataset": {
-        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
-        "parameters": {
-            "dataset_root": "./build/MagicWandDataset"
-        }
-    },
-    "model_wrapper": {
-        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
-        "parameters": {
-            "model_path": "kenning:///models/classification/magic_wand.h5"
-        }
-    },
-    "optimizers":
-    [
-        {
-            "type": "kenning.optimizers.iree.IREECompiler",
-            "parameters":
-            {
-                "compiled_model_path": "./build/tflite-magic-wand.vmfb",
-                "backend": "llvm-cpu",
-                "model_framework": "keras",
-                "compiler_args": [
-                    "iree-llvm-debug-symbols=false",
-                    "iree-vm-bytecode-module-strip-source-map=true",
-                    "iree-vm-emit-polyglot-zip=false",
-                    "iree-llvm-target-triple=riscv32-pc-linux-elf",
-                    "iree-llvm-target-cpu=generic-rv32",
-                    "iree-llvm-target-cpu-features=+m,+f,+zvl512b,+zve32x,+zve32f",
-                    "iree-llvm-target-abi=ilp32"
-                ]
-            }
-        }
-    ],
-    "runtime": {
-        "type": "kenning.runtimes.renode.RenodeRuntime",
-        "parameters": {
-            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime",
-            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok.resc;branch=main",
-            "resc_dependencies": [
-                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main",
-                "third-party/iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs"
-            ],
-            "post_start_commands": [
-                "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
-            ],
-            "runtime_log_init_msg": "Runtime started",
-            "profiler_dump_path": "build/profiler.dump"
-        }
-    },
-    "protocol": {
-        "type": "kenning.protocols.uart.UARTProtocol",
-        "parameters": {
-            "port": "/tmp/uart",
-            "baudrate": 115200,
-            "endianness": "little"
-        }
-    }
-}
-
+```{literalinclude} ../scripts/jsonconfigs/renode-magic-wand-iree-bare-metal-inference.json
+:language: json
 ```
-It can be found in `kenning-scenarios/...`
-
 
 The model used in the scenario is a classifier trained on Magic Wand dataset for accelerometer based gesture recognition:
 

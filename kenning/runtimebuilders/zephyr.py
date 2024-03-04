@@ -13,7 +13,7 @@ import subprocess
 import venv
 from functools import wraps
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
@@ -34,20 +34,20 @@ class WestRun:
 
     def __init__(
         self,
-        workspace: "Optional[os.PathLike[str] | str]" = None,
-        zephyr_base: "Optional[os.PathLike[str] | str]" = None,
-        venv_dir: "Optional[os.PathLike[str] | str]" = None,
+        workspace: "Optional[Union[os.PathLike[str], str]]" = None,
+        zephyr_base: "Optional[Union[os.PathLike[str], str]]" = None,
+        venv_dir: "Optional[Union[os.PathLike[str], str]]" = None,
     ) -> None:
         """
         Prepares the WestRun object.
 
         Parameters
         ----------
-        workspace : Optional[os.PathLike[str] | str]
+        workspace : Optional[Union[os.PathLike[str], str]]
             Path to the Zephyr workspace
-        zephyr_base : Optional[os.PathLike[str] | str]
+        zephyr_base : Optional[Union[os.PathLike[str], str]]
             Path to the Zephyr base
-        venv_dir : Optional[os.PathLike[str] | str]
+        venv_dir : Optional[Union[os.PathLike[str], str]]
             Path to where the venv should be placed
         """
         self._venv_dir = None if venv_dir is None else Path(venv_dir)
@@ -98,8 +98,8 @@ class WestRun:
     def build(
         self,
         board: str,
-        application_dir: "os.PathLike[str] | Path",
-        build_dir: "Optional[os.PathLike[str] | Path]" = None,
+        application_dir: "Union[os.PathLike[str], Path]",
+        build_dir: "Optional[Union[os.PathLike[str], Path]]" = None,
         extra_conf_file: "Optional[str]" = None,
         pristine: bool = True,
     ):
@@ -110,9 +110,9 @@ class WestRun:
         ----------
         board : str
             Name of the board passed to '--board'
-        application_dir : os.PathLike[str] | Path
+        application_dir : Union[os.PathLike[str], Path]
             Path to the application dir (usually './app')
-        build_dir : Optional[os.PathLike[str] | Path]
+        build_dir : Optional[Union[os.PathLike[str], Path]]
             Path to where the build directory should be located
         extra_conf_file : Optional[str]
             Name of the additional .conf file

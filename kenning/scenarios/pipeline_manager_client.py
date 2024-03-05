@@ -20,6 +20,9 @@ from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
 from jsonschema.exceptions import ValidationError
+from pipeline_manager_backend_communication.utils import (
+    convert_message_to_string,
+)
 
 from kenning.cli.command_template import (
     GROUP_SCHEMA,
@@ -146,7 +149,10 @@ class PipelineManagerClient(CommandTemplate):
                 self.current_task_lock = asyncio.Lock()
 
             async def dataflow_import(
-                self, external_application_dataflow: Dict
+                self,
+                external_application_dataflow: Dict,
+                mime: str,
+                base64: bool,
             ) -> Dict:
                 """
                 Imports Kenning scenario to Pipeline Manager.
@@ -155,12 +161,23 @@ class PipelineManagerClient(CommandTemplate):
                 ----------
                 external_application_dataflow: Dict
                     Scenario in Kenning format
+                mime: str
+                    MIME type of the received file
+                base64: bool
+                    Tells whether file is in byte64 format
 
                 Returns
                 -------
                 Dict
                     Pipeline Manager graph representing the scenario
                 """
+                external_application_dataflow = json.loads(
+                    convert_message_to_string(
+                        message=external_application_dataflow,
+                        mime=mime,
+                        base64=base64,
+                    )
+                )
                 async with self.current_task_lock:
                     if self.current_task is not None:
                         return {

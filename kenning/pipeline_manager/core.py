@@ -202,7 +202,7 @@ class BaseDataflowHandler(ABC):
         self.autolayout = layout_algorithm
         self.navBarActions = [
             {
-                "name": "Run",
+                "name": "Evaluate",
                 "iconName": "Run",
                 "procedureName": "dataflow_run",
             },
@@ -213,17 +213,12 @@ class BaseDataflowHandler(ABC):
             },
             {
                 "name": "Optimize",
-                "iconName": "Cogwheel",
+                "iconName": "optimize.svg",
                 "procedureName": "custom_dataflow_optimize",
             },
             {
-                "name": "Test",
-                "iconName": "Run",
-                "procedureName": "custom_dataflow_test",
-            },
-            {
                 "name": "Report",
-                "iconName": "datasheet.svg",
+                "iconName": "report.svg",
                 "procedureName": "custom_dataflow_report",
             },
         ]

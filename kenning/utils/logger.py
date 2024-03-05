@@ -143,6 +143,39 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         setattr(self.__class__, level_name.lower(), custom_log)
         setattr(logging, level_name.lower(), custom_log_root)
 
+    def error_prepare_exception(
+        self, message: str, exception: Exception, *args: Any, **kwargs: Any
+    ) -> Exception:
+        """
+        Log the message with verbosity 'error' and returns an exception
+        to be raised.
+
+        This is a wrapper method that should be used whenever an error is
+        encountered and the runtime should raise an exception.
+
+        It returns an exception, instead of raising it, so that
+        the exception can be tracked back to the original function
+        instead of this wrapper.
+
+        Parameters
+        ----------
+        message : str
+            Message to log.
+        exception : Exception
+            Exception to be prepared to be raised.
+        *args : Any
+            Arguments to pass to the logging function.
+        **kwargs : Any
+            Keyword arguments to pass to the logging function.
+
+        Returns
+        -------
+        Exception
+            The exception that was passed as an argument prepared to be raised.
+        """
+        self.error(message, *args, **kwargs)
+        return exception(message)
+
 
 KLogger = _KLogger()
 

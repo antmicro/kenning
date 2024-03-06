@@ -10,36 +10,16 @@ A script for connecting Kenning with Pipeline Manager server.
 
 import argparse
 import asyncio
-import datetime
-import json
-import os
-import re
 import signal
 import sys
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
-
-from jsonschema.exceptions import ValidationError
-from pipeline_manager_backend_communication.utils import (
-    convert_message_to_string,
-)
 
 from kenning.cli.command_template import (
     GROUP_SCHEMA,
     VISUAL_EDITOR,
     ArgumentsGroups,
     CommandTemplate,
-)
-from kenning.core.drawing import (
-    IMMATERIAL_COLORS,
-    RED_GREEN_CMAP,
-    SERVIS_PLOT_OPTIONS,
-)
-from kenning.core.measurements import MeasurementsCollector
-from kenning.scenarios.render_report import (
-    deduce_report_name,
-    generate_report,
-    get_model_name,
 )
 from kenning.utils.logger import (
     Callback,
@@ -118,9 +98,8 @@ class PipelineManagerClient(CommandTemplate):
 
         return parser, groups
 
-    @staticmethod
-    def run(args: argparse.Namespace, **kwargs):
-        from jsonrpc.exceptions import JSONRPCDispatchException
+    @classmethod
+    def run(cls, args: argparse.Namespace, **kwargs):
         from pipeline_manager import frontend_builder
         from pipeline_manager.backend.run_in_parallel import (
             start_server_in_parallel,
@@ -129,501 +108,14 @@ class PipelineManagerClient(CommandTemplate):
         from pipeline_manager_backend_communication.communication_backend import (  # noqa: E501
             CommunicationBackend,
         )
-        from pipeline_manager_backend_communication.misc_structures import (
-            MessageType,
-        )
 
-        from kenning.pipeline_manager.core import BaseDataflowHandler
         from kenning.pipeline_manager.flow_handler import KenningFlowHandler
         from kenning.pipeline_manager.pipeline_handler import PipelineHandler
-
-        class PipelineManagerRPC:
-            def __init__(
-                self,
-                dataflow_handler: BaseDataflowHandler,
-                output_file_path: Path,
-            ):
-                self.dataflow_handler = dataflow_handler
-                self.output_file_path = output_file_path
-                self.current_task = None
-                self.current_task_lock = asyncio.Lock()
-
-            async def dataflow_import(
-                self,
-                external_application_dataflow: Dict,
-                mime: str,
-                base64: bool,
-            ) -> Dict:
-                """
-                Imports Kenning scenario to Pipeline Manager.
-
-                Parameters
-                ----------
-                external_application_dataflow: Dict
-                    Scenario in Kenning format
-                mime: str
-                    MIME type of the received file
-                base64: bool
-                    Tells whether file is in byte64 format
-
-                Returns
-                -------
-                Dict
-                    Pipeline Manager graph representing the scenario
-                """
-                external_application_dataflow = json.loads(
-                    convert_message_to_string(
-                        message=external_application_dataflow,
-                        mime=mime,
-                        base64=base64,
-                    )
-                )
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't import pipeline - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "importing pipeline"
-                try:
-                    graph_repr = self.dataflow_handler.create_dataflow(
-                        external_application_dataflow
-                    )
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": graph_repr,
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling import job")
-                except (ValidationError, RuntimeError) as ex:
-                    KLogger.error(f"Failed to load JSON file:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Failed to load scenario:\n{ex}",  # noqa: E501
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-
-            async def specification_get(self) -> Dict:
-                """
-                Returns the specification of available Kenning classes.
-
-                Returns
-                -------
-                Dict
-                    Method's response
-                """
-                try:
-                    if not PipelineManagerClient.specification:
-                        KLogger.info(
-                            "SpecificationBuilder: Generating specification..."
-                        )
-                        PipelineManagerClient.specification = (
-                            self.dataflow_handler.get_specification(
-                                workspace_dir=args.workspace_dir,
-                                spec_save_path=args.save_specification_path,
-                            )
-                        )
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": PipelineManagerClient.specification,
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling specification building")
-                except (ValidationError, RuntimeError) as ex:
-                    KLogger.error(f"Failed to generate specification:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Failed to generate specification:\n{ex}",  # noqa: E501
-                    }
-
-            async def dataflow_run(self, dataflow: Dict) -> Dict:
-                """
-                Runs the given Kenning scenario.
-
-                Parameters
-                ----------
-                dataflow : Dict
-                    Content of the request.
-
-                Returns
-                -------
-                Dict
-                    Method's response
-                """
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't run pipeline - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "running pipeline"
-                try:
-                    status, msg = self.dataflow_handler.parse_dataflow(
-                        dataflow
-                    )
-                    if not status:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": msg,
-                        }
-                    try:
-                        runner = self.dataflow_handler.parse_json(msg)
-                        MeasurementsCollector.clear()
-
-                        if not os.path.exists(self.output_file_path):
-                            os.mkdir(self.output_file_path)
-                        current_time = datetime.datetime.now()
-                        timestamp = current_time.strftime("%Y%m%d_%H%M%S")
-                        self.filename = f"run_{timestamp}.json"
-
-                        def dataflow_runner(runner):
-                            self.dataflow_handler.run_dataflow(
-                                runner, self.output_file_path / self.filename
-                            )
-                            KLogger.warning("Finished run")
-
-                        runner_coro = asyncio.to_thread(
-                            dataflow_runner, runner
-                        )
-                        runner_task = asyncio.create_task(runner_coro)
-                        await runner_task
-                    except Exception as ex:
-                        KLogger.error(ex, stack_info=True)
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": str(ex),
-                        }
-                    except asyncio.exceptions.CancelledError:
-                        if hasattr(runner, "should_cancel"):
-                            runner.should_cancel = True
-                        if hasattr(runner, "model_wrapper"):
-                            runner.model_wrapper.should_cancel = True
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": f"Successfully finished processing. Measurements are saved in {self.output_file_path}",  # noqa: E501
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling run job")
-                except (ValidationError, RuntimeError) as ex:
-                    KLogger.error(f"Failed to run the pipeline:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Failed to run the pipeline:\n{ex}",  # noqa: E501
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-
-            async def dataflow_validate(self, dataflow: Dict) -> Dict:
-                """
-                Validates the graph in terms of compatibility of classes.
-
-                Parameters
-                ----------
-                dataflow : Dict
-                    Current graph representing the scenario.
-
-                Returns
-                -------
-                Dict
-                    Method's response
-                """
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't validate pipeline - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "validating pipeline"
-                try:
-                    status, msg = self.dataflow_handler.parse_dataflow(
-                        dataflow
-                    )
-                    if not status:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": msg,
-                        }
-                    try:
-                        runner = self.dataflow_handler.parse_json(msg)
-                        self.dataflow_handler.destroy_dataflow(runner)
-                    except Exception as ex:
-                        KLogger.error(ex, stack_info=True)
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": str(ex),
-                        }
-                    async with self.current_task_lock:
-                        self.current_task = None
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": "The graph is valid.",
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling validate job")
-                except (ValidationError, RuntimeError) as ex:
-                    KLogger.error(f"Validation error:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Validation error:\n{ex}",  # noqa: E501
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-
-            async def custom_dataflow_report(self, dataflow: Dict) -> Dict:
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "reporting"
-                try:
-                    measurementsdata = []
-                    with open(self.output_file_path / self.filename, "r") as f:
-                        measurements = json.load(f)
-                        if "model_name" not in measurements:
-                            measurements["model_name"] = get_model_name(
-                                self.output_file_path / self.filename
-                            )
-                        measurements["model_name"] = measurements[
-                            "model_name"
-                        ].replace(" ", "_")
-                        if "report_name" not in measurements:
-                            measurements["report_name"] = deduce_report_name(
-                                [measurements], ["performance"]
-                            )
-                        measurements["report_name_simple"] = re.sub(
-                            r"[\W]",
-                            "",
-                            measurements["report_name"]
-                            .lower()
-                            .replace(" ", "_"),
-                        )
-                        measurementsdata.append(measurements)
-                        SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
-                        cmap = RED_GREEN_CMAP
-                        colors = IMMATERIAL_COLORS
-                        output_path = self.output_file_path.parent / "report"
-                        if not os.path.exists(output_path):
-                            os.mkdir(output_path)
-                        if not os.path.exists(output_path / "imgs"):
-                            os.mkdir(output_path / "imgs")
-                        generate_report(
-                            "Pipeline Manager Run Report",
-                            measurementsdata,
-                            output_path / "report.md",
-                            output_path / "imgs",
-                            ["performance"],
-                            output_path,
-                            set(["png"]),
-                            cmap=cmap,
-                            colors=colors,
-                        )
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling reporting job")
-                except Exception as ex:
-                    KLogger.error(f"Reporting error:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Reporting error:\n{ex}",
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": "The report is generated.",
-                    }
-
-            async def custom_dataflow_optimize(self, dataflow: Dict) -> Dict:
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "optimizing"
-                    status, msg = self.dataflow_handler.parse_dataflow(
-                        dataflow
-                    )
-                    if not status:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": msg,
-                        }
-                try:
-                    runner = self.dataflow_handler.parse_json(msg)
-
-                    def dataflow_optimizer(runner):
-                        self.dataflow_handler.optimize_dataflow(runner)
-                        KLogger.warning("Finished optimizing")
-
-                    runner_coro = asyncio.to_thread(dataflow_optimizer, runner)
-                    runner_task = asyncio.create_task(runner_coro)
-                    await runner_task
-                except Exception as ex:
-                    KLogger.error(ex, stack_info=True)
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": str(ex),
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling optimizing job")
-                except Exception as ex:
-                    KLogger.error(f"Optimizing error:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Optimizing error:\n{ex}",
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": "Optimization complete.",
-                    }
-
-            async def custom_dataflow_test(self, dataflow: Dict) -> Dict:
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't create report - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "testing"
-                    status, msg = self.dataflow_handler.parse_dataflow(
-                        dataflow
-                    )
-                    if not status:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": msg,
-                        }
-                try:
-                    runner = self.dataflow_handler.parse_json(msg)
-                    MeasurementsCollector.clear()
-
-                    if not os.path.exists(self.output_file_path):
-                        os.mkdir(self.output_file_path)
-                    current_time = datetime.datetime.now()
-                    timestamp = current_time.strftime("%Y%m%d_%H%M%S")
-                    self.filename = f"run_{timestamp}.json"
-
-                    def dataflow_tester(runner):
-                        self.dataflow_handler.test_dataflow(
-                            runner, self.output_file_path / self.filename
-                        )
-                        KLogger.warning("Finished testing")
-
-                    runner_coro = asyncio.to_thread(dataflow_tester, runner)
-                    runner_task = asyncio.create_task(runner_coro)
-                    await runner_task
-                except Exception as ex:
-                    KLogger.error(ex, stack_info=True)
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": str(ex),
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling testing job")
-                except Exception as ex:
-                    KLogger.error(f"Testing error:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Testing error:\n{ex}",
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": "Testing complete.",
-                    }
-
-            async def dataflow_export(self, dataflow: Dict) -> Dict:
-                """
-                Export the graph to Kenning's scenario format.
-
-                Parameters
-                ----------
-                dataflow : Dict
-                    Current graph representing the scenario.
-
-                Returns
-                -------
-                Dict
-                    Method's response
-                """
-                async with self.current_task_lock:
-                    if self.current_task is not None:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": f"Can't export pipeline - task {self.current_task} is running",  # noqa: E501
-                        }
-                    self.current_task = "exporting pipeline"
-                try:
-                    status, msg = self.dataflow_handler.parse_dataflow(
-                        dataflow
-                    )
-                    if not status:
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": msg,
-                        }
-                    try:
-                        runner = self.dataflow_handler.parse_json(msg)
-                        with open(self.output_file_path, "w") as f:
-                            json.dump(msg, f, indent=4)
-                        self.dataflow_handler.destroy_dataflow(runner)
-                    except Exception as ex:
-                        KLogger.error(ex, stack_info=True)
-                        return {
-                            "type": MessageType.ERROR.value,
-                            "content": str(ex),
-                        }
-                    return {
-                        "type": MessageType.OK.value,
-                        "content": f"The graph is saved to {self.output_file_path}.",  # noqa: E501
-                    }
-                except (
-                    asyncio.exceptions.CancelledError,
-                    JSONRPCDispatchException,
-                ):
-                    KLogger.warning("Cancelling export job")
-                except (ValidationError, RuntimeError) as ex:
-                    KLogger.error(f"Failed to save the scenario:\n{ex}")
-                    return {
-                        "type": MessageType.ERROR.value,
-                        "content": f"Failed to save the scenario:\n{ex}",  # noqa: E501
-                    }
-                finally:
-                    async with self.current_task_lock:
-                        self.current_task = None
+        from kenning.pipeline_manager.rpc_handler import (
+            FlowHandlerRPC,
+            OptimizationHandlerRPC,
+            PipelineManagerRPC,
+        )
 
         def build_frontend(frontend_path: Path) -> None:
             """
@@ -661,13 +153,17 @@ class PipelineManagerClient(CommandTemplate):
 
         frontend_files_path = args.workspace_dir / "frontend/dist"
 
+        cls.workspace_dir = args.workspace_dir
+        cls.save_specification_path = args.save_specification_path
+
         build_frontend(frontend_path=frontend_files_path)
 
         def send_progress(
             state: Dict,
+            handler: PipelineManagerRPC,
             client: CommunicationBackend,
             loop: asyncio.base_events.BaseEventLoop,
-        ):
+        ) -> None:
             """
             Sends progress message to Pipeline Manager.
 
@@ -676,16 +172,29 @@ class PipelineManagerClient(CommandTemplate):
             state : Dict
                 The `format_dict` that comes from tqdm. It is used to determine
                 the progress of the inference.
+            handler : PipelineManagerRPC
+                handler of RPC calls
             client : CommunicationBackend
                 Client used to send the message.
             loop : asyncio.base_events.BaseEventLoop
                 main asyncio loop
+
+            Returns
+            -------
+            None
+                No return value
             """
+            if handler.current_method is None:
+                return
             progress = -1
             if state["total"] is not None:
                 progress = int(state["n"] / state["total"] * 100)
             asyncio.run_coroutine_threadsafe(
-                client.notify("progress_change", {"progress": progress}), loop
+                client.notify(
+                    "progress_change",
+                    {"progress": progress, "method": handler.current_method},
+                ),
+                loop,
             )
 
         async def run_client():
@@ -712,27 +221,30 @@ class PipelineManagerClient(CommandTemplate):
                 lambda: asyncio.create_task(exit_handler(signal.SIGINT, loop)),
             )
 
-            callback_percent = Callback(
-                "runtime", send_progress, 0.5, client, loop
-            )
-
             try:
                 if args.spec_type == "pipeline":
                     dataflow_handler = PipelineHandler(
                         layout_algorithm=args.layout
                     )
+                    rpchandler = OptimizationHandlerRPC(
+                        dataflow_handler, args.file_path, cls, client
+                    )
                 elif args.spec_type == "flow":
                     dataflow_handler = KenningFlowHandler(
                         layout_algorithm=args.layout
+                    )
+                    rpchandler = FlowHandlerRPC(
+                        dataflow_handler, args.file_path, cls, client
                     )
                 else:
                     raise RuntimeError(
                         f"Unrecognized f{args.spec_type} spec_type"
                     )
 
-                rpchandler = PipelineManagerRPC(
-                    dataflow_handler, args.file_path
+                callback_percent = Callback(
+                    "runtime", send_progress, 0.5, rpchandler, client, loop
                 )
+
                 TqdmCallback.register_callback(callback_percent)
                 await client.initialize_client(rpchandler)
                 await client.start_json_rpc_client()

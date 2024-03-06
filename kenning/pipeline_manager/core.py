@@ -200,31 +200,12 @@ class BaseDataflowHandler(ABC):
         self.dataflow_graph = graph_creator
         self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
-        self.navBarActions = [
-            {
-                "name": "Evaluate",
-                "iconName": "Run",
-                "procedureName": "dataflow_run",
-            },
-            {
-                "name": "Validate",
-                "iconName": "Validate",
-                "procedureName": "dataflow_validate",
-            },
-            {
-                "name": "Optimize",
-                "iconName": "optimize.svg",
-                "procedureName": "custom_dataflow_optimize",
-            },
-            {
-                "name": "Report",
-                "iconName": "report.svg",
-                "procedureName": "custom_dataflow_report",
-            },
-        ]
 
     def get_specification(
-        self, workspace_dir: Path, spec_save_path: Optional[Path] = None
+        self,
+        workspace_dir: Path,
+        actions: List[Dict[str, str]],
+        spec_save_path: Optional[Path] = None,
     ) -> Dict:
         """
         Prepares core-based Kenning classes to be sent to Pipeline Manager.
@@ -236,6 +217,8 @@ class BaseDataflowHandler(ABC):
         ----------
         workspace_dir : Path
             Pipeline Manager's workspace directory
+        actions: List[Dict[str, str]]
+            Navbar actions available for a given application
         spec_save_path : Optional[Path]
             Path where the generated specification JSON will be saved.
 
@@ -246,7 +229,7 @@ class BaseDataflowHandler(ABC):
         """
         self.spec_builder.metadata_add_param("twoColumn", True)
         self.spec_builder.metadata_add_param("layout", self.autolayout)
-        self.spec_builder.metadata_add_param("navbarItems", self.navBarActions)
+        self.spec_builder.metadata_add_param("navbarItems", actions)
 
         def strip_io(io_list: list, direction) -> list:
             """

@@ -122,6 +122,7 @@ class ResourceManager(metaclass=Singleton):
             "antmicro/kenning/main/scripts/{path}"
         ),
         "file": lambda uri: Path(uri.path).expanduser().resolve(),
+        "hf": None,
     }
 
     KENNING_RESOURCES_VERSION_URL = "kenning:///VERSION"
@@ -239,6 +240,37 @@ class ResourceManager(metaclass=Singleton):
             )
 
         output_path = output_path.resolve()
+
+        if parsed_uri.scheme == "hf":
+            # Huggingface does not provide any md5 checksums for the files
+            # so we can't validate them remotely. Additionally, calculating
+            # cache for large files (which are usually stored in Huggingface)
+            # is not feasible. Therefore, they are not validatef for now
+
+            if output_path.exists():
+                KLogger.info(f"Using cached: {output_path}")
+                return output_path
+
+            from huggingface_hub import snapshot_download
+
+            if parsed_uri.netloc == "datasets":
+                repo_id = parsed_uri.path[1:]
+                repo_type = "dataset"
+            else:
+                repo_id = parsed_uri.netloc + parsed_uri.path
+                repo_type = "model"
+
+            # If 'local_dir_use_symlinks' is set to False, the files are copied
+            # instead of being symlinked if the resource is
+            # in huggingface's cache. If there are not, then the
+            # files are directly downloaded to the local_dir.
+            snapshot_download(
+                repo_id=repo_id,
+                repo_type=repo_type,
+                local_dir=output_path,
+                local_dir_use_symlinks=False,
+            )
+            return output_path
 
         # file already exists - check if its valid
         if output_path.exists():
@@ -714,11 +746,10 @@ class ResourceURI(Path):
 
         instance = super().__new__(cls, path)
         instance._uri = uri
-
         if instance.uri is not None:
             try:
                 ResourceManager().get_resource(instance.uri, Path(instance))
-            except URLError:
+            except (URLError, requests.HTTPError):
                 # ignore the exception as the __new__ might be called during
                 # URI manipulations (by using with_suffix etc.) and the URI
                 # could be invalid as some stage of such operations

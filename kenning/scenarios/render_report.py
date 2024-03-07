@@ -1964,6 +1964,94 @@ def generate_html_report(
             )
 
 
+def load_measurements_for_report(
+    measurements_files: List[str],
+    model_names: Optional[List[str]],
+    skip_unoptimized_model: bool,
+    report_types: Optional[List[str]],
+) -> Tuple[Dict, List[str]]:
+    """
+    Loads all files with measurements and prepares list of report types.
+
+    Parameters
+    ----------
+    measurements_files: List[str]
+        List of the files with measurements
+    model_names: Optional[List[str]]
+        List of model names for measurements that should be displayed in the
+        report
+    skip_unoptimized_model: bool
+        If False, the original native model measurements should be collected
+    report_types: Optional[List[str]]
+        Types of reports (performance, clasisfication, ...) to include
+
+    Returns
+    -------
+    Dict
+        Measurements data to use for report
+    List[str]
+        List of report types, either passed from arguments or derived
+        from measurements data
+
+    Raises
+    ------
+    argparse.ArgumentError :
+        Raised when report types cannot be deduced from measurements data
+    """
+    measurementsdata = []
+    for i, measurementspath in enumerate(measurements_files):
+        with open(measurementspath, "r") as measurementsfile:
+            measurements = json.load(measurementsfile)
+        if model_names is not None:
+            measurements["model_name"] = model_names[i]
+        elif "model_name" not in measurements:
+            measurements["model_name"] = get_model_name(measurementspath)
+        measurements["model_name"] = measurements["model_name"].replace(
+            " ", "_"
+        )
+        # Append measurements of unoptimized data separately
+        if (
+            not skip_unoptimized_model
+            and UNOPTIMIZED_MEASUREMENTS in measurements
+        ):
+            unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
+            del measurements[UNOPTIMIZED_MEASUREMENTS]
+            if "model_name" not in unoptimized:
+                unoptimized[
+                    "model_name"
+                ] = f"unoptimized_{measurements['model_name']}"
+            measurementsdata.append(unoptimized)
+        measurementsdata.append(measurements)
+
+    report_types = report_types
+    if not report_types:
+        report_types = deduce_report_types(measurementsdata)
+    if report_types is None:
+        raise argparse.ArgumentError(
+            None,
+            "Report types cannot be deduced. Please specify "
+            "'--report-types' or make sure the path is correct "
+            "measurements were chosen.",
+        )
+
+    for measurements in measurementsdata:
+        if "build_cfg" in measurements:
+            measurements["build_cfg"] = json.dumps(
+                measurements["build_cfg"], indent=4
+            ).split("\n")
+
+        if "report_name" not in measurements:
+            measurements["report_name"] = deduce_report_name(
+                [measurements], report_types
+            )
+        measurements["report_name_simple"] = re.sub(
+            r"[\W]",
+            "",
+            measurements["report_name"].lower().replace(" ", "_"),
+        )
+    return measurementsdata, report_types
+
+
 class RenderReport(CommandTemplate):
     """
     Command-line template for rendering reports.
@@ -2121,60 +2209,15 @@ class RenderReport(CommandTemplate):
         if not args.only_png_images:
             image_formats |= {"html"}
 
-        measurementsdata = []
-        for i, measurementspath in enumerate(args.measurements):
-            with open(measurementspath, "r") as measurementsfile:
-                measurements = json.load(measurementsfile)
-            if args.model_names is not None:
-                measurements["model_name"] = args.model_names[i]
-            elif "model_name" not in measurements:
-                measurements["model_name"] = get_model_name(measurementspath)
-            measurements["model_name"] = measurements["model_name"].replace(
-                " ", "_"
-            )
-            # Append measurements of unoptimized data separately
-            if (
-                not args.skip_unoptimized_model
-                and UNOPTIMIZED_MEASUREMENTS in measurements
-            ):
-                unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
-                del measurements[UNOPTIMIZED_MEASUREMENTS]
-                if "model_name" not in unoptimized:
-                    unoptimized[
-                        "model_name"
-                    ] = f"unoptimized_{measurements['model_name']}"
-                measurementsdata.append(unoptimized)
-            measurementsdata.append(measurements)
-
-        report_types = args.report_types
-        if not report_types:
-            report_types = deduce_report_types(measurementsdata)
-        if report_types is None:
-            raise argparse.ArgumentError(
-                None,
-                "Report types cannot be deduced. Please specify "
-                "'--report-types' or make sure the path is correct "
-                "measurements were chosen.",
-            )
-
+        measurementsdata, report_types = load_measurements_for_report(
+            args.measurements,
+            args.model_names,
+            args.skip_unoptimized_model,
+            args.report_types,
+        )
         report_name = args.report_name
         if report_name is None:
             report_name = deduce_report_name(measurementsdata, report_types)
-        for measurements in measurementsdata:
-            if "build_cfg" in measurements:
-                measurements["build_cfg"] = json.dumps(
-                    measurements["build_cfg"], indent=4
-                ).split("\n")
-
-            if "report_name" not in measurements:
-                measurements["report_name"] = deduce_report_name(
-                    [measurements], report_types
-                )
-            measurements["report_name_simple"] = re.sub(
-                r"[\W]",
-                "",
-                measurements["report_name"].lower().replace(" ", "_"),
-            )
 
         SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
         cmap = RED_GREEN_CMAP

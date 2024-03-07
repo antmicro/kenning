@@ -359,7 +359,7 @@ class PipelineRunner(object):
         verbosity: str = "INFO",
         convert_to_onnx: Optional[Path] = None,
         max_target_side_optimizers: int = -1,
-        command: List = ["Run in a different environment"],
+        command: List = [],
         run_optimizations: bool = True,
         run_benchmarks: bool = True,
     ) -> int:

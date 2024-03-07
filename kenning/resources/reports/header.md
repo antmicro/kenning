@@ -4,9 +4,9 @@
 # {{data['report_name']}}
 {% endif %}
 
+{% if data['command']|length > 0 -%}
 ### Commands used
 
-{% if data['command']|length > 0 -%}
 ````{note}
 
 This section was generated using:

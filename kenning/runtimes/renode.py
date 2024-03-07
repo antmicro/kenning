@@ -177,8 +177,6 @@ class RenodeRuntime(Runtime):
         self.runtime_log_uart = runtime_log_uart
         self.runtime_log_init_msg = runtime_log_init_msg
         self.disable_profiler = disable_profiler
-        if profiler_dump_path is not None:
-            profiler_dump_path = profiler_dump_path.resolve()
         self.profiler_dump_path = profiler_dump_path
         self.profiler_interval_step = profiler_interval_step
         self.sensor = sensor
@@ -403,8 +401,10 @@ class RenodeRuntime(Runtime):
             not self.disable_performance_measurements
             and not self.disable_profiler
         ):
-            self.machine.EnableProfiler(str(self.profiler_dump_path))
-            KLogger.info(f"Profiler dump path: {self.profiler_dump_path}")
+            self.machine.EnableProfiler(str(self.profiler_dump_path.resolve()))
+            KLogger.info(
+                f"Profiler dump path: {self.profiler_dump_path.resolve()}"
+            )
 
         if self.runtime_log_uart is not None:
             self.runtime_log_uart = Serial(str(self.runtime_log_uart), 115200)

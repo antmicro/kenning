@@ -22,7 +22,7 @@ from kenning.core.measurements import Measurements, MeasurementsCollector
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Protocol, RequestFailure, check_request
 from kenning.core.runtime import Runtime
-from kenning.utils.logger import KLogger, LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar, TqdmCallback
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 KLogger.add_custom_level(logging.INFO + 1, "RENODE")
@@ -224,7 +224,9 @@ class RenodeRuntime(Runtime):
 
             # inference loop
             with LoggerProgressBar() as logger_progress_bar:
-                for sample in tqdm.tqdm(iterable, file=logger_progress_bar):
+                for sample in TqdmCallback(
+                    "runtime", iterable, file=logger_progress_bar
+                ):
                     if self.sensor is None:
                         # provide data to runtime
                         X, _ = sample

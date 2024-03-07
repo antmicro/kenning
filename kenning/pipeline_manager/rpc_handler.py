@@ -58,6 +58,7 @@ class PipelineManagerRPC(ABC):
         self.current_task_lock = asyncio.Lock()
         self.pipeline_manager_client = pipeline_manager_client
         self.client = client
+        self.filename = None
 
     @abstractmethod
     def app_capabilities_get(self):
@@ -480,6 +481,11 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                     "method": "custom_dataflow_report",
                 },
             )
+        if self.filename is None:
+            return {
+                "type": MessageType.ERROR.value,
+                "content": "Run evaluation before generating a report",
+            }
         try:
             command = get_command()
             measurementsdata, report_types = load_measurements_for_report(

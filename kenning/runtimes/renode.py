@@ -379,7 +379,7 @@ class RenodeRuntime(Runtime):
         monitor = Monitor()
 
         log_tester = LogTester(10)
-        Logger.AddBackend(log_tester, "logTester")
+        Logger.AddBackend(backend=log_tester, name="logTester", overwrite=True)
 
         self.log_file_path = Path(tempfile.mktemp(prefix="renode_log_"))
 

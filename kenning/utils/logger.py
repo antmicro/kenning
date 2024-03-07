@@ -40,9 +40,11 @@ class _DuplicateStream(TextIOBase):
         super().__init__()
         self.stream = stream
         self.client = None
+        self.loop = None
 
-    def set_client(self, client):
+    def set_client(self, client, loop):
         self.client = client
+        self.loop = loop if loop is not None else asyncio.get_event_loop()
 
     def write(self, s, /):
         if self.client is not None:
@@ -50,17 +52,13 @@ class _DuplicateStream(TextIOBase):
                 "name": "Kenning Terminal",
                 "message": s.replace("\n", "\r\n"),
             }
-            try:
-                # if an error is thrown by the coroutine
-                # and not an invalid get(),
-                # there will be a warning about an unawaited coroutine
-                loop = asyncio.get_event_loop()
-                asyncio.run_coroutine_threadsafe(
-                    self.client.notify("terminal_write", request),
-                    loop,
-                )
-            except RuntimeError:
-                asyncio.run(self.client.notify("terminal_write", request))
+            # if an error is thrown by the coroutine
+            # and not an invalid get(),
+            # there will be a warning about an unawaited coroutine
+            asyncio.run_coroutine_threadsafe(
+                self.client.notify("terminal_write", request),
+                self.loop,
+            )
         return self.stream.write(s)
 
 

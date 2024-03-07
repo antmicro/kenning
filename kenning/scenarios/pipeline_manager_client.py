@@ -206,7 +206,7 @@ class PipelineManagerClient(CommandTemplate):
             client = CommunicationBackend(host=args.host, port=args.port)
 
             loop = asyncio.get_event_loop()
-            DuplicateStream.set_client(client)
+            DuplicateStream.set_client(client, loop)
 
             async def exit_handler(signal, loop):
                 KLogger.info("Closing the Visual Editor...")

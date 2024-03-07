@@ -60,6 +60,7 @@ The default available schemes are:
 * `kenning://` - a scheme for downloading Kenning-specific resources from `https://dl.antmicro.com`.
   For example, `kenning:///models/classification/magic_wand.h5` resolves to `https://dl.antmicro.com/kenning/models/classification/magic_wand.h5`
 * `gh://` - used for downloading files from Github repositories, e.g. `gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main` resolves to `https://raw.githubusercontent.com/antmicro/kenning-bare-metal-iree-runtime/main/sim/config/platforms/springbok.repl`
+* `hf://` - used for downloading files from Hugging Face model hub, e.g. `hf://company/model-id` resolves to `https://huggingface.co/company/model-id`. Using this scheme may require logging in to `huggingface_hub` using `huggingface-cli`.
 
 
 This allows using links such as:
@@ -67,6 +68,7 @@ This allows using links such as:
 - `kenning:///models/classification/magic_wand.h5`
 - `gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main`
 - `file:///some/directory/magic_wand.h5`
+- `hf://mistralai/Mistral-7B-Instruct-v0.1`
 
 
 If the provided path does not have any scheme, the it will be interpreted as a path.
@@ -127,6 +129,6 @@ You can manage cache using Kenning CLI commands.
 The available commands are:
 
 * `kenning cache list_files` - list cached files, their size and total cache size.
-  To see full paths add `-v` argument,
+  To see full paths add `-v` argument.
 * `kenning cache clear` - removes all cached files,
 * `kenning cache settings` - prints default cache directory path and default max cache size.

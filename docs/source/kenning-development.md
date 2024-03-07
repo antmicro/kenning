@@ -80,7 +80,8 @@ A sample metadata JSON file may look as follows (for the YOLOv4 detection model)
                 "dtype": "kenning.datasets.helpers.detection_and_segmentation.DetectObject"
             }
         }
-    ]
+    ],
+    "model_version": 4
 }
 ```
 
@@ -94,7 +95,9 @@ In general, the metadata file consist of four fields:
 If `processed_input` or `processed_output` is not specified we assume that there is no processing and it is the same as `input` or `output` respectively.
 Each array consist of dictionaries describing model inputs and outputs.
 
-Parameters common to all fields:
+Additionally, any non-conflicting miscellaneous keywords may be included into the metadata JSON, but those will not be validated by Kenning.
+
+Parameters common to all fields (except for the miscellaneous):
 
 * `name` - input/output name,
 * `shape` - input/output tensor shape, if `processed_input` is present, `input` can have list of valid shapes,

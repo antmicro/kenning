@@ -730,6 +730,7 @@ class ResourceURI(Path):
 
     _flavour = type(Path())._flavour
     _uri: Optional[ParseResult]
+    _origin: str
 
     def __new__(cls, uri_or_path: Union[str, Path, "ResourceURI"]):
         if isinstance(uri_or_path, str) and ":/" in uri_or_path:
@@ -739,13 +740,15 @@ class ResourceURI(Path):
             )
         elif isinstance(uri_or_path, cls):
             uri = uri_or_path._uri
-            path = Path(uri_or_path)
+            path = Path(uri_or_path).expanduser()
         else:
             uri = None
-            path = Path(uri_or_path).expanduser().resolve()
+            path = Path(uri_or_path).expanduser()
 
         instance = super().__new__(cls, path)
         instance._uri = uri
+        instance._origin = str(uri_or_path)
+
         if instance.uri is not None:
             try:
                 ResourceManager().get_resource(instance.uri, Path(instance))
@@ -770,12 +773,20 @@ class ResourceURI(Path):
         ).geturl()
 
     @property
+    def origin(self) -> str:
+        """
+        Returns the original string passed to the constructor.
+        """
+        return self._origin
+
+    @property
     def parent(self) -> "ResourceURI":
         """
         Get parent of the URI.
         """
         ret = super().parent
         ret._uri = self._uri
+        ret._origin = self._origin
         return ret
 
     def with_suffix(self, suffix: str) -> "ResourceURI":
@@ -794,6 +805,7 @@ class ResourceURI(Path):
         """
         ret = super().with_suffix(suffix)
         ret._uri = self._uri
+        ret._origin = self._origin
         return ResourceURI(ret)
 
     def with_name(self, name: str) -> "ResourceURI":
@@ -812,6 +824,7 @@ class ResourceURI(Path):
         """
         ret = super().with_name(name)
         ret._uri = self._uri
+        ret._origin = self._origin
         return ResourceURI(ret)
 
     def with_stem(self, stem: str) -> "ResourceURI":
@@ -830,6 +843,7 @@ class ResourceURI(Path):
         """
         ret = super().with_stem(stem)
         ret._uri = self._uri
+        ret._origin = self._origin
         return ResourceURI(ret)
 
     def __str__(self) -> str:

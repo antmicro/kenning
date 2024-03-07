@@ -1778,9 +1778,8 @@ def generate_report(
         header_data[model_data["model_name"]] = model_data
 
     # add command only if previous one is not the same
-    # if any(c1 != c2 for c1, c2 in zip(header_data['command'], command)):
-    if header_data["command"] == command:
-        header_data["command"] += command
+    if any(c1 != c2 for c1, c2 in zip(header_data["command"], command)):
+        header_data["command"].extend(command)
 
     with path(reports, "header.md") as reporttemplate:
         content = create_report_from_measurements(reporttemplate, header_data)

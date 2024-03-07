@@ -9,7 +9,6 @@ Handlers for RPC for Pipeline Manager.
 import asyncio
 import datetime
 import json
-import re
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict
@@ -27,14 +26,16 @@ from kenning.core.drawing import (
     IMMATERIAL_COLORS,
     RED_GREEN_CMAP,
     SERVIS_PLOT_OPTIONS,
+    choose_theme,
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.pipeline_manager.core import BaseDataflowHandler
 from kenning.scenarios.render_report import (
-    deduce_report_name,
+    generate_html_report,
     generate_report,
-    get_model_name,
+    load_measurements_for_report,
 )
+from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
 
 
@@ -480,45 +481,48 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                 },
             )
         try:
-            measurementsdata = []
-            with open(self.output_file_path / self.filename, "r") as f:
-                measurements = json.load(f)
-                if "model_name" not in measurements:
-                    measurements["model_name"] = get_model_name(
-                        self.output_file_path / self.filename
-                    )
-                measurements["model_name"] = measurements[
-                    "model_name"
-                ].replace(" ", "_")
-                if "report_name" not in measurements:
-                    measurements["report_name"] = deduce_report_name(
-                        [measurements], ["performance"]
-                    )
-                measurements["report_name_simple"] = re.sub(
-                    r"[\W]",
-                    "",
-                    measurements["report_name"].lower().replace(" ", "_"),
-                )
-                measurementsdata.append(measurements)
-                SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
-                cmap = RED_GREEN_CMAP
-                colors = IMMATERIAL_COLORS
-                output_path = self.output_file_path.parent / "report"
-                if not output_path.exists():
-                    output_path.mkdir(parents=True, exist_ok=True)
-                if not (output_path / "imgs").exists():
-                    (output_path / "imgs").mkdir(parents=True, exist_ok=True)
+            command = get_command()
+            measurementsdata, report_types = load_measurements_for_report(
+                measurements_files=[self.output_file_path / self.filename],
+                model_names=None,
+                skip_unoptimized_model=True,
+                report_types=None,
+            )
+            SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
+            cmap = RED_GREEN_CMAP
+            colors = IMMATERIAL_COLORS
+            output_path = self.output_file_path.parent / "report"
+            output_path_html = self.output_file_path.parent / "report_html"
+            if not output_path.exists():
+                output_path.mkdir(parents=True, exist_ok=True)
+            if not output_path_html.exists():
+                output_path_html.mkdir(parents=True, exist_ok=True)
+            if not (output_path / "imgs").exists():
+                (output_path / "imgs").mkdir(parents=True, exist_ok=True)
+            with choose_theme(
+                custom_bokeh_theme=True, custom_matplotlib_theme=True
+            ):
                 generate_report(
-                    "Pipeline Manager Run Report",
-                    measurementsdata,
-                    output_path / "report.md",
-                    output_path / "imgs",
-                    ["performance"],
-                    output_path,
-                    set(["png"]),
+                    report_name="Pipeline Manager Run Report",
+                    data=measurementsdata,
+                    outputpath=output_path / "report.md",
+                    imgdir=output_path / "imgs",
+                    report_types=report_types,
+                    root_dir=output_path,
+                    image_formats={"png", "html"},
+                    command=command,
                     cmap=cmap,
                     colors=colors,
                 )
+                generate_html_report(
+                    output_path / "report.md", output_path_html, False
+                )
+            import webbrowser
+
+            webbrowser.open(
+                f"file://{(output_path_html / 'report.html').resolve()}", new=2
+            )
+
         except (
             asyncio.exceptions.CancelledError,
             JSONRPCDispatchException,

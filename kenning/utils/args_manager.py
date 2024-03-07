@@ -113,7 +113,9 @@ def convert_to_jsontype(v: Any) -> Any:
         return [convert_to_jsontype(e) for e in v]
     if isinstance(v, dict):
         return {key: convert_to_jsontype(e) for key, e in v.items()}
-    if isinstance(v, (Path, ResourceURI)):
+    if isinstance(v, (ResourceURI)):
+        return v.origin
+    if isinstance(v, (Path)):
         return str(v)
     if isinstance(v, np.ndarray):
         return v.tolist()

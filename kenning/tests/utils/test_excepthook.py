@@ -23,6 +23,8 @@ IGNORED_MODULES = {
     "__future__",  # builtin module not in stdlib
 } | stdlibs.py3.stdlib
 
+KNOWN_MAPS = {"jsonrpc": "json-rpc"}
+
 
 def get_all_used_imports() -> Set[str]:
     """
@@ -58,6 +60,8 @@ class TestFindingDependency:
         for missing_module in get_all_used_imports():
             if missing_module in IGNORED_MODULES:
                 continue
+            if missing_module in KNOWN_MAPS:
+                missing_module = KNOWN_MAPS[missing_module]
             non_stdlib_modules += 1
             result = find_missing_optional_dependency(missing_module)
             if result is None:

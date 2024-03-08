@@ -585,6 +585,7 @@ class PipelineManagerGraphCreator(GraphCreator):
             ],
             "interfaces": interfaces,
             "width": self.node_width,
+            "twoColumn": True,
         }
         return node_id
 

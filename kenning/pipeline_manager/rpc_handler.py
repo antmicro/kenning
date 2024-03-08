@@ -106,9 +106,11 @@ class PipelineManagerRPC(ABC):
                 }
             self.current_task = "importing pipeline"
         try:
+            KLogger.info("Importing scenario...")
             graph_repr = self.dataflow_handler.create_dataflow(
                 external_application_dataflow
             )
+            KLogger.info("Imported scenario.")
             return {
                 "type": MessageType.OK.value,
                 "content": graph_repr,
@@ -151,6 +153,7 @@ class PipelineManagerRPC(ABC):
                 }
             self.current_task = "exporting pipeline"
         try:
+            KLogger.info("Exporting scenario...")
             status, msg = self.dataflow_handler.parse_dataflow(dataflow)
             if not status:
                 return {
@@ -168,6 +171,7 @@ class PipelineManagerRPC(ABC):
                     "type": MessageType.ERROR.value,
                     "content": str(ex),
                 }
+            KLogger.info(f"Saved scenario in {self.output_file_path}.")
             return {
                 "type": MessageType.OK.value,
                 "content": f"The graph is saved to {self.output_file_path}.",  # noqa: E501
@@ -207,6 +211,7 @@ class PipelineManagerRPC(ABC):
                     actions=self.get_navbar_actions(),
                     spec_save_path=self.pipeline_manager_client.save_specification_path,
                 )
+                KLogger.info("SpecificationBuilder: Generated specification.")
             return {
                 "type": MessageType.OK.value,
                 "content": self.pipeline_manager_client.specification,
@@ -253,8 +258,10 @@ class PipelineManagerRPC(ABC):
                 },
             )
         try:
+            KLogger.info("SpecificationBuilder: Validating specification...")
             status, msg = self.dataflow_handler.parse_dataflow(dataflow)
             if not status:
+                KLogger.info("SpecificationBuilder: Specification is invalid.")
                 return {
                     "type": MessageType.ERROR.value,
                     "content": msg,
@@ -270,6 +277,7 @@ class PipelineManagerRPC(ABC):
                 }
             async with self.current_task_lock:
                 self.current_task = None
+            KLogger.info("SpecificationBuilder: Specification is valid.")
             return {
                 "type": MessageType.OK.value,
                 "content": "The graph is valid.",
@@ -320,6 +328,7 @@ class PipelineManagerRPC(ABC):
                 },
             )
         try:
+            KLogger.info("Running scenario...")
             status, msg = self.dataflow_handler.parse_dataflow(dataflow)
             if not status:
                 return {
@@ -340,7 +349,7 @@ class PipelineManagerRPC(ABC):
                     self.dataflow_handler.run_dataflow(
                         runner, self.output_file_path / self.filename
                     )
-                    KLogger.warning("Finished run")
+                    KLogger.info("Finished run")
 
                 runner_coro = asyncio.to_thread(dataflow_runner, runner)
                 runner_task = asyncio.create_task(runner_coro)
@@ -356,6 +365,7 @@ class PipelineManagerRPC(ABC):
                     runner.should_cancel = True
                 if hasattr(runner, "model_wrapper"):
                     runner.model_wrapper.should_cancel = True
+            KLogger.info("Finished running scenario.")
             return {
                 "type": MessageType.OK.value,
                 "content": f"Successfully finished processing. Measurements are saved in {self.output_file_path}",  # noqa: E501
@@ -432,11 +442,12 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                 },
             )
         try:
+            KLogger.info("Optimizing model...")
             runner = self.dataflow_handler.parse_json(msg)
 
             def dataflow_optimizer(runner):
                 self.dataflow_handler.optimize_dataflow(runner)
-                KLogger.warning("Finished optimizing")
+                KLogger.info("Optimized model.")
 
             runner_coro = asyncio.to_thread(dataflow_optimizer, runner)
             runner_task = asyncio.create_task(runner_coro)
@@ -489,6 +500,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                     "type": MessageType.ERROR.value,
                     "content": "Run evaluation before generating a report",
                 }
+            KLogger.info("Generating report...")
             command = get_command()
             measurementsdata, report_types = load_measurements_for_report(
                 measurements_files=[self.output_file_path / self.filename],
@@ -527,6 +539,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                 )
             import webbrowser
 
+            KLogger.info("Generated report.")
             webbrowser.open(
                 f"file://{(output_path_html / 'report.html').resolve()}", new=2
             )

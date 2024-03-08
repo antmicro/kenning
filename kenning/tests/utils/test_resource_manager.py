@@ -127,7 +127,8 @@ class TestResourceManager:
         resource = ResourceURI(str(pytest.test_directory / "test_file.txt"))
 
         assert (
-            Path(resource) == pytest.test_directory.resolve() / "test_file.txt"
+            Path(resource).resolve()
+            == pytest.test_directory.resolve() / "test_file.txt"
         )
 
         resource = ResourceURI("~/test_file.txt")

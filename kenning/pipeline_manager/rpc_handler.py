@@ -127,6 +127,7 @@ class PipelineManagerRPC(ABC):
         finally:
             async with self.current_task_lock:
                 self.current_task = None
+                self.current_method = None
 
     async def dataflow_export(self, dataflow: Dict) -> Dict:
         """
@@ -185,6 +186,7 @@ class PipelineManagerRPC(ABC):
         finally:
             async with self.current_task_lock:
                 self.current_task = None
+                self.current_method = None
 
     async def specification_get(self) -> Dict:
         """
@@ -242,6 +244,7 @@ class PipelineManagerRPC(ABC):
                     "content": f"Can't validate pipeline - task {self.current_task} is running",  # noqa: E501
                 }
             self.current_task = "validating pipeline"
+            self.current_method = "dataflow_validate"
             await self.client.notify(
                 "progress_change",
                 {
@@ -249,7 +252,6 @@ class PipelineManagerRPC(ABC):
                     "method": "dataflow_validate",
                 },
             )
-            self.current_method = "dataflow_validate"
         try:
             status, msg = self.dataflow_handler.parse_dataflow(dataflow)
             if not status:
@@ -439,6 +441,10 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
             runner_coro = asyncio.to_thread(dataflow_optimizer, runner)
             runner_task = asyncio.create_task(runner_coro)
             await runner_task
+            return {
+                "type": MessageType.OK.value,
+                "content": "Model compiled successfully.",
+            }
         except Exception as ex:
             KLogger.error(ex, stack_info=True)
             return {
@@ -460,10 +466,6 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
             async with self.current_task_lock:
                 self.current_task = None
                 self.current_method = None
-            return {
-                "type": MessageType.OK.value,
-                "content": "Optimization complete.",
-            }
 
     async def custom_dataflow_report(self, dataflow: Dict) -> Dict:
         async with self.current_task_lock:
@@ -481,12 +483,12 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                     "method": "custom_dataflow_report",
                 },
             )
-        if self.filename is None:
-            return {
-                "type": MessageType.ERROR.value,
-                "content": "Run evaluation before generating a report",
-            }
         try:
+            if self.filename is None:
+                return {
+                    "type": MessageType.ERROR.value,
+                    "content": "Run evaluation before generating a report",
+                }
             command = get_command()
             measurementsdata, report_types = load_measurements_for_report(
                 measurements_files=[self.output_file_path / self.filename],
@@ -528,6 +530,10 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
             webbrowser.open(
                 f"file://{(output_path_html / 'report.html').resolve()}", new=2
             )
+            return {
+                "type": MessageType.OK.value,
+                "content": "The report is generated.",
+            }
 
         except (
             asyncio.exceptions.CancelledError,
@@ -544,10 +550,6 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
             async with self.current_task_lock:
                 self.current_task = None
                 self.current_method = None
-            return {
-                "type": MessageType.OK.value,
-                "content": "The report is generated.",
-            }
 
 
 class FlowHandlerRPC(PipelineManagerRPC):

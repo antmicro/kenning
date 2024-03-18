@@ -162,6 +162,13 @@ class RenodeRuntime(Runtime):
             "type": int,
             "default": 10,
         },
+        "llext_binary_path": {
+            "argparse_name": "--llext-binary-path",
+            "description": "Path to the LLEXT binary",
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -179,6 +186,7 @@ class RenodeRuntime(Runtime):
         sensor: Optional[str] = None,
         batches_count: int = 100,
         disable_performance_measurements: bool = False,
+        llext_binary_path: Optional[PathOrURI] = None,
     ):
         """
         Constructs Renode runtime.
@@ -215,7 +223,8 @@ class RenodeRuntime(Runtime):
             Number of batches to read.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
-
+        llext_binary_path : Optional[PathOrURI]
+            Path to the LLEXT binary
         Raises
         ------
         ValueError
@@ -231,9 +240,6 @@ class RenodeRuntime(Runtime):
 
         self.runtime_binary_path = runtime_binary_path
         self.platform_resc_path = platform_resc_path
-        # check resc dependencies
-        for dependency in resc_dependencies:
-            assert dependency.is_file(), f"Dependency {dependency} not found"
         self.resc_dependencies = resc_dependencies
         self.zephyr_build_path = zephyr_build_path
         self.post_start_commands = post_start_commands
@@ -249,6 +255,7 @@ class RenodeRuntime(Runtime):
         self.renode_log_buffer = ""
         self.uart_log_buffer = ""
         self.renode_logs = []
+        self.llext_binary_path = llext_binary_path
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )
@@ -267,7 +274,17 @@ class RenodeRuntime(Runtime):
 
         protocol.initialize_client()
 
+        # check resc dependencies
+        for dependency in self.resc_dependencies:
+            assert dependency.is_file(), f"Dependency {dependency} not found"
+
         try:
+            if self.llext_binary_path:
+                status = protocol.upload_runtime(self.llext_binary_path)
+                self.handle_renode_logs()
+                if not status:
+                    return False
+
             spec_path = self.get_io_spec_path(compiled_model_path)
             if spec_path.exists():
                 status = protocol.upload_io_specification(spec_path)

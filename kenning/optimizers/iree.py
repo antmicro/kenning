@@ -215,7 +215,9 @@ class IREECompiler(Optimizer):
         backend : str
             Backend on which the model will be executed.
         model_framework : str
-            Framework of the input model.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         compiler_args : Optional[List[str]]
             Additional arguments for the compiler. Every options should be in a
             separate string, which should be formatted like this:
@@ -264,8 +266,11 @@ class IREECompiler(Optimizer):
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
 
-        self.model_load = self.inputtypes[self.inputtype]
-        imported_model = self.model_load(input_model_path, input_spec)
+        input_type = self.get_input_type(input_model_path)
+
+        imported_model = self.inputtypes[input_type](
+            input_model_path, input_spec
+        )
         try:
             compiled_buffer = ireecmp.compile_str(
                 imported_model,

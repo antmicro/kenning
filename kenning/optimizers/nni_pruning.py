@@ -152,7 +152,7 @@ def reshape_replacer(reshape, masks):
     """
     Function replacing Reshape for pruned model.
     """
-    in_masks, out_mask, _ = masks
+    _, out_mask, _ = masks
     reshape = copy.deepcopy(reshape)
     if hasattr(reshape.wrapped_module, "shape"):
         rem = [
@@ -167,7 +167,7 @@ def expand_conversion(expand, masks):
     """
     Function replacing Expand for pruned model.
     """
-    in_masks, out_mask, _ = masks
+    _, out_mask, _ = masks
     if hasattr(expand, "const0"):
         expand = copy.deepcopy(expand)
         expand.const0 = torch.tensor(
@@ -380,7 +380,9 @@ class NNIPruningOptimizer(Optimizer):
             'relu', 'gelu' or 'relu6' - to select activation function
             used by pruner.
         model_framework : str
-            Framework of the input model, used to select proper backend.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         finetuning_epochs: int
             Number of epoch used for fine-tuning model.
         confidence : Optional[int]
@@ -443,7 +445,9 @@ class NNIPruningOptimizer(Optimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
-        model = self.inputtypes[self.inputtype](input_model_path, self.device)
+        input_type = self.get_input_type(input_model_path)
+
+        model = self.inputtypes[input_type](input_model_path, self.device)
         params_before = self.get_number_of_parameters(model)
 
         if self.exclude_last_layer:

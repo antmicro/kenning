@@ -189,7 +189,9 @@ class ONNXCompiler(Optimizer):
             Specifies where optimization should be performed in client-server
             scenario.
         model_framework : str
-            Framework of the input model, used to select a proper backend.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)
@@ -230,7 +232,9 @@ class ONNXCompiler(Optimizer):
         except KeyError:
             output_names = None
 
-        model = self.inputtypes[self.inputtype](
+        input_type = self.get_input_type(input_model_path)
+
+        model = self.inputtypes[input_type](
             input_model_path, input_spec, output_names
         )
 

@@ -197,7 +197,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             Determines whether optimized model should additionally be saved
             in ZIP format.
         model_framework : str
-            Framework of the input model, used to select a proper backend.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         inferenceinputtype : str
             Data type of the input layer.
         inferenceoutputtype : str
@@ -276,7 +278,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             pcqat_model = self.train_model(pcqat_model)
             converter = tf.lite.TFLiteConverter.from_keras_model(pcqat_model)
         else:
-            converter = self.inputtypes[self.inputtype](input_model_path)
+            input_type = self.get_input_type(input_model_path)
+
+            converter = self.inputtypes[input_type](input_model_path)
 
         if self.target in ["int8", "edgetpu"]:
             converter.optimizations = [tf.lite.Optimize.DEFAULT]

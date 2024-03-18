@@ -116,7 +116,9 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         save_to_zip : bool
             Determines whether optimized model should be saved in ZIP format.
         model_framework : str
-            Framework of the input model, used to select a proper backend.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         prune_dense : bool
             Determines if only dense layers should be pruned.
         target_sparsity : float
@@ -148,7 +150,9 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         input_model_path: PathOrURI,
         io_spec: Optional[Dict[str, List[Dict]]] = None,
     ):
-        model = self.inputtypes[self.inputtype](input_model_path)
+        input_type = self.get_input_type(input_model_path)
+
+        model = self.inputtypes[input_type](input_model_path)
 
         pruning_params = {
             "pruning_schedule": tfmot.sparsity.keras.ConstantSparsity(

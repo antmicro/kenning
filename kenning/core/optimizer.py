@@ -18,6 +18,14 @@ from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
+EXT_TO_FRAMEWORK = {
+    ".onnx": "onnx",
+    ".h5": "keras",
+    ".pt": "pytorch",
+    ".pth": "pytorch",
+    ".tflite": "tflite",
+}
+
 
 class ConversionError(Exception):
     """
@@ -159,7 +167,7 @@ class Optimizer(ArgumentsHandler, ABC):
         inputtype : str
             Path to be set.
         """
-        assert inputtype in self.inputtypes.keys(), (
+        assert inputtype in list(self.inputtypes.keys()) + ["any"], (
             f'Unsupported input type {inputtype}, only '
             f'{", ".join(self.inputtypes.keys())} are supported'
         )
@@ -367,3 +375,37 @@ class Optimizer(ArgumentsHandler, ABC):
             f"{self} did not find io_specification in path: {spec_path}"
         )
         return None
+
+    def get_input_type(
+        self,
+        model_path: PathOrURI,
+    ) -> str:
+        """
+        Return input model type. If input type is set to "any", then it is
+        derived from model file extension.
+
+        Parameters
+        ----------
+        model_path : PathOrURI
+            Path to the input model.
+
+        Returns
+        -------
+        str
+            Input model type.
+
+        Raises
+        ------
+        Exception
+            Raised if input model type cannot be determined.
+        """
+        input_type = (
+            self.inputtype
+            if self.inputtype != "any"
+            else EXT_TO_FRAMEWORK.get(model_path.suffix, None)
+        )
+
+        if input_type is None:
+            raise Exception("Could not determine input model type")
+
+        return input_type

@@ -6,6 +6,7 @@
 Wrapper for TVM deep learning compiler.
 """
 
+import re
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
 import onnx
@@ -20,7 +21,11 @@ from kenning.core.optimizer import (
     Optimizer,
 )
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
+TVM_FUNC_PATTERN = re.compile(
+    r"TVM_DLL[\s\n\t]+int32_t[\s\n\t]*(tvmgen_[a-zA-Z0-9_]*)\([^\(\)]*\)"
+)
 
 
 def onnxconversion(
@@ -423,6 +428,16 @@ class TVMCompiler(Optimizer):
             "type": float,
             "default": 0.25,
         },
+        "zephyr_template_header": {
+            "argparse_name": "--zephyr-template-header",
+            "description": (
+                "Path to the template header that will be used to generate "
+                "header for TVM ops source for Kenning Zephyr runtime."
+            ),
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -444,6 +459,7 @@ class TVMCompiler(Optimizer):
         use_int8_precision: bool = False,
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
+        zephyr_template_header: Optional[PathOrURI] = None,
     ):
         """
         A TVM Compiler wrapper.
@@ -458,7 +474,9 @@ class TVMCompiler(Optimizer):
             Specifies where optimization should be performed in client-server
             scenario.
         model_framework : str
-            Framework of the input model, used to select a proper backend.
+            Framework of the input model, used to select a proper backend. If
+            set to "any", then the optimizer will try to derive model framework
+            from file extension.
         target : str
             Target accelerator on which the model will be executed.
         target_microtvm_board : Optional[str]
@@ -492,6 +510,9 @@ class TVMCompiler(Optimizer):
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
             used for calibrating the model.
+        zephyr_template_header : Optional[PathOrURI]
+            Path to the template header that will be used to generate header
+            for TVM ops source for Kenning Zephyr runtime.
         """
         assert not (
             use_fp16_precision and use_int8_precision
@@ -530,6 +551,7 @@ class TVMCompiler(Optimizer):
         self.use_int8_precision = use_int8_precision
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
+        self.zephyr_template_header = zephyr_template_header
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
@@ -649,6 +671,41 @@ class TVMCompiler(Optimizer):
                 with open(outputpath.with_suffix(".c"), "w") as ops_f:
                     ops_f.write(lib.get_lib().get_source())
 
+                    # extract TVM functions from source file
+                    tvm_funcs = list(
+                        set(
+                            TVM_FUNC_PATTERN.findall(
+                                lib.get_lib().get_source()
+                            )
+                        )
+                    )
+                    tvm_funcs.sort()
+
+                    template_tvmgen_functions = "".join(
+                        [
+                            f" \\\n    FUNC({func_name})"
+                            for func_name in tvm_funcs
+                        ]
+                    )
+                    template_tvmgen_functions_count = (
+                        f'"\\x{len(tvm_funcs):02x}"'
+                    )
+
+                    # generate header
+                    with open(self.zephyr_template_header, "r") as template_f:
+                        template = template_f.read()
+
+                    template = template.replace(
+                        "{{TVMGEN_FUNCTIONS}}", template_tvmgen_functions
+                    )
+                    template = template.replace(
+                        "{{TVMGEN_FUNCTIONS_COUNT}}",
+                        template_tvmgen_functions_count,
+                    )
+
+                    with open(outputpath.with_suffix(".h"), "w") as header_f:
+                        header_f.write(template)
+
             else:
                 lib.export_library(outputpath)
 
@@ -675,7 +732,9 @@ class TVMCompiler(Optimizer):
         if not inputshapes:
             raise ValueError("No shapes in the input specification")
 
-        mod, params = self.inputtypes[self.inputtype](
+        input_type = self.get_input_type(input_model_path)
+
+        mod, params = self.inputtypes[input_type](
             self, input_model_path, inputshapes, dtypes
         )
         self.compile_model(mod, params, self.compiled_model_path, io_spec)

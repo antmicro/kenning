@@ -371,6 +371,8 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
             show_on_eval=show_on_eval,
             image_width=image_width,
             image_height=image_height,
+            min_iou=min_iou,
+            max_preds=max_preds,
         )
 
     def download_dataset_fun(self):

@@ -311,19 +311,21 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
             self.crop_dict = {}
         self.download_seed = download_seed
         super().__init__(
-            root,
-            batch_size,
-            download_dataset,
-            force_download_dataset,
-            external_calibration_dataset,
-            split_fraction_test,
-            split_fraction_val,
-            split_seed,
-            task,
-            image_memory_layout,
-            show_on_eval,
-            image_width,
-            image_height,
+            root=root,
+            batch_size=batch_size,
+            download_dataset=download_dataset,
+            force_download_dataset=force_download_dataset,
+            external_calibration_dataset=external_calibration_dataset,
+            split_fraction_test=split_fraction_test,
+            split_fraction_val=split_fraction_val,
+            split_seed=split_seed,
+            task=task,
+            image_memory_layout=image_memory_layout,
+            show_on_eval=show_on_eval,
+            image_width=image_width,
+            image_height=image_height,
+            min_iou=min_iou,
+            max_preds=max_preds,
         )
 
     def download_dataset_fun(self):

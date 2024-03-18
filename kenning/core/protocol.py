@@ -22,6 +22,8 @@ from kenning.utils.logger import KLogger
 MSG_SIZE_LEN = 4
 MSG_TYPE_LEN = 2
 
+ZEPHYR_LLEXT_NAME_MAX_LEN = 32
+
 
 class RequestFailure(Exception):
     """
@@ -81,6 +83,10 @@ class MessageType(Enum):
     OUTPUT - host requests the output from the target.
     STATS - host requests the inference statistics from the target.
     IO_SPEC - message contains io specification to load.
+    OPTIMIZERS - message contains optimizers config.
+    OPTIMIZE_MODEL - message means the model should be optimized.
+    LOAD_LLEXT - message contains compiled Zephyr's LLEXT.
+    UNLOAD_LLEXT - hosts requests unloading of the given LLEXT.
     """
 
     OK = 0
@@ -93,6 +99,8 @@ class MessageType(Enum):
     IO_SPEC = 7
     OPTIMIZERS = 8
     OPTIMIZE_MODEL = 9
+    ZEPHYR_LOAD_LLEXT = 10
+    ZEPHYR_UNLOAD_LLEXT = 11
 
     def to_bytes(
         self, endianness: Literal["little", "big"] = "little"
@@ -543,6 +551,76 @@ class Protocol(ArgumentsHandler, ABC):
             data = modfile.read()
 
         message = Message(MessageType.MODEL, data)
+
+        if not self.send_message(message):
+            return False
+        return self.receive_confirmation()[0]
+
+    def zephyr_load_llext(self, name: str, path: Path) -> bool:
+        """
+        Uploads the loadable linkable extension to the target device.
+
+        This method takes the binary from given Path and sends it to the target
+        device.
+
+        This method should receive the status of loading LLEXT from the
+        target.
+
+        Parameters
+        ----------
+        name : str
+            Name of the extension.
+        path : Path
+            Path to the LLEXT binary.
+
+        Returns
+        -------
+        bool
+            True if LLEXT upload finished successfully.
+        """
+        KLogger.debug(f"Loading LLEXT {name}")
+
+        data = (
+            name[: ZEPHYR_LLEXT_NAME_MAX_LEN - 1]
+            .encode()
+            .ljust(ZEPHYR_LLEXT_NAME_MAX_LEN, b"\0")
+        )
+
+        with open(path, "rb") as llext_file:
+            data += llext_file.read()
+
+        message = Message(MessageType.ZEPHYR_LOAD_LLEXT, data)
+
+        if not self.send_message(message):
+            return False
+        return self.receive_confirmation()[0]
+
+    def zephyr_unload_llext(self, name: str) -> bool:
+        """
+        Requests unloading of the given extension.
+
+        This method should receive the status of unloading LLEXT from the
+        target.
+
+        Parameters
+        ----------
+        name : str
+            Name of the extension.
+
+        Returns
+        -------
+        bool
+            True if LLEXT upload finished successfully.
+        """
+        KLogger.debug(f"Unloading LLEXT {name}")
+
+        data = (
+            name[:ZEPHYR_LLEXT_NAME_MAX_LEN]
+            .encode()
+            .ljust(ZEPHYR_LLEXT_NAME_MAX_LEN, b"\0")
+        )
+
+        message = Message(MessageType.ZEPHYR_UNLOAD_LLEXT, data)
 
         if not self.send_message(message):
             return False

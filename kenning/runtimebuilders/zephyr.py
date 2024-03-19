@@ -13,10 +13,11 @@ import subprocess
 import venv
 from functools import wraps
 from pathlib import Path
-from typing import Optional, Union
+from typing import List, Optional, Union
 
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
+from kenning.utils.resource_manager import ResourceURI
 
 
 class WestExecutionError(Exception):
@@ -101,6 +102,7 @@ class WestRun:
         application_dir: "Union[os.PathLike[str], Path]",
         build_dir: "Optional[Union[os.PathLike[str], Path]]" = None,
         extra_conf_file: "Optional[str]" = None,
+        extra_build_args: List[str] = [],
         pristine: bool = True,
     ):
         """
@@ -109,15 +111,17 @@ class WestRun:
         Parameters
         ----------
         board : str
-            Name of the board passed to '--board'
+            Name of the board passed to '--board'.
         application_dir : Union[os.PathLike[str], Path]
-            Path to the application dir (usually './app')
+            Path to the application dir (usually './app').
         build_dir : Optional[Union[os.PathLike[str], Path]]
-            Path to where the build directory should be located
+            Path to where the build directory should be located.
         extra_conf_file : Optional[str]
-            Name of the additional .conf file
+            Name of the additional .conf file.
+        extra_build_args : List[str]
+            Extra arguments passed to west.
         pristine : bool
-            If '-p always' should be used
+            If '-p always' should be used.
         """
         params = [
             "build",
@@ -133,6 +137,24 @@ class WestRun:
 
         if extra_conf_file is not None:
             params.extend(["--", f"-DEXTRA_CONF_FILE={extra_conf_file}"])
+
+        params.extend(extra_build_args)
+
+        self._subprocess_west_run(params)
+
+    def build_target(
+        self,
+        target: str,
+        build_dir: "Optional[Union[os.PathLike[str], Path]]" = None,
+    ):
+        params = [
+            "build",
+            "-t",
+            target,
+        ]
+
+        if build_dir is not None:
+            params.extend(["--build-dir", str(build_dir)])
 
         self._subprocess_west_run(params)
 
@@ -252,6 +274,22 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "default": None,
             "nullable": True,
         },
+        "extra_targets": {
+            "description": "Extra targets to be built",
+            "type": str,
+            "is_list": True,
+            "default": [],
+        },
+        "llext_model": {
+            "description": "Path to the LLEXT model source",
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
+        "run_west_update": {
+            "description": "Whether to update the project before build",
+            "type": bool,
+        },
     }
 
     allowed_frameworks = [
@@ -263,35 +301,44 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self,
         workspace: Path,
         board: str,
-        runtime_location: Optional[Path] = None,
+        output_path: Optional[Path] = None,
         model_framework: Optional[str] = None,
         application_dir: Path = Path("app"),
         build_dir: Path = Path("build"),
         venv_dir: Path = Path(".west-venv"),
         zephyr_base: Optional[Path] = None,
+        extra_targets: List[str] = [],
+        llext_model: Optional[ResourceURI] = None,
+        run_west_update: bool = False,
     ):
         """
         RuntimeBuilder for the kenning-zephyr-runtime.
 
         Parameters
         ----------
-        workspace: Path
+        workspace : Path
             Location of the project directory.
-        board: str
+        board : str
             Name of the target board.
-        runtime_location: Optional[Path]
-            Destination of the built runtime
-        model_framework: Optional[str]
+        output_path: Optional[Path]
+            Destination of the built binaries.
+        model_framework : Optional[str]
             Selected model framework
-        application_dir: Path
+        application_dir : Path
             Path to the project's application directory.
             In the kenning-zephyr-runtime it's always './app'.
-        build_dir: Path
+        build_dir : Path
             Path to the project's build directory.
-        venv_dir: Path
+        venv_dir : Path
             Virtual environment for West
-        zephyr_base: Optional[Path]
+        zephyr_base : Optional[Path]
             Path to the Zephyr base.
+        extra_targets : List[str]
+            Extra targets to be built.
+        llext_model : Optional[ResourceURI]
+            Path to the LLEXT model source.
+        run_west_update : bool
+            Whether to update the project before build.
 
         Raises
         ------
@@ -300,7 +347,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         """
         super().__init__(
             workspace=workspace.resolve(),
-            runtime_location=runtime_location,
+            output_path=output_path,
             model_framework=model_framework,
         )
 
@@ -319,37 +366,67 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         self.venv_dir = self._fix_relative(venv_dir)
 
+        self.extra_targets = extra_targets
+        self.llext_model = llext_model
+
         self._westrun = WestRun(self.workspace, zephyr_base, self.venv_dir)
 
         if not self._westrun.has_zephyr_base():
             self._westrun.init()
 
-        self._westrun.update()
-        KLogger.info(f"Updated Zephyr workspace in '{self.workspace}'")
+        if run_west_update:
+            self._westrun.update()
+            KLogger.info(f"Updated Zephyr workspace in '{self.workspace}'")
 
-        self._prepare_modules()
-        KLogger.info("Prepared modules")
+            self._prepare_modules()
+            KLogger.info("Prepared modules")
 
     def build(self) -> Path:
+        output_files = {}
+
+        if self.llext_model is not None:
+            extra_build_args = [
+                f'-DCONFIG_KENNING_LLEXT_MODEL_SRC="{self.llext_model.resolve()}"'
+            ]
+            extra_conf_file = f"{self.model_framework}_llext.conf"
+
+            output_files["model_impl.llext"] = self.llext_model.with_suffix(
+                ".llext"
+            ).name
+        else:
+            extra_conf_file = f"{self.model_framework}.conf"
+
+        if "board-repl" in self.extra_targets:
+            output_files[f"{self.board}.repl"] = f"{self.board}.repl"
+
         self._westrun.build(
             self.board,
             self.application_dir,
-            self.build_dir,
-            f"{self.model_framework}.conf",
-            True,
+            build_dir=self.build_dir,
+            extra_conf_file=extra_conf_file,
+            extra_build_args=extra_build_args,
+            pristine=True,
         )
 
-        runtime_elf = self.build_dir / "zephyr/zephyr.elf"
+        for target in self.extra_targets:
+            self._westrun.build_target(target, self.build_dir)
 
-        if self.runtime_location is not None:
-            self.runtime_location.unlink(missing_ok=True)
-            shutil.copy(runtime_elf, self.runtime_location)
+        runtime_elf = "zephyr/zephyr.elf"
+        output_files[runtime_elf] = runtime_elf
 
-            KLogger.info(
-                "Zephyr Runtime was build and "
-                f"copied to '{self.runtime_location.absolute()}'"
-            )
-            return self.runtime_location
+        if self.output_path is not None:
+            for src_file, dest_file in output_files.items():
+                src_path = self.build_dir / src_file
+                dest_path = self.output_path / dest_file
+
+                dest_path.parent.mkdir(exist_ok=True, parents=True)
+                dest_path.unlink(missing_ok=True)
+
+                shutil.copy(src_path, dest_path)
+
+                KLogger.info(f"Output file {src_file} copied to {dest_path}.")
+
+            return self.output_path / runtime_elf
 
         KLogger.info(
             "Zephyr Runtime was build and "

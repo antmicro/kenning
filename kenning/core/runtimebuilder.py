@@ -24,8 +24,8 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
             "type": Path,
             "required": True,
         },
-        "runtime_location": {
-            "description": "Specifies where built runtime should be stored",
+        "output_path": {
+            "description": "Specifies where built binaries should be stored",
             "type": Path,
             "default": None,
             "nullable": True,
@@ -43,7 +43,7 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
     def __init__(
         self,
         workspace: Path,
-        runtime_location: Optional[Path] = None,
+        output_path: Optional[Path] = None,
         model_framework: Optional[str] = None,
     ):
         """
@@ -51,15 +51,15 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        workspace: Path
+        workspace : Path
             Location of the project directory.
-        runtime_location: Optional[Path]
-            Destination of the built runtime
-        model_framework: Optional[str]
+        output_path : Optional[Path]
+            Destination of the built binaries.
+        model_framework : Optional[str]
             Selected model framework
         """
         self.workspace = workspace
-        self.runtime_location = runtime_location
+        self.output_path = output_path
 
         self.model_framework = None
         if model_framework is not None:

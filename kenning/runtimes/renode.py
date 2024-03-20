@@ -385,14 +385,14 @@ class RenodeRuntime(Runtime):
 
         monitor.execute(f"logFile @{self.log_file_path.resolve()}")
         self.renode_log_file = open(self.log_file_path, "r")
-        monitor.execute(f"$bin=@{self.runtime_binary_path}")
+        monitor.execute(f"$bin=@{self.runtime_binary_path.resolve()}")
 
         for dep in self.resc_dependencies:
             dep_name = dep.name.lower().replace(".", "_")
             dep_path = str(dep.resolve())
             monitor.execute(f"${dep_name}=@{dep_path}")
 
-        _, err = monitor.execute_script(str(self.platform_resc_path))
+        _, err = monitor.execute_script(str(self.platform_resc_path.resolve()))
 
         if err:
             raise Exception("RESC execution error: " + err)

@@ -671,6 +671,9 @@ class TVMCompiler(Optimizer):
                 with open(outputpath.with_suffix(".c"), "w") as ops_f:
                     ops_f.write(lib.get_lib().get_source())
 
+                    if not self.zephyr_template_header:
+                        return None
+
                     # extract TVM functions from source file
                     tvm_funcs = list(
                         set(

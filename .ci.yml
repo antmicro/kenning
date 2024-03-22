@@ -26,7 +26,7 @@ pre-commit:
     <<: *common_only
     stage: lint
     script:
-        - pre-commit run --all-files
+        - pre-commit run --all-files || (echo "pre-commit changes:" && git diff && false)
 
 pytest:
     <<: *ace
@@ -39,7 +39,7 @@ pytest:
         - pip install -e ".[llm]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
-        - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
+        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 58m 55m pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
     artifacts:
         paths:
             - log.json

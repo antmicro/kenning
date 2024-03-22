@@ -32,14 +32,13 @@ pytest:
     <<: *ace
     <<: *common_only
     stage: tests
-    before_script:
+    script:
         - /scripts/prepare_environment.sh .
         - pip uninstall -y pipeline_manager
         - pip install -e ".[test,pipeline_manager]"
         - pip install -e ".[llm]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
-    script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
     artifacts:
         paths:
@@ -51,13 +50,12 @@ pytest:
 .pytest-docs: &pytest-docs
     image: $CI_MINIMAL_IMAGE
     stage: tests
-    before_script:
+    script:
         - /scripts/prepare_environment.sh .
         # Prepare Docker
         - /scripts/prepare_docker.sh
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         - pip install -e ".[test]"
-    script:
         - PYTHONPATH=$(pwd):$PYTHONPATH pytest kenning/tests/docs/test_snippets.py -m $TESTS_SCOPE -n=4 --test-docs-log-dir $TESTS_SCOPE
     artifacts:
         paths:

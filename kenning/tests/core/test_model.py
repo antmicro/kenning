@@ -9,7 +9,6 @@ import pytest
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.modelwrappers.llm.llm import LLM
-from kenning.modelwrappers.llm.phi_2 import PHI2
 from kenning.tests.core.conftest import (
     copy_model_to_tmp,
     get_dataset_random_mock,
@@ -23,12 +22,12 @@ MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True
 )
 
-# Remove LLM from the list of modelwrappers to test and add a
-# represenatative - PHI2 modelwrapper.
+# Remove LLM from the list of modelwrappers to test
 # TODO: Those should be tested in a separate test suite.
+# TODO: Add tests for minimal LLM model
 MODELWRAPPER_SUBCLASSES = [
     cls for cls in MODELWRAPPER_SUBCLASSES if not issubclass(cls, LLM)
-] + [PHI2]
+]
 
 
 @pytest.fixture(autouse=True, scope="module")

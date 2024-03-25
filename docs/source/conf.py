@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -43,7 +43,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 
 project = "Kenning"
 basic_filename = "kenning"
-copyright = "2020-2023, Antmicro"
+copyright = "2020-2024, Antmicro"
 authors = "Antmicro"
 
 # The short X.Y version

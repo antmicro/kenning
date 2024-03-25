@@ -71,6 +71,23 @@ def prepare_kenning(session: nox.Session, device: str):
     session.install(*indices_strs, f".[{deps_str}]")
 
 
+def fix_pyximport(session: nox.Session):
+    session.run(
+        "python",
+        "-c",
+        """
+import numpy as np
+import pyximport;
+pyximport.install(
+    setup_args={"include_dirs": np.get_include()}, reload_support=True
+);
+from kenning.modelwrappers.instance_segmentation.cython_nms import (
+    nms,
+);
+""",
+    )
+
+
 @nox.session(python=PYTHON_VERSIONS)
 @nox.parametrize("device", ["cpu", "any"])
 def run_pytest(session: nox.Session, device):
@@ -80,6 +97,8 @@ def run_pytest(session: nox.Session, device):
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
         return
+
+    fix_pyximport(session)
 
     report_path = Path("pytest-reports") / f"{session.name}.json"
     session.run(

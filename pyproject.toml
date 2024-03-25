@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 [build-system]
-requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy~=1.23.5"]
+requires = ["setuptools>=40.8.0", "wheel", "cython<3.0.0", "numpy>=1.23.5"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -27,16 +27,17 @@ dependencies = [
     "isort>=5.12.0",
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
-    "numpy~=1.23.5",
-    "onnx~=1.12.0",
+    "numpy",
+    "onnx",
     "Pillow>=8.1.0",
     "psutil>=5.8.0",
     "requests",
-    "rst-to-myst[sphinx]",
+    "rst-to-myst[sphinx]>=0.4.0",
     "scikit_learn>=0.24.1",
-    "scipy~=1.10.1",
+    "scipy",
     "tomli; python_version<'3.11'",
     "tqdm>=4.56.2",
+    "datasets",
 ]
 
 [project.optional-dependencies]
@@ -51,21 +52,21 @@ docs = [
     "sphinxcontrib-napoleon",
 ]
 tensorflow = [
-    "onnx_tf~=1.10.0",
-    "tensorflow_addons~=0.19.0",
-    "tensorflow_model_optimization~=0.7.4",
+    "onnx_tf",
+    "tensorflow_addons",
+    "tensorflow_model_optimization",
     "tensorflow_probability~=0.19.0",
     "tensorflow~=2.11.0",
-    "tf2onnx~=1.13.0",
+    "tf2onnx",
 ]
 torch = [
-    "onnx2torch~=1.5.4",
-    "torch~=1.13.0",
-    "torchvision~=0.14.0",
+    "onnx2torch",
+    "torch>=2.0.1",
+    "torchvision>=0.15.0",
 ]
 mxnet = [
     "gluoncv>=0.10.2",
-    "mxnet~=1.9.1",
+    "mxnet",
 ]
 nvidia_perf = [
     "pynvml>=8.0.4",
@@ -95,7 +96,7 @@ iree = [
     "iree-tools-tflite==20230209.425",
 ]
 onnxruntime = [
-    "onnxruntime",
+    "onnxruntime>=1.12.0",
 ]
 test = [
     "pexpect",
@@ -133,9 +134,9 @@ zephyr = [
 ]
 nni = [
     "kenning[torch]",
-    "dill~=0.3.6",
-    "nni~=2.10.0",
-    "tensorboard~=2.11.1",
+    "dill",
+    "nni~=2.10.1",
+    "tensorboard",
 ]
 ros2 = [
     "rosbags"
@@ -145,13 +146,12 @@ albumentations = [
 ]
 
 llm = [
-    "autoawq~=0.1.8",
-    "auto_gptq~=0.5.1",
-    "datasets~=2.15.0",
-    "rouge-score~=0.1.2",
-    "torch~=2.1",
-    "transformers~=4.36.2",
-    "vllm~=0.2.6",
+    "kenning[torch]",
+    "autoawq",
+    "auto_gptq",
+    "rouge-score",
+    "transformers",
+    "vllm>=0.3.0",
 ]
 
 [project.scripts]

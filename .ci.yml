@@ -63,6 +63,34 @@ pytest:
             - $TESTS_SCOPE/*.log
         when: always
 
+nox-pytest:
+    <<: *ace
+    <<: *common_only
+    image: $CI_NOX_IMAGE
+    stage: lint
+    before_script:
+        - /scripts/prepare_environment.sh .
+    script:
+        - export PATH=$PATH:/root/.pyenv/shims
+        - nox -vs "run_pytest-3.9(device='cpu')"
+        - nox -vs "run_pytest-3.10(device='cpu')"
+
+nox-gallery:
+    <<: *ace
+    <<: *common_only
+    image: $CI_NOX_IMAGE
+    stage: lint
+    before_script:
+        - /scripts/prepare_environment.sh .
+    script:
+        - export PATH=$PATH:/root/.pyenv/shims
+        - nox -vs "run_gallery_tests-3.9"
+        - nox -vs "run_gallery_tests-3.10"
+    only:
+        refs:
+            - main
+            - dev
+
 docs-tests:
     <<: *ace
     variables:

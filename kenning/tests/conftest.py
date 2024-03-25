@@ -214,7 +214,7 @@ def tmpfolder(test_directory: Optional[Path]) -> Generator[Path, None, None]:
     """
     if test_directory is not None:
         test_directory = Path(test_directory)
-        tempfile.tempdir = test_directory / "tmp"
+        tempfile.tempdir = str(test_directory / "tmp")
         test_directory.mkdir(exist_ok=True)
         yield Path(tempfile.mkdtemp())
     else:

@@ -1019,7 +1019,7 @@ class BubblePlot(Plot):
                 y=self.y_data,
                 size=15 + np.array(self.bubble_size),
                 model_size=[format_size(s) for s in self.size_data],
-                color=self.colors,
+                color=self.colors[: len(self.x_data)],
                 name=self.bubble_labels,
             )
         )
@@ -1058,7 +1058,8 @@ class BubblePlot(Plot):
         bubbleplot_fig.add_tools(
             HoverTool(
                 tooltips=self._create_custom_hover_template(
-                    ["Model", self.size_label], values=["@name", "@model_size"]
+                    ["Model", self.size_label, self.x_label, self.y_label],
+                    values=["@name", "@model_size", "@x", "@y"],
                 )
             )
         )

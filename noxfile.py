@@ -128,7 +128,6 @@ def run_pytest(session: nox.Session, device):
     session.run(
         "pytest",
         "kenning",
-        "--ignore=kenning/tests/core/test_model.py",
         "--ignore=kenning/tests/utils/test_class_loader.py",
         "-n=auto",
         "-m",

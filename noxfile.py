@@ -114,6 +114,10 @@ def run_pytest(session: nox.Session, device):
 
     name = fix_name(session.name)
 
+    requirments_path = Path("requirements") / f"{name}.txt"
+    requirments_path.parent.mkdir(exist_ok=True)
+    requirments_path.write_text(session.run("pip", "freeze", silent=True))
+
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
         return

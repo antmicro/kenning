@@ -87,6 +87,24 @@ from kenning.modelwrappers.instance_segmentation.cython_nms import (
 """,
     )
 
+def fix_name(name):
+    namever, _, args = name.partition("(")
+    name, _, ver = namever.partition("-")
+    args = args.rstrip(")")
+
+    params = []
+    params.append(name)
+    if ver:
+        params.append(ver)
+
+    if args:
+        for arg in args.split(","):
+            arg = arg.strip()
+            _, v = arg.split("=")
+            v = v.strip("'\"")
+            params.append(v)
+
+    return "-".join(params)
 
 @nox.session(python=PYTHON_VERSIONS)
 @nox.parametrize("device", ["cpu", "any"])
@@ -94,13 +112,15 @@ def run_pytest(session: nox.Session, device):
     prepare_kenning(session, device)
     prepare_pyrenode(session)
 
+    name = fix_name(session.name)
+
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
         return
 
     fix_pyximport(session)
 
-    report_path = Path("pytest-reports") / f"{session.name}.json"
+    report_path = Path("pytest-reports") / f"{name}.json"
     session.run(
         "pytest",
         "kenning",
@@ -117,7 +137,9 @@ def run_pytest(session: nox.Session, device):
 def run_gallery_tests(session: nox.Session):
     session.install(".[test,pipeline_manager]")
 
-    report_path = Path("pytest-reports") / f"{session.name}.json"
+    name = fix_name(session.name)
+
+    report_path = Path("pytest-reports") / f"{name}.json"
     session.run(
         "pytest",
         "kenning/tests/docs/test_snippets.py",

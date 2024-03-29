@@ -1,3 +1,6 @@
+"""
+Test Kenning on multiple Python versions.
+"""
 import os
 from glob import glob
 from pathlib import Path
@@ -8,7 +11,7 @@ PYTHON_VERSIONS = ["3.9", "3.10"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
 
 
-def prepare_pyrenode(session: nox.Session):
+def _prepare_pyrenode(session: nox.Session):
     renode_dir = session.create_tmp()
     with session.chdir(renode_dir):
         session.run_install(
@@ -33,7 +36,7 @@ def prepare_pyrenode(session: nox.Session):
         session.log(f"Using Renode from: '{renode_bin}'.")
 
 
-def prepare_kenning(session: nox.Session, device: str):
+def _prepare_kenning(session: nox.Session, device: str):
     optional_dependencies = [
         "docs",
         "tensorflow",
@@ -71,7 +74,7 @@ def prepare_kenning(session: nox.Session, device: str):
     session.install(*indices_strs, f".[{deps_str}]")
 
 
-def fix_pyximport(session: nox.Session):
+def _fix_pyximport(session: nox.Session):
     session.run(
         "python",
         "-c",
@@ -87,7 +90,8 @@ from kenning.modelwrappers.instance_segmentation.cython_nms import (
 """,
     )
 
-def fix_name(name):
+
+def _fix_name(name):
     namever, _, args = name.partition("(")
     name, _, ver = namever.partition("-")
     args = args.rstrip(")")
@@ -106,23 +110,27 @@ def fix_name(name):
 
     return "-".join(params)
 
+
 @nox.session(python=PYTHON_VERSIONS)
 @nox.parametrize("device", ["cpu", "any"])
 def run_pytest(session: nox.Session, device):
-    prepare_kenning(session, device)
-    prepare_pyrenode(session)
+    """
+    Install Kenning with all dependencies and run pytest.
+    """
+    _prepare_kenning(session, device)
+    _prepare_pyrenode(session)
 
-    name = fix_name(session.name)
+    name = _fix_name(session.name)
 
-    requirments_path = Path("requirements") / f"{name}.txt"
-    requirments_path.parent.mkdir(exist_ok=True)
-    requirments_path.write_text(session.run("pip", "freeze", silent=True))
+    requirements_path = Path("requirements") / f"{name}.txt"
+    requirements_path.parent.mkdir(exist_ok=True)
+    requirements_path.write_text(session.run("pip", "freeze", silent=True))
 
     if PYTEST_CPU_ONLY and device != "cpu":
         session.log("Skipping pytest")
         return
 
-    fix_pyximport(session)
+    _fix_pyximport(session)
 
     report_path = Path("pytest-reports") / f"{name}.json"
     session.run(
@@ -138,9 +146,12 @@ def run_pytest(session: nox.Session, device):
 
 @nox.session(python=PYTHON_VERSIONS)
 def run_gallery_tests(session: nox.Session):
+    """
+    Install Kenning with minimal dependencies and run gallery tests.
+    """
     session.install(".[test,pipeline_manager]")
 
-    name = fix_name(session.name)
+    name = _fix_name(session.name)
 
     report_path = Path("pytest-reports") / f"{name}.json"
     session.run(

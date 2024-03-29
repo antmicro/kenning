@@ -68,9 +68,8 @@ nox-pytest:
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: tests
-    before_script:
-        - /scripts/prepare_environment.sh .
     script:
+        - /scripts/prepare_environment.sh .
         - export NOX_PYTEST_CPU_ONLY=y
         - nox -vs run_pytest
     artifacts:
@@ -83,9 +82,10 @@ nox-gallery:
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: tests
-    before_script:
-        - /scripts/prepare_environment.sh .
     script:
+        - /scripts/prepare_environment.sh .
+        - /scripts/prepare_docker.sh
+        - trap "kill $(cat /var/run/docker.pid)" EXIT
         - nox -vs run_gallery_tests
     when: manual
 

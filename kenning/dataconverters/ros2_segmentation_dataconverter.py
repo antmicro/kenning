@@ -8,7 +8,7 @@ SegmentationAction object for compatibility between surronding blocks
 during runtime.
 """
 
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import numpy as np
 from kenning_computer_vision_msgs.action import SegmentationAction
@@ -31,7 +31,7 @@ class ROS2SegmentationDataConverter(DataConverter):
         super().__init__()
 
     def to_next_block(
-        self, data: List[Dict[str, Any]]
+        self, data: List[Union[Dict[str, Any], np.array]]
     ) -> SegmentationAction.Goal:
         """
         Converts input frames to segmentation action goal.
@@ -39,7 +39,7 @@ class ROS2SegmentationDataConverter(DataConverter):
 
         Parameters
         ----------
-        data : List[Dict[str, Any]]
+        data : List[Union[Dict[str, Any], np.array]]
             The input data to be converted.
 
         Returns
@@ -71,9 +71,14 @@ class ROS2SegmentationDataConverter(DataConverter):
         goal = SegmentationAction.Goal()
         for frame_data in data:
             frame_msg = VideoFrameMsg()
-            frame_msg._frame = prepare_image(frame_data["data"])
-            frame_msg.frame_id = frame_data["frame_id"]
-            frame_msg.video_id = frame_data["video_id"]
+            frame_msg.frame_id = 0
+            frame_msg.video_id = "0"
+            if type(frame_data) is dict:
+                frame_msg._frame = prepare_image(frame_data["data"])
+                frame_msg.frame_id = frame_data["frame_id"]
+                frame_msg.video_id = frame_data["video_id"]
+            else:
+                frame_msg._frame = prepare_image(frame_data)
             goal._input.append(frame_msg)
         return goal
 

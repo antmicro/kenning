@@ -59,7 +59,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         return {
             "input": [
                 {
-                    "name": "input.1",
+                    "name": "input_1",
                     "shape": [
                         (batch_size, 3, 224, 224),
                         (batch_size, 224, 224, 3),
@@ -69,7 +69,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             ],
             "processed_input": [
                 {
-                    "name": "input.1",
+                    "name": "input_1",
                     "shape": (batch_size, 3, 224, 224),
                     "dtype": "float32",
                 }

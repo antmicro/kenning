@@ -18,7 +18,7 @@ from kenning.core.dataset import Dataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.interfaces.io_interface import IOInterface
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
-from kenning.utils.logger import LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -41,7 +41,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         super().__init__(model_path, dataset, from_file, model_name)
         gpus = tf.config.list_physical_devices("GPU")
         for gpu in gpus:
-            tf.config.experimental.set_memory_growth(gpu, True)
+            try:
+                tf.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError:
+                KLogger.warn(f"Couldn't enable memory growth for {gpu}")
 
         if dataset is not None:
             self.numclasses = dataset.numclasses

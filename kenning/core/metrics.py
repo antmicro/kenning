@@ -6,6 +6,7 @@
 A collection of methods for computing benchmark and quality metrics.
 """
 
+from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -31,7 +32,7 @@ def accuracy(confusion_matrix: Union[List[List[int]], np.ndarray]) -> float:
 
 
 def mean_precision(
-    confusion_matrix: Union[List[List[int]], np.ndarray]
+    confusion_matrix: Union[List[List[int]], np.ndarray],
 ) -> float:
     """
     Computes mean precision for all classes in the confusion matrix.
@@ -53,7 +54,7 @@ def mean_precision(
 
 
 def mean_sensitivity(
-    confusion_matrix: Union[List[List[int]], np.ndarray]
+    confusion_matrix: Union[List[List[int]], np.ndarray],
 ) -> float:
     """
     Computes mean sensitivity for all classes in the confusion matrix.
@@ -280,10 +281,20 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
     if not any(("opcode_counters" in data for data in measurementsdata)):
         return {}
 
+    aggr_opcode_counters = []
+    for data in measurementsdata:
+        opcode_counters = defaultdict(int)
+
+        for cpu_counters in data["opcode_counters"].values():
+            for opcode, counter in cpu_counters.items():
+                opcode_counters[opcode] += counter
+
+        aggr_opcode_counters.append(opcode_counters)
+
     # retrieve all opcodes with nonzero counters
     all_opcodes = set()
-    for data in measurementsdata:
-        for opcode, counter in data["opcode_counters"].items():
+    for opcode_counters in aggr_opcode_counters:
+        for opcode, counter in opcode_counters.items():
             if counter > 0:
                 all_opcodes.add(opcode)
 
@@ -292,8 +303,8 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
 
     for opcode in all_opcodes:
         counters = [opcode]
-        for data in measurementsdata:
-            counters.append(data["opcode_counters"].get(opcode, 0))
+        for opcode_counters in aggr_opcode_counters:
+            counters.append(opcode_counters.get(opcode, 0))
         opcode_ctrs.append(counters)
 
     opcode_ctrs.sort(key=lambda x: (sum(x[1:]), x[0]), reverse=True)
@@ -334,10 +345,10 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
             }
 
     ret["instructions_per_inference_pass"] = {
-        data["model_name"]: int(
-            sum(data["opcode_counters"].values()) / data["total"]
+        data["model_name"]: int(sum(opcode_counters.values()) / data["total"])
+        for data, opcode_counters in zip(
+            measurementsdata, aggr_opcode_counters
         )
-        for data in measurementsdata
     }
     if len(v_opcode_ctrs):
         ret["vector_opcodes_fraction"] = {
@@ -347,8 +358,8 @@ def compute_renode_metrics(measurementsdata: List[Dict[str, List]]) -> Dict:
         }
 
     ret["top_10_opcodes_per_inference_pass"] = {}
-    for data in measurementsdata:
-        opcode_counters = list(map(list, data["opcode_counters"].items()))
+    for data, opcode_counters in zip(measurementsdata, aggr_opcode_counters):
+        opcode_counters = list(map(list, opcode_counters.items()))
         opcode_counters.sort(key=lambda x: x[::-1], reverse=True)
         for i in range(len(opcode_counters)):
             opcode_counters[i][1] //= data["total"]

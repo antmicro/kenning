@@ -101,6 +101,8 @@ class PipelineHandler(BaseDataflowHandler):
                 ],
             )
 
+        self.pm_graph.start_new_graph()
+
         node_ids = {}
 
         block_names = ["dataset", "model_wrapper", "runtime", "protocol"]

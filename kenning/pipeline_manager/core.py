@@ -229,7 +229,7 @@ class BaseDataflowHandler(ABC):
         """
         self.spec_builder.metadata_add_param("twoColumn", True)
         self.spec_builder.metadata_add_param("layout", self.autolayout)
-        self.spec_builder.metadata_add_param("navbarItems", actions)
+        self.spec_builder._metadata["navbarItems"] = actions
 
         def strip_io(io_list: list, direction) -> list:
             """

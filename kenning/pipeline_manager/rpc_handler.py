@@ -9,6 +9,7 @@ Handlers for RPC for Pipeline Manager.
 import asyncio
 import datetime
 import json
+import traceback
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict
@@ -121,7 +122,9 @@ class PipelineManagerRPC(ABC):
         ):
             KLogger.warning("Cancelling import job")
         except (ValidationError, RuntimeError) as ex:
-            KLogger.error(f"Failed to load JSON file:\n{ex}")
+            KLogger.error(
+                f"Failed to load JSON file:\n{traceback.format_exc()}"
+            )
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Failed to load scenario:\n{ex}",  # noqa: E501
@@ -182,7 +185,9 @@ class PipelineManagerRPC(ABC):
         ):
             KLogger.warning("Cancelling export job")
         except (ValidationError, RuntimeError) as ex:
-            KLogger.error(f"Failed to save the scenario:\n{ex}")
+            KLogger.error(
+                f"Failed to save the scenario:\n{traceback.format_exc()}"
+            )
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Failed to save the scenario:\n{ex}",  # noqa: E501
@@ -222,7 +227,9 @@ class PipelineManagerRPC(ABC):
         ):
             KLogger.warning("Cancelling specification building")
         except (ValidationError, RuntimeError) as ex:
-            KLogger.error(f"Failed to generate specification:\n{ex}")
+            KLogger.error(
+                f"Failed to generate specification:\n{traceback.format_exc()}"
+            )
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Failed to generate specification:\n{ex}",  # noqa: E501
@@ -288,7 +295,7 @@ class PipelineManagerRPC(ABC):
         ):
             KLogger.warning("Cancelling validate job")
         except (ValidationError, RuntimeError) as ex:
-            KLogger.error(f"Validation error:\n{ex}")
+            KLogger.error(f"Validation error:\n{traceback.format_exc()}")
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Validation error:\n{ex}",  # noqa: E501
@@ -376,7 +383,9 @@ class PipelineManagerRPC(ABC):
         ):
             KLogger.warning("Cancelling run job")
         except (ValidationError, RuntimeError) as ex:
-            KLogger.error(f"Failed to run the pipeline:\n{ex}")
+            KLogger.error(
+                f"Failed to run the pipeline:\n{traceback.format_exc()}"
+            )
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Failed to run the pipeline:\n{ex}",  # noqa: E501
@@ -468,7 +477,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
         ):
             KLogger.warning("Cancelling optimizing job")
         except Exception as ex:
-            KLogger.error(f"Optimizing error:\n{ex}")
+            KLogger.error(f"Optimizing error:\n{traceback.format_exc()}")
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Optimizing error:\n{ex}",
@@ -554,7 +563,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
         ):
             KLogger.warning("Cancelling reporting job")
         except Exception as ex:
-            KLogger.error(f"Reporting error:\n{ex}")
+            KLogger.error(f"Reporting error:\n{traceback.format_exc()}")
             return {
                 "type": MessageType.ERROR.value,
                 "content": f"Reporting error:\n{ex}",

@@ -7,6 +7,7 @@ Runtime implementation for Renode.
 """
 
 import logging
+import re
 import struct
 import tempfile
 from collections import defaultdict
@@ -28,30 +29,72 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 KLogger.add_custom_level(logging.INFO + 1, "RENODE")
 
 
+class UARTNotFoundInDTSError(Exception):
+    """
+    Exception raised when UART was not found in devicetree.
+    """
+
+    ...
+
+
+class RenodeRuntimeError(Exception):
+    """
+    Exception raised when Renode command fails.
+    """
+
+    ...
+
+
 class RenodeRuntime(Runtime):
     """
     Runtime subclass that provides and API for testing inference on bare-metal
     runtimes executed on Renode simulated platform.
+
+    This runtime creates Renode platform based on provided resc or Zephyr
+    runtime build artifacts. It is required to specify either
+    `platform_resc_path` or `zephyr_build_path`. Those parameters are mutually
+    exclusive. If the provided resc uses some other files (i.e. csharp sources
+    with custom CPU definition) then they should be specified in
+    `resc_dependencies` and resc should use them via variables named the same
+    as their names lowercased and with dots replaced with underscore
+    (i.e. springbokriscv32_cs). The `zephyr_build_path` directory should
+    contain devicetree file `<board>_flat.dts` and `<board>.repl`. Those files
+    can be generated using `board-repl` cmake target. It also should contain
+    runtime binary `zephyr/zephyr.elf`.
     """
 
-    inputtypes = ["iree"]
+    inputtypes = ["iree", "tflite", "tvm"]
 
     arguments_structure = {
         "runtime_binary_path": {
             "argparse_name": "--runtime-binary-path",
             "description": "Path to bare-metal runtime binary",
             "type": ResourceURI,
+            "nullable": True,
+            "default": None,
         },
         "platform_resc_path": {
             "argparse_name": "--platform-resc-path",
             "description": "Path to platform script",
             "type": ResourceURI,
+            "nullable": True,
+            "default": None,
         },
         "resc_dependencies": {
             "argparse_name": "--resc-dependencies",
             "description": "Renode script dependencies",
             "type": ResourceURI,
             "is_list": True,
+            "default": [],
+        },
+        "zephyr_build_path": {
+            "description": (
+                "Path to Zephyr runtime build directory. It should contain "
+                "runtime binary and platform repl and dts files."
+            ),
+            "type": Path,
+            "nullable": True,
+            "default": None,
         },
         "post_start_commands": {
             "argparse_name": "--post-start-commands",
@@ -121,9 +164,10 @@ class RenodeRuntime(Runtime):
 
     def __init__(
         self,
-        runtime_binary_path: PathOrURI,
-        platform_resc_path: PathOrURI,
+        runtime_binary_path: Optional[PathOrURI] = None,
+        platform_resc_path: Optional[PathOrURI] = None,
         resc_dependencies: List[ResourceURI] = [],
+        zephyr_build_path: Optional[Path] = None,
         post_start_commands: List[str] = [],
         runtime_log_uart: Optional[Path] = None,
         runtime_log_init_msg: Optional[str] = None,
@@ -139,12 +183,15 @@ class RenodeRuntime(Runtime):
 
         Parameters
         ----------
-        runtime_binary_path : PathOrURI
+        runtime_binary_path : Optional[PathOrURI]
             Path to the runtime binary.
-        platform_resc_path : PathOrURI
+        platform_resc_path : Optional[PathOrURI]
             Path to the Renode script.
         resc_dependencies : List[ResourceURI]
             Renode script dependencies.
+        zephyr_build_path : Optional[Path]
+            Path to Zephyr runtime build directory. It should contain runtime
+            binary and platform repl and dts files.
         post_start_commands : List[str]
             Renode commands executed after starting the machine.
         runtime_log_uart : Optional[Path]
@@ -166,13 +213,27 @@ class RenodeRuntime(Runtime):
             Number of batches to read.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+
+        Raises
+        ------
+        ValueError
+            Raised when invalid arguments passed.
         """
+        if not ((platform_resc_path is None) ^ (zephyr_build_path is None)):
+            raise ValueError(
+                "One of platform_resc_path, runtime_build_path should be "
+                "specified"
+            )
+        if platform_resc_path is not None and runtime_binary_path is None:
+            raise ValueError("runtime_binary_path should be specified")
+
         self.runtime_binary_path = runtime_binary_path
         self.platform_resc_path = platform_resc_path
         # check resc dependencies
         for dependency in resc_dependencies:
             assert dependency.is_file(), f"Dependency {dependency} not found"
         self.resc_dependencies = resc_dependencies
+        self.zephyr_build_path = zephyr_build_path
         self.post_start_commands = post_start_commands
         self.runtime_log_uart = runtime_log_uart
         self.runtime_log_init_msg = runtime_log_init_msg
@@ -227,42 +288,49 @@ class RenodeRuntime(Runtime):
                 for sample in TqdmCallback(
                     "runtime", iterable, file=logger_progress_bar
                 ):
-                    if self.sensor is None:
-                        # provide data to runtime
-                        X, _ = sample
-                        prepX = modelwrapper._preprocess_input(X)
-                        prepX = modelwrapper.convert_input_to_bytes(prepX)
-                        check_request(
-                            protocol.upload_input(prepX), "send input"
+                    try:
+                        if self.sensor is None:
+                            # provide data to runtime
+                            X, _ = sample
+                            prepX = modelwrapper._preprocess_input(X)
+                            prepX = modelwrapper.convert_input_to_bytes(prepX)
+                            check_request(
+                                protocol.upload_input(prepX), "send input"
+                            )
+                            check_request(
+                                protocol.request_processing(self.get_time),
+                                "inference",
+                            )
+
+                        # get inference output
+                        _, preds = check_request(
+                            protocol.download_output(), "receive output"
                         )
-                        check_request(
-                            protocol.request_processing(self.get_time),
-                            "inference",
+
+                        preds = modelwrapper.convert_output_from_bytes(preds)
+                        posty = modelwrapper._postprocess_outputs(preds)
+
+                        out_spec = (
+                            self.processed_output_spec
+                            if self.processed_output_spec
+                            else self.output_spec
                         )
 
-                    # get inference output
-                    _, preds = check_request(
-                        protocol.download_output(), "receive output"
-                    )
+                        if self.sensor is not None:
+                            measurements += dataset._evaluate(
+                                posty, None, out_spec
+                            )
+                        else:
+                            _, y = sample
+                            measurements += dataset._evaluate(
+                                posty, y, out_spec
+                            )
 
-                    preds = modelwrapper.convert_output_from_bytes(preds)
-                    posty = modelwrapper._postprocess_outputs(preds)
+                        self.handle_renode_logs()
 
-                    out_spec = (
-                        self.processed_output_spec
-                        if self.processed_output_spec
-                        else self.output_spec
-                    )
-
-                    if self.sensor is not None:
-                        measurements += dataset._evaluate(
-                            posty, None, out_spec
-                        )
-                    else:
-                        _, y = sample
-                        measurements += dataset._evaluate(posty, y, out_spec)
-
-                    self.handle_renode_logs()
+                    except KeyboardInterrupt:
+                        # break inference loop
+                        break
 
             # get opcode stats after inference
             if not self.disable_performance_measurements:
@@ -280,6 +348,7 @@ class RenodeRuntime(Runtime):
 
         except RequestFailure as ex:
             KLogger.fatal(ex)
+            self.handle_renode_logs()
             return False
         else:
             MeasurementsCollector.measurements += measurements
@@ -385,19 +454,11 @@ class RenodeRuntime(Runtime):
 
         monitor.execute(f"logFile @{self.log_file_path.resolve()}")
         self.renode_log_file = open(self.log_file_path, "r")
-        monitor.execute(f"$bin=@{self.runtime_binary_path.resolve()}")
 
-        for dep in self.resc_dependencies:
-            dep_name = dep.name.lower().replace(".", "_")
-            dep_path = str(dep.resolve())
-            monitor.execute(f"${dep_name}=@{dep_path}")
-
-        _, err = monitor.execute_script(str(self.platform_resc_path.resolve()))
-
-        if err:
-            raise Exception("RESC execution error: " + err)
-
-        self.machine = next(iter(emu))
+        if self.platform_resc_path is not None:
+            self._prepare_platform_from_resc()
+        else:
+            self._prepare_zephyr_platform()
 
         if (
             not self.disable_performance_measurements
@@ -443,27 +504,40 @@ class RenodeRuntime(Runtime):
         Logger.RemoveBackend(log_tester)
         KLogger.info("Renode initialized")
 
-    def get_opcode_stats(self) -> Dict[str, int]:
+    def get_opcode_stats(self) -> Dict[str, Dict[str, int]]:
         """
-        Retrieves opcode counters from Renode.
+        Retrieves opcode counters for all cpus from Renode.
 
         Returns
         -------
-        Dict[str, int]
+        Dict[str, Dict[str, int]]
             Dict where the keys are opcodes and the values are counters.
         """
         KLogger.info("Retrieving opcode counters")
 
+        stats = defaultdict(dict)
         # retrieve opcode counters
-        stats_raw = self.machine.sysbus.cpu.GetAllOpcodesCounters()
-        stats = {}
-        i = 1
-        while True:
-            try:
-                stats[stats_raw[i, 0]] = int(stats_raw[i, 1])
-            except IndexError:
-                break
-            i += 1
+        for elem in dir(self.machine.sysbus):
+            opcode_counters_getter = getattr(
+                getattr(self.machine.sysbus, elem),
+                "GetAllOpcodesCounters",
+                None,
+            )
+
+            if opcode_counters_getter is None:
+                continue
+
+            stats_raw = opcode_counters_getter()
+            i = 1
+            while True:
+                try:
+                    stats[elem][stats_raw[i, 0]] = int(stats_raw[i, 1])
+                except IndexError:
+                    break
+                i += 1
+
+            if not len(stats):
+                KLogger.warning(f"Empty opcode counters for {elem}")
 
         return stats
 
@@ -515,29 +589,32 @@ class RenodeRuntime(Runtime):
 
     @staticmethod
     def _opcode_stats_diff(
-        opcode_stats_a: Dict[str, int], opcode_stats_b: Dict[str, int]
-    ) -> Dict[str, int]:
+        opcode_stats_a: Dict[str, Dict[str, int]],
+        opcode_stats_b: Dict[str, Dict[str, int]],
+    ) -> Dict[str, Dict[str, int]]:
         """
         Computes difference of opcode counters. It is assumed that counters
         from second dict are greater.
 
         Parameters
         ----------
-        opcode_stats_a : Dict[str, int]
+        opcode_stats_a : Dict[str, Dict[str, int]]
             First opcode stats.
-        opcode_stats_b : Dict[str, int]
+        opcode_stats_b : Dict[str, Dict[str, int]]
             Seconds opcode stats.
 
         Returns
         -------
-        Dict[str, int]
+        Dict[str, Dict[str, int]]
             Difference between two opcode stats.
         """
-        ret = {}
-        for opcode in opcode_stats_b.keys():
-            ret[opcode] = opcode_stats_b[opcode] - opcode_stats_a.get(
-                opcode, 0
-            )
+        ret = defaultdict(dict)
+        for cpu in opcode_stats_b.keys():
+            for opcode in opcode_stats_b[cpu].keys():
+                ret[cpu][opcode] = opcode_stats_b[cpu][
+                    opcode
+                ] - opcode_stats_a.get(cpu, {opcode: 0}).get(opcode, 0)
+
         return ret
 
     def extract_output(self):
@@ -551,6 +628,122 @@ class RenodeRuntime(Runtime):
 
     def run(self):
         raise NotImplementedError
+
+    def _prepare_platform_from_resc(self):
+        """
+        Prepares platform based on provided resc.
+        """
+        from pyrenode3.wrappers import Emulation, Monitor
+
+        emu = Emulation()
+        monitor = Monitor()
+
+        monitor.execute(f"$bin=@{self.runtime_binary_path.resolve()}")
+        # parse resc dependencies paths
+        for dep in self.resc_dependencies:
+            dep_name = dep.name.lower().replace(".", "_")
+            dep_path = str(dep.resolve())
+            monitor.execute(f"${dep_name}=@{dep_path}")
+
+        _, err = monitor.execute_script(str(self.platform_resc_path.resolve()))
+
+        if err:
+            raise RenodeRuntimeError("RESC execution error: " + err)
+
+        self.machine = next(iter(emu))
+
+    def _prepare_zephyr_platform(self):
+        """
+        Prepares platform based on provided Zephyr build artifacts.
+        """
+        # as it is called only from init_renode, we can assume this import
+        # will not raise exception
+        from Antmicro.Renode.Exceptions import RecoverableException
+        from pyrenode3.wrappers import Emulation
+
+        def find_uart_by_alias(dts: str, alias: str) -> str:
+            alias_match = re.findall(
+                rf"{alias} = &([a-zA-Z0-9]*);", platform_dts, re.MULTILINE
+            )
+            if not len(alias_match):
+                UARTNotFoundInDTSError(f"{alias} UART not found in devicetree")
+
+            return alias_match[0]
+
+        emu = Emulation()
+
+        # find dts, repl and runtime binary
+        try:
+            dts_path = next(self.zephyr_build_path.glob("*_flat.dts"))
+        except StopIteration:
+            KLogger.error(
+                f"Devicetree file not found in {self.zephyr_build_path}"
+            )
+            return False
+        try:
+            repl_path = next(self.zephyr_build_path.glob("*.repl"))
+        except StopIteration:
+            KLogger.error(f"repl file not found in {self.zephyr_build_path}")
+            return False
+        bin_path = self.zephyr_build_path / "zephyr" / "zephyr.elf"
+        if not bin_path.exists():
+            KLogger.error(
+                f"Runtime binary not found in {self.zephyr_build_path}"
+            )
+            return False
+
+        board = repl_path.stem
+
+        with open(dts_path, "r") as dts_f:
+            platform_dts = dts_f.read()
+
+        kcomms_uart = find_uart_by_alias(platform_dts, "kcomms")
+        console_uart = find_uart_by_alias(platform_dts, "zephyr,console")
+
+        self.machine = emu.add_mach(board)
+        self.machine.load_repl(repl_path.resolve())
+        self.machine.load_elf(bin_path.resolve())
+
+        emu.CreateUartPtyTerminal("console_uart_term", "/tmp/uart-log")
+        emu.Connector.Connect(
+            getattr(self.machine.sysbus, console_uart).internal,
+            emu.externals.console_uart_term,
+        )
+
+        emu.CreateUartPtyTerminal("kcomms_uart_term", "/tmp/uart")
+        emu.Connector.Connect(
+            getattr(self.machine.sysbus, kcomms_uart).internal,
+            emu.externals.kcomms_uart_term,
+        )
+
+        if not self.disable_performance_measurements:
+            # enable opcode counters
+            for elem in dir(self.machine.sysbus):
+                for method_name in (
+                    "EnableOpcodesCounting",
+                    "EnableRiscvOpcodesCounting",
+                    "EnableVectorOpcodesCounting",
+                ):
+                    try:
+                        opcode_counters_enabler = getattr(
+                            getattr(self.machine.sysbus, elem),
+                            method_name,
+                            None,
+                        )
+                    except TypeError:
+                        # property cannot be read
+                        continue
+
+                    if opcode_counters_enabler is None:
+                        continue
+
+                    try:
+                        opcode_counters_enabler()
+                        KLogger.info(f"Enabling {method_name} for {elem}")
+                    except RecoverableException:
+                        KLogger.warning(
+                            f"Error enabling {method_name} for {elem}"
+                        )
 
 
 class _ProfilerDumpParser(object):
@@ -594,7 +787,7 @@ class _ProfilerDumpParser(object):
 
         Raises
         ------
-        Exception
+        ValueError
             Raised when profiler dump could not be parsed
         """
         profiler_timestamps = []
@@ -665,7 +858,7 @@ class _ProfilerDumpParser(object):
                     elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
                         self._read(self.ENTRY_FORMAT_EXCEPTIONS, dump_file)
                     else:
-                        raise Exception(
+                        raise ValueError(
                             "Invalid entry in profiler dump: "
                             f"{entry_type.hex()}"
                         )
@@ -763,7 +956,7 @@ class _ProfilerDumpParser(object):
                     output_list[-1] += 1
 
                 else:
-                    raise Exception(
+                    raise ValueError(
                         f"Invalid entry in profiler dump: {entry_type.hex()}"
                     )
 

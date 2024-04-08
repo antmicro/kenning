@@ -244,8 +244,8 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
         )
 
         runtime = RenodeRuntime(
-            runtime_binary_path=None,
-            platform_resc_path=None,
+            runtime_binary_path="",
+            platform_resc_path="",
         )
 
         assert compiler.dataset.batch_size == batch_size

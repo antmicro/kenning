@@ -9,6 +9,13 @@ import nox
 
 PYTHON_VERSIONS = ["3.9", "3.10", "3.11"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
+PYTEST_EXPLICIT_DOWNLOAD = (
+    os.environ.get("NOX_PYTEST_EXPLICIT_DOWNLOAD", "n") != "n"
+)
+
+KENNING_DEPS_DIR = Path("kenning-deps").resolve()
+
+nox.options.sessions = ["run_pytest", "run_gallery_tests"]
 
 
 def _prepare_pyrenode(session: nox.Session):
@@ -39,7 +46,7 @@ def _prepare_pyrenode(session: nox.Session):
         session.log(f"Using Renode from: '{renode_bin}'.")
 
 
-def _prepare_kenning(session: nox.Session, device: str):
+def _prepare_pip_params(session: nox.Session, device: str):
     """
     Installs Kenning with all dependencies.
     """
@@ -77,7 +84,7 @@ def _prepare_kenning(session: nox.Session, device: str):
 
     deps_str = ",".join(optional_dependencies)
     indices_strs = [f"--extra-index-url={url}" for url in extra_indices]
-    session.install(*indices_strs, f".[{deps_str}]")
+    return [*indices_strs, f".[{deps_str}]"]
 
 
 def _fix_pyximport(session: nox.Session):
@@ -122,6 +129,34 @@ def _fix_name(name):
             params.append(v)
 
     return "-".join(params)
+
+
+def _prepare_kenning(session: nox.Session, device):
+    if not PYTEST_EXPLICIT_DOWNLOAD:
+        pip_params = _prepare_pip_params(session, device)
+        session.install(*pip_params)
+        return
+
+    for path in KENNING_DEPS_DIR.glob("*"):
+        filename = Path(path).name
+        name, ver, *params = filename.split("-")
+
+        if session.python == ver and device in params:
+            deps = path.glob("*")
+            session.install("--no-deps", ".", *deps)
+            return
+
+
+@nox.session(python=PYTHON_VERSIONS)
+@nox.parametrize("device", ["cpu", "any"])
+def get_deps(session: nox.Session, device):
+    """
+    Downloads Kenning dependencies.
+    """
+    pip_params = _prepare_pip_params(session, device)
+    name = _fix_name(session.name)
+    deps_path = KENNING_DEPS_DIR / name
+    session.run("pip", "download", f"--dest={deps_path}", *pip_params)
 
 
 @nox.session(python=PYTHON_VERSIONS)

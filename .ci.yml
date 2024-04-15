@@ -16,6 +16,7 @@ variables:
 
 stages:
     - lint
+    - prepare
     - tests
     - docs
     - docs-deploy
@@ -63,19 +64,67 @@ pytest:
             - $TESTS_SCOPE/*.log
         when: always
 
-nox-pytest:
+.nox-prepare-deps:
+    <<: *ace
+    <<: *common_only
+    image: $CI_NOX_IMAGE
+    stage: prepare
+    script:
+        - for v in $PY_VERSIONS; do nox -s "get_deps-${v}(device='${DEVICE}')"; done
+    artifacts:
+        paths:
+            - "kenning-deps"
+        expire_in: 1 day
+
+nox-prepare-deps-cpu-schedule:
+    extends: .nox-prepare-deps
+    variables:
+        DEVICE: cpu
+    only:
+        - schedules
+
+nox-prepare-deps-cpu:
+    extends: .nox-prepare-deps
+    variables:
+        DEVICE: cpu
+    when: manual
+
+nox-prepare-deps-any:
+    extends: .nox-prepare-deps
+    variables:
+        DEVICE: any
+    when: manual
+
+.nox-pytest:
     <<: *ace
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
+        - /scripts/download_deps.sh
         - export NOX_PYTEST_CPU_ONLY=y
-        - nox -vs run_pytest
+        - export NOX_PYTEST_EXPLICIT_DOWNLOAD=y
+        - nox -vs "run_pytest-${PY_VERSION}(device='cpu')"
     artifacts:
         paths:
             - pytest-reports
             - requirements
+
+nox-pytest-3.9:
+    extends: .nox-pytest
+    variables:
+        PY_VERSION: "3.9"
+
+nox-pytest-3.10:
+    extends: .nox-pytest
+    variables:
+        PY_VERSION: "3.10"
+
+nox-pytest-3.11:
+    extends: .nox-pytest
+    variables:
+        PY_VERSION: "3.11"
 
 nox-gallery:
     <<: *ace

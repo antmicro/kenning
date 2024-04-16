@@ -531,7 +531,13 @@ class TVMCompiler(Optimizer):
         if self.target_microtvm_board:
             import tvm.micro.testing as mtvmt
 
-            self.target_obj = mtvmt.get_target(target, target_microtvm_board)
+            try:
+                self.target_obj = mtvmt.get_target(
+                    target, target_microtvm_board
+                )
+            except KeyError:
+                # board not found
+                self.target_obj = tvm.target.Target("c")
         else:
             self.target_obj = tvm.target.Target(target)
 

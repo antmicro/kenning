@@ -228,48 +228,6 @@ class Runtime(ArgumentsHandler, ABC):
         """
         ...
 
-    def preprocess_input(
-        self, input_data: List[np.ndarray]
-    ) -> List[np.ndarray]:
-        """
-        Reshapes input data to the format expected by the model.
-        Applies quantization if needed.
-
-        Parameters
-        ----------
-        input_data : List[np.ndarray]
-            Input data to be preprocessed.
-
-        Returns
-        -------
-        List[np.ndarray]
-            List of preprocessed input data.
-        """
-        for idx, (spec, inp) in enumerate(
-            zip(
-                self.processed_input_spec
-                if self.processed_input_spec
-                else self.input_spec,
-                input_data,
-            )
-        ):
-            # Check if dtype is valid and if it should be quantized
-            if "prequantized_dtype" in spec and inp.dtype != np.dtype(
-                spec["dtype"]
-            ):
-                scale = spec["scale"]
-                zero_point = spec["zero_point"]
-                inp = (inp / scale + zero_point).astype(spec["dtype"])
-            if np.prod(inp.shape) != np.prod(spec["shape"]):
-                # fill input with zeroes to match expected shape
-                # the data needs to be copied because otherwise the array
-                # does not own its data - which is needed for resizing
-                diff = np.prod(spec["shape"]) - np.prod(inp.shape)
-                inp = np.resize(inp, np.prod(spec["shape"]))
-                inp[-diff:] = 0
-            input_data[idx] = inp.reshape(spec["shape"])
-        return input_data
-
     def load_input_from_bytes(self, input_data: bytes) -> bool:
         """
         The method accepts `input_data` in bytes and loads it
@@ -354,66 +312,6 @@ class Runtime(ArgumentsHandler, ABC):
             reordered_inputs = inputs
 
         return self.load_input(reordered_inputs)
-
-    def postprocess_output(
-        self, results: List[np.ndarray]
-    ) -> List[np.ndarray]:
-        """
-        The method accepts output of the model and postprocesses it.
-
-        The output is quantized and converted to a correct dtype if needed.
-
-        Some compilers can change the order of the layers. If that's the case
-        the methods also reorders the output to match the original
-        order of the model before compilation.
-
-        Parameters
-        ----------
-        results : List[np.ndarray]
-            List of outputs of the model.
-
-        Returns
-        -------
-        List[np.ndarray]
-            Postprocessed and reordered outputs of the model.
-
-        Raises
-        ------
-        AttributeError :
-            Raised if output specification is not loaded.
-        """
-        if self.output_spec is None:
-            raise AttributeError(
-                "You must load the output specification first."
-            )
-        is_reordered = any(["order" in spec for spec in self.output_spec])
-
-        # dequantization/precision conversion
-        for i, spec in enumerate(self.output_spec):
-            if "prequantized_dtype" in spec:
-                if ("scale" not in spec) and ("zero_point" not in spec):
-                    results[i] = results[i].astype(spec["prequantized_dtype"])
-                else:
-                    scale = spec.get("scale", 1.0)
-                    zero_point = spec.get("zero_point", 0.0)
-                    results[i] = (
-                        results[i].astype(spec["prequantized_dtype"])
-                        - zero_point
-                    ) * scale
-
-        # retrieving original order
-        reordered_results = [None] * len(results)
-        if is_reordered:
-            for spec, result in zip(self.output_spec, results):
-                reordered_results[spec["order"]] = result
-        else:
-            reordered_results = results
-
-        return (
-            reordered_results
-            if len(reordered_results) > 1
-            else reordered_results[0]
-        )
 
     def preprocess_model_to_upload(self, path: PathOrURI) -> PathOrURI:
         """

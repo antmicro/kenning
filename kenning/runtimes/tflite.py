@@ -107,7 +107,6 @@ class TFLiteRuntime(Runtime):
             KLogger.error("Received empty input data")
             return False
 
-        input_data = self.preprocess_input(input_data)
         for i, spec in enumerate(
             self.processed_input_spec
             if self.processed_input_spec
@@ -137,4 +136,4 @@ class TFLiteRuntime(Runtime):
             out = self.interpreter.tensor(det["index"])()
             results.append(out.copy())
 
-        return self.postprocess_output(results)
+        return results

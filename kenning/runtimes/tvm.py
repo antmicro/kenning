@@ -100,7 +100,6 @@ class TVMRuntime(Runtime):
 
         input = {}
         try:
-            input_data = self.preprocess_input(input_data)
             for spec, inp in zip(
                 self.processed_input_spec
                 if self.processed_input_spec
@@ -165,4 +164,4 @@ class TVMRuntime(Runtime):
         else:
             for i in range(self.model.get_num_outputs()):
                 results.append(self.model.get_output(i).asnumpy())
-        return self.postprocess_output(results)
+        return results

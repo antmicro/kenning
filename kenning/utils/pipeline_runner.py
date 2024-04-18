@@ -343,6 +343,7 @@ class PipelineRunner(object):
                     return self.runtime.run_client(
                         dataset=self.dataset,
                         modelwrapper=self.model_wrapper,
+                        dataconverter=self.dataconverter,
                         protocol=self.protocol,
                         compiled_model_path=model_path,
                     )
@@ -419,6 +420,9 @@ class PipelineRunner(object):
         model_path = self.handle_optimizations(
             convert_to_onnx, run_optimizations
         )
+
+        io_spec = self.model_wrapper.load_io_specification(model_path)
+        self.dataconverter.set_io_specification(io_spec)
 
         if self.runtime_builder is not None:
             self.handle_runtime_builder(
@@ -700,6 +704,7 @@ class PipelineRunner(object):
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
                     )(X)
+                    prepX = self.model_wrapper.convert_input_to_bytes(prepX)
                     check_request(
                         self.protocol.upload_input(prepX), "send input"
                     )
@@ -713,9 +718,10 @@ class PipelineRunner(object):
                         self.protocol.download_output(), "receive output"
                     )
                     KLogger.debug("Received output")
+                    posty = self.model_wrapper.convert_output_from_bytes(preds)
                     posty = tagmeasurements("postprocessing")(
                         self.dataconverter.to_previous_block
-                    )(preds)
+                    )(posty)
                     measurements += self.dataset._evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -763,7 +769,7 @@ class PipelineRunner(object):
                     if self.should_cancel:
                         break
                     prepX = tagmeasurements("preprocessing")(
-                        self.model_wrapper._preprocess_input
+                        self.dataconverter.to_next_block
                     )(X)
                     succeed = self.runtime.load_input([prepX])
                     if not succeed:
@@ -771,7 +777,7 @@ class PipelineRunner(object):
                     self.runtime._run()
                     preds = self.runtime.extract_output()
                     posty = tagmeasurements("postprocessing")(
-                        self.model_wrapper._postprocess_outputs
+                        self.dataconverter.to_previous_block
                     )(preds)
                     measurements += self.dataset._evaluate(
                         posty,

@@ -311,7 +311,13 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 for entry in self.dataset.calibration_dataset_generator(
                     self.dataset_percentage
                 ):
-                    yield [np.array(entry, dtype=np.float32)]
+                    yield [
+                        np.array(entry, dtype=np.float32).reshape(
+                            io_spec.get("processed_input", io_spec["input"])[
+                                0
+                            ]["shape"]
+                        )
+                    ]
 
             converter.representative_dataset = generator
 
@@ -352,6 +358,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if "processed_input" not in io_spec:
             io_spec["processed_input"] = deepcopy(io_spec["input"])
+        if "processed_output" not in io_spec:
+            io_spec["processed_output"] = deepcopy(io_spec["output"])
+
         update_io_spec(
             signature.get_input_details(),
             interpreter.get_input_details(),

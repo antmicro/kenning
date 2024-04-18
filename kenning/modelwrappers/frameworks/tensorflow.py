@@ -61,7 +61,9 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.model.save(model_path)
 
     def preprocess_input(self, X):
-        return np.array(X, dtype="float32")
+        if isinstance(X[0], np.ndarray):
+            return np.array(X, dtype=X[0].dtype)
+        return np.array(X, dtype=np.float32)
 
     def run_inference(self, X):
         self.prepare_model()
@@ -97,11 +99,15 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         return inputdata.tobytes()
 
     def convert_output_from_bytes(self, outputdata):
+        io_spec = self.get_io_specification()
+        dtype = np.dtype(io_spec["output"][0]["dtype"])
+        shape = io_spec["output"][0]["shape"]
+
         result = []
-        singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
+        singleoutputsize = np.prod(shape) * np.dtype(dtype).itemsize
         for ind in range(0, len(outputdata), singleoutputsize):
             arr = np.frombuffer(
-                outputdata[ind : ind + singleoutputsize], dtype=np.float32
+                outputdata[ind : ind + singleoutputsize], dtype=dtype
             )
-            result.append(arr)
+            result.append(arr.reshape(shape))
         return result

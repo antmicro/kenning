@@ -5,6 +5,7 @@
 """
 Runtime implementation for PyTorch models.
 """
+
 import gc
 from typing import List, Optional
 
@@ -138,7 +139,7 @@ class PyTorchRuntime(Runtime):
             return False
         import torch
 
-        self.input = self.preprocess_input(input_data)
+        self.input = input_data
         for id, inp in enumerate(self.input):
             if isinstance(inp, torch.Tensor):
                 self.input[id] = inp.to(self.device)
@@ -169,4 +170,4 @@ class PyTorchRuntime(Runtime):
             else:
                 results.append(output)
 
-        return self.postprocess_output(results)
+        return results

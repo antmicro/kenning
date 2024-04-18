@@ -6,6 +6,7 @@
 Runtime implementation for Renode.
 """
 
+import json
 import logging
 import re
 import struct
@@ -18,6 +19,7 @@ from typing import Any, BinaryIO, Dict, List, Optional, Tuple
 import tqdm
 from serial import Serial
 
+from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements, MeasurementsCollector
 from kenning.core.model import ModelWrapper
@@ -257,9 +259,10 @@ class RenodeRuntime(Runtime):
         self,
         dataset: Dataset,
         modelwrapper: ModelWrapper,
+        dataconverter: DataConverter,
         protocol: Protocol,
         compiled_model_path: PathOrURI,
-    ):
+    ) -> bool:
         self.init_renode()
 
         protocol.initialize_client()
@@ -267,8 +270,19 @@ class RenodeRuntime(Runtime):
         try:
             spec_path = self.get_io_spec_path(compiled_model_path)
             if spec_path.exists():
-                protocol.upload_io_specification(spec_path)
+                status = protocol.upload_io_specification(spec_path)
+                self.handle_renode_logs()
+                if not status:
+                    return False
+
+            with open(spec_path, "r") as spec_f:
+                io_spec = json.load(spec_f)
+
+                self.read_io_specification(io_spec)
+                modelwrapper.io_specification = io_spec
+
             protocol.upload_model(compiled_model_path)
+            self.handle_renode_logs()
 
             measurements = Measurements()
 
@@ -292,7 +306,7 @@ class RenodeRuntime(Runtime):
                         if self.sensor is None:
                             # provide data to runtime
                             X, _ = sample
-                            prepX = modelwrapper._preprocess_input(X)
+                            prepX = dataconverter.to_next_block(X)
                             prepX = modelwrapper.convert_input_to_bytes(prepX)
                             check_request(
                                 protocol.upload_input(prepX), "send input"
@@ -307,8 +321,8 @@ class RenodeRuntime(Runtime):
                             protocol.download_output(), "receive output"
                         )
 
-                        preds = modelwrapper.convert_output_from_bytes(preds)
-                        posty = modelwrapper._postprocess_outputs(preds)
+                        posty = modelwrapper.convert_output_from_bytes(preds)
+                        posty = dataconverter.to_previous_block(posty)
 
                         out_spec = (
                             self.processed_output_spec
@@ -392,7 +406,7 @@ class RenodeRuntime(Runtime):
                 logs = self.runtime_log_uart.read_all()
                 if not len(logs):
                     break
-                self.uart_log_buffer += logs.decode()
+                self.uart_log_buffer += logs.decode(errors="ignore")
 
             *new_logs, self.uart_log_buffer = self.uart_log_buffer.split("\n")
             self.renode_logs.extend(new_logs)

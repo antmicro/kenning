@@ -8,7 +8,7 @@ ModelWrapper object for compatibility with surrounding block
 during runtime.
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from kenning.core.dataconverter import DataConverter
 from kenning.core.model import ModelWrapper
@@ -33,13 +33,13 @@ class ModelWrapperDataConverter(DataConverter):
         self.model_wrapper = model_wrapper
         super().__init__()
 
-    def to_next_block(self, data: Any) -> bytes:
+    def to_next_block(self, data: List[Any]) -> bytes:
         """
         Converts the data to bytes using the ModelWrapper.
 
         Parameters
         ----------
-        data : Any
+        data : List[Any]
             The data to be converted.
 
         Returns
@@ -47,10 +47,9 @@ class ModelWrapperDataConverter(DataConverter):
         bytes
             The converted data.
         """
-        prepX = self.model_wrapper._preprocess_input(data)
-        return self.model_wrapper.convert_input_to_bytes(prepX)
+        return self.model_wrapper._preprocess_input(data)
 
-    def to_previous_block(self, data: bytes) -> Any:
+    def to_previous_block(self, data: bytes) -> List[Any]:
         """
         Converts the data from bytes using the ModelWrapper.
 
@@ -61,11 +60,10 @@ class ModelWrapperDataConverter(DataConverter):
 
         Returns
         -------
-        Any
+        List[Any]
             The converted data.
         """
-        preds = self.model_wrapper.convert_output_from_bytes(data)
-        return self.model_wrapper._postprocess_outputs(preds)
+        return self.model_wrapper._postprocess_outputs(data)
 
     @classmethod
     def from_json(

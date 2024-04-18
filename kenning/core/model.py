@@ -233,17 +233,79 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return X
 
-    def _preprocess_input(self, X):
-        spec = self.get_io_specification()
-        IOInterface.assert_data_format(X, spec["input"])
+    def _quantize_input(
+        self,
+        X: List[np.ndarray],
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ) -> List[np.ndarray]:
+        """
+        Reshapes input data to the format expected by the model.
+        Applies quantization if needed.
+
+        Parameters
+        ----------
+        X : List[np.ndarray]
+            Input data to be preprocessed.
+        io_spec : Optional[Dict[str, List[Dict]]]
+            IO specification to be used. If not specified, then it is
+            retrieved from model.
+
+        Returns
+        -------
+        List[np.ndarray]
+            List of preprocessed input data.
+        """
+        if io_spec is None:
+            io_spec = self.get_io_specification()
+
+        for idx, (io_spec, inp) in enumerate(
+            zip(
+                io_spec.get("processed_input", io_spec["input"]),
+                X,
+            )
+        ):
+            # Check if dtype is valid and if it should be quantized
+            if "prequantized_dtype" in io_spec and inp.dtype != np.dtype(
+                io_spec["dtype"]
+            ):
+                scale = io_spec["scale"]
+                zero_point = io_spec["zero_point"]
+                inp = (inp / scale + zero_point).astype(io_spec["dtype"])
+            if np.prod(inp.shape) != np.prod(io_spec["shape"]):
+                # fill input with zeroes to match expected shape
+                # the data needs to be copied because otherwise the array
+                # does not own its data - which is needed for resizing
+                diff = np.prod(io_spec["shape"]) - np.prod(inp.shape)
+                inp = np.resize(inp, np.prod(io_spec["shape"]))
+                inp[-diff:] = 0
+            X[idx] = inp.reshape(io_spec["shape"])
+
+        return X
+
+    def _preprocess_input(
+        self,
+        X,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
+        if io_spec is None:
+            io_spec = self.get_io_specification()
+
+        IOInterface.assert_data_format(X, io_spec["input"])
+
+        preprocessed_x = self._quantize_input(X, io_spec)
 
         preprocessed_x = timemeasurements("input_preprocess_step")(
             tagmeasurements("preprocess")(self.preprocess_input)
-        )(X)
+        )(preprocessed_x)
+
+        if len(X) == 1:
+            preprocessed_x = preprocessed_x[0]
 
         IOInterface.assert_data_format(
             preprocessed_x,
-            spec["processed_input" if "processed_input" in spec else "input"],
+            io_spec[
+                "processed_input" if "processed_input" in io_spec else "input"
+            ],
         )
         return preprocessed_x
 
@@ -266,18 +328,92 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         return y
 
-    def _postprocess_outputs(self, y):
-        spec = self.get_io_specification()
-        not IOInterface.assert_data_format(y, spec["output"])
+    def _dequantize_outputs(
+        self,
+        y: List[np.ndarray],
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ) -> List[np.ndarray]:
+        """
+        The method accepts output of the model and postprocesses it.
+
+        The output is quantized and converted to a correct dtype if needed.
+
+        Some compilers can change the order of the layers. If that's the case
+        the methods also reorders the output to match the original
+        order of the model before compilation.
+
+        Parameters
+        ----------
+        y : List[np.ndarray]
+            List of outputs of the model.
+        io_spec : Optional[Dict[str, List[Dict]]]
+            IO specification to be used. If not specified, then it is
+            retrieved from model.
+
+        Returns
+        -------
+        List[np.ndarray]
+            Postprocessed and reordered outputs of the model.
+        """
+        if io_spec is None:
+            io_spec = self.get_io_specification()
+
+        is_reordered = any(["order" in spec for spec in io_spec["output"]])
+
+        # dequantization/precision conversion
+        for i, output_spec in enumerate(io_spec["output"]):
+            if "prequantized_dtype" in output_spec:
+                if ("scale" not in output_spec) and (
+                    "zero_point" not in output_spec
+                ):
+                    y[i] = y[i].astype(output_spec["prequantized_dtype"])
+                else:
+                    scale = output_spec.get("scale", 1.0)
+                    zero_point = output_spec.get("zero_point", 0.0)
+                    y[i] = (
+                        y[i].astype(output_spec["prequantized_dtype"])
+                        - zero_point
+                    ) * scale
+
+        # retrieving original order
+        reordered_results = [None] * len(y)
+        if is_reordered:
+            for output_spec, result in zip(io_spec["output"], y):
+                reordered_results[output_spec["order"]] = result
+        else:
+            reordered_results = y
+
+        return (
+            reordered_results
+            if len(reordered_results) > 1
+            else reordered_results[0]
+        )
+
+    def _postprocess_outputs(
+        self,
+        y,
+        io_spec: Optional[Dict[str, List[Dict]]] = None,
+    ):
+        if io_spec is None:
+            io_spec = self.get_io_specification()
+
+        if len(y) > 1:
+            IOInterface.assert_data_format(y, io_spec["output"])
+        else:
+            IOInterface.assert_data_format(y[0], io_spec["output"])
+
+        processed_y = self._dequantize_outputs(y, io_spec)
 
         processed_y = timemeasurements("output_postprocess_step")(
             tagmeasurements("postprocess")(self.postprocess_outputs)
-        )(y)
+        )(processed_y)
 
         IOInterface.assert_data_format(
             processed_y,
-            spec[
-                "processed_output" if "processed_output" in spec else "output"
+            io_spec[
+                "processed_output"
+                if "processed_output" in io_spec
+                else "output"
             ],
         )
         return processed_y
@@ -347,7 +483,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                 if self.should_cancel:
                     break
                 prepX = self._preprocess_input(X)
-                preds = self._run_inference(prepX)
+                preds = [self._run_inference(prepX)]
                 posty = self._postprocess_outputs(preds)
                 measurements += self.dataset._evaluate(
                     posty,

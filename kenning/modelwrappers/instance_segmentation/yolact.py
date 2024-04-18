@@ -245,6 +245,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
             raise RuntimeError(
                 "YOLACT model expects only single image in a batch."
             )
+        X = X[0]
         _, self.w, self.h = X[0].shape
         X = np.transpose(X[0], (1, 2, 0))
         if X.max() > 1:
@@ -252,7 +253,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
         X = cv2.resize(X, (550, 550))
         X = np.transpose(X, (2, 0, 1))
         X = (X * 255.0 - MEANS) / STD
-        return X[None, [2, 1, 0], ...].astype(np.float32)
+        return X[None, None, [2, 1, 0], ...].astype(np.float32)
 
     def get_framework_and_version(self):
         return ("onnx", onnx.__version__)

@@ -6,7 +6,10 @@
 import torch
 from transformers import AutoConfig
 
-from kenning.sparsegpt.base import BasePruningConfig, BaseSparseGPTForCausalML
+from kenning.sparsegpt.base import (
+    BaseOptimizationConfig,
+    BaseSparseGPTForCausalML,
+)
 
 
 class MistralGPTQForCausalLM(BaseSparseGPTForCausalML):
@@ -26,18 +29,18 @@ SPARSEGPT_MODEL_MAP = {
 
 class AutoSparseGPTForCausalML:
     """
-    Module used to seamlessly prepare a supported model to be pruned.
+    Module used to seamlessly prepare a supported model to be optimized.
 
     AutoSparseGPTForCausalML is designed to be instantiated
     using `AutoSparseGPTForCausalML.from_pretrained`
-    if want to prune a pretrained model.
+    if want to optimize a pretrained model.
     """
 
     def __init__(self):
         raise EnvironmentError(
             "AutoSparseGPTForCausalML is designed to be instantiated\n"
             "using `AutoSparseGPTForCausalML.from_pretrained` "
-            "if want to prune a pretrained model."
+            "if want to optimize a pretrained model."
         )
 
     @classmethod
@@ -83,7 +86,7 @@ class AutoSparseGPTForCausalML:
     def from_pretrained(
         cls,
         pretrained_model_name_or_path: str,
-        pruning_config: BasePruningConfig,
+        optimization_config: BaseOptimizationConfig,
         torch_dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
@@ -97,8 +100,8 @@ class AutoSparseGPTForCausalML:
         ----------
         pretrained_model_name_or_path : str
             Path to the pretrained model or its name.
-        pruning_config : BasePruningConfig
-            Pruning configuration.
+        optimization_config : BaseOptimizationConfig
+            Optimization configuration.
         torch_dtype : torch.dtype
             Torch dtype of the model.
         dev : str
@@ -119,7 +122,7 @@ class AutoSparseGPTForCausalML:
         model_class = SPARSEGPT_MODEL_MAP[model_type]
         return model_class.from_pretrained(
             pretrained_model_name_or_path,
-            pruning_config,
+            optimization_config,
             torch_dtype=torch_dtype,
             dev=dev,
             verbosity=verbosity,

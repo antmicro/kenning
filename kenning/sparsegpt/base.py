@@ -2,64 +2,70 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-"""
-Structure of this module is based on AutoGPTQ implementation:
-https://github.com/AutoGPTQ/AutoGPTQ.
 
-The original module was licensed under MIT.
-"""
-
-
+import json
 import logging
 import time
 from dataclasses import dataclass, field, fields
-from typing import Dict, List, Optional, Union
+from os.path import join
+from pprint import pformat
+from typing import Dict, List, Union
 
 import coloredlogs
 import torch
 import torch.nn as nn
+from auto_gptq.modeling._utils import pack_model
 from transformers import AutoModelForCausalLM, PreTrainedModel
 
+from kenning.sparsegpt.quant import Quantizer
 from kenning.sparsegpt.sparsegpt import SparseGPT
 
 
 @dataclass
-class BasePruningConfig:
+class BaseOptimizationConfig:
     """
     Configuration class for optimization parameters.
 
     Attributes
-        sparsity : float
-            The desired sparsity level. Must be in the range [0, 1].
-        n_samples : int
-            The number of samples used for calibration.
-        prunen : int
-            Number of weights pruned in semi-structured manner.
-            Both prunen and prunem have to be non-zero to use semi-structured
-            pruning. If semi-structured pruning is used, prunen has to be
-            smaller than prunem.
-        prunem : int
-            Block size in semi-structured pruning.
-            Both prunen and prunem have to be non-zero to use semi-structured
-            pruning.
-        block_size : int
-            Number of columns that are pruned and quantized at once.
-            It is a trade-off between the speed and the memory usage.
-        minlayer : int
-            Index of the first layer to be pruned. Cannot be used with
-            quantization.
-        maxlayer : int
-            Index of the last layer to be pruned. Cannot be used with
-            quantization.
+    ----------
+    sparsity : float
+        The desired sparsity level. Must be in the range [0, 1].
+    n_samples : int
+        The number of samples used for calibration.
+    prunen : int
+        Number of weights pruned in semi-structured manner.
+        Both prunen and prunem have to be non-zero to use semi-structured
+        pruning. If semi-structured pruning is used, prunen has to be
+        smaller than prunem.
+    prunem : int
+        Block size in semi-structured pruning.
+        Both prunen and prunem have to be non-zero to use semi-structured
+        pruning.
+    block_size : int
+        Number of columns that are pruned and quantized at once.
+        It is a trade-off between the speed and the memory usage.
+    minlayer : int
+        Index of the first layer to be optimized. Cannot be used with
+        quantization.
+    maxlayer : int
+        Index of the last layer to be optimized. Cannot be used with
+        quantization.
+    bits : int
+        Number of bits used for quantization. Can be
+        one of the following: 2, 3, 4, 8, 16.
+    sym : bool
+        Whether to use symmetric quantization.
     """
 
     sparsity: float = field(default=0.5, metadata={"min": 0, "max": 1})
     n_samples: int = field(default=128)
-    prunen: Optional[int] = field(default=0)
-    prunem: Optional[int] = field(default=0)
+    prunen: int = field(default=0)
+    prunem: int = field(default=0)
     block_size: int = field(default=128)
     minlayer: int = field(default=None)
     maxlayer: int = field(default=None)
+    bits: int = field(default=16, metadata={"range": [2, 3, 4, 8, 16]})
+    sym: bool = field(default=False)
 
     def __post_init__(self):
         fields_info = fields(self)
@@ -83,6 +89,34 @@ class BasePruningConfig:
                 + "prunen has to be smaller than prunem"
             )
 
+        if self.bits not in fields_info[-2].metadata["range"]:
+            raise ValueError(
+                f"Invalid quantization precision value {self.bits}. "
+                + f"Allowed values: {fields_info[-2].metadata['range']}"
+            )
+
+    def save_pretrained(self, save_dir: str, **kwargs):
+        # Not all quantization parameters are yet supported, so the
+        # values are set statically
+        # auto-gptq compatibility
+        if self.bits < 16:
+            with open(join(save_dir, "quantize_config.json"), "w") as f:
+                json.dump(
+                    {
+                        "bits": self.bits,
+                        "group_size": self.block_size,
+                        "damp_percent": 0.01,
+                        "desc_act": False,
+                        "static_groups": False,
+                        "sym": self.sym,
+                        "true_sequential": True,
+                        "model_name_or_path": None,
+                        "model_file_base_name": None,
+                    },
+                    f,
+                    indent=4,
+                )
+
 
 class HijackException(Exception):
     """
@@ -94,22 +128,22 @@ class HijackException(Exception):
 
 class BaseSparseGPTForCausalML(nn.Module):
     """
-    Base class for sparsegpt models that can be used for pruning
-    the model.
+    Base class for sparsegpt models that can be used for pruning and
+    quantizing the model.
 
     Attributes
     ----------
     model : PreTrainedModel
-        Model to be pruned
-    pruning_config : BasePruningConfig
-        Configuration of the pruning
+        Model to be optimized
+    config : BaseOptimizationConfig
+        Configuration of the optimization
     dev : str
-        Device to run the pruning on. Can be either 'cpu' or 'cuda'
+        Device to run the optimization on. Can be either 'cpu' or 'cuda'
     logger : logging.Logger
         Logger used for logging
     outside_layer_modules : Optional[List[List[str]]]
-        List of lists of layer names that are sequential. The order detetmines
-        the order of pruning. It is overridden in the derived classes.
+        List of lists of layer names that are sequential. The order determines
+        the order of optimization. It is overridden in the derived classes.
     inside_layer_modules : Optional[List[str]]
         List of layer names that are used for preprocessing. It is overridden
         in the derived classes. It has to be defined as it is needed when
@@ -122,21 +156,21 @@ class BaseSparseGPTForCausalML(nn.Module):
     def __init__(
         self,
         model: PreTrainedModel,
-        pruning_config: BasePruningConfig,
+        config: BaseOptimizationConfig,
         dev: str,
         verbosity: str,
     ):
         """
-        Initializes the Pruner.
+        Initializes the Optimizer.
 
         Parameters
         ----------
         model : PreTrainedModel
-            Model to be pruned
-        pruning_config : BasePruningConfig
-            Configuration of the pruning
+            Model to be optimized
+        config : BaseOptimizationConfig
+            Optimization config
         dev : str
-            Device to run the pruning on. Can be either 'cpu' or 'cuda'
+            Device to run the optimization on. Can be either 'cpu' or 'cuda'
         verbosity : str
             Verbosity level of the logger. Can be one of the following:
             'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
@@ -144,7 +178,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         super().__init__()
 
         self.model = model
-        self.pruning_config = pruning_config
+        self.config = config
         self.dev = dev
         self.logger = logging.getLogger(__name__)
         coloredlogs.install(
@@ -156,25 +190,25 @@ class BaseSparseGPTForCausalML(nn.Module):
     def from_pretrained(
         cls,
         pretrained_model_name_or_path: str,
-        pruning_config: BasePruningConfig,
+        config: BaseOptimizationConfig,
         torch_dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
         **model_init_kwargs,
     ) -> "BaseSparseGPTForCausalML":
         """
-        Initializes the Pruner from a pretrained model.
+        Initializes the Optimizer from a pretrained model.
 
         Parameters
         ----------
         pretrained_model_name_or_path : str
             Name or path of the pretrained model
-        pruning_config : BasePruningConfig
-            Configuration of the pruning
+        config : BaseOptimizationConfig
+            Optimization config
         torch_dtype : torch.dtype, optional
             Type of the torch tensors.
         dev : str, optional
-            Device to run the pruning on. Can be either 'cpu'
+            Device to run the optimization on. Can be either 'cpu'
             or 'cuda'.
         verbosity : str, optional
             Verbosity level of the logger. Can be one of the following:
@@ -185,7 +219,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         Returns
         -------
         BaseSparseGPTForCausalML
-            Pruner initialized from the pretrained model
+            Optimizer initialized from the pretrained model
         """
         # Setting model init arguments
         model_init_kwargs["torch_dtype"] = torch_dtype
@@ -194,7 +228,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         )
         model.eval()
 
-        return cls(model, pruning_config, dev, verbosity)
+        return cls(model, config, dev, verbosity)
 
     def _find_layers(
         self,
@@ -272,13 +306,13 @@ class BaseSparseGPTForCausalML(nn.Module):
         return examples
 
     @torch.no_grad()
-    def prune(
+    def optimize(
         self,
         examples: List[Dict[str, Union[List[int], torch.Tensor]]],
     ):
         """
-        Prunes the model based on the calibration dataset provided
-        and the pruning configuration specified in the constructor.
+        Optimizes the model based on the calibration dataset provided
+        and the configuration specified in the constructor.
 
         Parameters
         ----------
@@ -297,7 +331,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         use_cache = self.model.config.use_cache
         self.model.config.use_cache = False
 
-        pruning_tick = time.time()
+        start_tick = time.time()
 
         # Preprocessing modules have to be moved to the same device
         # as the calibration dataset
@@ -315,11 +349,11 @@ class BaseSparseGPTForCausalML(nn.Module):
                 + "Using default value of 4096"
             )
 
-        if self.pruning_config.n_samples != len(examples):
+        if self.config.n_samples != len(examples):
             self.logger.error(
                 "Number of samples in the calibration dataset "
                 + f"({len(examples)}) is different than the number of samples "
-                + f"({self.pruning_config.n_samples}) specified "
+                + f"({self.config.n_samples}) specified "
                 + "in the pruning config. "
                 + "Make sure that the configuration is correct"
             )
@@ -329,7 +363,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         hidden_size = self.model.config.hidden_size
 
         inps = torch.zeros(
-            (self.pruning_config.n_samples, seqlen, hidden_size),
+            (self.config.n_samples, seqlen, hidden_size),
             dtype=dtype,
             device=self.dev,
         )
@@ -387,24 +421,23 @@ class BaseSparseGPTForCausalML(nn.Module):
         attention_mask = cache["attention_mask"]
 
         self.logger.debug(
-            "Starting pruning with configuration: "
-            + f"{self.pruning_config.__dict__}"
+            "Optimizing with configuration: \n" + pformat(self.config.__dict__)
         )
         self.logger.debug(f"Found layers: {layers}")
 
+        quantizers = {}
         for i in range(len(layers)):
+            tick = time.time()
             if (
-                self.pruning_config.minlayer is not None
-                and self.pruning_config.maxlayer is not None
-                and not self.pruning_config.minlayer
-                <= i
-                < self.pruning_config.maxlayer
+                self.config.minlayer is not None
+                and self.config.maxlayer is not None
+                and not self.config.minlayer <= i < self.config.maxlayer
             ):
                 self.logger.debug(f"Skipping layer: {i}")
                 continue
 
             self.logger.debug("-------------------------")
-            self.logger.debug(f"Pruning layer number: {i}")
+            self.logger.debug(f"Optimizing layer number: {i}")
             self.logger.debug("-------------------------")
 
             layer = layers[i].to(self.dev)
@@ -416,6 +449,15 @@ class BaseSparseGPTForCausalML(nn.Module):
                 gpts = {}
                 for name in subset:
                     gpts[name] = SparseGPT(subset[name])
+
+                    if self.config.bits < 16:
+                        gpts[name].quantizer = Quantizer()
+                        gpts[name].quantizer.configure(
+                            bits=self.config.bits,
+                            perchannel=True,
+                            sym=False,
+                            mse=False,
+                        )
 
                 def add_batch(name):
                     def tmp(_, inp, out):
@@ -430,30 +472,38 @@ class BaseSparseGPTForCausalML(nn.Module):
                     handles.append(
                         subset[name].register_forward_hook(add_batch(name))
                     )
-                for j in range(self.pruning_config.n_samples):
+                for j in range(self.config.n_samples):
                     layer(inps[j].unsqueeze(0), attention_mask=attention_mask)
                 for h in handles:
                     h.remove()
 
                 for name in subset:
-                    self.logger.debug(f"Pruning {name} layer")
-                    sparsity = self.pruning_config.sparsity
-                    tick = time.time()
+                    self.logger.debug(f"Optimizing {name}")
+                    sparsity = self.config.sparsity
 
-                    error = gpts[name].optimize(
+                    error, scale, zero, g_idx = gpts[name].optimize(
                         sparsity,
-                        prunen=self.pruning_config.prunen,
-                        prunem=self.pruning_config.prunem,
-                        blocksize=self.pruning_config.block_size,
+                        prunen=self.config.prunen,
+                        prunem=self.config.prunem,
+                        blocksize=self.config.block_size,
                     )
+
+                    if self.config.bits < 16:
+                        quantizers[f"model.layers.{i}.{name}"] = (
+                            gpts[name].quantizer.to("cpu"),
+                            scale.to("cpu"),
+                            zero.to("cpu"),
+                            g_idx.to("cpu"),
+                        )
                     gpts[name].free()
 
-                    self.logger.debug(
-                        "Layer pruning took: %.2f s" % (time.time() - tick)
-                    )
-                    self.logger.debug(f"Layer error: {error}")
+                    self.logger.debug(f"Error: {error}")
 
-            for j in range(self.pruning_config.n_samples):
+            self.logger.debug(
+                "Layer optimization took: %.2f s" % (time.time() - tick)
+            )
+
+            for j in range(self.config.n_samples):
                 outs[j] = layer(
                     inps[j].unsqueeze(0), attention_mask=attention_mask
                 )[0]
@@ -467,18 +517,62 @@ class BaseSparseGPTForCausalML(nn.Module):
 
         self.model.config.use_cache = use_cache
 
+        if self.config.bits < 16:
+            self.logger.debug("Quantizing model")
+            pack_model(
+                self.model,
+                quantizers,
+                self.config.bits,
+                self.config.block_size,
+            )
+
         self.logger.debug("-------------------------")
-        self.logger.debug("Pruning finished")
-        self.logger.debug("Elapsed %.2f s" % (time.time() - pruning_tick))
+        self.logger.debug("Optimization finished")
+        self.logger.debug("Elapsed %.2f s" % (time.time() - start_tick))
         self.logger.debug("-------------------------")
 
-    def save_pruned_model(self, path: str):
+    def _safetensors_metadata(self) -> Dict[str, str]:
         """
-        Saves the pruned model to the specified path.
+        Returns the metadata that will be saved along with the model.
+
+        Returns
+        -------
+        Dict[str, str]
+            Dictionary with metadata
+        """
+        from auto_gptq import __version__
+
+        safetensors_metadata = {}
+        safetensors_metadata["format"] = "pt"
+        safetensors_metadata["auto_gptq_version"] = str(__version__)
+        safetensors_metadata["gptq_bits"] = str(self.config.bits)
+        safetensors_metadata["gptq_group_size"] = str(self.config.block_size)
+        safetensors_metadata["gptq_desc_act"] = str(False)
+        safetensors_metadata["gptq_damp_percent"] = str(0.01)
+
+        return safetensors_metadata
+
+    def save_optimized(self, path: str):
+        """
+        Saves the optimized model to the specified path.
 
         Parameters
         ----------
         path : str
-            Path where the pruned model will be saved
+            Path where the optimized model will be saved
         """
-        self.model.save_pretrained(path)
+        import os
+
+        from safetensors.torch import save_file
+
+        safetensors_metadata = self._safetensors_metadata()
+
+        os.makedirs(path, exist_ok=True)
+        save_file(
+            self.model.state_dict(),
+            (path + "/model.safetensors"),
+            safetensors_metadata,
+        )
+
+        self.config.save_pretrained(path)
+        self.model.config.save_pretrained(path)

@@ -125,7 +125,7 @@ class CNNDailymailDataset(Dataset):
     def prepare(self):
         from datasets import load_from_disk
 
-        self.ds = load_from_disk(self.root)
+        self.ds = load_from_disk(str(self.root.resolve()))
 
         # Input and output data are lists of Ids
         self.dataX = list(range(self.ds.num_rows))

@@ -46,7 +46,13 @@ def get_c4(
     verbosity = logger.level
     logger.setLevel(logging.ERROR)
 
-    dataset = load_dataset("c4", "en", split="train", streaming=True)
+    dataset = load_dataset(
+        "allenai/c4",
+        "en",
+        split="train",
+        streaming=True,
+        trust_remote_code=True,
+    )
 
     tokenized_input_ids = None
     for sample in dataset:

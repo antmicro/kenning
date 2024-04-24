@@ -9,7 +9,7 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
-from typing import Optional
+from typing import Any, List, Optional
 
 import numpy as np
 from tqdm import tqdm
@@ -97,22 +97,19 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         return self._get_io_specification(self.numclasses)
 
-    def preprocess_input(self, X):
-        if np.ndim(X) == 3:
-            X = np.array([X])
+    def preprocess_input(self, X: List[np.ndarray]) -> List[Any]:
+        if np.ndim(X[0]) == 3:
+            X = [np.expand_dims(X[0], 0)]
         import torch
 
+        X = [torch.Tensor(np.array(X[0], dtype=np.float32)).to(self.device)]
         if (
             self.dataset
             and getattr(self.dataset, "image_memory_layout", None) == "NCHW"
         ):
-            return torch.Tensor(np.array(X, dtype=np.float32)).to(self.device)
+            return X
         else:
-            return (
-                torch.Tensor(np.array(X, dtype=np.float32))
-                .to(self.device)
-                .permute(0, 3, 1, 2)
-            )
+            return [X[0].permute(0, 3, 1, 2)]
 
     def create_model_structure(self):
         from torchvision import models
@@ -183,7 +180,9 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                 return len(self.inputs)
 
             def __getitem__(self, idx):
-                X = self.dataset.prepare_input_samples([self.inputs[idx]])[0]
+                X = self.dataset.prepare_input_samples([self.inputs[idx]])[0][
+                    0
+                ]
                 y = np.array(self.labels[idx])
                 X = torch.from_numpy(X.astype("float32")).permute(2, 0, 1)
                 y = torch.from_numpy(y)
@@ -305,21 +304,3 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         writer.close()
         self.model.eval()
-
-    def convert_input_to_bytes(self, inputdata):
-        data = bytes()
-        for inp in inputdata.detach().cpu().numpy():
-            data += inp.tobytes()
-        return data
-
-    def convert_output_from_bytes(self, outputdata):
-        import torch
-
-        result = []
-        singleoutputsize = self.numclasses * np.dtype(np.float32).itemsize
-        for ind in range(0, len(outputdata), singleoutputsize):
-            arr = np.frombuffer(
-                outputdata[ind : (ind + singleoutputsize)], dtype=np.float32
-            )
-            result.append(arr)
-        return torch.FloatTensor(result)

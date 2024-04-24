@@ -91,7 +91,9 @@ class TestPetDataset:
         annotations - to get folder with empty 'annotations/list.txt'
         """
         dataset = PetDataset(annotations, download_dataset=False)
-        assert ([], []) == dataset.get_data()
+        x, y = dataset.get_data()
+        assert x[0].size == 0
+        assert y[0].size == 0
 
         with pytest.raises(StopIteration):
             dataset.__next__()

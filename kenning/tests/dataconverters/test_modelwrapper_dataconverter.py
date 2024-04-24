@@ -20,14 +20,10 @@ class TestModelWRapperDataConverter:
         model = ModelWrapper(None, None)
         with (
             patch.object(model, "_preprocess_input", return_value=2),
-            patch.object(
-                model, "convert_input_to_bytes", return_value=b"0x02"
-            ),
         ):
             converter = ModelWrapperDataConverter(model)
-            assert converter.to_next_block(1) == b"0x02"
+            assert converter.to_next_block(1) == 2
             assert model._preprocess_input.called_once_with(1)
-            assert model.convert_input_to_bytes.called_once_with(2)
 
     @patch("kenning.core.model.ModelWrapper.__abstractmethods__", set())
     def test_core_modelwrapper_to_previous_block(self):
@@ -39,9 +35,7 @@ class TestModelWRapperDataConverter:
         model = ModelWrapper(None, None)
         with (
             patch.object(model, "_postprocess_outputs", return_value=2),
-            patch.object(model, "convert_output_from_bytes", return_value=1),
         ):
             converter = ModelWrapperDataConverter(model)
-            assert converter.to_previous_block(b"0x01") == 2
-            assert model.convert_output_from_bytes.called_once_with(b"0x01")
+            assert converter.to_previous_block(1) == 2
             assert model._postprocess_outputs.called_once_with(1)

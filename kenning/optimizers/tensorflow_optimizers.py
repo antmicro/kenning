@@ -119,15 +119,15 @@ class TensorFlowOptimizer(Optimizer, ABC):
         """
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations()
 
-        Xt = self.dataset.prepare_input_samples(Xt)
-        Yt = self.dataset.prepare_output_samples(Yt)
+        Xt = self.dataset.prepare_input_samples(Xt)[0]
+        Yt = self.dataset.prepare_output_samples(Yt)[0]
         traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
         traindataset = traindataset.batch(
             self.batch_size, num_parallel_calls=tf.data.experimental.AUTOTUNE
         )
 
-        Xv = self.dataset.prepare_input_samples(Xv)
-        Yv = self.dataset.prepare_output_samples(Yv)
+        Xv = self.dataset.prepare_input_samples(Xv)[0]
+        Yv = self.dataset.prepare_output_samples(Yv)[0]
         validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
         validdataset = validdataset.batch(
             self.batch_size, num_parallel_calls=tf.data.experimental.AUTOTUNE

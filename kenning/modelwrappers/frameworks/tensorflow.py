@@ -7,7 +7,7 @@ Provides base methods for using TensorFlow models in Kenning.
 """
 
 from abc import ABC
-from typing import Optional
+from typing import List, Optional
 
 import numpy as np
 
@@ -60,14 +60,14 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.prepare_model()
         self.model.save(model_path)
 
-    def preprocess_input(self, X):
-        if isinstance(X[0], np.ndarray):
-            return np.array(X, dtype=X[0].dtype)
-        return np.array(X, dtype=np.float32)
-
-    def run_inference(self, X):
+    def run_inference(self, X: List[np.ndarray]) -> List[np.ndarray]:
         self.prepare_model()
-        return self.model.predict(X, verbose=0)
+        if 1 == len(X):
+            X = X[0]
+        y = self.model.predict(X, verbose=0)
+        if not isinstance(y, (list, tuple)):
+            y = [y]
+        return y
 
     def get_framework_and_version(self):
         import tensorflow as tf
@@ -91,23 +91,27 @@ class TensorFlowWrapper(ModelWrapper, ABC):
             for spec in self.get_io_specification()["input"]
         )
 
-        modelproto, _ = tf2onnx.convert.from_keras(
+        tf2onnx.convert.from_keras(
             self.model, input_signature=x, output_path=model_path, opset=11
         )
 
-    def convert_input_to_bytes(self, inputdata):
-        return inputdata.tobytes()
+    def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
+        return b"".join(inp.tobytes() for inp in inputdata)
 
-    def convert_output_from_bytes(self, outputdata):
-        io_spec = self.get_io_specification()
-        dtype = np.dtype(io_spec["output"][0]["dtype"])
-        shape = io_spec["output"][0]["shape"]
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
+        out_spec = self.get_io_specification()["output"]
 
         result = []
-        singleoutputsize = np.prod(shape) * np.dtype(dtype).itemsize
-        for ind in range(0, len(outputdata), singleoutputsize):
+        data_idx = 0
+        for spec in out_spec:
+            dtype = np.dtype(spec["dtype"])
+            shape = spec["shape"]
+
+            out_size = np.prod(shape) * np.dtype(dtype).itemsize
             arr = np.frombuffer(
-                outputdata[ind : ind + singleoutputsize], dtype=dtype
+                outputdata[data_idx : data_idx + out_size], dtype=dtype
             )
+            data_idx += out_size
             result.append(arr.reshape(shape))
+
         return result

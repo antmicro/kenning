@@ -10,7 +10,7 @@ import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Dict, List, Optional, Tuple, Type
 from urllib.request import HTTPError
 
 import numpy as np
@@ -215,7 +215,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         ...
 
-    def preprocess_input(self, X: List) -> Any:
+    def preprocess_input(self, X: List[Any]) -> List[Any]:
         """
         Preprocesses the inputs for a given model before inference.
 
@@ -223,28 +223,28 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        X : List
+        X : List[Any]
             The input data from the Dataset object.
 
         Returns
         -------
-        Any
+        List[Any]
             The preprocessed inputs that are ready to be fed to the model.
         """
         return X
 
-    def _quantize_input(
+    def _quantize_inputs(
         self,
-        X: List[np.ndarray],
+        X: List[Any],
         io_spec: Optional[Dict[str, List[Dict]]] = None,
-    ) -> List[np.ndarray]:
+    ) -> List[Any]:
         """
         Reshapes input data to the format expected by the model.
         Applies quantization if needed.
 
         Parameters
         ----------
-        X : List[np.ndarray]
+        X : List[Any]
             Input data to be preprocessed.
         io_spec : Optional[Dict[str, List[Dict]]]
             IO specification to be used. If not specified, then it is
@@ -252,7 +252,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[np.ndarray]
+        List[Any]
             List of preprocessed input data.
         """
         if io_spec is None:
@@ -276,30 +276,29 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                 # the data needs to be copied because otherwise the array
                 # does not own its data - which is needed for resizing
                 diff = np.prod(io_spec["shape"]) - np.prod(inp.shape)
-                inp = np.resize(inp, np.prod(io_spec["shape"]))
+                inp = np.resize(
+                    inp, np.prod((inp.shape[0], *io_spec["shape"][1:]))
+                )
                 inp[-diff:] = 0
-            X[idx] = inp.reshape(io_spec["shape"])
+            X[idx] = inp.reshape((X[idx].shape[0], *io_spec["shape"][1:]))
 
         return X
 
     def _preprocess_input(
         self,
-        X,
+        X: List[Any],
         io_spec: Optional[Dict[str, List[Dict]]] = None,
-    ):
+    ) -> List[Any]:
         if io_spec is None:
             io_spec = self.get_io_specification()
 
         IOInterface.assert_data_format(X, io_spec["input"])
 
-        preprocessed_x = self._quantize_input(X, io_spec)
-
         preprocessed_x = timemeasurements("input_preprocess_step")(
             tagmeasurements("preprocess")(self.preprocess_input)
-        )(preprocessed_x)
+        )(X)
 
-        if len(X) == 1:
-            preprocessed_x = preprocessed_x[0]
+        preprocessed_x = self._quantize_inputs(preprocessed_x, io_spec)
 
         IOInterface.assert_data_format(
             preprocessed_x,
@@ -309,7 +308,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         )
         return preprocessed_x
 
-    def postprocess_outputs(self, y: Union[List[Any], np.ndarray]) -> Any:
+    def postprocess_outputs(self, y: List[Any]) -> List[Any]:
         """
         Processes the outputs for a given model.
 
@@ -317,12 +316,12 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        y : Union[List[Any], np.ndarray]
+        y : List[Any]
             The list of output data from the model.
 
         Returns
         -------
-        Any
+        List[Any]
             The post processed outputs from the model that need to be in
             format requested by the Dataset object.
         """
@@ -330,9 +329,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
     def _dequantize_outputs(
         self,
-        y: List[np.ndarray],
+        y: List[Any],
         io_spec: Optional[Dict[str, List[Dict]]] = None,
-    ) -> List[np.ndarray]:
+    ) -> List[Any]:
         """
         The method accepts output of the model and postprocesses it.
 
@@ -344,7 +343,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        y : List[np.ndarray]
+        y : List[Any]
             List of outputs of the model.
         io_spec : Optional[Dict[str, List[Dict]]]
             IO specification to be used. If not specified, then it is
@@ -352,7 +351,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         Returns
         -------
-        List[np.ndarray]
+        List[Any]
             Postprocessed and reordered outputs of the model.
         """
         if io_spec is None:
@@ -383,24 +382,17 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         else:
             reordered_results = y
 
-        return (
-            reordered_results
-            if len(reordered_results) > 1
-            else reordered_results[0]
-        )
+        return reordered_results
 
     def _postprocess_outputs(
         self,
-        y,
+        y: List[Any],
         io_spec: Optional[Dict[str, List[Dict]]] = None,
-    ):
+    ) -> List[Any]:
         if io_spec is None:
             io_spec = self.get_io_specification()
 
-        if len(y) > 1:
-            IOInterface.assert_data_format(y, io_spec["output"])
-        else:
-            IOInterface.assert_data_format(y[0], io_spec["output"])
+        IOInterface.assert_data_format(y, io_spec["output"])
 
         processed_y = self._dequantize_outputs(y, io_spec)
 
@@ -410,27 +402,23 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         IOInterface.assert_data_format(
             processed_y,
-            io_spec[
-                "processed_output"
-                if "processed_output" in io_spec
-                else "output"
-            ],
+            io_spec.get("processed_output", io_spec["output"]),
         )
         return processed_y
 
     @abstractmethod
-    def run_inference(self, X: List) -> Any:
+    def run_inference(self, X: List[Any]) -> List[Any]:
         """
         Runs inference for a given preprocessed input.
 
         Parameters
         ----------
-        X : List
+        X : List[Any]
             The preprocessed inputs for the model.
 
         Returns
         -------
-        Any
+        List[Any]
             The results of the inference.
         """
         ...
@@ -483,7 +471,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                 if self.should_cancel:
                     break
                 prepX = self._preprocess_input(X)
-                preds = [self._run_inference(prepX)]
+                preds = self._run_inference(prepX)
                 posty = self._postprocess_outputs(preds)
                 measurements += self.dataset._evaluate(
                     posty,

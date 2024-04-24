@@ -6,6 +6,9 @@
 Runtime implementation for IREE models.
 """
 
+from typing import List, Optional
+
+import numpy as np
 from iree import runtime as ireert
 
 from kenning.core.runtime import (
@@ -66,18 +69,18 @@ class IREERuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-    def load_input(self, input_data):
+    def load_input(self, input_data: List[List[np.ndarray]]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.model is None:
             raise ModelNotPreparedError
-        if not input_data:
+        if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
             return False
 
-        self.input = self.preprocess_input(input_data)
+        self.input = input_data
         return True
 
-    def prepare_model(self, input_data):
+    def prepare_model(self, input_data: Optional[bytes]) -> bool:
         KLogger.info("loading model")
         if input_data:
             with open(self.model_path, "wb") as outmodel:
@@ -100,7 +103,7 @@ class IREERuntime(Runtime):
             raise InputNotPreparedError
         self.output = self.model.main(*self.input)
 
-    def extract_output(self):
+    def extract_output(self) -> List[np.ndarray]:
         if self.model is None:
             raise ModelNotPreparedError
 
@@ -110,4 +113,4 @@ class IREERuntime(Runtime):
         except AttributeError:
             for out in self.output:
                 results.append(out.to_host())
-        return self.postprocess_output(results)
+        return results

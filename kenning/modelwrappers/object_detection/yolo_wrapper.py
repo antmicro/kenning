@@ -118,8 +118,8 @@ class YOLOWrapper(ModelWrapper, ABC):
 
         self.model_prepared = True
 
-    def preprocess_input(self, X):
-        return np.array(X)
+    def preprocess_input(self, X: List[Any]) -> List[np.ndarray]:
+        return [np.array(x) for x in X]
 
     def convert_to_detectobject(self, entry):
         # array x, y, w, h, classid, score
@@ -137,7 +137,7 @@ class YOLOWrapper(ModelWrapper, ABC):
             False,
         )
 
-    def parse_outputs(self, data):
+    def parse_outputs(self, data: List[np.ndarray]) -> List[DetectObject]:
         # get all bounding boxes with objectness score over given threshold
         boxdata = []
         for i in range(len(data)):
@@ -234,7 +234,9 @@ class YOLOWrapper(ModelWrapper, ABC):
                         clsbboxes[j] = clsbboxes[j]._replace(score=0)
         return cleaned_bboxes
 
-    def postprocess_outputs(self, y):
+    def postprocess_outputs(
+        self, y: List[np.ndarray]
+    ) -> List[List[List[DetectObject]]]:
         # YOLOv3 has three stages of outputs
         # each one contains:
         # - real output
@@ -262,15 +264,21 @@ class YOLOWrapper(ModelWrapper, ABC):
 
             outputs.append(y[i].reshape(outshape))
 
-        return self.parse_batches(outputs)
+        return [self.parse_batches(outputs)]
 
-    def parse_batches(self, outputs):
+    def parse_batches(
+        self, outputs: List[np.ndarray]
+    ) -> List[List[DetectObject]]:
         # change the dimensions so the output format is
         # batches layerouts dets params width height
         perbatchoutputs = []
         for i in range(outputs[0].shape[0]):
             perbatchoutputs.append(
-                [outputs[0][i], outputs[1][i], outputs[2][i]]
+                [
+                    outputs[0][i],
+                    outputs[1][i],
+                    outputs[2][i],
+                ]
             )
         result = []
         # parse the combined outputs for each image in batch, and return result
@@ -279,10 +287,10 @@ class YOLOWrapper(ModelWrapper, ABC):
 
         return result
 
-    def convert_input_to_bytes(self, inputdata):
-        return inputdata.tobytes()
+    def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
+        return inputdata[0].tobytes()
 
-    def convert_output_from_bytes(self, outputdata):
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
         y = np.frombuffer(outputdata, dtype="float32")
         # iterate over each group
         lastid = 0

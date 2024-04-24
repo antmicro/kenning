@@ -365,7 +365,9 @@ class CommonVoiceDataset(Dataset):
             assert self.sample_size <= len(self.dataX)
             self.select_representative_sample(metric_values)
 
-    def prepare_input_samples(self, samples: List):
+    def prepare_input_samples(
+        self, samples: List[str]
+    ) -> List[List[np.ndarray]]:
         result = []
         for sample in samples:
             x = Path(sample)
@@ -383,7 +385,7 @@ class CommonVoiceDataset(Dataset):
                     audio, loaded_wav.getframerate(), self.sample_rate
                 )
             result.append(audio)
-        return result
+        return [result]
 
     def select_representative_sample(self, metric_values: List[Any]):
         """

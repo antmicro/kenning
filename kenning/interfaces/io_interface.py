@@ -349,9 +349,6 @@ class IOInterface(ABC):
         IOCompatibilityError
             Raised if data does not match with specification.
         """
-        # Check if single data or list was received and match length with specification  # noqa: E501
-        if len(spec) == 1:
-            data = [data]
         if len(spec) != len(data):
             raise IOCompatibilityError(
                 "Number of received data do not match specification"
@@ -370,7 +367,7 @@ class IOInterface(ABC):
                     # validate dtype in Dict format
                     if isinstance(dtype, Dict):
                         for item in data_item:
-                            IOInterface.assert_data_format(item, [dtype])
+                            IOInterface.assert_data_format([item], [dtype])
                     # validate dtype containing class path
                     elif isinstance(dtype, str):
                         type_cls = _load_class(dtype)
@@ -399,7 +396,7 @@ class IOInterface(ABC):
                         )
                     for key, spec_dict_item in spec_item["fields"].items():
                         IOInterface.assert_data_format(
-                            data_item[key], [spec_dict_item]
+                            [data_item[key]], [spec_dict_item]
                         )
                 else:
                     raise IOSpecWrongFormat(

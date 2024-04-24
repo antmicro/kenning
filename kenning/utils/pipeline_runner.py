@@ -340,6 +340,8 @@ class PipelineRunner(object):
                 return False
             elif self.protocol:
                 if isinstance(self.runtime, RenodeRuntime):
+                    if self.model_wrapper is None:
+                        return False
                     return self.runtime.run_client(
                         dataset=self.dataset,
                         modelwrapper=self.model_wrapper,
@@ -349,7 +351,12 @@ class PipelineRunner(object):
                     )
                 return self._run_client(model_path)
             else:
+                if self.model_wrapper is None:
+                    return False
                 return self._run_locally(model_path)
+
+        if self.model_wrapper is None:
+            return False
         self.model_wrapper.model_path = model_path
         self.model_wrapper.test_inference()
         return True
@@ -420,9 +427,6 @@ class PipelineRunner(object):
         model_path = self.handle_optimizations(
             convert_to_onnx, run_optimizations
         )
-
-        io_spec = self.model_wrapper.load_io_specification(model_path)
-        self.dataconverter.set_io_specification(io_spec)
 
         if self.runtime_builder is not None:
             self.handle_runtime_builder(
@@ -652,6 +656,11 @@ class PipelineRunner(object):
         if self.optimizers:
             self.optimizers[-1].save_io_specification(model_path)
 
+            # update model io spec
+            self.model_wrapper.io_specification = self.optimizers[
+                -1
+            ].load_io_specification(model_path)
+
         KLogger.info(f"Compiled model path: {model_path}")
         return model_path
 
@@ -704,7 +713,10 @@ class PipelineRunner(object):
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
                     )(X)
-                    prepX = self.model_wrapper.convert_input_to_bytes(prepX)
+                    if self.model_wrapper is not None:
+                        prepX = self.model_wrapper.convert_input_to_bytes(
+                            prepX
+                        )
                     check_request(
                         self.protocol.upload_input(prepX), "send input"
                     )
@@ -718,10 +730,13 @@ class PipelineRunner(object):
                         self.protocol.download_output(), "receive output"
                     )
                     KLogger.debug("Received output")
-                    posty = self.model_wrapper.convert_output_from_bytes(preds)
+                    if self.model_wrapper is not None:
+                        preds = self.model_wrapper.convert_output_from_bytes(
+                            preds
+                        )
                     posty = tagmeasurements("postprocessing")(
                         self.dataconverter.to_previous_block
-                    )(posty)
+                    )(preds)
                     measurements += self.dataset._evaluate(posty, y)
 
             measurements += self.protocol.download_statistics()
@@ -771,7 +786,7 @@ class PipelineRunner(object):
                     prepX = tagmeasurements("preprocessing")(
                         self.dataconverter.to_next_block
                     )(X)
-                    succeed = self.runtime.load_input([prepX])
+                    succeed = self.runtime.load_input(prepX)
                     if not succeed:
                         return False
                     self.runtime._run()

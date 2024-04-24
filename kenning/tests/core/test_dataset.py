@@ -181,7 +181,7 @@ class TestDataset:
         x, y = dataset.__next__()
         assert x is not None
         assert y is not None
-        assert len(x) == len(y) == 3
+        assert len(x[0]) == len(y[0]) == 3
         assert dataset._dataindex == len(dataset.dataX)
         with pytest.raises(StopIteration):
             dataset.__next__()
@@ -318,7 +318,7 @@ class TestDataset:
         dataset.image_memory_layout = "NHWC"
         dataset.preprocess_type = None
         # generate random images
-        sample_shape = dataset.prepare_input_samples([X_sample])[0].shape
+        sample_shape = dataset.prepare_input_samples([X_sample])[0][0].shape
         random_images = np.random.randint(
             0, 255, size=(N, 8, 8, sample_shape[2]), dtype=np.uint8
         )
@@ -348,7 +348,7 @@ class TestDataset:
             cv2.imwrite(img_path, random_images_resized[i])
 
         # load images by dataset
-        loaded_images = dataset.prepare_input_samples(dataset.dataX[:N])
+        loaded_images = dataset.prepare_input_samples(dataset.dataX[:N])[0]
         loaded_images = np.array(loaded_images)
 
         # convert to the same range

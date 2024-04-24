@@ -186,7 +186,7 @@ class VisualWakeWordsDataset(Dataset):
                 img = np.transpose(img, (2, 0, 1))
             result.append(img)
 
-        return result
+        return [np.array(result)]
 
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))

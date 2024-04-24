@@ -553,8 +553,8 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
 
     def evaluate(
         self,
-        predictions: List,
-        truth: List,
+        predictions: List[List[List[Union[DetectObject, SegmObject]]]],
+        truth: List[List[List[Union[DetectObject, SegmObject]]]],
     ) -> Measurements:
         """
         Evaluates the model based on the predictions.
@@ -564,9 +564,9 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
 
         Parameters
         ----------
-        predictions : List
+        predictions : List[List[List[Union[DetectObject, SegmObject]]]]
             The list of predictions from the model.
-        truth : List
+        truth : List[List[List[Union[DetectObject, SegmObject]]]]
             The ground truth for given batch.
 
         Returns
@@ -576,7 +576,7 @@ class ObjectDetectionSegmentationDataset(Dataset, ABC):
         """
         measurements = Measurements()
 
-        for preds, groundtruths in zip(predictions, truth):
+        for preds, groundtruths in zip(predictions[0], truth[0]):
             # operate on a single image
             # first, let's sort predictions by score
             preds.sort(key=lambda x: -x.score)

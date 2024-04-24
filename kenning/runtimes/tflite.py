@@ -8,6 +8,8 @@ Runtime implementation for TFLite models.
 
 from typing import List, Optional
 
+import numpy as np
+
 from kenning.core.runtime import (
     InputNotPreparedError,
     ModelNotPreparedError,
@@ -76,7 +78,7 @@ class TFLiteRuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-    def prepare_model(self, input_data):
+    def prepare_model(self, input_data: Optional[bytes]) -> bool:
         try:
             import tflite_runtime.interpreter as tflite
         except ModuleNotFoundError:
@@ -99,11 +101,11 @@ class TFLiteRuntime(Runtime):
         KLogger.info("Model loading ended successfully")
         return True
 
-    def load_input(self, input_data):
+    def load_input(self, input_data: List[np.ndarray]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.interpreter is None:
             raise ModelNotPreparedError
-        if not input_data:
+        if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
             return False
 
@@ -127,7 +129,7 @@ class TFLiteRuntime(Runtime):
             raise InputNotPreparedError
         self.interpreter.invoke()
 
-    def extract_output(self):
+    def extract_output(self) -> List[np.ndarray]:
         if self.interpreter is None:
             raise ModelNotPreparedError
 

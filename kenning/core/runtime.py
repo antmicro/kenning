@@ -179,7 +179,7 @@ class Runtime(ArgumentsHandler, ABC):
             self.statsmeasurements = None
 
     @abstractmethod
-    def load_input(self, input_data: List[np.ndarray]) -> bool:
+    def load_input(self, input_data: List[Any]) -> bool:
         """
         Loads and converts delivered data to the accelerator for inference.
 
@@ -188,7 +188,7 @@ class Runtime(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        input_data : List[np.ndarray]
+        input_data : List[Any]
             Input data in bytes delivered by the client, preprocessed.
 
         Returns
@@ -295,6 +295,7 @@ class Runtime(ArgumentsHandler, ABC):
                 return False
 
             input = np.frombuffer(input_data[:expected_size], dtype=dtype)
+            input = input.reshape(shape)
 
             inputs.append(input)
             input_data = input_data[expected_size:]
@@ -558,16 +559,16 @@ class Runtime(ArgumentsHandler, ABC):
 
     def infer(
         self,
-        X: np.ndarray,
+        X: List[np.ndarray],
         model_wrapper: ModelWrapper,
         postprocess: bool = True,
-    ) -> Any:
+    ) -> List[Any]:
         """
         Runs inference on single batch locally using a given runtime.
 
         Parameters
         ----------
-        X : np.ndarray
+        X : List[np.ndarray]
             Batch of data provided for inference.
         model_wrapper : ModelWrapper
             Model that is executed on target hardware.
@@ -576,11 +577,11 @@ class Runtime(ArgumentsHandler, ABC):
 
         Returns
         -------
-        Any
+        List[Any]
             Obtained values.
         """
         prepX = model_wrapper._preprocess_input(X)
-        succeed = self.load_input([prepX])
+        succeed = self.load_input(prepX)
         if not succeed:
             return False
         self._run()

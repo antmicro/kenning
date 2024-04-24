@@ -3,7 +3,7 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from itertools import chain, permutations, product
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import pytest
@@ -168,19 +168,19 @@ SEGM_OBJ = SegmObject("test", "./mask", 0, 0, 1, 1, "mask", 0.5, False)
 
 # List of list of data compatible with specs from SPECS_VALID
 DATA_VALID = (
-    (np.ones((1, 2, 4, 8), dtype=np.float32),),
+    ([np.ones((1, 2, 4, 8), dtype=np.float32)],),
     ([np.ones((32, 128), dtype=np.int8), np.zeros((32, 2), dtype=np.int8)],),
-    (np.ones((32, 2), dtype=np.float16),),
-    ([SEGM_OBJ, SEGM_OBJ],),
+    ([np.ones((32, 2), dtype=np.float16)],),
     ([[SEGM_OBJ, SEGM_OBJ]],),
-    ([{"test2": [SEGM_OBJ, SEGM_OBJ]}],),
+    ([[[SEGM_OBJ, SEGM_OBJ]]],),
+    ([[{"test2": [SEGM_OBJ, SEGM_OBJ]}]],),
 )
 
 # List of list of data not compatible with specs from SPECS_VALID
 DATA_INVALID = (
-    (np.ones((5, 2, 4, 8), dtype=np.float32),),
-    (np.ones((32, 128), dtype=np.int8),),
-    (np.ones((32,), dtype=np.float128),),
+    ([np.ones((5, 2, 4, 8), dtype=np.float32)],),
+    ([np.ones((32, 128), dtype=np.int8)],),
+    ([np.ones((32,), dtype=np.float128)],),
     ([SEGM_OBJ, DETECT_OBJ],),
     ([SEGM_OBJ, SEGM_OBJ],),
     ([{"test": [SEGM_OBJ, SEGM_OBJ]}],),
@@ -216,7 +216,9 @@ class TestIOInterface:
             ]
         ),
     )
-    def test_assert_data_format_valid(self, spec: Dict, data: Any):
+    def test_assert_data_format_valid(
+        self, spec: Dict[str, List], data: List[Any]
+    ):
         IOInterface.assert_data_format(data, spec["test1"])
 
     @pytest.mark.parametrize(
@@ -228,6 +230,8 @@ class TestIOInterface:
             ]
         ),
     )
-    def test_assert_data_format_invalid(self, spec: Dict, data: Any):
+    def test_assert_data_format_invalid(
+        self, spec: Dict[str, List], data: List[Any]
+    ):
         with pytest.raises(IOCompatibilityError):
             IOInterface.assert_data_format(data, spec["test1"])

@@ -6,7 +6,7 @@
 Runtime implementation for ONNX models.
 """
 
-from typing import List
+from typing import List, Optional
 
 import numpy as np
 import onnxruntime as ort
@@ -67,10 +67,10 @@ class ONNXRuntime(Runtime):
             disable_performance_measurements=disable_performance_measurements
         )
 
-    def load_input(self, input_data):
+    def load_input(self, input_data: List[np.ndarray]) -> bool:
         if self.session is None:
             raise ModelNotPreparedError
-        if not input_data:
+        if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
             return False
 
@@ -79,7 +79,7 @@ class ONNXRuntime(Runtime):
             self.input[spec["name"]] = inp
         return True
 
-    def prepare_model(self, input_data):
+    def prepare_model(self, input_data: Optional[bytes]) -> bool:
         KLogger.info("Loading model")
         if input_data:
             with open(self.model_path, "wb") as outmodel:
@@ -146,7 +146,7 @@ class ONNXRuntime(Runtime):
             [spec["name"] for spec in self.output_spec], self.input
         )
 
-    def extract_output(self):
+    def extract_output(self) -> List[np.ndarray]:
         if self.session is None:
             raise ModelNotPreparedError
 

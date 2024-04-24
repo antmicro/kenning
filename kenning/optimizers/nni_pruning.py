@@ -32,6 +32,7 @@ from tqdm import tqdm
 from kenning.core.dataset import Dataset
 from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import CompilationError, Optimizer
+from kenning.interfaces.io_interface import IOInterface
 from kenning.onnxconverters.onnx2torch import convert
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
@@ -456,6 +457,10 @@ class NNIPruningOptimizer(Optimizer):
         if not io_spec:
             io_spec = self.load_io_specification(input_model_path)
         self.io_spec = io_spec
+
+        if len(self.io_spec.get("processed_input", self.io_spec["input"])) > 1:
+            raise ValueError("Multi-output models are not supported")
+
         KLogger.info(f"Model before pruning\n{model}")
 
         dummy_input = self.generate_dummy_input(io_spec)
@@ -596,8 +601,8 @@ class NNIPruningOptimizer(Optimizer):
             ):
                 data, label = self.prepare_input_output_data(batch_begin)
                 optimizer.zero_grad()
-                output = model(data)
-                loss = criterion(output, label)
+                output = model(*data)
+                loss = criterion(output, label[0])
                 loss.backward()
                 optimizer.step()
                 if max_steps is not None:
@@ -648,8 +653,8 @@ class NNIPruningOptimizer(Optimizer):
                 file=logger_progress_bar,
             ):
                 data, target = self.prepare_input_output_data(batch_begin)
-                output = model(data)
-                loss: torch.Tensor = criterion(output, target)
+                output = model(*data)
+                loss: torch.Tensor = criterion(output, target[0])
                 loss_sum += loss.sum(-1)
         return loss_sum / data_len
 
@@ -680,20 +685,18 @@ class NNIPruningOptimizer(Optimizer):
         ]
         label = self.dataset.prepare_output_samples(batch_y)
 
-        assert list(data.shape[1:]) == list(
-            self.io_spec[
-                "processed_input"
-                if "processed_input" in self.io_spec
-                else "input"
-            ][0]["shape"][1:]
-        ), (
-            f"Input data in shape {data.shape[1:]}, but only "
-            f"{self.io_spec['input'][0]['shape'][1:]} shape supported"
+        output_spec = self.io_spec.get(
+            "processed_input", self.io_spec["input"]
         )
+        output_spec[0]["shape"] = (-1, *output_spec[0]["shape"][1:])
+        IOInterface.assert_data_format(data, output_spec)
 
-        data = torch.from_numpy(data).to(self.device)
+        data = [torch.from_numpy(_d).to(self.device) for _d in data]
         try:
-            label = torch.from_numpy(np.asarray(label)).to(self.device)
+            label = [
+                torch.from_numpy(np.asarray(_l)).to(self.device)
+                for _l in label
+            ]
         except TypeError:
             pass
 

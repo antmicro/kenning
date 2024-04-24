@@ -170,8 +170,8 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             return img, tf.convert_to_tensor(onehot)
 
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(0.25)
-        Yt = self.dataset.prepare_output_samples(Yt)
-        Yv = self.dataset.prepare_output_samples(Yv)
+        Yt = self.dataset.prepare_output_samples(Yt)[0]
+        Yv = self.dataset.prepare_output_samples(Yv)[0]
         traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
         traindataset = traindataset.map(
             preprocess_input, num_parallel_calls=tf.data.experimental.AUTOTUNE

@@ -41,11 +41,11 @@ class TestModelWrapperAndDatasetCompatibility:
 
         samples = dataset.prepare_input_samples(Xv)
         assert isinstance(samples, list)
-        assert len(samples) == len(Xv)
+        assert all(len(s) == len(Xv) for s in samples)
 
         samples = dataset.prepare_output_samples(Yv)
         assert isinstance(samples, list)
-        assert len(samples) == len(Yv)
+        assert all(len(s) == len(Yv) for s in samples)
 
         mean_and_std = dataset.get_input_mean_std()
         assert isinstance(mean_and_std, tuple)

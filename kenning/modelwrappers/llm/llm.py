@@ -77,7 +77,7 @@ class LLM(ModelWrapper, ABC):
         self.model.save_pretrained(str(model_path))
         self.tokenizer.save_pretrained(str(model_path))
 
-    def convert_input_to_bytes(self, inputdata: List[str]) -> bytes:
+    def convert_input_to_bytes(self, inputdata: List[List[str]]) -> bytes:
         """
         Converts the input returned by the ``preprocess_input`` method
         to bytes.
@@ -87,7 +87,7 @@ class LLM(ModelWrapper, ABC):
 
         Parameters
         ----------
-        inputdata : List[str]
+        inputdata : List[List[str]]
             The preprocessed inputs.
 
         Returns
@@ -104,23 +104,23 @@ class LLM(ModelWrapper, ABC):
             data += message.encode()
         return data
 
-    def preprocess_input(self, X: List[str]) -> List[str]:
+    def preprocess_input(self, X: List[List[str]]) -> List[List[str]]:
         """
         Preprocesses the inputs for a given model before inference by
         adding a system message to the user message.
 
         Parameters
         ----------
-        X : List[str]
+        X : List[List[str]]
             The input data from the Dataset object.
 
         Returns
         -------
-        List[str]
+        List[List[str]]
             The list of prompts for the model along with system messages.
         """
         conversations = []
-        for message in X:
+        for message in X[0]:
             if hasattr(self.dataset, "system_message"):
                 message = self.message_to_instruction(
                     message, self.dataset.system_message
@@ -128,9 +128,9 @@ class LLM(ModelWrapper, ABC):
             else:
                 message = self.message_to_instruction(message)
             conversations.append(message)
-        return conversations
+        return [conversations]
 
-    def convert_output_from_bytes(self, outputdata: bytes) -> List[str]:
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[List[str]]:
         """
         Converts the output from bytes to a list of strings.
 
@@ -144,7 +144,7 @@ class LLM(ModelWrapper, ABC):
 
         Returns
         -------
-        List[str]
+        List[List[str]]
             The list of output strings.
 
         Raises
@@ -184,7 +184,7 @@ class LLM(ModelWrapper, ABC):
                 RuntimeError,
             )
 
-        return result
+        return [result]
 
     @classmethod
     def _get_io_specification(cls):
@@ -202,7 +202,7 @@ class LLM(ModelWrapper, ABC):
     def get_io_specification_from_model(self):
         return self._get_io_specification()
 
-    def run_inference(self, X: List) -> List:
+    def run_inference(self, X: List[List[str]]) -> List[List[str]]:
         self.prepare_model()
 
         if self.tokenizer.pad_token is None:
@@ -213,7 +213,7 @@ class LLM(ModelWrapper, ABC):
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
         outputs = []
-        for x in X:
+        for x in X[0]:
             inputs = self.tokenizer(x, return_tensors="pt")
             generated_ids = self.model.generate(
                 inputs.input_ids,
@@ -223,7 +223,7 @@ class LLM(ModelWrapper, ABC):
             output = self.tokenizer.batch_decode(generated_ids)
             outputs.append(output[0])
 
-        return outputs
+        return [outputs]
 
     def save_to_onnx(self):
         raise NotImplementedError

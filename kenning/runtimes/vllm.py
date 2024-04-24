@@ -205,19 +205,19 @@ class VLLMRuntime(Runtime):
         )
         return True
 
-    def load_input(self, input_data: List[List[str]]):
+    def load_input(self, input_data: List[List[List[str]]]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data[0])}")
         if self.llm is None or self.sampling_params is None:
             raise KLogger.error_prepare_exception(
                 "Prepare the model using before loading input data",
                 ModelNotPreparedError,
             )
-        if not input_data:
+        if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
             return False
 
         self.input_prompts = []
-        for prompt in input_data[0]:
+        for prompt in input_data[0][0]:
             prompt = prompt.split(" ", 1)[1]
             self.input_prompts.append(prompt)
 
@@ -240,7 +240,7 @@ class VLLMRuntime(Runtime):
             prompt = prompts[0 : len(prompt_length) + 1 + int(prompt_length)]
             input_prompts.append(prompt)
             prompts = prompts[(len(prompt_length) + 1 + int(prompt_length)) :]
-        return self.load_input([input_prompts])
+        return self.load_input([[input_prompts]])
 
     def run(self):
         if self.llm is None or self.sampling_params is None:

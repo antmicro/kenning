@@ -7,7 +7,7 @@ The Oxford-IIIT Pet Dataset wrapper.
 """
 
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -174,7 +174,7 @@ class PetDataset(Dataset):
             else:
                 self.numclasses = len(self.classnames)
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for sample in samples:
             img = Image.open(sample)
@@ -186,10 +186,10 @@ class PetDataset(Dataset):
             if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
-        return result
+        return [np.array(result)]
 
-    def prepare_output_samples(self, samples):
-        return list(np.eye(self.numclasses)[samples])
+    def prepare_output_samples(self, samples: List[int]) -> List[np.ndarray]:
+        return [np.eye(self.numclasses)[samples]]
 
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))

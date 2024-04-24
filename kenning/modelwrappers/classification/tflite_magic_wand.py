@@ -116,10 +116,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             self.window_size, self.numclasses, self.class_names
         )
 
-    def preprocess_input(self, X):
+    def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
         X = super().preprocess_input(X)
-        if X.shape[-1] != 1:
-            return np.resize(X, (*X.shape, 1))
+        if X[0].shape[-1] != 1:
+            return [np.resize(X[0], (*X[0].shape, 1))]
         return X
 
     def prepare_model(self):
@@ -168,8 +168,8 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         def convert_to_tf_dataset(features: List, labels: List):
             return tf.data.Dataset.from_tensor_slices(
                 (
-                    np.array(self.dataset.prepare_input_samples(features)),
-                    np.array(self.dataset.prepare_output_samples(labels)),
+                    np.array(self.dataset.prepare_input_samples(features)[0]),
+                    np.array(self.dataset.prepare_output_samples(labels)[0]),
                 )
             )
 

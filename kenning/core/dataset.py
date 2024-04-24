@@ -421,7 +421,7 @@ class Dataset(ArgumentsHandler, ABC):
         List
             Preprocessed input samples.
         """
-        return samples
+        return [samples]
 
     def prepare_output_samples(self, samples: List) -> List:
         """
@@ -441,7 +441,7 @@ class Dataset(ArgumentsHandler, ABC):
         List
             Preprocessed output samples.
         """
-        return samples
+        return [samples]
 
     def set_batch_size(self, batch_size: int):
         """

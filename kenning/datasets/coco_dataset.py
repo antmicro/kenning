@@ -8,7 +8,7 @@ Classes and methods for COCO dataset.
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import cv2
 import numpy as np
@@ -156,7 +156,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         for inputid in self.dataX:
             self.dataY.append(annotations[inputid])
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for imgpath in samples:
             img = cv2.imread(str(imgpath))
@@ -166,7 +166,7 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
             if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
-        return result
+        return [np.array(result)]
 
     def get_class_names(self):
         return self.classnames

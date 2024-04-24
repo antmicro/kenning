@@ -5,6 +5,7 @@
 """
 Provides a runner that performs inference.
 """
+
 from argparse import Namespace
 from copy import deepcopy
 from typing import Any, Dict, List, Tuple
@@ -244,21 +245,20 @@ class ModelRuntimeRunner(Runner):
         return self._get_io_specification(self.model.get_io_specification())
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        model_input = inputs.get("processed_input")
-        if model_input is None:
-            model_input = inputs["input"]
+        model_input = inputs.get("processed_input", inputs["input"])
 
-        preds = self.runtime.infer(model_input, self.model, postprocess=False)
+        preds = self.runtime.infer(
+            [model_input], self.model, postprocess=False
+        )
         posty = self.model.postprocess_outputs(preds)
 
         io_spec = self.get_io_specification()
 
         result = {}
-        # TODO: Add support for multiple inputs/outputs
-        for out_spec, out_value in zip(io_spec["output"], [preds]):
+        for out_spec, out_value in zip(io_spec["output"], preds):
             result[out_spec["name"]] = out_value
 
-        for out_spec, out_value in zip(io_spec["processed_output"], [posty]):
+        for out_spec, out_value in zip(io_spec["processed_output"], posty):
             result[out_spec["name"]] = out_value
 
         return result

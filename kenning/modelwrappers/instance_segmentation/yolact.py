@@ -217,7 +217,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
     def save_model(self, model_path: PathOrURI):
         shutil.copy(self.original_model_path, model_path)
 
-    def preprocess_input(self, X: List[np.ndarray]) -> np.ndarray:
+    def preprocess_input(self, X: List[np.ndarray]) -> List[np.ndarray]:
         """
         Preprocesses input image to be compatible with the model.
 
@@ -233,7 +233,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
 
         Returns
         -------
-        np.ndarray
+        List[np.ndarray]
             Preprocessed image.
 
         Raises
@@ -253,7 +253,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
         X = cv2.resize(X, (550, 550))
         X = np.transpose(X, (2, 0, 1))
         X = (X * 255.0 - MEANS) / STD
-        return X[None, None, [2, 1, 0], ...].astype(np.float32)
+        return [X[None, [2, 1, 0], ...].astype(np.float32)]
 
     def get_framework_and_version(self):
         return ("onnx", onnx.__version__)
@@ -264,8 +264,8 @@ class YOLACTWrapper(ModelWrapper, ABC):
     def save_to_onnx(self, model_path: PathOrURI):
         self.save_model(model_path)
 
-    def convert_input_to_bytes(self, inputdata):
-        return inputdata.tobytes()
+    def convert_input_to_bytes(self, inputdata: List[np.ndarray]) -> bytes:
+        return inputdata[0].tobytes()
 
     @classmethod
     def derive_io_spec_from_json_params(cls, json_dict):
@@ -284,7 +284,9 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
 
     pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"  # noqa: E501
 
-    def postprocess_outputs(self, y):
+    def postprocess_outputs(
+        self, y: List[np.ndarray]
+    ) -> List[List[List[SegmObject]]]:
         # The signature of the y input
         # 0 - BOX
         # 1 - MASK
@@ -347,9 +349,9 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
                     iscrowd=False,
                 )
             )
-        return [Y]
+        return [[Y]]
 
-    def convert_output_from_bytes(self, outputdata):
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
         # Signatures of outputs of the model:
         # BOX:   size=(num_dets, 4)  dtype=float32
         # MASK:  size=(num_dets, 32) dtype=float32
@@ -439,14 +441,13 @@ class YOLACT(YOLACTWrapper):
         "kenning:///models/instance_segmentation/yolact.onnx"
     )
 
-    def postprocess_outputs(self, y):
-        if not y:
-            return []
-
+    def postprocess_outputs(
+        self, y: List[np.ndarray]
+    ) -> List[List[List[SegmObject]]]:
         y = self._detect(y)
 
         if not y:
-            return []
+            return [[] for _ in self.io_specification["processed_output"]]
 
         if self.top_k is not None:
             for k in y:
@@ -496,9 +497,9 @@ class YOLACT(YOLACTWrapper):
                     iscrowd=False,
                 )
             )
-        return [Y]
+        return [[Y]]
 
-    def convert_output_from_bytes(self, outputdata):
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[np.ndarray]:
         # Signatures of outputs of the model:
         # LOC:    size=(1, num_dets, 4)     dtype=float32
         # CONF:   size=(1, num_dets, 81)    dtype=float32

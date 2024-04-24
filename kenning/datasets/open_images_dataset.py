@@ -21,7 +21,7 @@ from collections import defaultdict
 from concurrent import futures
 from math import ceil, floor
 from pathlib import Path
-from typing import Any, Generator, List, Optional, Tuple
+from typing import Any, Generator, List, Optional, Tuple, Union
 
 import boto3
 import botocore
@@ -53,7 +53,7 @@ REGEX = r"(test|train|validation|challenge2018)/([a-fA-F0-9]*)"
 
 
 def check_and_homogenize_one_image(
-    image: str
+    image: str,
 ) -> Generator[Tuple[str, str], None, None]:
     """
     Subdivides download entry to split type and image ID.
@@ -73,7 +73,7 @@ def check_and_homogenize_one_image(
 
 
 def check_and_homogenize_image_list(
-    image_list: List[str]
+    image_list: List[str],
 ) -> Generator[Tuple[str, str], None, None]:
     """
     Converts download entries using check_and_homogenize_one_image.
@@ -546,7 +546,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         """
         return str(self.root / "img" / f"{image_id}.jpg")
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for sample in samples:
             img = cv2.imread(self.get_sample_image_path(sample))
@@ -563,7 +563,7 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                 npimg = np.transpose(npimg, (2, 0, 1))
 
             result.append(npimg)
-        return result
+        return [np.array(result)]
 
     def prepare_instance_segmentation_output_samples(
         self, samples: List[List[SegmObject]]
@@ -612,11 +612,13 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
                 result[-1].append(new_subsample)
         return result
 
-    def prepare_output_samples(self, samples):
+    def prepare_output_samples(
+        self, samples: List[List[List[DetectObject]]]
+    ) -> List[List[List[Union[DetectObject, SegmObject]]]]:
         if self.task == "instance_segmentation":
-            return self.prepare_instance_segmentation_output_samples(samples)
+            return [self.prepare_instance_segmentation_output_samples(samples)]
         else:
-            return samples
+            return [samples]
 
     def get_class_names(self):
         return self.classnames

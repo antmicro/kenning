@@ -199,7 +199,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
         dtype = np.dtype(processed_input_spec[0]["dtype"])
 
         result = []
-        for img in X:
+        for img in X[0]:
             w, h = img.shape[:2]
             img = img[
                 int((w / 2) * (1 - self.central_fraction)) : int(
@@ -219,7 +219,7 @@ class PersonDetectionModelWrapper(ModelWrapper):
 
             result.append(img)
 
-        return result
+        return [np.array(result)]
 
     def postprocess_outputs(self, y: List[np.ndarray]) -> List[np.ndarray]:
         io_spec = self.get_io_specification_from_model()

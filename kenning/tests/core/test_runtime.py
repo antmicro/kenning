@@ -141,7 +141,7 @@ class TestRuntime:
             X, _ = next(dataset)
             prepX = model.preprocess_input(X)
 
-            assert runtime.load_input([prepX])
+            assert runtime.load_input(prepX)
             runtime.run()
 
         assert runtime.statsmeasurements is None
@@ -188,7 +188,7 @@ class TestRuntime:
             X, _ = next(dataset)
             prepX = model._preprocess_input(X)
 
-            assert runtime.load_input([prepX])
+            assert runtime.load_input(prepX)
             runtime._run()
             sleep(0.01)
 
@@ -270,7 +270,7 @@ class TestRuntime:
         X, _ = next(dataset)
         prepX = model._preprocess_input(X)
 
-        assert runtime.load_input([prepX])
+        assert runtime.load_input(prepX)
 
         assert not runtime.load_input([])
 
@@ -346,7 +346,7 @@ class TestRuntime:
         X, _ = next(dataset)
         prepX = model._preprocess_input(X)
 
-        assert runtime.load_input([prepX])
+        assert runtime.load_input(prepX)
 
         runtime.run()
 
@@ -392,7 +392,7 @@ class TestRuntime:
         X, _ = next(dataset)
         prepX = model._preprocess_input(X)
 
-        assert runtime.load_input([prepX])
+        assert runtime.load_input(prepX)
 
         runtime.run()
 

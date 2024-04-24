@@ -9,7 +9,7 @@ Provides base methods for using PyTorch models in Kenning.
 import copy
 from abc import ABC
 from collections import OrderedDict
-from typing import Optional
+from typing import Any, List, Optional
 
 import numpy as np
 
@@ -108,12 +108,12 @@ class PyTorchWrapper(ModelWrapper, ABC):
         else:
             torch.save(self.model, model_path)
 
-    def preprocess_input(self, X):
+    def preprocess_input(self, X: List[np.ndarray]) -> List[Any]:
         import torch
 
-        return torch.Tensor(np.array(X)).to(self.device)
+        return [torch.Tensor(x).to(self.device) for x in X]
 
-    def postprocess_outputs(self, y):
+    def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
         import torch
 
         if isinstance(y, torch.Tensor):
@@ -124,9 +124,12 @@ class PyTorchWrapper(ModelWrapper, ABC):
             return [self.postprocess_outputs(_y) for _y in y]
         raise NotImplementedError
 
-    def run_inference(self, X):
+    def run_inference(self, X: List[Any]) -> List[Any]:
         self.prepare_model()
-        return self.model(X)
+        y = self.model(*X)
+        if not isinstance(y, (list, tuple)):
+            y = [y]
+        return y
 
     def get_framework_and_version(self):
         import torch
@@ -135,3 +138,29 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def get_output_formats(self):
         return ["onnx", "torch"]
+
+    def convert_input_to_bytes(self, inputdata: List[Any]) -> bytes:
+        data = bytes()
+        for inp in inputdata.detach().cpu().numpy():
+            data += inp.tobytes()
+        return data
+
+    def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
+        import torch
+
+        out_spec = self.get_io_specification()["output"]
+
+        result = []
+        data_idx = 0
+        for spec in out_spec:
+            dtype = np.dtype(spec["dtype"])
+            shape = spec["shape"]
+
+            out_size = np.prod(shape) * np.dtype(dtype).itemsize
+            arr = np.frombuffer(
+                outputdata[data_idx : data_idx + out_size], dtype=dtype
+            )
+            data_idx += out_size
+            result.append(torch.Tensor(arr.reshape(shape)))
+
+        return result

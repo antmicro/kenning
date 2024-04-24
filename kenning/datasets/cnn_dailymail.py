@@ -110,17 +110,17 @@ class CNNDailymailDataset(Dataset):
             split_seed,
         )
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[int]) -> List[List[str]]:
         result = []
         for id in samples:
             result.append(self.ds[id]["article"])
-        return result
+        return [result]
 
-    def prepare_output_samples(self, samples):
+    def prepare_output_samples(self, samples: List[int]) -> List[List[str]]:
         result = []
         for id in samples:
             result.append(self.ds[id]["highlights"])
-        return result
+        return [result]
 
     def prepare(self):
         from datasets import load_from_disk

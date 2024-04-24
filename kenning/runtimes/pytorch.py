@@ -9,6 +9,8 @@ Runtime implementation for PyTorch models.
 import gc
 from typing import List, Optional
 
+import numpy as np
+
 from kenning.core.runtime import (
     InputNotPreparedError,
     ModelNotPreparedError,
@@ -132,9 +134,9 @@ class PyTorchRuntime(Runtime):
         KLogger.info("Model loading ended successfully")
         return True
 
-    def load_input(self, input_data):
+    def load_input(self, input_data: List[np.ndarray]) -> bool:
         KLogger.debug(f"Loading inputs of size {len(input_data)}")
-        if not input_data:
+        if input_data is None or 0 == len(input_data):
             KLogger.error("Received empty input data")
             return False
         import torch
@@ -158,7 +160,7 @@ class PyTorchRuntime(Runtime):
             self.output = [self.model(data) for data in self.input]
         self.input = None
 
-    def extract_output(self):
+    def extract_output(self) -> List[np.ndarray]:
         import torch
 
         results = []

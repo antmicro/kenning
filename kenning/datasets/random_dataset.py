@@ -122,21 +122,21 @@ class RandomizedClassificationDataset(Dataset):
             self.dataY = [np.eye(self.numclasses)[y] for y in self.dataY]
 
         (self.root / "images").mkdir(parents=True, exist_ok=True)
-        samples = self.prepare_input_samples(self.dataX)
+        samples = self.prepare_input_samples(self.dataX)[0]
         for img_path, img_data in zip(self.dataX, samples):
             cv2.imwrite(img_path, img_data)
 
     def download_dataset_fun(self):
         pass
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for _ in samples:
             result.append(np.random.randn(*self.inputdims).astype(self.dtype))
-        return result
+        return [np.array(result)]
 
-    def prepare_output_samples(self, samples):
-        return samples
+    def prepare_output_samples(self, samples: List[Any]) -> List[np.ndarray]:
+        return [np.array(samples)]
 
     def evaluate(self, predictions, truth):
         return Measurements()
@@ -250,15 +250,17 @@ class RandomizedDetectionSegmentationDataset(
     def download_dataset_fun(self):
         pass
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[int]) -> List[np.ndarray]:
         result = []
         for sample in samples:
             np.random.seed(sample)
             result.append(np.random.randn(*self.inputdims).astype(self.dtype))
-        return result
+        return [np.array(result)]
 
-    def prepare_output_samples(self, samples):
-        return samples
+    def prepare_output_samples(
+        self, samples: List[List[DetectObject]]
+    ) -> List[List[List[DetectObject]]]:
+        return [samples]
 
     def evaluate(self, predictions, truth):
         return Measurements()
@@ -393,16 +395,16 @@ class RandomizedTextDataset(Dataset):
     def download_dataset_fun(self):
         pass
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[List[str]]:
         result = []
         for txt_path in samples:
             with open(txt_path, "r") as f:
                 result.append(f.read())
 
-        return result
+        return [result]
 
-    def prepare_output_samples(self, samples):
-        return samples
+    def prepare_output_samples(self, samples: List[int]) -> List[List[int]]:
+        return [samples]
 
     def evaluate(self, predictions, truth):
         return Measurements()

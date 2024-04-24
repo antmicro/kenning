@@ -77,7 +77,9 @@ class ONNXYOLOV4(YOLOWrapper):
     default_dataset = COCODataset2017
     arguments_structure = {}
 
-    def postprocess_outputs(self, y):
+    def postprocess_outputs(
+        self, y: List[np.ndarray]
+    ) -> List[List[List[DetectObject]]]:
         # YOLOv4, as YOLOv3, has three outputs for three stages of computing.
         # Each output layer has information about bounding boxes, scores and
         # classes in a grid.
@@ -103,7 +105,7 @@ class ONNXYOLOV4(YOLOWrapper):
             outarr[:, :, 4:, :, :] = 1 / (1 + np.exp(-outarr[:, :, 4:, :, :]))
             outputs.append(outarr)
 
-        return self.parse_batches(outputs)
+        return [self.parse_batches(outputs)]
 
     def loss_torch(
         self,

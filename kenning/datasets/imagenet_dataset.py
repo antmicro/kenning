@@ -8,7 +8,7 @@ The ImageNet 2012 wrapper.
 
 import json
 from pathlib import Path
-from typing import Any, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
 from PIL import Image
@@ -145,7 +145,7 @@ class ImageNetDataset(Dataset):
             self.classnames = [f"{i}" for i in range(1000)]
             self.numclasses = 1000
 
-    def prepare_input_samples(self, samples):
+    def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for sample in samples:
             img = Image.open(sample)
@@ -169,10 +169,10 @@ class ImageNetDataset(Dataset):
             if self.image_memory_layout == "NCHW":
                 npimg = np.transpose(npimg, (2, 0, 1))
             result.append(npimg)
-        return result
+        return [np.array(result)]
 
-    def prepare_output_samples(self, samples):
-        return list(np.eye(self.numclasses)[samples])
+    def prepare_output_samples(self, samples: List[int]) -> List[np.ndarray]:
+        return [np.eye(self.numclasses)[samples]]
 
     def evaluate(self, predictions, truth):
         confusion_matrix = np.zeros((self.numclasses, self.numclasses))

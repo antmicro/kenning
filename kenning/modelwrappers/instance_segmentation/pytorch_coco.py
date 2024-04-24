@@ -11,7 +11,7 @@ Pretrained on COCO dataset.
 import operator
 import sys
 from functools import reduce
-from typing import Dict, Optional, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import numpy as np
 
@@ -76,7 +76,9 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                 for line in f:
                     self.custom_classnames.append(line.strip())
 
-    def postprocess_outputs(self, out_all: list) -> list:
+    def postprocess_outputs(
+        self, out_all: List[np.ndarray]
+    ) -> List[List[List[SegmObject]]]:
         ret = []
         for out in out_all:
             ret.append([])
@@ -99,15 +101,14 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
                         iscrowd=False,
                     )
                 )
-        return ret
+        return [ret]
 
-    def convert_input_to_bytes(self, input_data):
-        data = bytes()
-        for i in input_data.detach().cpu().numpy():
-            data += i.tobytes()
-        return data
+    def convert_input_to_bytes(self, input_data: List[np.ndarray]) -> bytes:
+        return input_data[0].tobytes()
 
-    def convert_output_from_bytes(self, output_data):
+    def convert_output_from_bytes(
+        self, output_data: bytes
+    ) -> List[np.ndarray]:
         # The unknown size in the output specification is the
         # number of detected object. It can be calculated
         # manually using the size of the output
@@ -116,11 +117,10 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
         i = np.dtype(np.int64).itemsize
         num_dets = S // (416 * 416 * f + i)
 
-        output_specification = self.get_io_specification()["        "]
+        output_specification = self.get_io_specification()["output"]
 
-        result = {}
+        result = []
         for spec in output_specification:
-            name = spec["name"]
             shape = list(
                 num_dets if val == -1 else val for val in spec["shape"]
             )
@@ -132,10 +132,10 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             outputtensor = np.array(
                 np.frombuffer(output_data[:tensorsize], dtype=dtype)
             ).reshape(shape)
-            result[name] = outputtensor
+            result.append(outputtensor)
             output_data = output_data[tensorsize:]
 
-        return [result]
+        return result
 
     @classmethod
     def _get_io_specification(cls):
@@ -149,23 +149,22 @@ class PyTorchCOCOMaskRCNN(PyTorchWrapper):
             ],
             "output": [
                 {
-                    "type": "List",
-                    "dtype": {
-                        "type": "Dict",
-                        "fields": {
-                            "boxes": {"shape": (-1, 4), "dtype": "float32"},
-                            "labels": {"shape": (-1,), "dtype": "int64"},
-                            "scores": {"shape": (-1,), "dtype": "float32"},
-                            "masks": {
-                                "shape": (-1, 1, 416, 416),
-                                "dtype": "float32",
-                            },
+                    "name": "output",
+                    "type": "Dict",
+                    "fields": {
+                        "boxes": {"shape": (-1, 4), "dtype": "float32"},
+                        "labels": {"shape": (-1,), "dtype": "int64"},
+                        "scores": {"shape": (-1,), "dtype": "float32"},
+                        "masks": {
+                            "shape": (-1, 1, 416, 416),
+                            "dtype": "float32",
                         },
                     },
                 },
             ],
             "processed_output": [
                 {
+                    "name": "segmentation_output",
                     "type": "List",
                     "dtype": {
                         "type": "List",

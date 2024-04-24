@@ -5,6 +5,7 @@
 """
 The Tensorflow Magic Wand dataset.
 """
+
 import glob
 import os
 from pathlib import Path
@@ -167,6 +168,16 @@ class MagicWandDataset(Dataset):
                 self.dataY.append(np.eye(self.numclasses)[label])
 
         assert len(self.dataX) == len(self.dataY)
+
+    def prepare_input_samples(
+        self, samples: List[np.ndarray]
+    ) -> List[np.ndarray]:
+        return [np.array(samples)]
+
+    def prepare_output_samples(
+        self, samples: List[np.ndarray]
+    ) -> List[np.ndarray]:
+        return [np.array(samples)]
 
     def download_dataset_fun(self):
         extract_tar(self.root, self.resources["data"])

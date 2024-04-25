@@ -34,8 +34,9 @@ class SparseGPT:
     calibration dataset. After adding all the input data, the
     optimize method is called to optimize the weights of the layer.
 
-    * SparseGPT: https://arxiv.org/abs/2301.00774
-    * gptq: https://arxiv.org/abs/2210.17323
+    * SparseGPT paper: https://arxiv.org/abs/2301.00774
+    * SparseGPT repository: https://github.com/IST-DASLab/sparsegpt.
+    * GPTQ paper: https://arxiv.org/abs/2210.17323
 
     """
 
@@ -154,6 +155,9 @@ class SparseGPT:
         Hinv = H
 
         mask = None
+        scale = []
+        zero = []
+        g_idx = []
 
         for i1 in range(0, self.columns, blocksize):
             i2 = min(i1 + blocksize, self.columns)
@@ -177,9 +181,18 @@ class SparseGPT:
             else:
                 mask1 = torch.zeros_like(W1) == 1
 
+            if hasattr(self, "quantizer"):
+                self.quantizer.find_params(W[:, i1:i2], weight=True)
+                scale.append(self.quantizer.scale)
+                zero.append(self.quantizer.zero)
+
             for i in range(count):
                 w = W1[:, i]
                 d = Hinv1[i, i]
+
+                q = w.clone()
+                if hasattr(self, "quantizer"):
+                    q = self.quantizer.quantize(q.unsqueeze(1)).flatten()
 
                 if prunen != 0 and i % prunem == 0:
                     tmp = (
@@ -200,7 +213,8 @@ class SparseGPT:
                         True,
                     )
 
-                q = w.clone()
+                # This has to go after the quantization to make sure that
+                # the zeroed weights are not quantized
                 q[mask1[:, i]] = 0
 
                 Q1[:, i] = q
@@ -225,8 +239,20 @@ class SparseGPT:
             self.layer.weight.data.dtype
         )
 
-        return torch.sum(Losses).item()
+        if hasattr(self, "quantizer"):
+            scale = torch.cat(scale, dim=1)
+            zero = torch.cat(zero, dim=1)
+
+            # act_order is not supported for now, so g_idx
+            # is statically created to be compatible with autogptq format
+            g_idx = [i // blocksize for i in range(self.columns)]
+            g_idx = torch.tensor(g_idx, dtype=torch.int32)
+
+        return torch.sum(Losses).item(), scale, zero, g_idx
 
     def free(self):
+        """
+        Free the memory used by the Hessian matrix.
+        """
         self.H = None
         torch.cuda.empty_cache()

@@ -25,7 +25,12 @@ from kenning.datasets.helpers.detection_and_segmentation import (
     SegmObject,
 )
 from kenning.utils.logger import KLogger, LoggerProgressBar
-from kenning.utils.resource_manager import ResourceManager, Resources
+from kenning.utils.resource_manager import (
+    ResourceManager,
+    Resources,
+    ResourceURI,
+    extract_zip,
+)
 
 try:
     import rosbags
@@ -322,6 +327,10 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         }
     )
 
+    demo_dataset_uri = ResourceURI(
+        "kenning:///datasets/lindenthal-dataset-sample.zip"
+    )
+
     arguments_structure = {
         "image_width": {
             "description": "Width of the input images",
@@ -332,6 +341,11 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
             "description": "Height of the input images",
             "type": int,
             "default": 0,
+        },
+        "use_demonstration_dataset": {
+            "description": "If set to True, then instead of downloading a full Lindenthal dataset, a smaller, demonstration dataset is downloaded",  # noqa: E501
+            "type": bool,
+            "default": False,
         },
     }
 
@@ -353,9 +367,11 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         min_iou: float = 0.5,
         max_preds: int = 100,
         augment: bool = False,
+        use_demonstration_dataset: bool = False,
     ):
         self.num_classes = 4
         self.augment = augment
+        self.use_demonstration_dataset = use_demonstration_dataset
 
         super().__init__(
             root=root,
@@ -375,8 +391,21 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
             max_preds=max_preds,
         )
 
-    def download_dataset_fun(self):
-        self.root.mkdir(parents=True, exist_ok=True)
+    def download_original_dataset(self):
+        """
+        Downloads the Lindenthal dataset.
+
+        The dataset consists of ROS 1 rosbag files that contain data
+        from various sensors - camera, depth camera, infrared camera, ...
+
+        This method downloads the dataset, reads rosbag files, extracts
+        the color and infrared images from it, and loads annotations for it.
+
+        NOTE: At download, it reaches a size of around 220 GB.
+        The downloaded file is later removed, but it is recommended
+        to prepare a storage or configure a different one with
+        `KENNING_CACHE_DIR`
+        """
         topics = [
             "/device_0/sensor_0/Infrared_1/image/data",
             "/device_0/sensor_1/Color_0/image/data",
@@ -403,6 +432,28 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
                 )
                 (self.root / f).unlink()
         shutil.rmtree((self.root / "lindenthal-camera-traps"))
+
+    def download_demonstration_dataset(self):
+        """
+        Downloads sample sequences from Lindenthal dataset.
+
+        The sample sequences are of size around 1GB, providing
+        ready-to-use images and annotations (without the need
+        for ROS 1 rosbag unpacking).
+
+        It is mostly for testing/demonstration purposes, it
+        is not recommended for training due to size.
+
+        It should be used with `split_fraction_test` set to 1.0.
+        """
+        extract_zip(self.root, self.demo_dataset_uri)
+
+    def download_dataset_fun(self):
+        self.root.mkdir(parents=True, exist_ok=True)
+        if self.use_demonstration_dataset:
+            self.download_demonstration_dataset()
+        else:
+            self.download_original_dataset()
 
     def __next__(self):
         X, y = super().__next__()

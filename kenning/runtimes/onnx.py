@@ -68,7 +68,6 @@ class ONNXRuntime(Runtime):
         )
 
     def load_input(self, input_data):
-        KLogger.debug(f"Loading inputs of size {len(input_data)}")
         if self.session is None:
             raise ModelNotPreparedError
         if not input_data:

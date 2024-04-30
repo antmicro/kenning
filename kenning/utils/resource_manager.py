@@ -166,7 +166,7 @@ class ResourceManager(metaclass=Singleton):
         if self.kenning_resources_version_validated:
             return
         self.kenning_resources_version_validated = True
-        if not kenning.__version__:
+        if not (hasattr(kenning, "__version__") and kenning.__version__):
             return
         uri = self._resolve_uri(
             urlparse(ResourceManager.KENNING_RESOURCES_VERSION_URL)

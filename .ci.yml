@@ -102,10 +102,7 @@ nox-prepare-deps-any:
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
-        - python -m pip install --break-system-packages requests tqdm
-        - python /scripts/download_deps.py
-        - 7zz -y x artifacts.zip
-        - rm artifacts.zip
+        - /scripts/prepare_deps.sh
         - export NOX_PYTEST_CPU_ONLY=y
         - export NOX_PYTEST_EXPLICIT_DOWNLOAD=y
         - nox -vs "run_pytest-${PY_VERSION}(device='cpu')"

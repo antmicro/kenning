@@ -76,18 +76,12 @@ pytest:
             - "kenning-deps"
         expire_in: 1 day
 
-nox-prepare-deps-cpu-schedule:
+nox-prepare-deps-any-schedule:
     extends: .nox-prepare-deps
     variables:
-        DEVICE: cpu
+        DEVICE: any
     only:
         - schedules
-
-nox-prepare-deps-cpu:
-    extends: .nox-prepare-deps
-    variables:
-        DEVICE: cpu
-    when: manual
 
 nox-prepare-deps-any:
     extends: .nox-prepare-deps
@@ -102,10 +96,9 @@ nox-prepare-deps-any:
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
-        - /scripts/prepare_deps.sh
-        - export NOX_PYTEST_CPU_ONLY=y
+        - /scripts/prepare_deps.sh nox-prepare-deps-any nox-prepare-deps-any-schedule
         - export NOX_PYTEST_EXPLICIT_DOWNLOAD=y
-        - nox -vs "run_pytest-${PY_VERSION}(device='cpu')"
+        - nox -vs "run_pytest-${PY_VERSION}(device='any')"
     artifacts:
         paths:
             - pytest-reports

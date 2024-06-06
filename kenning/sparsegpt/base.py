@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Implements the main class for model optimization that iteratively,
+layer by layer, quantizes and/or prunes the model.
+"""
 
 import json
 import logging
@@ -14,11 +18,11 @@ from typing import Dict, List, Union
 import coloredlogs
 import torch
 import torch.nn as nn
-from auto_gptq.modeling._utils import pack_model
 from transformers import AutoModelForCausalLM, PreTrainedModel
 
 from kenning.sparsegpt.quant import Quantizer
 from kenning.sparsegpt.sparsegpt import SparseGPT
+from kenning.sparsegpt.utils import pack_model
 
 
 @dataclass
@@ -89,6 +93,15 @@ class BaseOptimizationConfig:
                 + "prunen has to be smaller than prunem"
             )
 
+        if (
+            self.prunen * self.prunem != 0
+            and self.prunen / self.prunem != self.sparsity
+        ):
+            raise ValueError(
+                "When using semi-structured pruning, `sparsity` value "
+                + "has to match `prunen` and `prunem` values"
+            )
+
         if self.bits not in fields_info[-2].metadata["range"]:
             raise ValueError(
                 f"Invalid quantization precision value {self.bits}. "
@@ -126,6 +139,14 @@ class HijackException(Exception):
     pass
 
 
+class InvalidMetadataException(Exception):
+    """
+    Exception raised when sparsity metadata is invalid.
+    """
+
+    pass
+
+
 class BaseSparseGPTForCausalML(nn.Module):
     """
     Base class for sparsegpt models that can be used for pruning and
@@ -148,10 +169,14 @@ class BaseSparseGPTForCausalML(nn.Module):
         List of layer names that are used for preprocessing. It is overridden
         in the derived classes. It has to be defined as it is needed when
         hijacking the first layer of the model.
+    compressible_modules : Optional[List[str]]
+        List of layer names that are being pruned and compressed when using
+        semi-structured pruning.
     """
 
     outside_layer_modules = None
     inside_layer_modules = None
+    compressible_modules = None
 
     def __init__(
         self,
@@ -159,6 +184,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         config: BaseOptimizationConfig,
         dev: str,
         verbosity: str,
+        development_mode: bool = False,
     ):
         """
         Initializes the Optimizer.
@@ -174,6 +200,11 @@ class BaseSparseGPTForCausalML(nn.Module):
         verbosity : str
             Verbosity level of the logger. Can be one of the following:
             'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'
+        development_mode : bool
+            Determines whether to run additional checks during model
+            optimization. If set to True, the model will be optimized
+            with additional checks to ensure that the model is optimized
+            correctly.
         """
         super().__init__()
 
@@ -181,6 +212,8 @@ class BaseSparseGPTForCausalML(nn.Module):
         self.config = config
         self.dev = dev
         self.logger = logging.getLogger(__name__)
+        self.verbosity = verbosity
+        self.development_mode = development_mode
         coloredlogs.install(
             level=verbosity,
             fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
@@ -194,6 +227,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         torch_dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
+        development_mode: bool = False,
         **model_init_kwargs,
     ) -> "BaseSparseGPTForCausalML":
         """
@@ -205,14 +239,19 @@ class BaseSparseGPTForCausalML(nn.Module):
             Name or path of the pretrained model
         config : BaseOptimizationConfig
             Optimization config
-        torch_dtype : torch.dtype, optional
+        torch_dtype : torch.dtype
             Type of the torch tensors.
-        dev : str, optional
+        dev : str
             Device to run the optimization on. Can be either 'cpu'
             or 'cuda'.
-        verbosity : str, optional
+        verbosity : str
             Verbosity level of the logger. Can be one of the following:
             'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'.
+        development_mode : bool
+            Determines whether to run additional checks during model
+            optimization. If set to True, the model will be optimized
+            with additional checks to ensure that the model is optimized
+            correctly.
         **model_init_kwargs :
             Additional arguments passed to the model initializer
 
@@ -228,7 +267,7 @@ class BaseSparseGPTForCausalML(nn.Module):
         )
         model.eval()
 
-        return cls(model, config, dev, verbosity)
+        return cls(model, config, dev, verbosity, development_mode)
 
     def _find_layers(
         self,
@@ -305,6 +344,48 @@ class BaseSparseGPTForCausalML(nn.Module):
             )
         return examples
 
+    @torch.no_grad
+    def _validate_prune_n_m(
+        self,
+        weights: torch.Tensor,
+        metadata: torch.Tensor,
+        prunen: int,
+        prunem: int,
+    ):
+        """
+        Validates the pruning mask in the semi-structured pruning.
+
+        All values indicated by mask have to be zero and for every
+        `prunem` values in the mask, at least `prunen` of them have to be zero.
+
+        Parameters
+        ----------
+        weights : torch.Tensor
+            Pruned weights
+        metadata : torch.Tensor
+            Pruning mask
+        prunen : int
+            Number of zeroed values in blocks of size `prunem`
+        prunem : int
+            Pruned block size
+
+        Raises
+        ------
+        Exception
+            Raised if validation fails
+        """
+        if not (weights[metadata] == 0).all().item():
+            raise InvalidMetadataException(
+                "All values indicated by mask have to be zero"
+            )
+
+        metadata_view = metadata.reshape(-1, prunem)
+        if not (metadata_view.sum(dim=1) == prunen).all().item():
+            raise InvalidMetadataException(
+                f"At least {prunen} values have to be zero "
+                + "in every block of size {prunem}"
+            )
+
     @torch.no_grad()
     def optimize(
         self,
@@ -330,7 +411,6 @@ class BaseSparseGPTForCausalML(nn.Module):
         """
         use_cache = self.model.config.use_cache
         self.model.config.use_cache = False
-
         start_tick = time.time()
 
         # Preprocessing modules have to be moved to the same device
@@ -340,13 +420,17 @@ class BaseSparseGPTForCausalML(nn.Module):
                 if module_name == name:
                     module = module.to(self.dev)
 
-        try:
+        if hasattr(self.model, "seqlen"):
             seqlen = self.model.seqlen
-        except AttributeError:
+        elif hasattr(self.model, "config") and hasattr(
+            self.model.config, "max_position_embeddings"
+        ):
+            seqlen = self.model.config.max_position_embeddings
+        else:
             seqlen = 4096
             logging.warning(
-                "Model does not have 'seqlen' attribute. "
-                + "Using default value of 4096"
+                "Model does not have 'seqlen' or 'max_position_embeddings' "
+                + "attribute. Using default value of 4096"
             )
 
         if self.config.n_samples != len(examples):
@@ -481,16 +565,34 @@ class BaseSparseGPTForCausalML(nn.Module):
                     self.logger.debug(f"Optimizing {name}")
                     sparsity = self.config.sparsity
 
-                    error, scale, zero, g_idx = gpts[name].optimize(
+                    error, sparsity_metadata, scale, zero, g_idx = gpts[
+                        name
+                    ].optimize(
                         sparsity,
                         prunen=self.config.prunen,
                         prunem=self.config.prunem,
                         blocksize=self.config.block_size,
                     )
 
+                    # If semi-structured pruning is used,
+                    # pruning mask is validated in a development mode
+                    if self.config.prunem != 0 and self.development_mode:
+                        self._validate_prune_n_m(
+                            gpts[name].layer.weight,
+                            sparsity_metadata,
+                            self.config.prunen,
+                            self.config.prunem,
+                        )
+
                     if self.config.bits < 16:
                         quantizers[f"model.layers.{i}.{name}"] = (
                             gpts[name].quantizer.to("cpu"),
+                            (
+                                sparsity_metadata.to("cpu")
+                                if name in self.compressible_modules
+                                and len(sparsity_metadata)
+                                else None
+                            ),
                             scale.to("cpu"),
                             zero.to("cpu"),
                             g_idx.to("cpu"),
@@ -518,16 +620,25 @@ class BaseSparseGPTForCausalML(nn.Module):
         self.model.config.use_cache = use_cache
 
         if self.config.bits < 16:
-            self.logger.debug("Quantizing model")
+            self.logger.debug("-------------------------")
+            self.logger.debug("Optimization finished")
+            self.logger.debug("Elapsed %.2f s" % (time.time() - start_tick))
+            self.logger.debug("-------------------------")
+
+            self.logger.debug("Packing optimized model")
             pack_model(
                 self.model,
                 quantizers,
                 self.config.bits,
                 self.config.block_size,
+                self.config.prunen,
+                self.config.prunem,
+                self.verbosity,
+                self.development_mode,
             )
 
         self.logger.debug("-------------------------")
-        self.logger.debug("Optimization finished")
+        self.logger.debug("Optimization and packing finished")
         self.logger.debug("Elapsed %.2f s" % (time.time() - start_tick))
         self.logger.debug("-------------------------")
 

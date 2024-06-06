@@ -20,6 +20,7 @@ class MistralGPTQForCausalLM(BaseSparseGPTForCausalML):
         ["mlp.up_proj", "mlp.gate_proj"],
         ["mlp.down_proj"],
     ]
+    compressible_modules = ["mlp.up_proj", "mlp.gate_proj", "mlp.down_proj"]
 
 
 SPARSEGPT_MODEL_MAP = {
@@ -90,6 +91,7 @@ class AutoSparseGPTForCausalML:
         torch_dtype: torch.dtype = torch.float16,
         dev: str = "cuda:0",
         verbosity: str = "DEBUG",
+        development_mode: bool = False,
         **model_init_kwargs,
     ) -> BaseSparseGPTForCausalML:
         """
@@ -108,6 +110,11 @@ class AutoSparseGPTForCausalML:
             Device on which the model is stored.
         verbosity : str
             Verbosity level.
+        development_mode : bool
+            Determines whether to run additional checks during model
+            optimization. If set to True, the model will be optimized
+            with additional checks to ensure that the model is optimized
+            correctly.
         **model_init_kwargs :
             Keyword arguments passed to the model init function.
 
@@ -126,5 +133,6 @@ class AutoSparseGPTForCausalML:
             torch_dtype=torch_dtype,
             dev=dev,
             verbosity=verbosity,
+            development_mode=development_mode,
             **model_init_kwargs,
         )

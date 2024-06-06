@@ -10,7 +10,6 @@ Only nuanced changes were made to the original file.
 The original file was licensed under Apache-2.0.
 """
 
-
 import math
 
 import torch
@@ -154,10 +153,10 @@ class SparseGPT:
         H = torch.linalg.cholesky(H, upper=True)
         Hinv = H
 
-        mask = None
         scale = []
         zero = []
         g_idx = []
+        sparsity_metadata = []
 
         for i1 in range(0, self.columns, blocksize):
             i2 = min(i1 + blocksize, self.columns)
@@ -170,14 +169,11 @@ class SparseGPT:
             Hinv1 = Hinv[i1:i2, i1:i2]
 
             if prunen == 0:
-                if mask is not None:
-                    mask1 = mask[:, i1:i2]
-                else:
-                    tmp = W1**2 / (torch.diag(Hinv1).reshape((1, -1))) ** 2
-                    thresh = torch.sort(tmp.flatten())[0][
-                        int(tmp.numel() * sparsity)
-                    ]
-                    mask1 = tmp <= thresh
+                tmp = W1**2 / (torch.diag(Hinv1).reshape((1, -1))) ** 2
+                thresh = torch.sort(tmp.flatten())[0][
+                    int(tmp.numel() * sparsity)
+                ]
+                mask1 = tmp <= thresh
             else:
                 mask1 = torch.zeros_like(W1) == 1
 
@@ -189,10 +185,6 @@ class SparseGPT:
             for i in range(count):
                 w = W1[:, i]
                 d = Hinv1[i, i]
-
-                q = w.clone()
-                if hasattr(self, "quantizer"):
-                    q = self.quantizer.quantize(q.unsqueeze(1)).flatten()
 
                 if prunen != 0 and i % prunem == 0:
                     tmp = (
@@ -213,9 +205,13 @@ class SparseGPT:
                         True,
                     )
 
-                # This has to go after the quantization to make sure that
-                # the zeroed weights are not quantized
+                # This has to go before the quantization to make sure that
+                # the zeroed weights are dequantized properly
+                q = w.clone()
                 q[mask1[:, i]] = 0
+
+                if hasattr(self, "quantizer"):
+                    q = self.quantizer.quantize(q.unsqueeze(1)).flatten()
 
                 Q1[:, i] = q
                 Losses1[:, i] = (w - q) ** 2 / d**2
@@ -225,6 +221,9 @@ class SparseGPT:
                     Hinv1[i, i:].unsqueeze(0)
                 )
                 Err1[:, i] = err1
+
+            if prunen != 0:
+                sparsity_metadata.append(mask1)
 
             W[:, i1:i2] = Q1
             Losses += torch.sum(Losses1, 1) / 2
@@ -248,7 +247,10 @@ class SparseGPT:
             g_idx = [i // blocksize for i in range(self.columns)]
             g_idx = torch.tensor(g_idx, dtype=torch.int32)
 
-        return torch.sum(Losses).item(), scale, zero, g_idx
+        if prunen != 0:
+            sparsity_metadata = torch.cat(sparsity_metadata, dim=1)
+
+        return torch.sum(Losses).item(), sparsity_metadata, scale, zero, g_idx
 
     def free(self):
         """

@@ -10,7 +10,6 @@ Only nuanced changes were made to the original file.
 The original file was licensed under MIT.
 """
 
-
 import torch
 import torch.nn as nn
 

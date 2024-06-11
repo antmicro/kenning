@@ -433,6 +433,9 @@ class BaseSparseGPTForCausalML(nn.Module):
                 + "attribute. Using default value of 4096"
             )
 
+        # Too big sequence length can cause out of memory errors
+        seqlen = min(seqlen, 4096)
+
         if self.config.n_samples != len(examples):
             self.logger.error(
                 "Number of samples in the calibration dataset "
@@ -651,11 +654,8 @@ class BaseSparseGPTForCausalML(nn.Module):
         Dict[str, str]
             Dictionary with metadata
         """
-        from auto_gptq import __version__
-
         safetensors_metadata = {}
         safetensors_metadata["format"] = "pt"
-        safetensors_metadata["auto_gptq_version"] = str(__version__)
         safetensors_metadata["gptq_bits"] = str(self.config.bits)
         safetensors_metadata["gptq_group_size"] = str(self.config.block_size)
         safetensors_metadata["gptq_desc_act"] = str(False)

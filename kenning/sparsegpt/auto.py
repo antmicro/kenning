@@ -2,6 +2,13 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Implements wrappers for models architecture that specify
+which layers are to be optimized and how.
+
+Additionally provides functionality for instantiating
+a supported model according to the model type.
+"""
 
 import torch
 from transformers import AutoConfig
@@ -23,8 +30,22 @@ class MistralGPTQForCausalLM(BaseSparseGPTForCausalML):
     compressible_modules = ["mlp.up_proj", "mlp.gate_proj", "mlp.down_proj"]
 
 
+class PhiGPTQForCausalLM(BaseSparseGPTForCausalML):
+    inside_layer_modules = ["model.embed_tokens", "model.final_layernorm"]
+    outside_layer_modules = [
+        ["self_attn.q_proj"],
+        ["self_attn.k_proj"],
+        ["self_attn.v_proj"],
+        ["self_attn.dense"],
+        ["mlp.fc1"],
+        ["mlp.fc2"],
+    ]
+    compressible_modules = ["mlp.fc1", "mlp.fc2"]
+
+
 SPARSEGPT_MODEL_MAP = {
     "mistral": MistralGPTQForCausalLM,
+    "phi": PhiGPTQForCausalLM,
 }
 
 

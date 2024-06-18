@@ -187,7 +187,7 @@ def pack_model(
         fmt="%(asctime)s %(name)s %(levelname)s %(message)s",
     )
 
-    logger.info("Packing model...")
+    logger.info("Packing model")
     layers = find_layers(model)
     layers = {n: layers[n] for n in quantizers}
 
@@ -224,4 +224,4 @@ def pack_model(
         qlayers[name].pack(layers[name], sparsity_metadata, scale, zero, g_idx)
         qlayers[name].to(layer_device)
         logger.debug("Layer packing took: %.2f s" % (time.time() - tick))
-    logger.info("Model packed.")
+    logger.info("Model packed")

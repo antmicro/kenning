@@ -507,10 +507,10 @@ class BaseSparseGPTForCausalML(nn.Module):
         outs = torch.zeros_like(inps)
         attention_mask = cache["attention_mask"]
 
-        self.logger.debug(
+        self.logger.info(
             "Optimizing with configuration: \n" + pformat(self.config.__dict__)
         )
-        self.logger.debug(f"Found layers: {layers}")
+        self.logger.info(f"Found layers: {layers}")
 
         quantizers = {}
         for i in range(len(layers)):
@@ -623,12 +623,11 @@ class BaseSparseGPTForCausalML(nn.Module):
         self.model.config.use_cache = use_cache
 
         if self.config.bits < 16:
-            self.logger.debug("-------------------------")
-            self.logger.debug("Optimization finished")
-            self.logger.debug("Elapsed %.2f s" % (time.time() - start_tick))
-            self.logger.debug("-------------------------")
+            self.logger.info("-------------------------")
+            self.logger.info("Optimization finished")
+            self.logger.info("Elapsed %.2f s" % (time.time() - start_tick))
+            self.logger.info("-------------------------")
 
-            self.logger.debug("Packing optimized model")
             pack_model(
                 self.model,
                 quantizers,
@@ -640,10 +639,10 @@ class BaseSparseGPTForCausalML(nn.Module):
                 self.development_mode,
             )
 
-        self.logger.debug("-------------------------")
-        self.logger.debug("Optimization and packing finished")
-        self.logger.debug("Elapsed %.2f s" % (time.time() - start_tick))
-        self.logger.debug("-------------------------")
+        self.logger.info("-------------------------")
+        self.logger.info("Optimization and packing finished")
+        self.logger.info("Elapsed %.2f s" % (time.time() - start_tick))
+        self.logger.info("-------------------------")
 
     def _safetensors_metadata(self) -> Dict[str, str]:
         """

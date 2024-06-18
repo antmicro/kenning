@@ -10,6 +10,7 @@ quantized weights and sparsity metadata.
 import math
 from typing import Optional
 
+import numpy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -334,15 +335,22 @@ class QuantLinear(nn.Module):
             i += INT32_BITS // self.bits
             row += 1
 
+        # Zeros matrix has to be converted to ndarray, as torch
+        # does not support required bitwise operations
+        zeros = zeros.numpy().astype(np.uint32)
+
+        # Checking whether zero points are within the range of 4 bits
+        if self.development_mode and (
+            numpy.any((zeros & ((1 << self.bits) - 1)) != zeros)
+            or numpy.any(zeros > self.maxq)
+        ):
+            raise PackingError(
+                "Zero points are not within the range of 4 bits."
+            )
+
         # Packing zeros
         i = 0
         col = 0
-
-        # One has to be subtracted from zeros, as GPTQ kernels make this
-        # assumption:
-        # https://github.com/vllm-project/vllm/blob/88407532e7ec2dd3313f6cb3a31d8dd1fa868178/csrc/quantization/gptq/q_gemm.cu#L1413
-        zeros -= 1
-        zeros = zeros.numpy().astype(np.uint32)
         while col < self.qzeros.shape[1]:
             for j in range(i, i + (INT32_BITS // self.bits)):
                 self.qzeros[:, col] |= zeros[:, j] << (self.bits * (j - i))

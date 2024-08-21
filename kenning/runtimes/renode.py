@@ -767,7 +767,7 @@ class _ProfilerDumpParser(object):
     ENTRY_TYPE_EXCEPTIONS = b"\x03"
 
     ENTRY_HEADER_FORMAT = "<qdc"
-    ENTRY_FORMAT_INSTRUCTIONS = "<cQ"
+    ENTRY_FORMAT_INSTRUCTIONS = "<iQ"
     ENTRY_FORMAT_MEM0RY = "c"
     ENTRY_FORMAT_PERIPHERALS = "<cQ"
     ENTRY_FORMAT_EXCEPTIONS = "Q"
@@ -863,8 +863,8 @@ class _ProfilerDumpParser(object):
                         cpu_id, instr_counter = self._read(
                             self.ENTRY_FORMAT_INSTRUCTIONS, dump_file
                         )
-                        if cpu_id[0] in cpus:
-                            prev_instr_counter[cpus[cpu_id[0]]] = instr_counter
+                        if cpu_id in cpus:
+                            prev_instr_counter[cpus[cpu_id]] = instr_counter
                     elif entry_type == self.ENTRY_TYPE_MEM0RY:
                         self._read(self.ENTRY_FORMAT_MEM0RY, dump_file)
                     elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
@@ -901,8 +901,8 @@ class _ProfilerDumpParser(object):
                     cpu_id, instr_counter = self._read(
                         self.ENTRY_FORMAT_INSTRUCTIONS, dump_file
                     )
-                    if cpu_id[0] in cpus:
-                        cpu = cpus[cpu_id[0]]
+                    if cpu_id in cpus:
+                        cpu = cpus[cpu_id]
                         output_list = output_list[cpu]
 
                         output_list[-1] += (

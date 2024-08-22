@@ -110,7 +110,7 @@ from kenning.modelwrappers.instance_segmentation.cython_nms import (
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
-    `run_pytest-3.9(device='cpu')` is converted into `run_ytest-3.9-cpu`.
+    `run_pytest-3.9(device='cpu')` is converted into `run_pytest-3.9-cpu`.
     """
     namever, _, args = name.partition("(")
     name, _, ver = namever.partition("-")
@@ -138,11 +138,26 @@ def _prepare_kenning(session: nox.Session, device):
         return
 
     for path in KENNING_DEPS_DIR.glob("*"):
-        filename = Path(path).name
-        name, ver, *params = filename.split("-")
+        path = Path(path)
+        name, ver, *params = path.name.split("-")
 
         if session.python == ver and device in params:
-            deps = path.glob("*")
+            wheels = path.glob("*")
+            deps = []
+            for dep in wheels:
+                # TODO pip >= 24 does not allow ".tip" suffix present in
+                # sphinx_immaterial
+                if (
+                    "sphinx_immaterial-0.0.post1.tip-py3-none-any.whl"
+                    == dep.name
+                ):
+                    newpath = (
+                        dep.parent
+                        / "sphinx_immaterial-0.0.post1-py3-none-any.whl"
+                    )
+                    dep.rename(newpath)
+                    dep = newpath
+                deps.append(dep)
             session.install("--no-deps", ".", *deps)
             return
 

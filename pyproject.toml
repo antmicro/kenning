@@ -27,7 +27,7 @@ dependencies = [
     "isort>=5.12.0",
     "jsonschema>=4.16.0",
     "matplotlib>=3.3.4",
-    "numpy",
+    "numpy>=1.23.5,<2.0.0",
     "onnx",
     "Pillow>=8.1.0",
     "psutil>=5.8.0",

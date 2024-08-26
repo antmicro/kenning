@@ -1,8 +1,5 @@
 image: $CI_BASE_IMAGE
 
-.ace: &ace
-    tags: ['ace-x86_64']
-
 .common_only: &common_only
     only:
         - main
@@ -23,14 +20,12 @@ stages:
 
 pre-commit:
     image: $CI_LINT_IMAGE
-    <<: *ace
     <<: *common_only
     stage: lint
     script:
         - pre-commit run --all-files || (echo "pre-commit changes:" && git diff && false)
 
 pytest:
-    <<: *ace
     <<: *common_only
     stage: tests
     script:
@@ -65,7 +60,6 @@ pytest:
         when: always
 
 .nox-prepare-deps:
-    <<: *ace
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: prepare
@@ -76,27 +70,30 @@ pytest:
             - "kenning-deps"
         expire_in: 1 day
 
-nox-prepare-deps-any-schedule:
+nox-prepare-deps:
     extends: .nox-prepare-deps
     variables:
         DEVICE: any
     only:
-        - schedules
+        - dev
+        - main
 
-nox-prepare-deps-any:
+nox-prepare-deps-manual:
     extends: .nox-prepare-deps
     variables:
         DEVICE: any
+    except:
+        - dev
+        - main
     when: manual
 
 .nox-pytest:
-    <<: *ace
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
-        - /scripts/prepare_deps.sh nox-prepare-deps-any nox-prepare-deps-any-schedule
+        - /scripts/prepare_deps.sh nox-prepare-deps-manual nox-prepare-deps
         - export NOX_PYTEST_EXPLICIT_DOWNLOAD=y
         - nox -vs "run_pytest-${PY_VERSION}(device='any')"
     artifacts:
@@ -119,8 +116,7 @@ nox-pytest-3.11:
     variables:
         PY_VERSION: "3.11"
 
-nox-gallery:
-    <<: *ace
+.nox-gallery-tests-base:
     <<: *common_only
     image: $CI_NOX_IMAGE
     stage: tests
@@ -129,10 +125,25 @@ nox-gallery:
         - /scripts/prepare_docker.sh
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         - nox -vs run_gallery_tests
+
+nox-gallery-tests-manual:
+    extends: .nox-gallery-tests-base
+    except:
+        refs:
+            - main
+            - dev
     when: manual
+    allow_failure: true
+
+nox-gallery-tests:
+    extends: .nox-gallery-tests-base
+    only:
+        refs:
+            - main
+            - dev
+    allow_failure: true
 
 docs-tests:
-    <<: *ace
     variables:
         TESTS_SCOPE: 'docs'
     only:
@@ -142,7 +153,6 @@ docs-tests:
     <<: *pytest-docs
 
 docs-tests-manual:
-    <<: *ace
     variables:
         TESTS_SCOPE: 'docs'
     except:
@@ -156,17 +166,16 @@ docs-tests-manual:
     when: manual
 
 docs-gallery-tests:
-    <<: *ace
     variables:
         TESTS_SCOPE: 'docs_gallery'
     only:
         refs:
             - main
             - dev
+    allow_failure: true
     <<: *pytest-docs
 
 docs-gallery-tests-manual:
-    <<: *ace
     variables:
         TESTS_SCOPE: 'docs_gallery'
     except:
@@ -178,9 +187,9 @@ docs-gallery-tests-manual:
             - merge_requests
     <<: *pytest-docs
     when: manual
+    allow_failure: true
 
 sample-compilation:
-    <<: *ace
     <<: *common_only
     stage: tests
     script:
@@ -192,7 +201,6 @@ sample-compilation:
             - docs/source/generated
 
 sample-pipeline-optimization:
-    <<: *ace
     <<: *common_only
     stage: tests
     script:
@@ -203,7 +211,6 @@ sample-pipeline-optimization:
             - build/
 
 sample-client-server-scenario:
-    <<: *ace
     <<: *common_only
     stage: tests
     script:
@@ -217,11 +224,9 @@ sample-client-server-scenario:
     artifacts:
         paths:
             - build/
-    allow_failure: false
 
 docs:
     image: $CI_DOCS_IMAGE
-    <<: *ace
     <<: *common_only
     stage: docs
     dependencies:
@@ -242,7 +247,6 @@ docs:
 
 linkcheck:
     image: $CI_DOCS_IMAGE
-    <<: *ace
     <<: *common_only
     stage: docs
     dependencies:

@@ -23,10 +23,10 @@ import psutil
 
 from kenning.utils.logger import KLogger
 
-# try:
-#     from pynvml.smi import nvidia_smi
-# except ImportError:
-nvidia_smi = None
+try:
+    from pynvml.smi import nvidia_smi
+except ImportError:
+    nvidia_smi = None
 
 
 class Measurements(object):

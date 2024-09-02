@@ -230,7 +230,7 @@ def performance_report(
             plot_path, root_dir
         )
     else:
-        KLogger.warning("No memory usage measurements in the report")
+        KLogger.warning("No CPU usage measurements in the report")
 
     if "session_utilization_gpu_mem_utilization" in measurementsdata:
         KLogger.info("Using target measurements GPU memory usage percentage")

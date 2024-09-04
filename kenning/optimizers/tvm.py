@@ -6,6 +6,7 @@
 Wrapper for TVM deep learning compiler.
 """
 
+import json
 import re
 from typing import Dict, List, Literal, Optional, Tuple, Union
 
@@ -658,7 +659,13 @@ class TVMCompiler(Optimizer):
                 )
 
             if self.target_microtvm_board:
-                graph_json = lib.get_graph_json().encode()
+                graph_json = lib.get_graph_json()
+                # minify JSON
+                graph_json = json.dumps(
+                    json.loads(graph_json), separators=(",", ":")
+                )
+                graph_json = graph_json.encode()
+
                 params = tvm.runtime.params.save_param_dict(lib.get_params())
 
                 graph_data = b""

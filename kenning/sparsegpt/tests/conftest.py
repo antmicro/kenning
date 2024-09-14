@@ -14,7 +14,6 @@ def empty_file_path() -> Generator[Path, None, None]:
     """
     Fixture that returns path to a new temporary file that is closed
     automatically after using the fixture.
-
     """
     with tempfile.TemporaryDirectory() as tmp_dir:
         yield Path(tmp_dir)

@@ -10,7 +10,6 @@ quantized weights and sparsity metadata.
 import math
 from typing import Optional
 
-import numpy
 import numpy as np
 import torch
 import torch.nn as nn
@@ -215,7 +214,7 @@ class QuantLinear(nn.Module):
         -------
         torch.Tensor
             Compressed sparsity metadata.
-        """
+        """  # noqa: E501
         target_shape = (
             sparsity_metadata.shape[0],
             sparsity_metadata.shape[1]
@@ -341,8 +340,8 @@ class QuantLinear(nn.Module):
 
         # Checking whether zero points are within the range of 4 bits
         if self.development_mode and (
-            numpy.any((zeros & ((1 << self.bits) - 1)) != zeros)
-            or numpy.any(zeros > self.maxq)
+            np.any((zeros & ((1 << self.bits) - 1)) != zeros)
+            or np.any(zeros > self.maxq)
         ):
             raise PackingError(
                 "Zero points are not within the range of 4 bits."

@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Test configuration for sparsegpt module.
+"""
+
 import tempfile
 from pathlib import Path
 from typing import Generator

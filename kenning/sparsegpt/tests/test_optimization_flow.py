@@ -2,6 +2,10 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+"""
+Test verifying SparseGPT+GTPQ flow on Phi-2 model.
+"""
+
 from pathlib import Path
 
 from transformers import AutoTokenizer

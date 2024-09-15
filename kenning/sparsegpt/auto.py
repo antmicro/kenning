@@ -20,6 +20,10 @@ from kenning.sparsegpt.base import (
 
 
 class MistralGPTQForCausalLM(BaseSparseGPTForCausalML):
+    """
+    Configuration of Mistral's OBC compression.
+    """
+
     inside_layer_modules = ["model.embed_tokens", "model.norm"]
     outside_layer_modules = [
         ["self_attn.k_proj", "self_attn.v_proj", "self_attn.q_proj"],
@@ -31,6 +35,10 @@ class MistralGPTQForCausalLM(BaseSparseGPTForCausalML):
 
 
 class PhiGPTQForCausalLM(BaseSparseGPTForCausalML):
+    """
+    Configuration of Phi-2's OBC compression.
+    """
+
     inside_layer_modules = ["model.embed_tokens", "model.final_layernorm"]
     outside_layer_modules = [
         ["self_attn.q_proj"],

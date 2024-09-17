@@ -25,17 +25,46 @@ pre-commit:
     script:
         - pre-commit run --all-files || (echo "pre-commit changes:" && git diff && false)
 
+
+.nox-prepare-deps:
+    <<: *common_only
+    image: $CI_NOX_IMAGE
+    stage: prepare
+    script:
+        - for v in $PY_VERSIONS; do nox -s "get_deps-${v}(device='${DEVICE}')"; done
+    artifacts:
+        paths:
+            - "kenning-deps"
+        expire_in: 1 week
+
+nox-prepare-deps:
+    extends: .nox-prepare-deps
+    variables:
+        DEVICE: any
+    only:
+        - dev
+        - main
+
+nox-prepare-deps-manual:
+    extends: .nox-prepare-deps
+    variables:
+        DEVICE: any
+    except:
+        - dev
+        - main
+    when: manual
+
 pytest:
     <<: *common_only
     stage: tests
+    variables:
+        MARKS: "(not docs_gallery) and (not docs) and (not gpu)"
     script:
         - /scripts/prepare_environment.sh .
-        - pip uninstall -y pipeline_manager
-        - pip install -e ".[test,pipeline_manager]"
-        - pip install -e ".[llm]"
+        - pip install -e ".[pipeline_manager,test,llm]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
-        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 58m 55m pytest kenning -m "(not docs_gallery) and (not docs)" -n=auto --cov=kenning --cov-report=html
+        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 58m 55m pytest kenning -m "$MARKS" -n=auto --cov=kenning --cov-report=html
     artifacts:
         paths:
             - log.json
@@ -58,34 +87,6 @@ pytest:
             - log.json
             - $TESTS_SCOPE/*.log
         when: always
-
-.nox-prepare-deps:
-    <<: *common_only
-    image: $CI_NOX_IMAGE
-    stage: prepare
-    script:
-        - for v in $PY_VERSIONS; do nox -s "get_deps-${v}(device='${DEVICE}')"; done
-    artifacts:
-        paths:
-            - "kenning-deps"
-        expire_in: 1 day
-
-nox-prepare-deps:
-    extends: .nox-prepare-deps
-    variables:
-        DEVICE: any
-    only:
-        - dev
-        - main
-
-nox-prepare-deps-manual:
-    extends: .nox-prepare-deps
-    variables:
-        DEVICE: any
-    except:
-        - dev
-        - main
-    when: manual
 
 .nox-pytest:
     <<: *common_only

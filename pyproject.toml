@@ -211,6 +211,7 @@ markers = [
     "serial",
     "docs",          # marks tests extracted from Kenning documentation (without gallery)
     "docs_gallery",  # marks tests extracted from Kenning gallery
+    "gpu",           # marks tests requiring GPU for running
 ]
 log_cli = true
 log_level = "DEBUG"

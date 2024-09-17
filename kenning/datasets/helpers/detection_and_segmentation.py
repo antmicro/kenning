@@ -256,7 +256,7 @@ def compute_segm_iou(segm_pred: SegmObject, segm_true: SegmObject) -> float:
     """
     # Mask shapes must be equal
     if segm_pred.mask.shape != segm_true.mask.shape:
-        KLogger.warn(
+        KLogger.warning(
             "Segmentation masks have different shapes "
             f"({segm_pred.mask.shape} != {segm_true.mask.shape}). "
             "Returning 0.0"

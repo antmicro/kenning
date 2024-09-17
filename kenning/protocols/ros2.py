@@ -173,7 +173,7 @@ class ROS2Protocol(Protocol):
         """
         KLogger.warning(message)
         if self.node is not None:
-            self.node.get_logger().warn(message)
+            self.node.get_logger().warning(message)
 
     def log_error(self, message: str):
         """

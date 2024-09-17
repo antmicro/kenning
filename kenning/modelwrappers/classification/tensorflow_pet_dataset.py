@@ -44,7 +44,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             try:
                 tf.config.experimental.set_memory_growth(gpu, True)
             except RuntimeError:
-                KLogger.warn(f"Couldn't enable memory growth for {gpu}")
+                KLogger.warning(f"Couldn't enable memory growth for {gpu}")
 
         if dataset is not None:
             self.numclasses = dataset.numclasses

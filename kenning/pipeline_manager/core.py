@@ -266,10 +266,10 @@ class BaseDataflowHandler(ABC):
                 node_cls = load_class(node.cls_name)
             except (ModuleNotFoundError, ImportError, Exception) as err:
                 msg = f"Could not add {node_cls}. Reason:"
-                KLogger.warn("-" * len(msg))
-                KLogger.warn(msg)
-                KLogger.warn(err)
-                KLogger.warn("-" * len(msg))
+                KLogger.warning("-" * len(msg))
+                KLogger.warning(msg)
+                KLogger.warning(err)
+                KLogger.warning("-" * len(msg))
                 nodes_to_remove.add(key)
                 continue
             parameterschema = node_cls.form_parameterschema()

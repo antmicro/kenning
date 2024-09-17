@@ -203,10 +203,10 @@ def get_all_subclasses(
         except (ModuleNotFoundError, ImportError, Exception) as e:
             if show_warnings:
                 msg = f"Could not add {subclass_name}. Reason:"
-                KLogger.warn("-" * len(msg))
-                KLogger.warn(msg)
-                KLogger.warn(e)
-                KLogger.warn("-" * len(msg))
+                KLogger.warning("-" * len(msg))
+                KLogger.warning(msg)
+                KLogger.warning(e)
+                KLogger.warning("-" * len(msg))
             if raise_exception:
                 raise
 

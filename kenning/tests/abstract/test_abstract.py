@@ -110,14 +110,17 @@ class TestAbstract:
         """
         Test checking if @abstractmethod is defined in ABC class.
         """
+
+        def isabstractmethod(decorator):
+            if hasattr(decorator, "id"):
+                return decorator.id == "abstractmethod"
+            elif hasattr(decorator, "func") and hasattr(decorator.func, "id"):  # noqa: E501
+                return decorator.func.id == "abstractmethod"
+            return False
+
         if not check_class_bases(class_ast) and any(
             any(
-                (
-                    decorator.id
-                    if hasattr(decorator, "id")
-                    else decorator.func.id
-                )
-                == "abstractmethod"
+                isabstractmethod(decorator)
                 for decorator in method_ast.decorator_list
             )
             for method_ast in get_all_methods(class_ast)

@@ -8,6 +8,7 @@ Test verifying SparseGPT+GTPQ flow on Phi-2 model.
 
 from pathlib import Path
 
+import pytest
 from transformers import AutoTokenizer
 
 from kenning.sparsegpt.auto import AutoSparseGPTForCausalML
@@ -15,6 +16,7 @@ from kenning.sparsegpt.base import BaseOptimizationConfig
 from kenning.sparsegpt.datautils import get_c4
 
 
+@pytest.mark.gpu
 def test_optimization_flow_phi_2(empty_file_path: Path):
     """
     Test the optimization flow of the Phi-2 model.

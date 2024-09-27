@@ -1,0 +1,28 @@
+# Copyright (c) 2024 Antmicro <www.antmicro.com>
+#
+# SPDX-License-Identifier: Apache-2.0
+
+[build-system]
+requires = ["setuptools>=40.8.0", "wheel", "torch==2.3.0", "nvidia-cutlass==3.5.1.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "kenning_sparsity_aware_kernel"
+version = "0.0.1"
+description = "Implementation of sparsity aware CUDA kernel for vLLM runtime"
+authors = [
+    {name = "Antmicro Ltd.", email = "contact@antmicro.com"},
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "safetensors==0.4.3",
+    "torch==2.3.0",
+    "vllm==0.5.0.post1",
+]
+
+[tool.setuptools.packages.find]
+include = ["kenning_sparsity_aware_kernel*"]

@@ -271,6 +271,11 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
                 scale = io_spec["scale"]
                 zero_point = io_spec["zero_point"]
                 inp = (inp / scale + zero_point).astype(io_spec["dtype"])
+            if io_spec["dtype"] == "str" and io_spec["type"] == "List":
+                # If the input is a string,
+                # then no further processing is needed
+                X[idx] = inp
+                continue
             if np.prod(inp.shape) != np.prod(io_spec["shape"]):
                 # fill input with zeroes to match expected shape
                 # the data needs to be copied because otherwise the array

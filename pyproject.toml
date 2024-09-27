@@ -153,8 +153,13 @@ llm = [
     "auto_gptq",
     "rouge-score",
     "transformers",
-    "vllm>=0.3.0,<0.4.0",
+    "vllm>=0.3.0",
 ]
+
+# pip does not distinguish between kenning.datasets and datasets
+# so the local module is excluded from being found
+[tool.setuptools.packages.find]
+exclude = ["kenning/sparsity_aware_kernel*", "kenning/datasets*"]
 
 [project.scripts]
 kenning = "kenning.cli.cli:main"

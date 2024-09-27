@@ -2568,6 +2568,7 @@ class Barplot(Plot):
                 bottom=0,
                 fill_color=self.colors[i],
                 width=self.bar_width,
+                legend_label=label,
             )
             tooltips = [(self.x_label, "@xdata"), (self.y_label, f"@{label}")]
             if len(self.y_data) > 1:

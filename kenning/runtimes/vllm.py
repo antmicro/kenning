@@ -8,8 +8,6 @@ Runtime implementation for vLLM runtime.
 
 from typing import Any, List, Optional
 
-from vllm import LLM, SamplingParams
-
 from kenning.core.runtime import (
     InputNotPreparedError,
     ModelNotPreparedError,
@@ -40,12 +38,48 @@ class VLLMRuntime(Runtime):
             "type": int,
             "default": 128,
         },
+        "sparse_gptq_kernel": {
+            "argparse_name": "--sparse-gptq-kernel",
+            "description": "Determines whether to use custom "
+            + "kernel for models optimized with GPTQ and SparseGPT "
+            + "flow from GPTQSparseGPTOptimizer",
+            "type": bool,
+            "default": False,
+        },
+        "enforce_eager": {
+            "argparse_name": "--enforce-eager",
+            "description": "Determines whether to disable CUDA graphs",
+            "type": bool,
+            "default": False,
+        },
+        "temperature": {
+            "description": "Value that controls the randomness of sampling",
+            "type": float,
+            "default": 1.0,
+        },
+        "top_k": {
+            "description": "Determines how many top tokens are "
+            + "considered during sampling",
+            "type": int,
+            "default": -1,
+        },
+        "max_model_len": {
+            "description": "Model context length",
+            "type": int,
+            "nullable": True,
+            "default": 4096,
+        },
     }
 
     def __init__(
         self,
         model_path: PathOrURI,
         max_tokens: int = 128,
+        sparse_gptq_kernel: bool = False,
+        enforce_eager: bool = False,
+        temperature: float = 1.0,
+        top_k: int = -1,
+        max_model_len: Optional[int] = None,
         disable_performance_measurements: bool = False,
     ):
         """
@@ -57,11 +91,36 @@ class VLLMRuntime(Runtime):
             Path or URI to the model file.
         max_tokens : int
             Maximum number of tokens to generate, by default 128.
+        sparse_gptq_kernel: bool
+            Determines whether to use custom kernel implementation for
+            sparse and quantized models from GPTQSparseGPTOptimizer
+        enforce_eager : bool
+            Determines whether to disable CUDA graphs
+        temperature : float
+            Value that controls the randomness of sampling.
+        top_k : int
+            Determines how many top tokens are considered during sampling
+        max_model_len : Optional[int]
+            Model context length
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         """
         self.model_path = model_path
         self.max_tokens = max_tokens
+        self.sparse_gptq_kernel = sparse_gptq_kernel
+        self.temperature = temperature
+        self.top_k = top_k
+        self.max_model_len = max_model_len
+        self.enforce_eager = enforce_eager
+
+        if self.sparse_gptq_kernel:
+            from sparsity_aware_kernel.third_party.custom_vllm.quant_compressed_vllm import (  # noqa: E501
+                GPTQLinearMethod,
+            )
+            from vllm.model_executor.layers.quantization import gptq
+
+            gptq.GPTQLinearMethod = GPTQLinearMethod
+
         super().__init__(disable_performance_measurements)
 
     def _detect_quantization(self) -> Optional[str]:
@@ -175,6 +234,8 @@ class VLLMRuntime(Runtime):
         return path
 
     def prepare_model(self, input_data: Optional[bytes]) -> bool:
+        from vllm import LLM, SamplingParams
+
         # Models are uploaded as .tar.gz
         if input_data:
             import io
@@ -196,12 +257,18 @@ class VLLMRuntime(Runtime):
                     member.name = new_name
                     tar.extract(member, path=self.model_path)
 
-        self.sampling_params = SamplingParams(max_tokens=self.max_tokens)
+        self.sampling_params = SamplingParams(
+            max_tokens=self.max_tokens,
+            temperature=self.temperature,
+            top_k=self.top_k,
+        )
 
         self.llm = LLM(
             model=str(self.model_path),
             tokenizer=str(self.model_path),
             quantization=self._detect_quantization(),
+            enforce_eager=self.enforce_eager,
+            max_model_len=self.max_model_len,
         )
         return True
 
@@ -217,10 +284,8 @@ class VLLMRuntime(Runtime):
             return False
 
         self.input_prompts = []
-        for prompt in input_data[0][0]:
-            prompt = prompt.split(" ", 1)[1]
-            self.input_prompts.append(prompt)
 
+        self.input_prompts = input_data[0]
         return True
 
     def load_input_from_bytes(self, input_data: bytes) -> bool:
@@ -261,6 +326,7 @@ class VLLMRuntime(Runtime):
         for output in llm_outputs:
             generated_text = output.outputs[0].text
             self.outputs.append(generated_text)
+        self.outputs = [self.outputs]
 
     def extract_output(self) -> List[Any]:
         return self.outputs

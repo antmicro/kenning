@@ -26,5 +26,5 @@ class MistralInstruct(LLM):
         self, user_message: str, system_message: Optional[str] = None
     ):
         if system_message is None:
-            return f"[INST] {user_message} [/INST] "
-        return f"[INST] {system_message}\n{user_message} [/INST] "
+            return f"<s>[INST] {user_message} [/INST] "
+        return f"<s>[INST] {system_message}\n{user_message} [/INST] "

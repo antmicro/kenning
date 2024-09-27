@@ -53,6 +53,12 @@ class CNNDailymailDataset(Dataset):
             "type": bool,
             "default": False,
         },
+        "metrics": {
+            "description": "Types of rouge metrics gathered during evaluation",
+            "type": str,
+            "default": ["rouge1", "rouge2", "rouge3", "rougeL"],
+            "is_list": True,
+        },
     }
 
     def __init__(
@@ -66,6 +72,7 @@ class CNNDailymailDataset(Dataset):
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
         gather_predictions: bool = False,
+        metrics: List[str] = ["rouge1", "rouge2", "rouge3", "rougeL"],
     ):
         """
         Prepares all structures and data required for providing data samples.
@@ -94,8 +101,11 @@ class CNNDailymailDataset(Dataset):
         gather_predictions : bool
             Determines whether returned evaluations should
             include target and predicted sentences
+        metrics : List[str]
+            Types of rouge metrics gathered during evaluation
         """
         self.gather_predictions = gather_predictions
+        self.metrics = metrics
 
         self.ds = None
 
@@ -149,7 +159,7 @@ class CNNDailymailDataset(Dataset):
         ds = load_dataset(
             path=str(dataset_path), name="3.0.0", split="train+test+validation"
         )
-        ds.save_to_disk(self.root)
+        ds.save_to_disk(str(self.root))
 
     def get_data(self) -> Tuple[List, List]:
         raise NotImplementedError
@@ -204,19 +214,20 @@ class CNNDailymailDataset(Dataset):
             append_index,
         )
 
-    def evaluate(self, predictions: List, truth: List) -> Measurements:
+    def evaluate(
+        self, predictions: List[List[str]], truth: List[List[str]]
+    ) -> Measurements:
         from rouge_score import rouge_scorer
 
         measurements = Measurements()
-        metrics = ["rouge1", "rouge2", "rouge3", "rougeL"]
 
-        for p, t in zip(predictions, truth):
-            scorer = rouge_scorer.RougeScorer(metrics, use_stemmer=True)
+        for p, t in zip(predictions[0], truth[0]):
+            scorer = rouge_scorer.RougeScorer(self.metrics, use_stemmer=True)
             scores = scorer.score(t, p)
 
-            for metric in metrics:
+            for metric in self.metrics:
                 measurements.accumulate(
-                    metric, scores[metric].fmeasure, lambda: 0
+                    metric, scores[metric].precision, lambda: 0
                 )
 
             if self.gather_predictions:
@@ -229,5 +240,5 @@ class CNNDailymailDataset(Dataset):
                         }
                     ],
                 )
-        measurements.accumulate("total", len(truth), lambda: 0)
+        measurements.accumulate("total", len(truth[0]), lambda: 0)
         return measurements

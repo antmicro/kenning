@@ -1,0 +1,34 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.cnn_dailymail.CNNDailymailDataset",
+        "parameters": {
+            "dataset_root": "./build/CNNDailymailDataset",
+            "inference_batch_size": 128,
+            "gather_predictions": true,
+            "split_fraction_test": 0.001
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.llm.mistral.MistralInstruct",
+        "parameters": {
+            "model_path": "hf://mistralai/Mistral-7B-Instruct-v0.1"
+        }
+    },
+    "optimizers":
+    [
+        {
+            "type": "kenning.optimizers.gptq_sparsegpt.GPTQSparseGPTOptimizer",
+            "parameters": {
+                "compiled_model_path": "./build/mistral_pruned_quantized"
+            }
+        }
+    ],
+    "runtime": {
+        "type": "kenning.runtimes.vllm.VLLMRuntime",
+        "parameters": {
+            "save_model_path": "./build/mistral_pruned_quantized",
+            "max_tokens": 4096,
+            "sparse_gptq_kernel": true
+        }
+    }
+}

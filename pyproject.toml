@@ -152,8 +152,8 @@ llm = [
     "autoawq",
     "auto_gptq",
     "rouge-score",
-    "transformers",
-    "vllm>=0.3.0",
+    "transformers<=4.40.2",  # version fixed for sparsegpt+gptq optimization
+    "vllm==0.5.0.post1",
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

@@ -3,7 +3,7 @@
         "type": "kenning.datasets.cnn_dailymail.CNNDailymailDataset",
         "parameters": {
             "dataset_root": "./build/CNNDailymailDataset",
-            "inference_batch_size": 128,
+            "inference_batch_size": 1,
             "gather_predictions": true,
             "split_fraction_test": 0.001
         }
@@ -11,7 +11,7 @@
     "model_wrapper": {
         "type": "kenning.modelwrappers.llm.mistral.MistralInstruct",
         "parameters": {
-            "model_path": "hf://mistralai/Mistral-7B-Instruct-v0.1"
+            "model_path": "./Mistral-7B-Instruct-v0.1"
         }
     },
     "optimizers":
@@ -19,7 +19,8 @@
         {
             "type": "kenning.optimizers.gptq_sparsegpt.GPTQSparseGPTOptimizer",
             "parameters": {
-                "compiled_model_path": "./build/mistral_pruned_quantized"
+                "compiled_model_path": "./build/mistral_pruned_quantized",
+                "context_length": 4096
             }
         }
     ],

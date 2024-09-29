@@ -153,7 +153,7 @@ class AutoSparseGPTForCausalML:
             Sparse GPT model.
         """
         model_type = cls.check_and_get_model_type(
-            pretrained_model_name_or_path, trust_remote_code=False
+            str(pretrained_model_name_or_path), trust_remote_code=False
         )
         model_class = SPARSEGPT_MODEL_MAP[model_type]
         return model_class.from_pretrained(

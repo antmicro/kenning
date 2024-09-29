@@ -116,7 +116,7 @@ real_time_visualization = [
 ]
 pipeline_manager = [
     "json-rpc==1.15.0",
-    "pipeline_manager @ git+https://github.com/antmicro/kenning-pipeline-manager.git@v0.0.2",
+    "pipeline_manager @ git+https://github.com/antmicro/kenning-pipeline-manager.git@91b03351231f4d0981123536d4821b4a1a7128cc",
     "pipeline_manager_backend_communication @ git+https://github.com/antmicro/kenning-pipeline-manager-backend-communication.git",
 ]
 reports = [
@@ -152,7 +152,7 @@ llm = [
     "autoawq",
     "auto_gptq",
     "rouge-score",
-    "transformers<=4.40.2",  # version fixed for sparsegpt+gptq optimization
+    "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization
     "vllm==0.5.0.post1",
 ]
 

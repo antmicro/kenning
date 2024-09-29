@@ -35,7 +35,8 @@ def test_gemm(
         Batch size for the input.
     """
     import torch
-    from kenning_sparsity_aware_kernel.tests.conftest import (
+
+    from kenning.tests.sparsity_aware_kernel.conftest import (
         get_runners,
     )
 

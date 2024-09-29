@@ -28,7 +28,8 @@ def test_metadata(
         Path to the compressed and quantized Phi-2 model.
     """
     import torch
-    from kenning_sparsity_aware_kernel.tests.conftest import (
+
+    from kenning.tests.sparsity_aware_kernel.conftest import (
         get_runners,
     )
 

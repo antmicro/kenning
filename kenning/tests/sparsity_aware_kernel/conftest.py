@@ -76,16 +76,9 @@ def quantized_compressed_phi_2_path(
 
 
 @pytest.fixture(scope="session")
-def phi_2_layers(
-    models_dir: str,
-) -> List[Tuple[Tuple[int, int], str]]:
+def phi_2_layers() -> List[Tuple[Tuple[int, int], str]]:
     """
     Return the mlp layers of the Phi-2 model.
-
-    Parameters
-    ----------
-    models_dir : str
-        Path to the models directory where phi-2 is stored.
 
     Returns
     -------

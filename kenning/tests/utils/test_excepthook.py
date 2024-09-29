@@ -21,6 +21,9 @@ IGNORED_MODULES = {
     "rclpy",
     "tflite_runtime",  # fallback to tensorflow
     "__future__",  # builtin module not in stdlib
+    # sparse kernel dependencies - installed separately
+    "cutlass_library",
+    "setuptools",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {"jsonrpc": "json-rpc"}

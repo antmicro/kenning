@@ -32,6 +32,11 @@ class GPTQSparseGPTOptimizer(Optimizer):
             "default": 128,
             "type": int,
         },
+        "context_length": {
+            "description": "Length of the context for the model",
+            "default": 2048,
+            "type": int,
+        },
         "calibration_samples": {
             "description": "Number of samples in calibration dataset",
             "default": 4,
@@ -45,9 +50,11 @@ class GPTQSparseGPTOptimizer(Optimizer):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         group_size: int = 128,
+        context_length: int = 2048,
         calibration_samples: int = 128,
     ):
         self.group_size = group_size
+        self.context_length = context_length
         self.calibration_samples = calibration_samples
 
         super().__init__(dataset, compiled_model_path, location)
@@ -74,14 +81,14 @@ class GPTQSparseGPTOptimizer(Optimizer):
             maxlayer=None,
         )
         model = AutoSparseGPTForCausalML.from_pretrained(
-            input_model_path, config
+            str(input_model_path), config
         )
-        tokenizer = AutoTokenizer.from_pretrained(input_model_path)
+        tokenizer = AutoTokenizer.from_pretrained(str(input_model_path))
 
         data = get_c4(
-            n_samples=128,
+            n_samples=self.calibration_samples,
             tokenizer=tokenizer,
-            seqlen=2048,
+            seqlen=self.context_length,
             seed_constant=5,
         )
 

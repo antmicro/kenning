@@ -23,7 +23,12 @@ class VLLMRuntime(Runtime):
     for inference on LLMs using vLLM.
     """
 
-    inputtypes = ["safetensors-native", "safetensors-awq", "safetensors-gptq"]
+    inputtypes = [
+        "safetensors-native",
+        "safetensors-awq",
+        "safetensors-gptq",
+        "safetensors-sparsity-aware-kernel",
+    ]
 
     arguments_structure = {
         "model_path": {
@@ -114,7 +119,7 @@ class VLLMRuntime(Runtime):
         self.enforce_eager = enforce_eager
 
         if self.sparse_gptq_kernel:
-            from sparsity_aware_kernel.third_party.custom_vllm.quant_compressed_vllm import (  # noqa: E501
+            from kenning_sparsity_aware_kernel.third_party.custom_vllm.quant_compressed_vllm import (  # noqa: E501
                 GPTQLinearMethod,
             )
             from vllm.model_executor.layers.quantization import gptq

@@ -94,6 +94,7 @@ class GPTQSparseGPTOptimizer(Optimizer):
 
         model.optimize(data)
         model.save_optimized(str(self.compiled_model_path))
+        tokenizer.save_pretrained(str(self.compiled_model_path))
 
         self.save_io_specification(input_model_path)
 

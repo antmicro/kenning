@@ -17,7 +17,6 @@ from typing import List, Optional, Union
 
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
-from kenning.utils.resource_manager import ResourceURI
 
 
 class WestExecutionError(Exception):
@@ -280,11 +279,10 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "is_list": True,
             "default": [],
         },
-        "llext_model": {
-            "description": "Path to the LLEXT model source",
-            "type": ResourceURI,
-            "default": None,
-            "nullable": True,
+        "use_llext": {
+            "description": "Whether LLEXT should be used",
+            "type": bool,
+            "default": False,
         },
         "run_west_update": {
             "description": "Whether to update the project before build",
@@ -308,7 +306,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         venv_dir: Path = Path(".west-venv"),
         zephyr_base: Optional[Path] = None,
         extra_targets: List[str] = [],
-        llext_model: Optional[ResourceURI] = None,
+        use_llext: bool = False,
         run_west_update: bool = False,
     ):
         """
@@ -335,8 +333,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             Path to the Zephyr base.
         extra_targets : List[str]
             Extra targets to be built.
-        llext_model : Optional[ResourceURI]
-            Path to the LLEXT model source.
+        use_llext : bool
+            Whether LLEXT should be used
         run_west_update : bool
             Whether to update the project before build.
 
@@ -367,7 +365,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.venv_dir = self._fix_relative(venv_dir)
 
         self.extra_targets = extra_targets
-        self.llext_model = llext_model
+        self.use_llext = use_llext
 
         self._westrun = WestRun(self.workspace, zephyr_base, self.venv_dir)
 
@@ -384,17 +382,20 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def build(self) -> Path:
         output_files = {}
 
-        if self.llext_model is not None:
-            extra_build_args = [
-                f'-DCONFIG_KENNING_LLEXT_MODEL_SRC="{self.llext_model.resolve()}"'
-            ]
-            extra_conf_file = f"{self.model_framework}_llext.conf"
+        if self.use_llext:
+            extra_conf_file = f"llext_{self.model_framework}.conf;llext.conf"
 
-            output_files["model_impl.llext"] = self.llext_model.with_suffix(
-                ".llext"
-            ).name
+            llext_path = (
+                self.build_dir / "llext" / f"{self.model_framework}.llext"
+            )
+
+            output_files[str(llext_path)] = "runtime.llext"
         else:
             extra_conf_file = f"{self.model_framework}.conf"
+
+        extra_build_args = [
+            f"-DMODULE_EXT_ROOT={Path.cwd()}",
+        ]
 
         if "board-repl" in self.extra_targets:
             output_files[f"{self.board}.repl"] = f"{self.board}.repl"
@@ -430,9 +431,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         KLogger.info(
             "Zephyr Runtime was build and "
-            f"is located in '{runtime_elf.absolute()}'"
+            f"is located in '{Path(runtime_elf).absolute()}'"
         )
-        return runtime_elf
+        return Path(runtime_elf)
 
     def _fix_relative(self, p: Path) -> Path:
         if p.is_relative_to(self.workspace):

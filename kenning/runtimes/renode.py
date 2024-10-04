@@ -8,9 +8,11 @@ Runtime implementation for Renode.
 
 import json
 import logging
+import queue
 import re
 import struct
 import tempfile
+import threading
 from collections import defaultdict
 from pathlib import Path
 from time import perf_counter, sleep
@@ -45,6 +47,35 @@ class RenodeRuntimeError(Exception):
     """
 
     ...
+
+
+class UARTReader:
+    """
+    Reads bytes from the provided UART in a separate thread.
+    """
+
+    def __init__(self, port: str, baudrate: int):
+        self.queue = queue.Queue()
+
+        conn = Serial(port=port, baudrate=baudrate)
+        self._thread = self._create_thread(conn)
+        self._thread.start()
+
+    def _create_thread(self, conn: Serial):
+        def _reader_thread():
+            while True:
+                content = conn.read()
+                content += conn.read_all()
+                self.queue.put(content)
+
+        return threading.Thread(target=_reader_thread, daemon=True)
+
+    def read(self, block=False, timeout=None) -> bytes:
+        try:
+            content = self.queue.get(block=block, timeout=timeout)
+            return content
+        except queue.Empty:
+            return b""
 
 
 class RenodeRuntime(Runtime):
@@ -225,6 +256,7 @@ class RenodeRuntime(Runtime):
             Disable collection and processing of performance metrics.
         llext_binary_path : Optional[PathOrURI]
             Path to the LLEXT binary
+
         Raises
         ------
         ValueError
@@ -418,9 +450,9 @@ class RenodeRuntime(Runtime):
                 KLogger.renode(new_log)
 
         # capture UART logs
-        if self.runtime_log_uart is not None:
+        if self.uart_log_reader is not None:
             while True:
-                logs = self.runtime_log_uart.read_all()
+                logs = self.uart_log_reader.read()
                 if not len(logs):
                     break
                 self.uart_log_buffer += logs.decode(errors="ignore")
@@ -501,7 +533,9 @@ class RenodeRuntime(Runtime):
             )
 
         if self.runtime_log_uart is not None:
-            self.runtime_log_uart = Serial(str(self.runtime_log_uart), 115200)
+            self.uart_log_reader = UARTReader(
+                str(self.runtime_log_uart), 115200
+            )
 
         emu.StartAll()
 

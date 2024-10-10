@@ -780,6 +780,7 @@ class TVMCompiler(Optimizer):
         mod, params = self.inputtypes[input_type](
             self, input_model_path, inputshapes, dtypes
         )
+        self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         self.compile_model(mod, params, self.compiled_model_path, io_spec)
         if self.use_fp16_precision or self.use_int8_precision:
             output_dtype = "float16" if self.use_fp16_precision else "int8"

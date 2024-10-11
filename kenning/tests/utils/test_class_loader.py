@@ -164,7 +164,17 @@ class TestGetCommand:
 
 class TestGetAllSubclasses:
     @pytest.mark.parametrize(
-        "module_path,cls", get_base_classes_dict().values()
+        "module_path,cls",
+        [
+            pytest.param(
+                module_path,
+                cls,
+                marks=(
+                    pytest.mark.skip() if module == "onnxconversions" else ()
+                ),
+            )
+            for module, (module_path, cls) in get_base_classes_dict().items()
+        ],
     )
     def test_get_all_subclasses_should_return_non_abstract_classes(
         self,

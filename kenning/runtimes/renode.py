@@ -54,28 +54,46 @@ class UARTReader:
     Reads bytes from the provided UART in a separate thread.
     """
 
-    def __init__(self, port: str, baudrate: int):
-        self.queue = queue.Queue()
+    def __init__(self, *args, timeout: float = 0.5, **kwargs):
+        self._queue = queue.Queue()
 
-        conn = Serial(port=port, baudrate=baudrate)
-        self._thread = self._create_thread(conn)
-        self._thread.start()
+        self._conn = Serial(*args, **kwargs, timeout=timeout)
+        self._stop = threading.Event()
+        self._thread = None
+
+        self.start()
+
+    def __del__(self):
+        self.stop()
 
     def _create_thread(self, conn: Serial):
         def _reader_thread():
-            while True:
+            while not self._stop.is_set():
                 content = conn.read()
                 content += conn.read_all()
-                self.queue.put(content)
+                if content:
+                    self._queue.put(content)
 
         return threading.Thread(target=_reader_thread, daemon=True)
 
     def read(self, block=False, timeout=None) -> bytes:
         try:
-            content = self.queue.get(block=block, timeout=timeout)
+            content = self._queue.get(block=block, timeout=timeout)
             return content
         except queue.Empty:
             return b""
+
+    def start(self):
+        if self._thread is None:
+            self._stop.clear()
+            self._thread = self._create_thread(self._conn)
+            self._thread.start()
+
+    def stop(self):
+        if self._thread is not None:
+            self._stop.set()
+            self._thread.join()
+            self._thread = None
 
 
 class RenodeRuntime(Runtime):
@@ -473,6 +491,7 @@ class RenodeRuntime(Runtime):
 
         self.machine = None
         Emulation().PauseAll()
+        self.uart_log_reader.stop()
         Emulation().clear()
 
         if (

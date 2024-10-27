@@ -21,6 +21,7 @@ from pathlib import Path
 from pprint import pformat
 from typing import Any, Dict, List, Optional, Tuple
 
+import yaml
 from argcomplete.completers import DirectoriesCompleter, FilesCompleter
 from jsonschema.exceptions import ValidationError
 
@@ -357,10 +358,11 @@ class OptimizationRunner(CommandTemplate):
 
         command_group.add_argument(
             "--json-cfg",
+            "--cfg",
             help="The path to the input JSON file with configuration",
             type=ResourceURI,
             required=True,
-        ).completer = FilesCompleter("*.json")
+        ).completer = FilesCompleter(allowednames=("yaml", "yml", "json"))
         command_group.add_argument(
             "--output",
             help="The path to the output JSON file with the best pipeline",
@@ -378,7 +380,7 @@ class OptimizationRunner(CommandTemplate):
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
         with open(args.json_cfg, "r") as f:
-            json_cfg = json.load(f)
+            json_cfg = yaml.safe_load(f)
 
         optimization_parameters = json_cfg["optimization_parameters"]
         optimization_strategy = optimization_parameters["strategy"]

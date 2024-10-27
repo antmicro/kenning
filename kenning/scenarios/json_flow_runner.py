@@ -7,10 +7,10 @@ A script for running Kenning Flows.
 """
 
 import argparse
-import json
 import sys
 from typing import List, Optional, Tuple
 
+import yaml
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
@@ -47,16 +47,17 @@ class FlowRunner(CommandTemplate):
 
         flow_group.add_argument(
             "--json-cfg",
+            "--cfg",
             help="The path to the input JSON file with configuration of the graph",  # noqa: E501
             type=ResourceURI,
             required=True,
-        ).completer = FilesCompleter("*.json")
+        ).completer = FilesCompleter(allowednames=("yaml", "yml", "json"))
         return parser, groups
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
         with open(args.json_cfg, "r") as f:
-            json_cfg = json.load(f)
+            json_cfg = yaml.safe_load(f)
 
         flow: KenningFlow = KenningFlow.from_json(json_cfg)
         _ = flow.run()

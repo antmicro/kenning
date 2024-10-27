@@ -23,6 +23,7 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
+import yaml
 from argcomplete.completers import FilesCompleter
 
 from kenning.cli.command_template import (
@@ -220,7 +221,7 @@ class InferenceServer(object):
         """
         from kenning.utils.class_loader import load_class
 
-        json_cfg = json.loads(input_data.decode())
+        json_cfg = yaml.safe_load(input_data.decode())
 
         optimizers_cfg = (
             json_cfg["optimizers"] if "optimizers" in json_cfg else []
@@ -328,9 +329,11 @@ class InferenceServerRunner(CommandTemplate):
 
         groups[JSON_CONFIG].add_argument(
             "--json-cfg",
-            help="* The path to the input JSON file with configuration",
+            "--cfg",
+            metavar="CONFIG",
+            help="* The path to the input YAML/JSON file with configuration",
             type=ResourceURI,
-        ).completer = FilesCompleter("*.json")
+        ).completer = FilesCompleter(allowednames=("yaml", "yml", "json"))
         groups[FLAG_CONFIG].add_argument(
             "--protocol-cls",
             help=(
@@ -356,12 +359,12 @@ class InferenceServerRunner(CommandTemplate):
         ]
         if args.json_cfg is None and not any(flag_config_not_none):
             raise argparse.ArgumentError(
-                None, "JSON or flag configuration is required."
+                None, "Configuration file or flags are required."
             )
         if args.json_cfg is not None and any(flag_config_not_none):
             raise argparse.ArgumentError(
                 None,
-                "JSON and flag configurations are mutually exclusive. Please "
+                "Configuration file and flag configurations are mutually exclusive. Please "  # noqa: E501
                 "use only one method of configuration.",
             )
 
@@ -422,7 +425,7 @@ class InferenceServerRunner(CommandTemplate):
             )
 
         with open(args.json_cfg, "r") as f:
-            json_cfg = json.load(f)
+            json_cfg = yaml.safe_load(f)
 
         protocol_cfg = json_cfg["protocol"]
         runtime_cfg = json_cfg["runtime"]

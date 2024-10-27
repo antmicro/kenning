@@ -93,7 +93,7 @@ class CustomCompletion(CompletionFinder):
         )
 
         # JSON and flag config are mutually exclusive
-        if "--json-cfg" in comp_words:
+        if "--json-cfg" in comp_words or "--cfg" in comp_words:
             completions = [
                 arg
                 for arg in completions
@@ -102,9 +102,10 @@ class CustomCompletion(CompletionFinder):
         elif any(
             arg.startswith("--") and arg.endswith("-cls") for arg in comp_words
         ):
-            completions.remove(
-                "--json-cfg"
-            ) if "--json-cfg" in completions else None
+            if "--json-cfg" in completions:
+                completions.remove("--json-cfg")
+            if "--cfg" in completions:
+                completions.remove("--cfg")
 
         # Do not complete subcommands after flags
         # Do not duplicate already used flags

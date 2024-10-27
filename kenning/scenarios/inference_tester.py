@@ -36,11 +36,11 @@ compilation and benchmark process.
 """
 
 import argparse
-import json
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple
 
+import yaml
 from argcomplete.completers import FilesCompleter
 from jsonschema.exceptions import ValidationError
 
@@ -115,9 +115,12 @@ class InferenceTester(CommandTemplate):
             required_prefix = "* "
             groups[JSON_CONFIG].add_argument(
                 "--json-cfg",
+                "--cfg",
                 help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
                 type=ResourceURI,
-            ).completer = FilesCompleter(allowednames=("*.json",))
+            ).completer = FilesCompleter(
+                allowednames=("*.json", "*.yaml", "*.yml")
+            )
             flag_group = groups[FLAG_CONFIG]
             shared_flags_group = flag_group
         else:
@@ -263,7 +266,7 @@ class InferenceTester(CommandTemplate):
             )
 
         with open(args.json_cfg, "r") as f:
-            json_cfg = json.load(f)
+            json_cfg = yaml.safe_load(f)
 
         pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
 

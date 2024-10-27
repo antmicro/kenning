@@ -38,6 +38,7 @@ dependencies = [
     "tomli; python_version<'3.11'",
     "tqdm>=4.56.2",
     "datasets",
+    "pyyaml",
 ]
 
 [project.optional-dependencies]

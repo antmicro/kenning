@@ -15,7 +15,7 @@ from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
-SPECIFICATION_VERSION = "20230830.11"
+SPECIFICATION_VERSION = "20240723.13"
 
 
 class VisualEditorGraphParserError(Exception):

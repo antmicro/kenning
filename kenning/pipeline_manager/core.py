@@ -245,21 +245,6 @@ class BaseDataflowHandler(ABC):
                 for io in io_list
             ]
 
-        def property_value_to_dtype(value: Any) -> Optional[str]:
-            if value is None:
-                return None
-            property_type = str(type(value).__name__)
-
-            if property_type == "str":
-                return "string"
-            if property_type == "int":
-                return "integer"
-            if property_type == "float":
-                return "number"
-            if property_type == "bool":
-                return "boolean"
-            return None
-
         nodes_to_remove = set()
         for key, node in self.nodes.items():
             try:
@@ -297,20 +282,27 @@ class BaseDataflowHandler(ABC):
                     if "array" in props["type"]:
                         new_property["type"] = "list"
                         if "items" in props and "type" in props["items"]:
-                            dtype = props["items"]["type"]
-                            new_property["dtype"] = dtype
+                            new_property["dtype"] = props["items"]["type"]
+                        else:
+                            # Lists cannot have dtype set to None
+                            # so string is used by default
+                            new_property["dtype"] = "string"
                         add_default([])
                     elif "boolean" in props["type"]:
                         new_property["type"] = "bool"
+                        new_property["dtype"] = "boolean"
                         add_default(False)
                     elif "string" in props["type"]:
                         new_property["type"] = "text"
+                        new_property["dtype"] = "string"
                         add_default("")
                     elif "integer" in props["type"]:
                         new_property["type"] = "integer"
+                        new_property["dtype"] = "integer"
                         add_default(0)
                     elif "number" in props["type"]:
                         new_property["type"] = "number"
+                        new_property["dtype"] = "number"
                         add_default(0)
                     elif "object" in props["type"]:
                         # Object arguments should be defined in specification
@@ -336,7 +328,7 @@ class BaseDataflowHandler(ABC):
                     min=new_property.get("min"),
                     max=new_property.get("max"),
                     values=new_property.get("values"),
-                    dtype=property_value_to_dtype(new_property.get("default")),
+                    dtype=new_property.get("dtype"),
                 )
 
             stripped_interfaces = strip_io(

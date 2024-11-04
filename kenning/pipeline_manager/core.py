@@ -245,6 +245,14 @@ class BaseDataflowHandler(ABC):
                 for io in io_list
             ]
 
+        # Mapping dtype to type and default
+        standard_types = {
+            "boolean": ("bool", False),
+            "string": ("text", ""),
+            "integer": ("integer", 0),
+            "number": ("number", 0),
+        }
+
         nodes_to_remove = set()
         for key, node in self.nodes.items():
             try:
@@ -260,13 +268,11 @@ class BaseDataflowHandler(ABC):
             parameterschema = node_cls.form_parameterschema()
 
             for name, props in parameterschema["properties"].items():
-                new_property = {"name": name}
-
-                if "default" in props:
-                    new_property["default"] = props["default"]
-
-                if "description" in props:
-                    new_property["description"] = props["description"]
+                new_property = {
+                    "name": name,
+                    "default": props.get("default"),
+                    "description": props.get("description"),
+                }
 
                 def add_default(default_val):
                     if new_property.get("default") is None:
@@ -279,7 +285,13 @@ class BaseDataflowHandler(ABC):
                     add_default(new_property["values"][0])
                 # Case for a single value input
                 elif "type" in props:
-                    if "array" in props["type"]:
+                    property_type = props["type"][0]
+
+                    if property_type == "object":
+                        # Object arguments should be defined in specification
+                        # as node inputs, rather than properties
+                        new_property = None
+                    elif property_type == "array":
                         new_property["type"] = "list"
                         if "items" in props and "type" in props["items"]:
                             new_property["dtype"] = props["items"]["type"]
@@ -288,26 +300,10 @@ class BaseDataflowHandler(ABC):
                             # so string is used by default
                             new_property["dtype"] = "string"
                         add_default([])
-                    elif "boolean" in props["type"]:
-                        new_property["type"] = "bool"
-                        new_property["dtype"] = "boolean"
-                        add_default(False)
-                    elif "string" in props["type"]:
-                        new_property["type"] = "text"
-                        new_property["dtype"] = "string"
-                        add_default("")
-                    elif "integer" in props["type"]:
-                        new_property["type"] = "integer"
-                        new_property["dtype"] = "integer"
-                        add_default(0)
-                    elif "number" in props["type"]:
-                        new_property["type"] = "number"
-                        new_property["dtype"] = "number"
-                        add_default(0)
-                    elif "object" in props["type"]:
-                        # Object arguments should be defined in specification
-                        # as node inputs, rather than properties
-                        new_property = None
+                    elif property_type in standard_types:
+                        new_property["type"] = standard_types[property_type][0]
+                        new_property["dtype"] = property_type
+                        add_default(standard_types[property_type][1])
                     else:
                         new_property["type"] = "text"
                         add_default("")

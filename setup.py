@@ -25,12 +25,23 @@ setuptools.setup(
         ]
     },
     ext_modules=cythonize(
-        setuptools.Extension(
-            "kenning.modelwrappers.instance_segmentation.cython_nms",
-            sources=[
-                "kenning/modelwrappers/instance_segmentation/cython_nms.pyx"
-            ],
-            include_dirs=[numpy.get_include()],
-        )
+        [
+            setuptools.Extension(
+                "kenning.modelwrappers.instance_segmentation.cython_nms",
+                sources=[
+                    "kenning/modelwrappers/instance_segmentation/cython_nms.pyx"
+                ],
+                include_dirs=[numpy.get_include()],
+            ),
+            setuptools.Extension(
+                "kenning.utils.renode_profiler_parser",
+                sources=[
+                    "kenning/utils/renode_profiler_parser/caller.pyx",
+                    "kenning/utils/renode_profiler_parser/parser.cpp",
+                ],
+                language="c++",
+                extra_compile_flags=["-O3", "-Os"],
+            ),
+        ],
     ),
 )

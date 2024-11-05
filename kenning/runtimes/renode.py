@@ -10,17 +10,16 @@ import json
 import logging
 import queue
 import re
-import struct
 import tempfile
 import threading
 from collections import defaultdict
 from pathlib import Path
 from time import perf_counter, sleep
-from typing import Any, BinaryIO, Dict, List, Optional, Tuple
+from typing import Dict, List, Optional
 
-import tqdm
 from serial import Serial
 
+import kenning.utils.renode_profiler_parser as profiler_parser
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements, MeasurementsCollector
@@ -662,14 +661,16 @@ class RenodeRuntime(Runtime):
             start_timestamp = None
             end_timestamp = None
 
-        parser = _ProfilerDumpParser(
-            self.profiler_dump_path,
-            self.profiler_interval_step,
+        parsed_stats = profiler_parser.parse(
+            str(self.profiler_dump_path.resolve()).encode(),
             start_timestamp,
             end_timestamp,
+            self.profiler_interval_step,
         )
 
-        return parser.parse()
+        KLogger.info("Renode profiler dump parsed")
+
+        return parsed_stats
 
     @staticmethod
     def _opcode_stats_diff(
@@ -685,7 +686,7 @@ class RenodeRuntime(Runtime):
         opcode_stats_a : Dict[str, Dict[str, int]]
             First opcode stats.
         opcode_stats_b : Dict[str, Dict[str, int]]
-            Seconds opcode stats.
+            Second opcode stats.
 
         Returns
         -------
@@ -828,304 +829,3 @@ class RenodeRuntime(Runtime):
                         KLogger.warning(
                             f"Error enabling {method_name} for {elem}"
                         )
-
-
-class _ProfilerDumpParser(object):
-    ENTRY_TYPE_INSTRUCTIONS = b"\x00"
-    ENTRY_TYPE_MEM0RY = b"\x01"
-    ENTRY_TYPE_PERIPHERALS = b"\x02"
-    ENTRY_TYPE_EXCEPTIONS = b"\x03"
-
-    ENTRY_HEADER_FORMAT = "<qdc"
-    ENTRY_FORMAT_INSTRUCTIONS = "<iQ"
-    ENTRY_FORMAT_MEM0RY = "c"
-    ENTRY_FORMAT_PERIPHERALS = "<cQ"
-    ENTRY_FORMAT_EXCEPTIONS = "Q"
-
-    MEMORY_OPERATION_READ = b"\x02"
-    MEMORY_OPERATION_WRITE = b"\x03"
-
-    PERIPHERAL_OPERATION_READ = b"\x00"
-    PERIPHERAL_OPERATION_WRITE = b"\x01"
-
-    def __init__(
-        self,
-        dump_path: Path,
-        interval_step: float,
-        start_timestamp: Optional[float] = None,
-        end_timestamp: Optional[float] = None,
-    ):
-        self.dump_path = dump_path
-        self.interval_step = interval_step
-        self.start_timestamp = start_timestamp
-        self.end_timestamp = end_timestamp
-
-    def parse(self) -> Dict[str, Any]:
-        """
-        Parses Renode profiler dump.
-
-        Returns
-        -------
-        Dict[str, Any]
-            Dict containing statistics retrieved from the dump file.
-
-        Raises
-        ------
-        ValueError
-            Raised when profiler dump could not be parsed
-        """
-        profiler_timestamps = []
-        stats = {
-            "executed_instructions": {},
-            "memory_accesses": {"read": [], "write": []},
-            "peripheral_accesses": {},
-            "exceptions": [],
-        }
-
-        with (
-            LoggerProgressBar() as logger_progress_bar,
-            tqdm.tqdm(
-                total=self.dump_path.stat().st_size,
-                unit="B",
-                unit_scale=True,
-                unit_divisor=1024,
-                file=logger_progress_bar,
-            ) as progress_bar,
-            open(self.dump_path, "rb") as dump_file,
-        ):
-            # parse header
-            cpus, peripherals = self._parse_header(dump_file)
-
-            for cpu in cpus.values():
-                stats["executed_instructions"][cpu] = []
-
-            for peripheral in peripherals.keys():
-                stats["peripheral_accesses"][peripheral] = {
-                    "read": [],
-                    "write": [],
-                }
-
-            entry = struct.Struct(self.ENTRY_HEADER_FORMAT)
-            prev_instr_counter = defaultdict(lambda: 0)
-
-            # parse entries
-            entries_counter = 0
-            invalid_entries = 0
-
-            while True:
-                entry_header = dump_file.read(entry.size)
-                if not entry_header:
-                    break
-
-                _, virt_time, entry_type = entry.unpack(entry_header)
-                virt_time /= 1000
-
-                # ignore entry
-                if (
-                    self.start_timestamp is not None
-                    and self.end_timestamp is not None
-                    and not (
-                        self.start_timestamp < virt_time
-                        and virt_time < self.end_timestamp
-                    )
-                ):
-                    if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
-                        cpu_id, instr_counter = self._read(
-                            self.ENTRY_FORMAT_INSTRUCTIONS, dump_file
-                        )
-                        if cpu_id in cpus:
-                            prev_instr_counter[cpus[cpu_id]] = instr_counter
-                    elif entry_type == self.ENTRY_TYPE_MEM0RY:
-                        self._read(self.ENTRY_FORMAT_MEM0RY, dump_file)
-                    elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
-                        self._read(self.ENTRY_FORMAT_PERIPHERALS, dump_file)
-                    elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
-                        self._read(self.ENTRY_FORMAT_EXCEPTIONS, dump_file)
-                    else:
-                        raise ValueError(
-                            "Invalid entry in profiler dump: "
-                            f"{entry_type.hex()}"
-                        )
-                    continue
-
-                # parse entry
-                interval_start = virt_time - virt_time % (
-                    self.interval_step / 1000
-                )
-                if (
-                    len(profiler_timestamps) == 0
-                    or profiler_timestamps[-1] != interval_start
-                ):
-                    profiler_timestamps.append(interval_start)
-                    stats_to_update = [stats]
-                    while len(stats_to_update):
-                        s = stats_to_update.pop(0)
-                        if isinstance(s, list):
-                            s.append(0)
-                        elif isinstance(s, dict):
-                            stats_to_update.extend(s.values())
-
-                if entry_type == self.ENTRY_TYPE_INSTRUCTIONS:
-                    # parse executed instruction entry
-                    output_list = stats["executed_instructions"]
-                    cpu_id, instr_counter = self._read(
-                        self.ENTRY_FORMAT_INSTRUCTIONS, dump_file
-                    )
-                    if cpu_id in cpus:
-                        cpu = cpus[cpu_id]
-                        output_list = output_list[cpu]
-
-                        output_list[-1] += (
-                            instr_counter - prev_instr_counter[cpu]
-                        )
-                        prev_instr_counter[cpu] = instr_counter
-                    else:
-                        # invalid cpu id
-                        invalid_entries += 1
-                        continue
-
-                elif entry_type == self.ENTRY_TYPE_MEM0RY:
-                    # parse memory access entry
-                    output_list = stats["memory_accesses"]
-                    operation = self._read(
-                        self.ENTRY_FORMAT_MEM0RY, dump_file
-                    )[0]
-
-                    if operation == self.MEMORY_OPERATION_READ:
-                        output_list = output_list["read"]
-                    elif operation == self.MEMORY_OPERATION_WRITE:
-                        output_list = output_list["write"]
-                    else:
-                        # invalid operation
-                        invalid_entries += 1
-                        continue
-
-                    output_list[-1] += 1
-
-                elif entry_type == self.ENTRY_TYPE_PERIPHERALS:
-                    # parse peripheral access entry
-                    output_list = stats["peripheral_accesses"]
-                    operation, address = self._read(
-                        self.ENTRY_FORMAT_PERIPHERALS, dump_file
-                    )
-
-                    peripheral_found = False
-                    for peripheral, address_range in peripherals.items():
-                        if address_range[0] <= address <= address_range[1]:
-                            output_list = output_list[peripheral]
-                            peripheral_found = True
-                            break
-
-                    if not peripheral_found:
-                        # invalid address
-                        invalid_entries += 1
-                        continue
-
-                    if operation == self.PERIPHERAL_OPERATION_READ:
-                        output_list = output_list["read"]
-                    elif operation == self.PERIPHERAL_OPERATION_WRITE:
-                        output_list = output_list["write"]
-                    else:
-                        # invalid operation
-                        invalid_entries += 1
-                        continue
-
-                    output_list[-1] += 1
-
-                elif entry_type == self.ENTRY_TYPE_EXCEPTIONS:
-                    # parse exception entry
-                    output_list = stats["exceptions"]
-                    _ = self._read(self.ENTRY_FORMAT_EXCEPTIONS, dump_file)
-
-                    output_list[-1] += 1
-
-                else:
-                    raise ValueError(
-                        f"Invalid entry in profiler dump: {entry_type.hex()}"
-                    )
-
-                entries_counter += 1
-                if entries_counter >= 1000:
-                    progress_bar.update(dump_file.tell() - progress_bar.n)
-                    entries_counter = 0
-
-            progress_bar.update(dump_file.tell() - progress_bar.n)
-
-            if invalid_entries > 0:
-                KLogger.warning(
-                    f"Found {invalid_entries} invalid entries in profiler "
-                    "dump file"
-                )
-
-            # multiply counters by 1 sec / interval_step to get counts per sec
-            stats_to_update = [stats]
-            while len(stats_to_update):
-                s = stats_to_update.pop(0)
-                if isinstance(s, list):
-                    for i in range(len(s)):
-                        s[i] *= 1000 / self.interval_step
-                elif isinstance(s, dict):
-                    stats_to_update.extend(s.values())
-
-        return dict(stats, profiler_timestamps=profiler_timestamps)
-
-    def _parse_header(
-        self, file: BinaryIO
-    ) -> Tuple[Dict[int, str], Dict[str, Tuple[int, int]]]:
-        """
-        Parses header of Renode profiler dump.
-
-        Parameters
-        ----------
-        file : BinaryIO
-            File-like object to parse header from.
-
-        Returns
-        -------
-        Tuple[Dict[int, str], Dict[str, Tuple[int, int]]]
-            Tuples of dicts containing cpus and peripherals data.
-        """
-        cpus = {}
-        peripherals = {}
-        cpus_count = self._read("i", file)[0]
-        for _ in range(cpus_count):
-            cpu_id = self._read("i", file)[0]
-            cpu_name_len = self._read("i", file)[0]
-            cpus[cpu_id] = self._read(f"{cpu_name_len}s", file)[0].decode()
-
-        peripherals_count = self._read("i", file)[0]
-        for _ in range(peripherals_count):
-            peripheral_name_len = self._read("i", file)[0]
-            peripheral_name = self._read(f"{peripheral_name_len}s", file)[
-                0
-            ].decode()
-            peripheral_start_address, peripheral_end_address = self._read(
-                "2Q", file
-            )
-            peripherals[peripheral_name] = (
-                peripheral_start_address,
-                peripheral_end_address,
-            )
-
-        return cpus, peripherals
-
-    @staticmethod
-    def _read(format_str: str, file: BinaryIO) -> Tuple[Any, ...]:
-        """
-        Reads struct of given format from file.
-
-        Parameters
-        ----------
-        format_str : str
-            Format of the struct.
-        file : BinaryIO
-            File-like object to read struct from.
-
-        Returns
-        -------
-        Tuple[Any, ...]
-            Struct read from file.
-        """
-        return struct.unpack(
-            format_str, file.read(struct.calcsize(format_str))
-        )

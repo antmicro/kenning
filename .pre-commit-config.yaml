@@ -17,3 +17,8 @@ repos:
   rev: v1.16.23
   hooks:
     - id: typos
+- repo: https://github.com/pocc/pre-commit-hooks
+  rev: v1.3.5
+  hooks:
+  - id: clang-format
+    args: [-i, --style=file]

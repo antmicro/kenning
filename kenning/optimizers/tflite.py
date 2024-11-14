@@ -323,6 +323,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         tflite_model = converter.convert()
 
+        self.compiled_model_path.parent.mkdir(parents=True, exist_ok=True)
         with open(self.compiled_model_path, "wb") as f:
             f.write(tflite_model)
         if self.save_to_zip:

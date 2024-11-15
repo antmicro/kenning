@@ -303,6 +303,7 @@ class RenodeRuntime(Runtime):
         self.renode_log_file_name = None
         self.renode_log_buffer = ""
         self.uart_log_buffer = ""
+        self.uart_log_reader = None
         self.renode_logs = []
         self.llext_binary_path = llext_binary_path
         super().__init__(
@@ -490,7 +491,8 @@ class RenodeRuntime(Runtime):
 
         self.machine = None
         Emulation().PauseAll()
-        self.uart_log_reader.stop()
+        if self.uart_log_reader is not None:
+            self.uart_log_reader.stop()
         Emulation().clear()
 
         if (

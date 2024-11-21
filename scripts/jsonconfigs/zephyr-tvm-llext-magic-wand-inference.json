@@ -1,0 +1,49 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
+        "parameters": {
+            "dataset_root": "./build/MagicWandDataset"
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
+        "parameters": {
+            "model_path": "kenning:///models/classification/magic_wand.h5"
+        }
+    },
+    "optimizers": [
+        {
+            "type": "kenning.optimizers.tvm.TVMCompiler",
+            "parameters": {
+                "compiled_model_path": "./build/microtvm-magic-wand.bin",
+                "model_framework": "keras",
+                "target": "zephyr",
+                "target_microtvm_board": "stm32f746g_disco",
+                "zephyr_llext_source_template": "../zephyr-workspace/kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/llext/model_impl.llext.template"
+            }
+        }
+    ],
+    "runtime_builder": {
+        "type": "kenning.runtimebuilders.zephyr.ZephyrRuntimeBuilder",
+        "parameters": {
+            "workspace": "../zephyr-workspace/kenning-zephyr-runtime",
+            "board": "stm32f746g_disco",
+            "output_path": "./build/",
+            "extra_targets": ["board-repl"],
+            "run_west_update": false,
+            "use_llext": true
+        }
+    },
+    "runtime": {
+        "type": "kenning.runtimes.tvm.TVMRuntime",
+        "parameters": {}
+    },
+    "protocol": {
+        "type": "kenning.protocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/tmp/uart",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

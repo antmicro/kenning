@@ -1,0 +1,48 @@
+{
+    "dataset": {
+        "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
+        "parameters": {
+            "dataset_root": "./build/MagicWandDataset"
+        }
+    },
+    "model_wrapper": {
+        "type": "kenning.modelwrappers.classification.tflite_magic_wand.MagicWandModelWrapper",
+        "parameters": {
+            "model_path": "kenning:///models/classification/magic_wand.h5"
+        }
+    },
+    "optimizers": [
+        {
+            "type": "kenning.optimizers.tflite.TFLiteCompiler",
+            "parameters": {
+                "target": "default",
+                "compiled_model_path": "./build/f32.tflite",
+                "inference_input_type": "float32",
+                "inference_output_type": "float32"
+            }
+        }
+    ],
+    "runtime_builder": {
+        "type": "kenning.runtimebuilders.zephyr.ZephyrRuntimeBuilder",
+        "parameters": {
+            "workspace": "../zephyr-workspace/kenning-zephyr-runtime",
+            "board": "stm32f746g_disco",
+            "output_path": "./build/",
+            "extra_targets": ["board-repl"],
+            "run_west_update": false,
+            "use_llext": true
+        }
+    },
+    "runtime": {
+        "type": "kenning.runtimes.tflite.TFLiteRuntime",
+        "parameters": {}
+    },
+    "protocol": {
+        "type": "kenning.protocols.uart.UARTProtocol",
+        "parameters": {
+            "port": "/tmp/uart",
+            "baudrate": 115200,
+            "endianness": "little"
+        }
+    }
+}

@@ -55,6 +55,13 @@ class TVMRuntime(Runtime):
             "type": bool,
             "default": False,
         },
+        "llext_binary_path": {
+            "argparse_name": "--llext-binary-path",
+            "description": "Path to the LLEXT binary",
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -64,6 +71,7 @@ class TVMRuntime(Runtime):
         contextid: int = 0,
         use_tvm_vm: bool = False,
         disable_performance_measurements: bool = False,
+        llext_binary_path: Optional[PathOrURI] = None,
     ):
         """
         Constructs TVM runtime.
@@ -80,6 +88,8 @@ class TVMRuntime(Runtime):
             Use the TVM Relay VirtualMachine.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+        llext_binary_path : Optional[PathOrURI]
+            Path to the LLEXT binary.
         """
         self.model_path = model_path
         self.contextname = contextname
@@ -89,6 +99,7 @@ class TVMRuntime(Runtime):
         self.model = None
         self._input_prepared = False
         self.use_tvm_vm = use_tvm_vm
+        self.llext_binary_path = llext_binary_path
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )

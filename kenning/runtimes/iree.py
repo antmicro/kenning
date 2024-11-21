@@ -41,6 +41,13 @@ class IREERuntime(Runtime):
             "enum": ireert.HalDriver.query(),
             "required": True,
         },
+        "llext_binary_path": {
+            "argparse_name": "--llext-binary-path",
+            "description": "Path to the LLEXT binary",
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -48,6 +55,7 @@ class IREERuntime(Runtime):
         model_path: PathOrURI,
         driver: str = "local-sync",
         disable_performance_measurements: bool = False,
+        llext_binary_path: Optional[PathOrURI] = None,
     ):
         """
         Constructs IREE runtime.
@@ -60,11 +68,14 @@ class IREERuntime(Runtime):
             Name of the deployment target on the device.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+        llext_binary_path : Optional[PathOrURI]
+            Path to the LLEXT binary.
         """
         self.model_path = model_path
         self.model = None
         self.input = None
         self.driver = driver
+        self.llext_binary_path = llext_binary_path
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )

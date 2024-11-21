@@ -46,6 +46,13 @@ class TFLiteRuntime(Runtime):
             "default": 4,
             "type": int,
         },
+        "llext_binary_path": {
+            "argparse_name": "--llext-binary-path",
+            "description": "Path to the LLEXT binary",
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -54,6 +61,7 @@ class TFLiteRuntime(Runtime):
         delegates: Optional[List] = None,
         num_threads: int = 4,
         disable_performance_measurements: bool = False,
+        llext_binary_path: Optional[PathOrURI] = None,
     ):
         """
         Constructs TFLite Runtime pipeline.
@@ -68,12 +76,15 @@ class TFLiteRuntime(Runtime):
             Number of threads to use for inference.
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
+        llext_binary_path : Optional[PathOrURI]
+            Path to the LLEXT binary.
         """
         self.model_path = model_path
         self.interpreter = None
         self._input_prepared = False
         self.num_threads = num_threads
         self.delegates = delegates
+        self.llext_binary_path = llext_binary_path
         super().__init__(
             disable_performance_measurements=disable_performance_measurements
         )

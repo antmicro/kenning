@@ -272,7 +272,7 @@ class RenodeRuntime(Runtime):
         disable_performance_measurements : bool
             Disable collection and processing of performance metrics.
         llext_binary_path : Optional[PathOrURI]
-            Path to the LLEXT binary
+            Path to the LLEXT binary.
 
         Raises
         ------

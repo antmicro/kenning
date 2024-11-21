@@ -12,7 +12,7 @@ from typing import Any, Dict, List, Tuple, Union
 from pipeline_manager import specification_builder
 
 from kenning.core.model import ModelWrapper
-from kenning.core.protocol import Protocol
+from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.pipeline_manager.core import (
     SPECIFICATION_VERSION,
     BaseDataflowHandler,
@@ -105,7 +105,13 @@ class PipelineHandler(BaseDataflowHandler):
 
         node_ids = {}
 
-        block_names = ["dataset", "model_wrapper", "runtime", "protocol"]
+        block_names = [
+            "dataset",
+            "model_wrapper",
+            "runtime",
+            "runtime_builder",
+            "protocol",
+        ]
         supported_blocks = block_names + ["optimizers"]
         for name, block in pipeline.items():
             if name not in supported_blocks:
@@ -198,6 +204,7 @@ class PipelineHandler(BaseDataflowHandler):
             "kenning.datasets",
             "kenning.modelwrappers",
             "kenning.protocols",
+            "kenning.runtimebuilders",
             "kenning.runtimes",
             "kenning.optimizers",
         ]
@@ -213,7 +220,7 @@ class PipelineHandler(BaseDataflowHandler):
             for _, base_type in base_classes
         }
         base_type_names[ModelWrapper] = "model_wrapper"
-        base_type_names[Protocol] = "protocol"
+        base_type_names[RuntimeBuilder] = "runtime_builder"
         for base_module, base_type in base_classes:
             classes = get_all_subclasses(base_module, base_type)
             for kenning_class in classes:
@@ -288,6 +295,10 @@ class PipelineHandler(BaseDataflowHandler):
                         "required": False,
                     },
                 ],
+                "outputs": [],
+            },
+            "runtime_builder": {
+                "inputs": [],
                 "outputs": [],
             },
             "protocol": {
@@ -367,7 +378,13 @@ class PipelineGraphCreator(GraphCreator):
                 )
 
         pipeline = {}
-        types = ["model_wrapper", "runtime", "dataset", "protocol"]
+        types = [
+            "model_wrapper",
+            "runtime",
+            "runtime_builder",
+            "dataset",
+            "protocol",
+        ]
         for type_ in types:
             if type_ in self.type_to_id:
                 pipeline[type_] = self.nodes[self.type_to_id[type_]]

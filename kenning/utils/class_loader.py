@@ -24,6 +24,7 @@ from kenning.core.outputcollector import OutputCollector
 from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
+from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
 
 OPTIMIZERS = "optimizers"
@@ -34,6 +35,7 @@ DATASETS = "datasets"
 MODEL_WRAPPERS = "modelwrappers"
 ONNX_CONVERSIONS = "onnxconversions"
 OUTPUT_COLLECTORS = "outputcollectors"
+RUNTIME_BUILDERS = "runtimebuilders"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
 
@@ -57,6 +59,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         MODEL_WRAPPERS: ("kenning.modelwrappers", ModelWrapper),
         ONNX_CONVERSIONS: ("kenning.onnxconverters", ONNXConversion),
         OUTPUT_COLLECTORS: ("kenning.outputcollectors", OutputCollector),
+        RUNTIME_BUILDERS: ("kenning.runtimebuilders", RuntimeBuilder),
         RUNTIME_PROTOCOLS: ("kenning.protocols", Protocol),
         RUNTIMES: ("kenning.runtimes", Runtime),
     }
@@ -321,7 +324,7 @@ def get_command(argv: List[str] = None, with_slash: bool = True) -> List[str]:
         result = [f"python -m {modulename}"]
         first_flag = 1
     else:
-        result = [f'kenning {" ".join(command[1:first_flag])}']
+        result = [f"kenning {' '.join(command[1:first_flag])}"]
 
     if len(command) > 1:
         result[0] = f"{result[0]} " + ("\\" if with_slash else "")

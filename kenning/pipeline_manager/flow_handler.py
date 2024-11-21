@@ -356,7 +356,7 @@ class FlowGraphCreator(GraphCreator):
             to_ = self.nodes[to_id]
             if local_to in to_["inputs"]:
                 raise RuntimeError(
-                    f"Input {local_to} has more than one " f"connection"
+                    f"Input {local_to} has more than one connection"
                 )
             if local_from in from_["outputs"]:
                 conn_id = from_["outputs"][local_from]

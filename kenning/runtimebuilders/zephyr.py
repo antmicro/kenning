@@ -394,7 +394,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             extra_conf_file = f"{self.model_framework}.conf"
 
         extra_build_args = [
-            f"-DMODULE_EXT_ROOT={Path.cwd()}",
+            f"-DMODULE_EXT_ROOT={self.workspace}",
         ]
 
         if "board-repl" in self.extra_targets:

@@ -22,8 +22,6 @@ from kenning.utils.logger import KLogger
 MSG_SIZE_LEN = 4
 MSG_TYPE_LEN = 2
 
-ZEPHYR_LLEXT_NAME_MAX_LEN = 32
-
 
 class RequestFailure(Exception):
     """

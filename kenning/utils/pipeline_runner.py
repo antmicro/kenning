@@ -433,6 +433,21 @@ class PipelineRunner(object):
                 self._guess_model_framework(convert_to_onnx, run_optimizations)
             )
 
+        if not isinstance(self.runtime, RenodeRuntime) and (
+            getattr(self.runtime, "llext_binary_path", None) is not None
+            or (
+                self.runtime_builder is not None
+                and self.runtime_builder.use_llext
+            )
+        ):
+            if self.runtime_builder.use_llext:
+                llext_path = self.runtime_builder.output_path / "runtime.llext"
+            else:
+                llext_path = self.runtime.lext_binary_path
+            status = self.protocol.upload_runtime(llext_path)
+            if not status:
+                return False
+
         if output:
             self.add_scenario_configuration_to_measurements(
                 command, model_path

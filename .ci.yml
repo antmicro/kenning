@@ -44,6 +44,7 @@ nox-prepare-deps:
     only:
         - dev
         - main
+        - schedules
 
 nox-prepare-deps-manual:
     extends: .nox-prepare-deps

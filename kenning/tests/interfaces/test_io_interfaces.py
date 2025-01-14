@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -178,7 +178,7 @@ DATA_VALID = (
 
 # List of list of data not compatible with specs from SPECS_VALID
 DATA_INVALID = (
-    ([np.ones((5, 2, 4, 8), dtype=np.float32)],),
+    ([np.ones((5, 2, 5, 9), dtype=np.float32)],),
     ([np.ones((32, 128), dtype=np.int8)],),
     ([np.ones((32,), dtype=np.float128)],),
     ([SEGM_OBJ, DETECT_OBJ],),

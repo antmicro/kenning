@@ -1,9 +1,12 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import csv
 import os
+import random
 import shutil
+import tempfile
 from pathlib import Path
 from typing import Optional, Tuple, Type, Union
 
@@ -13,12 +16,14 @@ from torch import save as torch_save
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.imagenet_dataset import ImageNetDataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.datasets.random_dataset import (
+    RandomizedAnomalyDetectionDataset,
     RandomizedClassificationDataset,
     RandomizedDetectionSegmentationDataset,
     RandomizedTextDataset,
@@ -296,7 +301,47 @@ def get_dataset_random_mock(
         return RandomizedTextDataset(
             get_tmp_path(),
         )
+    if dataset_cls is AnomalyDetectionDataset:
+        return RandomizedAnomalyDetectionDataset(
+            get_tmp_path(),
+            samplescount=16 * 16,
+            numclasses=2,
+            integer_classes=True,
+            num_features=10,
+            window_size=5,
+        )
     raise NotImplementedError
+
+
+@pytest.fixture(scope="module", autouse=True)
+def define_anomaly_detection_csv_file():
+    """
+    Creates random CSV file for AnomalyDetectionDataset
+    and overrides init.
+    """
+    # Generate random data
+    columns = 10
+    data = [["a"] * columns]
+    for _ in range(1000):
+        data.append([random.random() for _ in range(columns)])
+
+    # Save data to tmp file
+    tmp_dir = Path(tempfile.mkdtemp())
+    tmp_file = tmp_dir / "data.csv"
+    with tmp_file.open("w") as fd:
+        writer = csv.writer(fd)
+        writer.writerows(data)
+
+    # Specify csv_file param for AnomalyDetectionDataset
+    default_init = AnomalyDetectionDataset.__init__
+    AnomalyDetectionDataset.__init__ = lambda *args, **kwargs: default_init(
+        *args, **kwargs, csv_file=str(tmp_file)
+    )
+
+    yield
+
+    shutil.rmtree(tmp_dir)
+    AnomalyDetectionDataset.__init__ = default_init
 
 
 class UnknownFramework(ValueError):

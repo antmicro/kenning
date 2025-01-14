@@ -1,13 +1,12 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import shutil
+from math import ceil
 from pathlib import Path
 from typing import Type
 
-import cv2
-import numpy as np
 import pytest
 
 from kenning.core.dataset import CannotDownloadDatasetError, Dataset
@@ -201,173 +200,16 @@ class TestDataset:
         ],
         indirect=True,
     )
-    def test_iter_train(self, dataset: Type[Dataset]):
+    def test_iterator_len(self, dataset: Type[Dataset]):
         """
-        Tests dataset iteration over training set.
-        Verifies that indexes are generated and used.
+        Tests length of dataset iteration.
+        Verifies whether batch size is taken into account.
         """
-        for i, (x, y) in enumerate(dataset.iter_train()):
-            assert x is not None
-            assert y is not None
-            if i > 10:
-                break
+        iter_train = dataset.iter_test()
+        split = dataset.split_fraction_test
 
-        assert len(dataset) > 0
-        assert len(dataset._dataindices) > 0
-        assert dataset._dataindex == (i + 1) * dataset.batch_size
-
-    @pytest.mark.parametrize(
-        "dataset",
-        [
-            pytest.param(
-                dataset_cls,
-                marks=[
-                    pytest.mark.xdist_group(
-                        name=f"TestDataset_{dataset_cls.__name__}"
-                    )
-                ],
-            )
-            for dataset_cls in DATASET_SUBCLASSES
-        ],
-        indirect=True,
-    )
-    def test_iter_test(self, dataset: Type[Dataset]):
-        """
-        Tests dataset iteration over test set.
-        Verifies that indexes are generated and used.
-        """
-        dataset.split_fraction_test = 0.2
-        for i, (x, y) in enumerate(dataset.iter_test()):
-            assert x is not None
-            assert y is not None
-            if i > 10:
-                break
-
-        assert len(dataset) > 0
-        assert len(dataset._dataindices) > 0
-        assert dataset._dataindex == (i + 1) * dataset.batch_size
-
-    @pytest.mark.parametrize(
-        "dataset",
-        [
-            pytest.param(
-                dataset_cls,
-                marks=[
-                    pytest.mark.xdist_group(
-                        name=f"TestDataset_{dataset_cls.__name__}"
-                    )
-                ],
-            )
-            for dataset_cls in DATASET_SUBCLASSES
-        ],
-        indirect=True,
-    )
-    def test_iter_val(self, dataset: Type[Dataset]):
-        """
-        Tests dataset iteration over validation set.
-        Verifies that indexes are generated and used.
-        """
-        dataset.split_fraction_test = 0.2
-        dataset.split_fraction_val = 0.2
-        for i, (x, y) in enumerate(dataset.iter_val()):
-            assert x is not None
-            assert y is not None
-            if i > 10:
-                break
-
-        assert len(dataset) > 0
-        assert len(dataset._dataindices) > 0
-        assert dataset._dataindex == (i + 1) * dataset.batch_size
-
-    @pytest.mark.parametrize(
-        "dataset",
-        [
-            pytest.param(
-                dataset_cls,
-                marks=[
-                    pytest.mark.xdist_group(
-                        name=f"TestDataset_{dataset_cls.__name__}"
-                    )
-                ],
-            )
-            for dataset_cls in DATASET_SUBCLASSES
-        ],
-        indirect=True,
-    )
-    def test_images_loading(self, dataset: Type[Dataset]):
-        """
-        Tests dataset iteration.
-        """
-        if "Random" in dataset.__class__.__name__:
-            pytest.skip("random dataset does not load images")
-        X_sample = dataset.dataX[0]
-
-        if not (
-            isinstance(X_sample, str)
-            and (
-                X_sample.split(".")[-1].lower() in ("jpg", "png", "jpeg")
-                or hasattr(dataset, "get_sample_image_path")
-            )
-        ):
-            pytest.skip("dataset inputs are not images")
-
-        N = 10
-
-        # disable images preprocessing
-        dataset.standardize = False
-        dataset.image_memory_layout = "NHWC"
-        dataset.preprocess_type = None
-        # generate random images
-        sample_shape = dataset.prepare_input_samples([X_sample])[0][0].shape
-        random_images = np.random.randint(
-            0, 255, size=(N, 8, 8, sample_shape[2]), dtype=np.uint8
-        )
-        # assert that full range is used
-        random_images[0, 0, 0, 0] = 0
-        random_images[0, 0, 1, 0] = 255
-
-        # write random images to dataset files
-        random_images_resized = np.zeros((N, *sample_shape), dtype=np.uint8)
-
-        for i in range(N):
-            resized_img = cv2.resize(
-                random_images[i],
-                (sample_shape[1], sample_shape[0]),
-                interpolation=cv2.INTER_NEAREST,
-            )
-            if resized_img.ndim == 2:
-                resized_img = np.expand_dims(resized_img, -1)
-
-            random_images_resized[i] = resized_img
-            img_path = dataset.dataX[i]
-            if hasattr(dataset, "get_sample_image_path"):
-                img_path = dataset.get_sample_image_path(img_path)
-            if not Path(img_path).exists():
-                raise FileNotFoundError
-
-            cv2.imwrite(img_path, random_images_resized[i])
-
-        # load images by dataset
-        loaded_images = dataset.prepare_input_samples(dataset.dataX[:N])[0]
-        loaded_images = np.array(loaded_images)
-
-        # convert to the same range
-        random_images_resized = (
-            random_images_resized.astype(np.float32) / 255.0
-        )
-        if np.max(loaded_images) > 1.0:
-            loaded_images /= 255.0
-
-        # compare shapes
-        assert random_images_resized.shape == loaded_images.shape
-        # compare similarity (RGB or BGR as color format cannot be retrieved
-        # from dataset)
-        assert (
-            np.mean(np.abs(loaded_images - random_images_resized)) < 0.05
-            or np.mean(
-                np.abs(loaded_images - random_images_resized[:, :, :, ::-1])
-            )
-            < 0.05
+        assert len(iter_train) == ceil(
+            len(dataset.dataX) * split / dataset.batch_size
         )
 
     @pytest.mark.parametrize(

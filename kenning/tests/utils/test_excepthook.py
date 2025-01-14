@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -26,7 +26,10 @@ IGNORED_MODULES = {
     "setuptools",
 } | stdlibs.py3.stdlib
 
-KNOWN_MAPS = {"jsonrpc": "json-rpc"}
+KNOWN_MAPS = {
+    "jsonrpc": "json-rpc",
+    "sklearn": "scikit_learn",
+}
 
 
 def get_all_used_imports() -> Set[str]:

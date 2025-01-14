@@ -62,7 +62,7 @@ pytest:
         MARKS: "(not docs_gallery) and (not docs) and (not gpu)"
     script:
         - /scripts/prepare_environment.sh .
-        - pip install -e ".[pipeline_manager,test,llm]"
+        - pip install -e ".[pipeline_manager,test,llm,anomaly_detection]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
         - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 58m 55m pytest kenning -m "$MARKS" -n=auto --cov=kenning --cov-report=html

@@ -72,6 +72,7 @@ def _prepare_pip_params(session: nox.Session, device: str):
         "ros2",
         "albumentations",
         "llm",
+        "anomaly_detection",
     ]
 
     extra_indices = []

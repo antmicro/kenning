@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -444,10 +444,23 @@ class IOInterface(ABC):
             else [entry_spec["shape"]]
         )
         valid_shape = False
+        # Check full shapes
         for entry_shape in check_shapes:
             if IOInterface._validate_shape(shape, entry_shape):
                 valid_shape = True
                 break
+        if not valid_shape:
+            # Check shapes without batch size (first dimension)
+            for entry_shape in check_shapes:
+                if len(shape) == len(
+                    entry_shape
+                ) and IOInterface._validate_shape(shape[1:], entry_shape[1:]):
+                    valid_shape = True
+                    KLogger.warn(
+                        "Shape with different batch size,"
+                        f" required: {entry_shape}, received: {shape}"
+                    )
+                    break
         if not valid_shape:
             raise IOCompatibilityError(
                 "Wrong shape, required: "

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -77,7 +77,7 @@ class DatasetIterator:
         int
             The length of the iterator.
         """
-        return len(self.indices)
+        return ceil(len(self.indices) / self.dataset.batch_size)
 
 
 class Dataset(ArgumentsHandler, ABC):

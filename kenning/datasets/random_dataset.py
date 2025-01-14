@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -73,7 +73,7 @@ class RandomizedClassificationDataset(Dataset):
         Parameters
         ----------
         root : Path
-            Directory, where the randomized dataset is stored.
+            Directory for the randomized dataset - no data will be store there.
         batch_size : int
             The size of batches of data delivered during inference.
         download_dataset : bool
@@ -408,3 +408,87 @@ class RandomizedTextDataset(Dataset):
 
     def evaluate(self, predictions, truth):
         return Measurements()
+
+
+class RandomizedAnomalyDetectionDataset(RandomizedClassificationDataset):
+    """
+    Randomized dataset for Anomaly Detection, implementing classification
+    dataset with adjustable window size and number of features per timestamp.
+    """
+
+    arguments_structure = {
+        "window_size": {
+            "argparse_name": "--window-size",
+            "description": "The number of consecutive timestamps included in one entry",  # noqa: E501
+            "type": int,
+            "default": 5,
+        },
+        "features": {
+            "argparse_name": "--features",
+            "description": "The number of features per one timestamps",
+            "type": int,
+            "default": 10,
+        },
+    }
+
+    def __init__(
+        self,
+        root: Path,
+        batch_size: int = 1,
+        download_dataset: bool = False,
+        force_download_dataset: bool = False,
+        samplescount: int = 100,
+        numclasses: int = 3,
+        integer_classes: bool = False,
+        dtype: Type = np.float32,
+        window_size: int = 5,
+        num_features: int = 10,
+        **kwargs: Any,
+    ):
+        """
+        Creates randomized dataset.
+
+        Parameters
+        ----------
+        root : Path
+            Directory for the randomized dataset - no data will be store there.
+        batch_size : int
+            The size of batches of data delivered during inference.
+        download_dataset : bool
+            Downloads the dataset before taking any action. If the dataset
+            files are already downloaded then they are not downloaded again.
+        force_download_dataset : bool
+            Forces dataset download.
+        samplescount : int
+            The number of samples in the dataset.
+        numclasses : int
+            The number of classes in the dataset.
+        integer_classes : bool
+            Indicates if classes should be represented by single integer
+            instead of one-hot encoding.
+        dtype : Type
+            Type of the data.
+        window_size : int
+            The number of consecutive timestamps included in one entry.
+        num_features : int
+            The number of features per one timestamps.
+        **kwargs : Any
+            Optional keyword arguments.
+        """
+        self.num_features = num_features
+        self.window_size = window_size
+        super().__init__(
+            root=root,
+            batch_size=batch_size,
+            download_dataset=download_dataset,
+            force_download_dataset=force_download_dataset,
+            samplescount=samplescount,
+            numclasses=numclasses,
+            integer_classes=integer_classes,
+            inputdims=(window_size, num_features),
+            dtype=dtype,
+            **kwargs,
+        )
+
+    def prepare_output_samples(self, samples: List[Any]) -> List[Any]:
+        return [samples]

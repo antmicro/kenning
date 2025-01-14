@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -125,7 +125,9 @@ class TFLiteRuntime(Runtime):
             if self.processed_input_spec
             else self.input_spec
         ):
-            self.interpreter.resize_tensor_input(i, spec["shape"])
+            self.interpreter.resize_tensor_input(
+                i, [s if s > 0 else 1 for s in spec["shape"]]
+            )
         self.interpreter.allocate_tensors()
 
         for det, inp in zip(self.interpreter.get_input_details(), input_data):

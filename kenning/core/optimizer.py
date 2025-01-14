@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,8 +21,8 @@ from kenning.utils.resource_manager import PathOrURI, ResourceURI
 EXT_TO_FRAMEWORK = {
     ".onnx": "onnx",
     ".h5": "keras",
-    ".pt": "pytorch",
-    ".pth": "pytorch",
+    ".pt": "torch",
+    ".pth": "torch",
     ".tflite": "tflite",
 }
 

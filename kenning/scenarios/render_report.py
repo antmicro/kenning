@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -1136,7 +1136,7 @@ def renode_stats_report(
         )
 
     # executed instructions plot
-    for cpu, data in measurementsdata["executed_instructions"].items():
+    for cpu, data in measurementsdata.get("executed_instructions", {}).items():
         paths = {}
 
         executed_instructions_plot_path = (
@@ -1183,7 +1183,9 @@ def renode_stats_report(
 
     # memory accesses plot
     for access_type in ("read", "write"):
-        if not len(measurementsdata["memory_accesses"][access_type]):
+        if "memory_access" not in measurementsdata or not len(
+            measurementsdata["memory_accesses"][access_type]
+        ):
             continue
 
         paths = {}
@@ -1238,9 +1240,9 @@ def renode_stats_report(
         measurementsdata["memoryaccessesplotpath"][access_type] = paths
 
     # peripheral accesses plot
-    for peripheral, measurements in measurementsdata[
-        "peripheral_accesses"
-    ].items():
+    for peripheral, measurements in measurementsdata.get(
+        "peripheral_accesses", {}
+    ).items():
         paths = defaultdict(dict)
 
         for access_type in ("read", "write"):
@@ -1297,7 +1299,9 @@ def renode_stats_report(
             measurementsdata["peripheralaccessesplotpath"][peripheral] = paths
 
     # exceptions plot
-    if sum(measurementsdata["exceptions"]):
+    if "exceptions" in measurementsdata and sum(
+        measurementsdata["exceptions"]
+    ):
         paths = {}
 
         exceptions_plot_path = imgdir / f"{imgprefix}exceptions_plot"

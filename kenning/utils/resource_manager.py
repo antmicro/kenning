@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -579,7 +579,12 @@ class ResourceManager(metaclass=Singleton):
             None if checksum cannot be validated, otherwise True if file
             checksum is valid.
         """
-        checksum_url = f"{url}.{self.HASHING_ALGORITHM}"
+        prefix, name = url.rsplit("/", 1) if "/" in url else ("", url)
+        name, args = name.split("?", 1) if "?" in name else (name, "")
+        checksum_url = (
+            f"{prefix + '/' if prefix else ''}{name}"
+            f".{self.HASHING_ALGORITHM}{'?' + args if args else ''}"
+        )
 
         response = requests.get(checksum_url, allow_redirects=True)
         if 200 != response.status_code:

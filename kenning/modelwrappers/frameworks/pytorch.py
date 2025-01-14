@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -83,7 +83,10 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
         self.prepare_model()
         x = tuple(
-            torch.randn(spec["shape"], device="cpu") for spec in input_spec
+            torch.randn(
+                [s if s > 0 else s for s in spec["shape"]], device="cpu"
+            )
+            for spec in input_spec
         )
 
         torch.onnx.export(
@@ -141,8 +144,9 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
     def convert_input_to_bytes(self, inputdata: List[Any]) -> bytes:
         data = bytes()
-        for inp in inputdata.detach().cpu().numpy():
-            data += inp.tobytes()
+        for inp in inputdata:
+            for x in inp.detach().cpu().numpy():
+                data += x.tobytes()
         return data
 
     def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:

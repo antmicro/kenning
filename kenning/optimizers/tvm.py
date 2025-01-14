@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -67,6 +67,9 @@ def onnxconversion(
         raise IndexError("No dtype in the input specification")
 
     onnxmodel = onnx.load(model_path)
+    input_shapes = {
+        k: [_v if _v > 0 else 1 for _v in v] for k, v in input_shapes.items()
+    }
     return relay.frontend.from_onnx(
         onnxmodel, shape=input_shapes, freeze_params=True, dtype=dtype
     )
@@ -361,6 +364,10 @@ class TVMCompiler(Optimizer):
             "description": "The kind or tag of the target device",
             "default": "llvm",
         },
+        "target_attrs": {
+            "description": "The target attributes (like device or arch) - e.g. '-device=arm_cpu -march=armv7e-m'",  # noqa: E501
+            "default": "",
+        },
         "target_microtvm_board": {
             "description": "The target board",
             "default": None,
@@ -457,6 +464,7 @@ class TVMCompiler(Optimizer):
         location: Literal["host", "target"] = "host",
         model_framework: str = "onnx",
         target: str = "llvm",
+        target_attrs: str = "",
         target_microtvm_board: Optional[str] = None,
         target_host: Optional[str] = None,
         zephyr_header_template: Optional[PathOrURI] = None,
@@ -490,6 +498,8 @@ class TVMCompiler(Optimizer):
             from file extension.
         target : str
             Target accelerator on which the model will be executed.
+        target_attrs : str
+            Target attributes.
         target_microtvm_board : Optional[str]
             Target board on which the model will be executed
         target_host : Optional[str]
@@ -528,6 +538,8 @@ class TVMCompiler(Optimizer):
             from the training dataset or external calibration dataset is
             used for calibrating the model.
         """
+        import tvm.micro.testing as mtvmt
+
         assert not (
             use_fp16_precision and use_int8_precision
         ), "Compilation cannot use both FP16 and INT8 conversion"
@@ -540,20 +552,28 @@ class TVMCompiler(Optimizer):
         self.model_framework = model_framework
 
         self.target = target
+        self.target_attrs = target_attrs
         self.target_microtvm_board = target_microtvm_board
 
-        if self.target_microtvm_board:
-            import tvm.micro.testing as mtvmt
-
-            try:
-                self.target_obj = mtvmt.get_target(
-                    target, target_microtvm_board
-                )
-            except KeyError:
-                # board not found
-                self.target_obj = tvm.target.Target("c")
+        if target in mtvmt.utils.get_supported_platforms():
+            if self.target_microtvm_board:
+                try:
+                    self.target_obj = mtvmt.get_target(
+                        target, target_microtvm_board
+                    )
+                    if target_attrs:
+                        KLogger.info(
+                            "Target chosen from microTVM,"
+                            " skipping provided target options"
+                        )
+                except KeyError:
+                    # board not found
+                    self.target_obj = tvm.target.Target("c " + target_attrs)
+            else:
+                self.target_obj = tvm.target.Target("c " + target_attrs)
+                self.target_microtvm_board = True
         else:
-            self.target_obj = tvm.target.Target(target)
+            self.target_obj = tvm.target.Target(f"{target} {target_attrs}")
 
         self.target_host = target_host
         self.target_host_obj = (
@@ -650,7 +670,7 @@ class TVMCompiler(Optimizer):
                 lib.export_library(str(outputpath) + ".so")
         else:
             pass_config = {}
-            if self.target == "zephyr":
+            if self.target.startswith("zephyr"):
                 pass_config["tir.disable_vectorize"] = True
 
             with tvm.transform.PassContext(

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,6 +10,9 @@ from collections import defaultdict
 from typing import Dict, List, Optional, Union
 
 import numpy as np
+from sklearn.metrics import f1_score, roc_auc_score
+
+from kenning.utils.logger import KLogger
 
 EPS = 1e-8
 
@@ -227,6 +230,50 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
             metrics["top_5_accuracy"] = (
                 measurementsdata["top_5_count"] / measurementsdata["total"]
             )
+        if "predictions" in measurementsdata.keys():
+            try:
+                preds = [
+                    int(v["prediction"])
+                    for v in measurementsdata["predictions"]
+                ]
+                targets = [
+                    int(v["target"]) for v in measurementsdata["predictions"]
+                ]
+            except ValueError:
+                KLogger.warning(
+                    "Cannot convert predictions to integers,"
+                    "ROC AUC and F1 score will not be calculated"
+                )
+            else:
+                class_num = len(set(targets))
+                if class_num == 2:
+                    metrics["roc_auc"] = roc_auc_score(targets, preds)
+                    metrics["f1_score"] = f1_score(targets, preds)
+                else:
+                    metrics["roc_auc_weighted"] = roc_auc_score(
+                        targets,
+                        [
+                            [1.0 if p == i else 0.0 for i in range(class_num)]
+                            for p in preds
+                        ],
+                        average="weighted",
+                        multi_class="ovr",
+                    )
+                    metrics["roc_auc_per_class"] = roc_auc_score(
+                        targets,
+                        [
+                            [1.0 if p == i else 0.0 for i in range(class_num)]
+                            for p in preds
+                        ],
+                        average=None,
+                        multi_class="ovr",
+                    )
+                    metrics["f1_score_weighted"] = f1_score(
+                        targets, preds, average="weighted"
+                    )
+                    metrics["f1_score_per_class"] = f1_score(
+                        targets, preds, average=None
+                    )
         return metrics
     return {}
 

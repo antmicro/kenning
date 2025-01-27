@@ -185,6 +185,7 @@ select = [
     "E261",   # At least two spaces before inline comment
     "E225",   # Missing whitespace around operator
     "F",      # PEP8 warnings
+    "RUF100", # disallowed unnecessary noqa
 ]
 
 ignore = [

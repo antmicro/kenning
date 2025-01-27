@@ -214,7 +214,7 @@ class QuantLinear(nn.Module):
         -------
         torch.Tensor
             Compressed sparsity metadata.
-        """  # noqa: E501
+        """
         target_shape = (
             sparsity_metadata.shape[0],
             sparsity_metadata.shape[1]

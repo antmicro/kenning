@@ -51,7 +51,7 @@ class ROS2SegmentationDataConverter(DataConverter):
         def prepare_image(frame: np.ndarray) -> Image:
             assert (
                 len(frame.shape) == 3
-            ), "Input data must be 3-dimensional and have BGR8 encoding"  # noqa: E501
+            ), "Input data must be 3-dimensional and have BGR8 encoding"
 
             if frame.shape[2] > frame.shape[0]:
                 frame = np.transpose(frame, (1, 2, 0))

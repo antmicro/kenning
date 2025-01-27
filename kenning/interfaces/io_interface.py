@@ -132,7 +132,7 @@ class IOInterface(ABC):
         if single_input_spec["dtype"] != single_output_spec["dtype"]:
             KLogger.error(
                 "dtypes do not match: "
-                f"{single_output_spec['dtype']} {single_input_spec['dtype']}"  # noqa: E501
+                f"{single_output_spec['dtype']} {single_input_spec['dtype']}"
             )
             return False
         input_shape = single_input_spec["shape"]

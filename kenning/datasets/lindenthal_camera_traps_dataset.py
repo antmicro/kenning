@@ -323,7 +323,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
 
     resources = Resources(
         {
-            "images": "https://storage.googleapis.com/public-datasets-lila/lindenthal-camera-traps/lindenthal-camera-traps.zip",  # noqa: E501
+            "images": "https://storage.googleapis.com/public-datasets-lila/lindenthal-camera-traps/lindenthal-camera-traps.zip",
         }
     )
 

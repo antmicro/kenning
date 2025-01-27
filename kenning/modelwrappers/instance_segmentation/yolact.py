@@ -282,7 +282,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
     Variant of YOLACT implementation with built-in postprocessing in the model.
     """
 
-    pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"  # noqa: E501
+    pretrained_model_uri = "kenning:///models/instance_segmentation/yolact_with_postprocessing.onnx"
 
     def postprocess_outputs(
         self, y: List[np.ndarray]

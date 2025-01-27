@@ -154,7 +154,7 @@ def _init_resources():
         "11.0": "cv-corpus-11.0-2022-09-21/cv-corpus-11.0-2022-09-21-",
         "12.0": "cv-corpus-12.0-2022-12-07/cv-corpus-12.0-2022-12-07-",
     }
-    url_format = "https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz"  # noqa: E501
+    url_format = "https://voice-prod-bundler-ee1969a6ce8178826482b88e843c335139bd3fb4.s3.amazonaws.com/{version_url}{language}.tar.gz"
 
     return Resources(
         {

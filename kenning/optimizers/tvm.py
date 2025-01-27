@@ -545,7 +545,7 @@ class TVMCompiler(Optimizer):
         ), "Compilation cannot use both FP16 and INT8 conversion"
         assert not (
             use_tensorrt and (use_fp16_precision or use_int8_precision)
-        ), "TensorRT usage with FP16 or INT8 passes is not supported"  # noqa: E501
+        ), "TensorRT usage with FP16 or INT8 passes is not supported"
         assert not (
             use_tensorrt and ("cuda" not in target)
         ), "TensorRT is only supported with CUDA target"

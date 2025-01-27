@@ -288,7 +288,7 @@ class Optimizer(ArgumentsHandler, ABC):
         raise ValueError(
             f'No matching formats between two objects: {self} and '
             f'{previous_block}\n'
-            f'Input block supported formats: {", ".join(possible_outputs)}\n'  # noqa: E501
+            f'Input block supported formats: {", ".join(possible_outputs)}\n'
             f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
         )
 

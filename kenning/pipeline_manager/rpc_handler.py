@@ -127,7 +127,7 @@ class PipelineManagerRPC(ABC):
             )
             return {
                 "type": MessageType.ERROR.value,
-                "content": f"Failed to load scenario:\n{ex}",  # noqa: E501
+                "content": f"Failed to load scenario:\n{ex}",
             }
         finally:
             async with self.current_task_lock:
@@ -177,7 +177,7 @@ class PipelineManagerRPC(ABC):
             KLogger.info(f"Saved scenario in {self.output_file_path}.")
             return {
                 "type": MessageType.OK.value,
-                "content": f"The graph is saved to {self.output_file_path}.",  # noqa: E501
+                "content": f"The graph is saved to {self.output_file_path}.",
             }
         except (
             asyncio.exceptions.CancelledError,
@@ -190,7 +190,7 @@ class PipelineManagerRPC(ABC):
             )
             return {
                 "type": MessageType.ERROR.value,
-                "content": f"Failed to save the scenario:\n{ex}",  # noqa: E501
+                "content": f"Failed to save the scenario:\n{ex}",
             }
         finally:
             async with self.current_task_lock:
@@ -232,7 +232,7 @@ class PipelineManagerRPC(ABC):
             )
             return {
                 "type": MessageType.ERROR.value,
-                "content": f"Failed to generate specification:\n{ex}",  # noqa: E501
+                "content": f"Failed to generate specification:\n{ex}",
             }
 
     async def dataflow_validate(self, dataflow: Dict) -> Dict:
@@ -298,7 +298,7 @@ class PipelineManagerRPC(ABC):
             KLogger.error(f"Validation error:\n{traceback.format_exc()}")
             return {
                 "type": MessageType.ERROR.value,
-                "content": f"Validation error:\n{ex}",  # noqa: E501
+                "content": f"Validation error:\n{ex}",
             }
         finally:
             async with self.current_task_lock:
@@ -388,7 +388,7 @@ class PipelineManagerRPC(ABC):
             )
             return {
                 "type": MessageType.ERROR.value,
-                "content": f"Failed to run the pipeline:\n{ex}",  # noqa: E501
+                "content": f"Failed to run the pipeline:\n{ex}",
             }
         finally:
             async with self.current_task_lock:

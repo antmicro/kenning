@@ -7,7 +7,7 @@ Wrapper for running GPTQ layers.
 """
 
 import torch
-from kenning_sparsity_aware_kernel.layers.gptq_compressed_layer import (  # noqa: E501
+from kenning_sparsity_aware_kernel.layers.gptq_compressed_layer import (
     GPTQCompressedLayer,
 )
 from kenning_sparsity_aware_kernel.layers.gptq_layer import (

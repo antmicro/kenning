@@ -28,7 +28,7 @@ class MagicWandDataset(Dataset):
 
     resources = Resources(
         {
-            "data": "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz",  # noqa: E501
+            "data": "http://download.tensorflow.org/models/tflite/magic_wand/data.tar.gz",
         }
     )
     arguments_structure = {

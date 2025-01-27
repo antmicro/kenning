@@ -268,10 +268,10 @@ def parse_io_dict_node_to_string(dict_node: ast.Dict) -> List[str]:
 
             for key, value in zip(
                 dict_element.keys[1:], dict_element.values[1:]
-            ):  # noqa: E501
+            ):
                 resulting_output.append(
                     f"    * `{key.value}`: "
-                    f"`{clean_variable_name(value)}`\n"  # noqa: E501
+                    f"`{clean_variable_name(value)}`\n"
                 )
 
     return resulting_output

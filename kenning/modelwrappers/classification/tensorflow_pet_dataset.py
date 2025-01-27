@@ -28,7 +28,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
     """
 
     default_dataset = PetDataset
-    pretrained_model_uri = "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
+    pretrained_model_uri = "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
     arguments_structure = {}
 
     def __init__(

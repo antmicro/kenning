@@ -142,7 +142,7 @@ class TestArgsManagerWrapper:
             ),
             (
                 JSON_SCHEMA_OBJECT_TYPE_MODELRUNTIME_RUNNER,
-                INVALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER_MISSING_REQUIRED,  # noqa: E501
+                INVALID_JSON_DICT_OBJECT_TYPE_MODELRUNTIME_RUNNER_MISSING_REQUIRED,
                 {},
                 pytest.raises(jsonschema.exceptions.ValidationError),
             ),
@@ -247,7 +247,7 @@ class TestArgsManagerWrapper:
             ),
             (
                 ModelRuntimeRunner,
-                INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME,  # noqa: E501
+                INVALID_ARGPARSE_ARGS_OBJECT_TYPE_MODELRUNTIME_RUNNER_UNDEF_ARG_NAME,
                 VALID_RESULT_OBJECT_TYPE_MODELRUNTIME_RUNNER,
                 pytest.raises(AssertionError),
             ),

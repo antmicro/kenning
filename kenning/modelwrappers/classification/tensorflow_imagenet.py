@@ -24,7 +24,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
     """
 
     default_dataset = ImageNetDataset
-    pretrained_model_uri = "kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5"  # noqa: E501
+    pretrained_model_uri = "kenning:///models/classification/tensorflow_imagenet_mobilenetv3small.h5"
     arguments_structure = {
         "modelcls": {
             "argparse_name": "--model-cls",

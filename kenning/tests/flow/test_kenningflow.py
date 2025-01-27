@@ -67,13 +67,13 @@ MDL_RT_RUNNER_YOLACT_JSON = {
         "model_wrapper": {
             "type": "kenning.modelwrappers.instance_segmentation.yolact.YOLACT",  # noqa: E501
             "parameters": {
-                "model_path": "kenning:///models/instance_segmentation/yolact.onnx"  # noqa: E501
+                "model_path": "kenning:///models/instance_segmentation/yolact.onnx"
             },
         },
         "runtime": {
             "type": "kenning.runtimes.onnx.ONNXRuntime",
             "parameters": {
-                "save_model_path": "kenning:///models/instance_segmentation/yolact.onnx",  # noqa: E501
+                "save_model_path": "kenning:///models/instance_segmentation/yolact.onnx",
                 "execution_providers": ["CPUExecutionProvider"],
             },
         },

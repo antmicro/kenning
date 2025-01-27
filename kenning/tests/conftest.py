@@ -233,21 +233,21 @@ def modelsamples():
             super().__init__()
             self.add(
                 ResourceURI(
-                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"  # noqa: E501
+                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
                 ),
                 "torch",
                 "PyTorchPetDatasetMobileNetV2",
             )
             self.add(
                 ResourceURI(
-                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"  # noqa: E501
+                    "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"
                 ),
                 "torch_weights",
                 "PyTorchPetDatasetMobileNetV2",
             )
             self.add(
                 ResourceURI(
-                    "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"  # noqa: E501
+                    "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
                 ),
                 "keras",
                 "TensorFlowPetDatasetMobileNetV2",

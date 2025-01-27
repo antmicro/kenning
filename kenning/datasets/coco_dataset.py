@@ -43,11 +43,11 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         {
             "train2017": {
                 "images": "http://images.cocodataset.org/zips/train2017.zip",
-                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",  # noqa: E501
+                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
             },
             "val2017": {
                 "images": "http://images.cocodataset.org/zips/val2017.zip",
-                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",  # noqa: E501
+                "object_detection": "http://images.cocodataset.org/annotations/annotations_trainval2017.zip",
             },
         }
     )

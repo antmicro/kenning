@@ -114,7 +114,7 @@ class TestAbstract:
         def isabstractmethod(decorator):
             if hasattr(decorator, "id"):
                 return decorator.id == "abstractmethod"
-            elif hasattr(decorator, "func") and hasattr(decorator.func, "id"):  # noqa: E501
+            elif hasattr(decorator, "func") and hasattr(decorator.func, "id"):
                 return decorator.func.id == "abstractmethod"
             return False
 

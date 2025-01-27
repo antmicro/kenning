@@ -149,7 +149,7 @@ albumentations = [
 
 llm = [
     "kenning[torch]",
-    "autoawq",
+    "autoawq==0.2.5",
     "auto_gptq",
     "rouge-score",
     "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization

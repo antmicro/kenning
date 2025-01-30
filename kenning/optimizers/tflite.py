@@ -17,7 +17,7 @@ import tensorflow as tf
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
 class EdgeTPUCompilerError(Exception):
@@ -146,6 +146,37 @@ class TFLiteCompiler(TensorFlowOptimizer):
             "type": bool,
             "default": False,
         },
+        "resolver_template_path": {
+            "description": """
+            Path to the custom template for creating C-based file with `tflite::MicroMutableOpResolver` with used ops for a given model.
+
+            When provided, it will be used instead of the default template located in `kenning.resources.templates` module
+            (as `tflite_ops_resolver.h.template`).
+
+            The template is a Jinja2 template, where names of used ops are provided via `opcode_names` list.
+
+            Number of used ops can be established with `{{opcode_names|length}}`.
+            Ops can be added to resolver like so:
+            ```
+            // ...
+            tflite::MicroMutableOpResolver<{{opcode_names|length}}> resolver;
+            // ...
+            {%- for opcode in opcode_names %}
+                g_tflite_resolver.Add{{opcode}}();
+            {%- endfor %}
+            // ...
+            ```
+            """,  # noqa: E501
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
+        "resolver_output_path": {
+            "description": "Path where a C-based file with tflite::MicroMutableOpResolver with used ops for a given model should be saved",  # noqa: E501
+            "type": ResourceURI,
+            "default": None,
+            "nullable": True,
+        },
     }
 
     def __init__(
@@ -165,6 +196,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         dataset_percentage: float = 0.25,
         quantization_aware_training: bool = False,
         use_tf_select_ops: bool = False,
+        resolver_template_path: Optional[ResourceURI] = None,
+        resolver_output_path: Optional[ResourceURI] = None,
     ):
         """
         The TFLite and EdgeTPU compiler.
@@ -214,6 +247,17 @@ class TFLiteCompiler(TensorFlowOptimizer):
         use_tf_select_ops : bool
             Enables adding SELECT_TF_OPS to the set of converter
             supported ops.
+        resolver_template_path: Optional[ResourceURI]
+            When provided, points to a template with a template for creating
+            C/header file with tflite::MicroMutableOpResolver
+            with all ops necessary to run a given model
+        resolver_output_path: Optional[ResourceURI]
+            When provided, a C-based file with tflite::MicroMutableOpResolver
+            with ops specific to the created model is saved to a specified
+            path.
+            If `resolver_template_path` is provided, it will be used as a
+            template for the C file generation. Otherwise, default template
+            will be used.
         """
         self.target = target
         self.model_framework = model_framework
@@ -223,6 +267,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         self.dataset_percentage = dataset_percentage
         self.quantization_aware_training = quantization_aware_training
         self.use_tf_select_ops = use_tf_select_ops
+        self.resolver_template_path = resolver_template_path
+        self.resolver_output_path = resolver_output_path
         super().__init__(
             dataset=dataset,
             compiled_model_path=compiled_model_path,
@@ -232,6 +278,139 @@ class TFLiteCompiler(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
+        )
+
+    @staticmethod
+    def create_resolver_file_from_ops_list(
+        opcode_names: List[str],
+        output_path: PathOrURI,
+        resolver_template: Optional[PathOrURI] = None,
+    ):
+        """
+        Creates a C file with tflite::MicroMutableOpResolver
+        containing ops used by model delivered in model_obj.
+
+        Parameters
+        ----------
+        opcode_names: List[str]
+            Names of ops in pascal case, for example names check
+            https://github.com/tensorflow/tflite-micro/blob/main/tensorflow/lite/micro/micro_mutable_op_resolver.h
+            (names without prefix `Add`)
+        output_path: PathOrURI
+            Path where the C file with resolver should be saved
+        resolver_template: Optional[PathOrURI]
+            Path to custom template for resolver file.
+            When provided, it will be used instead of the default template
+            located in `kenning.resources.templates` module
+            (as `tflite_ops_resolver.h.template`).
+
+            The template is a Jinja2 template, where names of used ops are
+            provided via `opcode_names` list.
+
+            Number of used ops can be established with
+            `{{opcode_names|length}}`.
+            Ops can be added to resolver like so:
+            ```
+            // ...
+            tflite::MicroMutableOpResolver<{{opcode_names|length}}> resolver;
+            // ...
+            {%- for opcode in opcode_names %}
+                g_tflite_resolver.Add{{opcode}}();
+            {%- endfor %}
+            // ...
+            ```
+        """
+        from jinja2 import Template
+
+        templatecontent = None
+
+        if resolver_template is None:
+            import sys
+
+            from kenning.resources import templates
+
+            if sys.version_info.minor < 9:
+                from importlib_resources import path
+            else:
+                from importlib.resources import path
+
+            with path(templates, "tflite_ops_resolver.h.template") as rpath:
+                resolver_template = rpath
+
+        with open(resolver_template, "r") as resolvertemplatefile:
+            templatecontent = resolvertemplatefile.read()
+
+        template = Template(templatecontent)
+
+        content = template.render(opcode_names=opcode_names)
+
+        with open(output_path, "w") as output:
+            output.write(content)
+
+    @staticmethod
+    def create_resolver_file_from_model(
+        modeldata: bytes,
+        output_path: PathOrURI,
+        resolver_template: Optional[PathOrURI] = None,
+    ):
+        """
+        Creates a C file with tflite::MicroMutableOpResolver
+        containing ops used by model delivered in model_obj.
+
+        Parameters
+        ----------
+        modeldata: bytes
+            TensorFlow Lite Flatbuffer data, read directly
+            from file
+        output_path: PathOrURI
+            Path where the C file with resolver should be saved
+        resolver_template: Optional[PathOrURI]
+            Path to custom template for resolver file.
+            When provided, it will be used instead of the default template
+            located in `kenning.resources.templates` module
+            (as `tflite_ops_resolver.h.template`).
+
+            The template is a Jinja2 template, where names of used ops are
+            provided via `opcode_names` list.
+
+            Number of used ops can be established with
+            `{{opcode_names|length}}`.
+            Ops can be added to resolver like so:
+            ```
+            // ...
+            tflite::MicroMutableOpResolver<{{opcode_names|length}}> resolver;
+            // ...
+            {%- for opcode in opcode_names %}
+                g_tflite_resolver.Add{{opcode}}();
+            {%- endfor %}
+            // ...
+            ```
+        """
+        from tensorflow.lite.python import schema_py_generated
+
+        def convert_to_pascal_case(opname: str):
+            return "".join(
+                [part.lower().capitalize() for part in str(opname).split("_")]
+            )
+
+        modelobj = schema_py_generated.Model.GetRootAsModel(modeldata)
+        model = schema_py_generated.ModelT.InitFromObj(modelobj)
+
+        opcodenames = {
+            opid: opname
+            for opname, opid in schema_py_generated.BuiltinOperator.__dict__.items()  # noqa: E501
+        }
+
+        opcode_names = []
+        for entry in sorted(model.operatorCodes, key=lambda c: c.builtinCode):
+            opcode_names.append(
+                convert_to_pascal_case(opcodenames[entry.builtinCode])
+            )
+
+        TFLiteCompiler.create_resolver_file_from_ops_list(
+            opcode_names=opcode_names,
+            output_path=output_path,
+            resolver_template=resolver_template,
         )
 
     def compile(
@@ -328,6 +507,13 @@ class TFLiteCompiler(TensorFlowOptimizer):
             f.write(tflite_model)
         if self.save_to_zip:
             self.compress_model_to_zip()
+
+        if self.resolver_output_path is not None:
+            TFLiteCompiler.create_resolver_file_from_model(
+                modeldata=tflite_model,
+                output_path=self.resolver_output_path,
+                resolver_template=self.resolver_template_path,
+            )
 
         interpreter = tf.lite.Interpreter(model_content=tflite_model)
         signature = interpreter.get_signature_runner()

@@ -352,6 +352,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         modeldata: bytes,
         output_path: PathOrURI,
         resolver_template: Optional[PathOrURI] = None,
+        additional_ops: Optional[List[str]] = None,
     ):
         """
         Creates a C file with tflite::MicroMutableOpResolver
@@ -385,13 +386,24 @@ class TFLiteCompiler(TensorFlowOptimizer):
             {%- endfor %}
             // ...
             ```
-        """
+        additional_ops: Optional[List[str]]
+            Names of additional ops to ones in the model, in pascal case, for example names check
+            https://github.com/tensorflow/tflite-micro/blob/main/tensorflow/lite/micro/micro_mutable_op_resolver.h
+            (names without prefix `Add`)
+        """  # noqa: E501
         from tensorflow.lite.python import schema_py_generated
 
         def convert_to_pascal_case(opname: str):
-            return "".join(
-                [part.lower().capitalize() for part in str(opname).split("_")]
-            )
+            opstring = ""
+            for part in str(opname).split("_"):
+                if len(part) > 1:
+                    if part[0].isalpha():
+                        opstring += part.lower().capitalize()
+                    else:
+                        opstring += part.upper()
+            opstring = opstring.replace("Lstm", "LSTM")
+            opstring = opstring.replace("BatchMatmul", "BatchMatMul")
+            return opstring
 
         modelobj = schema_py_generated.Model.GetRootAsModel(modeldata)
         model = schema_py_generated.ModelT.InitFromObj(modelobj)
@@ -406,6 +418,11 @@ class TFLiteCompiler(TensorFlowOptimizer):
             opcode_names.append(
                 convert_to_pascal_case(opcodenames[entry.builtinCode])
             )
+
+        if additional_ops is not None:
+            for op in additional_ops:
+                if op not in opcode_names:
+                    opcode_names.append(op)
 
         TFLiteCompiler.create_resolver_file_from_ops_list(
             opcode_names=opcode_names,

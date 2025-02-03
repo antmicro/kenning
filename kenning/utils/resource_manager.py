@@ -8,6 +8,7 @@ Provide resource manager responsible for downloading and caching resources.
 import hashlib
 import os
 import re
+import sys
 import tarfile
 from inspect import getfullargspec
 from pathlib import Path
@@ -748,6 +749,7 @@ class ResourceURI(Path):
     _flavour = type(Path())._flavour
     _uri: Optional[ParseResult]
     _origin: str
+    _raw_paths: list[str]
 
     def __new__(cls, uri_or_path: Union[str, Path, "ResourceURI"]):
         if isinstance(uri_or_path, str) and ":/" in uri_or_path:
@@ -762,7 +764,13 @@ class ResourceURI(Path):
             uri = None
             path = Path(uri_or_path).expanduser()
 
-        instance = super().__new__(cls, path)
+        if sys.version_info < (3, 12):
+            instance = super().__new__(cls, path)
+        else:
+            instance = super().__new__(cls)
+            instance._raw_paths = [str(path)]
+        KLogger.debug(instance)
+
         instance._uri = uri
         instance._origin = str(uri_or_path)
 
@@ -776,6 +784,21 @@ class ResourceURI(Path):
                 pass
 
         return instance
+
+    def __init__(self, uri_or_path: Union[str, Path, "ResourceURI"]):
+        if sys.version_info >= (3, 12):
+            if isinstance(uri_or_path, str) and ":/" in uri_or_path:
+                uri = urlparse(uri_or_path)
+                path = ResourceManager().cache_dir / Path(
+                    uri.path
+                ).relative_to("/")
+            elif isinstance(uri_or_path, type(self)):
+                uri = uri_or_path._uri
+                path = Path(uri_or_path).expanduser()
+            else:
+                uri = None
+                path = Path(uri_or_path).expanduser()
+            super().__init__(path)
 
     @property
     def uri(self) -> Optional[str]:

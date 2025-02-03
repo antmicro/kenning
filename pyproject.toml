@@ -51,12 +51,13 @@ docs = [
 ]
 tensorflow = [
     "onnx_tf",
-    "tensorflow_addons",
+    "tensorflow_addons; python_version<'3.12'",
     "tensorflow_model_optimization",
     "tensorflow~=2.11.0; python_version<'3.11'",
     "tensorflow_probability~=0.19.0; python_version<'3.11'",
     "tensorflow_probability~=0.22.0; python_version=='3.11'",
     "tensorflow~=2.14.0; python_version=='3.11'",
+    "tensorflow~=2.18.0; python_version=='3.12'",
     "tf2onnx",
     "tf2onnx>=1.16.1; python_version=='3.11'",
 ]
@@ -75,7 +76,8 @@ nvidia_perf = [
 object_detection = [
     "boto3>=1.17.5",
     "botocore>=1.20.5",
-    "cython<3.0.0",
+    "cython<3.0.0; python_version<'3.12'",
+    "cython>=3.0.0; python_version=='3.12'",
     "opencv_python>=4.5.2",
     "pandas>=1.2.1",
     "pycocotools",
@@ -99,13 +101,17 @@ tflite = [
     "tflite",
 ]
 tvm = [
-    "apache-tvm==0.14.dev273",
+    "apache-tvm==0.14.dev273; python_version<'3.12'",
 ]
 iree = [
-    "iree-compiler==20230209.425",
-    "iree-runtime==20230209.425",
-    "iree-tools-tf==20230209.425",
-    "iree-tools-tflite==20230209.425",
+    "iree-compiler==20230209.425; python_version<'3.12'",
+    "iree-runtime==20230209.425; python_version<'3.12'",
+    "iree-tools-tf==20230209.425; python_version<'3.12'",
+    "iree-tools-tflite==20230209.425; python_version<'3.12'",
+    "iree-compiler; python_version=='3.12'",
+    "iree-runtime; python_version=='3.12'",
+    "iree-tools-tf; python_version=='3.12'",
+    "iree-tools-tflite; python_version=='3.12'",
 ]
 onnxruntime = [
     "onnxruntime>=1.12.0",
@@ -167,11 +173,11 @@ albumentations = [
 
 llm = [
     "kenning[torch]",
-    "autoawq==0.2.5",
-    "auto_gptq",
+    "autoawq==0.2.5; python_version<'3.12'",
+    "auto_gptq; python_version<'3.12'",
     "rouge-score",
     "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization
-    "vllm==0.5.0.post1",
+    "vllm==0.5.0.post1; python_version<'3.12'",
 ]
 
 all = [

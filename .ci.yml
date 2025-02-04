@@ -146,50 +146,16 @@ nox-gallery-tests:
     allow_failure: true
 
 docs-tests:
+    <<: *common_only
     variables:
         TESTS_SCOPE: 'docs'
-    only:
-        refs:
-            - main
-            - dev
     <<: *pytest-docs
-
-docs-tests-manual:
-    variables:
-        TESTS_SCOPE: 'docs'
-    except:
-        refs:
-            - main
-            - dev
-    only:
-        refs:
-            - merge_requests
-    <<: *pytest-docs
-    when: manual
 
 docs-gallery-tests:
+    <<: *common_only
     variables:
         TESTS_SCOPE: 'docs_gallery'
-    only:
-        refs:
-            - main
-            - dev
-    allow_failure: true
     <<: *pytest-docs
-
-docs-gallery-tests-manual:
-    variables:
-        TESTS_SCOPE: 'docs_gallery'
-    except:
-        refs:
-            - main
-            - dev
-    only:
-        refs:
-            - merge_requests
-    <<: *pytest-docs
-    when: manual
-    allow_failure: true
 
 sample-compilation:
     <<: *common_only

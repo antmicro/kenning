@@ -36,6 +36,8 @@ from kenning.cli.command_template import (
 )
 from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
+    CLASSIFICATION_METRICS,
+    Metric,
     compute_classification_metrics,
     compute_detection_metrics,
     compute_performance_metrics,
@@ -524,6 +526,7 @@ def classification_report(
     )
     metrics = compute_classification_metrics(measurementsdata)
     measurementsdata |= metrics
+    available_metrics = list(metrics.keys())
 
     if "eval_confusion_matrix" in measurementsdata:
         KLogger.info("Using confusion matrix")
@@ -570,6 +573,7 @@ def classification_report(
         )
         return ""
 
+    measurementsdata["available_metrics"] = available_metrics
     with path(reports, "classification.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
@@ -583,6 +587,8 @@ def comparison_classification_report(
     image_formats: Set[str],
     colors: Optional[List] = None,
     draw_titles: bool = True,
+    bubble_plot_metric: Metric = Metric.ACC,
+    metrics_for_radar: Optional[List[Metric]] = None,
     **kwargs: Any,
 ) -> str:
     """
@@ -602,6 +608,11 @@ def comparison_classification_report(
         Colors to be used in the plots.
     draw_titles : bool
         Should titles be drawn on the plot.
+    bubble_plot_metric : Metric
+        Metric presented on Y-axis on bubble plot.
+    metrics_for_radar : Optional[List[Metric]]
+        List of metrics to use for radar plot. By default,
+        all available metrics are used.
     **kwargs : Any
         Additional keyword arguments.
 
@@ -628,8 +639,9 @@ def comparison_classification_report(
     }
     names = [data["model_name"] for data in measurementsdata]
     metric_visualization = {}
-    accuracy, mean_inference_time, model_sizes = [], [], []
+    bubble_plot_data, mean_inference_time, model_sizes = [], [], []
     skip_inference_metrics = False
+    available_metrics = set(CLASSIFICATION_METRICS)
     for data in measurementsdata:
         performance_metrics = compute_performance_metrics(data)
         if "inferencetime_mean" not in performance_metrics:
@@ -637,10 +649,15 @@ def comparison_classification_report(
             break
 
         classification_metrics = compute_classification_metrics(data)
-        model_accuracy = classification_metrics["accuracy"]
-        model_precision = classification_metrics["mean_precision"]
-        model_sensitivity = classification_metrics["mean_sensitivity"]
-        accuracy.append(model_accuracy)
+        model_metrics = {}
+        metrics = []
+        for metric in CLASSIFICATION_METRICS:
+            if metric not in classification_metrics:
+                continue
+            model_metrics[metric] = classification_metrics[metric]
+            metrics.append(metric)
+        available_metrics = available_metrics.intersection(metrics)
+        bubble_plot_data.append(model_metrics[bubble_plot_metric])
 
         model_inferencetime_mean = performance_metrics["inferencetime_mean"]
         mean_inference_time.append(model_inferencetime_mean)
@@ -656,21 +673,25 @@ def comparison_classification_report(
                 performance_metrics["session_utilization_mem_percent_mean"]
             )
 
-        # Accuracy, precision, sensitivity
-        metric_visualization[data["model_name"]] = [
-            model_accuracy,
-            model_precision,
-            model_sensitivity,
-        ]
+        metric_visualization[data["model_name"]] = model_metrics
 
     if not skip_inference_metrics:
+        if bubble_plot_metric not in available_metrics:
+            KLogger.error(
+                f"{bubble_plot_metric} not available"
+                " for all models, using accuracy"
+            )
+            bubble_plot_metric = Metric.ACC
         plot_path = imgdir / "accuracy_vs_inference_time"
         BubblePlot(
             title="Accuracy vs Mean inference time" if draw_titles else None,
             x_data=mean_inference_time,
             x_label="Mean inference time [s]",
-            y_data=accuracy,
-            y_label="Accuracy",
+            y_data=[
+                metric_visualization[name][bubble_plot_metric]
+                for name in names
+            ],
+            y_label=bubble_plot_metric.value,
             size_data=model_sizes,
             size_label="Model size",
             bubble_labels=names,
@@ -681,15 +702,32 @@ def comparison_classification_report(
         )
 
         plot_path = imgdir / "classification_metric_comparison"
+        if metrics_for_radar is None:
+            metrics_for_radar = available_metrics
+        if not available_metrics.issuperset(metrics_for_radar):
+            KLogger.error(
+                f"{set(metrics_for_radar).difference(available_metrics)} "
+                "are not available for all models"
+            )
+            metrics_for_radar = available_metrics.intersection(
+                metrics_for_radar
+            )
         RadarChart(
             title="Metric comparison" if draw_titles else None,
-            metric_data=metric_visualization,
-            metric_labels=["Accuracy", "Mean precision", "Mean recall"],
+            metric_data={
+                model: [metrics[metric] for metric in metrics_for_radar]
+                for model, metrics in metric_visualization.items()
+            },
+            metric_labels=[metric.value for metric in metrics_for_radar],
             colors=colors,
         ).plot(plot_path, image_formats)
         report_variables["radarchartpath"] = get_plot_wildcard_path(
             plot_path, root_dir
         )
+        # preserve the original order
+        metric_visualization["available_metrics"] = [
+            metric for metric in list(Metric) if metric in available_metrics
+        ]
         report_variables["model_names"] = names
         report_variables = {
             **report_variables,
@@ -815,7 +853,7 @@ def detection_report(
         lines=lines,
         class_names=measurementsdata["class_names"],
         avg_precisions=aps,
-        mean_avg_precision=measurementsdata["mAP"],
+        mean_avg_precision=measurementsdata[Metric.mAP],
         cmap=cmap,
     ).plot(gradient_path, image_formats)
     measurementsdata["gradientpath"] = get_plot_wildcard_path(
@@ -881,10 +919,10 @@ def detection_report(
         color_offset=color_offset,
     ).plot(map_path, image_formats)
     measurementsdata["mappath"] = get_plot_wildcard_path(map_path, root_dir)
-    measurementsdata["max_mAP"] = max(mapvalues)
-    measurementsdata["max_mAP_index"] = thresholds[np.argmax(mapvalues)].round(
-        2
-    )
+    measurementsdata[Metric.MAX_mAP] = max(mapvalues)
+    measurementsdata[Metric.MAX_mAP_ID] = thresholds[
+        np.argmax(mapvalues)
+    ].round(2)
 
     # Find all the keys that have eval_video/* structure
     video_measurements_keys = [

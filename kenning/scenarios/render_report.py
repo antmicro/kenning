@@ -696,7 +696,9 @@ def comparison_classification_report(
             **metric_visualization,
         }
 
-    if "predictions" in measurementsdata[0]:
+    if "predictions" in measurementsdata[0] and (
+        "eval_confusion_matrix" not in measurementsdata[0]
+    ):
         predictions = [measurementsdata[0]["class_names"]] + [
             data["predictions"] for data in measurementsdata
         ]

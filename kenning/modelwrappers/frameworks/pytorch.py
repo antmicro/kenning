@@ -60,7 +60,9 @@ class PyTorchWrapper(ModelWrapper, ABC):
     def load_model(self, model_path: PathOrURI):
         import torch
 
-        input_data = torch.load(self.model_path, map_location=self.device)
+        input_data = torch.load(
+            self.model_path, map_location=self.device, weights_only=False
+        )
 
         # If the file contains only the weights
         # we have to recreate the model's structure

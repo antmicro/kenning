@@ -7,6 +7,7 @@ A collection of methods for computing benchmark and quality metrics.
 """
 
 from collections import defaultdict
+from enum import Enum
 from typing import Dict, List, Optional, Union
 
 import numpy as np
@@ -195,6 +196,41 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     return computed_metrics
 
 
+class Metric(str, Enum):
+    """
+    The collection of available metrics.
+    """
+
+    ACC = "Accuracy"
+    TOP_5 = "Top-5 accuracy"
+    MEAN_PREC = "Mean precision"
+    MEAN_SENS = "Mean sensitivity"
+    G_MEAN = "G-mean"
+    ROC_AUC = "ROC AUC"
+    ROC_AUC_WEIGHTED = "ROC AUC weighted"
+    ROC_AUC_CLASS = "ROC AUC"
+    F1 = "F1 score"
+    F1_WEIGHTED = "F1 score weighted"
+    F1_CLASS = "F1 score"
+    mAP = "mAP"
+    MAX_mAP = "max_mAP"
+    MAX_mAP_ID = "max_mAP_index"
+
+
+# List of metrics used for classification
+CLASSIFICATION_METRICS = [
+    Metric.ACC,
+    Metric.TOP_5,
+    Metric.MEAN_PREC,
+    Metric.MEAN_SENS,
+    Metric.G_MEAN,
+    Metric.ROC_AUC,
+    Metric.ROC_AUC_WEIGHTED,
+    Metric.F1,
+    Metric.F1_WEIGHTED,
+]
+
+
 def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
     Computes classification metrics based on `measurementsdata` argument.
@@ -221,13 +257,13 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
         )
         confusion_matrix[np.isnan(confusion_matrix)] = 0.0
         metrics = {
-            "accuracy": accuracy(confusion_matrix),
-            "mean_precision": mean_precision(confusion_matrix),
-            "mean_sensitivity": mean_sensitivity(confusion_matrix),
-            "g_mean": g_mean(confusion_matrix),
+            Metric.ACC: accuracy(confusion_matrix),
+            Metric.MEAN_PREC: mean_precision(confusion_matrix),
+            Metric.MEAN_SENS: mean_sensitivity(confusion_matrix),
+            Metric.G_MEAN: g_mean(confusion_matrix),
         }
         if "top_5_count" in measurementsdata.keys():
-            metrics["top_5_accuracy"] = (
+            metrics[Metric.TOP_5] = (
                 measurementsdata["top_5_count"] / measurementsdata["total"]
             )
         if "predictions" in measurementsdata.keys():
@@ -247,10 +283,10 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
             else:
                 class_num = len(set(targets))
                 if class_num == 2:
-                    metrics["roc_auc"] = roc_auc_score(targets, preds)
-                    metrics["f1_score"] = f1_score(targets, preds)
+                    metrics[Metric.ROC_AUC] = roc_auc_score(targets, preds)
+                    metrics[Metric.F1] = f1_score(targets, preds)
                 else:
-                    metrics["roc_auc_weighted"] = roc_auc_score(
+                    metrics[Metric.ROC_AUC_WEIGHTED] = roc_auc_score(
                         targets,
                         [
                             [1.0 if p == i else 0.0 for i in range(class_num)]
@@ -259,7 +295,7 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
                         average="weighted",
                         multi_class="ovr",
                     )
-                    metrics["roc_auc_per_class"] = roc_auc_score(
+                    metrics[Metric.ROC_AUC_CLASS] = roc_auc_score(
                         targets,
                         [
                             [1.0 if p == i else 0.0 for i in range(class_num)]
@@ -268,10 +304,10 @@ def compute_classification_metrics(measurementsdata: Dict[str, List]) -> Dict:
                         average=None,
                         multi_class="ovr",
                     )
-                    metrics["f1_score_weighted"] = f1_score(
+                    metrics[Metric.F1_WEIGHTED] = f1_score(
                         targets, preds, average="weighted"
                     )
-                    metrics["f1_score_per_class"] = f1_score(
+                    metrics[Metric.F1_CLASS] = f1_score(
                         targets, preds, average=None
                     )
         return metrics
@@ -304,7 +340,9 @@ def compute_detection_metrics(measurementsdata: Dict[str, List]) -> Dict:
     if any(
         [key.startswith("eval_gtcount") for key in measurementsdata.keys()]
     ):
-        return {"mAP": compute_map_per_threshold(measurementsdata, [0.0])[0]}
+        return {
+            Metric.mAP: compute_map_per_threshold(measurementsdata, [0.0])[0]
+        }
     return {}
 
 

@@ -729,6 +729,7 @@ class RadarChart(Plot):
         radar_fig.xaxis.visible = False
         radar_fig.yaxis.visible = False
         radar_fig.background_fill_alpha = 0
+        radar_fig.toolbar.logo = None
 
         for i in [25, 50, 75, 100]:
             radar_fig.circle(
@@ -1036,6 +1037,7 @@ class BubblePlot(Plot):
             y_axis_label=self.y_label,
             output_backend="webgl",
         )
+        bubbleplot_fig.toolbar.logo = None
 
         bubbleplot_fig.add_layout(
             Legend(

@@ -44,14 +44,14 @@ align: center
 ---
 
 * - Model name
-  - Accuracy
-  - Mean precision
-  - Mean recall
+{%- for metric in data["available_metrics"] %}
+  - {{metric.value}}
+{%- endfor %}
 {% for model_name in data["model_names"] %}
 * - {{model_name}}
-  - {{'%.6f' % data[model_name][0]}}
-  - {{'%.6f' % data[model_name][1]}}
-  - {{'%.6f' % data[model_name][2]}}
+{%- for metric in data["available_metrics"] %}
+  - {{'%.6f' % data[model_name][metric]}}
+{%- endfor %}
 {% endfor %}
 ```
 

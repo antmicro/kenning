@@ -55,8 +55,8 @@ mAP values depending on threshold for the least detected recordings
 ```
 {% endif %}
 
-* *Mean Average Precision* for threshold 0.5: {{data['mAP']}}
-* Best *Mean Average Precision* occurs at threshold {{data['max_mAP_index']}}  and it is: {{data['max_mAP']}}
+* *Mean Average Precision* for threshold 0.5: {{data[Metric.mAP]}}
+* Best *Mean Average Precision* occurs at threshold {{data[Metric.MAX_mAP_ID]}}  and it is: {{data[Metric.MAX_mAP]}}
 
 ```{figure} {{data["tpioupath"]}}
 ---

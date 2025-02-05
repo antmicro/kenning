@@ -11,6 +11,8 @@ from typing import Dict, List
 
 from jinja2 import Template
 
+from kenning.core.metrics import Metric
+
 
 def create_report_from_measurements(
     template: Path, measurementsdata: Dict[str, List]
@@ -36,6 +38,6 @@ def create_report_from_measurements(
         resourcetemplate = resourcetemplatefile.read()
         tm = Template(resourcetemplate)
 
-        content = tm.render(data=measurementsdata, zip=zip)
+        content = tm.render(data=measurementsdata, zip=zip, Metric=Metric)
 
         return content

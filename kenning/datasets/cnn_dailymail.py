@@ -71,6 +71,7 @@ class CNNDailymailDataset(Dataset):
         split_fraction_test: float = 0.2,
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
+        dataset_percentage: float = 1,
         gather_predictions: bool = False,
         metrics: List[str] = ["rouge1", "rouge2", "rouge3", "rougeL"],
     ):
@@ -98,6 +99,8 @@ class CNNDailymailDataset(Dataset):
             Default fraction of data to leave for model validation.
         split_seed : int
             Default seed used for dataset split.
+        dataset_percentage : float
+            Use given percentage of the dataset.
         gather_predictions : bool
             Determines whether returned evaluations should
             include target and predicted sentences
@@ -118,6 +121,7 @@ class CNNDailymailDataset(Dataset):
             split_fraction_test,
             split_fraction_val,
             split_seed,
+            dataset_percentage,
         )
 
     def prepare_input_samples(self, samples: List[int]) -> List[List[str]]:

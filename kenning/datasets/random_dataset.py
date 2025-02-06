@@ -103,7 +103,11 @@ class RandomizedClassificationDataset(Dataset):
         self.classnames = self.get_class_names()
 
         super().__init__(
-            root, batch_size, force_download_dataset, download_dataset
+            root,
+            batch_size,
+            force_download_dataset,
+            download_dataset,
+            dataset_percentage=1,
         )
 
     def get_class_names(self):

@@ -63,6 +63,7 @@ class ImageNetDataset(Dataset):
         split_fraction_test: float = 0.2,
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
+        dataset_percentage: float = 1,
         image_memory_layout: str = "NHWC",
         preprocess_type: str = "caffe",
     ):
@@ -93,6 +94,8 @@ class ImageNetDataset(Dataset):
             Default fraction of data to leave for model validation.
         split_seed : int
             Default seed used for dataset split.
+        dataset_percentage : float
+            Use given percentage of the dataset.
         image_memory_layout : str
             Tells if the images should be delivered in NCHW or NHWC format.
             The default format is NHWC.
@@ -120,6 +123,7 @@ class ImageNetDataset(Dataset):
             split_fraction_test,
             split_fraction_val,
             split_seed,
+            dataset_percentage,
         )
 
     def download_dataset_fun(self):

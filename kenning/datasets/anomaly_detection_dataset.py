@@ -61,6 +61,7 @@ class AnomalyDetectionDataset(Dataset):
         split_fraction_test: float = 0.2,
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
+        dataset_percentage: float = 1,
         window_size: int = 5,
         gather_predictions: bool = True,
     ):
@@ -90,6 +91,8 @@ class AnomalyDetectionDataset(Dataset):
             Default fraction of data to leave for model validation.
         split_seed : int
             Default seed used for dataset split.
+        dataset_percentage : float
+            Use given percentage of the dataset.
         window_size : int
             The number of consecutive timestamps included in one entry.
         gather_predictions : bool
@@ -109,6 +112,7 @@ class AnomalyDetectionDataset(Dataset):
             split_fraction_test,
             split_fraction_val,
             split_seed,
+            dataset_percentage=dataset_percentage,
         )
         self.window_size = window_size
         self.gather_predictions = gather_predictions

@@ -100,6 +100,7 @@ class VisualWakeWordsDataset(Dataset):
         split_fraction_test: float = 0.2,
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
+        dataset_percentage: float = 1,
         dataset_type: str = "val2017",
         objects_class: str = "person",
         area_threshold: float = 0.005,
@@ -125,6 +126,7 @@ class VisualWakeWordsDataset(Dataset):
             split_fraction_test,
             split_fraction_val,
             split_seed,
+            dataset_percentage,
         )
 
     def get_class_names(self):

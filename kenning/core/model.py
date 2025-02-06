@@ -270,7 +270,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             ):
                 scale = io_spec["scale"]
                 zero_point = io_spec["zero_point"]
-                inp = (inp / scale + zero_point).astype(io_spec["dtype"])
+                X[idx] = (inp / scale + zero_point).astype(io_spec["dtype"])
 
         return X
 

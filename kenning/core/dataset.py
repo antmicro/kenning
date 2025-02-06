@@ -23,7 +23,7 @@ from tqdm import tqdm
 
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler
-from kenning.utils.logger import LoggerProgressBar
+from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import Resources
 
 from .measurements import Measurements
@@ -184,6 +184,11 @@ class Dataset(ArgumentsHandler, ABC):
             "type": int,
             "default": 1234,
         },
+        "dataset_percentage": {
+            "argparse_name": "--reduce-dataset",
+            "type": float,
+            "default": 1,
+        },
     }
 
     def __init__(
@@ -196,6 +201,7 @@ class Dataset(ArgumentsHandler, ABC):
         split_fraction_test: float = 0.2,
         split_fraction_val: Optional[float] = None,
         split_seed: int = 1234,
+        dataset_percentage: float = 1,
     ):
         """
         Initializes dataset object.
@@ -226,8 +232,13 @@ class Dataset(ArgumentsHandler, ABC):
             Default fraction of data to leave for model validation.
         split_seed : int
             Default seed used for dataset split.
+        dataset_percentage : float
+            Use given percentage of the dataset.
         """
         assert batch_size > 0
+        assert (
+            0 < dataset_percentage <= 1
+        ), "Percentage has to be between 0 and 1"
         self.root = Path(root)
         self._dataindex = 0
         self._dataindices = []
@@ -250,6 +261,7 @@ class Dataset(ArgumentsHandler, ABC):
         self.split_fraction_test = split_fraction_test
         self.split_fraction_val = split_fraction_val
         self.split_seed = split_seed
+        self.dataset_percentage = dataset_percentage
         if force_download_dataset or (
             download_dataset and not self.verify_dataset_checksum()
         ):
@@ -258,6 +270,8 @@ class Dataset(ArgumentsHandler, ABC):
             self.save_dataset_checksum()
 
         self.prepare()
+        if self.dataset_percentage < 1:
+            self._reduce_dataset()
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> "Dataset":
@@ -795,6 +809,34 @@ class Dataset(ArgumentsHandler, ABC):
         prepare_output_samples.
         """
         raise NotImplementedError
+
+    def _reduce_dataset(self):
+        """
+        Reduces dataset to the given percentage.
+
+        The order of remaining data is preserved.
+        """
+        full_size = len(self.dataX)
+        np.random.seed(self.split_seed)
+        _, _, _, _, reduced_indices, _ = self.train_test_split_representations(
+            1 - self.dataset_percentage,
+            append_index=True,
+        )
+        # Preserve order of dataset
+        reduced_indices = np.sort(reduced_indices)
+        if isinstance(self.dataX, np.ndarray):
+            self.dataX = self.dataX[reduced_indices]
+        else:
+            self.dataX = [self.dataX[idx] for idx in reduced_indices]
+        if isinstance(self.dataY, np.ndarray):
+            self.dataY = self.dataY[reduced_indices]
+        else:
+            self.dataY = [self.dataY[idx] for idx in reduced_indices]
+        reduced_size = len(self.dataX)
+        KLogger.info(
+            f"Dataset reduced from {full_size} to {reduced_size} entries"
+            f" ({reduced_size / full_size * 100:.2f}%)"
+        )
 
     @abstractmethod
     def evaluate(self, predictions: List, truth: List) -> "Measurements":

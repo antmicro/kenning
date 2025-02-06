@@ -428,6 +428,14 @@ class PipelineRunner(object):
             convert_to_onnx, run_optimizations
         )
 
+        # update model io spec after all optimizations (if any)
+        if self.optimizers:
+            final_io_spec = self.optimizers[-1].load_io_specification(
+                model_path
+            )
+            if final_io_spec is not None:
+                self.model_wrapper.io_specification = final_io_spec
+
         if self.runtime_builder is not None:
             self.handle_runtime_builder(
                 self._guess_model_framework(convert_to_onnx, run_optimizations)
@@ -670,11 +678,6 @@ class PipelineRunner(object):
 
         if self.optimizers:
             self.optimizers[-1].save_io_specification(model_path)
-
-            # update model io spec
-            self.model_wrapper.io_specification = self.optimizers[
-                -1
-            ].load_io_specification(model_path)
 
         KLogger.info(f"Compiled model path: {model_path}")
         return model_path

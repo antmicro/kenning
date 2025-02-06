@@ -37,7 +37,7 @@
         "criterion": "torch.nn.CrossEntropyLoss",
         "optimizer": "torch.optim.Adam",
         "pruning_on_cuda": true,
-        "finetuning_learning_rate": 5e-05,
+        "finetuning_learning_rate": 0.00005,
         "exclude_last_layer": true
       }
     }

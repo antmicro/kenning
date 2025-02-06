@@ -65,7 +65,9 @@ def torchconversion(
     CompilationError
         Raised when loaded model is not of instance torch.nn.Module
     """
-    loaded = torch.load(str(model_path), map_location=device)
+    loaded = torch.load(
+        str(model_path), map_location=device, weights_only=False
+    )
     if not isinstance(loaded, torch.nn.Module):
         raise CompilationError(
             f"Expecting model of type:"

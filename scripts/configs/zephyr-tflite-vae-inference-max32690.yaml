@@ -19,14 +19,14 @@ model_wrapper:
     type: kenning.modelwrappers.anomaly_detection.vae.PyTorchAnomalyDetectionVAE
     parameters:
         model_name: vae
-        model_path: ./vae_small.pth
+        model_path: ./vae_cats.pth
         encoder_layers: [16, 8]
         batch_norm: true
 # run TFLite conversion from above PyTorch model to TFLite Flatbuffers
 optimizers:
     - type: kenning.optimizers.tflite.TFLiteCompiler
       parameters:
-          compiled_model_path: ./workspace/vae_small.tflite
+          compiled_model_path: ./workspace/vae_cats.tflite
           target: default
           inference_input_type: float32
           inference_output_type: float32
@@ -36,36 +36,37 @@ optimizers:
 # this is a runtime that uses Renode simulation to evaluate the model
 # it uses UART communication on /tmp/uart
 
-runtime:
-    type: kenning.runtimes.renode.RenodeRuntime
-    parameters:
-        runtime_binary_path: ./build/zephyr/zephyr.elf
-        platform_resc_path: ./renode/scripts/max32690evkit.resc
-        resc_dependencies:
-            - ./build/max32690evkit.repl
-        runtime_log_uart: /tmp/uart-log
-        runtime_log_init_msg: "I: Inference server started"
-        profiler_dump_path: ./build/profiler.dump
-protocol:
-    type: kenning.protocols.uart.UARTProtocol
-    parameters:
-        port: /tmp/uart
-        baudrate: 9600
-        endianness: little
+# runtime:
+#     type: kenning.runtimes.renode.RenodeRuntime
+#     parameters:
+#         runtime_binary_path: ./build/zephyr/zephyr.elf
+#         platform_resc_path: ./renode/scripts/max32690evkit.resc
+#         resc_dependencies:
+#             - ./build/max32690evkit.repl
+#         runtime_log_uart: /tmp/uart-log
+#         runtime_log_init_msg: "I: Inference server started"
+#         profiler_dump_path: ./build/profiler.dump
+# protocol:
+#     type: kenning.protocols.uart.UARTProtocol
+#     parameters:
+#         port: /tmp/uart
+#         baudrate: 115200
+#         endianness: little
 
 # end of Renode-based evaluation
 
 # this is a runtime that runs on the actual MAX32690 Evaluation Kit
 # Path to the UART port is set to /dev/ttyUSB0, change it to appropriate path
 
-# runtime:
-#     type: kenning.runtimes.tflite.TFLiteRuntime
-#     parameters: {}
-# protocol:
-#     type: kenning.protocols.uart.UARTProtocol
-#     parameters:
-#         port: /dev/ttyUSB0
-#         baudrate: 9600
-#         endianness: little
+runtime:
+    type: kenning.runtimes.tflite.TFLiteRuntime
+    parameters:
+        save_model_path: ./workspace/vae_cats.tflite
+protocol:
+    type: kenning.protocols.uart.UARTProtocol
+    parameters:
+        port: /dev/ttyUSB0
+        baudrate: 115200
+        endianness: little
 
 # end of hardware-based evaluation

@@ -31,11 +31,17 @@ class PyTorchWrapper(ModelWrapper, ABC):
         model_name: Optional[str] = None,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
+        self._device = None
+
+    @property
+    def device(self):
         import torch
 
-        self.device = torch.device(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        if self._device is None:
+            self._device = torch.device(
+                "cuda" if torch.cuda.is_available() else "cpu"
+            )
+        return self._device
 
     def load_weights(self, weights: OrderedDict):
         """
@@ -147,7 +153,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
     def convert_input_to_bytes(self, inputdata: List[Any]) -> bytes:
         data = bytes()
         for inp in inputdata:
-            for x in inp.detach().cpu().numpy():
+            for x in inp:
                 data += x.tobytes()
         return data
 

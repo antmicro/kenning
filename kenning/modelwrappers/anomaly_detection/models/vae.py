@@ -96,25 +96,6 @@ class AnomalyDetectionVAE(VAEModel):
             last_neuron_size = neuron_size
         return nn.Sequential(*encoder_layers)
 
-    def classify_anomaly(self, distances: torch.Tensor) -> torch.Tensor:
-        """
-        Decides whether given distance indicates anomaly.
-
-        Parameters
-        ----------
-        distances : torch.Tensor
-            List of distances
-
-        Returns
-        -------
-        torch.Tensor
-            List with 1 (anomaly) and 0 (normal)
-        """
-        import torch
-
-        anomaly = distances > self.threshold
-        return anomaly.to(torch.int8)
-
     def forward_minimal(
         self, x: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
@@ -135,7 +116,7 @@ class AnomalyDetectionVAE(VAEModel):
         """
         return super().forward(x)
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def forward_distances(self, x: torch.Tensor) -> torch.Tensor:
         """
         Processes input data and calculates distance between target
         and predicted value.
@@ -154,6 +135,23 @@ class AnomalyDetectionVAE(VAEModel):
         euclidean_sq = torch.square(x_recon - x[:, -self.feature_size :])
         distance = torch.sqrt(torch.sum(euclidean_sq, axis=1)).reshape((-1, 1))
         return distance
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """
+        Processes input data and detects whether anomaly appeared.
+
+        Parameters
+        ----------
+        x : torch.Tensor
+            Input data in shape (batch size, window size * feature size)
+
+        Returns
+        -------
+        torch.Tensor
+            Detected anomalies
+        """
+        distances = self.forward_distances(x)
+        return (distances > self.threshold).to(torch.float32)
 
     def reparameterize(
         self, mu: torch.Tensor, logvar: torch.Tensor

@@ -155,8 +155,6 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
             Parameter of the VAE loss function - defines upper limit
             of KL divegence.
         """
-        import torch
-
         super().__init__(model_path, dataset, from_file, model_name)
 
         self.encoder_layers = encoder_layers
@@ -170,11 +168,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
         self.capacity = capacity
 
         if dataset:
-            mean, std = self.dataset.get_input_mean_std()
-            self.mean = torch.tensor(
-                mean, device=self.device, dtype=torch.float
-            )
-            self.std = torch.tensor(std, device=self.device, dtype=torch.float)
+            self.mean, self.std = self.dataset.get_input_mean_std()
 
     def create_model_structure(self):
         from kenning.modelwrappers.anomaly_detection.models.vae import (
@@ -215,50 +209,26 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
         self.model.to(self.device)
 
     def preprocess_input(self, X) -> List[Any]:
-        import torch
-
-        X = [torch.tensor(np.asarray(X[0])).to(self.device)]
-        X = [(x - self.mean) / self.std for x in X]
-        return [
-            x.view(
-                -1,
-                self.dataset.window_size * self.dataset.num_features,
-            )
-            for x in X
-        ]
+        X = np.asarray(X[0])
+        X = (X - self.mean) / self.std
+        X = X.reshape(
+            -1,
+            self.dataset.window_size * self.dataset.num_features,
+        )
+        return [X]
 
     def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
+        anomalies = np.asarray(y).reshape(-1).astype(np.int8)
+        return (anomalies,)
+
+    def run_inference(self, X: List[Any]) -> List[Any]:
         import torch
 
-        if isinstance(y[0], torch.Tensor):
-            distances = torch.stack(y)
-        else:
-            distances = torch.tensor(np.asarray(y), device=self.device)
-        y = self.model.classify_anomaly(distances.ravel())
-        return (y.detach().cpu().numpy(),)
-
-    def _quantize_inputs(
-        self,
-        X: List[Any],
-        io_spec: Optional[Dict[str, List[Dict]]] = None,
-    ) -> List[Any]:
-        if X[0].shape[0] != self.dataset.batch_size:
-            import torch
-
-            zeros = torch.zeros(
-                (self.dataset.batch_size - X[0].shape[0], *X[0].shape[1:]),
-                dtype=X[0].dtype,
-            ).to(self.device)
-            X[0] = torch.cat((X[0], zeros), 0)
-        if io_spec and any(
-            [
-                "prequantized_dtype" in spec
-                for key, spec in io_spec.items()
-                if "input" in key
-            ]
-        ):
-            X = [x.cpu().numpy() for x in X]
-        return super()._quantize_inputs(X, io_spec)
+        self.prepare_model()
+        y = self.model(*[torch.tensor(x, device=self.device) for x in X])
+        if not isinstance(y, (list, tuple)):
+            y = [y]
+        return [_y.detach().cpu().numpy() for _y in y]
 
     def train_model(
         self,
@@ -279,12 +249,22 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
         KLogger.info("Preparing dataset")
         X_train, y_train = [], []
         for X, y in self.dataset.iter_train():
-            X_train += self.preprocess_input(X)[0]
+            X_train += self.preprocess_input(X)
             y_train += y[0]
         X_test, y_test = [], []
         for X, y in self.dataset.iter_test():
-            X_test += self.preprocess_input(X)[0]
+            X_test += self.preprocess_input(X)
             y_test += y[0]
+        X_train = np.concatenate(X_train)
+        X_train = [
+            torch.tensor(X_train[i], device=self.device)
+            for i in range(X_train.shape[0])
+        ]
+        X_test = np.concatenate(X_test)
+        X_test = [
+            torch.tensor(X_test[i], device=self.device)
+            for i in range(X_test.shape[0])
+        ]
         contamination = sum(y_train) / len(y_train)
 
         optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
@@ -339,7 +319,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
                 for batch_start in range(0, len(X_train), batch_size):
                     x = X_train[batch_start : batch_start + batch_size]
                     with torch.no_grad():
-                        distance = self.model(torch.stack(x))
+                        distance = self.model.forward_distances(torch.stack(x))
                     distances.append(distance.cpu().numpy())
 
                 distances = np.concatenate(distances)
@@ -355,10 +335,9 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper):
                 pred = []
                 for batch_start in range(0, len(X_test), batch_size):
                     x = X_test[batch_start : batch_start + batch_size]
+                    x = torch.stack(x)
                     with torch.no_grad():
-                        anomaly = self.model.classify_anomaly(
-                            self.model(torch.stack(x)).ravel()
-                        )
+                        anomaly = self.model(x).ravel()
                     pred.append(anomaly.cpu().numpy())
                     acc += np.sum(
                         y_test[batch_start : batch_start + batch_size]

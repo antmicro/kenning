@@ -7,16 +7,16 @@ This demo will use [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-
 ## Prepare an environment for development
 
 This example uses the pre-built Docker image from [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-zephyr-runtime).
-To get started, create a workspace directory:
-
-```bash
-mkdir -p zephyr-workspace/workspace && cd zephyr-workspace
-```
-
-Secondly, create a Docker container with the necessary environment:
+To get started, create a Docker container with the necessary environment:
 
 ```bash
 docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
+```
+
+Secondly, create a workspace directory in the container:
+
+```bash
+mkdir -p zephyr-workspace && cd zephyr-workspace
 ```
 
 In case the MAX32690 Evaluation Kit is connected to the desktop PC using MAX32625PICO debugger, the Docker container needs to be started in privileged mode, with UART and ACM devices forwarded to it.
@@ -36,8 +36,23 @@ cd kenning-zephyr-runtime/
 source .venv/bin/activate
 ```
 
+:::{note}
+Optionally, to use the newest Kenning - install it in the image and reload the virtual environment:
+
+```bash test-skip
+pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
+source .venv/bin/activate
+```
+:::
+
 An environment configured this way will allow working with Kenning and Zephyr RTOS.
 For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#building-the-project).
+
+In the end, let's create a `workspace` directory, where intermediate results of further commands will be stored:
+
+```bash
+mkdir -p workspace
+```
 
 ## Install software necessary for flashing the MAX32690 Evaluation Kit
 
@@ -212,10 +227,10 @@ shutdown command invoked
 
 If `./build/zephyr/zephyr.hex` is successfully written to the device, the model can be tested directly on hardware platform.
 
-To do so, let's use a single-command approach, where `kenning optimize test report` are invoked all at once:
+To do so, let's use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
 
 ```bash test-skip
-kenning optimize test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml \
+kenning test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml \
     --measurements workspace/vae-tflite-hw.json \
     --report-path reports/vae-tflite-hw/report.md --to-html \
     --verbosity INFO
@@ -285,8 +300,37 @@ To test the model on hardware, first flash the device with microTVM-based app:
 And run testing on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
 
 ```bash test-skip
-kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yaml \
+kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yaml \
     --measurements workspace/vae-tvm-hw.json \
     --report-path reports/vae-tvm-hw/report.md --to-html \
     --verbosity INFO
 ```
+
+## Comparing performance and quality of runtimes and models
+
+Having results for microTVM and TensorFlow Lite Micro runtimes, it is possible to generate comparison reports that will show the differences in performance and quality between the two.
+
+To generate report for Renode simulations, run:
+
+```bash
+kenning report --measurements \
+    workspace/vae-tflite-renode.json \
+    workspace/vae-tvm-renode.json \
+    --report-path reports/vae-tflite-tvm-comparison-renode/report.md --to-html \
+    --verbosity INFO
+```
+
+For comparison of execution on hardware, run:
+
+```bash test-skip
+kenning report --measurements \
+    workspace/vae-tflite-hw.json \
+    workspace/vae-tvm-hw.json \
+    --report-path reports/vae-tflite-tvm-comparison-hw/report.md --to-html \
+    --verbosity INFO
+```
+
+The reports in HTML format will be available under:
+
+* `reports/vae-tflite-tvm-comparison-renode/report/report.html`
+* `reports/vae-tflite-tvm-comparison-hw/report/report.html`

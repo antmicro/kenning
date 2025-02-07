@@ -88,7 +88,7 @@ The evaluation results would be saved at `build/zephyr-stm32-tflite-magic-wand.j
 
 ![microTVM scenario with Renode simulation](img/kenning-zephyr-runtime-tvm.png)
 
-Building the Kenning Zephyr Runtime with [microTVM](https://tvm.apache.org/docs/topic/microtvm/index.html) support for the same board requires changing only `-DEXTRA_CONF_FILE` value.
+Building the Kenning Zephyr Runtime with [microTVM](https://tvm.apache.org/docs/v0.9.0/topic/microtvm/index.html) support for the same board requires changing only `-DEXTRA_CONF_FILE` value.
 Run:
 
 ```bash

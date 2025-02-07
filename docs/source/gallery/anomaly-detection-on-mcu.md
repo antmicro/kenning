@@ -10,7 +10,7 @@ This example uses the pre-built Docker image from [Kenning Zephyr Runtime](https
 To get started, create a workspace directory:
 
 ```bash
-mkdir zephyr-workspace && cd zephyr-workspace
+mkdir -p zephyr-workspace/workspace && cd zephyr-workspace
 ```
 
 Secondly, create a Docker container with the necessary environment:
@@ -22,7 +22,7 @@ docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-r
 In case the MAX32690 Evaluation Kit is connected to the desktop PC using MAX32625PICO debugger, the Docker container needs to be started in privileged mode, with UART and ACM devices forwarded to it.
 Assuming that the programmer is available as `/dev/ttyACM0`, and UART as `/dev/ttyUSB0` in the currently running system, run:
 
-```bash
+```bash test-skip
 docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
 ```
 
@@ -45,7 +45,7 @@ To flash the MAX32690 Evaluation Kit, a Maxim Micros SDK is needed.
 
 Within the Docker image, run:
 
-```bash
+```bash test-skip
 mkdir -p /usr/share/applications
 wget -O ./MaximMicrosSDK_linux.run https://github.com/analogdevicesinc/msdk/releases/download/v2024_10/MaximMicrosSDK_linux.run
 chmod +x ./MaximMicrosSDK_linux.run
@@ -163,7 +163,7 @@ kenning report --measurements workspace/vae-tflite-renode.json --report-path rep
 Lastly, the model can be evaluated on actual MAX32690 Evaluation Kit.
 First, flash the board with an evaluation app:
 
-```bash
+```bash test-skip
 /root/MaximSDK/Tools/OpenOCD/openocd \
     -s /root/MaximSDK/Tools/OpenOCD/scripts/ \
     -c 'source [find interface/cmsis-dap.cfg]' \
@@ -214,7 +214,7 @@ If `./build/zephyr/zephyr.hex` is successfully written to the device, the model 
 
 To do so, let's use a single-command approach, where `kenning optimize test report` are invoked all at once:
 
-```bash
+```bash test-skip
 kenning optimize test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml \
     --measurements workspace/vae-tflite-hw.json \
     --report-path reports/vae-tflite-hw/report.md --to-html \
@@ -271,7 +271,7 @@ This performs all actions at once - model optimization, model evaluation and rep
 
 To test the model on hardware, first flash the device with microTVM-based app:
 
-```bash
+```bash test-skip
 /root/MaximSDK/Tools/OpenOCD/openocd \
     -s /root/MaximSDK/Tools/OpenOCD/scripts/ \
     -c 'source [find interface/cmsis-dap.cfg]' \
@@ -284,7 +284,7 @@ To test the model on hardware, first flash the device with microTVM-based app:
 
 And run testing on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
 
-```bash
+```bash test-skip
 kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yaml \
     --measurements workspace/vae-tvm-hw.json \
     --report-path reports/vae-tvm-hw/report.md --to-html \

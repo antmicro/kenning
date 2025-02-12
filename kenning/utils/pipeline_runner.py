@@ -3,12 +3,12 @@
 # SPDX-License-Identifier: Apache-2.0
 
 """
-Module with pipelines running helper functions.
+Provides runner for optimization flows.
 """
 
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Dict, List, Optional
 
 from tqdm import tqdm
 
@@ -17,28 +17,32 @@ from kenning.core.dataset import Dataset
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
-    systemstatsmeasurements,
     tagmeasurements,
 )
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
-from kenning.core.protocol import Protocol, RequestFailure, check_request
+from kenning.core.platform import Platform
+from kenning.core.protocol import Protocol, check_request
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
-
-try:
-    from kenning.runtimes.renode import RenodeRuntime
-except ImportError:
-    RenodeRuntime = type(None)
-
+from kenning.platforms.local import LocalPlatform
+from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.class_loader import any_from_json
-from kenning.utils.logger import KLogger, LoggerProgressBar, TqdmCallback
-from kenning.utils.resource_manager import PathOrURI
+from kenning.utils.logger import KLogger, LoggerProgressBar
+from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 UNOPTIMIZED_MEASUREMENTS = "__unoptimized__"
+
+
+class PipelineRunnerInvalidConfigError(Exception):
+    """
+    Exception raised when invalid config value is provided to PipelineRunner.
+    """
+
+    pass
 
 
 class PipelineRunner(object):
@@ -48,12 +52,13 @@ class PipelineRunner(object):
 
     def __init__(
         self,
-        dataset: Dataset,
-        dataconverter: DataConverter,
-        optimizers: List[Optimizer],
-        runtime: Runtime,
+        dataset: Optional[Dataset] = None,
+        dataconverter: Optional[DataConverter] = None,
+        optimizers: List[Optimizer] = [],
+        platform: Optional[Platform] = None,
         protocol: Optional[Protocol] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        runtime: Optional[Runtime] = None,
         runtime_builder: Optional[RuntimeBuilder] = None,
     ):
         """
@@ -61,29 +66,104 @@ class PipelineRunner(object):
 
         Parameters
         ----------
-        dataset : Dataset
+        dataset : Optional[Dataset]
             Dataset object that provides data for inference.
-        dataconverter : DataConverter
+        dataconverter : Optional[DataConverter]
             DataConverter object that converts data from/to Protocol format.
         optimizers : List[Optimizer]
             List of Optimizer objects that optimize the model.
-        runtime : Runtime
-            Runtime object that runs the inference.
+        platform : Optional[Platform]
+            Platform on which model will be evaluated.
         protocol : Optional[Protocol]
             Protocol object that provides the communication protocol.
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper object that wraps the model.
+        runtime : Optional[Runtime]
+            Runtime object that runs the inference.
         runtime_builder : Optional[RuntimeBuilder]
             RuntimeBuilder object that builds the runtime.
+
+        Raises
+        ------
+        PipelineRunnerInvalidConfigError
+            Raised when invalid values are provided.
         """
         self.dataset = dataset
         self.dataconverter = dataconverter
-        self.model_wrapper = model_wrapper
         self.optimizers = optimizers
-        self.runtime = runtime
+        self.platform = platform
         self.protocol = protocol
+        self.model_wrapper = model_wrapper
+        self.runtime = runtime
         self.runtime_builder = runtime_builder
         self.should_cancel = False
+
+        # resolve defaults
+        if (
+            self.dataset is None
+            and self.model_wrapper is not None
+            and self.model_wrapper.default_dataset is not None
+        ):
+            dataset_cls = self.model_wrapper.default_dataset
+            self.dataset = dataset_cls(
+                root=Path(f"./build/{type(dataset_cls).__name__}")
+            )
+            KLogger.info(f"Set dataset to {self.dataset}")
+
+        if self.platform is None:
+            self.platform = LocalPlatform()
+            KLogger.info("Set platform to Local")
+
+        if self.protocol is None and self.platform.needs_protocol:
+            self.protocol = self.platform.get_default_protocol()
+            KLogger.info(f"Set protocol to {self.protocol}")
+
+        if not (self.model_wrapper or self.dataconverter):
+            raise PipelineRunnerInvalidConfigError(
+                "Provide either dataconverter or model_wrapper"
+            )
+
+        if self.dataconverter is None:
+            self.dataconverter = ModelWrapperDataConverter(self.model_wrapper)
+
+        assert (
+            self.model_wrapper or self.dataconverter
+        ), "Provide either dataconverter or model_wrapper."
+
+        if (
+            type(self.runtime_builder).__name__ == "ZephyrRuntimeBuilder"
+        ) and type(self.platform).__name__ in (
+            "BareMetalPlatform",
+            "ZephyrPlatform",
+        ):
+            self.platform.zephyr_build_path = self.runtime_builder.output_path
+            KLogger.info(
+                "Set platform Zephyr build path to "
+                f"{self.platform.zephyr_build_path}"
+            )
+            self.runtime_builder.board = self.platform.name
+            KLogger.info(
+                f"Set runtime builder board to {self.runtime_builder.board}"
+            )
+
+        if (
+            len(optimizers) > 0
+            and type(self.optimizers[-1]).__name__ == "TVMCompiler"
+            and type(self.platform).__name__
+            in ("BareMetalPlatform", "ZephyrPlatform")
+        ):
+            target_attrs = (
+                " ".join(platform.compilation_flags)
+                if platform.compilation_flags is not None
+                else ""
+            )
+            self.optimizers[-1].target = "zephyr"
+            self.optimizers[-1].target_attrs = target_attrs
+            self.optimizers[-1].target_microtvm_board = platform.name
+            self.optimizers[-1].zephyr_header_template = ResourceURI(
+                "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
+            )
+            KLogger.info(f"Set TVMCompiler target to zephyr, {platform.name}")
 
     @classmethod
     def from_json_cfg(
@@ -92,84 +172,48 @@ class PipelineRunner(object):
         assert_integrity: bool = True,
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
-    ) -> "PipelineRunner":
-        """
-        Method that parses a json configuration of an inference pipeline.
+    ):
+        dataset = any_from_json(json_cfg.get("dataset", {}), "datasets")
 
-        It also checks whether the pipeline is correct in terms of connected
-        blocks if `assert_integrity` is set to true.
+        dataconverter = any_from_json(
+            json_cfg.get("runtime", {}).get("data_converted", {}),
+            block_type="dataconverters",
+        )
 
-        Can be used to check whether blocks' parameters and the order of the
-        blocks are correct.
+        platform = any_from_json(
+            json_cfg.get("platform", {}), block_type="platforms"
+        )
 
-        Parameters
-        ----------
-        json_cfg : Dict
-            Configuration of the inference pipeline.
-        assert_integrity : bool
-            States whether integrity of connected blocks should be checked.
-        skip_optimizers : bool
-            States whether optimizers should be created.
-        skip_runtime : bool
-            States whether runtime should be created.
+        protocol = any_from_json(
+            json_cfg.get("protocol", {}), block_type="protocols"
+        )
 
-        Returns
-        -------
-        PipelineRunner
-            PipelineRunner created from provided JSON config.
-        """
-        if "runtime" not in json_cfg:
-            skip_runtime = True
+        model_wrapper = any_from_json(
+            json_cfg.get("model_wrapper", {}),
+            block_type="modelwrappers",
+            dataset=dataset,
+        )
 
-        dataset = (
-            any_from_json(json_cfg["dataset"])
-            if "dataset" in json_cfg
+        runtime = (
+            any_from_json(json_cfg.get("runtime", {}), block_type="runtimes")
+            if not skip_runtime
             else None
         )
 
-        model_wrapper = (
-            any_from_json(json_cfg["model_wrapper"], dataset=dataset)
-            if "model_wrapper" in json_cfg
-            else None
+        runtime_builder = any_from_json(
+            json_cfg.get("runtime_builder", {}), block_type="runtimebuilders"
         )
 
         optimizers = (
             [
-                any_from_json(optimizer_cfg, dataset=dataset)
+                any_from_json(
+                    optimizer_cfg, block_type="optimizers", dataset=dataset
+                )
                 for optimizer_cfg in json_cfg.get("optimizers", [])
             ]
             if not skip_optimizers
             else None
         )
-
-        runtime = (
-            any_from_json(json_cfg["runtime"]) if not skip_runtime else None
-        )
-
-        protocol = (
-            any_from_json(json_cfg["protocol"])
-            if "protocol" in json_cfg
-            else None
-        )
-
-        runtime_builder = (
-            any_from_json(json_cfg["runtime_builder"])
-            if "runtime_builder" in json_cfg
-            else None
-        )
-
-        dataconverter = (
-            any_from_json(json_cfg["runtime"]["data_converter"])
-            if json_cfg.get("runtime", {}).get("data_converter", None)
-            else None
-        )
-
-        assert (
-            model_wrapper or dataconverter
-        ), "Provide either dataconverter or model_wrapper."
-
-        if not dataconverter:
-            dataconverter = ModelWrapperDataConverter(model_wrapper)
 
         if assert_integrity:
             cls.assert_io_formats(model_wrapper, optimizers, runtime)
@@ -178,87 +222,51 @@ class PipelineRunner(object):
             dataset=dataset,
             dataconverter=dataconverter,
             optimizers=optimizers,
-            runtime=runtime,
+            platform=platform,
             protocol=protocol,
             model_wrapper=model_wrapper,
+            runtime=runtime,
             runtime_builder=runtime_builder,
         )
 
-    def serialize_inference(
+    def serialize(
         self,
-        dataset: Dataset,
-        model: ModelWrapper,
-        optimizers: Union[List[Optimizer], Optimizer],
-        protocol: Protocol,
-        runtime: Runtime,
-        dataconverter: DataConverter,
-        runtime_builder: RuntimeBuilder,
     ) -> Dict:
         """
-        Serializes the given objects into a dictionary which
-        is a valid input for `inference_tester.py`.
-
-        Parameters
-        ----------
-        dataset : Dataset
-            Dataset to serialize.
-        model : ModelWrapper
-            ModelWrapper to serialize.
-        optimizers : Union[List[Optimizer], Optimizer]
-            Optimizers to serialize.
-        protocol : Protocol
-            Protocol to serialize.
-        runtime : Runtime
-            Runtime to serialize.
-        dataconverter : DataConverter
-            DataConverter to serialize.
-        runtime_builder : RuntimeBuilder
-            RuntimeBuilder to serialize.
+        Serializes the given objects into a dictionary.
 
         Returns
         -------
         Dict
-            Serialized inference.
+            Serialized configuration.
         """
-
-        def object_to_module(obj):
-            return type(obj).__module__ + "." + type(obj).__name__
-
         serialized_dict = {}
 
-        for obj, name in zip(
-            [
-                dataset,
-                model,
-                protocol,
-                runtime,
-                dataconverter,
-                runtime_builder,
-            ],
-            [
-                "dataset",
-                "model_wrapper",
-                "protocol",
-                "runtime",
-                "data_converter",
-                "runtime_builder",
-            ],
-        ):
-            if obj:
-                serialized_dict[name] = obj.to_json()
+        for obj_name in [
+            "dataset",
+            "dataconverter",
+            "optimizers",
+            "platform",
+            "protocol",
+            "model_wrapper",
+            "runtime",
+            "runtime_builder",
+        ]:
+            obj = getattr(self, obj_name)
+            if obj is None:
+                continue
 
-        if optimizers:
-            if not isinstance(optimizers, list):
-                optimizers = [optimizers]
-
-            serialized_dict["optimizers"] = [
-                optimizer.to_json() for optimizer in optimizers
-            ]
+            if isinstance(obj, list):
+                serialized_dict[obj_name] = [
+                    obj_elem.to_json() for obj_elem in obj
+                ]
+            else:
+                serialized_dict[obj_name] = obj.to_json()
 
         return serialized_dict
 
     def add_scenario_configuration_to_measurements(
-        self, command: List, model_path: Optional[PathOrURI]
+        self, command: List, model_path: Optional[PathOrURI] = None
     ):
         """
         Adds scenario configuration to measurements.
@@ -281,15 +289,7 @@ class PipelineRunner(object):
                 for optimizer in self.optimizers
             ],
             "command": command,
-            "build_cfg": self.serialize_inference(
-                dataset=self.dataset,
-                model=self.model_wrapper,
-                optimizers=self.optimizers,
-                protocol=self.protocol,
-                runtime=self.runtime,
-                dataconverter=self.dataconverter,
-                runtime_builder=self.runtime_builder,
-            ),
+            "build_cfg": self.serialize(),
         }
 
         if self.model_wrapper:
@@ -315,51 +315,6 @@ class PipelineRunner(object):
             MeasurementsCollector.measurements += {
                 "compiled_model_size": model_path.stat().st_size
             }
-
-    def execute_benchmarks(self, model_path: PathOrURI) -> bool:
-        """
-        Executes appropriate inference method for benchmarking.
-
-        Parameters
-        ----------
-        model_path : PathOrURI
-            Path to the compiled model.
-
-        Returns
-        -------
-        bool
-            True if the benchmarks were performed successfully,
-            False otherwise.
-        """
-        if self.runtime:
-            if not self.dataset:
-                KLogger.error(
-                    "The benchmarks cannot be performed without a dataset and "
-                    "a runtime or model wrapper"
-                )
-                return False
-            elif self.protocol:
-                if isinstance(self.runtime, RenodeRuntime):
-                    if self.model_wrapper is None:
-                        return False
-                    return self.runtime.run_client(
-                        dataset=self.dataset,
-                        modelwrapper=self.model_wrapper,
-                        dataconverter=self.dataconverter,
-                        protocol=self.protocol,
-                        compiled_model_path=model_path,
-                    )
-                return self._run_client(model_path)
-            else:
-                if self.model_wrapper is None:
-                    return False
-                return self._run_locally(model_path)
-
-        if self.model_wrapper is None:
-            return False
-        self.model_wrapper.model_path = model_path
-        self.model_wrapper.test_inference()
-        return True
 
     def run(
         self,
@@ -397,34 +352,55 @@ class PipelineRunner(object):
         -------
         int
             The 0 value if the inference was successful, 1 otherwise.
+
+        Raises
+        ------
+        PipelineRunnerInvalidConfigError
+            Raised when invalid values are provided.
         """
-        assert run_optimizations or run_benchmarks, (
-            "If both optimizations and benchmarks are skipped, pipeline will "
-            "not be executed"
-        )
+        if not (run_optimizations or run_benchmarks):
+            raise PipelineRunnerInvalidConfigError(
+                "If both optimizations and benchmarks are skipped, pipeline "
+                "will not be executed"
+            )
         KLogger.set_verbosity(verbosity)
 
         MeasurementsCollector.clear()
 
-        self.assert_io_formats(
-            self.model_wrapper, self.optimizers, self.runtime
+        model_framework = self._guess_model_framework(
+            convert_to_onnx, run_optimizations
         )
 
-        ret = True
-        if (
-            self.protocol
-            and not isinstance(self.runtime, RenodeRuntime)
-            and (
-                run_benchmarks
-                or any(
-                    optimizer.location == "target"
-                    for optimizer in self.optimizers
-                )
+        # initialize protocol if needed
+        protocol_required_by_optimizers = run_optimizations and any(
+            optimizer.location == "target" for optimizer in self.optimizers
+        )
+        protocol_required = (
+            run_benchmarks
+            and self.platform is not None
+            and self.platform.needs_protocol
+        ) or protocol_required_by_optimizers
+
+        if protocol_required and self.protocol is None:
+            msg = "Protocol not specified but required"
+            KLogger.error(msg)
+            raise PipelineRunnerInvalidConfigError(msg)
+
+        if protocol_required_by_optimizers and type(
+            self.platform
+        ).__name__ in ("BareMetalPlatform", "ZephyrPlatform"):
+            msg = (
+                f"Invalid configucation, {type(self.platform).__name__} "
+                "platform cannot run optimization"
             )
-        ):
+            KLogger.error(msg)
+            raise PipelineRunnerInvalidConfigError(msg)
+
+        if protocol_required_by_optimizers:
             check_request(self.protocol.initialize_client(), "prepare client")
 
-        model_path = self.handle_optimizations(
+        # handle model optimizations
+        model_path = self._handle_optimizations(
             convert_to_onnx, run_optimizations
         )
 
@@ -436,107 +412,133 @@ class PipelineRunner(object):
             if final_io_spec is not None:
                 self.model_wrapper.io_specification = final_io_spec
 
-        if self.runtime_builder is not None:
-            self.handle_runtime_builder(
-                self._guess_model_framework(convert_to_onnx, run_optimizations)
-            )
+        # handle runtime builder
+        self._handle_runtime_builder(model_framework, model_path)
 
-        if not isinstance(self.runtime, RenodeRuntime) and (
-            getattr(self.runtime, "llext_binary_path", None) is not None
-            or (
-                self.runtime_builder is not None
-                and self.runtime_builder.use_llext
+        # deduce runtime if not specified
+        if (
+            run_benchmarks
+            and self.runtime is None
+            and (
+                protocol_required
+                or (run_optimizations and len(self.optimizers) > 0)
             )
         ):
-            if self.runtime_builder.use_llext:
-                llext_path = self.runtime_builder.output_path / "runtime.llext"
+            self.runtime = get_default_runtime(model_framework, model_path)
+            KLogger.info(f"Deduced runtime {self.runtime}")
+
+        if run_benchmarks:
+            if self.runtime is None:
+                self.model_wrapper.test_inference()
             else:
-                llext_path = self.runtime.lext_binary_path
-            status = self.protocol.upload_runtime(llext_path)
-            if not status:
-                return False
+                # handle platform init
+                self._handle_platform_init()
+
+                measurements = Measurements()
+
+                try:
+                    if (
+                        protocol_required
+                        and not protocol_required_by_optimizers
+                    ):
+                        check_request(
+                            self.protocol.initialize_client(), "prepare client"
+                        )
+
+                    # Handle LLEXT upload
+                    self._handle_runtime_upload()
+
+                    self._inference_loop(
+                        measurements, model_path, remote=protocol_required
+                    )
+                except Exception:
+                    raise
+                finally:
+                    # handle platform deinit
+                    self._handle_platform_deinit(measurements)
+
+                MeasurementsCollector.measurements += measurements
 
         if output:
             self.add_scenario_configuration_to_measurements(
                 command, model_path
             )
-        if run_benchmarks:
-            if not output:
-                KLogger.warning(
-                    "Running benchmarks without defined output -- "
-                    "measurements will not be saved"
-                )
-            ret = self.execute_benchmarks(model_path)
-
-        if output:
             MeasurementsCollector.save_measurements(output)
 
-        if ret:
-            return 0
-        return 1
+        return 0
 
-    def _guess_model_framework(self, convert_to_onnx, run_optimizations):
-        def first_not_onnx(x):
-            for fmt in x.get_output_formats():
-                if fmt != "onnx":
-                    return fmt
-
-        if not run_optimizations or len(self.optimizers) == 0:
-            if convert_to_onnx:
-                return "onnx"
-
-            return first_not_onnx(self.model_wrapper)
-
-        return first_not_onnx(self.optimizers[-1])
-
-    def upload_essentials(
-        self, compiled_model_path: Optional[PathOrURI]
-    ) -> bool:
+    def _handle_runtime_builder(
+        self,
+        model_framework: Optional[str],
+        model_path: Optional[PathOrURI],
+    ):
         """
-        Wrapper for uploading data to the server.
-        Uploads model by default.
+        Handles RuntimeBuilder.
 
         Parameters
         ----------
-        compiled_model_path : Optional[PathOrURI]
-            Path or URI to the file with a compiled model.
-
-        Returns
-        -------
-        bool
-            True if succeeded.
+        model_framework : Optional[str]
+            Framework of the model.
+        model_path : Optional[PathOrURI]
+            Path to the model.
         """
-        if not compiled_model_path:
-            KLogger.warning(
-                "No compiled model provided, skipping uploading IO spec"
+        if self.runtime_builder is not None:
+            if model_framework is not None:
+                self.runtime_builder.set_input_framework(model_framework)
+            if model_path is not None:
+                self.runtime_builder.set_model_path(model_path)
+            self.runtime_builder.build()
+
+    def _handle_runtime_upload(self):
+        """
+        Handles runtime upload i.e. LLEXT.
+        """
+        llext_path = None
+        if (
+            self.platform is not None
+            and getattr(self.platform, "llext_binary_path", None) is not None
+        ):
+            # use LLEXT from platform params
+            llext_path = self.platform.llext_binary_path
+        elif (
+            self.runtime_builder is not None and self.runtime_builder.use_llext
+        ):
+            # use LLEXT built by runtime builder
+            llext_path = self.runtime_builder.output_path / "runtime.llext"
+
+        if llext_path is not None and llext_path.exists():
+            check_request(
+                self.protocol.upload_runtime(llext_path),
+                "upload runtime",
             )
-        else:
-            spec_path = self.runtime.get_io_spec_path(compiled_model_path)
-            if spec_path.exists():
-                self.protocol.upload_io_specification(spec_path)
-            else:
-                KLogger.info("No Input/Output specification found")
 
-        compiled_model_path = self.runtime.preprocess_model_to_upload(
-            compiled_model_path
-        )
-        return self.protocol.upload_model(compiled_model_path)
+    def _handle_platform_init(self):
+        """
+        Handles platform initialization.
+        """
+        if self.platform is not None:
+            self.platform.init()
 
-    def handle_runtime_builder(
-        self,
-        model_framework: Optional[str],
-    ) -> Path:
-        self.runtime_builder.set_input_framework(model_framework)
-        self.runtime_builder.build()
+    def _handle_platform_deinit(self, measurements: Measurements):
+        """
+        Handles platform deinitialization.
 
-    def handle_optimizations(
+        Parameters
+        ----------
+        measurements : Measurements
+            Measurements to which platform metrics will be added to.
+        """
+        if self.platform is not None:
+            self.platform.deinit(measurements)
+
+    def _handle_optimizations(
         self,
         convert_to_onnx: Optional[Path] = None,
         run_optimization: bool = True,
         max_target_side_optimizers: int = -1,
     ) -> Optional[Path]:
         """
-        Handle model optimization.
+        Handles model optimization.
 
         Parameters
         ----------
@@ -569,9 +571,10 @@ class PipelineRunner(object):
             else:
                 return None
 
-        assert (
-            self.model_wrapper
-        ), "Model wrapper is required for optimizations"
+        if self.model_wrapper is None:
+            raise PipelineRunnerInvalidConfigError(
+                "Model wrapper is required for optimizations"
+            )
         model_path = self.model_wrapper.get_path()
         prev_block = self.model_wrapper
         if convert_to_onnx:
@@ -664,6 +667,7 @@ class PipelineRunner(object):
                 )
 
                 next_block.set_input_type(model_type)
+                next_block.init()
                 if hasattr(prev_block, "get_io_specification"):
                     next_block.compile(
                         model_path, prev_block.get_io_specification()
@@ -682,156 +686,215 @@ class PipelineRunner(object):
         KLogger.info(f"Compiled model path: {model_path}")
         return model_path
 
-    def _run_client(self, compiled_model_path: Optional[Path]) -> bool:
+    def _inference_loop(
+        self,
+        measurements: Measurements,
+        model_path: Path,
+        remote: bool = False,
+    ):
         """
-        Main runtime client program.
-
-        The client performance procedure is as follows:
-
-        * connect with the server
-        * upload the model
-        * send dataset data in a loop to the server:
-
-            * upload input
-            * request processing of inputs
-            * request predictions for inputs
-            * evaluate the response
-        * collect performance statistics
-        * end connection
+        Executes inference loop.
 
         Parameters
         ----------
-        compiled_model_path : Optional[Path]
-            Path to the model that should be tested.
-
-        Returns
-        -------
-        bool
-            True if executed successfully.
-
-        Raises
-        ------
-        RequestFailure
-            Raised when communication protocol is not provided
+        measurements : Measurements
+            Measurements to which metrics will be saved to.
+        model_path : Path
+            Path to the model used for in ference.
+        remote : bool
+            True if the inference is performed on remote platform.
         """
-        if self.protocol is None:
-            raise RequestFailure("Protocol is not provided")
+        KLogger.info("Starting inference loop")
+
         try:
-            check_request(
-                self.upload_essentials(compiled_model_path),
-                "upload essentials",
+            if remote:
+                self._remote_inference_prepare(model_path)
+            else:
+                self._local_inference_prepare()
+
+            use_platform_sensor = (
+                getattr(self.platform, "sensor", None) is not None
             )
-            measurements = Measurements()
+
+            # prepare iterator for inference
+            iterable = (
+                range(self.platform.batches_count)
+                if use_platform_sensor
+                else self.dataset.iter_test()
+            )
+
             with LoggerProgressBar() as logger_progress_bar:
-                for X, y in tqdm(
-                    self.dataset.iter_test(), file=logger_progress_bar
-                ):
+                for sample in tqdm(iterable, file=logger_progress_bar):
                     if self.should_cancel:
                         break
-                    prepX = tagmeasurements("preprocessing")(
-                        self.dataconverter.to_next_block
-                    )(X)
-                    if self.model_wrapper is not None:
-                        prepX = self.model_wrapper.convert_input_to_bytes(
-                            prepX
-                        )
-                    check_request(
-                        self.protocol.upload_input(prepX), "send input"
-                    )
-                    check_request(
-                        self.protocol.request_processing(
-                            self.runtime.get_time
-                        ),
-                        "inference",
-                    )
-                    _, preds = check_request(
-                        self.protocol.download_output(), "receive output"
-                    )
-                    KLogger.debug("Received output")
-                    if self.model_wrapper is not None:
-                        preds = self.model_wrapper.convert_output_from_bytes(
-                            preds
-                        )
+
+                    if use_platform_sensor:
+                        preds = self._sensor_inference_step()
+                        y = None
+                    else:
+                        X, y = sample
+
+                        prepX = tagmeasurements("preprocessing")(
+                            self.dataconverter.to_next_block
+                        )(X)
+
+                        if remote:
+                            preds = self._remote_inference_step(prepX)
+                        else:
+                            preds = self._local_inference_step(prepX)
+
                     posty = tagmeasurements("postprocessing")(
                         self.dataconverter.to_previous_block
                     )(preds)
+
                     measurements += self.dataset._evaluate(posty, y)
 
-            measurements += self.protocol.download_statistics()
-        except RequestFailure as ex:
-            KLogger.fatal(ex)
-            return False
+                    self.platform.inference_step_callback()
+
         except KeyboardInterrupt:
-            KLogger.info("Stopping benchmark...")
-            return False
+            KLogger.info("Stopping inference...")
         else:
-            MeasurementsCollector.measurements += measurements
+            if remote:
+                measurements += self.protocol.download_statistics()
+        finally:
+            if remote:
+                self._remote_inference_cleanup()
+            else:
+                self._local_inference_cleanup()
 
-        self.protocol.disconnect()
-        return True
-
-    @systemstatsmeasurements("full_run_statistics")
-    def _run_locally(self, compiled_model_path: Path) -> bool:
+    def _remote_inference_prepare(self, model_path: Path):
         """
-        Runs inference locally.
+        Uploads model to the remote platform.
 
         Parameters
         ----------
-        compiled_model_path : Path
-            Path to the model that should be tested.
+        model_path : Path
+            Path to the model.
+
+        Raises
+        ------
+        FileNotFoundError
+            Raised when IO specification is not found.
+        """
+        spec_path = self.runtime.get_io_spec_path(model_path)
+        if not spec_path.exists():
+            KLogger.error("No Input/Output specification found")
+            raise FileNotFoundError("IO specification not found")
+
+        check_request(
+            self.protocol.upload_io_specification(spec_path), "upload io spec"
+        )
+
+        compiled_model_path = self.runtime.preprocess_model_to_upload(
+            model_path
+        )
+        check_request(
+            self.protocol.upload_model(compiled_model_path), "upload model"
+        )
+
+    def _remote_inference_cleanup(self):
+        """
+        Cleanups remote inference.
+        """
+        self.protocol.disconnect()
+
+    def _remote_inference_step(self, X: any) -> any:
+        """
+        Performs inference step on remote platform.
+
+        Parameters
+        ----------
+        X : any
+            Inference input data.
 
         Returns
         -------
-        bool
-            True if executed successfully.
+        any
+            Inference output data.
         """
-        self.model_path = compiled_model_path
+        if self.model_wrapper is not None:
+            prepX = self.model_wrapper.convert_input_to_bytes(X)
+        else:
+            prepX = X
+        check_request(self.protocol.upload_input(prepX), "send input")
+        check_request(
+            self.protocol.request_processing(self.platform.get_time),
+            "inference",
+        )
+        _, preds = check_request(
+            self.protocol.download_output(), "receive output"
+        )
+        KLogger.debug("Received output")
+        if self.model_wrapper is not None:
+            preds = self.model_wrapper.convert_output_from_bytes(preds)
 
-        measurements = Measurements()
-        try:
+        return preds
+
+    def _local_inference_prepare(self):
+        """
+        Starts local inference sessions.
+        """
+        if self.runtime is not None:
             self.runtime.inference_session_start()
             assert (
                 self.runtime.prepare_local()
             ), "Cannot prepare local environment"
-            with LoggerProgressBar() as logger_progress_bar:
-                for X, y in TqdmCallback(
-                    "runtime",
-                    self.dataset.iter_test(),
-                    file=logger_progress_bar,
-                ):
-                    if self.should_cancel:
-                        break
-                    prepX = tagmeasurements("preprocessing")(
-                        self.dataconverter.to_next_block
-                    )(X)
-                    succeed = self.runtime.load_input(prepX)
-                    if not succeed:
-                        return False
-                    self.runtime._run()
-                    preds = self.runtime.extract_output()
-                    posty = tagmeasurements("postprocessing")(
-                        self.dataconverter.to_previous_block
-                    )(preds)
-                    measurements += self.dataset._evaluate(
-                        posty,
-                        y,
-                        self.runtime.processed_output_spec
-                        if self.runtime.processed_output_spec
-                        else self.runtime.output_spec,
-                    )
-        except KeyboardInterrupt:
-            KLogger.info("Stopping benchmark...")
-            return False
-        finally:
-            self.runtime.inference_session_end()
-            MeasurementsCollector.measurements += measurements
 
-        return True
+    def _local_inference_cleanup(self):
+        """
+        Stops local inference sessions.
+        """
+        if self.runtime is not None:
+            self.runtime.inference_session_end()
+
+    def _local_inference_step(self, X: any) -> any:
+        """
+        Performs inference step on local platform.
+
+        Parameters
+        ----------
+        X : any
+            Inference input data.
+
+        Returns
+        -------
+        any
+            Inference output data.
+        """
+        succeed = self.runtime.load_input(X)
+        if not succeed:
+            return None
+        self.runtime._run()
+        preds = self.runtime.extract_output()
+
+        return preds
+
+    def _sensor_inference_step(self) -> any:
+        """
+        Performs inference step using data read from sensor.
+
+        Returns
+        -------
+        any
+            Inference output data.
+        """
+        check_request(
+            self.protocol.request_processing(self.platform.get_time),
+            "inference",
+        )
+        _, preds = check_request(
+            self.protocol.download_output(), "receive output"
+        )
+        KLogger.debug("Received output")
+        if self.model_wrapper is not None:
+            preds = self.model_wrapper.convert_output_from_bytes(preds)
+
+        return preds
 
     @staticmethod
     def assert_io_formats(
         model_wrapper: Optional[ModelWrapper],
-        optimizers: Union[List[Optimizer], Optimizer],
+        optimizers: List[Optimizer],
         runtime: Optional[Runtime],
     ):
         """
@@ -841,19 +904,16 @@ class PipelineRunner(object):
         ----------
         model_wrapper : Optional[ModelWrapper]
             ModelWrapper of the pipeline.
-        optimizers : Union[List[Optimizer], Optimizer]
+        optimizers : List[Optimizer]
             Optimizers of the pipeline.
         runtime : Optional[Runtime]
             Runtime of the pipeline.
 
         Raises
         ------
-        ValueError :
+        PipelineRunnerInvalidConfigError :
             Raised if blocks are incompatible.
         """
-        if isinstance(optimizers, Optimizer):
-            optimizers = [optimizers]
-
         chain = [model_wrapper] + optimizers + [runtime]
         chain = [block for block in chain if block is not None]
 
@@ -877,9 +937,44 @@ class PipelineRunner(object):
 
             output_formats_str = ", ".join(previous_block.get_output_formats())
             input_formats_str = ", ".join(previous_block.get_output_formats())
-            raise ValueError(
+            raise PipelineRunnerInvalidConfigError(
                 f"No matching formats between two objects: {previous_block} "
                 f"and {next_block}\n"
                 f"Output block supported formats: {output_formats_str}\n"
                 f"Input block supported formats: {input_formats_str}"
             )
+
+    def _guess_model_framework(
+        self, convert_to_onnx: bool, run_optimizations: bool
+    ) -> Optional[str]:
+        """
+        Retrieves model framework from ModelWrapper and Optimizers.
+
+        Parameters
+        ----------
+        convert_to_onnx : bool
+            Whether model should be converted to ONNX.
+        run_optimizations : bool
+            Whether Optimizers should be used.
+
+        Returns
+        -------
+        Optional[str]
+            Model framework or None if no model specified.
+        """
+
+        def first_not_onnx(x):
+            for fmt in x.get_output_formats():
+                if fmt != "onnx":
+                    return fmt
+
+        if self.model_wrapper is None:
+            return None
+
+        if not run_optimizations or len(self.optimizers) == 0:
+            if convert_to_onnx:
+                return "onnx"
+
+            return first_not_onnx(self.model_wrapper)
+
+        return first_not_onnx(self.optimizers[-1])

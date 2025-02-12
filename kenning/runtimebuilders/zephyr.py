@@ -134,8 +134,9 @@ class WestRun:
         if build_dir is not None:
             params.extend(["--build-dir", str(build_dir)])
 
+        params.append("--")
         if extra_conf_file is not None:
-            params.extend(["--", f"-DEXTRA_CONF_FILE={extra_conf_file}"])
+            params.append(f"-DEXTRA_CONF_FILE={extra_conf_file}")
 
         params.extend(extra_build_args)
 
@@ -250,7 +251,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         "board": {
             "description": "Zephyr name of the target board",
             "type": str,
-            "required": True,
+            "default": None,
+            "nullable": True,
         },
         "application_dir": {
             "description": "Workspace relative path to the app directory",
@@ -279,6 +281,12 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             "is_list": True,
             "default": [],
         },
+        "extra_build_args": {
+            "description": "Extra build arguments",
+            "type": str,
+            "is_list": True,
+            "default": [],
+        },
         "use_llext": {
             "description": "Whether LLEXT should be used",
             "type": bool,
@@ -298,7 +306,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     def __init__(
         self,
         workspace: Path,
-        board: str,
+        board: Optional[str] = None,
         output_path: Optional[Path] = None,
         model_framework: Optional[str] = None,
         application_dir: Path = Path("app"),
@@ -306,6 +314,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         venv_dir: Path = Path(".west-venv"),
         zephyr_base: Optional[Path] = None,
         extra_targets: List[str] = [],
+        extra_build_args: List[str] = [],
         use_llext: bool = False,
         run_west_update: bool = False,
     ):
@@ -316,7 +325,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         ----------
         workspace : Path
             Location of the project directory.
-        board : str
+        board : Optional[str]
             Name of the target board.
         output_path: Optional[Path]
             Destination of the built binaries.
@@ -333,6 +342,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             Path to the Zephyr base.
         extra_targets : List[str]
             Extra targets to be built.
+        extra_build_args : List[str]
+            Extra build arguments.
         use_llext : bool
             Whether LLEXT should be used
         run_west_update : bool
@@ -365,6 +376,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         self.venv_dir = self._fix_relative(venv_dir)
 
         self.extra_targets = extra_targets
+        self.extra_build_args = extra_build_args
         self.use_llext = use_llext
 
         self._westrun = WestRun(self.workspace, zephyr_base, self.venv_dir)
@@ -379,8 +391,12 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             self._prepare_modules()
             KLogger.info("Prepared modules")
 
-    def build(self) -> Path:
+    def build(self) -> Optional[Path]:
         output_files = {}
+
+        if self.board is None:
+            KLogger.error("Board must be specified before build")
+            return None
 
         if self.use_llext:
             extra_conf_file = f"llext_{self.model_framework}.conf;llext.conf"
@@ -393,12 +409,34 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         else:
             extra_conf_file = f"{self.model_framework}.conf"
 
+        # add board-specific config if it exists
+        board_specific_conf = (
+            self.workspace
+            / "app"
+            / "boards"
+            / f"{self.board.replace('/', '_')}.conf"
+        )
+        if board_specific_conf.exists():
+            KLogger.info(f"Adding board-specific config {board_specific_conf}")
+            extra_conf_file = (
+                f"{extra_conf_file};{board_specific_conf.resolve()}"
+            )
+
         extra_build_args = [
             f"-DMODULE_EXT_ROOT={self.workspace}",
         ]
 
+        if self.model_path is not None:
+            extra_build_args.append(
+                f'-DCONFIG_KENNING_MODEL_PATH="{self.model_path.resolve()}"'
+            )
+
+        extra_build_args.extend(self.extra_build_args)
+
         if "board-repl" in self.extra_targets:
-            output_files[f"{self.board}.repl"] = f"{self.board}.repl"
+            board = self.board.split("/")[0]
+            output_files[f"{board}.repl"] = f"{board}.repl"
+            output_files[f"{board}_flat.dts"] = f"{board}_flat.dts"
 
         self._westrun.build(
             self.board,
@@ -414,6 +452,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         runtime_elf = "zephyr/zephyr.elf"
         output_files[runtime_elf] = runtime_elf
+
+        runtime_hex = "zephyr/zephyr.hex"
+        output_files[runtime_hex] = runtime_hex
 
         if self.output_path is not None:
             for src_file, dest_file in output_files.items():

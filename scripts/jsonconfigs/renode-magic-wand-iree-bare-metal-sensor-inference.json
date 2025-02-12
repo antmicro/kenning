@@ -1,4 +1,21 @@
 {
+    "platform": {
+        "type": "BareMetalPlatform",
+        "parameters": {
+            "name": "rv32-springbok",
+            "simulated": true,
+            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime_i2c_accelerometer",
+            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok_accelerometer.resc;branch=main",
+            "resc_dependencies": [
+                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok_accelerometer.repl;branch=main",
+                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule"
+            ],
+            "profiler_dump_path": "build/profiler.dump",
+            "uart_port": "/tmp/uart",
+            "sensor": "adxl345",
+            "batches_count": 100
+        }
+    },
     "dataset": {
         "type": "kenning.datasets.magic_wand_dataset.MagicWandDataset",
         "parameters": {
@@ -11,12 +28,10 @@
             "model_path": "kenning:///models/classification/magic_wand.h5"
         }
     },
-    "optimizers":
-    [
+    "optimizers": [
         {
             "type": "kenning.optimizers.iree.IREECompiler",
-            "parameters":
-            {
+            "parameters": {
                 "compiled_model_path": "./build/tflite-magic-wand.vmfb",
                 "backend": "llvm-cpu",
                 "model_framework": "keras",
@@ -31,31 +46,5 @@
                 ]
             }
         }
-    ],
-    "runtime": {
-        "type": "kenning.runtimes.renode.RenodeRuntime",
-        "parameters": {
-            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime_i2c_accelerometer",
-            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok_accelerometer.resc;branch=main",
-            "resc_dependencies": [
-                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok_accelerometer.repl;branch=main",
-                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule"
-            ],
-            "post_start_commands": [
-                "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
-            ],
-            "runtime_log_init_msg": "Runtime started",
-            "profiler_dump_path": "build/profiler.dump",
-            "sensor": "adxl345",
-            "batches_count": 100
-        }
-    },
-    "protocol": {
-        "type": "kenning.protocols.uart.UARTProtocol",
-        "parameters": {
-            "port": "/tmp/uart",
-            "baudrate": 115200,
-            "endianness": "little"
-        }
-    }
+    ]
 }

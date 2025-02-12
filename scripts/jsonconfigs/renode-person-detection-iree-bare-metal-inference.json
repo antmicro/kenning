@@ -1,4 +1,11 @@
 {
+    "platform": {
+        "type": "kenning.platforms.bare_metal.BareMetalPlatform",
+        "parameters": {
+            "name": "rv32-springbok",
+            "simulated": true
+        }
+    },
     "dataset": {
         "type": "kenning.datasets.visual_wake_words_dataset.VisualWakeWordsDataset",
         "parameters": {
@@ -11,12 +18,10 @@
             "model_path": "kenning:///models/classification/person_detect.tflite"
         }
     },
-    "optimizers":
-    [
+    "optimizers": [
         {
             "type": "kenning.optimizers.iree.IREECompiler",
-            "parameters":
-            {
+            "parameters": {
                 "compiled_model_path": "./build/tflite-person-detect.vmfb",
                 "backend": "llvm-cpu",
                 "model_framework": "tflite",
@@ -32,22 +37,6 @@
             }
         }
     ],
-    "runtime": {
-        "type": "kenning.runtimes.renode.RenodeRuntime",
-        "parameters": {
-            "runtime_binary_path": "kenning:///renode/springbok/iree_runtime",
-            "platform_resc_path": "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok.resc;branch=main",
-            "resc_dependencies": [
-                "gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main",
-                "gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule"
-            ],
-            "post_start_commands": [
-                "sysbus.vec_controlblock WriteDoubleWord 0xc 0"
-            ],
-            "runtime_log_init_msg": "Runtime started",
-            "profiler_dump_path": "build/profiler.dump"
-        }
-    },
     "protocol": {
         "type": "kenning.protocols.uart.UARTProtocol",
         "parameters": {

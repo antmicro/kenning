@@ -59,6 +59,7 @@ from kenning.cli.completers import (
     DATASETS,
     MODEL_WRAPPERS,
     OPTIMIZERS,
+    PLATFORMS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
     ClassPathCompleter,
@@ -129,6 +130,10 @@ class InferenceTester(CommandTemplate):
             shared_flags_group = other_group
 
         shared_flags_group.add_argument(
+            "--platform-cls",
+            help="Platform-based class that wraps platform being tested",
+        ).completer = ClassPathCompleter(PLATFORMS)
+        shared_flags_group.add_argument(
             "--modelwrapper-cls",
             help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
             required=TRAIN in types,
@@ -194,6 +199,7 @@ class InferenceTester(CommandTemplate):
         command = get_command()
 
         flag_config_names = (
+            "platform_cls",
             "modelwrapper_cls",
             "dataset_cls",
             "compiler_cls",
@@ -209,14 +215,14 @@ class InferenceTester(CommandTemplate):
             args.json_cfg is None and not any(flag_config_not_none)
         ):
             raise argparse.ArgumentError(
-                None, "JSON or flag config is required."
+                None, "JSON, YAML or flag config is required."
             )
         if not args.help and (
             args.json_cfg is not None and any(flag_config_not_none)
         ):
             raise argparse.ArgumentError(
                 None,
-                "JSON and flag configurations are mutually exclusive. "
+                "JSON/YAML and flag configurations are mutually exclusive. "
                 "Please use only one method of configuration.",
             )
         if "measurements" not in args:
@@ -227,14 +233,14 @@ class InferenceTester(CommandTemplate):
         if args.json_cfg is not None:
             if args.help:
                 raise ParserHelpException
-            return InferenceTester._run_from_json(
+            return InferenceTester._run_from_cfg(
                 args, command, not_parsed=not_parsed, **kwargs
             )
 
         required_args = (
-            [0] + [1]
+            [1] + [2]
             if args.measurements[0] is not None
-            else [] + [2]
+            else [] + [3]
             if "compiler_cls" in args
             else []
         )
@@ -254,7 +260,7 @@ class InferenceTester(CommandTemplate):
         )
 
     @staticmethod
-    def _run_from_json(
+    def _run_from_cfg(
         args: argparse.Namespace,
         command: List[str],
         not_parsed: List[str] = [],
@@ -281,6 +287,9 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs,
     ):
+        platformcls = (
+            load_class(args.platform_cls) if args.platform_cls else None
+        )
         modelwrappercls = (
             load_class(args.modelwrapper_cls)
             if args.modelwrapper_cls
@@ -316,6 +325,7 @@ class InferenceTester(CommandTemplate):
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
             + "\n",
             parents=[]
+            + ([platformcls.form_argparse()[0]] if platformcls else [])
             + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
             + ([datasetcls.form_argparse()[0]] if datasetcls else [])
             + ([runtimecls.form_argparse()[0]] if runtimecls else [])
@@ -328,6 +338,7 @@ class InferenceTester(CommandTemplate):
             raise ParserHelpException(parser)
         args = parser.parse_args(not_parsed, namespace=args)
 
+        platform = platformcls.from_argparse(args) if platformcls else None
         dataset = datasetcls.from_argparse(args) if datasetcls else None
         model = (
             modelwrappercls.from_argparse(dataset, args)
@@ -345,6 +356,7 @@ class InferenceTester(CommandTemplate):
         dataconverter = ModelWrapperDataConverter(model)
 
         pipeline_runner = PipelineRunner(
+            platform=platform,
             dataset=dataset,
             dataconverter=dataconverter,
             optimizers=optimizers,

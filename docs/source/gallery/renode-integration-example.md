@@ -49,8 +49,9 @@ IREE compiler is enabled by adding it to the `optimizers`.
 It optimizes and compiles the model to Virtual Machine Flat Buffer format (`.vmfb`), which is later executed on a minimal IREE virtual machine.
 The additional flags provided to the compiler specify the RISC-V target architecture and V Extension features compatible with the Springbok accelerator.
 
-Renode simulation is enabled by specifying the `RenodeRuntime` in the `runtime` entry and setting the following parameters:
+Renode simulation is enabled by specifying the `simulated` in the `platform`'s parameters' and setting the following parameters:
 
+* `name` - name of the simulated board (int this case `stm32f746g_disco`)
 * `runtime_binary_path` - path to the runtime binary (in this case IREE runtime)
 * `platform_resc_path` - path to the Renode script (`.resc` file) used for setting up the emulation
 * `resc_dependencies` - additional dependencies for RESC files

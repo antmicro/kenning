@@ -94,7 +94,6 @@ Runtimes (in kenning.runtimes):
     kenning.runtimes.pytorch.PyTorchRuntime
     kenning.runtimes.tvm.TVMRuntime
     kenning.runtimes.onnx.ONNXRuntime
-    kenning.runtimes.renode.RenodeRuntime
 ```
 
 More verbose information is available with `-v` and `-vv` flags. They will display dependencies, descriptions and other information for each class.

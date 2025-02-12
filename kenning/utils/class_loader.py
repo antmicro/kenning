@@ -21,6 +21,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import ONNXConversion
 from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
+from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
@@ -35,6 +36,7 @@ DATASETS = "datasets"
 MODEL_WRAPPERS = "modelwrappers"
 ONNX_CONVERSIONS = "onnxconversions"
 OUTPUT_COLLECTORS = "outputcollectors"
+PLATFORMS = "platforms"
 RUNTIME_BUILDERS = "runtimebuilders"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
@@ -47,8 +49,8 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
     Returns
     -------
     Dict[str, Tuple[str, Type]]
-        dict with keys corresponding to names of
-        groups of modules, values are module paths and base class names
+        Dict with keys corresponding to names of groups of modules, values are
+        module paths and base classes.
     """
     return {
         OPTIMIZERS: ("kenning.optimizers", Optimizer),
@@ -59,6 +61,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         MODEL_WRAPPERS: ("kenning.modelwrappers", ModelWrapper),
         ONNX_CONVERSIONS: ("kenning.onnxconverters", ONNXConversion),
         OUTPUT_COLLECTORS: ("kenning.outputcollectors", OutputCollector),
+        PLATFORMS: ("kenning.platforms", Platform),
         RUNTIME_BUILDERS: ("kenning.runtimebuilders", RuntimeBuilder),
         RUNTIME_PROTOCOLS: ("kenning.protocols", Protocol),
         RUNTIMES: ("kenning.runtimes", Runtime),
@@ -86,7 +89,7 @@ def get_all_subclasses(
         Indicate if exception should be raised in case subclass cannot be
         imported.
     import_classes: bool
-        Whether to import classes into memory or just return a list of modules
+        Whether to import classes into memory or just return a list of modules.
     show_warnings: bool
         Tells whether method should print warnings if modules could not be
         imported.
@@ -96,14 +99,14 @@ def get_all_subclasses(
     Union[List[Type], List[Tuple[str, str]]]
         When importing classes: List of all final subclasses of given class.
         When not importing classes: list of tuples with name and module path
-        of the class
+        of the class.
 
     Raises
     ------
     ModuleNotFoundError, ImportError
-        When modules could not be imported
+        When modules could not be imported.
     Exception
-        If some unspecified errors occurred during imports
+        If some unspecified errors occurred during imports.
     """
     root_module = importlib.util.find_spec(module_path)
     modules_to_parse = [root_module]
@@ -153,8 +156,8 @@ def get_all_subclasses(
         """
         Updates the set of subclasses with subclasses for a given class.
 
-        It is an internal function updating the `subclasses`,
-        `checked_classes` structures.
+        It is an internal function updating the `subclasses`, `checked_classes`
+        structures.
 
         Parameters
         ----------
@@ -219,7 +222,9 @@ def get_all_subclasses(
     return result
 
 
-def any_from_json(json_cfg: Dict[str, Any], **kwargs) -> Optional[Any]:
+def any_from_json(
+    json_cfg: Dict[str, Any], block_type: Optional[str] = None, **kwargs
+) -> Optional[Any]:
     """
     Loads the class using `from_json` method, if available.
 
@@ -229,6 +234,9 @@ def any_from_json(json_cfg: Dict[str, Any], **kwargs) -> Optional[Any]:
         A JSON object snippet with `type` parameter, specifying the
         full name of the class, and `parameters` parameter, with list
         of constructor arguments for the class.
+    block_type: Optional[str]
+        Type of Kenning block, i.e. "optimizers", "platforms". If specified
+        then type in config does not require to specify full class path.
     **kwargs:
         Additional arguments
 
@@ -238,12 +246,35 @@ def any_from_json(json_cfg: Dict[str, Any], **kwargs) -> Optional[Any]:
         If a class is available and contains `from_json` method, it
         returns object of this class.
     """
-    if "type" not in json_cfg or "parameters" not in json_cfg:
+    if "type" not in json_cfg:
         return None
-    cls = load_class(json_cfg["type"])
+    base_classes_dict = get_base_classes_dict()
+    if (
+        block_type is not None
+        and block_type in base_classes_dict
+        and "." not in json_cfg["type"]
+    ):
+        module_path, base_class = base_classes_dict[block_type]
+        subclasses = get_all_subclasses(
+            module_path, base_class, import_classes=False
+        )
+
+        cls_type = None
+        for subcls_name, subcls_module_path in subclasses:
+            if subcls_name == json_cfg["type"]:
+                cls_type = f"{subcls_module_path}.{subcls_name}"
+                break
+
+        if cls_type is None:
+            KLogger.error(f"Could not find class of {json_cfg['type']}")
+    else:
+        cls_type = json_cfg["type"]
+
+    cls = load_class(cls_type)
     if not hasattr(cls, "from_json"):
         return None
-    return cls.from_json(json_cfg["parameters"], **kwargs)
+
+    return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
 
 
 def load_class(module_path: str) -> Type:

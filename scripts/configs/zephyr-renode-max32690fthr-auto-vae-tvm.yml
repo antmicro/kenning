@@ -1,0 +1,27 @@
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: max32690fthr/max32690/m4
+    simulated: true
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    workspace: ./build/zephyr-workspace/kenning-zephyr-runtime
+    run_west_update: false
+    output_path: ./build/kzr-output
+    extra_targets: [board-repl]
+    extra_build_args:
+      - "-DCONFIG_KENNING_TVM_MODEL_PRE_GEN=y"
+model_wrapper:
+  type: PyTorchAnomalyDetectionVAE
+  parameters:
+    model_path: kenning:///models/anomaly_detection/vae_cats.pth
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: build/AnomalyDetectionDataset
+    csv_file: https://zenodo.org/records/8338435/files/data.csv
+optimizers:
+- type: TVMCompiler
+  parameters:
+    compiled_model_path: ./build/vae.graph_data

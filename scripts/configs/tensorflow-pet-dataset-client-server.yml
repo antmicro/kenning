@@ -1,0 +1,29 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: ./build/PetDataset
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    target: default
+    compiled_model_path: ./build/compiled_tflite.tflite
+    inference_input_type: float32
+    inference_output_type: float32
+- type: TVMCompiler
+  parameters:
+    target: llvm -mcpu=core-avx2
+    compiled_model_path: ./build/compiled_tvm.tar
+    opt_level: 3
+    location: target
+runtime:
+  type: TVMRuntime
+  parameters:
+    save_model_path: ./build/compiled_model.tar
+protocol:
+  type: NetworkProtocol

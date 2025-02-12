@@ -1,0 +1,17 @@
+platform:
+  type: LocalPlatform
+model_wrapper:
+  type: TensorFlowPetDatasetMobileNetV2
+  parameters:
+    model_path: kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5
+dataset:
+  type: PetDataset
+  parameters:
+    dataset_root: build/PetDataset
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    compiled_model_path: build/fp32.1.tflite
+    inference_input_type: float32
+    inference_output_type: float32
+    target: default

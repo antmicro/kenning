@@ -85,7 +85,7 @@ class PipelineHandler(BaseDataflowHandler):
             VisualEditorGraphParserError:
                 Raised when provided node type is not available.
             """
-            _, kenning_name = kenning_block["type"].rsplit(".", 1)
+            *_, kenning_name = kenning_block["type"].rsplit(".", 1)
             if kenning_name not in self.nodes:
                 raise VisualEditorGraphParserError(
                     f"The node type {kenning_name} is not available in the "
@@ -97,7 +97,9 @@ class PipelineHandler(BaseDataflowHandler):
                 spec_node,
                 [
                     {"name": key, "value": value}
-                    for key, value in kenning_block["parameters"].items()
+                    for key, value in kenning_block.get(
+                        "parameters", {}
+                    ).items()
                 ],
             )
 
@@ -110,6 +112,7 @@ class PipelineHandler(BaseDataflowHandler):
             "model_wrapper",
             "runtime",
             "runtime_builder",
+            "platform",
             "protocol",
         ]
         supported_blocks = block_names + ["optimizers"]
@@ -203,6 +206,7 @@ class PipelineHandler(BaseDataflowHandler):
         pipeline_mode_classes = [
             "kenning.datasets",
             "kenning.modelwrappers",
+            "kenning.platforms",
             "kenning.protocols",
             "kenning.runtimebuilders",
             "kenning.runtimes",
@@ -301,6 +305,10 @@ class PipelineHandler(BaseDataflowHandler):
                 "inputs": [],
                 "outputs": [],
             },
+            "platform": {
+                "inputs": [],
+                "outputs": [],
+            },
             "protocol": {
                 "inputs": [],
                 "outputs": [
@@ -383,6 +391,7 @@ class PipelineGraphCreator(GraphCreator):
             "runtime",
             "runtime_builder",
             "dataset",
+            "platform",
             "protocol",
         ]
         for type_ in types:

@@ -64,6 +64,7 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
         self.model_framework = None
         if model_framework is not None:
             self.set_input_framework(model_framework)
+        self.model_path = None
 
     @abstractmethod
     def build(self) -> Path:
@@ -81,3 +82,6 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
             raise ValueError(msg)
 
         self.model_framework = model_framework
+
+    def set_model_path(self, model_path):
+        self.model_path = model_path

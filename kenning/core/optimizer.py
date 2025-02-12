@@ -101,6 +101,12 @@ class Optimizer(ArgumentsHandler, ABC):
         self.compiled_model_path = compiled_model_path
         self.location = location
 
+    def init(self):
+        """
+        Initializes optimizer, should be called before compilation.
+        """
+        ...
+
     @classmethod
     def from_argparse(
         cls,
@@ -168,8 +174,8 @@ class Optimizer(ArgumentsHandler, ABC):
             Path to be set.
         """
         assert inputtype in list(self.inputtypes.keys()) + ["any"], (
-            f'Unsupported input type {inputtype}, only '
-            f'{", ".join(self.inputtypes.keys())} are supported'
+            f"Unsupported input type {inputtype}, only "
+            f"{', '.join(self.inputtypes.keys())} are supported"
         )
         self.inputtype = inputtype
 
@@ -277,8 +283,8 @@ class Optimizer(ArgumentsHandler, ABC):
             else:
                 raise ValueError(
                     '"onnx" format is not supported by at least one block\n'
-                    f'Input block supported formats: {", ".join(possible_outputs)}\n'  # noqa: E501
-                    f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
+                    f"Input block supported formats: {', '.join(possible_outputs)}\n"  # noqa: E501
+                    f"Output block supported formats: {', '.join(self.get_input_formats())}"  # noqa: E501
                 )
 
         for input in self.get_input_formats():
@@ -286,10 +292,10 @@ class Optimizer(ArgumentsHandler, ABC):
                 return input
 
         raise ValueError(
-            f'No matching formats between two objects: {self} and '
-            f'{previous_block}\n'
-            f'Input block supported formats: {", ".join(possible_outputs)}\n'
-            f'Output block supported formats: {", ".join(self.get_input_formats())}'  # noqa: E501
+            f"No matching formats between two objects: {self} and "
+            f"{previous_block}\n"
+            f"Input block supported formats: {', '.join(possible_outputs)}\n"
+            f"Output block supported formats: {', '.join(self.get_input_formats())}"  # noqa: E501
         )
 
     @staticmethod

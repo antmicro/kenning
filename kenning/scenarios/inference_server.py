@@ -32,6 +32,7 @@ from kenning.cli.command_template import (
     ParserHelpException,
 )
 from kenning.cli.completers import (
+    PLATFORMS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
     ClassPathCompleter,
@@ -44,7 +45,8 @@ from kenning.core.protocol import (
     ServerStatus,
 )
 from kenning.core.runtime import Runtime
-from kenning.utils.class_loader import get_command, load_class
+from kenning.platforms.local import LocalPlatform
+from kenning.utils.class_loader import any_from_json, get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
@@ -285,6 +287,7 @@ class InferenceServer(object):
 
                 prev_block.save_io_specification(model_path)
                 optimizer.set_input_type(model_type)
+                optimizer.init()
                 if hasattr(prev_block, "get_io_specification"):
                     optimizer.compile(
                         model_path, prev_block.get_io_specification()
@@ -335,6 +338,10 @@ class InferenceServerRunner(CommandTemplate):
             type=ResourceURI,
         ).completer = FilesCompleter(allowednames=("yaml", "yml", "json"))
         groups[FLAG_CONFIG].add_argument(
+            "--platform-cls",
+            help="Platform-based class that wraps platform being tested",
+        ).completer = ClassPathCompleter(PLATFORMS)
+        groups[FLAG_CONFIG].add_argument(
             "--protocol-cls",
             help=(
                 "* Protocol-based class with the implementation of "
@@ -353,7 +360,7 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        flag_config_names = ("runtime_cls", "protocol_cls")
+        flag_config_names = ("platform_cls", "runtime_cls", "protocol_cls")
         flag_config_not_none = [
             getattr(args, name, None) is not None for name in flag_config_names
         ]
@@ -372,16 +379,17 @@ class InferenceServerRunner(CommandTemplate):
             return InferenceServerRunner._run_from_json(args, not_parsed)
 
         else:
+            required_args = [1]
             missing_args = [
-                f"'{n}'"
-                for i, n in enumerate(flag_config_names)
+                f"'{flag_config_names[i]}'"
+                for i in required_args
                 if not flag_config_not_none[i]
             ]
             if missing_args and not args.help:
                 raise argparse.ArgumentError(
                     None,
-                    'the following arguments are required: '
-                    f'{", ".join(missing_args)}',
+                    "the following arguments are required: "
+                    f"{', '.join(missing_args)}",
                 )
 
         return InferenceServerRunner._run_from_flags(args, not_parsed)
@@ -390,6 +398,9 @@ class InferenceServerRunner(CommandTemplate):
     def _run_from_flags(
         args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
     ):
+        platform_cls = (
+            load_class(args.platform_cls) if args.platform_cls else None
+        )
         protocol_cls = (
             load_class(args.protocol_cls) if args.protocol_cls else None
         )
@@ -400,6 +411,7 @@ class InferenceServerRunner(CommandTemplate):
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
             parents=[]
+            + ([platform_cls.form_argparse()[0]] if platform_cls else [])
             + ([protocol_cls.form_argparse()[0]] if protocol_cls else [])
             + ([runtime_cls.form_argparse()[0]] if runtime_cls else []),
             add_help=False,
@@ -410,8 +422,17 @@ class InferenceServerRunner(CommandTemplate):
 
         args = parser.parse_args(not_parsed)
 
-        protocol = protocol_cls.from_argparse(args)
-        runtime = runtime_cls.from_argparse(protocol, args)
+        platform = (
+            platform_cls.from_argparse(args)
+            if platform_cls is not None
+            else LocalPlatform()
+        )
+        protocol = (
+            protocol_cls.from_argparse(args)
+            if platform_cls is not None
+            else platform.get_default_protocol()
+        )
+        runtime = runtime_cls.from_argparse(args)
 
         InferenceServerRunner._run_server(runtime, protocol)
 
@@ -421,20 +442,21 @@ class InferenceServerRunner(CommandTemplate):
     ):
         if not_parsed:
             raise argparse.ArgumentError(
-                None, f'unrecognized arguments: {" ".join(not_parsed)}'
+                None, f"unrecognized arguments: {' '.join(not_parsed)}"
             )
 
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
-        protocol_cfg = json_cfg["protocol"]
-        runtime_cfg = json_cfg["runtime"]
+        platform = any_from_json(json_cfg.get("platform", {}), "platforms")
+        if platform is None:
+            platform = LocalPlatform()
 
-        protocol_cls = load_class(protocol_cfg["type"])
-        runtime_cls = load_class(runtime_cfg["type"])
+        protocol = any_from_json(json_cfg.get("protocol", {}), "protocols")
+        if protocol is None:
+            protocol = platform.get_default_protocol()
 
-        protocol = protocol_cls.from_json(protocol_cfg["parameters"])
-        runtime = runtime_cls.from_json(runtime_cfg["parameters"])
+        runtime = any_from_json(json_cfg.get("runtime", {}), "runtimes")
 
         InferenceServerRunner._run_server(runtime, protocol)
 

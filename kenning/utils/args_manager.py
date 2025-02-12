@@ -500,7 +500,7 @@ class ArgumentsHandler(ABC):
 
     @classmethod
     def form_argparse(
-        cls
+        cls,
     ) -> Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]:
         """
         Creates argparse parser based on `arguments_structure` of class and its
@@ -578,7 +578,9 @@ class ArgumentsHandler(ABC):
         parameterschema = cls.form_parameterschema()
         parsed_json_dict = get_parsed_json_dict(parameterschema, json_dict)
 
-        return cls(**kwargs, **parsed_json_dict)
+        cls_args = dict(parsed_json_dict, **kwargs)
+
+        return cls(**cls_args)
 
     def to_json(self) -> Dict[str, Any]:
         """

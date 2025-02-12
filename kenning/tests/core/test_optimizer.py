@@ -103,6 +103,7 @@ class TestOptimizer:
         optimizer, model = prepare_objects(opt_cls, inputtype)
 
         try:
+            optimizer.init()
             optimizer.compile(model.model_path)
             assert optimizer.compiled_model_path.exists()
         except CompilationError as e:

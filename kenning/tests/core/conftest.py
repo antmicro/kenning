@@ -128,6 +128,7 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = get_tmp_path(suffix=".onnx")
         onnx_compiler = ONNXCompiler(dataset, model_path)
+        onnx_compiler.init()
         onnx_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
@@ -139,6 +140,7 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
         dataset = get_dataset_random_mock(MagicWandDataset)
         onnx_model_path = get_tmp_path(suffix=".onnx")
         onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
+        onnx_compiler.init()
         onnx_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
@@ -161,6 +163,7 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
         dataset = get_dataset_random_mock(MagicWandDataset)
         model_path = get_tmp_path(suffix=".vmfb")
         iree_compiler = IREECompiler(dataset, model_path)
+        iree_compiler.init()
         iree_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )
@@ -172,6 +175,7 @@ def get_default_dataset_model(framework: str) -> Tuple[Dataset, ModelWrapper]:
         tvm_compiler = TVMCompiler(
             dataset, model_path, model_framework="keras"
         )
+        tvm_compiler.init()
         tvm_compiler.compile(
             ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
         )

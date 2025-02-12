@@ -26,7 +26,7 @@ from kenning.modelwrappers.classification.tflite_person_detection import (
 from kenning.optimizers.iree import IREECompiler
 from kenning.optimizers.tflite import TFLiteCompiler
 from kenning.optimizers.tvm import TVMCompiler
-from kenning.runtimes.renode import RenodeRuntime
+from kenning.runtimes.iree import IREERuntime
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.runtimes.tvm import TVMRuntime
 from kenning.tests.core.conftest import get_reduced_dataset_path
@@ -92,6 +92,7 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
             inferenceinputtype="float32",
             inferenceoutputtype="float32",
         )
+        compiler.init()
         compiler.compile(input_model_path=Path(model_path))
 
         runtime = TFLiteRuntime(model_path=tmp_model_path)
@@ -159,6 +160,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
             inferenceinputtype="float32",
             inferenceoutputtype="float32",
         )
+        compiler_tflite.init()
         compiler_tflite.compile(input_model_path=Path(model.model_path))
 
         compiler_tvm = TVMCompiler(
@@ -166,6 +168,7 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
             compiled_model_path=compiled_model_path_tvm,
             model_framework="tflite",
         )
+        compiler_tvm.init()
         compiler_tvm.compile(input_model_path=Path(compiled_model_path_tflite))
 
         runtime = TVMRuntime(model_path=compiled_model_path_tvm)
@@ -173,10 +176,10 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
         dataconverter = ModelWrapperDataConverter(model)
 
         pipeline_runner = PipelineRunner(
-            dataset,
-            dataconverter,
-            [compiler_tvm],
-            runtime,
+            dataset=dataset,
+            dataconverter=dataconverter,
+            optimizers=[compiler_tvm],
+            runtime=runtime,
             model_wrapper=model,
         )
 
@@ -239,20 +242,18 @@ def test_scenario_tflite_person_detection(batch_size, expectation, tmpfolder):
                 "iree-llvm-target-abi=ilp32",
             ],
         )
+        compiler.init()
         compiler.compile(
             input_model_path=Path(model_path),
         )
+        runtime = IREERuntime(model_path=compiled_model_path)
 
-        runtime = RenodeRuntime(
-            runtime_binary_path="",
-            platform_resc_path="",
-        )
+        runtime.prepare_local()
 
         assert compiler.dataset.batch_size == batch_size
 
-        for model_input_spec in model.io_specification["input"]:
+        for model_input_spec in model.io_specification["processed_input"]:
             assert model_input_spec["shape"][0] == batch_size
 
-        runtime.read_io_specification(model.io_specification)
-        for runtime_input_spec in runtime.input_spec:
+        for runtime_input_spec in runtime.processed_input_spec:
             assert runtime_input_spec["shape"][0] == batch_size

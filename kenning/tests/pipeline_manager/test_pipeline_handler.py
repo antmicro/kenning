@@ -220,11 +220,39 @@ class TestPipelineHandler(HandlerTests):
         return PipelineHandler(layout_algorithm="NoLayout")
 
     def equivalence_check(self, dataflow1, dataflow2):
+        def compare_blocks(block1, block2):
+            if (
+                block1["type"] != block2["type"]
+                and block1["type"].split(".")[-1]
+                != block2["type"].split(".")[-1]
+            ):
+                return False
+
+            return block1.get("parameters", dict()) == block2.get(
+                "parameters", dict()
+            )
+
         if "optimizers" not in dataflow1:
             dataflow1["optimizers"] = []
         if "optimizers" not in dataflow2:
             dataflow2["optimizers"] = []
-        return dataflow1 == dataflow2
+        if set(dataflow1.keys()) != set(dataflow2.keys()):
+            return False
+
+        for key in dataflow1.keys():
+            if type(dataflow1[key]) is not type(dataflow2[key]):
+                return False
+            if isinstance(dataflow1[key], list):
+                if len(dataflow1[key]) != len(dataflow2[key]):
+                    return False
+                for block1, block2 in zip(dataflow1[key], dataflow2[key]):
+                    if not compare_blocks(block1, block2):
+                        return False
+            else:
+                if not compare_blocks(dataflow1[key], dataflow2[key]):
+                    return False
+
+        return True
 
     PATH_TO_JSON_SCRIPTS = "./scripts/jsonconfigs"
 

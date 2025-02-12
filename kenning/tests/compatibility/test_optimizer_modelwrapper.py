@@ -58,6 +58,7 @@ class TestOptimizerModelWrapper:
 
         model_path = Path(model_path)
         optimizer.set_compiled_model_path(filepath)
+        optimizer.init()
         optimizer.compile(model_path, io_specs)
         assert os.path.exists(filepath)
         os.remove(filepath)
@@ -108,6 +109,7 @@ class TestOptimizerModelWrapper:
                 compiled_model_path = filename + "_" + optimizer.inputtype
                 compiled_model_path = tmpfolder / compiled_model_path
                 optimizer.set_compiled_model_path(compiled_model_path)
+                optimizer.init()
                 optimizer.compile(filepath, io_specs)
 
                 assert os.path.exists(compiled_model_path)

@@ -93,7 +93,7 @@ class TestServerSideOptimization:
             runtime=runtime_host,
         )
 
-        model_path = pipeline_runner.handle_optimizations()
+        model_path = pipeline_runner._handle_optimizations()
 
         assert model_path.exists()
 
@@ -170,7 +170,7 @@ class TestServerSideOptimization:
 
             protocol_host.initialize_client()
 
-            model_path = pipeline_runner.handle_optimizations()
+            model_path = pipeline_runner._handle_optimizations()
             assert model_path.exists()
             assert (
                 model_path.read_bytes()
@@ -213,7 +213,7 @@ class TestServerSideOptimization:
         )
 
         with pytest.raises(RequestFailure):
-            pipeline_runner.handle_optimizations()
+            pipeline_runner._handle_optimizations()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_target_side_optimization_compile_fail(self):
@@ -272,7 +272,7 @@ class TestServerSideOptimization:
             protocol_host.initialize_client()
 
             with pytest.raises(RequestFailure):
-                pipeline_runner.handle_optimizations()
+                pipeline_runner._handle_optimizations()
 
         finally:
             inference_server.close()
@@ -308,7 +308,7 @@ class TestServerSideOptimization:
             protocol=None,
         )
 
-        model_path = pipeline_runner.handle_optimizations()
+        model_path = pipeline_runner._handle_optimizations()
 
         assert model_path.exists()
         assert model_path.read_bytes() == model_wrapper.model_path.read_bytes()
@@ -375,7 +375,7 @@ class TestServerSideOptimization:
 
             protocol_host.initialize_client()
 
-            pipeline_runner.handle_optimizations(
+            pipeline_runner._handle_optimizations(
                 max_target_side_optimizers=max_optimizers
             )
             assert max_loaded_optimizers <= max_optimizers

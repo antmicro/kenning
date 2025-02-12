@@ -12,7 +12,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.model import ModelWrapper
 from kenning.core.runtime import ModelNotPreparedError, Runtime
-from kenning.runtimes.renode import RenodeRuntime
 from kenning.tests.core.conftest import (
     UnknownFramework,
     get_default_dataset_model,
@@ -36,10 +35,7 @@ def prepare_objects(
     except UnknownFramework:
         pytest.xfail(f"Unknown framework: {inputtype}")
 
-    if runtime_cls is RenodeRuntime:
-        pytest.xfail("RenodeRuntime is not a regular runtime")
-    else:
-        runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
+    runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
 
     return runtime, dataset, model
 

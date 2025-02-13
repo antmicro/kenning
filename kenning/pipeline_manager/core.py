@@ -277,6 +277,8 @@ class BaseDataflowHandler(ABC):
                 def add_default(default_val):
                     if new_property.get("default") is None:
                         new_property["default"] = default_val
+                    if isinstance(new_property["default"], Path):
+                        new_property["default"] = str(new_property["default"])
 
                 # Case for an input with range defined
                 if "enum" in props:

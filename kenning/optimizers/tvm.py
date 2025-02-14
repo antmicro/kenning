@@ -196,7 +196,9 @@ def torchconversion(
 
     def model_func(model_path: PathOrURI):
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        loaded_model = torch.load(str(model_path), map_location=device)
+        loaded_model = torch.load(
+            str(model_path), map_location=device, weights_only=False
+        )
         if not isinstance(loaded_model, torch.nn.Module):
             raise CompilationError(
                 f"TVM compiler expects the input data of type: torch.nn.Module, but got: {type(loaded_model).__name__}"  # noqa: E501
@@ -538,8 +540,6 @@ class TVMCompiler(Optimizer):
             from the training dataset or external calibration dataset is
             used for calibrating the model.
         """
-        import tvm.micro.testing as mtvmt
-
         assert not (
             use_fp16_precision and use_int8_precision
         ), "Compilation cannot use both FP16 and INT8 conversion"
@@ -554,26 +554,6 @@ class TVMCompiler(Optimizer):
         self.target = target
         self.target_attrs = target_attrs
         self.target_microtvm_board = target_microtvm_board
-
-        if target in mtvmt.utils.get_supported_platforms():
-            if self.target_microtvm_board:
-                try:
-                    self.target_obj = mtvmt.get_target(
-                        target, target_microtvm_board
-                    )
-                    if target_attrs:
-                        KLogger.info(
-                            "Target chosen from microTVM,"
-                            " skipping provided target options"
-                        )
-                except KeyError:
-                    # board not found
-                    self.target_obj = tvm.target.Target("c " + target_attrs)
-            else:
-                self.target_obj = tvm.target.Target("c " + target_attrs)
-                self.target_microtvm_board = True
-        else:
-            self.target_obj = tvm.target.Target(f"{target} {target_attrs}")
 
         self.target_host = target_host
         self.target_host_obj = (
@@ -598,6 +578,35 @@ class TVMCompiler(Optimizer):
             compiled_model_path=compiled_model_path,
             location=location,
         )
+
+    def init(self):
+        import tvm.micro.testing as mtvmt
+
+        if self.target in mtvmt.utils.get_supported_platforms():
+            if self.target_microtvm_board:
+                try:
+                    self.target_obj = mtvmt.get_target(
+                        self.target, self.target_microtvm_board
+                    )
+                    if self.target_attrs:
+                        KLogger.info(
+                            "Target chosen from microTVM,"
+                            " skipping provided target options"
+                        )
+                except KeyError:
+                    # board not found
+                    self.target_obj = tvm.target.Target(
+                        "c " + self.target_attrs
+                    )
+            else:
+                self.target_obj = tvm.target.Target("c " + self.target_attrs)
+                self.target_microtvm_board = True
+        else:
+            self.target_obj = tvm.target.Target(
+                f"{self.target} {self.target_attrs}"
+            )
+
+        KLogger.debug(f"Using target: {self.target_obj}")
 
     def compile_model(self, mod, params, outputpath, io_spec):
         # additional regular optimizations applied to models

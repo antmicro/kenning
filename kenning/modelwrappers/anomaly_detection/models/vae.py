@@ -8,11 +8,14 @@ for anomaly detection.
 """
 
 import math
-from typing import List, Tuple
+from typing import List, Optional, Tuple
 
+import numpy as np
 import torch
-from pyod.models.vae import LinearBlock, VAEModel
+from pyod.models.vae import LinearBlock, VAEModel, vae_loss
 from torch import nn
+
+from kenning.utils.logger import KLogger
 
 
 class AnomalyDetectionVAE(VAEModel):
@@ -96,7 +99,7 @@ class AnomalyDetectionVAE(VAEModel):
             last_neuron_size = neuron_size
         return nn.Sequential(*encoder_layers)
 
-    def forward_minimal(
+    def _forward_minimal(
         self, x: torch.Tensor
     ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
@@ -116,7 +119,7 @@ class AnomalyDetectionVAE(VAEModel):
         """
         return super().forward(x)
 
-    def forward_distances(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_distances(self, x: torch.Tensor) -> torch.Tensor:
         """
         Processes input data and calculates distance between target
         and predicted value.
@@ -131,12 +134,14 @@ class AnomalyDetectionVAE(VAEModel):
         torch.Tensor
             Calculated distances
         """
+        if len(x.shape) > 2:
+            x = x.view(x.shape[0], -1)
         x_recon, _, _ = super().forward(x)
         euclidean_sq = torch.square(x_recon - x[:, -self.feature_size :])
         distance = torch.sqrt(torch.sum(euclidean_sq, axis=1)).reshape((-1, 1))
         return distance
 
-    def forward(self, x: torch.Tensor) -> torch.Tensor:
+    def _forward_classify(self, x: torch.Tensor) -> torch.Tensor:
         """
         Processes input data and detects whether anomaly appeared.
 
@@ -150,8 +155,13 @@ class AnomalyDetectionVAE(VAEModel):
         torch.Tensor
             Detected anomalies
         """
-        distances = self.forward_distances(x)
+        distances = self._forward_distances(x)
         return (distances > self.threshold).to(torch.float32)
+
+    _forward = _forward_classify
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self._forward(x)
 
     def reparameterize(
         self, mu: torch.Tensor, logvar: torch.Tensor
@@ -190,3 +200,90 @@ class AnomalyDetectionVAE(VAEModel):
             ]
         )
         return mu + eps.detach() * std
+
+
+def train_step(
+    model: AnomalyDetectionVAE,
+    optimizer: torch.optim.Optimizer,
+    data: torch.Tensor,
+    clip_grad_max_norm: Optional[float] = None,
+    beta: float = 1.0,
+    capacity: float = 0.0,
+) -> Tuple[torch.Tensor, torch.Tensor]:
+    """
+    Training of the model on one batch.
+
+    Parameters
+    ----------
+    model : AnomalyDetectionVAE
+        Model to train.
+    optimizer : torch.optim.Optimizer
+        Optimizer for training model.
+    data : torch.Tensor
+        The batch of data.
+    clip_grad_max_norm : Optional[float]
+        Max norm for clipping gradients.
+    beta : float
+        Beta parameter of VAE loss function.
+    capacity : float
+        Capacity parameter of VAE loss function.
+
+    Returns
+    -------
+    Tuple[torch.Tensor, torch.Tensor]
+        Loss and autoencoded data.
+
+    Raises
+    ------
+    ValueError
+        If loss is not a number.
+    """
+    optimizer.zero_grad()
+    x_recon, mu_log, var_log = model._forward_minimal(data)
+    loss = vae_loss(
+        data[:, -(x_recon.shape[1]) :],
+        x_recon,
+        mu_log,
+        var_log,
+        beta=beta,
+        capacity=capacity,
+    )
+    loss.backward()
+    if torch.isnan(loss):
+        raise ValueError("Loss value is nan")
+    torch.nn.utils.clip_grad_norm_(model.parameters(), clip_grad_max_norm)
+    optimizer.step()
+    return loss, x_recon
+
+
+def calibrate_threshold(
+    model: AnomalyDetectionVAE,
+    contamination: float,
+    distances: List[np.ndarray],
+):
+    """
+    Calibrates VAE threshold.
+
+    Parameters
+    ----------
+    model : AnomalyDetectionVAE
+        Model with threshold.
+    contamination : float
+        The percentage of anomalies in the data.
+    distances : List[np.ndarray]
+        Predicted distances on the data.
+
+    Raises
+    ------
+    ValueError
+        If threshold is not a number.
+    """
+    distances = np.concatenate(distances)
+    threshold = np.percentile(distances, 100 * (1 - contamination))
+    KLogger.debug(f"Calibrated threshold: {threshold}")
+    model.threshold = torch.nn.parameter.Parameter(
+        torch.tensor(threshold),
+        requires_grad=False,
+    )
+    if torch.isnan(model.threshold):
+        raise ValueError("Threshold value is nan")

@@ -26,19 +26,20 @@ class NetworkProtocol(BytesBasedProtocol):
         "host": {
             "description": "The address to the target device",
             "type": str,
-            "required": True,
+            "default": "localhost",
         },
         "port": {
             "description": "The port for the target device",
             "type": int,
-            "required": True,
+            "default": 12345,
         },
     }
 
     def __init__(
         self,
-        host: str,
-        port: int,
+        host: str = "localhost",
+        port: int = 12345,
+        timeout: int = -1,
         packet_size: int = 4096,
         endianness: str = "little",
     ):
@@ -51,6 +52,9 @@ class NetworkProtocol(BytesBasedProtocol):
             Host for the TCP connection.
         port : int
             Port for the TCP connection.
+        timeout : int
+            Response receive timeout in seconds. If negative, then waits for
+            responses forever.
         packet_size : int
             Receive packet sizes.
         endianness : str
@@ -61,7 +65,9 @@ class NetworkProtocol(BytesBasedProtocol):
         self.collecteddata = bytes()
         self.serversocket = None
         self.socket = None
-        super().__init__(packet_size=packet_size, endianness=endianness)
+        super().__init__(
+            timeout=timeout, packet_size=packet_size, endianness=endianness
+        )
 
     def accept_client(
         self, socket: socket.socket, mask: int

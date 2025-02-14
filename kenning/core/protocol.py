@@ -284,7 +284,28 @@ class Protocol(ArgumentsHandler, ABC):
     of the communication with the target device.
     """
 
-    arguments_structure = {}
+    arguments_structure = {
+        "timeout": {
+            "type": int,
+            "description": (
+                "Response receive timeout in seconds. If negative, then waits "
+                "forever."
+            ),
+            "default": -1,
+        }
+    }
+
+    def __init__(self, timeout: int = -1):
+        """
+        Constructs protocol.
+
+        Parameters
+        ----------
+        timeout : int
+            Response receive timeout in seconds. If negative, then waits for
+            responses forever.
+        """
+        self.timeout = timeout
 
     @classmethod
     def from_argparse(cls, args: Namespace) -> "Protocol":
@@ -477,6 +498,8 @@ class Protocol(ArgumentsHandler, ABC):
         Tuple[bool, Optional[bytes]]
             True if OK received and attached message data, False otherwise.
         """
+        start_time = time.perf_counter()
+
         while True:
             status, message = self.receive_message(0.01)
 
@@ -496,6 +519,13 @@ class Protocol(ArgumentsHandler, ABC):
 
             elif status == ServerStatus.DATA_INVALID:
                 KLogger.error("Received invalid packet")
+                return False, None
+
+            if (
+                self.timeout > 0
+                and time.perf_counter() > start_time + self.timeout
+            ):
+                KLogger.error("Receive timeout")
                 return False, None
 
     def upload_input(self, data: bytes) -> bool:

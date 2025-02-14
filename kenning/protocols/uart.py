@@ -222,6 +222,7 @@ class UARTProtocol(BytesBasedProtocol):
         self,
         port: str,
         baudrate: int = 9600,
+        timeout: int = -1,
         packet_size: int = 4096,
         endianness: str = "little",
     ):
@@ -234,6 +235,9 @@ class UARTProtocol(BytesBasedProtocol):
             UART port.
         baudrate : int
             UART baudrate.
+        timeout : int
+            Response receive timeout in seconds. If negative, then waits for
+            responses forever.
         packet_size : int
             Size of the packet.
         endianness : str
@@ -243,7 +247,9 @@ class UARTProtocol(BytesBasedProtocol):
         self.baudrate = baudrate
         self.collecteddata = bytes()
         self.connection = None
-        super().__init__(packet_size=packet_size, endianness=endianness)
+        super().__init__(
+            timeout=timeout, packet_size=packet_size, endianness=endianness
+        )
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=0)

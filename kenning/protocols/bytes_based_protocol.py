@@ -35,12 +35,17 @@ class BytesBasedProtocol(Protocol, ABC):
         },
     }
 
-    def __init__(self, packet_size: int = 4096, endianness: str = "little"):
+    def __init__(
+        self,
+        packet_size: int = 4096,
+        endianness: str = "little",
+        timeout: int = -1,
+    ):
         self.packet_size = packet_size
         self.endianness = endianness
         self.selector = selectors.DefaultSelector()
         self.input_buffer = b""
-        super().__init__()
+        super().__init__(timeout)
 
     def send_message(self, message: Message) -> bool:
         KLogger.debug(f"Sending message {message}")

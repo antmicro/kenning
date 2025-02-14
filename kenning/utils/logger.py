@@ -83,6 +83,11 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         Initialize the root logger.
         """
         super().__init__("kenning", "NOTSET")
+        # `coloredlogs` treats the given stream that is sys.stdout/sys.stderr
+        # differently to avoid corresponding stream duplication. Duplication
+        # is desired only for the client
+        prev_stderr = sys.stderr
+        sys.stderr = DuplicateStream
         coloredlogs.install(
             logger=self,
             level="NOTSET",
@@ -90,9 +95,10 @@ class _KLogger(logging.Logger, metaclass=Singleton):
             level_styles=dict(
                 coloredlogs.DEFAULT_LEVEL_STYLES, **CUSTOM_LEVEL_STYLES
             ),
-            stream=DuplicateStream,
+            stream=sys.stderr,
             isatty=True,
         )
+        sys.stderr = prev_stderr
         if os.environ.get("KENNING_ENABLE_ALL_LOGS", False):
             self.configure()
 

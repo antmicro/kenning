@@ -158,8 +158,6 @@ class PyTorchWrapper(ModelWrapper, ABC):
         return data
 
     def convert_output_from_bytes(self, outputdata: bytes) -> List[Any]:
-        import torch
-
         out_spec = self.get_io_specification()["output"]
 
         result = []
@@ -173,6 +171,6 @@ class PyTorchWrapper(ModelWrapper, ABC):
                 outputdata[data_idx : data_idx + out_size], dtype=dtype
             )
             data_idx += out_size
-            result.append(torch.Tensor(arr.reshape(shape)))
+            result.append(arr.reshape(shape))
 
         return result

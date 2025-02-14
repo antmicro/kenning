@@ -16,9 +16,9 @@ import asyncio
 import io
 import logging
 import os
-import re
 import sys
 import urllib.request
+from contextlib import redirect_stdout
 from dataclasses import dataclass
 from io import TextIOBase
 from pathlib import Path
@@ -27,6 +27,7 @@ from typing import Any, Callable, Dict, List, Optional, Type, Union
 
 import coloredlogs
 from tqdm import tqdm
+from tqdm.contrib.logging import logging_redirect_tqdm
 
 from kenning.utils.singleton import Singleton
 
@@ -233,17 +234,36 @@ class LoggerProgressBar(io.StringIO):
     """
 
     def __init__(
-        self, suppress_new_line: bool = True, capture_stdout: bool = False
+        self, verbosity: int = logging.INFO, capture_stdout: bool = False
     ):
         super().__init__()
-        self.buf = ""
-        self.suppress_new_line = suppress_new_line
-        self.capture_stdout = capture_stdout
+        self.redirect_tqdm = logging_redirect_tqdm(loggers=[KLogger])
+        self.redirect_stdout = (
+            redirect_stdout(self) if capture_stdout else None
+        )
+        self.desc = None
+        self.verbosity = verbosity
+        self.disable = None
 
     def __enter__(self) -> "LoggerProgressBar":
-        if self.capture_stdout:
-            self.prev_stdout = sys.stdout
-            sys.stdout = self
+        self.redirect_tqdm.__enter__()
+        fn, lno, func, sinfo = KLogger.findCaller(stacklevel=2)
+        record = KLogger.makeRecord(
+            KLogger.name,
+            KLogger.level,
+            fn=fn,
+            lno=lno,
+            msg="",
+            args=[],
+            exc_info=None,
+            func=func,
+            sinfo=sinfo,
+        )
+        self.desc = KLogger.handlers[0].formatter.format(record)
+        self.disable = self.verbosity < KLogger.level
+
+        if self.redirect_stdout:
+            self.redirect_stdout.__enter__()
         return self
 
     def __exit__(
@@ -251,36 +271,10 @@ class LoggerProgressBar(io.StringIO):
         exc_type: Optional[Type[BaseException]],
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
-    ) -> bool:
-        if self.capture_stdout:
-            sys.stdout = self.prev_stdout
-
-        _KLogger().info(self.buf, stacklevel=PROGRESS_BAR_STACKLEVEL)
-
-        return False
-
-    def write(self, buf):
-        buf = buf.lstrip("\r\n\t\x08 ")
-        for newline in re.finditer(r"\r?\n", buf):
-            _KLogger().info(
-                buf[: newline.start()], stacklevel=PROGRESS_BAR_STACKLEVEL
-            )
-            buf = buf[newline.end() :]
-
-        self.buf = buf
-
-    def flush(self):
-        prev_terminators = []
-        if self.suppress_new_line:
-            for handler in _KLogger().handlers:
-                if isinstance(handler, logging.StreamHandler):
-                    prev_terminators.append((handler, handler.terminator))
-                    handler.terminator = "\r"
-
-        _KLogger().info(self.buf, stacklevel=PROGRESS_BAR_STACKLEVEL)
-        # restore previous terminator
-        for handler, terminator in prev_terminators:
-            handler.terminator = terminator
+    ) -> None:
+        self.redirect_tqdm.__exit__(exc_type, exc_value, traceback)
+        if self.redirect_stdout:
+            self.redirect_stdout.__exit__(exc_type, exc_value, traceback)
 
 
 class DownloadError(Exception):

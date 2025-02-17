@@ -2029,7 +2029,9 @@ def generate_report(
         "smaller_header": smaller_header,
     }
 
-    for model_data in data:
+    for model_data in filter(
+        lambda x: not x.get(Measurements.UNOPTIMIZED), data
+    ):
         header_data["model_names"].append(model_data["model_name"])
         if "command" in model_data:
             header_data["command"] += model_data["command"] + [""]

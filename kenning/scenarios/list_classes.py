@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 """
@@ -25,6 +25,7 @@ from kenning.cli.command_template import (
 )
 from kenning.utils.class_info import generate_class_info, get_class_description
 from kenning.utils.class_loader import (
+    AUTOML,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
     DATASETS,
@@ -167,6 +168,7 @@ class ListClassesRunner(CommandTemplate):
     ID = generate_command_type()
 
     base_class_arguments = [
+        PLATFORMS,
         OPTIMIZERS,
         RUNNERS,
         DATA_PROVIDERS,
@@ -178,6 +180,7 @@ class ListClassesRunner(CommandTemplate):
         PLATFORMS,
         RUNTIME_PROTOCOLS,
         RUNTIMES,
+        AUTOML,
     ]
 
     @staticmethod

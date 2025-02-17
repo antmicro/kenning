@@ -1,0 +1,39 @@
+platform:
+  type: ZephyrPlatform
+  parameters:
+    simulated: True
+    name: max32690fthr/max32690/m4
+    uart_port: /tmp/uart
+    uart_log_port: /tmp/uart-log
+    zephyr_build_path: ./build
+    profiler_dump_path: ./build/renode_profiler.dump
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: build/CATS
+    csv_file: ./data.csv
+    split_seed: 12345
+    split_fraction_test: 0.0001
+    inference_batch_size: 1
+    reduce_dataset: 0.1
+automl:
+  type: AutoPyTorchML
+  parameters:
+    output_directory: ./build/automl-results
+    time_limit: 30
+    use_models:
+      - PyTorchAnomalyDetectionVAE
+    n_best_models: 5
+    # AutoPyTorch specific options
+    optimize_metric: f1
+    budget_type: epochs
+    min_budget: 1
+    max_budget: 5
+optimizers:
+- type: TFLiteCompiler
+  parameters:
+    target: default
+    compiled_model_path: ./build/fp32.tflite
+    inference_input_type: float32
+    inference_output_type: float32
+

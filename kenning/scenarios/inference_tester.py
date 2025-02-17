@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -73,11 +73,11 @@ from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import ResourceURI
 
-JSON_CONFIG = "Inference configuration with JSON"
+FILE_CONFIG = "Inference configuration with JSON/YAML file"
 FLAG_CONFIG = "Inference configuration with flags"
 ARGS_GROUPS = {
-    JSON_CONFIG: f"Configuration with pipeline defined in JSON file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
-    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{JSON_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+    FILE_CONFIG: f"Configuration with pipeline defined in JSON/YAML file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{FILE_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
 }
 
 
@@ -88,8 +88,8 @@ class InferenceTester(CommandTemplate):
 
     parse_all = False
     description = {
-        TEST: "A script that runs inference and gathers measurements.",
-        OPTIMIZE: "A script that optimize model.",
+        TEST: "    A script that runs inference and gathers measurements.",
+        OPTIMIZE: "    A script that optimize model.",
     }
     ID = generate_command_type()
 
@@ -99,6 +99,8 @@ class InferenceTester(CommandTemplate):
         command: Optional[str] = None,
         types: List[str] = [],
         groups: Optional[ArgumentsGroups] = None,
+        include_modelwrapper: bool = True,
+        include_measurements: bool = True,
     ) -> Tuple[argparse.ArgumentParser, ArgumentsGroups]:
         parser, groups = super(
             InferenceTester, InferenceTester
@@ -116,7 +118,7 @@ class InferenceTester(CommandTemplate):
             # 'train' is not used, JSON and flag configuration available
             groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
             required_prefix = "* "
-            groups[JSON_CONFIG].add_argument(
+            groups[FILE_CONFIG].add_argument(
                 "--json-cfg",
                 "--cfg",
                 help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
@@ -135,11 +137,12 @@ class InferenceTester(CommandTemplate):
             "--platform-cls",
             help="Platform-based class that wraps platform being tested",
         ).completer = ClassPathCompleter(PLATFORMS)
-        shared_flags_group.add_argument(
-            "--modelwrapper-cls",
-            help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
-            required=TRAIN in types,
-        ).completer = ClassPathCompleter(MODEL_WRAPPERS)
+        if include_modelwrapper:
+            shared_flags_group.add_argument(
+                "--modelwrapper-cls",
+                help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
+                required=TRAIN in types,
+            ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         dataset_flag = shared_flags_group.add_argument(
             "--dataset-cls",
             help="Dataset-based class with dataset to import",
@@ -165,14 +168,15 @@ class InferenceTester(CommandTemplate):
             )
         # 'test' specific arguments
         if not types or TEST in types:
-            other_group.add_argument(
-                "--measurements",
-                help="The path to the output JSON file with measurements",
-                nargs=1,
-                type=Path,
-                default=[None],
-                required=bool(types),
-            )
+            if include_measurements:
+                other_group.add_argument(
+                    "--measurements",
+                    help="The path to the output JSON file with measurements",
+                    nargs=1,
+                    type=Path,
+                    default=[None],
+                    required=bool(types),
+                )
             other_group.add_argument(
                 "--evaluate-unoptimized",
                 help="Test model before optimization and append measurements",
@@ -197,19 +201,31 @@ class InferenceTester(CommandTemplate):
         return parser, groups
 
     @staticmethod
-    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        command = get_command()
+    def prepare_args(
+        args: argparse.Namespace, required_flags: List[str] = None
+    ) -> argparse.Namespace:
+        """
+        Prepares and validates parased arguments.
 
-        flag_config_names = (
-            "platform_cls",
-            "modelwrapper_cls",
-            "dataset_cls",
-            "compiler_cls",
-            "runtime_cls",
-            "protocol_cls",
-        )
+        Parameters
+        ----------
+        args : argparse.Namespace
+            Parsed arguments.
+        required_flags : List[str]
+            Flags required for this command.
+
+        Returns
+        -------
+        argparse.Namespace
+            Validated parsed arguments.
+
+        Raises
+        ------
+        argparse.ArgumentError
+            If required argument is missing.
+        """
         flag_config_not_none = [
-            getattr(args, name, None) is not None for name in flag_config_names
+            getattr(args, name, None) is not None for name in required_flags
         ]
         if "json_cfg" not in args:
             args.json_cfg = None
@@ -233,11 +249,7 @@ class InferenceTester(CommandTemplate):
             args.evaluate_unoptimized = False
 
         if args.json_cfg is not None:
-            if args.help:
-                raise ParserHelpException
-            return InferenceTester._run_from_cfg(
-                args, command, not_parsed=not_parsed, **kwargs
-            )
+            return args
 
         required_args = (
             [1] + [2]
@@ -247,7 +259,7 @@ class InferenceTester(CommandTemplate):
             else []
         )
         missing_args = [
-            f"'{flag_config_names[i]}'"
+            f"'{required_flags[i]}'"
             for i in required_args
             if not flag_config_not_none[i]
         ]
@@ -256,7 +268,28 @@ class InferenceTester(CommandTemplate):
             raise argparse.ArgumentError(
                 None, f"missing required arguments: {', '.join(missing_args)}"
             )
+        return args
 
+    @staticmethod
+    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
+        command = get_command()
+
+        flag_config_names = (
+            "platform_cls",
+            "modelwrapper_cls",
+            "dataset_cls",
+            "compiler_cls",
+            "runtime_cls",
+            "protocol_cls",
+        )
+        args = InferenceTester.prepare_args(args, flag_config_names)
+
+        if args.help:
+            raise ParserHelpException
+        if args.json_cfg is not None:
+            return InferenceTester._run_from_cfg(
+                args, command, not_parsed=not_parsed, **kwargs
+            )
         return InferenceTester._run_from_flags(
             args, command, not_parsed=not_parsed, **kwargs
         )
@@ -377,6 +410,9 @@ class InferenceTester(CommandTemplate):
         command: List[str],
         pipeline_runner: PipelineRunner,
     ):
+        from kenning.cli.config import get_used_subcommands
+
+        subcommands = get_used_subcommands(args)
         try:
             ret = pipeline_runner.run(
                 output=args.measurements[0] if args.measurements[0] else None,
@@ -387,13 +423,12 @@ class InferenceTester(CommandTemplate):
                 ),
                 command=command,
                 run_optimizations=(
-                    "compiler_cls" in args
+                    OPTIMIZE in subcommands
                     and not getattr(args, "run_benchmarks_only", False)
                     and len(pipeline_runner.optimizers) > 0
                 ),
                 run_benchmarks=(
-                    bool(args.measurements[0])
-                    and pipeline_runner.dataset is not None
+                    TEST in subcommands and pipeline_runner.dataset is not None
                 ),
             )
         except ValidationError as ex:

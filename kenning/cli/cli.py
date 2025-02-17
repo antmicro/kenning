@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 # PYTHON_ARGCOMPLETE_OK
@@ -16,6 +16,7 @@ from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
     SUB_DEST_FORM,
+    USED_SUBCOMMANDS,
     setup_base_parser,
 )
 from kenning.cli.parser import (
@@ -65,8 +66,8 @@ def main():
     # Retrieve parsed subcommands
     i = 0
     subcommands = []
-    while getattr(args, SUB_DEST_FORM.format(i), None) is not None:
-        subcommands.append(getattr(args, SUB_DEST_FORM.format(i)))
+    while (sub := getattr(args, SUB_DEST_FORM.format(i), None)) is not None:
+        subcommands.append(sub)
         i += 1
 
     if not subcommands:
@@ -77,6 +78,7 @@ def main():
                 f"{parser.prog}: error: '{rem[0]}' doesn't match any subcommand",  # noqa: E501
             )
         return
+    setattr(args, USED_SUBCOMMANDS, subcommands)
 
     # Creating parent-parsers from scenarios and completing description
     groups = {}
@@ -93,11 +95,11 @@ def main():
         else:
             desc = scenario.description[1:]
         description.append(("- " if seq_description else "") + desc)
-        if scenario.configure_parser not in used_configs:
+        if scenario.ID not in used_configs:
             parents.append(
                 scenario.configure_parser(types=subcommands, groups=groups)[0]
             )
-            used_configs.add(scenario.configure_parser)
+            used_configs.add(scenario.ID)
             parse_all = parse_all and scenario.parse_all
     description = "\n".join(description)
 
@@ -150,12 +152,12 @@ def main():
     # Run subcommands
     used_functions = set()
     for subcommand in subcommands:
-        run = MAP_COMMAND_TO_SCENARIO[subcommand].run
-        if run in used_functions:
+        scenario = MAP_COMMAND_TO_SCENARIO[subcommand]
+        if scenario.ID in used_functions:
             continue
         try:
             try:
-                result = run(args, not_parsed=rem)
+                result = scenario.run(args, not_parsed=rem)
                 if result:
                     parser.error(
                         f"`{subcommand}` subcommand did not end successfully",
@@ -191,4 +193,4 @@ def main():
             )
             return
 
-        used_functions.add(run)
+        used_functions.add(scenario.ID)

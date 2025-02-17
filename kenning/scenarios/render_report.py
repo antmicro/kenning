@@ -27,6 +27,7 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 from kenning.cli.command_template import (
+    AUTOML,
     DEFAULT_GROUP,
     GROUP_SCHEMA,
     REPORT,
@@ -2322,20 +2323,21 @@ class RenderReport(CommandTemplate):
         report_group = parser.add_argument_group(GROUP_SCHEMA.format(REPORT))
         run_in_sequence = TEST in types
 
-        other_group.add_argument(
-            "--measurements",
-            help="Path to the JSON files with measurements"
-            + (
-                f" created with {TEST} subcommand"
-                if run_in_sequence
-                else ". If more than one file is provided, model comparison will be generated."  # noqa: E501
-            )
-            + " It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
-            type=Path,
-            nargs=1 if run_in_sequence else "*",
-            default=[None],
-            required=run_in_sequence,
-        ).completer = FilesCompleter("*.json")
+        if AUTOML not in types:
+            other_group.add_argument(
+                "--measurements",
+                help="Path to the JSON files with measurements"
+                + (
+                    f" created with {TEST} subcommand"
+                    if run_in_sequence
+                    else ". If more than one file is provided, model comparison will be generated."  # noqa: E501
+                )
+                + " It can be skipped when '--to-html' used, then HTML report will be rendered from previously generated report from '--report-path'",  # noqa: E501
+                type=Path,
+                nargs=1 if run_in_sequence else "*",
+                default=[None],
+                required=run_in_sequence,
+            ).completer = FilesCompleter("*.json")
         report_group.add_argument(
             "--report-name",
             help="Name of the report",

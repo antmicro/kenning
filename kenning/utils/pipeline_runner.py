@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -30,7 +30,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
 )
 from kenning.platforms.local import LocalPlatform
 from kenning.runtimes.utils import get_default_runtime
-from kenning.utils.class_loader import any_from_json
+from kenning.utils.class_loader import ConfigKey, any_from_json, obj_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
@@ -40,6 +40,14 @@ UNOPTIMIZED_MEASUREMENTS = "__unoptimized__"
 class PipelineRunnerInvalidConfigError(Exception):
     """
     Exception raised when invalid config value is provided to PipelineRunner.
+    """
+
+    pass
+
+
+class ModelTooLargeError(Exception):
+    """
+    Exception raised when provided model is larger than RAM of the board.
     """
 
     pass
@@ -157,43 +165,36 @@ class PipelineRunner(object):
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
     ):
-        dataset = any_from_json(json_cfg.get("dataset", {}), "datasets")
-
+        dataset = obj_from_json(json_cfg, ConfigKey.dataset)
         dataconverter = any_from_json(
-            json_cfg.get("runtime", {}).get("data_converted", {}),
+            json_cfg.get(ConfigKey.runtime.name, {}).get("data_converted", {}),
             block_type="dataconverters",
         )
 
-        platform = any_from_json(
-            json_cfg.get("platform", {}), block_type="platforms"
-        )
-
-        protocol = any_from_json(
-            json_cfg.get("protocol", {}), block_type="protocols"
-        )
-
-        model_wrapper = any_from_json(
-            json_cfg.get("model_wrapper", {}),
-            block_type="modelwrappers",
-            dataset=dataset,
+        platform = obj_from_json(json_cfg, ConfigKey.platform)
+        protocol = obj_from_json(json_cfg, ConfigKey.protocol)
+        model_wrapper = obj_from_json(
+            json_cfg, ConfigKey.model_wrapper, dataset=dataset
         )
 
         runtime = (
-            any_from_json(json_cfg.get("runtime", {}), block_type="runtimes")
+            obj_from_json(json_cfg, ConfigKey.runtime)
             if not skip_runtime
             else None
         )
-
-        runtime_builder = any_from_json(
-            json_cfg.get("runtime_builder", {}), block_type="runtimebuilders"
-        )
+        runtime_builder = obj_from_json(json_cfg, ConfigKey.runtime_builder)
 
         optimizers = (
             [
                 any_from_json(
-                    optimizer_cfg, block_type="optimizers", dataset=dataset
+                    optimizer_cfg,
+                    block_type=ConfigKey.optimizers.value,
+                    dataset=dataset,
                 )
-                for optimizer_cfg in json_cfg.get("optimizers", [])
+                for optimizer_cfg in json_cfg.get(
+                    ConfigKey.optimizers.name,
+                    [],
+                )
             ]
             if not skip_optimizers
             else None
@@ -413,6 +414,7 @@ class PipelineRunner(object):
             if self.runtime is None:
                 self.model_wrapper.test_inference()
             else:
+                measurements = None
                 # handle platform init
                 self._handle_platform_init()
 
@@ -436,6 +438,8 @@ class PipelineRunner(object):
                 except Exception:
                     raise
                 finally:
+                    if measurements is None:
+                        measurements = Measurements()
                     # handle platform deinit
                     self._handle_platform_deinit(measurements)
 
@@ -762,6 +766,16 @@ class PipelineRunner(object):
         if not spec_path.exists():
             KLogger.error("No Input/Output specification found")
             raise FileNotFoundError("IO specification not found")
+        if (ram_kb := getattr(self.platform, "ram_size_kb", None)) and (
+            (model_kb := model_path.stat().st_size // 1024) > ram_kb
+        ):
+            KLogger.error(
+                f"Model ({model_kb}KB) does not fit "
+                f"into board's RAM ({ram_kb}KB)"
+            )
+            raise ModelTooLargeError(
+                f"Model too large ({model_kb}KB > {ram_kb}KB)"
+            )
 
         check_request(
             self.protocol.upload_io_specification(spec_path), "upload io spec"

@@ -7,6 +7,7 @@ import os
 import re
 import shlex
 import shutil
+import subprocess
 import tempfile
 import uuid
 import venv
@@ -18,6 +19,7 @@ from typing import Callable, Dict, Generator, Optional, Tuple
 
 import pexpect
 import pytest
+from filelock import FileLock
 from tuttest import Snippet, get_snippets
 
 # Regex for changing Kenning installation to local version
@@ -36,9 +38,9 @@ GALLERY_MARKDOWNS = str(GALLERY_DIR / "*.md")
 # List of snippet executables types
 EXECUTABLE_TYPES = ("bash",)
 # Kenning repo root path
-KENNING_ROOT_PATH = Path(os.getcwd()).resolve()
+KENNING_ROOT_PATH = "./kenning"
 # Pip install lockfile
-PIP_LOCK_FILE = KENNING_ROOT_PATH / ".PIP_LOCK"
+PIP_LOCK_FILE = Path(os.getcwd()).resolve() / ".PIP_LOCK"
 # Mapping of markdown files to separate working directories
 WORKING_DIRS: Dict[str, Path] = {}
 # Mapping of markdown files to subshells
@@ -272,21 +274,32 @@ def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
     Path
         Path to the working directory.
     """
-    if markdown in WORKING_DIRS:
-        return WORKING_DIRS[markdown]
+    lock_path = tmpfolder / f"{markdown}_wd.lock"
 
-    working_dir_path = tmpfolder / f"{markdown}_wd"
-    venv_path = working_dir_path / "venv"
-    if not venv_path.exists():
-        venv.create(venv_path, with_pip=True, upgrade_deps=True)
-    WORKING_DIRS[markdown] = working_dir_path
-    return working_dir_path
+    with FileLock(lock_path):
+        if markdown in WORKING_DIRS:
+            return WORKING_DIRS[markdown]
+
+        working_dir_path = tmpfolder / f"{markdown}_wd"
+
+        venv_path = working_dir_path / "venv"
+        if not venv_path.exists():
+            venv.create(venv_path, with_pip=True, upgrade_deps=True)
+
+        kenning_path = working_dir_path / "kenning"
+        if not kenning_path.exists():
+            subprocess.check_output(
+                ["git", "clone", "/ci", str(working_dir_path / "kenning")]
+            )
+
+        WORKING_DIRS[markdown] = working_dir_path
+        return working_dir_path
 
 
 def get_subshell(
     markdown: str,
     _id: int,
-    tmpfolder: Path,
+    working_dir: Path,
     log_dir: Optional[Path] = None,
 ) -> pexpect.spawn:
     """
@@ -299,8 +312,8 @@ def get_subshell(
         Name of the markdown file.
     id : int
         ID of the subshell.
-    tmpfolder : Path
-        Path to the temporary folder.
+    working_dir : Path
+        Path to the working directory.
     log_dir : Optional[Path]
         Path to folder where subshell logs will be saved.
 
@@ -312,11 +325,9 @@ def get_subshell(
     if _id in SHELLS[markdown]:
         return SHELLS[markdown][_id]
 
-    working_directory = get_working_directory(markdown, tmpfolder)
-
     SHELLS[markdown][_id] = pexpect.spawn(
         shutil.which("bash"),
-        cwd=str(working_directory),
+        cwd=str(working_dir),
         timeout=DEFAULT_TIMEOUT,
         encoding="utf-8",
         echo=False,
@@ -327,19 +338,17 @@ def get_subshell(
         SHELLS[markdown][_id].logfile_read = tmp_file
 
     # Activate virtual environment
-    venv_path = working_directory / "venv"
+    venv_path = working_dir / "venv"
     if not execute_script_and_wait(
         SHELLS[markdown][_id], f'source {venv_path / "bin" / "activate"}'
     ):
         raise Exception("Virtual environment cannot be activated")
 
     # Link directories with datasets
-    os.makedirs(working_directory / DATASET_DIR, exist_ok=True)
+    os.makedirs(working_dir / DATASET_DIR, exist_ok=True)
     for checksum_path in glob(f"{DATASET_DIR}/**/DATASET_CHECKSUM"):
         checksum_path = Path(checksum_path)
-        target_path = (
-            working_directory / DATASET_DIR / checksum_path.parent.name
-        )
+        target_path = working_dir / DATASET_DIR / checksum_path.parent.name
         if target_path.exists():
             continue
         os.symlink(checksum_path.parent.absolute(), target_path)
@@ -347,7 +356,9 @@ def get_subshell(
     return SHELLS[markdown][_id]
 
 
-def create_script(snippet: Snippet, gallery_snippet: bool) -> str:
+def create_script(
+    snippet: Snippet, gallery_snippet: bool, working_dir: Path
+) -> str:
     """
     Extract script from snippet and prepare it to be executed.
 
@@ -365,18 +376,19 @@ def create_script(snippet: Snippet, gallery_snippet: bool) -> str:
     str
         Prepared script
     """
+    kenning_path = working_dir / "kenning"
     script = None
     if snippet.lang == "bash":
         # If `pip install` change it to install local Kenning version
         pip_install = re.match(PIP_INSTALL_KENNING_RE, snippet.text)
         if pip_install:
             snippet.text = re.sub(
-                KENNING_LINK_RE, rf"{KENNING_ROOT_PATH}\2", snippet.text
+                KENNING_LINK_RE, rf"{kenning_path}\2", snippet.text
             )
         else:
             snippet.text = re.sub(
                 PIP_INSTALL_KENNING_LOCAL_RE,
-                rf"\1{KENNING_ROOT_PATH}",
+                rf"\1{kenning_path}",
                 snippet.text,
             )
         script = snippet.text
@@ -429,7 +441,11 @@ def factory_test_snippet(
         "script,snippet,markdown",
         [
             pytest.param(
-                create_script(snippet, docs_gallery),
+                create_script(
+                    snippet,
+                    docs_gallery,
+                    get_working_directory(markdown, tmpfolder),
+                ),
                 snippet,
                 markdown,
                 id=f"{markdown}_{snippet_name}",
@@ -482,8 +498,9 @@ def factory_test_snippet(
         docs_log_dir : Optional[Path]
             Path to folder where subshell logs will be saved.
         """
+        working_dir = get_working_directory(markdown, tmpfolder)
         subshell = get_subshell(
-            markdown, snippet.meta["terminal"], tmpfolder, docs_log_dir
+            markdown, snippet.meta["terminal"], working_dir, docs_log_dir
         )
 
         timeout = (

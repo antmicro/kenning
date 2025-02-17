@@ -21,6 +21,7 @@ This section was generated using:
 
 
 {% for model_name in data['model_names'] %}
+{% if not data[model_name]["__unoptimized__"] is defined %}
 ### General information for {{model_name}}
 
 *Model framework*:
@@ -44,5 +45,6 @@ This section was generated using:
 {{ line }}
 {% endfor %}
 ```
+{% endif -%}
 {% endif -%}
 {% endfor %}

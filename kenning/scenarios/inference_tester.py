@@ -65,12 +65,16 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
+from kenning.core.measurements import MeasurementsCollector
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
-from kenning.utils.pipeline_runner import PipelineRunner
+from kenning.utils.pipeline_runner import (
+    PipelineRunner,
+    PipelineRunnerInvalidConfigError,
+)
 from kenning.utils.resource_manager import ResourceURI
 
 FILE_CONFIG = "Inference configuration with JSON/YAML file"
@@ -416,24 +420,54 @@ class InferenceTester(CommandTemplate):
         from kenning.cli.config import get_used_subcommands
 
         subcommands = get_used_subcommands(args)
+        output = args.measurements[0] if args.measurements[0] else None
+        verbosity = args.verbosity
+        convert_to_onnx = getattr(args, "convert_to_onnx", False)
+        max_target_side_optimizers = getattr(
+            args, "max_target_side_optimizers", -1
+        )
+        run_optimizations = (
+            OPTIMIZE in subcommands
+            and not getattr(args, "run_benchmarks_only", False)
+            and len(pipeline_runner.optimizers) > 0
+        )
+        run_benchmarks = (
+            TEST in subcommands and pipeline_runner.dataset is not None
+        )
         try:
             ret = pipeline_runner.run(
-                output=args.measurements[0] if args.measurements[0] else None,
-                verbosity=args.verbosity,
-                convert_to_onnx=getattr(args, "convert_to_onnx", False),
-                max_target_side_optimizers=(
-                    getattr(args, "max_target_side_optimizers", -1)
-                ),
+                output=output,
+                verbosity=verbosity,
+                convert_to_onnx=convert_to_onnx,
+                max_target_side_optimizers=max_target_side_optimizers,
                 command=command,
-                run_optimizations=(
-                    OPTIMIZE in subcommands
-                    and not getattr(args, "run_benchmarks_only", False)
-                    and len(pipeline_runner.optimizers) > 0
-                ),
-                run_benchmarks=(
-                    TEST in subcommands and pipeline_runner.dataset is not None
-                ),
+                run_optimizations=run_optimizations,
+                run_benchmarks=run_benchmarks,
             )
+
+            evaluate_unoptimized = getattr(args, "evaluate_unoptimized", False)
+            if evaluate_unoptimized and not ret and output:
+                if not run_optimizations:
+                    raise PipelineRunnerInvalidConfigError(
+                        "If optimizations are skipped, the model will already "
+                        "be unoptimized, thus '--evaluate-unoptimized' is "
+                        "redundant"
+                    )
+                unoptimized_output = output.parent / (
+                    "unoptmized_" + output.name
+                )
+                pipeline_runner.optimizers = []
+                ret |= pipeline_runner.run(
+                    output=unoptimized_output,
+                    verbosity=verbosity,
+                    convert_to_onnx=convert_to_onnx,
+                    command=command,
+                    run_optimizations=False,
+                    run_benchmarks=run_benchmarks,
+                )
+                MeasurementsCollector.set_unoptimized(
+                    output, unoptimized_output
+                )
         except ValidationError as ex:
             KLogger.error(f"Validation error: {ex}", stack_info=True)
             raise

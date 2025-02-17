@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -10,9 +10,10 @@ and mapping to classes extending CommandTemplate.
 """
 
 import argparse
-from typing import Dict, Generator, List, Optional, Tuple, Type
+from typing import Dict, Generator, List, Optional, Tuple, Type, Union
 
 from kenning.cli.command_template import (
+    AUTOML,
     CACHE,
     COMPLETION,
     FINE_TUNE,
@@ -31,6 +32,7 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.formatter import Formatter
 from kenning.scenarios import (
+    automl,
     class_info,
     configure_autocompletion,
     fuzzy_search_class,
@@ -62,6 +64,7 @@ BASIC_COMMANDS = (
 )
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (
+    AUTOML,
     OPTIMIZE,
     TRAIN,
     TEST,
@@ -71,6 +74,7 @@ AVAILABLE_COMMANDS = (
 )
 # Connection between subcommand and its logic (extending CommandTemplate)
 MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
+    AUTOML: automl.AutoMLCommand,
     FINE_TUNE: optimization_runner.OptimizationRunner,
     FLOW: json_flow_runner.FlowRunner,
     SEARCH: fuzzy_search_class.FuzzySearchClass,
@@ -89,6 +93,27 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
 SUBCOMMANDS = "Subcommands"
 # Destination of subcommands
 SUB_DEST_FORM = "__seq_{}"
+# Destination of used subcommands list
+USED_SUBCOMMANDS = "__seq"
+
+
+def get_used_subcommands(
+    args: argparse.Namespace,
+) -> List[str]:
+    """
+    Returns used subcommands from parsed arguments.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments.
+
+    Returns
+    -------
+    List[str]
+        List with used subcommands.
+    """
+    return getattr(args, USED_SUBCOMMANDS, [])
 
 
 def get_all_sequences(
@@ -124,7 +149,7 @@ def get_all_sequences(
 
 def create_subcommands(
     subparser: argparse._SubParsersAction,
-    names: List[str],
+    names: Tuple[Union[str, Tuple[str]]],
     number: int = 0,
     with_arguments: bool = False,
 ) -> Dict[Tuple[str], argparse.ArgumentParser]:
@@ -135,7 +160,7 @@ def create_subcommands(
     ----------
     subparser : argparse._SubParsersAction
         Object which can create parsers
-    names : List[str]
+    names : Tuple[Union[str, Tuple[str]]]
         Sequence of subcommands
     number : int
         Depth of subparser
@@ -155,6 +180,18 @@ def create_subcommands(
             subparser = parser.add_subparsers(
                 title=SUBCOMMANDS, dest=SUB_DEST_FORM.format(number + i)
             )
+        if isinstance(name[0], tuple):
+            subparsers = {}
+            for n in name:
+                subparsers |= create_subcommands(
+                    subparser,
+                    n,
+                    number + i,
+                    with_arguments=with_arguments,
+                )
+            for key, subp in subparsers.items():
+                parsers[(*names[:i], *key)] = subp
+            continue
         desc = MAP_COMMAND_TO_SCENARIO[name].description
         if not isinstance(desc, str):
             desc = desc[name]
@@ -214,6 +251,17 @@ def setup_base_parser(
     sequences = set()
     for sequence in SEQUENCED_COMMANDS:
         sequences.update(get_all_sequences(sequence))
+    # Append AUTOML subcommand to all sequences without TRAIN
+    sequences.add(
+        (
+            AUTOML,
+            tuple(
+                sequence
+                for sequence in sequences
+                if TRAIN not in sequence and sequence[0] != "report"
+            ),
+        )
+    )
     for sequence in sorted(sequences, key=lambda x: x[0]):
         parsers.update(
             create_subcommands(

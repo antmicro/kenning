@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -13,6 +13,7 @@ from argcomplete.completers import BaseCompleter
 
 from kenning.scenarios.list_classes import list_classes
 from kenning.utils.class_loader import (
+    AUTOML,
     DATA_CONVERTERS,
     DATA_PROVIDERS,
     DATASETS,
@@ -27,6 +28,7 @@ from kenning.utils.class_loader import (
 )
 
 ALL_TYPES = (
+    AUTOML,
     DATASETS,
     DATA_CONVERTERS,
     DATA_PROVIDERS,

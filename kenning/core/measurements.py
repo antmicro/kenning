@@ -194,6 +194,42 @@ class MeasurementsCollector(object):
     measurements = Measurements()
 
     @classmethod
+    def set_unoptimized(
+        cls,
+        optimized_measurementspath: Path,
+        unoptimized_measurementspath: Path,
+        remove_unoptimized_measurementsfile: bool = True,
+    ):
+        """
+        Copies unoptimized model measurements to `UNOPTIMIZED` field of the
+        optimized model measurements.
+
+        Parameters
+        ----------
+        optimized_measurementspath : Path
+            Path to the optimized model measurements.
+        unoptimized_measurementspath : Path
+            Path to the unoptimized model measurements.
+        remove_unoptimized_measurementsfile : bool
+            Determines whether the unoptimized model measurements should be
+            deleted.
+        """
+        with (
+            open(optimized_measurementspath) as optimized_measurementsfile,
+            open(unoptimized_measurementspath) as unoptimized_measurementsfile,
+        ):
+            optimized_measurements = json.load(optimized_measurementsfile)
+            unoptimized_measurements = json.load(unoptimized_measurementsfile)
+
+        optimized_measurements[
+            Measurements.UNOPTIMIZED
+        ] = unoptimized_measurements
+        cls._dump(optimized_measurements, optimized_measurementspath)
+
+        if remove_unoptimized_measurementsfile:
+            unoptimized_measurementspath.unlink()
+
+    @classmethod
     def save_measurements(cls, resultpath: Path):
         """
         Saves measurements to JSON file.
@@ -206,9 +242,23 @@ class MeasurementsCollector(object):
         for key, measurement in cls.measurements.data.items():
             if isinstance(measurement, np.ndarray):
                 cls.measurements.data[key] = measurement.tolist()
+        cls._dump(cls.measurements.data, resultpath)
+
+    @staticmethod
+    def _dump(measurementsdata: Dict, resultpath: Path):
+        """
+        Serializes measurements data into the given path.
+
+        Parameters
+        ----------
+        measurementsdata : Dict
+            Serializable measurements data
+        resultpath : Path
+            Path to the saved JSON file.
+        """
         with open(resultpath, "w") as measurementsfile:
             json.dump(
-                cls.measurements.data,
+                measurementsdata,
                 measurementsfile,
                 indent=2,
                 default=str,

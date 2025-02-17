@@ -2070,7 +2070,9 @@ def generate_report(
                         "scenarioPath": model_data.get("cfg_path", None),
                     }
                 if len(data) > 1:
-                    imgprefix = model_data["model_name"] + "_"
+                    imgprefix = (
+                        model_data["model_name"].replace(" ", "_") + "_"
+                    )
                 else:
                     imgprefix = ""
                 additional_content, metrics = reptypes[_type](

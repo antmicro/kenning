@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 """
@@ -95,10 +95,19 @@ class ClassInfoRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, **kwargs):
+        from kenning.cli.config import USED_SUBCOMMANDS
+
         args_dict = {
             k: v
             for k, v in vars(args).items()
-            if v is not None and k not in ("help", "verbosity", "__seq_0")
+            if v is not None
+            and k
+            not in (
+                "help",
+                "verbosity",
+                "__seq_0",
+                USED_SUBCOMMANDS,
+            )
         }
 
         # if no flags are given, set all of them to True (display everything)

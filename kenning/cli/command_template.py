@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -28,6 +28,7 @@ INFO = "info"
 CACHE = "cache"
 SEARCH = "search"
 COMPLETION = "completion"
+AUTOML = "automl"
 HELP = {
     "flags": HELP_FLAGS,
     "msg": "show this help message and exit",
@@ -36,9 +37,20 @@ HELP = {
 # Groups:
 DEFAULT_GROUP = "common arguments"
 GROUP_SCHEMA = "'{}' arguments"
+# Internal variable for generating command ID
+_COMMAND_ID = -1
 
 
 ArgumentsGroups = Dict[str, argparse._ArgumentGroup]
+
+
+def generate_command_type() -> int:
+    """
+    Generates consecutive IDs for CommandTemplate.
+    """
+    global _COMMAND_ID
+    _COMMAND_ID += 1
+    return _COMMAND_ID
 
 
 class CommandTemplate(ABC):
@@ -48,6 +60,7 @@ class CommandTemplate(ABC):
 
     parse_all: bool
     description: Union[str, Dict[str, str]]
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

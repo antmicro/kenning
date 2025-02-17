@@ -54,6 +54,7 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
+    generate_command_type,
 )
 from kenning.cli.completers import (
     DATASETS,
@@ -90,6 +91,7 @@ class InferenceTester(CommandTemplate):
         TEST: "A script that runs inference and gathers measurements.",
         OPTIMIZE: "A script that optimize model.",
     }
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

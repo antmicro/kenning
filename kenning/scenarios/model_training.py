@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -21,6 +21,7 @@ from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
+    generate_command_type,
 )
 from kenning.cli.completers import DATASETS, MODEL_WRAPPERS, ClassPathCompleter
 from kenning.utils.class_loader import get_command, load_class
@@ -33,6 +34,7 @@ class TrainModel(CommandTemplate):
 
     parse_all = False
     description = __doc__[:-1]
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

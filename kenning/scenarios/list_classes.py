@@ -21,6 +21,7 @@ from kenning.cli.command_template import (
     LIST,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 from kenning.utils.class_info import generate_class_info, get_class_description
 from kenning.utils.class_loader import (
@@ -163,6 +164,7 @@ class ListClassesRunner(CommandTemplate):
 
     parse_all = True
     description = __doc__.split("\n\n")[0]
+    ID = generate_command_type()
 
     base_class_arguments = [
         OPTIMIZERS,

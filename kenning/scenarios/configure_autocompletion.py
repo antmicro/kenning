@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,6 +17,7 @@ from kenning.cli.command_template import (
     GROUP_SCHEMA,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 
 BASH = "bash"
@@ -76,6 +77,7 @@ class ConfigureCompletion(CommandTemplate):
 
     parse_all = True
     description = __doc__.strip("\n")
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -20,6 +20,7 @@ from kenning.cli.command_template import (
     VISUAL_EDITOR,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 from kenning.utils.logger import (
     Callback,
@@ -37,6 +38,7 @@ class PipelineManagerClient(CommandTemplate):
     parse_all = True
     description = __doc__.split("\n\n")[0]
     specification = None
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

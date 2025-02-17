@@ -33,6 +33,7 @@ from kenning.cli.command_template import (
     TEST,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
@@ -2302,6 +2303,7 @@ class RenderReport(CommandTemplate):
 
     parse_all = True
     description = __doc__.split("\n\n")[0]
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

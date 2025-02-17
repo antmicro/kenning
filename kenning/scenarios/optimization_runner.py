@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -30,6 +30,7 @@ from kenning.cli.command_template import (
     GROUP_SCHEMA,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.core.metrics import (
@@ -340,6 +341,7 @@ class OptimizationRunner(CommandTemplate):
 
     parse_all = True
     description = __doc__.split("\n\n")[0]
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

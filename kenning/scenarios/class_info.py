@@ -23,6 +23,7 @@ from kenning.cli.command_template import (
     INFO,
     ArgumentsGroups,
     CommandTemplate,
+    generate_command_type,
 )
 from kenning.cli.completers import ClassPathCompleter
 from kenning.utils.class_info import generate_class_info
@@ -35,6 +36,7 @@ class ClassInfoRunner(CommandTemplate):
 
     parse_all = True
     description = __doc__.split("\n\n")[0]
+    ID = generate_command_type()
 
     @staticmethod
     def configure_parser(

@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,9 +11,11 @@ import ast
 import importlib
 import inspect
 import sys
+from enum import Enum
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type, Union
 
+from kenning.core.automl import AutoML
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
@@ -40,6 +42,25 @@ PLATFORMS = "platforms"
 RUNTIME_BUILDERS = "runtimebuilders"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
+AUTOML = "automl"
+
+
+class ConfigKey(str, Enum):
+    """
+    Enum with fields available in configuration.
+
+    `name` property defines key in configuration,
+    `value` property defines type of the class given field can store.
+    """
+
+    dataset = DATASETS
+    runtime = RUNTIMES
+    optimizers = OPTIMIZERS
+    platform = PLATFORMS
+    protocol = RUNTIME_PROTOCOLS
+    model_wrapper = MODEL_WRAPPERS
+    runtime_builder = RUNTIME_BUILDERS
+    automl = AUTOML
 
 
 def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
@@ -65,6 +86,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         RUNTIME_BUILDERS: ("kenning.runtimebuilders", RuntimeBuilder),
         RUNTIME_PROTOCOLS: ("kenning.protocols", Protocol),
         RUNTIMES: ("kenning.runtimes", Runtime),
+        AUTOML: ("kenning.automl", AutoML),
     }
 
 
@@ -88,9 +110,9 @@ def get_all_subclasses(
     raise_exception : bool
         Indicate if exception should be raised in case subclass cannot be
         imported.
-    import_classes: bool
+    import_classes : bool
         Whether to import classes into memory or just return a list of modules.
-    show_warnings: bool
+    show_warnings : bool
         Tells whether method should print warnings if modules could not be
         imported.
 
@@ -222,6 +244,32 @@ def get_all_subclasses(
     return result
 
 
+def obj_from_json(
+    json_cfg: Dict[str, Any], key: ConfigKey, **kwargs
+) -> Optional[Any]:
+    """
+    Loads the object from configuration, specified by key.
+
+    Parameters
+    ----------
+    json_cfg : Dict[str, Any]
+        A JSON object snippet with `type` parameter, specifying the
+        full name of the class, and `parameters` parameter, with list
+        of constructor arguments for the class.
+    key : ConfigKey
+        Chooses the field from configuration and class type.
+    **kwargs :
+        Additional arguments
+
+    Returns
+    -------
+    Optional[Any]
+        If a class is available and contains `from_json` method, it
+        returns object of this class.
+    """
+    return any_from_json(json_cfg.get(key.name, {}), key.value, **kwargs)
+
+
 def any_from_json(
     json_cfg: Dict[str, Any], block_type: Optional[str] = None, **kwargs
 ) -> Optional[Any]:
@@ -230,14 +278,14 @@ def any_from_json(
 
     Parameters
     ----------
-    json_cfg: Dict[str, Any]
+    json_cfg : Dict[str, Any]
         A JSON object snippet with `type` parameter, specifying the
         full name of the class, and `parameters` parameter, with list
         of constructor arguments for the class.
-    block_type: Optional[str]
+    block_type : Optional[str]
         Type of Kenning block, i.e. "optimizers", "platforms". If specified
         then type in config does not require to specify full class path.
-    **kwargs:
+    **kwargs :
         Additional arguments
 
     Returns
@@ -248,30 +296,9 @@ def any_from_json(
     """
     if "type" not in json_cfg:
         return None
-    base_classes_dict = get_base_classes_dict()
-    if (
-        block_type is not None
-        and block_type in base_classes_dict
-        and "." not in json_cfg["type"]
-    ):
-        module_path, base_class = base_classes_dict[block_type]
-        subclasses = get_all_subclasses(
-            module_path, base_class, import_classes=False
-        )
 
-        cls_type = None
-        for subcls_name, subcls_module_path in subclasses:
-            if subcls_name == json_cfg["type"]:
-                cls_type = f"{subcls_module_path}.{subcls_name}"
-                break
-
-        if cls_type is None:
-            KLogger.error(f"Could not find class of {json_cfg['type']}")
-    else:
-        cls_type = json_cfg["type"]
-
-    cls = load_class(cls_type)
-    if not hasattr(cls, "from_json"):
+    cls = load_class_by_type(json_cfg["type"], block_type)
+    if cls is None or not hasattr(cls, "from_json"):
         return None
 
     return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
@@ -295,6 +322,54 @@ def load_class(module_path: str) -> Type:
     module = importlib.import_module(module_name)
     cls = getattr(module, cls_name)
     return cls
+
+
+def load_class_by_type(
+    path: Optional[str], block_type: Optional[str] = None
+) -> Optional[Type]:
+    """
+    Loads the class based on its name and type, or using full path.
+
+    Parameters
+    ----------
+    path : Optional[str]
+        A path to the class or full class name (requires block_type).
+    block_type : Optional[str]
+        Type of Kenning block, i.e. "optimizers", "platforms". If specified
+        then type in config does not require to specify full class path.
+
+    Returns
+    -------
+    Optional[Type]
+        Loaded class or None if class cannot be found.
+    """
+    if path is None:
+        return None
+    base_classes_dict = get_base_classes_dict()
+    if (
+        block_type is not None
+        and block_type in base_classes_dict
+        and "." not in path
+    ):
+        module_path, base_class = base_classes_dict[block_type]
+        subclasses = get_all_subclasses(
+            module_path, base_class, import_classes=False
+        )
+
+        cls_type = None
+        for subcls_name, subcls_module_path in subclasses:
+            if subcls_name == path:
+                cls_type = f"{subcls_module_path}.{subcls_name}"
+                break
+
+        if cls_type is None:
+            KLogger.error(f"Could not find class of {path}")
+    else:
+        cls_type = path
+
+    if cls_type is not None:
+        return load_class(cls_type)
+    return None
 
 
 def get_kenning_submodule_from_path(module_path: str) -> str:

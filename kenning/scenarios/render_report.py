@@ -49,7 +49,6 @@ from kenning.core.metrics import (
 from kenning.resources import reports
 from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
-from kenning.utils.pipeline_runner import UNOPTIMIZED_MEASUREMENTS
 
 # REPORT_TYPES:
 PERFORMANCE = "performance"
@@ -2300,14 +2299,14 @@ def load_measurements_for_report(
         # Append measurements of unoptimized data separately
         if (
             not skip_unoptimized_model
-            and UNOPTIMIZED_MEASUREMENTS in measurements
+            and Measurements.UNOPTIMIZED in measurements
         ):
-            unoptimized = measurements[UNOPTIMIZED_MEASUREMENTS]
-            del measurements[UNOPTIMIZED_MEASUREMENTS]
+            unoptimized = measurements.pop(Measurements.UNOPTIMIZED)
             if "model_name" not in unoptimized:
                 unoptimized[
                     "model_name"
-                ] = f"unoptimized_{measurements['model_name']}"
+                ] = f"unoptimized {measurements['model_name']}"
+            unoptimized[Measurements.UNOPTIMIZED] = True
             measurementsdata.append(unoptimized)
         measurementsdata.append(measurements)
 

@@ -34,8 +34,6 @@ from kenning.utils.class_loader import ConfigKey, any_from_json, obj_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
-UNOPTIMIZED_MEASUREMENTS = "__unoptimized__"
-
 
 class PipelineRunnerInvalidConfigError(Exception):
     """

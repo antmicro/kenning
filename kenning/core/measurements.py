@@ -48,6 +48,8 @@ class Measurements(object):
         Dictionary storing lists of values.
     """
 
+    UNOPTIMIZED = "__unoptimized__"
+
     def __init__(self):
         self.data = dict()
 

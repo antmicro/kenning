@@ -19,7 +19,7 @@ except ImportError:
 
 from kenning.core.automl import AutoML
 from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import any_from_json
+from kenning.utils.class_loader import ConfigKey, obj_from_json
 from kenning.utils.logger import KLogger
 
 
@@ -52,10 +52,10 @@ class AutoMLRunner(object):
 
     @classmethod
     def from_json_cfg(cls, cfg: Dict):
-        dataset = any_from_json(cfg.get("dataset", {}), "datasets")
-        autoML = any_from_json(
-            cfg.get("automl", {}),
-            "automl",
+        dataset = obj_from_json(cfg, ConfigKey.dataset)
+        autoML = obj_from_json(
+            cfg,
+            ConfigKey.automl,
             dataset=dataset,
         )
 

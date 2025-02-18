@@ -8,9 +8,19 @@ with Pipeline Manager.
 """
 
 import itertools
+import json
+import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
+
+from pipeline_manager.dataflow_builder.dataflow_builder import GraphBuilder
+from pipeline_manager.dataflow_builder.dataflow_graph import AttributeType
+from pipeline_manager.dataflow_builder.entities import (
+    Interface,
+    NodeAttributeType,
+    get_uuid,
+)
 
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
@@ -196,10 +206,14 @@ class BaseDataflowHandler(ABC):
         """
         self.nodes = nodes
         self.io_mapping = io_mapping
-        self.pm_graph = PipelineManagerGraphCreator(io_mapping)
         self.dataflow_graph = graph_creator
         self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
+
+        spec = self.spec_builder.create_and_validate_spec()
+        self.pm_graph = PipelineManagerGraphCreator(
+            self.io_mapping, specification=spec
+        )
 
     def get_specification(
         self,
@@ -499,7 +513,7 @@ class BaseDataflowHandler(ABC):
         ...
 
 
-class PipelineManagerGraphCreator(GraphCreator):
+class PipelineManagerGraphCreator:
     """
     Abstraction for graph generation in Pipeline Manager format.
 
@@ -507,7 +521,12 @@ class PipelineManagerGraphCreator(GraphCreator):
     documentation of Pipeline Manager
     """
 
-    def __init__(self, io_mapping: Dict[str, Dict], node_width: int = 300):
+    def __init__(
+        self,
+        io_mapping: Dict[str, Dict],
+        specification: Dict,
+        node_width: int = 300,
+    ):
         """
         Prepares the Graph creator for Pipeline Manager.
 
@@ -515,116 +534,107 @@ class PipelineManagerGraphCreator(GraphCreator):
         ----------
         io_mapping : Dict[str, Dict]
             IO mapping based on the input nodes specification
+        specification : Dict
+            Specification created by SpecificationBuilder
         node_width : int
             Width of nodes
         """
         self.io_mapping = io_mapping
         self.node_width = node_width
-        super().__init__()
+        self.specification = specification
 
-    def reset_graph(self):
-        self.connections = []
+        with tempfile.TemporaryDirectory() as tmpdir:
+            spec_path = Path(tmpdir) / "spec.json"
+            with open(spec_path, "w") as spec_file:
+                json.dump(
+                    specification,
+                    spec_file,
+                    indent=4,
+                    sort_keys=True,
+                    ensure_ascii=False,
+                )
+            self.graph_builder = GraphBuilder(
+                specification=spec_path,
+                specification_version=SPECIFICATION_VERSION,
+            )
+        self.graph = self.graph_builder.create_graph()
+
+        # VARS FROM reset_graph - NOT SURE IF NEEDED
+        # self.connections = []
         self.inp_interface_map = {}
         self.out_interface_map = {}
-
-    def _create_interface(
-        self, io_spec: Dict[str, List], direction: str
-    ) -> Tuple[str, List]:
-        """
-        Creates a node interface based on it's IO specification.
-
-        Parameters
-        ----------
-        io_spec : Dict[str, List]
-            IO specification of an input.
-        direction : str
-            Direction of the IO.
-
-        Returns
-        -------
-        Tuple[str, List]
-            Created interface together with its ID.
-        """
-        interface_id = self.gen_id()
-        interface = {
-            "name": io_spec["name"],
-            "id": interface_id,
-            "direction": direction,
-        }
-        return interface_id, interface
+        print("init ok")
 
     def create_node(self, node, parameters):
-        node_id = self.gen_id()
         io_map = self.io_mapping[node.type]
 
         interfaces = []
         for io_spec in io_map["inputs"]:
-            interface_id, interface = self._create_interface(io_spec, "input")
+            interface = Interface(io_spec["name"], "input")
             interfaces.append(interface)
-            self.inp_interface_map[interface_id] = io_spec
+            #      DO I NEED THIS
+            self.inp_interface_map[interface.id] = io_spec
         for io_spec in io_map["outputs"]:
-            interface_id, interface = self._create_interface(io_spec, "output")
+            interface = Interface(io_spec["name"], "output")
             interfaces.append(interface)
-            self.out_interface_map[interface_id] = io_spec
+            #      DO I NEED THIS
+            self.out_interface_map[interface.id] = io_spec
 
-        self.nodes[node_id] = {
-            "name": node.name,
-            "id": node_id,
+        node_kwargs = {
+            "width": self.node_width,
             "properties": [
-                {**param, "id": self.gen_id()} for param in parameters
+                {**param, "id": get_uuid()} for param in parameters
             ],
             "interfaces": interfaces,
-            "width": self.node_width,
             "twoColumn": True,
         }
-        return node_id
+
+        node = self.graph.create_node(node.name, node_kwargs)
+        print("create_node ok")
+        return node.id
 
     def find_compatible_io(self, from_id, to_id):
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
-        from_interface_arr = self.nodes[from_id]["interfaces"]
-        to_interface_arr = self.nodes[to_id]["interfaces"]
+
+        from_interface_arr = self.graph.get(AttributeType.NODE, from_id).get(
+            NodeAttributeType.INTERFACE
+        )
+
+        to_interface_arr = self.graph.get(AttributeType.NODE, to_id).get(
+            NodeAttributeType.INTERFACE
+        )
 
         for from_interface, to_interface in itertools.product(
             from_interface_arr, to_interface_arr
         ):
-            from_interface_id = from_interface["id"]
-            to_interface_id = to_interface["id"]
             try:
-                from_io_spec = self.out_interface_map[from_interface_id]
-                to_io_spec = self.inp_interface_map[to_interface_id]
+                from_io_spec = self.out_interface_map[from_interface.id]
+                to_io_spec = self.inp_interface_map[to_interface.id]
             except KeyError:
                 KLogger.debug(
-                    f"The connection from {from_interface_id} to "
-                    f"{to_interface_id} could not be established."
+                    f"The connection from {from_interface.id} to "
+                    f"{to_interface.id} could not be established."
                 )
                 continue
 
             if from_io_spec["type"] == to_io_spec["type"]:
-                return from_interface_id, to_interface_id
+                print("find_compatible_io ok")
+                return from_interface.id, to_interface.id
         raise RuntimeError("No compatible connections were found")
 
     def create_connection(self, from_id, to_id):
         from_interface_id, to_interface_id = self.find_compatible_io(
             from_id, to_id
         )
-        self.connections.append(
-            {
-                "id": self.gen_id(),
-                "from": from_interface_id,
-                "to": to_interface_id,
-            }
-        )
+        self.graph.create_connection(from_interface_id, to_interface_id)
+        print("create_connection ok")
 
     def flush_graph(self):
-        finished_graph = {
-            "version": SPECIFICATION_VERSION,
-            "graph": {
-                "id": self.gen_id(),
-                "nodes": list(self.nodes.values()),
-                "connections": self.connections,
-            },
-            "subgraphs": [],
-        }
-        self.start_new_graph()
+        finished_graph = self.graph.to_json()
+        del self.graph_builder.graph[0]
+        # THIS MIGHT NOT WORK DUE TO SPECIFICATIONBUILDER AVOIDING DUPLICATES ?
+        # have to check
+        self.graph = self.graph_builder.create_graph()
+        print("flush_graph ok")
         return finished_graph

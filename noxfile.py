@@ -218,6 +218,8 @@ def run_gallery_tests(session: nox.Session):
     name = _fix_name(session.name)
 
     report_path = Path("pytest-reports") / f"{name}.json"
+    test_docs_log_dir = Path("log_docs") / f"{name}"
+    test_docs_log_dir.mkdir(parents=True)
     session.run(
         "pytest",
         "kenning/tests/docs/test_snippets.py",
@@ -226,4 +228,5 @@ def run_gallery_tests(session: nox.Session):
         "-m",
         "docs_gallery",
         f"--report-log={report_path}",
+        f"--test-docs-log-dir={test_docs_log_dir}",
     )

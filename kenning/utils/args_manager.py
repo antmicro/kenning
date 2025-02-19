@@ -11,7 +11,7 @@ import json
 import os.path
 from abc import ABC
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Iterable, Optional, Sequence, Tuple
 
 import jsonschema
 import numpy as np
@@ -124,6 +124,57 @@ def convert_to_jsontype(v: Any) -> Any:
     if isinstance(v, np.ndarray):
         return v.tolist()
     return v
+
+
+def ensure_exclusive_cfg_or_flags(
+    args: argparse.Namespace,
+    flag_config_names: Sequence[str],
+    required: Optional[Iterable[int]] = None,
+):
+    """
+    Verifies exclusion of file-based or flag-based configuration.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments.
+    flag_config_names : Sequence[str]
+        Flags supported by the command.
+    required : Optional[Iterable[int]]
+        If provided, only selected flags are checked to not be missing.
+
+    Raises
+    ------
+    ArgumentError
+        Raised when verification fails.
+    """
+    flag_config_not_none = [
+        getattr(args, name, None) is not None for name in flag_config_names
+    ]
+    if args.json_cfg is None:
+        # Exclusion violated
+        if not any(flag_config_not_none):
+            raise argparse.ArgumentError(
+                None, "JSON or flag config is required."
+            )
+
+        # Missing arguments
+        missing_args = [
+            f"'{flag_config_names[i]}'"
+            for i in required or range(len(flag_config_names))
+            if not flag_config_not_none[i]
+        ]
+        if missing_args and not args.help:
+            raise argparse.ArgumentError(
+                None, f"missing required arguments: {', '.join(missing_args)}"
+            )
+
+    if args.json_cfg is not None and any(flag_config_not_none):
+        raise argparse.ArgumentError(
+            None,
+            "JSON and flag configurations are mutually exclusive. "
+            "Please use only one method of configuration.",
+        )
 
 
 type_to_jsontype = {

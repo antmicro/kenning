@@ -11,20 +11,36 @@ in Dataset object.
 
 import argparse
 import sys
-from pathlib import Path
 from typing import List, Optional, Tuple
 
+import yaml
+from argcomplete.completers import FilesCompleter
+
 from kenning.cli.command_template import (
-    GROUP_SCHEMA,
     TEST,
-    TRAIN,
     ArgumentsGroups,
     CommandTemplate,
     ParserHelpException,
     generate_command_type,
 )
-from kenning.cli.completers import DATASETS, MODEL_WRAPPERS, ClassPathCompleter
-from kenning.utils.class_loader import get_command, load_class
+from kenning.cli.completers import DATASETS, ClassPathCompleter
+from kenning.core.model import ModelWrapper
+from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
+from kenning.utils.class_loader import (
+    MODEL_WRAPPERS,
+    ConfigKey,
+    get_command,
+    load_class,
+    obj_from_json,
+)
+from kenning.utils.resource_manager import ResourceURI
+
+FILE_CONFIG = "Train configuration with JSON/YAML file"
+FLAG_CONFIG = "Train configuration with flags"
+ARGS_GROUPS = {
+    FILE_CONFIG: f"Configuration with parameters defined in JSON/YAML file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required",  # noqa: E501
+    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{FILE_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+}
 
 
 class TrainModel(CommandTemplate):
@@ -46,47 +62,88 @@ class TrainModel(CommandTemplate):
         parser, groups = super(TrainModel, TrainModel).configure_parser(
             parser, command, types, groups, TEST in types
         )
-        # other_group = groups[DEFAULT_GROUP]
-        train_group = parser.add_argument_group(GROUP_SCHEMA.format(TRAIN))
+        groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
-        train_group.add_argument(
+        # required prefix
+        def _(x):
+            return f"* {x}"
+
+        groups[FILE_CONFIG].add_argument(
+            "--json-cfg",
+            "--cfg",
+            help=_(
+                "The path to the input JSON file with configuration of the inference"  # noqa: E501
+            ),
+            type=ResourceURI,
+        ).completer = FilesCompleter(
+            allowednames=("*.json", "*.yaml", "*.yml")
+        )
+        groups[FLAG_CONFIG].add_argument(
             "--modelwrapper-cls",
-            help="ModelWrapper-based class with inference implementation to import",  # noqa: E501
-            required=True,
+            help=_(
+                "ModelWrapper-based class with inference implementation to import"  # noqa: E501
+            ),
         ).completer = ClassPathCompleter(MODEL_WRAPPERS)
-        train_group.add_argument(
+        groups[FLAG_CONFIG].add_argument(
             "--dataset-cls",
-            help="Dataset-based class with dataset to import",
-            required=True,
+            help=_("Dataset-based class with dataset to import"),
         ).completer = ClassPathCompleter(DATASETS)
-        train_group.add_argument(
-            "--batch-size",
-            help="The batch size for training",
-            type=int,
-            required=True,
-        )
-        train_group.add_argument(
-            "--learning-rate",
-            help="The learning rate for training",
-            type=float,
-            required=True,
-        )
-        train_group.add_argument(
-            "--num-epochs",
-            help="Number of epochs to train for",
-            type=int,
-            required=True,
-        )
-        train_group.add_argument(
-            "--logdir",
-            help="Path to the training logs directory",
-            type=Path,
-            required=True,
-        )
+
         return parser, groups
 
     @staticmethod
+    def prepare_args(args: argparse.Namespace):
+        """
+        Prepares and validates parased arguments.
+
+        Parameters
+        ----------
+        args : argparse.Namespace
+            Parsed arguments.
+        """
+        TrainModel._ensure_args_in_namespace(args)
+        TrainModel._ensure_exclusive_cfg_or_flags(args)
+
+    @staticmethod
+    def _ensure_args_in_namespace(args):
+        if "json_cfg" not in args:
+            args.json_cfg = None
+
+    @staticmethod
+    def _ensure_exclusive_cfg_or_flags(args: argparse.Namespace):
+        flag_config_args = ("modelwrapper_cls", "dataset_cls")
+        ensure_exclusive_cfg_or_flags(args, flag_config_args)
+
+    @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
+        TrainModel.prepare_args(args)
+        if args.help:
+            raise ParserHelpException
+        if args.json_cfg:
+            return TrainModel._run_from_cfg(args, not_parsed, **kwargs)
+        return TrainModel._run_from_flags(args, not_parsed, **kwargs)
+
+    @staticmethod
+    def _run_from_cfg(
+        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
+    ):
+        if not_parsed:
+            raise argparse.ArgumentError(
+                None, f"unrecognized arguments: {' '.join(not_parsed)}"
+            )
+
+        with open(args.json_cfg, "r") as f:
+            cfg = yaml.safe_load(f)
+
+        dataset = obj_from_json(cfg, ConfigKey.dataset)
+        model = obj_from_json(cfg, ConfigKey.model_wrapper, dataset=dataset)
+
+        TrainModel._run(model, args)
+
+    @staticmethod
+    def _run_from_flags(
+        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
+    ):
         modelwrappercls = (
             load_class(args.modelwrapper_cls)
             if args.modelwrapper_cls
@@ -109,8 +166,10 @@ class TrainModel(CommandTemplate):
         dataset = datasetcls.from_argparse(args)
         model = modelwrappercls.from_argparse(dataset, args, from_file=False)
 
-        args.logdir.mkdir(parents=True, exist_ok=True)
+        TrainModel._run(model, args)
 
+    @staticmethod
+    def _run(model: ModelWrapper, args: argparse.Namespace):
         model.prepare_model()
         model.train_model(
             args.batch_size, args.learning_rate, args.num_epochs, args.logdir

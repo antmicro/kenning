@@ -47,21 +47,16 @@ from kenning.core.protocol import (
 )
 from kenning.core.runtime import Runtime
 from kenning.platforms.local import LocalPlatform
+from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import any_from_json, get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
-JSON_CONFIG = "Server configuration with JSON"
+FILE_CONFIG = "Server configuration with JSON/YAML file"
 FLAG_CONFIG = "Server configuration with flags"
 ARGS_GROUPS = {
-    JSON_CONFIG: (
-        "Configuration with data defined in JSON file. This section is not "
-        f"compatible with '{FLAG_CONFIG}'. Arguments with '*' are required"
-    ),
-    FLAG_CONFIG: (
-        "Configuration with flags. This section is not compatible with "
-        f"'{JSON_CONFIG}'. Arguments with '*' are required."
-    ),
+    FILE_CONFIG: f"Configuration with data defined in JSON/YAML file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required",  # noqa: E501
+    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{FILE_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
 }
 
 
@@ -332,7 +327,7 @@ class InferenceServerRunner(CommandTemplate):
 
         groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
 
-        groups[JSON_CONFIG].add_argument(
+        groups[FILE_CONFIG].add_argument(
             "--json-cfg",
             "--cfg",
             metavar="CONFIG",
@@ -362,38 +357,11 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        flag_config_names = ("platform_cls", "runtime_cls", "protocol_cls")
-        flag_config_not_none = [
-            getattr(args, name, None) is not None for name in flag_config_names
-        ]
-        if args.json_cfg is None and not any(flag_config_not_none):
-            raise argparse.ArgumentError(
-                None, "Configuration file or flags are required."
-            )
-        if args.json_cfg is not None and any(flag_config_not_none):
-            raise argparse.ArgumentError(
-                None,
-                "Configuration file and flag configurations are mutually exclusive. Please "  # noqa: E501
-                "use only one method of configuration.",
-            )
-
+        ensure_exclusive_cfg_or_flags(
+            args, ("platform_cls", "runtime_cls", "protocol_cls")
+        )
         if args.json_cfg is not None:
             return InferenceServerRunner._run_from_json(args, not_parsed)
-
-        else:
-            required_args = [1]
-            missing_args = [
-                f"'{flag_config_names[i]}'"
-                for i in required_args
-                if not flag_config_not_none[i]
-            ]
-            if missing_args and not args.help:
-                raise argparse.ArgumentError(
-                    None,
-                    "the following arguments are required: "
-                    f"{', '.join(missing_args)}",
-                )
-
         return InferenceServerRunner._run_from_flags(args, not_parsed)
 
     @staticmethod

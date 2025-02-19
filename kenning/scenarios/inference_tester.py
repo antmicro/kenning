@@ -69,6 +69,7 @@ from kenning.core.measurements import MeasurementsCollector
 from kenning.dataconverters.modelwrapper_dataconverter import (
     ModelWrapperDataConverter,
 )
+from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import get_command, load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import (
@@ -206,7 +207,7 @@ class InferenceTester(CommandTemplate):
 
     @staticmethod
     def prepare_args(
-        args: argparse.Namespace, required_flags: List[str] = None
+        args: argparse.Namespace, required_flags: List[str]
     ) -> argparse.Namespace:
         """
         Prepares and validates parased arguments.
@@ -222,39 +223,24 @@ class InferenceTester(CommandTemplate):
         -------
         argparse.Namespace
             Validated parsed arguments.
-
-        Raises
-        ------
-        argparse.ArgumentError
-            If required argument is missing.
         """
-        flag_config_not_none = [
-            getattr(args, name, None) is not None for name in required_flags
-        ]
+        InferenceTester._fill_missing_namespace_args(args)
+        InferenceTester._ensure_exclusive_cfg_or_flags(args, required_flags)
+        return args
+
+    @staticmethod
+    def _fill_missing_namespace_args(args: argparse.Namespace):
         if "json_cfg" not in args:
             args.json_cfg = None
-        if not args.help and (
-            args.json_cfg is None and not any(flag_config_not_none)
-        ):
-            raise argparse.ArgumentError(
-                None, "JSON, YAML or flag config is required."
-            )
-        if not args.help and (
-            args.json_cfg is not None and any(flag_config_not_none)
-        ):
-            raise argparse.ArgumentError(
-                None,
-                "JSON/YAML and flag configurations are mutually exclusive. "
-                "Please use only one method of configuration.",
-            )
         if "measurements" not in args:
             args.measurements = [None]
         if "evaluate_unoptimized" not in args:
             args.evaluate_unoptimized = False
 
-        if args.json_cfg is not None:
-            return args
-
+    @staticmethod
+    def _ensure_exclusive_cfg_or_flags(
+        args: argparse.Namespace, required_flags: List[str]
+    ):
         required_args = (
             [1] + [2]
             if args.measurements[0] is not None
@@ -262,31 +248,21 @@ class InferenceTester(CommandTemplate):
             if "compiler_cls" in args
             else []
         )
-        missing_args = [
-            f"'{required_flags[i]}'"
-            for i in required_args
-            if not flag_config_not_none[i]
-        ]
-
-        if missing_args and not args.help:
-            raise argparse.ArgumentError(
-                None, f"missing required arguments: {', '.join(missing_args)}"
-            )
-        return args
+        ensure_exclusive_cfg_or_flags(args, required_flags, required_args)
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
 
-        flag_config_names = (
+        flag_config_args = [
             "platform_cls",
             "modelwrapper_cls",
             "dataset_cls",
             "compiler_cls",
             "runtime_cls",
             "protocol_cls",
-        )
-        args = InferenceTester.prepare_args(args, flag_config_names)
+        ]
+        args = InferenceTester.prepare_args(args, flag_config_args)
 
         if args.help:
             raise ParserHelpException

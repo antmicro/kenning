@@ -102,14 +102,14 @@ class AutoMLCommand(InferenceTester):
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
 
-        flag_config_names = (
+        flag_config_names = [
             "automl_cls",
             "platform_cls",
             "dataset_cls",
             "compiler_cls",
             "runtime_cls",
             "protocol_cls",
-        )
+        ]
         args = AutoMLCommand.prepare_args(args, flag_config_names)
         if args.help:
             raise ParserHelpException

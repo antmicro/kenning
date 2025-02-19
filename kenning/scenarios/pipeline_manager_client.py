@@ -226,14 +226,15 @@ class PipelineManagerClient(CommandTemplate):
             try:
                 if args.spec_type == "pipeline":
                     dataflow_handler = PipelineHandler(
-                        layout_algorithm=args.layout
+                        layout_algorithm=args.layout,
+                        workspace_dir=cls.workspace_dir.resolve(),  
                     )
                     rpchandler = OptimizationHandlerRPC(
                         dataflow_handler, args.file_path, cls, client
                     )
                 elif args.spec_type == "flow":
                     dataflow_handler = KenningFlowHandler(
-                        layout_algorithm=args.layout
+                        layout_algorithm=args.layout,
                     )
                     rpchandler = FlowHandlerRPC(
                         dataflow_handler, args.file_path, cls, client

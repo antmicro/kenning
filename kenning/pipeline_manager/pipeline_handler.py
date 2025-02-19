@@ -36,7 +36,8 @@ class PipelineHandler(BaseDataflowHandler):
 
     def __init__(self, **kwargs):
         self.spec_builder = specification_builder.SpecificationBuilder(
-            SPECIFICATION_VERSION
+            spec_version=SPECIFICATION_VERSION,
+            assets_dir=kwargs.pop("workspace_dir"),
         )
         nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
         super().__init__(

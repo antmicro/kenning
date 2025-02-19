@@ -210,7 +210,10 @@ class BaseDataflowHandler(ABC):
         self.spec_builder = spec_builder
         self.autolayout = layout_algorithm
 
-        spec = self.spec_builder.create_and_validate_spec()
+        # Creates spec and passes as an argument to build a graph
+        spec = self.spec_builder.create_and_validate_spec(
+            workspacedir=self.spec_builder.assets_dir
+        )
         self.pm_graph = PipelineManagerGraphCreator(
             self.io_mapping, specification=spec
         )

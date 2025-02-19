@@ -127,6 +127,11 @@ nox-pytest-3.11:
         - /scripts/prepare_docker.sh
         - trap "kill $(cat /var/run/docker.pid)" EXIT
         - nox -vs run_gallery_tests
+    artifacts:
+        when: always
+        paths:
+            - pytest-reports
+            - log_docs
 
 nox-gallery-tests-manual:
     extends: .nox-gallery-tests-base

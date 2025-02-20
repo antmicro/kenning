@@ -21,6 +21,7 @@ from kenning.core.optimizer import (
     IOSpecificationNotFoundError,
     Optimizer,
 )
+from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -819,6 +820,25 @@ class TVMCompiler(Optimizer):
                 ][id]["dtype"]
                 io_spec["output"][id]["dtype"] = output_dtype
         self.save_io_specification(input_model_path, io_spec)
+
+    def read_platform(self, platform: Platform):
+        if type(platform).__name__ not in [
+            "BareMetalPlatform",
+            "ZephyrPlatform",
+        ]:
+            return None
+        target_attrs = (
+            " ".join(platform.compilation_flags)
+            if platform.compilation_flags is not None
+            else ""
+        )
+        self.target = "zephyr"
+        self.target_attrs = target_attrs
+        self.target_microtvm_board = platform.name
+        self.zephyr_header_template = ResourceURI(
+            "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
+        )
+        KLogger.info(f"Set TVMCompiler target to zephyr, {platform.name}")
 
     def get_framework_and_version(self):
         return ("tvm", tvm.__version__)

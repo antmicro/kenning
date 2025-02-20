@@ -32,7 +32,7 @@ from kenning.platforms.local import LocalPlatform
 from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.class_loader import any_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar
-from kenning.utils.resource_manager import PathOrURI, ResourceURI
+from kenning.utils.resource_manager import PathOrURI
 
 UNOPTIMIZED_MEASUREMENTS = "__unoptimized__"
 
@@ -146,24 +146,8 @@ class PipelineRunner(object):
                 f"Set runtime builder board to {self.runtime_builder.board}"
             )
 
-        if (
-            len(optimizers) > 0
-            and type(self.optimizers[-1]).__name__ == "TVMCompiler"
-            and type(self.platform).__name__
-            in ("BareMetalPlatform", "ZephyrPlatform")
-        ):
-            target_attrs = (
-                " ".join(platform.compilation_flags)
-                if platform.compilation_flags is not None
-                else ""
-            )
-            self.optimizers[-1].target = "zephyr"
-            self.optimizers[-1].target_attrs = target_attrs
-            self.optimizers[-1].target_microtvm_board = platform.name
-            self.optimizers[-1].zephyr_header_template = ResourceURI(
-                "gh://antmicro:kenning-zephyr-runtime/lib/kenning_inference_lib/runtimes/tvm/generated/model_impl.h.template;branch=main"
-            )
-            KLogger.info(f"Set TVMCompiler target to zephyr, {platform.name}")
+        for optim in optimizers:
+            optim.read_platform(self.platform)
 
     @classmethod
     def from_json_cfg(

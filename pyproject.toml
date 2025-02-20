@@ -20,7 +20,7 @@ classifiers = [
 ]
 readme = "README.md"
 dependencies = [
-    "argcomplete>=0.7",
+    "argcomplete>=3.0",
     "astunparse>=1.6.3",
     "coloredlogs>=0.5",
     "importlib_resources>=5.1.4; python_version<'3.9'",

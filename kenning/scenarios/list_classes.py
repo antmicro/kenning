@@ -7,6 +7,7 @@
 Script collects and lists available subclasses in Kenning, based on the
 provided base class.
 """
+
 import argparse
 import errno
 import os
@@ -30,6 +31,7 @@ from kenning.utils.class_loader import (
     ONNX_CONVERSIONS,
     OPTIMIZERS,
     OUTPUT_COLLECTORS,
+    PLATFORMS,
     RUNNERS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
@@ -171,6 +173,7 @@ class ListClassesRunner(CommandTemplate):
         MODEL_WRAPPERS,
         ONNX_CONVERSIONS,
         OUTPUT_COLLECTORS,
+        PLATFORMS,
         RUNTIME_PROTOCOLS,
         RUNTIMES,
     ]

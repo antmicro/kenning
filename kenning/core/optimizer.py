@@ -14,6 +14,7 @@ from typing import Dict, List, Literal, Optional, Tuple, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.platform import Platform
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -415,3 +416,22 @@ class Optimizer(ArgumentsHandler, ABC):
             raise Exception("Could not determine input model type")
 
         return input_type
+
+    def read_platform(self, platform: Platform):
+        """
+        Reads Platform data to configure optimization/compilation.
+
+        Platform-based entities come with lots of information on hardware
+        architecture that can be used by the Optimizer class.
+
+        By default no data is read.
+
+        It is important to take into account that different
+        Platform-based classes come with a different sets of attributes.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        """
+        pass

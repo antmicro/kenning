@@ -12,5 +12,6 @@ include kenning/resources/coco_detection/*.json
 include kenning/resources/pyproject/pyproject.toml
 include kenning/resources/templates/**/*
 include kenning/resources/templates/*
+include kenning/resources/platforms/platforms.yml
 
 include LICENSE

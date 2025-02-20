@@ -103,11 +103,6 @@ pytest:
             - pytest-reports
             - requirements
 
-nox-pytest-3.9:
-    extends: .nox-pytest
-    variables:
-        PY_VERSION: "3.9"
-
 nox-pytest-3.10:
     extends: .nox-pytest
     variables:

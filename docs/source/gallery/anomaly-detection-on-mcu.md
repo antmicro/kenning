@@ -39,7 +39,7 @@ source .venv/bin/activate
 :::{note}
 Optionally, to use the newest Kenning - install it in the image and reload the virtual environment:
 
-```bash test-skip
+```bash
 pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
 source .venv/bin/activate
 ```
@@ -65,6 +65,7 @@ mkdir -p /usr/share/applications
 wget -O ./MaximMicrosSDK_linux.run https://github.com/analogdevicesinc/msdk/releases/download/v2024_10/MaximMicrosSDK_linux.run
 chmod +x ./MaximMicrosSDK_linux.run
 ./MaximMicrosSDK_linux.run install
+export PATH=/root/MaximSDK/Tools/OpenOCD/:$PATH
 ```
 
 Now follow along, answering prompts in the installation process.
@@ -93,12 +94,14 @@ And proceed to the next section.
 :::
 
 Once the environment is set up, the sample model can be trained.
-In this demo, a [Variational AutoEncoder (VAE)] will be used.
+In this demo, a [Variational AutoEncoder (VAE)](https://en.wikipedia.org/wiki/Variational_autoencoder) will be used.
 In Kenning, there is a [PytorchAnomalyDetectionVAE](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/anomaly_detection/vae.py) `ModelWrapper` encapsulating the model.
 
 As for dataset, [Controlled Anomalies Time Series (CATS)](https://data.niaid.nih.gov/resources?id=zenodo_7646896) will be used.
 It provides telemetry readings of a simulated complex dynamical system with external stimuli.
 It provides a nice set of time series for sensors with anomalies.
+
+The model can be trained with the following command:
 
 ```bash
 kenning train test \
@@ -115,9 +118,9 @@ kenning train test \
     --batch-norm --loss-beta 0.2 --loss-capacity 0.1
 ```
 
-The command above:
+This command:
 
-* Downloads the CATS dataset from https://zenodo.org/records/8338435/files/data.csv
+* Downloads the CATS dataset from https://zenodo.org/records/8338435/files/data.csv (if it has not been downloaded yet)
 * Creates `AnomalyDetectionDataset` class with dataset data taken from the downloaded CSV
 * Creates `PyTorchAnomalyDetectionVAE` model wrapper encapsulating VAE model, providing necessary methods for input preprocessing, output postprocessing, model training and more
 * Trains the model using given batch size, learning rate, number of epochs and other exposed training parameters for the model
@@ -129,19 +132,28 @@ The command above:
 Once the VAE model is trained and available under `./vae_cats.pth`, it can be compiled with `kenning optimize` command and deployed on device using either TensorFlow Lite Micro or microTVM.
 This section focuses on TensorFlow Lite Micro.
 
-First, compile the model using `kenning optimize`:
+Let's consider the following scenario:
 
-```bash
-kenning optimize --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml
-```
-
-It runs the following scenario:
-
-```{literalinclude} ../scripts/configs/zephyr-tflite-vae-inference-max32690.yaml
+```{literalinclude} ../scripts/configs/zephyr-tflite-vae-inference-max32690.yml
 :language: yaml
 ```
 
-This will create a `./workspace/vae_cats.tflite` file with an optimized model.
+The scenario contents are as follows:
+
+* `platform` - specifies the target platform where the model will be deployed.
+  In this case the target platform is called `max32690evkit/max32690/m4`.
+  `simulated` boolean tells whether board should be simulated or not.
+* `model_wrapper` - provides a class that encapsulates necessary preprocessing and postprocessing functions for input and output data.
+* `dataset` - provides a class implementing methods around dataset management
+* `optimizers` - provides a list of optimizations that are used for optimizing and/or compiling the model.
+
+First, compile the model using `kenning optimize`:
+
+```bash
+kenning optimize --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml
+```
+
+This scenario will create a `./workspace/vae_cats.tflite` file with an optimized model.
 
 Now, to test the model in simulation or an actual hardware, the evaluation app needs to be compiled.
 This can be done with `west build` command with `tflite.conf` configuration for the selected board.
@@ -159,11 +171,11 @@ west build -p always -b max32690evkit/max32690/m4 app -- \
 Once the model and evaluation app are ready, it is possible to simulate the board in Renode with:
 
 ```bash
-kenning test --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690-renode.yaml --measurements workspace/vae-tflite-renode.json --verbosity INFO
+kenning test --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml --measurements workspace/vae-tflite-renode.json --verbosity INFO
 ```
 
 :::{note}
-The only difference between `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml` and `./kenning-scenarios/zephyr-tflite-vae-inference-max32690-renode.yaml` is which runtime and protocol is commented out.
+The only difference between `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml` and `./kenning-scenarios/zephyr-tflite-vae-inference-max32690-renode.yml` is which runtime and protocol is commented out.
 Other parts are the same.
 :::
 
@@ -227,10 +239,11 @@ shutdown command invoked
 
 If `./build/zephyr/zephyr.hex` is successfully written to the device, the model can be tested directly on hardware platform.
 
-To do so, let's use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
+In order to do so, set `simulated` to `false` in the `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml` file.
+In the end, let's use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
 
 ```bash test-skip
-kenning test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yaml \
+kenning test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml \
     --measurements workspace/vae-tflite-hw.json \
     --report-path reports/vae-tflite-hw/report.md --to-html \
     --verbosity INFO
@@ -243,40 +256,20 @@ The `workspace/vae-tflite-hw.json` will hold the collected performance and quali
 With microTVM, the deployment looks similar, similarly as the scenario.
 The only difference are used optimizers and runtimes:
 
-```yaml
-# ...
-optimizers:
-    - type: kenning.optimizers.tvm.TVMCompiler
-      parameters:
-          compiled_model_path: ./workspace/vae.tvm.graph_data
-          model_framework: onnx
-          target: zephyr
-          target_attrs: -keys=arm_cpu,cpu -device=arm_cpu -march=armv7e-m -mcpu=cortex-m4 -model=max32690
-# ...
-
-runtime:
-    type: kenning.runtimes.tvm.TVMRuntime
-    parameters:
-        save_model_path: ./workspace/vae.tvm.graph_data
-
-# ...
+```{literalinclude} ../scripts/configs/zephyr-tvm-vae-inference-max32690.yml
+:language: yaml
 ```
 
 To begin evaluation, run compilation of the evaluation app using microTVM as the runtime:
 
 ```bash
-west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE='tvm.conf;boards/max32690evkit_max32690_m4.conf' -DKENNING_MODEL_PATH=`realpath ./vae_cats.pth`
+west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE='tvm.conf;boards/max32690evkit_max32690_m4.conf'
 ```
-
-:::{note}
-The `./vae_cats.pth` here is used for similar reasons as in TensorFlow Lite Micro - to provide a minimal set of operations to run models.
-The weights of the model are provided separately along with its architecture during evaluation, allowing to test various models without reflashing as long as now new types of layers appear.
-:::
 
 After this, run:
 
 ```bash
-kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690-renode.yaml \
+kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
     --measurements workspace/vae-tvm-renode.json \
     --report-path reports/vae-tvm-renode/report.md --to-html \
     --verbosity INFO
@@ -284,7 +277,7 @@ kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-
 
 This performs all actions at once - model optimization, model evaluation and report generation.
 
-To test the model on hardware, first flash the device with microTVM-based app:
+To test the model on hardware, set `simulated` in the scenario to `false` and then flash the device with microTVM-based app:
 
 ```bash test-skip
 /root/MaximSDK/Tools/OpenOCD/openocd \
@@ -300,7 +293,7 @@ To test the model on hardware, first flash the device with microTVM-based app:
 And run testing on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
 
 ```bash test-skip
-kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yaml \
+kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
     --measurements workspace/vae-tvm-hw.json \
     --report-path reports/vae-tvm-hw/report.md --to-html \
     --verbosity INFO

@@ -1,0 +1,60 @@
+max32690evkit/max32690/m4:
+  display_name: MAX32690 Evaluation Kit
+  flash_size_kb: 3072
+  ram_size_kb: 128
+  uart_port_wildcard: /dev/serial/by-id/usb-FTDI_FT231X_USB_UART_*-if00-port0
+  uart_baudrate: 115200
+  uart_log_baudrate: 115200
+  compilation_flags:
+  - "-keys=arm_cpu,cpu"
+  - "-device=arm_cpu"
+  - "-march=armv7e-m"
+  - "-mcpu=cortex-m4"
+  - "-model=max32690"
+  openocd_flash_cmd:
+  - source [find interface/cmsis-dap.cfg]
+  - source [find target/max32690.cfg]
+  - init
+  - targets
+  - reset init
+  - flash write_image erase {binary_path}
+  - reset run
+  - shutdown
+  platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690evkit.resc;branch=main
+
+max32690fthr/max32690/m4:
+  display_name: MAX32690FTHR
+  flash_size_kb: 3072
+  ram_size_kb: 128
+  uart_baudrate: 115200
+  uart_log_baudrate: 115200
+  compilation_flags:
+  - "-keys=arm_cpu,cpu"
+  - "-device=arm_cpu"
+  - "-march=armv7e-m"
+  - "-mcpu=cortex-m4"
+  - "-model=max32690"
+  platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690fthr.resc;branch=main
+
+rv32-springbok:
+  display_name: RISC-V 32-bit Springbok
+  runtime_binary_path: kenning:///renode/springbok/iree_runtime
+  platform_resc_path: gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/springbok.resc;branch=main
+  resc_dependencies:
+  - gh://antmicro:kenning-bare-metal-iree-runtime/sim/config/platforms/springbok.repl;branch=main
+  - gh://antmicro:iree-rv32-springbok/sim/config/infrastructure/SpringbokRiscV32.cs;branch=repo-as-submodule
+  post_start_commands:
+  - sysbus.vec_controlblock WriteDoubleWord 0xc 0
+  runtime_log_init_msg: Runtime started
+
+stm32f746g_disco:
+  display_name: STM32F746G Discovery
+  flash_size_kb: 1024
+  ram_size_kb: 256
+  uart_baudrate: 115200
+  platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/stm32f746g_disco.resc;branch=main
+
+hifive_unmatched/fu740/s7:
+  display_name: HiFive Unmatched
+  uart_baudrate: 115200
+  platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/hifive_unmatched.resc;branch=main

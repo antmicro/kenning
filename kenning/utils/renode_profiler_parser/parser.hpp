@@ -28,8 +28,8 @@ int parse_dump(
     double start_timestamp,
     double end_timestamp,
     double interval_step,
-    std::vector<double> &profiler_timestamps,
-    std::map<std::string, std::vector<int>> &executed_instructions,
-    std::map<char, std::vector<int>> &memory_accesses,
-    std::map<std::string, std::map<char, std::vector<int>>> &peripheral_accesses,
-    std::vector<int> &exceptions);
+    std::vector< double > &profiler_timestamps,
+    std::map< std::string, std::vector< int > > &executed_instructions,
+    std::map< char, std::vector< int > > &memory_accesses,
+    std::map< std::string, std::map< char, std::vector< int > > > &peripheral_accesses,
+    std::vector< int > &exceptions);

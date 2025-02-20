@@ -118,7 +118,7 @@ void print_progress(std::uintmax_t done, std::uintmax_t total)
  * @param stream Input stream
  * @param var Variable to read bytes into.
  */
-template <typename T>
+template < typename T >
 void read_into(std::ifstream &stream, T &var)
 {
     stream.read((char *)&var, sizeof(T));
@@ -134,7 +134,7 @@ void read_into(std::ifstream &stream, T &var)
  */
 std::string read_string(std::ifstream &stream, size_t len)
 {
-    std::vector<char> buf(len);
+    std::vector< char > buf(len);
     stream.read(&buf.front(), len);
     return std::string(buf.data(), len);
 }
@@ -144,11 +144,11 @@ int parse_dump(
     double start_timestamp,
     double end_timestamp,
     double interval_step,
-    std::vector<double> &profiler_timestamps,
-    std::map<std::string, std::vector<int>> &executed_instructions,
-    std::map<char, std::vector<int>> &memory_accesses,
-    std::map<std::string, std::map<char, std::vector<int>>> &peripheral_accesses,
-    std::vector<int> &exceptions)
+    std::vector< double > &profiler_timestamps,
+    std::map< std::string, std::vector< int > > &executed_instructions,
+    std::map< char, std::vector< int > > &memory_accesses,
+    std::map< std::string, std::map< char, std::vector< int > > > &peripheral_accesses,
+    std::vector< int > &exceptions)
 {
     std::ifstream dump_file(filename, std::ios_base::in | std::ios_base::binary);
 
@@ -166,7 +166,7 @@ int parse_dump(
     read_into(dump_file, cpu_count);
 
     // parse cpus
-    std::map<int, std::string> cpus;
+    std::map< int, std::string > cpus;
     for (int i = 0; i < cpu_count; ++i)
     {
         int cpu_id, cpu_name_len;
@@ -180,7 +180,7 @@ int parse_dump(
     read_into(dump_file, peripherals_count);
 
     // parse peripherals
-    std::map<std::string, std::pair<unsigned long long, unsigned long long>> peripherals;
+    std::map< std::string, std::pair< unsigned long long, unsigned long long > > peripherals;
     for (int i = 0; i < peripherals_count; ++i)
     {
         int peripheral_name_len;
@@ -189,14 +189,14 @@ int parse_dump(
         auto peripheral_name = read_string(dump_file, peripheral_name_len);
         read_into(dump_file, start_addr);
         read_into(dump_file, end_addr);
-        peripherals[peripheral_name] = {start_addr, end_addr};
+        peripherals[peripheral_name] = std::pair< unsigned long long, unsigned long long >(start_addr, end_addr);
     }
 
     // prepare containers for stats
     profiler_timestamps.clear();
 
     executed_instructions.clear();
-    std::map<std::string, int> prev_instr_counter;
+    std::map< std::string, int > prev_instr_counter;
 
     memory_accesses.clear();
 

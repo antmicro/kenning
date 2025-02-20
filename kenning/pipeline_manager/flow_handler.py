@@ -36,7 +36,8 @@ class KenningFlowHandler(BaseDataflowHandler):
 
     def __init__(self, **kwargs):
         self.spec_builder = specification_builder.SpecificationBuilder(
-            SPECIFICATION_VERSION
+            spec_version=SPECIFICATION_VERSION,
+            assets_dir=kwargs.pop("workspace_dir"),
         )
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(
             self.spec_builder

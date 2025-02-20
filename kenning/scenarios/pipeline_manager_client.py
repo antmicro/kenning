@@ -235,6 +235,7 @@ class PipelineManagerClient(CommandTemplate):
                 elif args.spec_type == "flow":
                     dataflow_handler = KenningFlowHandler(
                         layout_algorithm=args.layout,
+                        workspace_dir=cls.workspace_dir.resolve(),
                     )
                     rpchandler = FlowHandlerRPC(
                         dataflow_handler, args.file_path, cls, client

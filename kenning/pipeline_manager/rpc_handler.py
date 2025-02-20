@@ -92,6 +92,7 @@ class PipelineManagerRPC(ABC):
         Dict
             Pipeline Manager graph representing the scenario
         """
+        print("\n\ndataflow_import\n\n")
         external_application_dataflow = json.loads(
             convert_message_to_string(
                 message=external_application_dataflow,
@@ -488,6 +489,7 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                 self.current_method = None
 
     async def custom_dataflow_report(self, dataflow: Dict) -> Dict:
+        # breakpoint()
         async with self.current_task_lock:
             if self.current_task is not None:
                 return {

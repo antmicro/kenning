@@ -589,10 +589,12 @@ class PipelineManagerGraphCreator:
                 {**param, "id": get_uuid()} for param in parameters
             ],
             "interfaces": interfaces,
-            "twoColumn": True,
+            "two_column": True,
         }
 
-        node = self.graph.create_node(node.name, node_kwargs)
+        # breakpoint()
+        node = self.graph.create_node(node.name, **node_kwargs)
+        # breakpoint()
         print("create_node ok")
         return node.id
 
@@ -600,11 +602,11 @@ class PipelineManagerGraphCreator:
         # TODO: I'm assuming here that there is only one pair of matching
         # input-output interfaces
 
-        from_interface_arr = self.graph.get(AttributeType.NODE, from_id).get(
-            NodeAttributeType.INTERFACE
-        )
+        from_interface_arr = self.graph.get_by_id(
+            AttributeType.NODE, from_id
+        ).get(NodeAttributeType.INTERFACE)
 
-        to_interface_arr = self.graph.get(AttributeType.NODE, to_id).get(
+        to_interface_arr = self.graph.get_by_id(AttributeType.NODE, to_id).get(
             NodeAttributeType.INTERFACE
         )
 
@@ -633,11 +635,15 @@ class PipelineManagerGraphCreator:
         self.graph.create_connection(from_interface_id, to_interface_id)
         print("create_connection ok")
 
+    def start_new_graph(self):
+        self.graph = self.graph_builder.create_graph()
+        print("start_new_graph ok")
+
     def flush_graph(self):
         finished_graph = self.graph.to_json()
-        del self.graph_builder.graph[0]
+        del self.graph_builder.graphs[0]
         # THIS MIGHT NOT WORK DUE TO SPECIFICATIONBUILDER AVOIDING DUPLICATES ?
         # have to check
-        self.graph = self.graph_builder.create_graph()
+        self.start_new_graph()
         print("flush_graph ok")
         return finished_graph

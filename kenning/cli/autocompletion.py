@@ -99,6 +99,10 @@ class CustomCompletion(CompletionFinder):
                 for arg in completions
                 if not (arg.startswith("--") and arg.endswith("-cls"))
             ]
+            if "--json-cfg" in completions:
+                completions.remove("--json-cfg")
+            if "--cfg" in completions:
+                completions.remove("--cfg")
         elif any(
             arg.startswith("--") and arg.endswith("-cls") for arg in comp_words
         ):

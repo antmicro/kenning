@@ -7,7 +7,7 @@ from pathlib import Path
 
 import nox
 
-PYTHON_VERSIONS = ["3.9", "3.10", "3.11"]
+PYTHON_VERSIONS = ["3.10", "3.11"]
 PYTEST_CPU_ONLY = os.environ.get("NOX_PYTEST_CPU_ONLY", "n") != "n"
 PYTEST_EXPLICIT_DOWNLOAD = (
     os.environ.get("NOX_PYTEST_EXPLICIT_DOWNLOAD", "n") != "n"
@@ -111,7 +111,7 @@ from kenning.modelwrappers.instance_segmentation.cython_nms import (
 def _fix_name(name):
     """
     Converts concrete session name into a suitable filename. For example,
-    `run_pytest-3.9(device='cpu')` is converted into `run_pytest-3.9-cpu`.
+    `run_pytest-3.10(device='cpu')` is converted into `run_pytest-3.10-cpu`.
     """
     namever, _, args = name.partition("(")
     name, _, ver = namever.partition("-")

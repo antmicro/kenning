@@ -1,0 +1,35 @@
+# This scenario demonstrates deployment of Anomaly Detection in time series on MAX32960 Evaluation Kit
+# It provides two variants of execution - a deployment on an actual hardware, and simulation in Renode
+# This scenario should be executed within kenning-zephyr-runtime project, with built evaluation app for
+# TFLite Micro runtime:
+#
+# west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE="tflite.conf"
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: max32690evkit/max32690/m4
+    # to run inference on actual hardwarem change simulated to false
+    simulated: true
+    zephyr_build_path: ./build/
+
+# model wrapper for the VAE anomaly detection model
+model_wrapper:
+  type: PyTorchAnomalyDetectionVAE
+  parameters:
+    model_path: ./vae_cats.pth
+
+# A dataset used for evaluating the model
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: ./workspace/dataset
+    csv_file: https://zenodo.org/records/8338435/files/data.csv
+
+# run TFLite conversion from above PyTorch model to TFLite Flatbuffers
+optimizers:
+  - type: TFLiteCompiler
+    parameters:
+      target: default
+      compiled_model_path: ./workspace/vae_cats.tflite
+      inference_input_type: float32
+      inference_output_type: float32

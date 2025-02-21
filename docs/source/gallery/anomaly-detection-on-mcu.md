@@ -29,7 +29,7 @@ docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v 
 Then, in the Docker container clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:
 
 ```bash
-git clone https://github.com/antmicro/kenning-zephyr-runtime
+git clone https://github.com/antmicro/kenning-zephyr-runtime -b stable
 cd kenning-zephyr-runtime/
 ./scripts/prepare_zephyr_env.sh
 ./scripts/prepare_modules.sh

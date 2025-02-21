@@ -4,6 +4,20 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
+/* Background for bokeh plots */
+.bk-root {
+  background: var(--md-code-bg-color);
+  padding: 0.5em;
+  border-radius: 0.1rem;
+  min-width: 350px;
+  width: 90vw;
+  max-width: 90vw;
+}
+
+.plot {
+
+}
+
 /* Centring of bokeh plots in divs instead of figure */
 div.figure.align-center {
   display: flex !important;

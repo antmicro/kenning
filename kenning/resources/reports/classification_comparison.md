@@ -17,6 +17,17 @@ The size of the model is represented by the size of its point.
 
 ### Detailed metrics comparison
 
+```{figure} {{data['radarchartpath']}}
+---
+name: {{data['report_name_simple']}}_classification_metrics_radar
+alt: Metric comparison
+align: center
+width: 100%
+---
+
+Radar chart representing the accuracy, precision and recall for models
+```
+
 ```{list-table} Summary of classification metrics for models
 ---
 header-rows: 1

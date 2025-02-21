@@ -201,6 +201,36 @@ class Plot(ABC, object):
         ...
 
     @staticmethod
+    def _add_global_css(html_file: Path, additional_css: str) -> None:
+        """
+        Inject a custom CSS into an HTML file.
+
+        Insert the CSS before the closing </head> tag.
+        Modifies the HTML file in-place.
+
+        Parameters
+        ----------
+        html_file : Path
+            Path to an HTML file.
+        additional_css : str
+            CSS code that should be injected globally.
+        """
+        style_tag = f"<style> {additional_css} </style>\n"
+        with open(html_file, "r") as fd:
+            html_content = fd.read()
+
+        head_end_index = html_content.find("</head>")
+        if head_end_index != -1:
+            html_content = (
+                html_content[:head_end_index]
+                + style_tag
+                + html_content[head_end_index:]
+            )
+
+        with open(html_file, "w") as fd:
+            fd.write(html_content)
+
+    @staticmethod
     def _output_bokeh_figure(
         bokeh_figure: Any,
         output_path: Optional[Path] = None,
@@ -228,6 +258,15 @@ class Plot(ABC, object):
         if "html" in formats:
             output_file(f"{output_path}.html", mode="inline")
             save(bokeh_figure)
+
+            # additional_css = (
+            # f".bk-root {{ "
+            # "max-width: 80vw; width: 1000px; min-width: 400px; }}"
+            # )
+            # Plot._add_global_css(
+            #     Path(f"{output_path}.html"), additional_css=additional_css
+            # )
+
         if "png" in formats:
             export_png(bokeh_figure, filename=f"{output_path}.png")
         if "svg" in formats:
@@ -467,6 +506,13 @@ class ViolinComparisonPlot(Plot):
                 width=self.width,
                 height=self.height,
                 output_backend="webgl",
+                sizing_mode="stretch_both",
+                max_width=self.width * 2,
+                max_height=self.height,
+                match_aspect=True,
+                height_policy="max",
+                width_policy="auto",
+                css_classes=["plot"],
             )
             for metric_label in self.metric_labels
         }
@@ -566,12 +612,13 @@ class ViolinComparisonPlot(Plot):
         grid_fig = gridplot(
             [[violin_figs[name]] for name in self.metric_labels],
             merge_tools=True,
-            toolbar_location="above",
+            toolbar_location=None,
             toolbar_options={"logo": None},
+            sizing_mode="scale_both",
         )
 
         self._output_bokeh_figure(
-            column(children=[grid_fig, legend_fig]),
+            column(children=[grid_fig, legend_fig], sizing_mode="scale_both"),
             output_path,
             output_formats,
         )
@@ -699,6 +746,7 @@ class RadarChart(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
+        from bokeh.layouts import column
         from bokeh.models import (
             ColumnDataSource,
             HoverTool,
@@ -716,9 +764,17 @@ class RadarChart(Plot):
             toolbar_location="above",
             width=self.width,
             height=self.height,
+            max_width=self.width * 2,
+            max_height=self.height,
             match_aspect=True,
             output_backend="webgl",
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
         )
+        # radar_fig.width_policy="max"
+        # radar_fig.max_width=self.width*2
+
         radar_fig.grid.visible = False
         radar_fig.xaxis.visible = False
         radar_fig.yaxis.visible = False
@@ -825,6 +881,8 @@ class RadarChart(Plot):
         )
         radar_fig.add_layout(legend, "below")
 
+        radar_fig = column(radar_fig, sizing_mode="stretch_width")
+        radar_fig.max_width = self.width
         self._output_bokeh_figure(radar_fig, output_path, output_formats)
 
 
@@ -1030,6 +1088,13 @@ class BubblePlot(Plot):
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
+            max_width=self.width * 2,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
         bubbleplot_fig.toolbar.logo = None
 
@@ -1394,14 +1459,14 @@ class ConfusionMatrixPlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.layouts import Spacer, gridplot
+        from bokeh.layouts import Spacer, column, gridplot
         from bokeh.models import (
             ColumnDataSource,
             FactorRange,
             HoverTool,
             Range1d,
         )
-        from bokeh.plotting import figure, row
+        from bokeh.plotting import figure
 
         # Calculate confusion matrix sizes
         cm_width = int(self.width / (1 + 1 / 15 + 1 / 13 + 1 / 11))
@@ -1423,6 +1488,7 @@ class ConfusionMatrixPlot(Plot):
             width=cm_width,
             height=cm_height,
             output_backend="webgl",
+            css_classes=["plot", "confusion-matrix"],
         )
 
         # Preprocess data
@@ -1643,13 +1709,14 @@ class ConfusionMatrixPlot(Plot):
             x_range=["color"],
             y_range=Range1d(0.0, 100.0),
             width=confusion_matrix_fig.width // 11,
-            height=self.height // 2,
+            # height=self.height // 2,
             tools="",
             toolbar_location=None,
             x_axis_location="above",
             y_axis_location="right",
             margin=(self.height // 4, 0, self.height // 4, 0),
             output_backend="webgl",
+            sizing_mode="stretch_both",
         )
         # Draw scale
         scale_fig.hbar(
@@ -1673,18 +1740,16 @@ class ConfusionMatrixPlot(Plot):
             [
                 [
                     confusion_matrix_fig,
-                    precision_fig,
-                ],
-                [
-                    sensitivity_fig,
-                    accuracy_fig,
                 ],
             ],
             merge_tools=True,
             toolbar_location="above",
             toolbar_options={"logo": None},
+            sizing_mode="scale_both",
+            height=self.height // 2,
+            width=self.width // 2,
         )
-        plot_with_scale = row(
+        plot_with_scale = column(
             grid_fig,
             Spacer(width=confusion_matrix_fig.width // 13),
             scale_fig,
@@ -1798,6 +1863,13 @@ class RecallPrecisionCurvesPlot(Plot):
             x_axis_label="recall",
             y_axis_label="precision",
             output_backend="webgl",
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
 
         colors = [
@@ -1935,6 +2007,13 @@ class TruePositiveIoUHistogram(Plot):
             x_axis_label="IoU precision",
             y_axis_label="classes",
             output_backend="webgl",
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
 
         hbar = hist_fig.hbar(
@@ -2033,11 +2112,18 @@ class TruePositivesPerIoURangeHistogram(Plot):
             title=self.title,
             tools="pan,box_zoom,wheel_zoom,reset,save",
             toolbar_location="above",
-            width=self.width,
+            width=self.width / 2,
             height=self.height,
             x_axis_label="IoU ranges",
             y_axis_label="Number of masks in IoU range",
             output_backend="webgl",
+            max_width=self.width / 2,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
 
         hist = np.histogram(self.iou_data, bins=self.x_range)[0]
@@ -2191,6 +2277,13 @@ class RecallPrecisionGradients(Plot):
             x_axis_label="recall",
             y_axis_label="classes",
             output_backend="webgl",
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
         color_mapper = LinearColorMapper(
             palette=[
@@ -2350,6 +2443,13 @@ class LinePlot(Plot):
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
         plot_fig.toolbar.logo = None
 
@@ -2383,6 +2483,12 @@ class LinePlot(Plot):
                 frame_width=0,
                 frame_height=11 * len(legend_data),
                 toolbar_location=None,
+                max_width=self.width,
+                max_height=self.height,
+                match_aspect=True,
+                sizing_mode="scale_both",
+                height_policy="max",
+                width_policy="auto",
             )
             # Creating few columns with legends
             legends = []
@@ -2407,7 +2513,9 @@ class LinePlot(Plot):
                 for legend in legends
             ]
 
-            plot_fig = column(children=[plot_fig, legend_fig])
+            plot_fig = column(
+                children=[plot_fig, legend_fig], sizing_mode="scale_both"
+            )
 
         self._output_bokeh_figure(plot_fig, output_path, output_formats)
 
@@ -2551,6 +2659,13 @@ class Barplot(Plot):
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            css_classes=["plot"],
         )
         barplot_fig.toolbar.logo = None
 

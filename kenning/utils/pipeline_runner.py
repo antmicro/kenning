@@ -68,6 +68,7 @@ class PipelineRunner(object):
         model_wrapper: Optional[ModelWrapper] = None,
         runtime: Optional[Runtime] = None,
         runtime_builder: Optional[RuntimeBuilder] = None,
+        configuration_path: Optional[Path] = None,
     ):
         """
         Initializes the PipelineRunner object.
@@ -90,6 +91,8 @@ class PipelineRunner(object):
             Runtime object that runs the inference.
         runtime_builder : Optional[RuntimeBuilder]
             RuntimeBuilder object that builds the runtime.
+        configuration_path : Optional[Path]
+            Path to the file containing configuration.
 
         Raises
         ------
@@ -105,6 +108,7 @@ class PipelineRunner(object):
         self.runtime = runtime
         self.runtime_builder = runtime_builder
         self.should_cancel = False
+        self.configuration_path = configuration_path
 
         # resolve defaults
         if (
@@ -164,6 +168,7 @@ class PipelineRunner(object):
         assert_integrity: bool = True,
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
+        cfg_path: Optional[Path] = None,
     ):
         dataset = obj_from_json(json_cfg, ConfigKey.dataset)
         dataconverter = any_from_json(
@@ -212,6 +217,7 @@ class PipelineRunner(object):
             model_wrapper=model_wrapper,
             runtime=runtime,
             runtime_builder=runtime_builder,
+            configuration_path=cfg_path,
         )
 
     def serialize(
@@ -276,6 +282,11 @@ class PipelineRunner(object):
             "command": command,
             "build_cfg": self.serialize(),
         }
+
+        if self.configuration_path:
+            MeasurementsCollector.measurements += {
+                "cfg_path": str(self.configuration_path.absolute()),
+            }
 
         if self.model_wrapper:
             framework, version = self.model_wrapper.get_framework_and_version()

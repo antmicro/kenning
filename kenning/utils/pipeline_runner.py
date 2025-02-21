@@ -351,9 +351,7 @@ class PipelineRunner(object):
 
         MeasurementsCollector.clear()
 
-        model_framework = self._guess_model_framework(
-            convert_to_onnx, run_optimizations
-        )
+        model_framework = self._guess_model_framework(convert_to_onnx)
 
         # initialize protocol if needed
         protocol_required_by_optimizers = run_optimizations and any(
@@ -928,9 +926,7 @@ class PipelineRunner(object):
                 f"Input block supported formats: {input_formats_str}"
             )
 
-    def _guess_model_framework(
-        self, convert_to_onnx: bool, run_optimizations: bool
-    ) -> Optional[str]:
+    def _guess_model_framework(self, convert_to_onnx: bool) -> Optional[str]:
         """
         Retrieves model framework from ModelWrapper and Optimizers.
 
@@ -938,8 +934,6 @@ class PipelineRunner(object):
         ----------
         convert_to_onnx : bool
             Whether model should be converted to ONNX.
-        run_optimizations : bool
-            Whether Optimizers should be used.
 
         Returns
         -------
@@ -955,7 +949,7 @@ class PipelineRunner(object):
         if self.model_wrapper is None:
             return None
 
-        if not run_optimizations or len(self.optimizers) == 0:
+        if len(self.optimizers) == 0:
             if convert_to_onnx:
                 return "onnx"
 

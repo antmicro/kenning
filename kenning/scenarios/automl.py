@@ -234,9 +234,10 @@ class AutoMLCommand(InferenceTester):
 
         subcommands = get_used_subcommands(args)
         measurements = []
+        model_names = []
         rets = []
         run_pipeline = bool({OPTIMIZE, TEST}.intersection(subcommands))
-        for conf in best_configs:
+        for path, conf in best_configs.items():
             model_path = Path(
                 conf[ConfigKey.model_wrapper.name]["parameters"]["model_path"]
             )
@@ -244,10 +245,14 @@ class AutoMLCommand(InferenceTester):
                 measurements.append(
                     str(model_path.with_suffix(".measurements.json"))
                 )
+                model_names.append(path.stem)
                 args.measurements = [measurements[-1]]
             # Run InferenceTester flow - optimization and evaluation
             if run_pipeline:
-                pipeline_runner = PipelineRunner.from_json_cfg(conf)
+                pipeline_runner = PipelineRunner.from_json_cfg(
+                    conf,
+                    cfg_path=path,
+                )
                 try:
                     ret = InferenceTester._run_pipeline(
                         args, command, pipeline_runner
@@ -255,10 +260,12 @@ class AutoMLCommand(InferenceTester):
                 except Exception:
                     ret = 1
                     measurements.pop(-1)
+                    model_names.pop(-1)
                 rets.append(ret)
 
         # Set all available measurement for comparison report
         args.measurements = measurements
+        args.model_names = model_names
         if not run_pipeline:
             return 0
         if len(rets) == 0:

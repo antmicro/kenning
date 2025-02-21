@@ -562,11 +562,8 @@ class PipelineManagerGraphCreator:
             )
         self.graph = self.graph_builder.create_graph()
 
-        # VARS FROM reset_graph - NOT SURE IF NEEDED
-        # self.connections = []
         self.inp_interface_map = {}
         self.out_interface_map = {}
-        print("init ok")
 
     def create_node(self, node, parameters):
         io_map = self.io_mapping[node.type]
@@ -575,12 +572,10 @@ class PipelineManagerGraphCreator:
         for io_spec in io_map["inputs"]:
             interface = Interface(io_spec["name"], "input")
             interfaces.append(interface)
-            #      DO I NEED THIS
             self.inp_interface_map[interface.id] = io_spec
         for io_spec in io_map["outputs"]:
             interface = Interface(io_spec["name"], "output")
             interfaces.append(interface)
-            #      DO I NEED THIS
             self.out_interface_map[interface.id] = io_spec
 
         node_kwargs = {
@@ -592,10 +587,7 @@ class PipelineManagerGraphCreator:
             "two_column": True,
         }
 
-        # breakpoint()
         node = self.graph.create_node(node.name, **node_kwargs)
-        # breakpoint()
-        print("create_node ok")
         return node.id
 
     def find_compatible_io(self, from_id, to_id):
@@ -624,7 +616,6 @@ class PipelineManagerGraphCreator:
                 continue
 
             if from_io_spec["type"] == to_io_spec["type"]:
-                print("find_compatible_io ok")
                 return from_interface.id, to_interface.id
         raise RuntimeError("No compatible connections were found")
 
@@ -633,17 +624,17 @@ class PipelineManagerGraphCreator:
             from_id, to_id
         )
         self.graph.create_connection(from_interface_id, to_interface_id)
-        print("create_connection ok")
 
     def start_new_graph(self):
         self.graph = self.graph_builder.create_graph()
-        print("start_new_graph ok")
 
     def flush_graph(self):
         finished_graph = self.graph.to_json()
+        raw_graph = self.graph.to_json()
+        graph = (
+            raw_graph if isinstance(raw_graph, Dict) else json.loads(raw_graph)
+        )
+        finished_graph = {"version": SPECIFICATION_VERSION, "graphs": [graph]}
         del self.graph_builder.graphs[0]
-        # THIS MIGHT NOT WORK DUE TO SPECIFICATIONBUILDER AVOIDING DUPLICATES ?
-        # have to check
         self.start_new_graph()
-        print("flush_graph ok")
         return finished_graph

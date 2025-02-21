@@ -94,7 +94,6 @@ class PipelineHandler(BaseDataflowHandler):
                     "installed for this class with 'kenning info'"
                 )
             spec_node = self.nodes[kenning_name]
-            # breakpoint()
             temp = self.pm_graph.create_node(
                 spec_node,
                 [
@@ -134,10 +133,7 @@ class PipelineHandler(BaseDataflowHandler):
                     for instance in pipeline.get(name, []):
                         node_ids[name].append(add_block(instance))
                 else:
-                    print("name, block")
-                    print(name, block)
                     node_ids[name] = add_block(block)
-                    print(node_ids[name])
 
         node_ids["optimizer"] = []
         for optimizer in pipeline.get("optimizers", []):

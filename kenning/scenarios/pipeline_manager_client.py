@@ -227,7 +227,7 @@ class PipelineManagerClient(CommandTemplate):
                 if args.spec_type == "pipeline":
                     dataflow_handler = PipelineHandler(
                         layout_algorithm=args.layout,
-                        workspace_dir=cls.workspace_dir.resolve(),  
+                        workspace_dir=cls.workspace_dir.resolve(),
                     )
                     rpchandler = OptimizationHandlerRPC(
                         dataflow_handler, args.file_path, cls, client

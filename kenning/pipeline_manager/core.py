@@ -387,7 +387,7 @@ class BaseDataflowHandler(ABC):
         """
         try:
             interface_to_id = {}
-            graph = dataflow["graph"]
+            graph = dataflow["graphs"][0]
             for dataflow_node in graph["nodes"]:
                 kenning_node = self.nodes[dataflow_node["name"]]
                 parameters = dataflow_node["properties"]

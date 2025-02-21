@@ -294,7 +294,7 @@ def performance_report(
     with path(reports, "performance.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
-        )
+        ), metrics
 
 
 def comparison_performance_report(
@@ -573,13 +573,13 @@ def classification_report(
             "Confusion matrix and predictions not present for classification "
             "report"
         )
-        return ""
+        return "", metrics
 
     measurementsdata["available_metrics"] = available_metrics
     with path(reports, "classification.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
-        )
+        ), metrics
 
 
 def comparison_classification_report(
@@ -1002,7 +1002,7 @@ def detection_report(
     with path(reports, "detection.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
-        )
+        ), metrics
 
 
 def comparison_detection_report(
@@ -1135,7 +1135,8 @@ def renode_stats_report(
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
     plot_options["colormap"] = plot_options["colormap"][color_offset:]
 
-    measurementsdata |= compute_renode_metrics([measurementsdata])
+    metrics = compute_renode_metrics([measurementsdata])
+    measurementsdata |= metrics
 
     # opcode counter barplot
     if "sorted_opcode_counters" in measurementsdata:
@@ -1392,7 +1393,7 @@ def renode_stats_report(
     with path(reports, "renode_stats.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, measurementsdata
-        )
+        ), metrics
 
 
 def comparison_renode_stats_report(
@@ -1848,7 +1849,7 @@ def text_summarization_report(
     with path(reports, "text_summarization.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, report_variables
-        )
+        ), metrics
 
 
 def comparison_text_summarization_report(
@@ -1950,6 +1951,7 @@ def generate_report(
     colors: Optional[List] = None,
     draw_titles: bool = True,
     smaller_header: bool = False,
+    save_summary: bool = False,
 ):
     """
     Generates an MyST report based on Measurements data.
@@ -1986,6 +1988,8 @@ def generate_report(
         Should titles be drawn on the plot.
     smaller_header : bool
         Use H2 header instead of H1.
+    save_summary : bool
+        Whether to save JSON with summary data from report.
     """
     from kenning.core.report import create_report_from_measurements
 
@@ -2024,13 +2028,19 @@ def generate_report(
     with path(reports, "header.md") as reporttemplate:
         content = create_report_from_measurements(reporttemplate, header_data)
 
+    models_metrics = {}
     for typ in report_types:
         for i, model_data in enumerate(data):
+            if model_data["model_name"] not in models_metrics:
+                models_metrics[model_data["model_name"]] = {
+                    "metrics": [],
+                    "scenarioPath": model_data.get("cfg_path", None),
+                }
             if len(data) > 1:
                 imgprefix = model_data["model_name"] + "_"
             else:
                 imgprefix = ""
-            content += reptypes[typ](
+            additional_content, metrics = reptypes[typ](
                 model_data,
                 imgdir,
                 imgprefix,
@@ -2041,6 +2051,11 @@ def generate_report(
                 colors=colors,
                 draw_titles=draw_titles,
             )
+            for metric_name, metric in metrics.items():
+                models_metrics[model_data["model_name"]]["metrics"].append(
+                    {"type": typ, "name": metric_name, "value": metric}
+                )
+            content += additional_content
         if len(data) > 1:
             content += comparereptypes[typ](
                 data,
@@ -2056,6 +2071,12 @@ def generate_report(
 
     with open(outputpath, "w") as out:
         out.write(content)
+    if save_summary:
+        report_summary = []
+        for name, data in models_metrics.items():
+            report_summary.append(data | {"modelName": name})
+        with open(outputpath.with_suffix(".summary.json"), "w") as out:
+            json.dump(report_summary, out)
 
 
 def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
@@ -2394,6 +2415,11 @@ class RenderReport(CommandTemplate):
             help="Use smaller size for header containing report name",
             action="store_true",
         )
+        report_group.add_argument(
+            "--save-summary",
+            help="Saves JSON file with summary data from the report, to file specified in report-path with suffix `.summary.json`",  # noqa: E501
+            action="store_true",
+        )
         return parser, groups
 
     @staticmethod
@@ -2487,6 +2513,7 @@ class RenderReport(CommandTemplate):
                 colors=colors,
                 draw_titles=False,
                 smaller_header=args.smaller_header,
+                save_summary=args.save_summary,
             )
 
         if args.to_html:

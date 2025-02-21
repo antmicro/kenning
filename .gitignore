@@ -150,3 +150,4 @@ kenning:///models/object_detection/yolov3.weights
 
 # Cython-generated code
 kenning/modelwrappers/instance_segmentation/cython_nms.c
+kenning/utils/renode_profiler_parser/caller.cpp

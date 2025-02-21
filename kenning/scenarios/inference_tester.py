@@ -309,7 +309,10 @@ class InferenceTester(CommandTemplate):
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
-        pipeline_runner = PipelineRunner.from_json_cfg(json_cfg)
+        pipeline_runner = PipelineRunner.from_json_cfg(
+            json_cfg,
+            cfg_path=args.json_cfg,
+        )
 
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner

@@ -10,11 +10,23 @@ For more details, check:
 
 ## Setup
 
-For quick setup, use `docker` to open the environment with all necessary dependencies installed.
-Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
+For quick setup, use `docker` to open the environment with all necessary dependencies installed:
+
 ```bash
-docker run --rm -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
+mkdir -p workspace && cd workspace
+docker run --rm -v $(pwd):$(pwd) -w $(pwd) -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
+
+The `workspace` directory created here will be used to store results of the simulation, as well as Kenning reports.
+Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
+
+:::{note}
+Optionally, to use the newest Kenning - install it in the image:
+
+```bash
+pip install "kenning[tensorflow,reports,uart,renode,object_detection] @ git+https://github.com/antmicro/kenning.git"
+```
+:::
 
 Kenning uses [pyrenode3](https://github.com/antmicro/pyrenode3/) package, which requires Renode to work.
 To install it, download the latest Renode Arch package and store its location in `PYRENODE_PKG`:

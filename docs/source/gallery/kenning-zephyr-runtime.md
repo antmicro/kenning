@@ -77,7 +77,7 @@ The built binary can be found in `build/zephyr/zephyr.elf`.
 To evaluate the Magic Wand model using built runtime, run:
 ```bash
 kenning optimize test \
-    --json-cfg kenning-scenarios/renode-zephyr-tflite-magic-wand-inference.json \
+    --cfg kenning-scenarios/renode-zephyr-tflite-magic-wand-inference.yml \
     --measurements build/zephyr-stm32-tflite-magic-wand.json --verbosity INFO \
     --verbosity INFO
 ```
@@ -98,7 +98,7 @@ west build --board stm32f746g_disco app -- -DEXTRA_CONF_FILE=tvm.conf
 And now, as previously, run evaluation using Kenning:
 ```bash
 kenning optimize test \
-    --json-cfg kenning-scenarios/renode-zephyr-tvm-magic-wand-inference.json \
+    --cfg kenning-scenarios/renode-zephyr-tvm-magic-wand-inference.yml \
     --measurements build/zephyr-stm32-tvm-magic-wand.json --verbosity INFO \
     --verbosity INFO
 ```

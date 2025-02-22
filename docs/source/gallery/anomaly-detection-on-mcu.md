@@ -23,7 +23,7 @@ In case the MAX32690 Evaluation Kit is connected to the desktop PC using MAX3262
 Assuming that the programmer is available as `/dev/ttyACM0`, and UART as `/dev/ttyUSB0` in the currently running system, run:
 
 ```bash test-skip
-docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
+docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v $(pwd):$(pwd) -v /dev/serial/by-id/:/dev/serial/by-id/ -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
 ```
 
 Then, in the Docker container clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:

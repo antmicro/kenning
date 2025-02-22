@@ -11,12 +11,15 @@ platform:
     # to run inference on actual hardwarem change simulated to false
     simulated: true
     zephyr_build_path: ./build/
+    uart_port: /dev/ttyUSB0
 
 # model wrapper for the VAE anomaly detection model
 model_wrapper:
   type: PyTorchAnomalyDetectionVAE
   parameters:
     model_path: ./vae_cats.pth
+    encoder_layers: [16, 8]
+    batch_norm: true
 
 # A dataset used for evaluating the model
 dataset:
@@ -24,6 +27,9 @@ dataset:
   parameters:
     dataset_root: ./workspace/dataset
     csv_file: https://zenodo.org/records/8338435/files/data.csv
+    split_fraction_test: 0.0005
+    inference_batch_size: 1
+    split_seed: 12345
 
 # run TVM conversion from above PyTorch model
 optimizers:

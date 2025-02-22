@@ -63,6 +63,7 @@ class ZephyrPlatform(BareMetalPlatform):
         uart_baudrate: int = None,
         uart_log_port: Optional[Path] = None,
         uart_log_baudrate: int = None,
+        auto_flash: bool = False,
         openocd_path: Path = "openocd",
         zephyr_build_path: Optional[PathOrURI] = None,
         llext_binary_path: Optional[PathOrURI] = None,
@@ -106,6 +107,9 @@ class ZephyrPlatform(BareMetalPlatform):
             Path to the UART used for logging.
         uart_log_baudrate : int
             Baudrate of the UART used for logging.
+        auto_flash : bool
+            Automatically flashes platform before evaluating model.
+            If disabled, the hardware is assumed to be flashed.
         openocd_path : Path
             Path to the OpenOCD.
         zephyr_build_path : Optional[PathOrURI]
@@ -133,6 +137,7 @@ class ZephyrPlatform(BareMetalPlatform):
             uart_baudrate=uart_baudrate,
             uart_log_port=uart_log_port,
             uart_log_baudrate=uart_log_baudrate,
+            auto_flash=auto_flash,
             openocd_path=openocd_path,
         )
 

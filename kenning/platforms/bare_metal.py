@@ -51,6 +51,11 @@ class BareMetalPlatform(SimulatablePlatform):
             "nullable": True,
             "default": None,
         },
+        "auto_flash": {
+            "description": "Automatically flashes platform before evaluating model. If disabled, the hardware is assumed to be flashed",  # noqa: E501
+            "type": bool,
+            "default": False,
+        },
         "openocd_path": {
             "description": "Path to the OpenOCD",
             "type": Path,
@@ -82,6 +87,7 @@ class BareMetalPlatform(SimulatablePlatform):
         uart_baudrate: int = None,
         uart_log_port: Optional[Path] = None,
         uart_log_baudrate: int = None,
+        auto_flash: bool = False,
         openocd_path: Path = "openocd",
     ):
         """
@@ -123,6 +129,9 @@ class BareMetalPlatform(SimulatablePlatform):
             Path to the UART used for logging.
         uart_log_baudrate : int
             Baudrate of the UART used for logging.
+        auto_flash : bool
+            Automatically flashes platform before evaluating model.
+            If disabled, the hardware is assumed to be flashed.
         openocd_path : Path
             Path to the OpenOCD.
         """
@@ -130,6 +139,7 @@ class BareMetalPlatform(SimulatablePlatform):
         self.uart_baudrate = uart_baudrate
         self.uart_log_port = uart_log_port
         self.uart_log_baudrate = uart_log_baudrate
+        self.auto_flash = auto_flash
         self.openocd_path = openocd_path
 
         # fields obtained from platforms.yml
@@ -215,15 +225,10 @@ class BareMetalPlatform(SimulatablePlatform):
         binary_path = Path(binary_path)
 
         KLogger.info(f"Flashing board {self.name}")
-        if self.openocd_path is not None and hasattr(
-            self, "openocd_flash_cmd"
-        ):
-            self._flash_board_openocd(binary_path)
-        else:
-            pass
+        self._flash_board_openocd(binary_path)
 
         # wait for platform boot
-        sleep(1)
+        sleep(2)
 
     def get_default_protocol(self):
         from kenning.protocols.uart import UARTProtocol
@@ -235,12 +240,19 @@ class BareMetalPlatform(SimulatablePlatform):
         )
 
     def _init_hardware(self):
-        if self.runtime_binary_path is not None:
-            self.flash_board(self.runtime_binary_path)
-        else:
-            KLogger.info(
-                "No binary path specified, assuming board is already flashed"
-            )
+        if self.auto_flash:
+            if self.openocd_path is None or not hasattr(
+                self, "openocd_flash_cmd"
+            ):
+                raise RuntimeError(
+                    "In order to run automatic flash, path to OpenOCD (openocd_flash_cmd) and flash script (openocd_flash_cmd) need to be provided"  # noqa: E501
+                )
+            if self.runtime_binary_path is not None:
+                self.flash_board(self.runtime_binary_path)
+            else:
+                KLogger.info(
+                    "No binary path specified, assuming board is already flashed"  # noqa: E501
+                )
 
         self.setup_runtime_log_reader()
 

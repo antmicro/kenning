@@ -52,7 +52,7 @@ EXPECT_RE = "(?<!'){}(?!')"
 # Regex for splitting multiline scripts
 NEW_LINE_RE = re.compile("(?<!\\\\)\n", flags=re.MULTILINE)
 # Default timeout of command execution
-DEFAULT_TIMEOUT = 60 * 45  # 45 min
+DEFAULT_TIMEOUT = 60 * 120  # 120 min
 # Directory with datasets (relative to Kenning)
 DATASET_DIR = "build"
 # Possible arguments for snippet

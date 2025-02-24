@@ -6,10 +6,12 @@
 A module for parsing the Kenning scenarios provided via JSON or command-line.
 """
 
+import uuid
 from pathlib import Path
 from typing import Any, Dict, List, Tuple, Union
 
 from pipeline_manager import specification_builder
+from pipeline_manager.frontend_builder import copy_frontend_to_workspace
 
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
@@ -35,9 +37,12 @@ class PipelineHandler(BaseDataflowHandler):
     """
 
     def __init__(self, **kwargs):
+        if not (assets_dir := kwargs.pop("workspace_dir", None)):
+            assets_dir = Path("/tmp") / uuid.uuid4().hex
+            copy_frontend_to_workspace(assets_dir)
+
         self.spec_builder = specification_builder.SpecificationBuilder(
-            spec_version=SPECIFICATION_VERSION,
-            assets_dir=kwargs.pop("workspace_dir"),
+            spec_version=SPECIFICATION_VERSION, assets_dir=assets_dir
         )
         nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
         super().__init__(

@@ -18,7 +18,7 @@ model_wrapper:
   type: PyTorchAnomalyDetectionVAE
   parameters:
     model_path: ./vae_cats.pth
-    encoder_layers: [16, 8]
+    encoder_neuron_list: [16, 8]
     batch_norm: true
 
 # A dataset used for evaluating the model

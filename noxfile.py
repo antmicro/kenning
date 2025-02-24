@@ -73,6 +73,7 @@ def _prepare_pip_params(session: nox.Session, device: str):
         "albumentations",
         "llm",
         "anomaly_detection",
+        "auto_pytorch",
     ]
 
     extra_indices = []

@@ -13,11 +13,14 @@ For more details, check:
 For quick setup, use `docker` to open the environment with all necessary dependencies installed:
 
 ```bash
-mkdir -p workspace && cd workspace
 docker run --rm -v $(pwd):$(pwd) -w $(pwd) -it ghcr.io/antmicro/kenning-bare-metal-iree-runtime:latest
 ```
 
-The `workspace` directory created here will be used to store results of the simulation, as well as Kenning reports.
+Let's also create a `workspace` directory to store results of the simulation, as well as Kenning reports:
+
+```bash
+mkdir -p workspace && cd workspace
+```
 Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
 
 :::{note}

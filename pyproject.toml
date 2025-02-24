@@ -86,6 +86,10 @@ anomaly_detection = [
     "pandas",
     "pyod",
 ]
+auto_pytorch = [
+    "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
+    "ConfigSpace>=1.2.1",
+]
 tflite = [
     "tflite",
 ]

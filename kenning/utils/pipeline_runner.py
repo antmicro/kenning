@@ -508,6 +508,10 @@ class PipelineRunner(object):
                 self.protocol.upload_runtime(llext_path),
                 "upload runtime",
             )
+        elif llext_path:
+            raise FileNotFoundError(
+                f"LLEXT binary file does not exist:  {llext_path}"
+            )
 
     def _handle_platform_init(self):
         """

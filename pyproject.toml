@@ -89,6 +89,7 @@ anomaly_detection = [
 auto_pytorch = [
     "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
     "ConfigSpace>=1.2.1",
+    "smac>=1.2,<2.0.0"
 ]
 tflite = [
     "tflite",

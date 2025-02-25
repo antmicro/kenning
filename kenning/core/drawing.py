@@ -2630,6 +2630,7 @@ def choose_theme(
 
     # Create temporary context for matplotlib
     with mpl.rc_context():
+        mpl.use("Agg")
         # Set matplotlib theme
         if custom_matplotlib_theme:
             if isinstance(custom_matplotlib_theme, bool):

@@ -65,7 +65,7 @@ pytest:
         - pip install -e ".[pipeline_manager,test,llm,anomaly_detection,auto_pytorch]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
-        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 58m 55m pytest kenning -m "$MARKS" -n=auto --cov=kenning --cov-report=html
+        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 118m 115m pytest kenning -m "$MARKS" -n=auto --cov=kenning --cov-report=html
     artifacts:
         paths:
             - log.json

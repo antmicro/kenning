@@ -4,6 +4,7 @@
 
 import json
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from unittest.mock import Mock
 
 import pytest
@@ -721,20 +722,24 @@ class TestPipelineRunnerRun:
         platform_mock.zephyr_build_path = None
         platform_mock.name = "test_board"
         runtime_builder_mock = ZephyrRuntimeBuilder(spec=_ZephyrRuntimeBuilder)
-        runtime_builder_mock.output_path = Path("test/path")
         dataset_mock.iter_test.return_value = [[0, 0]]
         model_mock.get_path.return_value = "model_mock_path"
         model_mock.save_io_specification.return_value = True
         runtime_builder_mock.use_llext = True
-        runner = PipelineRunner(
-            platform=platform_mock,
-            dataset=dataset_mock,
-            model_wrapper=model_mock,
-            runtime=runtime_mock,
-            protocol=protocol_mock,
-            runtime_builder=runtime_builder_mock,
-        )
+        with TemporaryDirectory() as llext_dir:
+            llext_path = Path(llext_dir) / "runtime.llext"
+            with llext_path.open("wb") as f:
+                f.write(b"12345")
+            runtime_builder_mock.output_path = Path(llext_dir)
+            runner = PipelineRunner(
+                platform=platform_mock,
+                dataset=dataset_mock,
+                model_wrapper=model_mock,
+                runtime=runtime_mock,
+                protocol=protocol_mock,
+                runtime_builder=runtime_builder_mock,
+            )
 
-        runner.run(run_optimizations=True, run_benchmarks=True)
+            runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert runtime_builder_mock.build.called_once()
+            assert runtime_builder_mock.build.called_once()

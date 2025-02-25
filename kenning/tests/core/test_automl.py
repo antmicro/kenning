@@ -122,21 +122,11 @@ class TestAutoML:
     )
     def test_search(self, automl: AutoML):
         """
-        Test AutoML search process.
+        Test AutoML search process and best configs.
         """
         automl.prepare_framework()
-        automl.time_limit = 1
+        automl.time_limit = 2.5
 
-        automl.search()
-
-    @automl_matrix_test("automl", depend="test_search", indirect=True)
-    def test_get_best_configs(self, automl: AutoML):
-        """
-        Test AutoML generated configuration.
-        """
-        automl.prepare_framework()
-        automl.time_limit = 1
-        automl.n_best_models = 2
         automl.search()
 
         configs = automl.get_best_configs()

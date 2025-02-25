@@ -65,6 +65,7 @@ class RandomizedClassificationDataset(Dataset):
         integer_classes: bool = False,
         inputdims: List = [224, 224, 3],
         dtype: Type = np.float32,
+        seed: int = 1234,
         **kwargs: Any,
     ):
         """
@@ -92,6 +93,8 @@ class RandomizedClassificationDataset(Dataset):
             The dimensionality of the inputs.
         dtype : Type
             Type of the data.
+        seed : int
+            Seed used for data generation.
         **kwargs : Any
             Optional keyword arguments.
         """
@@ -101,6 +104,7 @@ class RandomizedClassificationDataset(Dataset):
         self.integer_classes = integer_classes
         self.dtype = dtype
         self.classnames = self.get_class_names()
+        self.seed = seed
 
         super().__init__(
             root,
@@ -117,6 +121,7 @@ class RandomizedClassificationDataset(Dataset):
         return (0.0, 1.0)
 
     def prepare(self):
+        np.random.seed(self.seed)
         self.dataX = [
             f"{self.root}/images/{i}.jpg" for i in range(self.samplescount)
         ]
@@ -445,6 +450,7 @@ class RandomizedAnomalyDetectionDataset(RandomizedClassificationDataset):
         numclasses: int = 3,
         integer_classes: bool = False,
         dtype: Type = np.float32,
+        seed: int = 1234,
         window_size: int = 5,
         num_features: int = 10,
         **kwargs: Any,
@@ -472,6 +478,8 @@ class RandomizedAnomalyDetectionDataset(RandomizedClassificationDataset):
             instead of one-hot encoding.
         dtype : Type
             Type of the data.
+        seed : int
+            Seed used for data generation.
         window_size : int
             The number of consecutive timestamps included in one entry.
         num_features : int
@@ -491,6 +499,7 @@ class RandomizedAnomalyDetectionDataset(RandomizedClassificationDataset):
             integer_classes=integer_classes,
             inputdims=(window_size, num_features),
             dtype=dtype,
+            seed=seed,
             **kwargs,
         )
 

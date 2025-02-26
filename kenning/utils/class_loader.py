@@ -293,14 +293,61 @@ def any_from_json(
         If a class is available and contains `from_json` method, it
         returns object of this class.
     """
+    if cls := load_class_from_json(json_cfg, block_type):
+        return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
+
+
+def load_class_from_json(
+    json_cfg: Dict[str, Any], block_type: Optional[str] = None
+) -> Optional[Type]:
+    """
+    Loads class from configuration if it exists `from_json` method is
+    available.
+
+    Parameters
+    ----------
+    json_cfg : Dict[str, Any]
+        A JSON object snippet with `type` parameter, specifying the
+        full name of the class, and `parameters` parameter, with list
+        of constructor arguments for the class.
+    block_type : Optional[str]
+        Type of Kenning block, i.e. "optimizers", "platforms". If specified
+        then type in config does not require to specify full class path.
+
+    Returns
+    -------
+    Optional[Type]
+        A class if it is available and contains `from_json` method.
+    """
     if "type" not in json_cfg:
         return None
 
     cls = load_class_by_type(json_cfg["type"], block_type)
     if cls is None or not hasattr(cls, "from_json"):
         return None
+    return cls
 
-    return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
+
+def load_class_by_key(
+    json_cfg: Dict[str, Any], key: ConfigKey
+) -> Optional[Type]:
+    """
+    Loads the object from configuration, specified by key.
+
+    Parameters
+    ----------
+    json_cfg : Dict[str, Any]
+        A JSON object containing entire configuration, from which the class is
+        retrieved.
+    key : ConfigKey
+        Chooses the class from configuration.
+
+    Returns
+    -------
+    Optional[Type]
+        A class if it is available and contains `from_json` method.
+    """
+    return load_class_from_json(json_cfg.get(key.name, {}), key.value)
 
 
 def load_class(module_path: str) -> Type:

@@ -21,7 +21,7 @@ import json
 import signal
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import yaml
 from argcomplete.completers import FilesCompleter
@@ -29,7 +29,6 @@ from argcomplete.completers import FilesCompleter
 from kenning.cli.command_template import (
     ArgumentsGroups,
     CommandTemplate,
-    ParserHelpException,
     generate_command_type,
 )
 from kenning.cli.completers import (
@@ -42,13 +41,19 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import (
     MessageType,
     Protocol,
-    RequestFailure,
     ServerStatus,
 )
 from kenning.core.runtime import Runtime
 from kenning.platforms.local import LocalPlatform
-from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
-from kenning.utils.class_loader import any_from_json, get_command, load_class
+from kenning.utils.args_manager import (
+    report_missing,
+    to_namespace_name,
+)
+from kenning.utils.class_loader import (
+    ConfigKey,
+    objs_from_argparse,
+    objs_from_json,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
@@ -363,83 +368,33 @@ class InferenceServerRunner(CommandTemplate):
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
-        ensure_exclusive_cfg_or_flags(
-            args, ("platform_cls", "runtime_cls", "protocol_cls")
-        )
+        keys = {ConfigKey.platform, ConfigKey.runtime, ConfigKey.protocol}
+
         if args.json_cfg is not None:
-            return InferenceServerRunner._run_from_json(args, not_parsed)
-        return InferenceServerRunner._run_from_flags(args, not_parsed)
+            with open(args.json_cfg, "r") as f:
+                json_cfg = yaml.safe_load(f)
 
-    @staticmethod
-    def _run_from_flags(
-        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
-    ):
-        platform_cls = (
-            load_class(args.platform_cls) if args.platform_cls else None
-        )
-        protocol_cls = (
-            load_class(args.protocol_cls) if args.protocol_cls else None
-        )
-        runtime_cls = (
-            load_class(args.runtime_cls) if args.runtime_cls else None
-        )
+            objs = objs_from_json(json_cfg, keys, (args, not_parsed))
+        else:
 
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
-            parents=[]
-            + ([platform_cls.form_argparse(args)[0]] if platform_cls else [])
-            + ([protocol_cls.form_argparse(args)[0]] if protocol_cls else [])
-            + ([runtime_cls.form_argparse(args)[0]] if runtime_cls else []),
-            add_help=False,
-        )
+            def required(classes: Dict[ConfigKey, Type]):
+                if ConfigKey.runtime not in classes:
+                    report_missing([to_namespace_name(ConfigKey.runtime)])
 
-        if args.help:
-            raise ParserHelpException(parser)
-
-        args = parser.parse_args(not_parsed)
-
-        platform = (
-            platform_cls.from_argparse(args)
-            if platform_cls is not None
-            else LocalPlatform()
-        )
-        protocol = (
-            protocol_cls.from_argparse(args)
-            if platform_cls is not None
-            else platform.get_default_protocol()
-        )
-        runtime = runtime_cls.from_argparse(args)
-
-        InferenceServerRunner._run_server(runtime, protocol)
-
-    @staticmethod
-    def _run_from_json(
-        args: argparse.Namespace, not_parsed: List[str] = [], **kwargs
-    ):
-        if not_parsed:
-            raise argparse.ArgumentError(
-                None, f"unrecognized arguments: {' '.join(not_parsed)}"
+            objs = objs_from_argparse(
+                args, not_parsed, keys, required=required
             )
 
-        with open(args.json_cfg, "r") as f:
-            json_cfg = yaml.safe_load(f)
-
-        platform = any_from_json(json_cfg.get("platform", {}), "platforms")
-        if platform is None:
-            platform = LocalPlatform()
-
-        protocol = any_from_json(json_cfg.get("protocol", {}), "protocols")
-        if protocol is None:
-            protocol = platform.get_default_protocol()
-
-        runtime = any_from_json(json_cfg.get("runtime", {}), "runtimes")
-
-        InferenceServerRunner._run_server(runtime, protocol)
+        return InferenceServerRunner._run_server(objs)
 
     @staticmethod
-    def _run_server(runtime: Runtime, protocol: Protocol):
-        if protocol is None:
-            raise RequestFailure("Protocol is not provided")
+    def _run_server(objs: Dict[ConfigKey, Any]):
+        runtime = objs.get(ConfigKey.runtime)
+        protocol = objs.get(ConfigKey.protocol)
+
+        if not protocol:
+            platform = objs.get(ConfigKey.platform, LocalPlatform())
+            protocol = platform.get_default_protocol()
 
         formersighandler = signal.getsignal(signal.SIGINT)
 

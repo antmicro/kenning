@@ -44,6 +44,7 @@ class SimulatablePlatform(Platform, ABC):
             ),
             "type": bool,
             "default": True,
+            "overridable": True,
         },
         "runtime_binary_path": {
             "description": "Path to runtime binary",

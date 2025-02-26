@@ -27,6 +27,7 @@ from sklearn.pipeline import Pipeline
 
 from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
+from kenning.core.platform import Platform
 from kenning.utils.logger import KLogger
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
@@ -428,11 +429,17 @@ class AutoPyTorchML(AutoML):
             "type": int,
             "default": 10,
         },
+        "application_size": {
+            "description": "The size of an application running on the platform (in KB). If platform has restricted amount of RAM, AutoPyTorch will train only models that fit into the platform",  # noqa: E501
+            "type": float,
+            "default": None,
+        },
     }
 
     def __init__(
         self,
         dataset: Dataset,
+        platform: Platform,
         output_directory: Path,
         use_models: List[str] = [],
         time_limit: float = 5.0,
@@ -444,6 +451,7 @@ class AutoPyTorchML(AutoML):
         budget_type: str = BUDGET_TYPES[0],
         min_budget: int = 3,
         max_budget: int = 10,
+        application_size: Optional[float] = None,
     ):
         """
         Prepares the AutoML object.
@@ -452,6 +460,8 @@ class AutoPyTorchML(AutoML):
         ----------
         dataset : Dataset
             Dataset for which models will be optimized.
+        platform : Platform
+            Platform on which generated models will be evaluated.
         output_directory : Path
             The path to the directory where found models
             and their measurements will be stored.
@@ -480,9 +490,14 @@ class AutoPyTorchML(AutoML):
             The lower bound of the budget.
         max_budget : int
             The upper bound of the budget.
+        application_size : Optional[float]
+            The size of an application (in KB) run on the platform.
+            If platform has restricted amount of RAM, AutoPyTorch will train
+            only models that fit into the platform.
         """
         super().__init__(
             dataset=dataset,
+            platform=platform,
             output_directory=output_directory,
             use_models=use_models if use_models else self.supported_models,
             time_limit=time_limit,
@@ -508,6 +523,16 @@ class AutoPyTorchML(AutoML):
         self.budget_type = budget_type
         self.min_budget = min_budget
         self.max_budget = max_budget
+        self.application_size = application_size
+
+        self.platform_ram = getattr(self.platform, "ram_size_kb", None)
+        self.max_model_size = None
+        if self.application_size and self.platform_ram:
+            assert (
+                self.platform_ram > self.application_size
+            ), f"Application ({self.application_size}) does not fit into the platform ({self.platform_ram})"  # noqa: E501
+            self.max_model_size = self.platform_ram - self.application_size
+            self.max_model_size *= 0.95
 
         self.X_train, self.y_train = None, None
         self.X_test, self.y_test = None, None
@@ -601,13 +626,16 @@ class AutoPyTorchML(AutoML):
             delete_tmp_folder_after_terminate=False,
         )
         self._api.set_pipeline_options(
-            **{
-                "device": "cpu",
-                "torch_num_threads": cpu_count(),
-                "use_tensorboard_logger": True,
-                "early_stopping": True,
-            }
+            device="cpu",
+            torch_num_threads=cpu_count(),
+            use_tensorboard_logger=True,
+            early_stopping=True,
         )
+        if self.max_model_size:
+            KLogger.info(f"Restricting model size to {self.max_model_size} KB")
+            self._api.set_pipeline_options(
+                max_model_size_kb=self.max_model_size,
+            )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
         self._api.search(

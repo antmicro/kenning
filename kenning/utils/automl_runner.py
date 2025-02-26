@@ -53,10 +53,12 @@ class AutoMLRunner(object):
     @classmethod
     def from_json_cfg(cls, cfg: Dict):
         dataset = obj_from_json(cfg, ConfigKey.dataset)
+        platform = obj_from_json(cfg, ConfigKey.platform)
         autoML = obj_from_json(
             cfg,
             ConfigKey.automl,
             dataset=dataset,
+            platform=platform,
         )
 
         return cls(

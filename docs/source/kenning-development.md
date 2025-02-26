@@ -225,7 +225,8 @@ The fields describing the argument are as follows:
 * `nullable` - tells if argument can be empty (`None`),
 * `AutoML` - specify whether argument is used for AutoML flow, supported only in model wrappers,
 * `item_range` - tuple of lower and upper bound of numerical argument (`type` is either `int` or `float`) or elements of list argument (`type` is list) (used only for AutoML),
-* `list_range` - tuple of lower and upper bound of list argument length (used only for AutoML).
+* `list_range` - tuple of lower and upper bound of list argument length (used only for AutoML),
+* `overridable` - tells if argument set in JSON can be overridden with argparse (default: `False`).
 
 Let's add parameters to the example class:
 

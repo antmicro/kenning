@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Type
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.platform import Platform
 from kenning.utils.args_manager import ArgumentsHandler
 
 
@@ -159,6 +160,7 @@ class AutoML(ArgumentsHandler, ABC):
     def __init__(
         self,
         dataset: Dataset,
+        platform: Platform,
         output_directory: Path,
         use_models: List[str] = [],
         time_limit: float = 5.0,
@@ -173,6 +175,8 @@ class AutoML(ArgumentsHandler, ABC):
         ----------
         dataset : Dataset
             Dataset for which models will be optimized.
+        platform : Platform
+            Platform on which generated models will be evaluated.
         output_directory : Path
             The path to the directory where found models
             and their measurements will be stored.
@@ -194,6 +198,7 @@ class AutoML(ArgumentsHandler, ABC):
         )
 
         self.dataset = dataset
+        self.platform = platform
         self.output_directory = output_directory
         self.time_limit = time_limit
         self.optimize_metric = optimize_metric
@@ -244,6 +249,7 @@ class AutoML(ArgumentsHandler, ABC):
     def from_argparse(
         cls,
         dataset: Optional[Dataset],
+        platform: Optional[Platform],
         args: Namespace,
     ) -> "AutoML":
         """
@@ -253,6 +259,8 @@ class AutoML(ArgumentsHandler, ABC):
         ----------
         dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
+        platform : Optional[Platform]
+            The platform on which generated models will be evaluated.
         args : Namespace
             Arguments from ArgumentParser object.
 
@@ -261,13 +269,14 @@ class AutoML(ArgumentsHandler, ABC):
         AutoML
             Object of class AutoML.
         """
-        return super().from_argparse(args, dataset=dataset)
+        return super().from_argparse(args, dataset=dataset, platform=platform)
 
     @classmethod
     def from_json(
         cls,
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
+        platform: Optional[Platform] = None,
     ) -> "AutoML":
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -282,10 +291,12 @@ class AutoML(ArgumentsHandler, ABC):
             Arguments for the constructor.
         dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
+        platform : Optional[Platform]
+            The platform on which generated models will be evaluated.
 
         Returns
         -------
         AutoML
             Object of class AutoML.
         """
-        return super().from_json(json_dict, dataset=dataset)
+        return super().from_json(json_dict, dataset=dataset, platform=platform)

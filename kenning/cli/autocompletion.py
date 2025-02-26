@@ -7,8 +7,10 @@ Module with custom autocompletion class and configuration.
 """
 
 import argparse
+from pathlib import Path
 from typing import List
 
+import yaml
 from argcomplete.finders import CompletionFinder
 
 from kenning.cli.config import (
@@ -16,7 +18,7 @@ from kenning.cli.config import (
     USED_SUBCOMMANDS,
     setup_base_parser,
 )
-from kenning.utils.class_loader import load_class
+from kenning.utils.class_loader import ConfigKey, load_class, load_class_by_key
 
 # Subcommands without help
 ALL_SUBCOMMANDS = AVAILABLE_COMMANDS[:-2]
@@ -27,6 +29,14 @@ CLASS_FLAG_NAMES = (
     "runtime_cls",
     "dataset_cls",
     "compiler_cls",
+    "platform_cls",
+)
+CLASS_JSON_KEYS = (
+    ConfigKey.model_wrapper,
+    ConfigKey.protocol,
+    ConfigKey.runtime,
+    ConfigKey.dataset,
+    ConfigKey.platform,
 )
 
 
@@ -55,21 +65,45 @@ class CustomCompletion(CompletionFinder):
             parser.add_argument(
                 f'--{flag.replace("_", "-")}', nargs="?", const=None
             )
+        parser.add_argument("--json-cfg", "--cfg")
         args, _ = parser.parse_known_args(comp_words)
         subcommands = [arg for arg in comp_words if arg in ALL_SUBCOMMANDS]
         setattr(args, USED_SUBCOMMANDS, subcommands)
 
         # Create parsers for used classes
         parsers = []
-        for name in CLASS_FLAG_NAMES:
-            if getattr(args, name, None):
+        cfg = None
+        cfg_path = getattr(args, "json_cfg", None)
+        if cfg_path and Path(cfg_path).is_file():
+            with open(cfg_path) as f:
+                try:
+                    cfg = yaml.safe_load(f)
+                except yaml.YAMLError:
+                    pass
+
+        if cfg:
+            # Load the config and inspect classes
+            for key in CLASS_JSON_KEYS:
                 _class = None
                 try:
-                    _class = load_class(getattr(args, name))
+                    _class = load_class_by_key(cfg, key)
                 except Exception:
                     pass
                 if _class:
-                    parsers.append(_class.form_argparse(args)[0])
+                    parsers.append(
+                        _class.form_argparse(args, override_only=True)[0]
+                    )
+
+        if not parsers:
+            for name in CLASS_FLAG_NAMES:
+                if getattr(args, name, None):
+                    _class = None
+                    try:
+                        _class = load_class(getattr(args, name))
+                    except Exception:
+                        pass
+                    if _class:
+                        parsers.append(_class.form_argparse(args)[0])
 
         if parsers:
             # Choose last subparser
@@ -90,7 +124,9 @@ class CustomCompletion(CompletionFinder):
                 subactions[0].choices[
                     subcommands[-1]
                 ] = argparse.ArgumentParser(
-                    subparser.prog, parents=[subparser] + parsers
+                    subparser.prog,
+                    parents=[subparser] + parsers,
+                    add_help=False,
                 )
 
         completions = super()._get_completions(

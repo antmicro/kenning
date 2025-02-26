@@ -253,9 +253,8 @@ def obj_from_json(
     Parameters
     ----------
     json_cfg : Dict[str, Any]
-        A JSON object snippet with `type` parameter, specifying the
-        full name of the class, and `parameters` parameter, with list
-        of constructor arguments for the class.
+        A JSON object containing entire configuration, from which the field is
+        retrieved and converted into an object.
     key : ConfigKey
         Chooses the field from configuration and class type.
     **kwargs :
@@ -274,7 +273,7 @@ def any_from_json(
     json_cfg: Dict[str, Any], block_type: Optional[str] = None, **kwargs
 ) -> Optional[Any]:
     """
-    Loads the class using `from_json` method, if available.
+    Loads the object using `from_json` method, if available.
 
     Parameters
     ----------

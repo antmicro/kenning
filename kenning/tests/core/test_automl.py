@@ -47,6 +47,7 @@ def automl_matrix_test(
                             pytest.mark.xdist_group(
                                 name=f"TestAutoML_{cls.__name__}"
                             ),
+                            pytest.mark.automl,
                         ],
                     )
                     for cls in AUTOML_SUBCLASSES

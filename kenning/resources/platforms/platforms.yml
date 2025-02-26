@@ -21,6 +21,7 @@ max32690evkit/max32690/m4:
   - reset run
   - shutdown
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690evkit.resc;branch=main
+  default_platform: ZephyrPlatform
 
 max32690fthr/max32690/m4:
   display_name: MAX32690FTHR
@@ -35,6 +36,7 @@ max32690fthr/max32690/m4:
   - "-mcpu=cortex-m4"
   - "-model=max32690"
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690fthr.resc;branch=main
+  default_platform: ZephyrPlatform
 
 rv32-springbok:
   display_name: RISC-V 32-bit Springbok
@@ -46,6 +48,7 @@ rv32-springbok:
   post_start_commands:
   - sysbus.vec_controlblock WriteDoubleWord 0xc 0
   runtime_log_init_msg: Runtime started
+  default_platform: BareMetalPlatform
 
 stm32f746g_disco:
   display_name: STM32F746G Discovery
@@ -53,8 +56,10 @@ stm32f746g_disco:
   ram_size_kb: 256
   uart_baudrate: 115200
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/stm32f746g_disco.resc;branch=main
+  default_platform: ZephyrPlatform
 
 hifive_unmatched/fu740/s7:
   display_name: HiFive Unmatched
   uart_baudrate: 115200
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/hifive_unmatched.resc;branch=main
+  default_platform: ZephyrPlatform

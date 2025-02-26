@@ -498,6 +498,8 @@ class ViolinComparisonPlot(Plot):
         from bokeh.models import ColumnDataSource, Div, Legend, Patch
         from bokeh.plotting import figure
 
+        margins = (0, 20, 0, 10)
+
         violin_figs = {
             metric_label: figure(
                 title=metric_label,
@@ -506,9 +508,9 @@ class ViolinComparisonPlot(Plot):
                 width=self.width,
                 height=self.height,
                 output_backend="webgl",
-                sizing_mode="stretch_both",
-                max_width=self.width * 2,
+                sizing_mode="scale_both",
                 max_height=self.height,
+                margin=margins,
                 match_aspect=True,
                 height_policy="max",
                 width_policy="auto",
@@ -615,6 +617,7 @@ class ViolinComparisonPlot(Plot):
             toolbar_location=None,
             toolbar_options={"logo": None},
             sizing_mode="scale_both",
+            height=DEFAULT_PLOT_SIZE // 3,
         )
 
         self._output_bokeh_figure(
@@ -1076,7 +1079,7 @@ class BubblePlot(Plot):
                 name=self.bubble_labels,
             )
         )
-
+        margins = (0, 20, 0, 10)
         bubbleplot_fig = figure(
             title=self.title,
             x_range=Range1d(*self.x_lim),
@@ -1095,6 +1098,7 @@ class BubblePlot(Plot):
             height_policy="max",
             width_policy="auto",
             css_classes=["plot"],
+            margin=margins,
         )
         bubbleplot_fig.toolbar.logo = None
 

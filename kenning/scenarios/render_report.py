@@ -170,6 +170,8 @@ def performance_report(
         KLogger.warning("No inference time measurements in the report")
 
     if inference_step:
+        if plot_options["backend"] == "bokeh":
+            plot_options["figsize"] = "responsive"
         plot_path = imgdir / f"{imgprefix}inference_time"
         render_time_series_plot_with_histogram(
             ydata=measurementsdata[inference_step],

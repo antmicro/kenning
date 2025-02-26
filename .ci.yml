@@ -59,10 +59,10 @@ pytest:
     <<: *common_only
     stage: tests
     variables:
-        MARKS: "(not docs_gallery) and (not docs) and (not gpu)"
+        MARKS: "(not docs_gallery) and (not docs) and (not gpu) and (not automl)"
     script:
         - /scripts/prepare_environment.sh .
-        - pip install -e ".[pipeline_manager,test,llm,anomaly_detection,auto_pytorch]"
+        - pip install -e ".[pipeline_manager,test,llm]"
         - wget https://builds.renode.io/renode-latest.pkg.tar.xz
         - export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
         - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 118m 115m pytest kenning -m "$MARKS" -n=auto --cov=kenning --cov-report=html
@@ -71,6 +71,20 @@ pytest:
             - log.json
             - log_docs/*.log
             - $DOCS_DIR/source/generated/coverage/*
+        when: always
+
+pytest-automl:
+    <<: *common_only
+    stage: tests
+    variables:
+        MARKS: "automl"
+    script:
+        - /scripts/prepare_environment.sh .
+        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 12m 10m pytest kenning/tests/core/test_automl.py -m "$MARKS" -n=1
+    artifacts:
+        paths:
+            - log.json
+            - log_docs/*.log
         when: always
 
 .pytest-docs: &pytest-docs

@@ -277,17 +277,13 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        if not_parsed:
-            raise argparse.ArgumentError(
-                None, f"unrecognized arguments: {' '.join(not_parsed)}"
-            )
-
         with open(args.json_cfg, "r") as f:
             json_cfg = yaml.safe_load(f)
 
         pipeline_runner = PipelineRunner.from_json_cfg(
             json_cfg,
             cfg_path=args.json_cfg,
+            override=(args, not_parsed),
         )
 
         return InferenceTester._run_pipeline(

@@ -194,7 +194,11 @@ class AutoMLCommand(InferenceTester):
 
         platform = platformcls.from_argparse(args) if platformcls else None
         dataset = datasetcls.from_argparse(args) if datasetcls else None
-        automl = automlcls.from_argparse(dataset, args) if automlcls else None
+        automl = (
+            automlcls.from_argparse(dataset, platform, args)
+            if automlcls
+            else None
+        )
         optimizers = (
             [compilercls.from_argparse(dataset, args)] if compilercls else []
         )

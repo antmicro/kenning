@@ -106,6 +106,7 @@ supported_keywords = [
     "enum",
     "nullable",
     "subcommands",
+    "overridable",
     # AutoML specific keys
     "AutoML",
     "list_range",
@@ -383,7 +384,9 @@ def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
     return converted_json_dict
 
 
-def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
+def get_parsed_args_dict(
+    cls: type, args: argparse.Namespace, override_only: bool = False
+) -> Dict:
     """
     Converts namespace provided by arguments parser into dictionary.
 
@@ -393,6 +396,8 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
         Class of object being parsed.
     args : argparse.Namespace
         Namespace provided by arguments parser.
+    override_only : bool
+        True if only parameters marked as `overridable` should be parsed.
 
     Returns
     -------
@@ -408,7 +413,14 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
     # its parent classes
     args_structure = {}
     for curr_cls in traverse_parents_with_args(cls):
-        args_structure = dict(args_structure, **curr_cls.arguments_structure)
+        args_structure = dict(
+            args_structure,
+            **{
+                name: arg
+                for name, arg in curr_cls.arguments_structure.items()
+                if not override_only or arg.get("overridable")
+            },
+        )
 
     # parse arguments
     parsed_args = {}
@@ -427,6 +439,9 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
                 raise Exception(
                     f"No default value provided for {argparse_name}"
                 )
+
+        if value is None and override_only:
+            continue
 
         # For arguments of type 'object' value is embedded in a JSON file
         if "type" in arg_properties and arg_properties["type"] is object:
@@ -519,6 +534,7 @@ def add_argparse_argument(
     struct: Dict[str, Dict],
     args: argparse.Namespace,
     *names: str,
+    override_only: bool = False,
 ):
     """
     Adds arguments to the argparse group based on the given
@@ -541,6 +557,9 @@ def add_argparse_argument(
     *names : str
         Names of the properties that are to be added to the group.
         If empty every property in struct is used.
+    override_only : bool
+        True if parameter set in file configuration can be overridden from
+        `argparse`.
 
     Raises
     ------
@@ -576,9 +595,12 @@ def add_argparse_argument(
             if prop_type is bool:
                 assert "default" in prop and prop["default"] in [True, False]
 
-                keywords["action"] = (
-                    "store_false" if prop["default"] else "store_true"
-                )
+                if override_only:
+                    keywords["action"] = argparse.BooleanOptionalAction
+                elif prop["default"]:
+                    keywords["action"] = "store_false"
+                else:
+                    keywords["action"] = "store_true"
             elif prop_type is list:
                 keywords["nargs"] = "+"
                 converters = set()
@@ -592,7 +614,7 @@ def add_argparse_argument(
                 keywords["type"] = prop_type
         if "description" in prop:
             keywords["help"] = prop["description"]
-        if "default" in prop:
+        if "default" in prop and not override_only:
             keywords["default"] = prop["default"]
         if "required" in prop and prop["required"]:
             keywords["required"] = prop["required"]
@@ -733,7 +755,7 @@ class ArgumentsHandler(ABC):
 
     @classmethod
     def form_argparse(
-        cls, args: argparse.Namespace
+        cls, args: argparse.Namespace, override_only: bool = False
     ) -> Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]:
         """
         Creates argparse parser based on `arguments_structure` of class and its
@@ -743,6 +765,8 @@ class ArgumentsHandler(ABC):
         ----------
         args : argparse.Namespace
             Arguments from ArgumentParser object.
+        override_only : bool
+            True if only parameters marked as `overridable` should be parsed.
 
         Returns
         -------
@@ -757,10 +781,18 @@ class ArgumentsHandler(ABC):
         group = None
 
         for curr_cls in traverse_parents_with_args(cls):
-            group = parser.add_argument_group(
-                title=f"{curr_cls.__name__} arguments"
+            add_argparse_argument(
+                group=parser.add_argument_group(
+                    title=f"{curr_cls.__name__} arguments"
+                ),
+                struct={
+                    name: arg
+                    for name, arg in curr_cls.arguments_structure.items()
+                    if not override_only or arg.get("overridable")
+                },
+                args=args,
+                override_only=override_only,
             )
-            add_argparse_argument(group, curr_cls.arguments_structure, args)
 
         return parser, group
 

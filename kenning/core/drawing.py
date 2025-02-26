@@ -1459,7 +1459,7 @@ class ConfusionMatrixPlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.layouts import Spacer, column, gridplot
+        from bokeh.layouts import column, gridplot
         from bokeh.models import (
             ColumnDataSource,
             FactorRange,
@@ -1468,9 +1468,7 @@ class ConfusionMatrixPlot(Plot):
         )
         from bokeh.plotting import figure
 
-        # Calculate confusion matrix sizes
-        cm_width = int(self.width / (1 + 1 / 15 + 1 / 13 + 1 / 11))
-        cm_height = int(self.height / (1 + 1 / 15))
+        margins = (0, 20, 0, 10)
 
         # Prepare figure
         confusion_matrix_fig = figure(
@@ -1485,10 +1483,10 @@ class ConfusionMatrixPlot(Plot):
             tools="pan,box_zoom,wheel_zoom,reset,save",
             toolbar_location=None,
             x_axis_location="above",
-            width=cm_width,
-            height=cm_height,
             output_backend="webgl",
+            sizing_mode="scale_both",
             css_classes=["plot", "confusion-matrix"],
+            margin=margins,
         )
 
         # Preprocess data
@@ -1706,23 +1704,23 @@ class ConfusionMatrixPlot(Plot):
         # Prepare figure
         scale_fig = figure(
             title=None,
-            x_range=["color"],
-            y_range=Range1d(0.0, 100.0),
-            width=confusion_matrix_fig.width // 11,
-            # height=self.height // 2,
+            x_range=Range1d(0.0, 1.0),
+            y_range=["color"],
             tools="",
             toolbar_location=None,
-            x_axis_location="above",
-            y_axis_location="right",
-            margin=(self.height // 4, 0, self.height // 4, 0),
+            x_axis_location="below",
+            y_axis_location="left",
+            margin=margins,
             output_backend="webgl",
-            sizing_mode="stretch_both",
+            sizing_mode="scale_width",
+            height=25,
         )
+
         # Draw scale
-        scale_fig.hbar(
-            y=np.linspace(0.0, 100.0, 256),
-            left=[0.0] * 256,
-            right=[1.0] * 256,
+        scale_fig.vbar(
+            x=np.linspace(0.0, 1.0, 256),
+            top=np.linspace(0.0, 100.0, 256),
+            width=1.0,
             color=self.cmap(np.linspace(0.0, 1.0, 256)),
         )
 
@@ -1746,13 +1744,11 @@ class ConfusionMatrixPlot(Plot):
             toolbar_location="above",
             toolbar_options={"logo": None},
             sizing_mode="scale_both",
-            height=self.height // 2,
-            width=self.width // 2,
         )
         plot_with_scale = column(
             grid_fig,
-            Spacer(width=confusion_matrix_fig.width // 13),
             scale_fig,
+            sizing_mode="scale_both",
         )
 
         self._output_bokeh_figure(

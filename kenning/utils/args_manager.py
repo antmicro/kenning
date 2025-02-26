@@ -17,6 +17,7 @@ from typing import (
     Any,
     Callable,
     Dict,
+    Generator,
     GenericAlias,
     Iterable,
     List,
@@ -361,13 +362,8 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
     """
     # retrieve all arguments from arguments_structure of this class and all of
     # its parent classes
-    classes = [cls]
     args_structure = {}
-    while len(classes):
-        curr_cls = classes.pop(0)
-        classes.extend(curr_cls.__bases__)
-        if not hasattr(curr_cls, "arguments_structure"):
-            continue
+    for curr_cls in traverse_parents_with_args(cls):
         args_structure = dict(args_structure, **curr_cls.arguments_structure)
 
     # parse arguments
@@ -446,6 +442,32 @@ def get_type(
         for arg in _type.__args__
     ]
     return main_type, sub_types
+
+
+def traverse_parents_with_args(cls: type) -> Generator[type, None, None]:
+    """
+    Traverses parents of a given class that have ``arguments_structure``
+    defined.
+
+    Note that traversal is executed with BFS strategy, not MRO.
+
+    Parameters
+    ----------
+    cls : type
+        Class to get parents from.
+
+    Yields
+    ------
+    type
+        Parent class.
+    """
+    classes = [cls]
+    while len(classes):
+        curr_cls = classes.pop(0)
+        classes.extend(curr_cls.__bases__)
+        if not hasattr(curr_cls, "arguments_structure"):
+            continue
+        yield curr_cls
 
 
 def add_argparse_argument(
@@ -656,14 +678,9 @@ class ArgumentsHandler(ABC):
         Dict
             Parameter schema for the class.
         """
-        classes = [cls]
         parameterschema = {"type": "object", "additionalProperties": False}
 
-        while len(classes):
-            curr_cls = classes.pop(0)
-            classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, "arguments_structure"):
-                continue
+        for curr_cls in traverse_parents_with_args(cls):
             add_parameterschema_argument(
                 parameterschema, curr_cls.arguments_structure
             )
@@ -690,17 +707,12 @@ class ArgumentsHandler(ABC):
             program's argument parser, and the corresponding arguments' group
             pointer.
         """
-        classes = [cls]
         parser = argparse.ArgumentParser(
             add_help=False, conflict_handler="resolve"
         )
         group = None
 
-        while len(classes):
-            curr_cls = classes.pop(0)
-            classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, "arguments_structure"):
-                continue
+        for curr_cls in traverse_parents_with_args(cls):
             group = parser.add_argument_group(
                 title=f"{curr_cls.__name__} arguments"
             )
@@ -770,13 +782,8 @@ class ArgumentsHandler(ABC):
         """
         cls = self.__class__
 
-        classes = [cls]
         cls_parameters = {}
-        while len(classes):
-            curr_cls = classes.pop(0)
-            classes.extend(curr_cls.__bases__)
-            if not hasattr(curr_cls, "arguments_structure"):
-                continue
+        for curr_cls in traverse_parents_with_args(cls):
             for arg_name, arg_opts in curr_cls.arguments_structure.items():
                 if not hasattr(self, arg_name):
                     continue

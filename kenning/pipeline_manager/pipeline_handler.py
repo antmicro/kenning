@@ -241,6 +241,7 @@ class PipelineHandler(BaseDataflowHandler):
                     info = generate_class_info(
                         target=kenning_class.__module__,
                         class_name=kenning_class.__name__,
+                        dependencies=False,
                     )
                     spec_builder.add_node_description(
                         name=node_name, description="".join(info)

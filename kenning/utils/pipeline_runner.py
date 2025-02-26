@@ -6,9 +6,10 @@
 Provides runner for optimization flows.
 """
 
+import argparse
 import tempfile
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from tqdm import tqdm
 
@@ -30,7 +31,7 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
 )
 from kenning.platforms.local import LocalPlatform
 from kenning.runtimes.utils import get_default_runtime
-from kenning.utils.class_loader import ConfigKey, any_from_json, obj_from_json
+from kenning.utils.class_loader import ConfigKey, objs_from_json
 from kenning.utils.logger import KLogger, LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
@@ -154,55 +155,33 @@ class PipelineRunner(object):
         skip_optimizers: bool = False,
         skip_runtime: bool = False,
         cfg_path: Optional[Path] = None,
+        override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
     ):
-        dataset = obj_from_json(json_cfg, ConfigKey.dataset)
-        dataconverter = any_from_json(
-            json_cfg.get(ConfigKey.runtime.name, {}).get("data_converted", {}),
-            block_type="dataconverters",
-        )
+        keys = [
+            ConfigKey.dataset,
+            ConfigKey.platform,
+            ConfigKey.protocol,
+            ConfigKey.model_wrapper,
+            ConfigKey.runtime_builder,
+            *([ConfigKey.runtime] if not skip_runtime else []),
+            *([ConfigKey.optimizers] if not skip_optimizers else []),
+        ]
 
-        platform = obj_from_json(json_cfg, ConfigKey.platform)
-        protocol = obj_from_json(json_cfg, ConfigKey.protocol)
-        model_wrapper = obj_from_json(
-            json_cfg, ConfigKey.model_wrapper, dataset=dataset
-        )
-
-        runtime = (
-            obj_from_json(json_cfg, ConfigKey.runtime)
-            if not skip_runtime
-            else None
-        )
-        runtime_builder = obj_from_json(json_cfg, ConfigKey.runtime_builder)
-
-        optimizers = (
-            [
-                any_from_json(
-                    optimizer_cfg,
-                    block_type=ConfigKey.optimizers.value,
-                    dataset=dataset,
-                )
-                for optimizer_cfg in json_cfg.get(
-                    ConfigKey.optimizers.name,
-                    [],
-                )
-            ]
-            if not skip_optimizers
-            else None
-        )
+        objs = objs_from_json(json_cfg, set(keys), override)
 
         if assert_integrity:
-            cls.assert_io_formats(model_wrapper, optimizers, runtime)
+            cls.assert_io_formats(
+                objs.get(ConfigKey.model_wrapper),
+                objs[ConfigKey.optimizers],
+                objs.get(ConfigKey.runtime),
+            )
 
+        return cls.from_objs_dict(objs, configuration_path=cfg_path)
+
+    @classmethod
+    def from_objs_dict(cls, objs: Dict[ConfigKey, Any], **kwargs):
         return cls(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            optimizers=optimizers,
-            platform=platform,
-            protocol=protocol,
-            model_wrapper=model_wrapper,
-            runtime=runtime,
-            runtime_builder=runtime_builder,
-            configuration_path=cfg_path,
+            **{key.name: value for key, value in objs.items()}, **kwargs
         )
 
     def serialize(

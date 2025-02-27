@@ -2118,20 +2118,19 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
             report_types.append(_type)
 
     _append_type_if(
-        PERFORMANCE,
-        lambda data: "target_inference_step" in data
-        or "protocol_inference_step" in data,
-    )
-    _append_type_if(
         CLASSIFICATION, lambda data: "eval_confusion_matrix" in data
     )
     _append_type_if(DETECTION, lambda data: "eval_gtcount" in data)
-    _append_type_if(RENODE, lambda data: "opcode_counters" in data)
-
     _append_type_if(
         TEXT_SUMMARIZATION,
         lambda data: any([key.startswith("rouge") for key in data.keys()]),
     )
+    _append_type_if(
+        PERFORMANCE,
+        lambda data: "target_inference_step" in data
+        or "protocol_inference_step" in data,
+    )
+    _append_type_if(RENODE, lambda data: "opcode_counters" in data)
 
     if len(report_types) == 0:
         KLogger.error(

@@ -2060,7 +2060,7 @@ def generate_report(
                 colors=colors,
                 draw_titles=draw_titles,
             )
-    if not comparison_only:
+    if not comparison_only or save_summary:
         for _type in report_types:
             for i, model_data in enumerate(data):
                 if model_data["model_name"] not in models_metrics:
@@ -2087,7 +2087,8 @@ def generate_report(
                     models_metrics[model_data["model_name"]]["metrics"].append(
                         {"type": _type, "name": metric_name, "value": metric}
                     )
-                content += additional_content
+                if not comparison_only:
+                    content += additional_content
 
     content = re.sub(r"[ \t]+$", "", content, 0, re.M)
 

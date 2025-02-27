@@ -1952,6 +1952,7 @@ def generate_report(
     draw_titles: bool = True,
     smaller_header: bool = False,
     save_summary: bool = False,
+    comparison_only: bool = False,
 ):
     """
     Generates an MyST report based on Measurements data.
@@ -1990,6 +1991,9 @@ def generate_report(
         Use H2 header instead of H1.
     save_summary : bool
         Whether to save JSON with summary data from report.
+    comparison_only : bool
+        Tells whether only comparison reports should be generated, without
+        per-measurements sections.
     """
     from kenning.core.report import create_report_from_measurements
 
@@ -2029,34 +2033,8 @@ def generate_report(
         content = create_report_from_measurements(reporttemplate, header_data)
 
     models_metrics = {}
-    for typ in report_types:
-        for i, model_data in enumerate(data):
-            if model_data["model_name"] not in models_metrics:
-                models_metrics[model_data["model_name"]] = {
-                    "metrics": [],
-                    "scenarioPath": model_data.get("cfg_path", None),
-                }
-            if len(data) > 1:
-                imgprefix = model_data["model_name"] + "_"
-            else:
-                imgprefix = ""
-            additional_content, metrics = reptypes[typ](
-                model_data,
-                imgdir,
-                imgprefix,
-                root_dir,
-                image_formats,
-                color_offset=i,
-                cmap=cmap,
-                colors=colors,
-                draw_titles=draw_titles,
-            )
-            for metric_name, metric in metrics.items():
-                models_metrics[model_data["model_name"]]["metrics"].append(
-                    {"type": typ, "name": metric_name, "value": metric}
-                )
-            content += additional_content
-        if len(data) > 1:
+    if len(data) > 1:
+        for typ in report_types:
             content += comparereptypes[typ](
                 data,
                 imgdir,
@@ -2066,6 +2044,34 @@ def generate_report(
                 colors=colors,
                 draw_titles=draw_titles,
             )
+    if not comparison_only:
+        for type in report_types:
+            for i, model_data in enumerate(data):
+                if model_data["model_name"] not in models_metrics:
+                    models_metrics[model_data["model_name"]] = {
+                        "metrics": [],
+                        "scenarioPath": model_data.get("cfg_path", None),
+                    }
+                if len(data) > 1:
+                    imgprefix = model_data["model_name"] + "_"
+                else:
+                    imgprefix = ""
+                additional_content, metrics = reptypes[typ](
+                    model_data,
+                    imgdir,
+                    imgprefix,
+                    root_dir,
+                    image_formats,
+                    color_offset=i,
+                    cmap=cmap,
+                    colors=colors,
+                    draw_titles=draw_titles,
+                )
+                for metric_name, metric in metrics.items():
+                    models_metrics[model_data["model_name"]]["metrics"].append(
+                        {"type": typ, "name": metric_name, "value": metric}
+                    )
+                content += additional_content
 
     content = re.sub(r"[ \t]+$", "", content, 0, re.M)
 
@@ -2406,6 +2412,11 @@ class RenderReport(CommandTemplate):
             action="store_true",
         )
         report_group.add_argument(
+            "--comparison-only",
+            help="Creates only sections with comparisons of metrics and time series",  # noqa: E501
+            action="store_true",
+        )
+        report_group.add_argument(
             "--skip-unoptimized-model",
             help="Do not use measurements of unoptimized model",
             action="store_true",
@@ -2457,6 +2468,12 @@ class RenderReport(CommandTemplate):
                 "'--measurements' have to be defined to generate new report. "
                 "If only HTML version from existing report has to be "
                 "rendered, please use '--to-html' flag",
+            )
+        if args.comparison_only and len(args.measurements) <= 1:
+            raise argparse.ArgumentError(
+                None,
+                "'--comparison-only' applies only if there are more than one "
+                "measurements' file.",
             )
 
         root_dir = args.root_dir
@@ -2514,6 +2531,7 @@ class RenderReport(CommandTemplate):
                 draw_titles=False,
                 smaller_header=args.smaller_header,
                 save_summary=args.save_summary,
+                comparison_only=args.comparison_only,
             )
 
         if args.to_html:

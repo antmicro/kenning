@@ -1953,6 +1953,7 @@ def generate_report(
     smaller_header: bool = False,
     save_summary: bool = False,
     comparison_only: bool = False,
+    skip_general_information: bool = False,
 ):
     """
     Generates an MyST report based on Measurements data.
@@ -1994,6 +1995,9 @@ def generate_report(
     comparison_only : bool
         Tells whether only comparison reports should be generated, without
         per-measurements sections.
+    skip_general_information : bool
+        Tells whether the header with used commands and configs should be
+        included in the report or not.
     """
     from kenning.core.report import create_report_from_measurements
 
@@ -2029,8 +2033,13 @@ def generate_report(
     if any(c1 != c2 for c1, c2 in zip(header_data["command"], command)):
         header_data["command"].extend(command)
 
-    with path(reports, "header.md") as reporttemplate:
-        content = create_report_from_measurements(reporttemplate, header_data)
+    content = ""
+
+    if not skip_general_information:
+        with path(reports, "header.md") as reporttemplate:
+            content += create_report_from_measurements(
+                reporttemplate, header_data
+            )
 
     models_metrics = {}
     if len(data) > 1:
@@ -2431,6 +2440,11 @@ class RenderReport(CommandTemplate):
             help="Saves JSON file with summary data from the report, to file specified in report-path with suffix `.summary.json`",  # noqa: E501
             action="store_true",
         )
+        report_group.add_argument(
+            "--skip-general-information",
+            help="Removes beginning sections listing used configuration and commands",  # noqa: E501
+            action="store_true",
+        )
         return parser, groups
 
     @staticmethod
@@ -2532,6 +2546,7 @@ class RenderReport(CommandTemplate):
                 smaller_header=args.smaller_header,
                 save_summary=args.save_summary,
                 comparison_only=args.comparison_only,
+                skip_general_information=args.skip_general_information,
             )
 
         if args.to_html:

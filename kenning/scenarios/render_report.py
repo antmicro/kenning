@@ -644,6 +644,7 @@ def comparison_classification_report(
     bubble_plot_data, mean_inference_time, model_sizes = [], [], []
     skip_inference_metrics = False
     available_metrics = set(CLASSIFICATION_METRICS)
+    max_metrics = {}
     for data in measurementsdata:
         performance_metrics = compute_performance_metrics(data)
         if "inferencetime_mean" not in performance_metrics:
@@ -658,6 +659,11 @@ def comparison_classification_report(
                 continue
             model_metrics[metric] = classification_metrics[metric]
             metrics.append(metric)
+            if (
+                metric not in max_metrics
+                or classification_metrics[metric] > max_metrics[metric]
+            ):
+                max_metrics[metric] = classification_metrics[metric]
         available_metrics = available_metrics.intersection(metrics)
         bubble_plot_data.append(model_metrics[bubble_plot_metric])
 
@@ -767,6 +773,7 @@ def comparison_classification_report(
         )
         return ""
 
+    report_variables["max_metrics"] = max_metrics
     with path(reports, "classification_comparison.md") as reporttemplate:
         return create_report_from_measurements(
             reporttemplate, report_variables
@@ -2043,8 +2050,8 @@ def generate_report(
 
     models_metrics = {}
     if len(data) > 1:
-        for typ in report_types:
-            content += comparereptypes[typ](
+        for _type in report_types:
+            content += comparereptypes[_type](
                 data,
                 imgdir,
                 root_dir,
@@ -2054,7 +2061,7 @@ def generate_report(
                 draw_titles=draw_titles,
             )
     if not comparison_only:
-        for type in report_types:
+        for _type in report_types:
             for i, model_data in enumerate(data):
                 if model_data["model_name"] not in models_metrics:
                     models_metrics[model_data["model_name"]] = {
@@ -2065,7 +2072,7 @@ def generate_report(
                     imgprefix = model_data["model_name"] + "_"
                 else:
                     imgprefix = ""
-                additional_content, metrics = reptypes[typ](
+                additional_content, metrics = reptypes[_type](
                     model_data,
                     imgdir,
                     imgprefix,
@@ -2078,7 +2085,7 @@ def generate_report(
                 )
                 for metric_name, metric in metrics.items():
                     models_metrics[model_data["model_name"]]["metrics"].append(
-                        {"type": typ, "name": metric_name, "value": metric}
+                        {"type": _type, "name": metric_name, "value": metric}
                     )
                 content += additional_content
 

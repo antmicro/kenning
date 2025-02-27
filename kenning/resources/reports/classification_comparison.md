@@ -1,16 +1,6 @@
 ## Classification comparison
 
-{%- if 'predictionsbarpath' in data %}
-```{figure} {{data["predictionsbarpath"]}}
----
-name: {{basename}}_predictionsbarplot
-alt: Predictions comparison
-align: center
----
-
-Predictions comparison
-```
-{%- endif %}
+### Comparison of inference time, accuracy and model size
 
 ```{figure} {{data["bubbleplotpath"]}}
 ---
@@ -25,17 +15,7 @@ The inference time of the model is presented on X axis.
 The size of the model is represented by the size of its point.
 ```
 
-### Metric comparison
-
-```{figure} {{data['radarchartpath']}}
----
-name: {{data['report_name_simple']}}_classification_metrics_radar
-alt: Metric comparison
-align: center
----
-
-Radar chart representing the accuracy, precision and recall for models
-```
+### Detailed metrics comparison
 
 ```{list-table} Summary of classification metrics for models
 ---
@@ -50,9 +30,31 @@ align: center
 {% for model_name in data["model_names"] %}
 * - {{model_name}}
 {%- for metric in data["available_metrics"] %}
-  - {{'%.6f' % data[model_name][metric]}}
+  - {{'**' if data[model_name][metric] == data['max_metrics'][metric]}}{{'%.6f' % data[model_name][metric]}}{{'**' if data[model_name][metric] == data['max_metrics'][metric]}}
 {%- endfor %}
 {% endfor %}
 ```
+
+```{figure} {{data['radarchartpath']}}
+---
+name: {{data['report_name_simple']}}_classification_metrics_radar
+alt: Metric comparison
+align: center
+---
+
+Radar chart representing the accuracy, precision and recall for models
+```
+
+{%- if 'predictionsbarpath' in data %}
+```{figure} {{data["predictionsbarpath"]}}
+---
+name: {{basename}}_predictionsbarplot
+alt: Predictions comparison
+align: center
+---
+
+Predictions comparison
+```
+{%- endif %}
 
 

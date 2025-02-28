@@ -10,6 +10,7 @@ from typing import Callable, Optional, Type
 import pytest
 
 from kenning.core.automl import AutoML
+from kenning.platforms.local import LocalPlatform
 from kenning.tests.core.conftest import (
     get_dataset_random_mock,
 )
@@ -73,7 +74,11 @@ def automl(request):
     dataset = get_dataset_random_mock(dataset_cls, model_cls)
     tmp_dir = Path(mkdtemp())
 
-    yield automl_cls(dataset=dataset, output_directory=tmp_dir)
+    yield automl_cls(
+        dataset=dataset,
+        platform=LocalPlatform(),
+        output_directory=tmp_dir,
+    )
 
     rmtree(tmp_dir)
 
@@ -87,7 +92,7 @@ class TestAutoML:
         This should assert that specified `supported_models`
         inherits from AutoMLModel.
         """
-        _ = automl_cls(None, Path("."))
+        _ = automl_cls(None, None, Path("."))
 
     @pytest.mark.xfail(strict=True, raises=AssertionError)
     @automl_matrix_test("automl_cls")
@@ -101,6 +106,7 @@ class TestAutoML:
         not implementing AutoMLModel.
         """
         _ = automl_cls(
+            None,
             None,
             Path("."),
             use_models=[

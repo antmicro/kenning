@@ -69,7 +69,7 @@ class CustomCompletion(CompletionFinder):
                 except Exception:
                     pass
                 if _class:
-                    parsers.append(_class.form_argparse()[0])
+                    parsers.append(_class.form_argparse(args)[0])
 
         if parsers:
             # Choose last subparser

@@ -381,9 +381,9 @@ class InferenceServerRunner(CommandTemplate):
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
             parents=[]
-            + ([platform_cls.form_argparse()[0]] if platform_cls else [])
-            + ([protocol_cls.form_argparse()[0]] if protocol_cls else [])
-            + ([runtime_cls.form_argparse()[0]] if runtime_cls else []),
+            + ([platform_cls.form_argparse(args)[0]] if platform_cls else [])
+            + ([protocol_cls.form_argparse(args)[0]] if protocol_cls else [])
+            + ([runtime_cls.form_argparse(args)[0]] if runtime_cls else []),
             add_help=False,
         )
 

@@ -174,7 +174,7 @@ class AutoMLCommand(InferenceTester):
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
             + "\n",
             parents=[
-                cls.form_argparse()[0]
+                cls.form_argparse(args)[0]
                 for cls in (
                     automlcls,
                     datasetcls,

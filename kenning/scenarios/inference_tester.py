@@ -343,12 +343,16 @@ class InferenceTester(CommandTemplate):
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
             + "\n",
             parents=[]
-            + ([platformcls.form_argparse()[0]] if platformcls else [])
-            + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
-            + ([datasetcls.form_argparse()[0]] if datasetcls else [])
-            + ([runtimecls.form_argparse()[0]] if runtimecls else [])
-            + ([compilercls.form_argparse()[0]] if compilercls else [])
-            + ([protocolcls.form_argparse()[0]] if protocolcls else []),
+            + ([platformcls.form_argparse(args)[0]] if platformcls else [])
+            + (
+                [modelwrappercls.form_argparse(args)[0]]
+                if modelwrappercls
+                else []
+            )
+            + ([datasetcls.form_argparse(args)[0]] if datasetcls else [])
+            + ([runtimecls.form_argparse(args)[0]] if runtimecls else [])
+            + ([compilercls.form_argparse(args)[0]] if compilercls else [])
+            + ([protocolcls.form_argparse(args)[0]] if protocolcls else []),
             add_help=False,
         )
 

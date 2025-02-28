@@ -78,6 +78,7 @@ supported_keywords = [
     "enum",
     "is_list",
     "nullable",
+    "subcommands",
     # AutoML specific keys
     "AutoML",
     "list_range",
@@ -343,7 +344,10 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
 
 
 def add_argparse_argument(
-    group: argparse._ArgumentGroup, struct: Dict[str, Dict], *names: str
+    group: argparse._ArgumentGroup,
+    struct: Dict[str, Dict],
+    args: argparse.Namespace,
+    *names: str,
 ):
     """
     Adds arguments to the argparse group based on the given
@@ -361,6 +365,8 @@ def add_argparse_argument(
         Argparse group that is filled with new properties.
     struct : Dict[str, Dict]
         Struct with properties described.
+    args : argparse.Namespace
+        Arguments from ArgumentParser object
     *names : str
         Names of the properties that are to be added to the group.
         If empty every property in struct is used.
@@ -370,6 +376,8 @@ def add_argparse_argument(
     KeyError :
         Raised if there is a keyword that is not recognized.
     """
+    from kenning.cli.config import AVAILABLE_COMMANDS, get_used_subcommands
+
     if not names:
         names = struct.keys()
 
@@ -383,6 +391,12 @@ def add_argparse_argument(
         for p in prop:
             if p not in supported_keywords:
                 raise KeyError(f"{p} is not a supported keyword")
+
+        if "subcommands" in prop:
+            required_subcommands = prop["subcommands"] or AVAILABLE_COMMANDS
+            used_subcommands = get_used_subcommands(args)
+            if not set(used_subcommands).intersection(required_subcommands):
+                continue
 
         if "argparse_name" in prop:
             argparse_name = prop["argparse_name"]
@@ -555,11 +569,16 @@ class ArgumentsHandler(ABC):
 
     @classmethod
     def form_argparse(
-        cls,
+        cls, args: argparse.Namespace
     ) -> Tuple[argparse.ArgumentParser, Optional[argparse._ArgumentGroup]]:
         """
         Creates argparse parser based on `arguments_structure` of class and its
         all parent classes.
+
+        Parameters
+        ----------
+        args : argparse.Namespace
+            Arguments from ArgumentParser object
 
         Returns
         -------
@@ -582,7 +601,7 @@ class ArgumentsHandler(ABC):
             group = parser.add_argument_group(
                 title=f"{curr_cls.__name__} arguments"
             )
-            add_argparse_argument(group, curr_cls.arguments_structure)
+            add_argparse_argument(group, curr_cls.arguments_structure, args)
 
         return parser, group
 

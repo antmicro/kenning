@@ -86,11 +86,11 @@ def main(argv):  # noqa: D103
         argv[0],
         parents=[
             parser,
-            modelwrappercls.form_argparse()[0],
-            runtimecls.form_argparse()[0],
-            dataprovidercls.form_argparse()[0],
+            modelwrappercls.form_argparse(args)[0],
+            runtimecls.form_argparse(args)[0],
+            dataprovidercls.form_argparse(args)[0],
         ]
-        + ([i.form_argparse()[0] for i in outputcollectorcls]),
+        + ([i.form_argparse(args)[0] for i in outputcollectorcls]),
     )
 
     args = parser.parse_args(argv[1:])

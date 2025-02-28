@@ -154,8 +154,12 @@ class TrainModel(CommandTemplate):
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
             parents=[]
-            + ([modelwrappercls.form_argparse()[0]] if modelwrappercls else [])
-            + ([datasetcls.form_argparse()[0]] if datasetcls else []),
+            + (
+                [modelwrappercls.form_argparse(args)[0]]
+                if modelwrappercls
+                else []
+            )
+            + ([datasetcls.form_argparse(args)[0]] if datasetcls else []),
             add_help=False,
         )
 

@@ -5,8 +5,14 @@ platform:
     name: max32690fthr/max32690/m4
     uart_port: /tmp/uart
     uart_log_port: /tmp/uart-log
-    zephyr_build_path: ./build
     profiler_dump_path: ./build/renode_profiler.dump
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    workspace: ./
+    run_west_update: false
+    output_path: ./build
+    extra_targets: [board-repl]
 dataset:
   type: AnomalyDetectionDataset
   parameters:
@@ -29,6 +35,7 @@ automl:
     budget_type: epochs
     min_budget: 1
     max_budget: 5
+    application_size: 74.01
 optimizers:
 - type: TFLiteCompiler
   parameters:

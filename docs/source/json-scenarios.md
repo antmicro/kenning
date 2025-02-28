@@ -134,6 +134,33 @@ This information can be later used for [](report-generation).
 ```{note}
 Check {doc}`kenning-measurements` for more information.
 ```
+## Model training
+
+Provided that training is supported by a given model, you can specify parameters as follows:
+
+```{literalinclude} scripts/jsonconfigs/mobilenetv2-tensorflow-native.json save-as=mobilenetv2-tensorflow-native.json
+:language: json
+:emphasize-lines: 7-10
+```
+
+To train the model, simply run:
+
+```bash test-skip
+kenning train \
+    --json-cfg mobilenetv2-tensorflow-native.json \
+    --verbosity INFO
+```
+
+Furthermore, the configuration is shared among subcommands:
+
+```bash test-skip
+kenning train test \
+    --json-cfg train-test.json \
+    --measurements output.json \
+    --verbosity INFO
+```
+
+File with measurements also stores training information, which can be viewed directly or displayed in a generated report.
 
 ## Optimizing and running a model on a single device
 

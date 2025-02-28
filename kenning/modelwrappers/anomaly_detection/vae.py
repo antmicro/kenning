@@ -9,7 +9,6 @@ Compatible with AnomalyDetectionDataset.
 """
 
 from enum import Enum
-from pathlib import Path
 from random import shuffle
 from typing import Any, Dict, List, Optional, Tuple, Type
 
@@ -18,6 +17,8 @@ from sklearn.metrics import f1_score, roc_auc_score
 from tqdm import tqdm
 
 from kenning.automl.auto_pytorch import AutoPyTorchModel
+from kenning.cli.command_template import TRAIN
+from kenning.core.model import TrainingParametersMissingError
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.utils.logger import KLogger, LoggerProgressBar
@@ -132,6 +133,33 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "type": float,
             "default": 2.0,
         },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "Batch size for training. If not assigned, dataset batch size will be used.",  # noqa: E501
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "learning_rate": {
+            "description": "Learning rate for training",
+            "type": float,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "num_epochs": {
+            "argparse_name": "--num-epochs",
+            "description": "Number of epochs to train for",
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "eval": {
+            "argparse_name": "--eval",
+            "description": "True if the model should be evaluated each epoch",
+            "type": bool,
+            "default": True,
+            "subcommands": [TRAIN],
+        },
     }
 
     model_class = "AnomalyDetectionVAE"
@@ -152,6 +180,10 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         loss_beta: float = 1.0,
         loss_capacity: float = 0.0,
         clip_grad_max_norm: float = 2.0,
+        batch_size: Optional[int] = None,
+        learning_rate: Optional[float] = None,
+        num_epochs: Optional[int] = None,
+        eval: bool = True,
     ):
         """
         Creates the model wrapper with VAE.
@@ -187,6 +219,14 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             of KL divegence.
         clip_grad_max_norm: float
             Max norm for clipping gradients
+        batch_size : Optional[int]
+            Batch size for training.
+        learning_rate : Optional[float]
+            Learning rate for training.
+        num_epochs : Optional[int]
+            Number of epochs to train for.
+        eval : bool
+            True if the model should be evaluated each epoch
         """
         super().__init__(model_path, dataset, from_file, model_name)
 
@@ -200,6 +240,10 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         self.loss_beta = loss_beta
         self.loss_capacity = loss_capacity
         self.clip_grad_max_norm = clip_grad_max_norm
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.eval = eval
 
         if dataset:
             self.mean, self.std = self.dataset.get_input_mean_std()
@@ -288,14 +332,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             y = [y]
         return [_y.detach().cpu().numpy() for _y in y]
 
-    def train_model(
-        self,
-        batch_size: int,
-        learning_rate: float,
-        epochs: int,
-        logdir: Path,
-        eval: bool = True,
-    ):
+    def train_model(self):
         import torch
         from pyod.models.vae import VAEModel
 
@@ -304,9 +341,22 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             train_step,
         )
 
+        if not self.batch_size:
+            self.batch_size = self.dataset.batch_size
+
+        missing_params = []
+        if not self.learning_rate:
+            missing_params.append("learning_rate")
+
+        if not self.num_epochs:
+            missing_params.append("num_epochs")
+
+        if missing_params:
+            raise TrainingParametersMissingError(missing_params)
+
         default_reparameterize = self.model.reparameterize
         default_batch_size = self.dataset.batch_size
-        self.dataset.set_batch_size(batch_size)
+        self.dataset.set_batch_size(self.batch_size)
 
         self.prepare_model()
         KLogger.info("Preparing dataset")
@@ -330,10 +380,12 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         ]
         contamination = sum(y_train) / len(y_train)
 
-        optimizer = torch.optim.Adam(self.model.parameters(), lr=learning_rate)
+        optimizer = torch.optim.Adam(
+            self.model.parameters(), lr=self.learning_rate
+        )
 
         prev_loss = 0
-        for epoch in range(epochs):
+        for epoch in range(self.num_epochs):
             shuffle(X_train)
             self.model.train()
             self.model.reparameterize = lambda *x: VAEModel.reparameterize(
@@ -342,10 +394,10 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             total_loss = 0
             with LoggerProgressBar() as logger_progress_bar:
                 for batch_start in tqdm(
-                    range(0, len(X_train), batch_size),
+                    range(0, len(X_train), self.batch_size),
                     file=logger_progress_bar,
                 ):
-                    x = X_train[batch_start : batch_start + batch_size]
+                    x = X_train[batch_start : batch_start + self.batch_size]
                     x = torch.stack(x)
                     loss, _ = train_step(
                         self.model,
@@ -366,16 +418,16 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
                 self.dataset.iter_train()
             )
             KLogger.info(
-                f"Epoch {epoch + 1}/{epochs} - mean_loss: {mean_loss}"
+                f"Epoch {epoch + 1}/{self.num_epochs} - mean_loss: {mean_loss}"
             )
 
-            if eval or epoch == epochs - 1:
+            if self.eval or epoch == self.num_epochs - 1:
                 self.model.reparameterize = default_reparameterize
                 self.model.eval()
                 # Calibrate threshold
                 distances = []
-                for batch_start in range(0, len(X_train), batch_size):
-                    x = X_train[batch_start : batch_start + batch_size]
+                for batch_start in range(0, len(X_train), self.batch_size):
+                    x = X_train[batch_start : batch_start + self.batch_size]
                     with torch.no_grad():
                         distance = self.model._forward_distances(
                             torch.stack(x)
@@ -391,14 +443,14 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
                 # Evaluate model on test set
                 acc = 0
                 pred = []
-                for batch_start in range(0, len(X_test), batch_size):
-                    x = X_test[batch_start : batch_start + batch_size]
+                for batch_start in range(0, len(X_test), self.batch_size):
+                    x = X_test[batch_start : batch_start + self.batch_size]
                     x = torch.stack(x)
                     with torch.no_grad():
                         anomaly = self.model(x).ravel()
                     pred.append(anomaly.cpu().numpy())
                     acc += np.sum(
-                        y_test[batch_start : batch_start + batch_size]
+                        y_test[batch_start : batch_start + self.batch_size]
                         == pred[-1]
                     )
                 roc = roc_auc_score(y_test, np.concatenate(pred))

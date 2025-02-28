@@ -6,11 +6,13 @@
 Contains TFLite model for MagicWand dataset.
 """
 
+from pathlib import Path
 from typing import List, Optional
 
 import numpy as np
 import tensorflow as tf
 
+from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
 from kenning.datasets.magic_wand_dataset import MagicWandDataset
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
@@ -31,7 +33,34 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             "description": "Determines the size of single sample window",
             "default": 128,
             "type": int,
-        }
+        },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "Batch size for training. If not assigned, dataset batch size will be used.",  # noqa: E501
+            "type": int,
+            "default": 64,
+            "subcommands": [TRAIN],
+        },
+        "learning_rate": {
+            "description": "Learning rate for training",
+            "type": float,
+            "default": 0.001,
+            "subcommands": [TRAIN],
+        },
+        "num_epochs": {
+            "argparse_name": "--num-epochs",
+            "description": "Number of epochs to train for",
+            "type": int,
+            "default": 50,
+            "subcommands": [TRAIN],
+        },
+        "logdir": {
+            "argparse_name": "--logdir",
+            "description": "Path to the logging directory",
+            "type": Path,
+            "default": Path("/tmp/tflite_magic_wand_logs"),
+            "subcommands": [TRAIN],
+        },
     }
 
     def __init__(
@@ -41,6 +70,10 @@ class MagicWandModelWrapper(TensorFlowWrapper):
         from_file: bool,
         model_name: Optional[str] = None,
         window_size: int = 128,
+        batch_size: int = 64,
+        learning_rate: float = 0.001,
+        num_epochs: int = 50,
+        logdir: Path = Path("/tmp/tflite_magic_wand_logs"),
     ):
         """
         Creates the Magic Wand model wrapper.
@@ -57,6 +90,14 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             Name of the model used for the report
         window_size : int
             Size of single sample window.
+        batch_size : int
+            Batch size for training.
+        learning_rate : float
+            Learning rate for training.
+        num_epochs : int
+            Number of epochs to train for.
+        logdir : Path
+            Path to the logging directory.
         """
         super().__init__(model_path, dataset, from_file, model_name)
         self.window_size = window_size
@@ -64,6 +105,11 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             self.class_names = self.dataset.get_class_names()
             self.numclasses = len(self.class_names)
             self.save_io_specification(self.model_path)
+
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.logdir = logdir
 
     @classmethod
     def _get_io_specification(
@@ -158,13 +204,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             self.model_prepared = True
             self.save_model(self.model_path)
 
-    def train_model(
-        self,
-        batch_size=64,
-        learning_rate=0.001,
-        epochs=50,
-        logdir="/tmp/tflite_magic_wand_logs",
-    ):
+    def train_model(self):
         def convert_to_tf_dataset(features: List, labels: List):
             return tf.data.Dataset.from_tensor_slices(
                 (
@@ -174,7 +214,7 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             )
 
         self.model.compile(
-            optimizer=tf.optimizers.Adam(learning_rate=learning_rate),
+            optimizer=tf.optimizers.Adam(learning_rate=self.learning_rate),
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )
@@ -191,24 +231,28 @@ class MagicWandModelWrapper(TensorFlowWrapper):
 
         train_dataset = (
             convert_to_tf_dataset(train_data, train_labels)
-            .batch(batch_size)
+            .batch(self.batch_size)
             .repeat()
         )
         val_dataset = convert_to_tf_dataset(val_data, val_labels).batch(
-            batch_size
+            self.batch_size
         )
         test_dataset = convert_to_tf_dataset(test_data, test_labels).batch(
-            batch_size
+            self.batch_size
         )
 
         with LoggerProgressBar(capture_stdout=True):
             self.model.fit(
                 train_dataset,
-                epochs=epochs,
+                epochs=self.num_epochs,
                 validation_data=val_dataset,
                 steps_per_epoch=1000,
-                validation_steps=int((len(val_data) - 1) / batch_size + 1),
-                callbacks=[tf.keras.callbacks.TensorBoard(log_dir=logdir)],
+                validation_steps=int(
+                    (len(val_data) - 1) / self.batch_size + 1
+                ),
+                callbacks=[
+                    tf.keras.callbacks.TensorBoard(log_dir=str(self.logdir))
+                ],
             )
 
         loss, acc = self.model.evaluate(test_dataset)

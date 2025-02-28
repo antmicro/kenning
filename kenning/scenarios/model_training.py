@@ -138,7 +138,7 @@ class TrainModel(CommandTemplate):
         dataset = obj_from_json(cfg, ConfigKey.dataset)
         model = obj_from_json(cfg, ConfigKey.model_wrapper, dataset=dataset)
 
-        TrainModel._run(model, args)
+        TrainModel._run(model)
 
     @staticmethod
     def _run_from_flags(
@@ -170,14 +170,12 @@ class TrainModel(CommandTemplate):
         dataset = datasetcls.from_argparse(args)
         model = modelwrappercls.from_argparse(dataset, args, from_file=False)
 
-        TrainModel._run(model, args)
+        TrainModel._run(model)
 
     @staticmethod
-    def _run(model: ModelWrapper, args: argparse.Namespace):
+    def _run(model: ModelWrapper):
         model.prepare_model()
-        model.train_model(
-            args.batch_size, args.learning_rate, args.num_epochs, args.logdir
-        )
+        model.train_model()
         model.save_model(model.get_path())
 
 

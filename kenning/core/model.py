@@ -9,7 +9,6 @@ Provides a wrapper for deep learning models.
 import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Type
 from urllib.request import HTTPError
 
@@ -42,6 +41,22 @@ class VariableBatchSizeNotSupportedError(Exception):
         **kwargs,
     ):
         super().__init__(msg, *args, **kwargs)
+
+
+class TrainingParametersMissingError(Exception):
+    """
+    Exception raised when trying train a model without defined training
+    parameters.
+    """
+
+    def __init__(
+        self,
+        params,
+        msg="Missing train parameters: {}",
+        *args,
+        **kwargs,
+    ):
+        super().__init__(msg.format(", ".join(params)), *args, **kwargs)
 
 
 class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
@@ -475,9 +490,7 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         return measurements
 
-    def train_model(
-        self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
-    ):
+    def train_model(self):
         """
         Trains the model with a given dataset.
 
@@ -488,17 +501,6 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         and number of epochs.
 
         The model needs to be saved explicitly.
-
-        Parameters
-        ----------
-        batch_size : int
-            The batch size for the training.
-        learning_rate : float
-            The learning rate for the training.
-        epochs : int
-            The number of epochs for training.
-        logdir : Path
-            Path to the logging directory.
 
         Raises
         ------

@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from pathlib import Path
 from typing import Type
 
 import pytest
@@ -225,18 +226,19 @@ class TestModelWrapper:
         ],
         indirect=True,
     )
-    def test_train(self, model: Type[ModelWrapper]):
+    def test_train(self, model: ModelWrapper):
         """
         Tests the `train_model` method.
         """
         model.prepare_model()
+
+        model.batch_size = 16
+        model.learning_rate = 0.01
+        model.num_epochs = 1
+        model.logdir = Path("/tmp/logdir")
+
         try:
-            model.train_model(
-                batch_size=16,
-                learning_rate=0.01,
-                epochs=1,
-                logdir=r"/tmp/logdir",
-            )
+            model.train_model()
         except NotImplementedError:
             pytest.xfail("train_model not implemented for this model")
 

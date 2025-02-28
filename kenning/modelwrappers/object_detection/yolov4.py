@@ -404,7 +404,5 @@ class ONNXYOLOV4(YOLOWrapper):
     def save_model(self, model_path: PathOrURI):
         raise NotImplementedError
 
-    def train_model(
-        self, batch_size: int, learning_rate: float, epochs: int, logdir: Path
-    ):
+    def train_model(self):
         raise NotImplementedError

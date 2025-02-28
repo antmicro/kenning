@@ -14,7 +14,9 @@ from typing import Any, List, Optional
 import numpy as np
 from tqdm import tqdm
 
+from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
+from kenning.core.model import TrainingParametersMissingError
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.utils.logger import LoggerProgressBar
@@ -36,7 +38,34 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             "description": "Number of classes that the model can classify",
             "type": int,
             "default": 37,
-        }
+        },
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "Batch size for training. If not assigned, dataset batch size will be used.",  # noqa: E501
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "learning_rate": {
+            "description": "Learning rate for training",
+            "type": float,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "num_epochs": {
+            "argparse_name": "--num-epochs",
+            "description": "Number of epochs to train for",
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "logdir": {
+            "argparse_name": "--logdir",
+            "description": "Path to the logging directory",
+            "type": Path,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
     }
 
     def __init__(
@@ -46,6 +75,10 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         from_file: bool = True,
         model_name: Optional[str] = None,
         class_count: int = 37,
+        batch_size: Optional[int] = None,
+        learning_rate: Optional[float] = None,
+        num_epochs: Optional[int] = None,
+        logdir: Optional[Path] = None,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
         self.class_count = class_count
@@ -53,6 +86,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.numclasses = dataset.numclasses
         else:
             self.numclasses = class_count
+
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.logdir = logdir
 
     @classmethod
     def _get_io_specification(cls, numclasses, batch_size=1):
@@ -153,12 +191,28 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
             self.save_model(self.model_path)
         self.model.to(self.device)
 
-    def train_model(
-        self, batch_size: int, learning_rate: int, epochs: int, logdir: Path
-    ):
+    def train_model(self):
         import torch
         from torch.utils.data import Dataset as TorchDataset
         from torchvision import transforms
+
+        if not self.batch_size:
+            self.batch_size = self.dataset.batch_size
+
+        missing_params = []
+        if not self.learning_rate:
+            missing_params.append("learning_rate")
+
+        if not self.num_epochs:
+            missing_params.append("num_epochs")
+
+        if not self.logdir:
+            missing_params.append("logdir")
+        else:
+            self.logdir.mkdir(exist_ok=True, parents=True)
+
+        if missing_params:
+            raise TrainingParametersMissingError(missing_params)
 
         self.prepare_model()
         Xt, Xv, Yt, Yv = self.dataset.train_test_split_representations(0.25)
@@ -223,11 +277,11 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         )
 
         trainloader = torch.utils.data.DataLoader(
-            traindat, batch_size=batch_size, num_workers=0, shuffle=True
+            traindat, batch_size=self.batch_size, num_workers=0, shuffle=True
         )
 
         validloader = torch.utils.data.DataLoader(
-            validdat, batch_size=batch_size, num_workers=0, shuffle=True
+            validdat, batch_size=self.batch_size, num_workers=0, shuffle=True
         )
 
         self.model.to(self.device)
@@ -235,15 +289,15 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
         criterion = torch.nn.CrossEntropyLoss()
         import torch.optim as optim
 
-        opt = optim.Adam(self.model.parameters(), lr=learning_rate)
+        opt = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
         best_acc = 0
 
         from torch.utils.tensorboard import SummaryWriter
 
-        writer = SummaryWriter(log_dir=logdir)
+        writer = SummaryWriter(log_dir=self.logdir)
 
-        for epoch in range(epochs):
+        for epoch in range(self.num_epochs):
             self.model.train()
             loss_sum = torch.zeros(1).to(self.device)
             loss_count = 0

@@ -14,7 +14,9 @@ from typing import Optional
 import numpy as np
 import tensorflow as tf
 
+from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
+from kenning.core.model import TrainingParametersMissingError
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.interfaces.io_interface import IOInterface
 from kenning.modelwrappers.frameworks.tensorflow import TensorFlowWrapper
@@ -29,7 +31,35 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
 
     default_dataset = PetDataset
     pretrained_model_uri = "kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5"
-    arguments_structure = {}
+    arguments_structure = {
+        "batch_size": {
+            "argparse_name": "--batch-size",
+            "description": "Batch size for training. If not assigned, dataset batch size will be used.",  # noqa: E501
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "learning_rate": {
+            "description": "Learning rate for training",
+            "type": float,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "num_epochs": {
+            "argparse_name": "--num-epochs",
+            "description": "Number of epochs to train for",
+            "type": int,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+        "logdir": {
+            "argparse_name": "--logdir",
+            "description": "Path to the logging directory",
+            "type": Path,
+            "default": None,
+            "subcommands": [TRAIN],
+        },
+    }
 
     def __init__(
         self,
@@ -37,6 +67,10 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         dataset: Dataset,
         from_file=True,
         model_name: Optional[str] = None,
+        batch_size: Optional[int] = None,
+        learning_rate: Optional[float] = None,
+        num_epochs: Optional[int] = None,
+        logdir: Optional[Path] = None,
     ):
         super().__init__(model_path, dataset, from_file, model_name)
         gpus = tf.config.list_physical_devices("GPU")
@@ -59,6 +93,11 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.std = input_1["std"]
             self.class_names = out_layer["class_names"]
             self.numclasses = len(self.class_names)
+
+        self.batch_size = batch_size
+        self.learning_rate = learning_rate
+        self.num_epochs = num_epochs
+        self.logdir = logdir
 
     @classmethod
     def _get_io_specification(
@@ -150,10 +189,26 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
             self.save_model(self.model_path)
             self.model.summary()
 
-    def train_model(
-        self, batch_size: int, learning_rate: int, epochs: int, logdir: Path
-    ):
+    def train_model(self):
         import tensorflow as tf
+
+        if not self.batch_size:
+            self.batch_size = self.dataset.batch_size
+
+        missing_params = []
+        if not self.learning_rate:
+            missing_params.append("learning_rate")
+
+        if not self.num_epochs:
+            missing_params.append("num_epochs")
+
+        if not self.logdir:
+            missing_params.append("logdir")
+        else:
+            self.logdir.mkdir(exist_ok=True, parents=True)
+
+        if missing_params:
+            raise TrainingParametersMissingError(missing_params)
 
         self.prepare_model()
 
@@ -175,25 +230,25 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         traindataset = tf.data.Dataset.from_tensor_slices((Xt, Yt))
         traindataset = traindataset.map(
             preprocess_input, num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(batch_size)
+        ).batch(self.batch_size)
         validdataset = tf.data.Dataset.from_tensor_slices((Xv, Yv))
         validdataset = validdataset.map(
             preprocess_input, num_parallel_calls=tf.data.experimental.AUTOTUNE
-        ).batch(batch_size)
+        ).batch(self.batch_size)
 
         tensorboard_callback = tf.keras.callbacks.TensorBoard(
-            str(logdir), histogram_freq=1
+            str(self.logdir), histogram_freq=1
         )
 
         model_checkpoint_callback = tf.keras.callbacks.ModelCheckpoint(
-            filepath=str(logdir),
+            filepath=str(self.logdir),
             monitor="val_categorical_accuracy",
             mode="max",
             save_best_only=True,
         )
 
         self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(lr=learning_rate),
+            optimizer=tf.keras.optimizers.Adam(lr=self.learning_rate),
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
             metrics=[tf.keras.metrics.CategoricalAccuracy()],
         )
@@ -201,7 +256,7 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         with LoggerProgressBar(capture_stdout=True):
             self.model.fit(
                 traindataset,
-                epochs=epochs,
+                epochs=self.num_epochs,
                 callbacks=[tensorboard_callback, model_checkpoint_callback],
                 validation_data=validdataset,
             )

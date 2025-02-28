@@ -102,7 +102,7 @@ class WestRun:
         build_dir: "Optional[Union[os.PathLike[str], Path]]" = None,
         extra_conf_file: "Optional[str]" = None,
         extra_build_args: List[str] = [],
-        pristine: bool = True,
+        pristine: str = "auto",
     ):
         """
         Wrapper for 'west build'.
@@ -119,14 +119,14 @@ class WestRun:
             Name of the additional .conf file.
         extra_build_args : List[str]
             Extra arguments passed to west.
-        pristine : bool
-            If '-p always' should be used.
+        pristine : str
+            Whether build should be pristine. One of "always", "never", "auto".
         """
         params = [
             "build",
             str(application_dir),
             "--pristine",
-            "always" if pristine else "auto",
+            pristine,
             "--board",
             board,
         ]
@@ -444,7 +444,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             build_dir=self.build_dir,
             extra_conf_file=extra_conf_file,
             extra_build_args=extra_build_args,
-            pristine=True,
+            pristine="auto",
         )
 
         for target in self.extra_targets:

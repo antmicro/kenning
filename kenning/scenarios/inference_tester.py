@@ -118,23 +118,21 @@ class InferenceTester(CommandTemplate):
         )
 
         other_group = groups[DEFAULT_GROUP]
-        required_prefix = ""
+        required_prefix = "* "
+        groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
+        groups[FILE_CONFIG].add_argument(
+            "--json-cfg",
+            "--cfg",
+            help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
+            type=ResourceURI,
+        ).completer = FilesCompleter(
+            allowednames=("*.json", "*.yaml", "*.yml")
+        )
+
         if TRAIN not in types:
-            # 'train' is not used, JSON and flag configuration available
-            groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
-            required_prefix = "* "
-            groups[FILE_CONFIG].add_argument(
-                "--json-cfg",
-                "--cfg",
-                help=f"{required_prefix}The path to the input JSON file with configuration of the inference",  # noqa: E501
-                type=ResourceURI,
-            ).completer = FilesCompleter(
-                allowednames=("*.json", "*.yaml", "*.yml")
-            )
             flag_group = groups[FLAG_CONFIG]
             shared_flags_group = flag_group
         else:
-            # 'train' is not compatible with JSON configuration
             flag_group = parser.add_argument_group(GROUP_SCHEMA.format(TEST))
             shared_flags_group = other_group
 
@@ -146,12 +144,10 @@ class InferenceTester(CommandTemplate):
             shared_flags_group.add_argument(
                 "--modelwrapper-cls",
                 help=f"{required_prefix}ModelWrapper-based class with inference implementation to import",  # noqa: E501
-                required=TRAIN in types,
             ).completer = ClassPathCompleter(MODEL_WRAPPERS)
         dataset_flag = shared_flags_group.add_argument(
             "--dataset-cls",
             help="Dataset-based class with dataset to import",
-            required=TRAIN in types,
         )
         dataset_flag.completer = ClassPathCompleter(DATASETS)
         # 'optimize' specific arguments

@@ -38,7 +38,7 @@ dependencies = [
     "rich",
     "rst-to-myst[sphinx]>=0.4.0",
     "scikit_learn>=0.24.1",
-    "scipy",
+    "scipy<1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
 ]
@@ -78,7 +78,7 @@ object_detection = [
     "botocore>=1.20.5",
     "cython<3.0.0; python_version<'3.12'",
     "cython>=3.0.0; python_version=='3.12'",
-    "opencv_python>=4.5.2",
+    "opencv_python>=4.5.2,<4.8.0",
     "pandas>=1.2.1",
     "pycocotools",
 ]

@@ -716,7 +716,7 @@ class AutoPyTorchML(AutoML):
             )
             torch.save(model.state_dict(), self.model_paths[-1])
             kenning_conf["model_wrapper"]["parameters"]["model_path"] = str(
-                self.model_paths[-1].absolute()
+                self.model_paths[-1]
             )
             self.best_configs.append(kenning_conf)
         return self.best_configs

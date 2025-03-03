@@ -283,7 +283,7 @@ class PipelineRunner(object):
 
         if self.configuration_path:
             MeasurementsCollector.measurements += {
-                "cfg_path": str(self.configuration_path.absolute()),
+                "cfg_path": str(self.configuration_path),
             }
 
         if self.model_wrapper:

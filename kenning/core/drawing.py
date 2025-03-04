@@ -745,8 +745,6 @@ class RadarChart(Plot):
             height_policy="max",
             width_policy="auto",
         )
-        # radar_fig.width_policy="max"
-        # radar_fig.max_width=self.width*2
 
         radar_fig.grid.visible = False
         radar_fig.xaxis.visible = False
@@ -1086,7 +1084,7 @@ class BubblePlot(Plot):
             size="size",
             fill_color="color",
             line_color="black",
-            legend="name",
+            legend_label="name",
             source=source,
         )
         # custom tooltips
@@ -1433,7 +1431,7 @@ class ConfusionMatrixPlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.layouts import column, gridplot
+        from bokeh.layouts import gridplot
         from bokeh.models import (
             ColumnDataSource,
             FactorRange,
@@ -1713,20 +1711,16 @@ class ConfusionMatrixPlot(Plot):
                 [
                     confusion_matrix_fig,
                 ],
+                [scale_fig],
             ],
             merge_tools=True,
             toolbar_location="above",
             toolbar_options={"logo": None},
             sizing_mode="scale_both",
         )
-        plot_with_scale = column(
-            grid_fig,
-            scale_fig,
-            sizing_mode="scale_both",
-        )
 
         self._output_bokeh_figure(
-            plot_with_scale,
+            grid_fig,
             output_path,
             output_formats,
         )

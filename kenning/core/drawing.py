@@ -484,7 +484,6 @@ class ViolinComparisonPlot(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        import numpy as np
         from bokeh.layouts import column, gridplot
         from bokeh.models import (
             ColumnDataSource,

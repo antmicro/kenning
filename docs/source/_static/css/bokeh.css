@@ -10,11 +10,18 @@
   padding: 0.5em;
   border-radius: 0.1rem;
   max-width: 95vw;
-  width: 75vw;
+  width: 95vw;
   min-width: 50vw;
   overflow-x: scroll;
+  margin-left: auto;
+  margin-right: auto;
 }
 
+@media (min-width: 1200px) {
+  .bk-root {
+    width: 75vw;
+  }
+}
 
 /* Centring of bokeh plots in divs instead of figure */
 div.figure.align-center {
@@ -73,7 +80,7 @@ div.bk-tooltip-custom {
   border-bottom-color: var(--md-default-bg-color) !important;
 }
 
-.md-typeset h1 {
+.md-typeset h1, .md-typeset h2, .md-typeset h3 {
   overflow: clip;
   text-overflow: ellipsis;
 }

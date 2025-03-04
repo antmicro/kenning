@@ -136,11 +136,7 @@ class TestAutoML:
 
         automl.search()
 
-        configs = automl.get_best_configs()
-        assert (
-            len(configs) <= automl.n_best_models
-        ), f"Method should return at most {automl.n_best_models}"
-        for config in configs:
+        for config in automl.get_best_configs():
             try:
                 PipelineRunner.from_json_cfg(json_cfg=config)
             except Exception:

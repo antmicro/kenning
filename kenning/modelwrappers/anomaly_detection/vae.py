@@ -66,8 +66,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "items": int,
             "default": [16, 8],
             "AutoML": True,
-            "list_range": (2, 16),
-            "item_range": (4, 256),
+            "list_range": (2, 6),
+            "item_range": (4, 48),
         },
         "decoder_neuron_list": {
             "description": "List of dense layer dimensions of decoder",
@@ -75,8 +75,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "items": int,
             "default": [16, 32],
             "AutoML": True,
-            "list_range": (2, 16),
-            "item_range": (4, 256),
+            "list_range": (2, 6),
+            "item_range": (4, 48),
         },
         "latent_dim": {
             "argparse_name": "--latent-dim",
@@ -84,7 +84,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "type": int,
             "default": 2,
             "AutoML": True,
-            "item_range": (2, 256),
+            "item_range": (2, 48),
         },
         "hidden_activation": {
             "argparse_name": "--hidden-activation",

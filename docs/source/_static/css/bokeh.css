@@ -9,8 +9,9 @@
   background: var(--md-code-bg-color);
   padding: 0.5em;
   border-radius: 0.1rem;
-  min-width: 350px;
-  max-width: 90vw;
+  max-width: 95vw;
+  width: 75vw;
+  min-width: 50vw;
   overflow-x: scroll;
 }
 
@@ -70,4 +71,9 @@ div.bk-tooltip-custom {
 
 .bk-root .bk-tooltip.bk-above::before {
   border-bottom-color: var(--md-default-bg-color) !important;
+}
+
+.md-typeset h1 {
+  overflow: clip;
+  text-overflow: ellipsis;
 }

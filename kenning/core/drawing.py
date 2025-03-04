@@ -258,15 +258,6 @@ class Plot(ABC, object):
         if "html" in formats:
             output_file(f"{output_path}.html", mode="inline")
             save(bokeh_figure)
-
-            # additional_css = (
-            # f".bk-root {{ "
-            # "max-width: 80vw; width: 1000px; min-width: 400px; }}"
-            # )
-            # Plot._add_global_css(
-            #     Path(f"{output_path}.html"), additional_css=additional_css
-            # )
-
         if "png" in formats:
             export_png(bokeh_figure, filename=f"{output_path}.png")
         if "svg" in formats:
@@ -505,8 +496,6 @@ class ViolinComparisonPlot(Plot):
                 title=metric_label,
                 tools="pan,box_zoom,wheel_zoom,reset,save",
                 toolbar_location=None,
-                width=self.width,
-                height=self.height,
                 output_backend="webgl",
                 sizing_mode="scale_both",
                 max_height=self.height,
@@ -514,7 +503,7 @@ class ViolinComparisonPlot(Plot):
                 match_aspect=True,
                 height_policy="max",
                 width_policy="auto",
-                css_classes=["plot"],
+                css_classes=["plot", "violin"],
             )
             for metric_label in self.metric_labels
         }

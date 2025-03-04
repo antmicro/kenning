@@ -158,6 +158,8 @@ def performance_report(
     # Shifting colors to match color_offset
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
     plot_options["colormap"] = plot_options["colormap"][color_offset:]
+    if plot_options["backend"] == "bokeh":
+        plot_options["figsize"] = "responsive"
 
     inference_step = None
     if "target_inference_step" in measurementsdata:
@@ -170,8 +172,6 @@ def performance_report(
         KLogger.warning("No inference time measurements in the report")
 
     if inference_step:
-        if plot_options["backend"] == "bokeh":
-            plot_options["figsize"] = "responsive"
         plot_path = imgdir / f"{imgprefix}inference_time"
         render_time_series_plot_with_histogram(
             ydata=measurementsdata[inference_step],
@@ -359,6 +359,10 @@ def comparison_performance_report(
         "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
 
+    plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
+    if plot_options["backend"] == "bokeh":
+        plot_options["figsize"] = "responsive"
+
     for data in measurementsdata:
         if "target_inference_step" in data:
             data["inference_step"] = data["target_inference_step"]
@@ -424,7 +428,7 @@ def comparison_performance_report(
                 legend_labels=list(metric_data.keys()),
                 outpath=plot_path,
                 outputext=image_formats,
-                **SERVIS_PLOT_OPTIONS,
+                **plot_options,
             )
             report_variables[f"{metric}_path"] = get_plot_wildcard_path(
                 plot_path, root_dir

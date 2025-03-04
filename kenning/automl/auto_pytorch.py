@@ -677,7 +677,7 @@ class AutoPyTorchML(AutoML):
                     mod_cls.prepare_config(pipeline.config),
                 )
 
-    def get_best_configs(self):
+    def get_best_configs(self) -> Iterable[Dict]:
         import torch
         from smac.tae import StatusType
 
@@ -697,8 +697,9 @@ class AutoPyTorchML(AutoML):
             key=lambda x: x[1].additional_info["opt_loss"][
                 self.optimize_metric
             ],
-        )[: self.n_best_models]
+        )
 
+        self.best_configs = []
         # Load pipelines from results, extract models and save them
         for r_key, r_value in results:
             idx = r_key.config_id + self.initial_run_num
@@ -719,4 +720,4 @@ class AutoPyTorchML(AutoML):
                 self.model_paths[-1]
             )
             self.best_configs.append(kenning_conf)
-        return self.best_configs
+            yield kenning_conf

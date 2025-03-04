@@ -31,7 +31,6 @@ from matplotlib import pyplot as plt
 from matplotlib.collections import LineCollection
 from matplotlib.colors import ListedColormap
 from numpy.typing import ArrayLike
-from scipy.stats import gaussian_kde
 
 from kenning.resources import reports
 from kenning.scenarios.manage_cache import format_size
@@ -485,9 +484,17 @@ class ViolinComparisonPlot(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
+        import numpy as np
         from bokeh.layouts import column, gridplot
-        from bokeh.models import ColumnDataSource, Div, Legend, Patch
+        from bokeh.models import (
+            ColumnDataSource,
+            Div,
+            Legend,
+            LegendItem,
+            Patch,
+        )
         from bokeh.plotting import figure
+        from scipy.stats import gaussian_kde
 
         margins = (0, 20, 0, 10)
 
@@ -522,13 +529,16 @@ class ViolinComparisonPlot(Plot):
                     kde = gaussian_kde(sample)
                     y = kde.pdf(x)
                     y *= 0.45 / max(y)
+
+                # Create the violin plot
+                source = ColumnDataSource(
+                    data=dict(
+                        x=np.hstack([x, x[::-1]]),
+                        y=i + np.hstack([y, -y[::-1]]),
+                    )
+                )
                 renderer = violin_figs[name].add_glyph(
-                    ColumnDataSource(
-                        data=dict(
-                            x=np.hstack([x, x[::-1]]),
-                            y=i + np.hstack([y, -y[::-1]]),
-                        )
-                    ),
+                    source,
                     Patch(
                         x="x",
                         y="y",
@@ -538,62 +548,34 @@ class ViolinComparisonPlot(Plot):
                     ),
                 )
                 legend_items[sample_name].append(renderer)
+
+                # Add lines for min and max
                 for line_start, line_end in (
                     ([x_min, x_max], [i, i]),
                     ([x_min, x_min], [i - 0.2, i + 0.2]),
                     ([x_max, x_max], [i - 0.2, i + 0.2]),
                 ):
-                    renderer = violin_figs[name].line(
+                    violin_figs[name].line(
                         line_start,
                         line_end,
                         color=color,
                         line_width=2,
                     )
-                    legend_items[sample_name].append(renderer)
 
-        # Patch + margin + padding + word length
-        legend_data = list(legend_items.items())
-        legend_length = [
-            11 + 20 + 10 + 6 * len(x) for x in legend_items.keys()
-        ]
+        # Create legend items
+        legend_items_list = []
+        for sample_name, renderers in legend_items.items():
+            legend_item = LegendItem(label=sample_name, renderers=renderers)
+            legend_items_list.append(legend_item)
 
-        # Iterate over length of labels to find the number of columns
-        # that would fit under the plot
-        legend_columns = len(legend_length)
-        for i in range(len(legend_length) - 1):
-            for j in range(i + 1, len(legend_length)):
-                if sum(legend_length[i:j]) > self.width:
-                    if legend_columns > j - i - 1:
-                        legend_columns = j - i - 1
-                    break
-        legend_columns = max(1, legend_columns)
-
-        # Creating fake figure for legend
-        legend_fig = figure(
-            min_border_left=0,
-            frame_width=0,
-            frame_height=11 * len(legend_data),
-            toolbar_location=None,
-        )
-        # Creating few columns with legends
-        legends = []
-        for offset in range(legend_columns):
-            legends.append(
-                Legend(
-                    items=legend_data[offset::legend_columns],
-                    orientation="vertical",
-                    location="center",
-                    click_policy="hide",
-                )
+        # Create and add the legend to the first figure
+        if legend_items_list:
+            legend = Legend(
+                items=legend_items_list,
+                location="top_left",
+                click_policy="hide",
             )
-
-        legend_fig.xaxis.visible = False
-        legend_fig.yaxis.visible = False
-        legend_fig.outline_line_alpha = 0.0
-        legend_fig.renderers += [
-            legend_item[1][0] for legend_item in legend_data
-        ]
-        [legend_fig.add_layout(legend, place="right") for legend in legends]
+            violin_figs[self.metric_labels[0]].add_layout(legend)
 
         if self.title is not None:
             violin_figs[self.metric_labels[0]].add_layout(
@@ -610,7 +592,7 @@ class ViolinComparisonPlot(Plot):
         )
 
         self._output_bokeh_figure(
-            column(children=[grid_fig, legend_fig], sizing_mode="scale_both"),
+            column(children=[grid_fig], sizing_mode="scale_both"),
             output_path,
             output_formats,
         )

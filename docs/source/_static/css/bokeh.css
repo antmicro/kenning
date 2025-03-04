@@ -6,7 +6,7 @@
 
 /* Background for bokeh plots */
 .bk-Column, .bk-GridPlot, .bk-Figure {
-  width: 90vw;
+  width: 85vw;
   margin: 10px;
 }
 

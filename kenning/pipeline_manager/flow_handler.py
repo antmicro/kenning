@@ -13,7 +13,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
 from pipeline_manager import specification_builder
-from pipeline_manager.frontend_builder import copy_frontend_to_workspace
+from pipeline_manager.frontend_builder import build_prepare
 
 from kenning.core.flow import KenningFlow
 from kenning.interfaces.io_interface import IOInterface
@@ -40,7 +40,7 @@ class KenningFlowHandler(BaseDataflowHandler):
     def __init__(self, **kwargs):
         if not (assets_dir := kwargs.pop("workspace_dir", None)):
             assets_dir = Path("/tmp") / uuid.uuid4().hex
-            copy_frontend_to_workspace(assets_dir)
+            build_prepare(assets_dir)
 
         self.spec_builder = specification_builder.SpecificationBuilder(
             spec_version=SPECIFICATION_VERSION, assets_dir=assets_dir

@@ -8,7 +8,7 @@ Provides runner for AutoML flow.
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict
+from typing import Dict, Iterable, Tuple
 
 import yaml
 
@@ -67,7 +67,7 @@ class AutoMLRunner(object):
             pipeline_config=cfg,
         )
 
-    def run(self, verbosity: str = "INFO") -> Dict[Path, Dict]:
+    def run(self, verbosity: str = "INFO") -> Iterable[Tuple[Path, Dict]]:
         """
         Runs AutoML flow and returns the best found configurations.
 
@@ -80,9 +80,9 @@ class AutoMLRunner(object):
         verbosity : str
             Verbosity level.
 
-        Returns
-        -------
-        Dict[Path, Dict]
+        Yields
+        ------
+        Tuple[Path, Dict]
             Dictionary with path to the saved configuration as a key
             and configuration as a value.
         """
@@ -93,13 +93,9 @@ class AutoMLRunner(object):
         KLogger.info(str(self.autoML._api.sprint_statistics()))
 
         out_dir = self.autoML.output_directory
-        best_configs = self.autoML.get_best_configs()
 
-        full_configs = [
-            deepcopy(self.pipeline_config | conf) for conf in best_configs
-        ]
-        output = {}
-        for i, conf in enumerate(full_configs):
+        for i, conf in enumerate(self.autoML.get_best_configs()):
+            conf = deepcopy(self.pipeline_config | conf)
             model_wrapper_path = conf["model_wrapper"]["parameters"][
                 "model_path"
             ]
@@ -125,5 +121,4 @@ class AutoMLRunner(object):
             conf_path = out_dir / f"automl_conf_{i}.yml"
             with conf_path.open("w") as fd:
                 yaml.dump(conf, fd, Dumper=Dumper)
-            output[conf_path] = conf
-        return output
+            yield conf_path, conf

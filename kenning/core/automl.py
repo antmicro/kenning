@@ -9,7 +9,7 @@ Provides an API for AutoML flow.
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Type
+from typing import Any, Dict, Iterable, List, Optional, Type
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -234,14 +234,14 @@ class AutoML(ArgumentsHandler, ABC):
         ...
 
     @abstractmethod
-    def get_best_configs(self) -> List[Dict]:
+    def get_best_configs(self) -> Iterable[Dict]:
         """
         Extracts the best models and returns Kenning configuration for them.
 
-        Returns
-        -------
-        List[Dict]
-            Configurations for found models (from the best one).
+        Yields
+        ------
+        Dict
+            Configuration for found models (from the best one).
         """
         ...
 

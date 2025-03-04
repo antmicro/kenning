@@ -241,7 +241,8 @@ class AutoMLCommand(InferenceTester):
         model_names = []
         rets = []
         run_pipeline = bool({OPTIMIZE, TEST}.intersection(subcommands))
-        for path, conf in best_configs.items():
+        n_valid_models = 0
+        for path, conf in best_configs:
             model_path = Path(
                 conf[ConfigKey.model_wrapper.name]["parameters"]["model_path"]
             )
@@ -265,7 +266,11 @@ class AutoMLCommand(InferenceTester):
                     ret = 1
                     measurements.pop(-1)
                     model_names.pop(-1)
+                else:
+                    n_valid_models += 1
                 rets.append(ret)
+                if n_valid_models >= automl_runner.autoML.n_best_models:
+                    break
 
         # Set all available measurement for comparison report
         args.measurements = measurements

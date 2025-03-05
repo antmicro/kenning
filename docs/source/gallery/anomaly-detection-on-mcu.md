@@ -111,7 +111,6 @@ kenning train test \
     --modelwrapper-cls kenning.modelwrappers.anomaly_detection.vae.PyTorchAnomalyDetectionVAE \
     --model-path ./vae_cats.pth \
     --batch-size 256 --learning-rate 0.00002 --num-epochs 4 \
-    --logdir output/vae_train \
     --verbosity INFO \
     --measurements workspace/vae-torch-native.json \
     --inference-batch-size 256 \

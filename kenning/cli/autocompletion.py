@@ -11,7 +11,11 @@ from typing import List
 
 from argcomplete.finders import CompletionFinder
 
-from kenning.cli.config import AVAILABLE_COMMANDS, setup_base_parser
+from kenning.cli.config import (
+    AVAILABLE_COMMANDS,
+    USED_SUBCOMMANDS,
+    setup_base_parser,
+)
 from kenning.utils.class_loader import load_class
 
 # Subcommands without help
@@ -52,6 +56,8 @@ class CustomCompletion(CompletionFinder):
                 f'--{flag.replace("_", "-")}', nargs="?", const=None
             )
         args, _ = parser.parse_known_args(comp_words)
+        subcommands = [arg for arg in comp_words if arg in ALL_SUBCOMMANDS]
+        setattr(args, USED_SUBCOMMANDS, subcommands)
 
         # Create parsers for used classes
         parsers = []
@@ -67,7 +73,6 @@ class CustomCompletion(CompletionFinder):
 
         if parsers:
             # Choose last subparser
-            subcommands = [arg for arg in comp_words if arg in ALL_SUBCOMMANDS]
             subparser = self._parser
             for subcommand in subcommands:
                 subactions = [

@@ -14,6 +14,12 @@
   height: 95vh;
 }
 
+@media (min-width: 1000px) {
+  .bk-Column, .bk-GridPlot, .bk-Figure {
+    width: 70vw;
+  }
+}
+
 /* Centring of bokeh plots in divs instead of figure */
 div.figure.align-center {
   display: flex !important;

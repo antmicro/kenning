@@ -1034,7 +1034,13 @@ class BubblePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.models import ColumnDataSource, HoverTool, Legend, Range1d
+        from bokeh.models import (
+            ColumnDataSource,
+            HoverTool,
+            Legend,
+            LegendItem,
+            Range1d,
+        )
         from bokeh.plotting import figure
 
         source = ColumnDataSource(
@@ -1070,22 +1076,29 @@ class BubblePlot(Plot):
         )
         bubbleplot_fig.toolbar.logo = None
 
-        bubbleplot_fig.add_layout(
-            Legend(
-                orientation="horizontal",
-                label_text_font="Lato",
-                location="center",
-            ),
-            "below",
-        )
-        bubbleplot_fig.scatter(
+        scatter_renderer = bubbleplot_fig.scatter(
             x="x",
             y="y",
             size="size",
             fill_color="color",
             line_color="black",
-            legend_label="name",
             source=source,
+        )
+
+        # The legend of a bubble plot.
+        bubbleplot_fig.add_layout(
+            Legend(
+                orientation="horizontal",
+                label_text_font="Lato",
+                location="center",
+                items=[
+                    LegendItem(
+                        label=label, renderers=[scatter_renderer], index=i
+                    )
+                    for i, label in enumerate(self.bubble_labels)
+                ],
+            ),
+            "below",
         )
         # custom tooltips
         bubbleplot_fig.add_tools(

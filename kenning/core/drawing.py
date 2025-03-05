@@ -1470,7 +1470,7 @@ class ConfusionMatrixPlot(Plot):
             x_axis_location="above",
             output_backend="webgl",
             sizing_mode="scale_both",
-            css_classes=["plot", "confusion-matrix"],
+            css_classes=["plot", "confusion-matrix", "square"],
             margin=margins,
         )
 
@@ -1535,10 +1535,12 @@ class ConfusionMatrixPlot(Plot):
             title=None,
             x_range=confusion_matrix_fig.x_range,
             y_range=FactorRange(factors=["Sensitivity"], bounds=(0, 1)),
-            width=confusion_matrix_fig.width,
-            height=confusion_matrix_fig.height // 15,
+            # height=confusion_matrix_fig.height // 15,
             toolbar_location=None,
             output_backend="webgl",
+            sizing_mode="scale_both",
+            margin=margins,
+            css_classes=["square"],
         )
 
         # Preprocess data
@@ -1582,11 +1584,15 @@ class ConfusionMatrixPlot(Plot):
             title=None,
             x_range=FactorRange(factors=["Precision"], bounds=(0, 1)),
             y_range=confusion_matrix_fig.y_range,
-            width=confusion_matrix_fig.width // 15,
-            height=confusion_matrix_fig.height,
+            # width=confusion_matrix_fig.width // 15,
+            # height=confusion_matrix_fig.height,
             toolbar_location=None,
             y_axis_location="right",
             output_backend="webgl",
+            sizing_mode="scale_both",
+            margin=margins,
+            match_aspect=True,
+            css_classes=["square"],
         )
 
         # Preprocess data
@@ -1630,10 +1636,11 @@ class ConfusionMatrixPlot(Plot):
             title=None,
             x_range=FactorRange(factors=["x"], bounds=(0, 1)),
             y_range=FactorRange(factors=["y"], bounds=(0, 1)),
-            width=precision_fig.width,
-            height=sensitivity_fig.height,
-            toolbar_location=None,
             output_backend="webgl",
+            sizing_mode="scale_both",
+            margin=margins,
+            toolbar_location=None,
+            css_classes=["plot", "square"],
         )
 
         # Preprocess data
@@ -1698,7 +1705,7 @@ class ConfusionMatrixPlot(Plot):
             margin=margins,
             output_backend="webgl",
             sizing_mode="scale_width",
-            height=25,
+            height=50,
         )
 
         # Draw scale
@@ -1721,15 +1728,16 @@ class ConfusionMatrixPlot(Plot):
 
         grid_fig = gridplot(
             [
-                [
-                    confusion_matrix_fig,
-                ],
+                [confusion_matrix_fig],
+                [precision_fig],
+                [accuracy_fig],
+                [sensitivity_fig],
                 [scale_fig],
             ],
             merge_tools=True,
             toolbar_location="above",
             toolbar_options={"logo": None},
-            sizing_mode="scale_both",
+            sizing_mode="scale_width",
         )
 
         self._output_bokeh_figure(

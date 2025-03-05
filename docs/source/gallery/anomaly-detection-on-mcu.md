@@ -1,32 +1,32 @@
 # Anomaly detection model training and deployment on the MAX32690 Evaluation Kit
 
 This example demonstrates how to train an example anomaly detection model and deploys it on an MCU using Kenning and Zephyr RTOS.
-The platform used for the experiments will be [MAX32690 Evaluation Kit](https://www.analog.com/en/resources/evaluation-hardware-and-software/evaluation-boards-kits/max32690evkit.html#eb-overview).
-This demo will use [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-zephyr-runtime) and [Zephyr RTOS](https://www.zephyrproject.org/) for execution of model on hardware.
+The platform used in this example is the Analog Devices [MAX32690 Evaluation Kit](https://www.analog.com/en/resources/evaluation-hardware-and-software/evaluation-boards-kits/max32690evkit.html#eb-overview).
+This demo uses [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-zephyr-runtime) and [Zephyr RTOS](https://www.zephyrproject.org/) for execution of the model on hardware.
 
 ## Prepare an environment for development
 
-This example uses the pre-built Docker image from [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-zephyr-runtime).
+This example uses a pre-built Docker image from [Kenning Zephyr Runtime](https://github.com/antmicro/kenning-zephyr-runtime).
 To get started, create a Docker container with the necessary environment:
 
 ```bash
 docker run --rm -it -v $(pwd):$(pwd) -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
 ```
 
-Secondly, create a workspace directory in the container:
+Then, create a workspace directory in the container:
 
 ```bash
 mkdir -p zephyr-workspace && cd zephyr-workspace
 ```
 
-In case the MAX32690 Evaluation Kit is connected to the desktop PC using MAX32625PICO debugger, the Docker container needs to be started in privileged mode, with UART and ACM devices forwarded to it.
+In case the MAX32690 Evaluation Kit is connected to the desktop PC using a MAX32625PICO debugger, the Docker container needs to be started in privileged mode, with UART and ACM devices forwarded to it.
 Assuming that the programmer is available as `/dev/ttyACM0`, and UART as `/dev/ttyUSB0` in the currently running system, run:
 
 ```bash test-skip
 docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v $(pwd):$(pwd) -v /dev/serial/by-id/:/dev/serial/by-id/ -w $(pwd) ghcr.io/antmicro/kenning-zephyr-runtime:latest /bin/bash
 ```
 
-Then, in the Docker container clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:
+Then, in the Docker container, clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:
 
 ```bash
 git clone https://github.com/antmicro/kenning-zephyr-runtime -b stable
@@ -37,7 +37,7 @@ source .venv/bin/activate
 ```
 
 :::{note}
-Optionally, to use the newest Kenning - install it in the image and reload the virtual environment:
+Optionally, to use the latest Kenning version, install it in the image and reload the virtual environment:
 
 ```bash
 pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
@@ -45,10 +45,10 @@ source .venv/bin/activate
 ```
 :::
 
-An environment configured this way will allow working with Kenning and Zephyr RTOS.
+An environment configured this way will allow you to work with Kenning and Zephyr RTOS.
 For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#building-the-project).
 
-In the end, let's create a `workspace` directory, where intermediate results of further commands will be stored:
+Now create a `workspace` director where intermediate results of commands executed further will be stored:
 
 ```bash
 mkdir -p workspace
@@ -69,12 +69,12 @@ export PATH=/root/MaximSDK/Tools/OpenOCD/:$PATH
 ```
 
 Now follow along, answering prompts in the installation process.
-Once everything is installed successfully, it will be possible to flash the device with the evaluation app from Kenning Zephyr Runtime.
+Once everything is installed successfully, it will be possible to flash the device using the evaluation app from Kenning Zephyr Runtime.
 
 :::{note}
-During installation, the script may notify that it was unable to install libncurses5.
+During installation, the script may notify you that it was unable to install libncurses5.
 
-In such case, answer `Ignore` and proceed with the installation - it is not needed for this demo.
+In such a case, answer `Ignore` and proceed with the installation - it is not needed for this demo.
 :::
 
 ## Train the sample anomaly detection model (optional)
@@ -97,11 +97,11 @@ Once the environment is set up, the sample model can be trained.
 In this demo, a [Variational AutoEncoder (VAE)](https://en.wikipedia.org/wiki/Variational_autoencoder) will be used.
 In Kenning, there is a [PytorchAnomalyDetectionVAE](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/anomaly_detection/vae.py) `ModelWrapper` encapsulating the model.
 
-As for dataset, [Controlled Anomalies Time Series (CATS)](https://data.niaid.nih.gov/resources?id=zenodo_7646896) will be used.
+][Controlled Anomalies Time Series (CATS)](https://data.niaid.nih.gov/resources?id=zenodo_7646896) will be used for a dataset.
 It provides telemetry readings of a simulated complex dynamical system with external stimuli.
-It provides a nice set of time series for sensors with anomalies.
+It provides a representative set of time series for sensors with anomalies.
 
-The model can be trained with the following command:
+The model can be trained using the following command:
 
 ```bash
 kenning train test \
@@ -121,11 +121,11 @@ kenning train test \
 This command:
 
 * Downloads the CATS dataset from https://zenodo.org/records/8338435/files/data.csv (if it has not been downloaded yet)
-* Creates `AnomalyDetectionDataset` class with dataset data taken from the downloaded CSV
-* Creates `PyTorchAnomalyDetectionVAE` model wrapper encapsulating VAE model, providing necessary methods for input preprocessing, output postprocessing, model training and more
-* Trains the model using given batch size, learning rate, number of epochs and other exposed training parameters for the model
-* Evaluates the model in the end, providing evaluation results in `./workspace/vae-torch-native.json`
-* Saves trained model in `./vae_cats.pth` file.
+* Creates the `AnomalyDetectionDataset` class with dataset data taken from the downloaded CSV
+* Creates  the `PyTorchAnomalyDetectionVAE` model wrapper encapsulating the VAE model, providing necessary methods for input preprocessing, output postprocessing, model training and more
+* Trains the model using the provided batch size, learning rate, number of epochs and other exposed training parameters for the model
+* Evaluates the model at the end, providing evaluation results in `./workspace/vae-torch-native.json`
+* Saves the trained model as the `./vae_cats.pth` file.
 
 ## Deploy the VAE model with TensorFlow Lite Micro
 
@@ -141,8 +141,8 @@ Let's consider the following scenario:
 The scenario contents are as follows:
 
 * `platform` - specifies the target platform where the model will be deployed.
-  In this case the target platform is called `max32690evkit/max32690/m4`.
-  `simulated` boolean tells whether board should be simulated or not.
+  In this case, the target platform is called `max32690evkit/max32690/m4`.
+  `simulated` boolean tells whether the board should be simulated or not.
 * `model_wrapper` - provides a class that encapsulates necessary preprocessing and postprocessing functions for input and output data.
 * `dataset` - provides a class implementing methods around dataset management
 * `optimizers` - provides a list of optimizations that are used for optimizing and/or compiling the model.
@@ -156,9 +156,9 @@ kenning optimize --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.
 This scenario will create a `./workspace/vae_cats.tflite` file with an optimized model.
 
 Now, to test the model in simulation or an actual hardware, the evaluation app needs to be compiled.
-This can be done with `west build` command with `tflite.conf` configuration for the selected board.
+To do so, use the `west build` command with a `tflite.conf` configuration for the selected board.
 However, this will build TensorFlow Lite Micro runtime with a limited set of operators.
-To get the runtime with only necessary set of operators for a given model, it is possible to provide the model that was just created.
+To get the runtime with just the necessary set of operators for a given model, you can provide the model that was just created.
 
 To build the evaluation application, run:
 
@@ -168,7 +168,7 @@ west build -p always -b max32690evkit/max32690/m4 app -- \
       -DCONFIG_KENNING_MODEL_PATH=\"./workspace/vae_cats.tflite\"
 ```
 
-Once the model and evaluation app are ready, it is possible to simulate the board in Renode with:
+Once the model and evaluation app are ready, you can simulate the board in Renode with:
 
 ```bash
 kenning test --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml --measurements workspace/vae-tflite-renode.json --verbosity INFO
@@ -188,7 +188,7 @@ kenning report --measurements workspace/vae-tflite-renode.json --report-path rep
 ```
 
 Lastly, the model can be evaluated on actual MAX32690 Evaluation Kit.
-First, flash the board with an evaluation app:
+To do so, first flash the board with an evaluation app:
 
 ```bash test-skip
 /root/MaximSDK/Tools/OpenOCD/openocd \
@@ -201,7 +201,7 @@ First, flash the board with an evaluation app:
     -c 'shutdown'
 ```
 
-In the end, logs from the flashing process should look as follows to ensure successful flashing:
+Logs from the flashing process should look as follows to ensure successful flashing:
 
 ```
 Open On-Chip Debugger (Analog Devices 0.12.0-1.0.0-7)  OpenOCD 0.12.0 (2023-09-27-07:53)
@@ -237,10 +237,10 @@ Info : SWD DPIDR 0x2ba01477
 shutdown command invoked
 ```
 
-If `./build/zephyr/zephyr.hex` is successfully written to the device, the model can be tested directly on hardware platform.
+Once `./build/zephyr/zephyr.hex` is successfully written to the device, the model can be tested directly on hardware platform.
 
 In order to do so, set `simulated` to `false` in the `./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml` file.
-In the end, let's use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
+Finally, use a single-command approach, where `kenning test report` are invoked all at once (model is already compiled, hence lack of `optimize`):
 
 ```bash test-skip
 kenning test report --cfg ./kenning-scenarios/zephyr-tflite-vae-inference-max32690.yml \
@@ -253,20 +253,20 @@ The `workspace/vae-tflite-hw.json` will hold the collected performance and quali
 
 ## Deploy the VAE model with microTVM
 
-With microTVM, the deployment looks similar, similarly as the scenario.
-The only difference are used optimizers and runtimes:
+For microTVM, the deployment looks similar to the scenario above.
+The only difference are the optimizers and runtimes used:
 
 ```{literalinclude} ../scripts/configs/zephyr-tvm-vae-inference-max32690.yml
 :language: yaml
 ```
 
-To begin evaluation, run compilation of the evaluation app using microTVM as the runtime:
+To begin evaluation, compile the evaluation app using microTVM as the runtime:
 
 ```bash
 west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE='tvm.conf;boards/max32690evkit_max32690_m4.conf'
 ```
 
-After this, run:
+Then, run:
 
 ```bash
 kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
@@ -277,7 +277,7 @@ kenning optimize test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-
 
 This performs all actions at once - model optimization, model evaluation and report generation.
 
-To test the model on hardware, set `simulated` in the scenario to `false` and then flash the device with microTVM-based app:
+To test the model on hardware, set `simulated` in the scenario to `false` and then flash the device with the microTVM-based app:
 
 ```bash test-skip
 /root/MaximSDK/Tools/OpenOCD/openocd \
@@ -290,7 +290,7 @@ To test the model on hardware, set `simulated` in the scenario to `false` and th
     -c 'shutdown'
 ```
 
-And run testing on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
+Run tests on device (`optimize` is not necessary, since compilation was done before simulation in Renode):
 
 ```bash test-skip
 kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.yml \
@@ -301,9 +301,9 @@ kenning test report --cfg ./kenning-scenarios/zephyr-tvm-vae-inference-max32690.
 
 ## Comparing performance and quality of runtimes and models
 
-Having results for microTVM and TensorFlow Lite Micro runtimes, it is possible to generate comparison reports that will show the differences in performance and quality between the two.
+Based on the results for microTVM and TensorFlow Lite Micro runtimes, you can generate comparison reports that will show the differences in performance and quality between the two.
 
-To generate report for Renode simulations, run:
+To generate a report for Renode simulations, run:
 
 ```bash
 kenning report --measurements \
@@ -323,7 +323,7 @@ kenning report --measurements \
     --verbosity INFO
 ```
 
-The reports in HTML format will be available under:
+The reports in HTML format will be available here:
 
 * `reports/vae-tflite-tvm-comparison-renode/report/report.html`
 * `reports/vae-tflite-tvm-comparison-hw/report/report.html`

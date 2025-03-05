@@ -6,8 +6,9 @@
 
 /* Background for bokeh plots */
 .bk-Column, .bk-GridPlot, .bk-Figure {
-  width: 85vw;
-  margin: 10px;
+	width: 90vw;
+	max-width: 100%;
+	margin: 0;
 }
 
 .bk-Column {
@@ -78,4 +79,8 @@ div.bk-tooltip-custom {
 .md-typeset h1, .md-typeset h2, .md-typeset h3 {
   overflow: clip;
   text-overflow: ellipsis;
+}
+
+.md-typeset .figure.align-center, .md-typeset .figure.align-right, .md-typeset figure.align-center, .md-typeset figure.align-right, .md-typeset img.align-center, .md-typeset img.align-right, .md-typeset object.align-center, .md-typeset object.align-right {
+  margin: 0;
 }

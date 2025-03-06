@@ -24,7 +24,7 @@ from pipeline_manager_backend_communication.utils import (
 )
 
 from kenning.core.drawing import (
-    IMMATERIAL_COLORS,
+    KENNING_COLORS,
     RED_GREEN_CMAP,
     SERVIS_PLOT_OPTIONS,
     choose_theme,
@@ -517,9 +517,9 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                 skip_unoptimized_model=True,
                 report_types=None,
             )
-            SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
+            SERVIS_PLOT_OPTIONS["colormap"] = KENNING_COLORS
             cmap = RED_GREEN_CMAP
-            colors = IMMATERIAL_COLORS
+            colors = KENNING_COLORS
             output_path = self.output_file_path.parent / "report"
             output_path_html = self.output_file_path.parent / "report_html"
             if not output_path.exists():

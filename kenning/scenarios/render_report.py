@@ -2460,7 +2460,7 @@ class RenderReport(CommandTemplate):
     @staticmethod
     def run(args, **kwargs):
         from kenning.core.drawing import (
-            IMMATERIAL_COLORS,
+            KENNING_COLORS,
             RED_GREEN_CMAP,
             SERVIS_PLOT_OPTIONS,
             choose_theme,
@@ -2533,9 +2533,9 @@ class RenderReport(CommandTemplate):
         if report_name is None:
             report_name = deduce_report_name(measurementsdata, report_types)
 
-        SERVIS_PLOT_OPTIONS["colormap"] = IMMATERIAL_COLORS
+        SERVIS_PLOT_OPTIONS["colormap"] = KENNING_COLORS
         cmap = RED_GREEN_CMAP
-        colors = IMMATERIAL_COLORS
+        colors = KENNING_COLORS
 
         with choose_theme(
             custom_bokeh_theme=True,

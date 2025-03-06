@@ -77,21 +77,15 @@ RED_GREEN_CMAP = ListedColormap(
     cmap_values.tolist(), name="red_green_colormap"
 )
 
-IMMATERIAL_COLORS = [
-    "#ef5552",  # red
-    # "#e92063",  # pink
-    "#ab47bd",  # purple
-    "#4051b5",  # indigo
-    "#00bdd6",  # cyan
-    "#4cae4f",  # green
-    # "#ffec3d",  # yellow
-    "#ffa724",  # orange
-    "#795649",  # brown
-    "#2094f3",  # blue
-    "#009485",  # teal
-    "#cbdc38",  # lime
-    "#7e56c2",  # deep-purple
-    "#546d78",  # deep-blue
+KENNING_COLORS = [
+    "#00E58D",  # gree500
+    "#0093E5",  # blue500
+    "#E56000",  # orange500
+    "#007F8C",  # teal500
+    "#159500",  # lime500
+    "#DE1135",  # red500
+    "#9E1FDA",  # purple500
+    "#E59700",  # yellow500
 ]
 
 

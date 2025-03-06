@@ -5,3 +5,7 @@
 """
 Module containing additional components for AutoPyTorch framework.
 """
+
+import warnings
+
+warnings.simplefilter(action="ignore", category=UserWarning)

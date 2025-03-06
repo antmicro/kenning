@@ -248,7 +248,9 @@ class TensorFlowPetDatasetMobileNetV2(TensorFlowWrapper):
         )
 
         self.model.compile(
-            optimizer=tf.keras.optimizers.Adam(lr=self.learning_rate),
+            optimizer=tf.keras.optimizers.Adam(
+                learning_rate=self.learning_rate
+            ),
             loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True),
             metrics=[tf.keras.metrics.CategoricalAccuracy()],
         )

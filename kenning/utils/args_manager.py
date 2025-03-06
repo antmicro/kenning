@@ -5,6 +5,7 @@
 """
 Module for preparing and serializing class arguments.
 """
+from __future__ import annotations
 
 import argparse
 import json
@@ -14,6 +15,7 @@ from functools import partial
 from pathlib import Path
 from types import UnionType
 from typing import (
+    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -31,6 +33,9 @@ import jsonschema
 import numpy as np
 
 from kenning.utils.logger import KLogger
+
+if TYPE_CHECKING:
+    from kenning.utils.class_loader import ConfigKey
 from kenning.utils.resource_manager import ResourceURI
 
 """
@@ -122,6 +127,28 @@ def to_argparse_name(s: str) -> str:
     return "--" + s.replace("_", "-")
 
 
+def to_namespace_name(s: ConfigKey) -> str:
+    """
+    Converts class key to the name that is stored in the
+    ``argparse.Namespace``.
+
+    Parameters
+    ----------
+    s : ConfigKey
+        Configuration key of the class.
+
+    Returns
+    -------
+    str
+        Name of the attribute in the namespace.
+    """
+    from kenning.utils.class_loader import ConfigKey
+
+    if s == ConfigKey.optimizers:
+        return "compiler_cls"
+    return s.name.replace("_", "") + "_cls"
+
+
 def convert_to_jsontype(v: Any) -> Any:
     """
     Converts entry to JSON-like format.
@@ -188,9 +215,7 @@ def ensure_exclusive_cfg_or_flags(
             if not flag_config_not_none[i]
         ]
         if missing_args and not args.help:
-            raise argparse.ArgumentError(
-                None, f"missing required arguments: {', '.join(missing_args)}"
-            )
+            report_missing(missing_args)
 
     if args.json_cfg is not None and any(flag_config_not_none):
         raise argparse.ArgumentError(
@@ -198,6 +223,25 @@ def ensure_exclusive_cfg_or_flags(
             "JSON and flag configurations are mutually exclusive. "
             "Please use only one method of configuration.",
         )
+
+
+def report_missing(names: List[str]):
+    """
+    Reports missing arguments given their names.
+
+    Parameters
+    ----------
+    names : List[str]
+        Names of the arguments to report.
+
+    Raises
+    ------
+    argparse.ArgumentError
+        Always raised.
+    """
+    raise argparse.ArgumentError(
+        None, f"missing required arguments: {', '.join(names)}"
+    )
 
 
 type_to_jsontype = {

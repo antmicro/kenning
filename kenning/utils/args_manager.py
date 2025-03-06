@@ -366,7 +366,7 @@ def add_argparse_argument(
     struct : Dict[str, Dict]
         Struct with properties described.
     args : argparse.Namespace
-        Arguments from ArgumentParser object
+        Arguments from ArgumentParser object.
     *names : str
         Names of the properties that are to be added to the group.
         If empty every property in struct is used.
@@ -578,7 +578,7 @@ class ArgumentsHandler(ABC):
         Parameters
         ----------
         args : argparse.Namespace
-            Arguments from ArgumentParser object
+            Arguments from ArgumentParser object.
 
         Returns
         -------

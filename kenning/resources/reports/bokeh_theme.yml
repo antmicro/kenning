@@ -24,4 +24,6 @@ attrs:
     label_text_color: *text_color
     label_text_font_style: "normal"
     border_line_alpha: 0.0
+  Label:
+    text_color: *text_color
 

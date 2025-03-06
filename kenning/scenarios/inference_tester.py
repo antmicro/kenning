@@ -38,7 +38,7 @@ compilation and benchmark process.
 import argparse
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Type
 
 import yaml
 from argcomplete.completers import FilesCompleter
@@ -66,11 +66,12 @@ from kenning.cli.completers import (
     ClassPathCompleter,
 )
 from kenning.core.measurements import MeasurementsCollector
-from kenning.dataconverters.modelwrapper_dataconverter import (
-    ModelWrapperDataConverter,
-)
 from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
-from kenning.utils.class_loader import get_command, load_class
+from kenning.utils.class_loader import (
+    ConfigKey,
+    get_command,
+    objs_from_argparse,
+)
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import (
     PipelineRunner,
@@ -297,87 +298,30 @@ class InferenceTester(CommandTemplate):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        platformcls = (
-            load_class(args.platform_cls) if args.platform_cls else None
-        )
-        modelwrappercls = (
-            load_class(args.modelwrapper_cls)
-            if args.modelwrapper_cls
-            else None
-        )
-        datasetcls = (
-            load_class(args.dataset_cls)
-            if getattr(args, "dataset_cls", None)
-            else None
-        )
-        runtimecls = (
-            load_class(args.runtime_cls)
-            if getattr(args, "runtime_cls", None)
-            else None
-        )
-        compilercls = (
-            load_class(args.compiler_cls)
-            if getattr(args, "compiler_cls", None)
-            else None
-        )
-        protocolcls = (
-            load_class(args.protocol_cls)
-            if getattr(args, "protocol_cls", None)
-            else None
+        keys = [
+            ConfigKey.platform,
+            ConfigKey.model_wrapper,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+            ConfigKey.optimizers,
+            ConfigKey.protocol,
+        ]
+
+        def required(objs: Dict[ConfigKey, Type]):
+            compilercls = objs.get(ConfigKey.optimizers)
+            protocolcls = objs.get(ConfigKey.protocol)
+            runtimecls = objs.get(ConfigKey.runtime)
+            if not compilercls and (protocolcls and not runtimecls):
+                raise argparse.ArgumentError(
+                    None,
+                    "'--protocol-cls' requires '--runtime-cls' to be defined",
+                )
+
+        objs = objs_from_argparse(
+            args, not_parsed, set(keys), required=required
         )
 
-        if not compilercls and (protocolcls and not runtimecls):
-            raise argparse.ArgumentError(
-                None, "'--protocol-cls' requires '--runtime-cls' to be defined"
-            )
-
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
-            + "\n",
-            parents=[]
-            + ([platformcls.form_argparse(args)[0]] if platformcls else [])
-            + (
-                [modelwrappercls.form_argparse(args)[0]]
-                if modelwrappercls
-                else []
-            )
-            + ([datasetcls.form_argparse(args)[0]] if datasetcls else [])
-            + ([runtimecls.form_argparse(args)[0]] if runtimecls else [])
-            + ([compilercls.form_argparse(args)[0]] if compilercls else [])
-            + ([protocolcls.form_argparse(args)[0]] if protocolcls else []),
-            add_help=False,
-        )
-
-        if args.help:
-            raise ParserHelpException(parser)
-        args = parser.parse_args(not_parsed, namespace=args)
-
-        platform = platformcls.from_argparse(args) if platformcls else None
-        dataset = datasetcls.from_argparse(args) if datasetcls else None
-        model = (
-            modelwrappercls.from_argparse(dataset, args)
-            if modelwrappercls
-            else None
-        )
-        optimizers = (
-            [compilercls.from_argparse(dataset, args)] if compilercls else []
-        )
-        protocol = protocolcls.from_argparse(args) if protocolcls else None
-        runtime = runtimecls.from_argparse(args) if runtimecls else None
-
-        # TODO: This is a temporal solution, in future dataconverter
-        # should be parsed separately
-        dataconverter = ModelWrapperDataConverter(model)
-
-        pipeline_runner = PipelineRunner(
-            platform=platform,
-            dataset=dataset,
-            dataconverter=dataconverter,
-            optimizers=optimizers,
-            runtime=runtime,
-            protocol=protocol,
-            model_wrapper=model,
-        )
+        pipeline_runner = PipelineRunner.from_objs_dict(objs)
 
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner

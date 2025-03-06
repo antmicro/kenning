@@ -61,7 +61,7 @@ def main():
 
     # Parse subcommands and help
     args, rem = parser.parse_known_args(sys.argv[1:i])
-    if sys.argv[1] != LIST:
+    if len(sys.argv) > 1 and sys.argv[1] != LIST:
         # skip parsing the rest for the "list" command
         args, rem = parser.parse_known_args(args=rem, namespace=args)
         rem += sys.argv[i:]

@@ -55,8 +55,14 @@ from kenning.utils.resource_manager import ResourceURI
 FILE_CONFIG = "Server configuration with JSON/YAML file"
 FLAG_CONFIG = "Server configuration with flags"
 ARGS_GROUPS = {
-    FILE_CONFIG: f"Configuration with data defined in JSON/YAML file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required",  # noqa: E501
-    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{FILE_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+    FILE_CONFIG: (
+        "Configuration with data defined in JSON/YAML file. This section is "
+        f"not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required"
+    ),
+    FLAG_CONFIG: (
+        "Configuration with flags. This section is not compatible with "
+        f"'{FILE_CONFIG}'. Arguments with '*' are required."
+    ),
 }
 
 

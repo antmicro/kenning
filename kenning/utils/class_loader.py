@@ -7,14 +7,16 @@ Provides methods for importing classes and modules at runtime based on string.
 """
 
 import abc
+import argparse
 import ast
 import importlib
 import inspect
 import sys
 from enum import Enum
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, Type, Union
+from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
 
+from kenning.cli.parser import ParserHelpException
 from kenning.core.automl import AutoML
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataprovider import DataProvider
@@ -28,6 +30,7 @@ from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
+from kenning.utils.args_manager import to_namespace_name
 from kenning.utils.logger import KLogger
 
 OPTIMIZERS = "optimizers"
@@ -60,6 +63,7 @@ class ConfigKey(str, Enum):
     protocol = RUNTIME_PROTOCOLS
     model_wrapper = MODEL_WRAPPERS
     runtime_builder = RUNTIME_BUILDERS
+    dataconverter = DATA_CONVERTERS
     automl = AUTOML
 
 
@@ -242,6 +246,204 @@ def get_all_subclasses(
         result.sort(key=lambda c: c.__name__)
 
     return result
+
+
+def objs_from_json(
+    json_cfg: Dict[str, Any],
+    keys: Set[ConfigKey],
+    override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
+) -> Dict[ConfigKey, Any]:
+    """
+    Loads the objects from configuration, specified by keys.
+
+    Parameters
+    ----------
+    json_cfg : Dict[str, Any]
+        A JSON object containing entire configuration, from which the class is
+        retrieved.
+    keys : Set[ConfigKey]
+        Keys that correspond to classes of objects that should be loaded.
+    override : Optional[Tuple[argparse.Namespace, List[str]]]
+        If not none, arguments will be used to override config parameters.
+
+    Returns
+    -------
+    Dict[ConfigKey, Any]
+        Parsed parameters.
+    """
+    objs = {
+        key: obj_from_json(json_cfg, key)
+        for key in set(
+            [
+                ConfigKey.platform,
+                ConfigKey.protocol,
+                ConfigKey.dataset,
+                ConfigKey.runtime,
+                ConfigKey.runtime_builder,
+            ]
+        ).intersection(keys)
+    }
+
+    dataset = objs.get(ConfigKey.dataset)
+
+    if ConfigKey.model_wrapper in keys:
+        objs[ConfigKey.model_wrapper] = obj_from_json(
+            json_cfg, ConfigKey.model_wrapper, dataset=dataset
+        )
+
+    if ConfigKey.dataconverter in keys:
+        objs[ConfigKey.dataconverter] = any_from_json(
+            json_cfg.get(ConfigKey.runtime.name, {}).get("data_converted", {}),
+            block_type="dataconverters",
+        )
+
+    if ConfigKey.optimizers in keys:
+        objs[ConfigKey.optimizers] = [
+            any_from_json(
+                optimizer_cfg,
+                block_type=ConfigKey.optimizers.value,
+                dataset=dataset,
+            )
+            for optimizer_cfg in json_cfg.get(
+                ConfigKey.optimizers.name,
+                [],
+            )
+        ]
+    else:
+        objs[ConfigKey.optimizers] = []
+
+    return objs
+
+
+def objs_from_argparse(
+    args: argparse.Namespace,
+    not_parsed: List[str],
+    keys: Set[ConfigKey],
+    required: Optional[Callable[[Dict[ConfigKey, Any]], Any]] = None,
+) -> Dict[ConfigKey, Any]:
+    """
+    Parses objects from arguments, specified by keys.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Initial namespace.
+    not_parsed : List[str]
+        Remaining arguments.
+    keys : Set[ConfigKey]
+        Keys that correspond to classes of objects that should be loaded.
+    required : Optional[Callable[[Dict[ConfigKey, Any]], Any]]
+        Callback that verifies used classes.
+
+    Returns
+    -------
+    Dict[ConfigKey, Any]
+        Parsed objects.
+    """
+    classes = {
+        key: cls
+        for key in keys
+        if (class_arg := getattr(args, to_namespace_name(key), None))
+        if (cls := load_class(class_arg))
+    }
+
+    if required:
+        required(classes)
+
+    args = parse_classes(list(classes.values()), args, not_parsed)
+
+    objs = {
+        key: cls.from_argparse(args)
+        for key, cls in classes.items()
+        if key
+        in [
+            ConfigKey.platform,
+            ConfigKey.protocol,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+        ]
+    }
+
+    dataset = objs.get(ConfigKey.dataset)
+
+    if modelwrappercls := classes.get(ConfigKey.model_wrapper):
+        objs[ConfigKey.model_wrapper] = (
+            modelwrappercls.from_argparse(dataset, args)
+            if modelwrappercls
+            else None
+        )
+
+    # TODO: This is a temporal solution, in future dataconverter
+    # should be parsed separately
+    if model := objs.get(ConfigKey.model_wrapper):
+        from kenning.dataconverters.modelwrapper_dataconverter import (
+            ModelWrapperDataConverter,
+        )
+
+        objs[ConfigKey.dataconverter] = ModelWrapperDataConverter(model)
+
+    if compilercls := classes.get(ConfigKey.optimizers):
+        objs[ConfigKey.optimizers] = [compilercls.from_argparse(dataset, args)]
+    else:
+        objs[ConfigKey.optimizers] = []
+
+    return objs
+
+
+def parse_classes(
+    classes: List[Type],
+    args: argparse.Namespace,
+    not_parsed: List[str],
+    override_only: bool = False,
+) -> argparse.Namespace:
+    """
+    Parses remaining arguments from class definitions determined by
+    ``form_argparse`` into ``argparse.Namespace``.
+
+    Parameters
+    ----------
+    classes: List[Type]
+        Classes to load.
+    args : argparse.Namespace
+        Initial namespace.
+    not_parsed : List[str]
+        Remaining arguments.
+    override_only : bool
+        True if ``overridable`` parameters should be parsed.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed class parameters.
+
+    Raises
+    ------
+    ParserHelpException
+        Raised when help is requested in arguments.
+    argparse.ArgumentParser
+        Raised when report types cannot be deduced from measurements data.
+    """
+    command = get_command(with_slash=False)
+    parser = argparse.ArgumentParser(
+        " ".join(map(lambda x: x.strip(), command)) + "\n",
+        parents=[
+            cls.form_argparse(args, override_only=override_only)[0]
+            for cls in classes
+        ],
+        add_help=False,
+    )
+
+    if args.help:
+        raise ParserHelpException(parser)
+
+    args, not_parsed = parser.parse_known_args(not_parsed, namespace=args)
+
+    if not_parsed:
+        raise argparse.ArgumentError(
+            None, f"unrecognized arguments: {' '.join(not_parsed)}"
+        )
+
+    return args
 
 
 def obj_from_json(

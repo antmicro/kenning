@@ -153,8 +153,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "default": None,
             "subcommands": [TRAIN],
         },
-        "eval": {
-            "argparse_name": "--eval",
+        "evaluate": {
+            "argparse_name": "--evaluate",
             "description": "True if the model should be evaluated each epoch",
             "type": bool,
             "default": True,
@@ -183,7 +183,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         batch_size: Optional[int] = None,
         learning_rate: Optional[float] = None,
         num_epochs: Optional[int] = None,
-        eval: bool = True,
+        evaluate: bool = True,
     ):
         """
         Creates the model wrapper with VAE.
@@ -225,8 +225,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             Learning rate for training.
         num_epochs : Optional[int]
             Number of epochs to train for.
-        eval : bool
-            True if the model should be evaluated each epoch
+        evaluate : bool
+            True if the model should be evaluated each epoch.
         """
         super().__init__(model_path, dataset, from_file, model_name)
 
@@ -243,7 +243,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         self.batch_size = batch_size
         self.learning_rate = learning_rate
         self.num_epochs = num_epochs
-        self.eval = eval
+        self.evaluate = evaluate
 
         if dataset:
             self.mean, self.std = self.dataset.get_input_mean_std()
@@ -421,7 +421,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
                 f"Epoch {epoch + 1}/{self.num_epochs} - mean_loss: {mean_loss}"
             )
 
-            if self.eval or epoch == self.num_epochs - 1:
+            if self.evaluate or epoch == self.num_epochs - 1:
                 self.model.reparameterize = default_reparameterize
                 self.model.eval()
                 # Calibrate threshold

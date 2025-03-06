@@ -759,11 +759,11 @@ class RadarChart(Plot):
                 )
             )
 
-        sorted_metric_data = list(self.metric_data.items())
-        sorted_metric_data.sort(key=lambda m: sum(m[1]), reverse=True)
+        sorted_metric_data = list(enumerate(self.metric_data.items()))
+        sorted_metric_data.sort(key=lambda m: sum(m[1][1]), reverse=True)
 
         legend_items = {name: [] for name in self.metric_data.keys()}
-        for i, (sample_name, samples) in enumerate(sorted_metric_data):
+        for color_id, (sample_name, samples) in sorted_metric_data:
             x = []
             y = []
             for j, sample in enumerate(samples):
@@ -781,9 +781,9 @@ class RadarChart(Plot):
                 Patch(
                     x="x",
                     y="y",
-                    fill_color=self.colors[i],
+                    fill_color=self.colors[color_id],
                     fill_alpha=0.5,
-                    line_color=self.colors[i],
+                    line_color=self.colors[color_id],
                 ),
             )
             radar_fig.add_tools(

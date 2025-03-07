@@ -10,7 +10,7 @@ import argparse
 import json
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
@@ -21,7 +21,7 @@ except ImportError:
 
 from kenning.core.automl import AutoML
 from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import ConfigKey, obj_from_json, objs_from_json
+from kenning.utils.class_loader import ConfigKey, objs_from_json
 from kenning.utils.logger import KLogger
 
 
@@ -61,21 +61,20 @@ class AutoMLRunner(object):
         cfg: Dict,
         override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
     ):
-        keys = [ConfigKey.dataset, ConfigKey.platform, ConfigKey.optimizers]
+        keys = set([ConfigKey.automl, ConfigKey.dataset, ConfigKey.platform])
+        objs = objs_from_json(cfg, keys, override=override)
+        return cls.from_objs_dict(objs, pipeline_config=cfg)
 
-        objs = objs_from_json(cfg, set(keys), override)
-        autoML = obj_from_json(
-            cfg,
-            ConfigKey.automl,
-            dataset=objs[ConfigKey.dataset],
-            platform=objs[ConfigKey.platform],
-            optimizers=objs[ConfigKey.optimizers],
-        )
-
+    @classmethod
+    def from_objs_dict(
+        cls,
+        objs: Dict[ConfigKey, Any],
+        pipeline_config: Dict[str, Any],
+    ):
         return cls(
             dataset=objs[ConfigKey.dataset],
-            autoML=autoML,
-            pipeline_config=cfg,
+            autoML=objs[ConfigKey.automl],
+            pipeline_config=pipeline_config,
         )
 
     def run(self, verbosity: str = "INFO") -> Iterable[Tuple[Path, Dict]]:

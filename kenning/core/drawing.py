@@ -43,6 +43,7 @@ else:
 
 
 BOKEH_THEME_FILE = path(reports, "bokeh_theme.yml")
+BOKEH_PLOT_WIDTH = 90  # in viewport width (vw)
 MATPLOTLIB_THEME_FILE = path(reports, "matplotlib_theme_rc")
 MATPLOTLIB_DPI = 120
 DEFAULT_PLOT_SIZE = 1000
@@ -852,9 +853,9 @@ class RadarChart(Plot):
         )
         radar_fig.add_layout(legend, "below")
 
-        radar_fig = column(radar_fig, sizing_mode="stretch_width")
-        radar_fig.max_width = self.width
-        self._output_bokeh_figure(radar_fig, output_path, output_formats)
+        final_fig = column(radar_fig, sizing_mode="stretch_width")
+        final_fig.max_width = self.width
+        self._output_bokeh_figure(final_fig, output_path, output_formats)
 
 
 class BubblePlot(Plot):
@@ -1453,6 +1454,11 @@ class ConfusionMatrixPlot(Plot):
         )
         from bokeh.plotting import figure
 
+        matrix_css_sizes = {
+            "width": f"{BOKEH_PLOT_WIDTH // 2}vw",
+            "height": f"{BOKEH_PLOT_WIDTH // 2}vw",
+            "margin": "10px",
+        }
         margins = (0, 20, 0, 10)
 
         # Prepare figure
@@ -1470,8 +1476,9 @@ class ConfusionMatrixPlot(Plot):
             x_axis_location="above",
             output_backend="webgl",
             sizing_mode="scale_both",
-            css_classes=["plot", "confusion-matrix", "square"],
+            css_classes=["plot", "confusion-matrix"],
             margin=margins,
+            styles=matrix_css_sizes,
         )
 
         # Preprocess data
@@ -1540,7 +1547,7 @@ class ConfusionMatrixPlot(Plot):
             output_backend="webgl",
             sizing_mode="scale_both",
             margin=margins,
-            css_classes=["square"],
+            styles=matrix_css_sizes,
         )
 
         # Preprocess data
@@ -1592,7 +1599,7 @@ class ConfusionMatrixPlot(Plot):
             sizing_mode="scale_both",
             margin=margins,
             match_aspect=True,
-            css_classes=["square"],
+            styles=matrix_css_sizes,
         )
 
         # Preprocess data
@@ -1640,7 +1647,8 @@ class ConfusionMatrixPlot(Plot):
             sizing_mode="scale_both",
             margin=margins,
             toolbar_location=None,
-            css_classes=["plot", "square"],
+            css_classes=["plot"],
+            styles=matrix_css_sizes,
         )
 
         # Preprocess data
@@ -1728,10 +1736,8 @@ class ConfusionMatrixPlot(Plot):
 
         grid_fig = gridplot(
             [
-                [confusion_matrix_fig],
-                [precision_fig],
-                [accuracy_fig],
-                [sensitivity_fig],
+                [confusion_matrix_fig, precision_fig],
+                [accuracy_fig, sensitivity_fig],
                 [scale_fig],
             ],
             merge_tools=True,
@@ -2498,11 +2504,11 @@ class LinePlot(Plot):
                 for legend in legends
             ]
 
-            plot_fig = column(
+            final_plot = column(
                 children=[plot_fig, legend_fig], sizing_mode="scale_both"
             )
 
-        self._output_bokeh_figure(plot_fig, output_path, output_formats)
+        self._output_bokeh_figure(final_plot, output_path, output_formats)
 
 
 class Barplot(Plot):

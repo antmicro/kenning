@@ -3,17 +3,24 @@
 # SPDX-License-Identifier: Apache-2.0
 
 import abc
+import argparse
 import inspect
+from contextlib import nullcontext as does_not_raise
+from typing import Any, ContextManager, Dict, List, Set
+from unittest.mock import patch
 
 import pytest
 
 import kenning.datasets.pet_dataset
 from kenning.utils.class_loader import (
+    ConfigKey,
     get_all_subclasses,
     get_base_classes_dict,
     get_command,
     get_kenning_submodule_from_path,
     load_class,
+    merge_argparse_and_json,
+    objs_from_argparse,
 )
 
 
@@ -46,6 +53,98 @@ class TestLoadClass:
         with pytest.raises(ModuleNotFoundError) as execinfo:
             load_class("kenning.datasets.pet_dataset.....PetDataset")
         assert error_message in str(execinfo.value)
+
+
+@pytest.mark.fast
+class TestObjFrom:
+    @staticmethod
+    def json_cfg_simulated():
+        return {
+            "platform": {
+                "type": "ZephyrPlatform",
+                "parameters": {
+                    "name": "max32690evkit/max32690/m4",
+                    "simulated": True,
+                    "zephyr_build_path": "./build/",
+                    "uart_port": "/dev/ttyUSB0",
+                },
+            },
+        }
+
+    @staticmethod
+    def json_cfg_not_simulated():
+        return {
+            "platform": {
+                "type": "ZephyrPlatform",
+                "parameters": {
+                    "name": "max32690evkit/max32690/m4",
+                    "simulated": False,
+                    "zephyr_build_path": "./build/",
+                    "uart_port": "/dev/ttyUSB0",
+                },
+            },
+        }
+
+    @pytest.mark.parametrize(
+        "keys,json_cfg,expected_cfg,not_parsed,exec_expectation",
+        [
+            (
+                set([ConfigKey.platform]),
+                json_cfg_simulated(),
+                json_cfg_not_simulated(),
+                ["--no-simulated"],
+                does_not_raise(),
+            ),
+            (
+                set([ConfigKey.platform, ConfigKey.dataset]),
+                json_cfg_not_simulated(),
+                json_cfg_simulated(),
+                ["--simulated"],
+                does_not_raise(),
+            ),
+            (
+                set(),
+                json_cfg_simulated(),
+                json_cfg_simulated(),
+                ["--no-simulated"],
+                pytest.raises(argparse.ArgumentError),
+            ),
+            (
+                set([ConfigKey.platform]),
+                json_cfg_simulated(),
+                json_cfg_simulated(),
+                [],
+                does_not_raise(),
+            ),
+        ],
+    )
+    def test_merge_argparse_and_json(
+        self,
+        keys: Set[ConfigKey],
+        json_cfg: Dict[str, Any],
+        expected_cfg: Dict[str, Any],
+        not_parsed: List[str],
+        exec_expectation: ContextManager,
+    ):
+        with patch("kenning.utils.class_loader.get_command") as mock:
+            mock.return_value = "kenning"
+            with exec_expectation:
+                merge_argparse_and_json(
+                    keys, json_cfg, argparse.Namespace(help=None), not_parsed
+                )
+                assert json_cfg == expected_cfg
+
+    def test_objs_from_argparse_callback(self):
+        def required(_):
+            raise RuntimeError
+
+        with pytest.raises(RuntimeError):
+            objs_from_argparse(
+                args=argparse.Namespace(),
+                not_parsed=[],
+                keys=set(),
+                required=required,
+            )
 
 
 @pytest.mark.fast

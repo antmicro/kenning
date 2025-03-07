@@ -511,6 +511,14 @@ class InferenceServerRunner(CommandTemplate):
         KLogger.info("Starting server...")
         server.run()
 
+    @staticmethod
+    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
+        return [
+            ConfigKey.runtime,
+            ConfigKey.protocol,
+            ConfigKey.platform,
+        ]
+
 
 if __name__ == "__main__":
     sys.exit(InferenceServerRunner.scenario_run())

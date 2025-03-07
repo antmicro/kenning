@@ -432,6 +432,27 @@ class InferenceTester(CommandTemplate):
             return 1
         return ret
 
+    @staticmethod
+    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
+        if TRAIN in subcommands:
+            return []
+
+        classes = [
+            ConfigKey.platform,
+            ConfigKey.model_wrapper,
+            ConfigKey.dataset,
+        ]
+
+        if TEST in subcommands:
+            classes.extend(
+                [
+                    ConfigKey.runtime,
+                    ConfigKey.protocol,
+                ]
+            )
+
+        return classes
+
 
 if __name__ == "__main__":
     sys.exit(InferenceTester.scenario_run())

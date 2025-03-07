@@ -17,7 +17,7 @@ import argparse
 import os
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Type, Union
 
 import yaml
 
@@ -31,11 +31,6 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.completers import (
     AUTOML,
-    DATASETS,
-    OPTIMIZERS,
-    PLATFORMS,
-    RUNTIME_PROTOCOLS,
-    RUNTIMES,
     ClassPathCompleter,
 )
 from kenning.core.automl import AutoML
@@ -48,7 +43,7 @@ from kenning.utils.automl_runner import AutoMLRunner
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
-    load_class_by_type,
+    objs_from_argparse,
 )
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
@@ -217,7 +212,9 @@ class AutoMLCommand(InferenceTester):
         with open(args.json_cfg, "r") as f:
             cfg = yaml.safe_load(f)
 
-        automl_runner = AutoMLRunner.from_json_cfg(cfg)
+        automl_runner = AutoMLRunner.from_json_cfg(
+            cfg, override=(args, not_parsed)
+        )
         return AutoMLCommand._run_pipeline(args, command, automl_runner)
 
     @staticmethod
@@ -227,82 +224,49 @@ class AutoMLCommand(InferenceTester):
         not_parsed: List[str] = [],
         **kwargs,
     ):
-        automlcls = load_class_by_type(
-            getattr(args, "automl_cls", None), AUTOML
-        )
-        platformcls = load_class_by_type(
-            getattr(args, "platform_cls", None), PLATFORMS
-        )
-        datasetcls = load_class_by_type(
-            getattr(args, "dataset_cls", None), DATASETS
-        )
-        runtimecls = load_class_by_type(
-            getattr(args, "runtime_cls", None), RUNTIMES
-        )
-        compilercls = load_class_by_type(
-            getattr(args, "compiler_cls", None), OPTIMIZERS
-        )
-        protocolcls = load_class_by_type(
-            getattr(args, "protocol_cls", None), RUNTIME_PROTOCOLS
-        )
+        keys = [
+            ConfigKey.automl,
+            ConfigKey.platform,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+            ConfigKey.optimizers,
+            ConfigKey.protocol,
+        ]
 
-        if not compilercls and (protocolcls and not runtimecls):
-            raise argparse.ArgumentError(
-                None, "'--protocol-cls' requires '--runtime-cls' to be defined"
-            )
-
-        parser = argparse.ArgumentParser(
-            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
-            + "\n",
-            parents=[
-                cls.form_argparse(args)[0]
-                for cls in (
-                    automlcls,
-                    datasetcls,
-                    runtimecls,
-                    compilercls,
-                    protocolcls,
-                    platformcls,
+        def required(objs: Dict[ConfigKey, Type]):
+            compilercls = objs.get(ConfigKey.optimizers)
+            protocolcls = objs.get(ConfigKey.protocol)
+            runtimecls = objs.get(ConfigKey.runtime)
+            if not compilercls and (protocolcls and not runtimecls):
+                raise argparse.ArgumentError(
+                    None,
+                    "'--protocol-cls' requires '--runtime-cls' to be defined",
                 )
-                if cls
-            ],
-            add_help=False,
-        )
 
-        if args.help:
-            raise ParserHelpException(parser)
-        args = parser.parse_args(not_parsed, namespace=args)
-        platform = platformcls.from_argparse(args) if platformcls else None
-        dataset = datasetcls.from_argparse(args) if datasetcls else None
-        automl = (
-            automlcls.from_argparse(dataset, platform, args)
-            if automlcls
-            else None
+        objs = objs_from_argparse(
+            args, not_parsed, set(keys), required=required
         )
-        optimizers = (
-            [compilercls.from_argparse(dataset, args)] if compilercls else []
-        )
-        protocol = protocolcls.from_argparse(args) if protocolcls else None
-        runtime = runtimecls.from_argparse(args) if runtimecls else None
 
         conf = {
             key.name: obj.to_json()
-            for key, obj in (
-                (ConfigKey.platform, platform),
-                (ConfigKey.dataset, dataset),
-                (ConfigKey.automl, automl),
-                (ConfigKey.runtime, runtime),
-                (ConfigKey.protocol, protocol),
+            for key in (
+                ConfigKey.automl,
+                ConfigKey.platform,
+                ConfigKey.dataset,
+                ConfigKey.runtime,
+                ConfigKey.protocol,
             )
-            if obj
+            if (obj := objs.get(key))
         }
-        conf[ConfigKey.optimizers.name] = [opt.to_json() for opt in optimizers]
-        automl_runner = AutoMLRunner(
-            dataset=dataset,
-            autoML=automl,
-            pipeline_config=conf,
+        conf[ConfigKey.optimizers.name] = [
+            opt.to_json() for opt in objs[ConfigKey.optimizers]
+        ]
+
+        return AutoMLCommand._run_pipeline(
+            args,
+            command,
+            AutoMLRunner.from_objs_dict(objs, pipeline_config=conf),
         )
-        return AutoMLCommand._run_pipeline(args, command, automl_runner)
 
     @staticmethod
     def _run_pipeline(

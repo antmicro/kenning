@@ -15,10 +15,11 @@ from argcomplete.finders import CompletionFinder
 
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
+    MAP_COMMAND_TO_SCENARIO,
     USED_SUBCOMMANDS,
     setup_base_parser,
 )
-from kenning.utils.class_loader import ConfigKey, load_class, load_class_by_key
+from kenning.utils.class_loader import load_class, load_class_by_key
 
 # Subcommands without help
 ALL_SUBCOMMANDS = AVAILABLE_COMMANDS[:-2]
@@ -30,13 +31,6 @@ CLASS_FLAG_NAMES = (
     "dataset_cls",
     "compiler_cls",
     "platform_cls",
-)
-CLASS_JSON_KEYS = (
-    ConfigKey.model_wrapper,
-    ConfigKey.protocol,
-    ConfigKey.runtime,
-    ConfigKey.dataset,
-    ConfigKey.platform,
 )
 
 
@@ -81,9 +75,17 @@ class CustomCompletion(CompletionFinder):
                 except yaml.YAMLError:
                     pass
 
+            # Autocomplete only those that can be overridden
+            overridable_classes = []
+            for subcommand in subcommands:
+                scenario = MAP_COMMAND_TO_SCENARIO[subcommand]
+                classes = scenario.get_overridable(subcommands)
+                overridable_classes.append(set(classes))
+            overridable_classes = set.union(*overridable_classes)
+
         if cfg:
             # Load the config and inspect classes
-            for key in CLASS_JSON_KEYS:
+            for key in overridable_classes:
                 _class = None
                 try:
                     _class = load_class_by_key(cfg, key)

@@ -1279,8 +1279,6 @@ class ConfusionMatrixPlot(Plot):
             )
             axConfMatrix.xaxis.set_ticks_position("top")
         else:
-            # plt.setp(axConfMatrix.get_yticklabels(), visible=False)
-            # plt.setp(axConfMatrix.get_xticklabels(), visible=False)
             axConfMatrix.tick_params(
                 top=False,
                 bottom=False,
@@ -1300,7 +1298,6 @@ class ConfusionMatrixPlot(Plot):
         )
         img = axConfMatrix.imshow(
             self.confusion_matrix_colors,
-            # norm=colors.PowerNorm(0.5),
             interpolation="nearest",
             cmap=self.cmap,
             aspect="auto",
@@ -1454,12 +1451,14 @@ class ConfusionMatrixPlot(Plot):
         )
         from bokeh.plotting import figure
 
+        small_height_value = 6
+        small_height = f"{small_height_value}vh"
+        small_width = small_height
+
         matrix_css_sizes = {
-            "width": f"{BOKEH_PLOT_WIDTH // 2}vw",
-            "height": f"{BOKEH_PLOT_WIDTH // 2}vw",
-            "margin": "10px",
+            "width": f"{BOKEH_PLOT_WIDTH - small_height_value}vw",
+            "height": f"{BOKEH_PLOT_WIDTH - small_height_value}vw",
         }
-        margins = (0, 20, 0, 10)
 
         # Prepare figure
         confusion_matrix_fig = figure(
@@ -1477,7 +1476,6 @@ class ConfusionMatrixPlot(Plot):
             output_backend="webgl",
             sizing_mode="scale_both",
             css_classes=["plot", "confusion-matrix"],
-            margin=margins,
             styles=matrix_css_sizes,
         )
 
@@ -1542,12 +1540,12 @@ class ConfusionMatrixPlot(Plot):
             title=None,
             x_range=confusion_matrix_fig.x_range,
             y_range=FactorRange(factors=["Sensitivity"], bounds=(0, 1)),
-            # height=confusion_matrix_fig.height // 15,
             toolbar_location=None,
             output_backend="webgl",
-            sizing_mode="scale_both",
-            margin=margins,
-            styles=matrix_css_sizes,
+            sizing_mode="scale_width",
+            styles={
+                "height": small_height,
+            },
         )
 
         # Preprocess data
@@ -1591,15 +1589,14 @@ class ConfusionMatrixPlot(Plot):
             title=None,
             x_range=FactorRange(factors=["Precision"], bounds=(0, 1)),
             y_range=confusion_matrix_fig.y_range,
-            # width=confusion_matrix_fig.width // 15,
-            # height=confusion_matrix_fig.height,
             toolbar_location=None,
             y_axis_location="right",
             output_backend="webgl",
-            sizing_mode="scale_both",
-            margin=margins,
+            sizing_mode="scale_height",
             match_aspect=True,
-            styles=matrix_css_sizes,
+            styles={
+                "width": small_width,
+            },
         )
 
         # Preprocess data
@@ -1644,11 +1641,12 @@ class ConfusionMatrixPlot(Plot):
             x_range=FactorRange(factors=["x"], bounds=(0, 1)),
             y_range=FactorRange(factors=["y"], bounds=(0, 1)),
             output_backend="webgl",
-            sizing_mode="scale_both",
-            margin=margins,
+            sizing_mode="fixed",
             toolbar_location=None,
-            css_classes=["plot"],
-            styles=matrix_css_sizes,
+            styles={
+                "width": small_width,
+                "height": small_height,
+            },
         )
 
         # Preprocess data
@@ -1701,20 +1699,22 @@ class ConfusionMatrixPlot(Plot):
 
         # === Scale ===
 
-        def create_scale_figure() -> figure():
+        def create_scale_figure() -> figure:
             # Prepare figure
             scale_fig = figure(
                 title=None,
-                x_range=Range1d(0.0, 1.0),
+                x_range=Range1d(-0.48, 0.48),
                 y_range=["color"],
                 tools="",
                 toolbar_location=None,
                 x_axis_location="below",
                 y_axis_location="left",
-                margin=margins,
                 output_backend="webgl",
                 sizing_mode="scale_width",
-                height=50,
+                margin=(40, 0, 0, 0),
+                styles={
+                    "height": small_height,
+                },
             )
 
             # Draw scale
@@ -1740,8 +1740,8 @@ class ConfusionMatrixPlot(Plot):
         grid_fig = gridplot(
             [
                 [confusion_matrix_fig, precision_fig],
-                [accuracy_fig, sensitivity_fig],
-                [create_scale_figure(), create_scale_figure()],
+                [sensitivity_fig, accuracy_fig],
+                [create_scale_figure(), None],
             ],
             merge_tools=True,
             toolbar_location="above",

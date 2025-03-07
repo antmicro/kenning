@@ -30,7 +30,11 @@ from kenning.core.protocol import Protocol
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
-from kenning.utils.args_manager import to_namespace_name
+from kenning.utils.args_manager import (
+    convert_to_jsontype,
+    get_parsed_args_dict,
+    to_namespace_name,
+)
 from kenning.utils.logger import KLogger
 
 OPTIMIZERS = "optimizers"
@@ -271,18 +275,21 @@ def objs_from_json(
     Dict[ConfigKey, Any]
         Parsed parameters.
     """
-    objs = {
-        key: obj_from_json(json_cfg, key)
-        for key in set(
-            [
-                ConfigKey.platform,
-                ConfigKey.protocol,
-                ConfigKey.dataset,
-                ConfigKey.runtime,
-                ConfigKey.runtime_builder,
-            ]
-        ).intersection(keys)
-    }
+    keys_regular = set(
+        [
+            ConfigKey.platform,
+            ConfigKey.protocol,
+            ConfigKey.dataset,
+            ConfigKey.runtime,
+            ConfigKey.runtime_builder,
+        ]
+    ).intersection(keys)
+
+    if override:
+        args, not_parsed = override
+        merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
+
+    objs = {key: obj_from_json(json_cfg, key) for key in keys_regular}
 
     dataset = objs.get(ConfigKey.dataset)
 
@@ -313,6 +320,44 @@ def objs_from_json(
         objs[ConfigKey.optimizers] = []
 
     return objs
+
+
+def merge_argparse_and_json(
+    keys: Set[ConfigKey],
+    json_cfg: Dict[str, Any],
+    args: argparse.Namespace,
+    not_parsed: List[str],
+):
+    """
+    Update ``json_cfg`` with overridable values from not parsed arguments.
+
+    Parameters
+    ----------
+    keys : Set[ConfigKey]
+        Keys that correspond to classes of objects that should be overridden.
+    json_cfg : Dict[str, Any]
+        A JSON object containing entire configuration, from which the class is
+        retrieved.
+    args : argparse.Namespace
+        Initial namespace.
+    not_parsed : List[str]
+        Remaining arguments.
+    """
+    keys = keys.difference([ConfigKey.dataconverter, ConfigKey.optimizers])
+    classes = {
+        key: cls for key in keys if (cls := load_class_by_key(json_cfg, key))
+    }
+    args = parse_classes(
+        list(classes.values()), args, not_parsed, override_only=True
+    )
+
+    for key, cls in classes.items():
+        if key.name in json_cfg:
+            if params := get_parsed_args_dict(cls, args, override_only=True):
+                json_cfg[key.name]["parameters"] = dict(
+                    json_cfg[key.name].get("parameters", {}),
+                    **convert_to_jsontype(params),
+                )
 
 
 def objs_from_argparse(

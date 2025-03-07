@@ -361,6 +361,13 @@ def objs_from_json(
             protocol=objs.get(ConfigKey.protocol),
             runtime=objs.get(ConfigKey.runtime),
         )
+    if ConfigKey.automl in keys:
+        objs[ConfigKey.automl] = obj_from_json(
+            json_cfg,
+            ConfigKey.automl,
+            dataset=dataset,
+            platform=objs.get(ConfigKey.platform),
+        )
 
     return objs
 

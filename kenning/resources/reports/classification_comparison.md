@@ -46,16 +46,6 @@ align: center
 {% endfor %}
 ```
 
-```{figure} {{data['radarchartpath']}}
----
-name: {{data['report_name_simple']}}_classification_metrics_radar
-alt: Metric comparison
-align: center
----
-
-Radar chart representing the accuracy, precision and recall for models
-```
-
 {%- if 'predictionsbarpath' in data %}
 ```{figure} {{data["predictionsbarpath"]}}
 ---

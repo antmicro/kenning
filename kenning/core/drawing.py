@@ -1701,36 +1701,39 @@ class ConfusionMatrixPlot(Plot):
 
         # === Scale ===
 
-        # Prepare figure
-        scale_fig = figure(
-            title=None,
-            x_range=Range1d(0.0, 1.0),
-            y_range=["color"],
-            tools="",
-            toolbar_location=None,
-            x_axis_location="below",
-            y_axis_location="left",
-            margin=margins,
-            output_backend="webgl",
-            sizing_mode="scale_width",
-            height=50,
-        )
+        def create_scale_figure() -> figure():
+            # Prepare figure
+            scale_fig = figure(
+                title=None,
+                x_range=Range1d(0.0, 1.0),
+                y_range=["color"],
+                tools="",
+                toolbar_location=None,
+                x_axis_location="below",
+                y_axis_location="left",
+                margin=margins,
+                output_backend="webgl",
+                sizing_mode="scale_width",
+                height=50,
+            )
 
-        # Draw scale
-        scale_fig.vbar(
-            x=np.linspace(0.0, 1.0, 256),
-            top=np.linspace(0.0, 100.0, 256),
-            width=1.0,
-            color=self.cmap(np.linspace(0.0, 1.0, 256)),
-        )
+            # Draw scale
+            scale_fig.vbar(
+                x=np.linspace(0.0, 1.0, 256),
+                top=np.linspace(0.0, 100.0, 256),
+                width=1.0,
+                color=self.cmap(np.linspace(0.0, 1.0, 256)),
+            )
 
-        # Set styles for scale
-        scale_fig.xaxis.major_tick_line_alpha = 0.0
-        scale_fig.yaxis.major_tick_line_alpha = 0.0
-        scale_fig.yaxis.minor_tick_line_alpha = 0.0
-        scale_fig.xaxis.axis_line_alpha = 0.0
-        scale_fig.yaxis.axis_line_alpha = 0.0
-        scale_fig.xaxis.major_label_text_alpha = 0.0
+            # Set styles for scale
+            scale_fig.xaxis.major_tick_line_alpha = 0.0
+            scale_fig.yaxis.major_tick_line_alpha = 0.0
+            scale_fig.yaxis.minor_tick_line_alpha = 0.0
+            scale_fig.xaxis.axis_line_alpha = 0.0
+            scale_fig.yaxis.axis_line_alpha = 0.0
+            scale_fig.xaxis.major_label_text_alpha = 0.0
+
+            return scale_fig
 
         # === Saving to file ===
 
@@ -1738,7 +1741,7 @@ class ConfusionMatrixPlot(Plot):
             [
                 [confusion_matrix_fig, precision_fig],
                 [accuracy_fig, sensitivity_fig],
-                [scale_fig],
+                [create_scale_figure(), create_scale_figure()],
             ],
             merge_tools=True,
             toolbar_location="above",

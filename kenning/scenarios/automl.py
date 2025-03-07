@@ -461,6 +461,16 @@ class AutoMLCommand(InferenceTester):
             return 1 if all(rets) else 0
         return 1 if any(rets) else 0
 
+    @staticmethod
+    def get_overridable(subcommands: List[str]) -> List[ConfigKey]:
+        overridable = super(AutoMLCommand, AutoMLCommand).get_overridable(
+            subcommands
+        )
+        overridable.remove(ConfigKey.model_wrapper)
+        overridable.append(ConfigKey.automl)
+
+        return overridable
+
 
 if __name__ == "__main__":
     sys.exit(AutoMLCommand.scenario_run())

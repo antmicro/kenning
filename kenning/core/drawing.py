@@ -1698,12 +1698,15 @@ class ConfusionMatrixPlot(Plot):
             fig.grid.visible = False
 
         # === Scale ===
-
-        def create_scale_figure() -> figure:
+        def create_color_scale_figure() -> figure:
+            """
+            Create a color scale figure spanning from 0% (red)
+            to 100% (green).
+            """
             # Prepare figure
             scale_fig = figure(
                 title=None,
-                x_range=Range1d(-0.48, 0.48),
+                x_range=Range1d(0.0, 100.0),
                 y_range=["color"],
                 tools="",
                 toolbar_location=None,
@@ -1719,8 +1722,8 @@ class ConfusionMatrixPlot(Plot):
 
             # Draw scale
             scale_fig.vbar(
-                x=np.linspace(0.0, 1.0, 256),
-                top=np.linspace(0.0, 100.0, 256),
+                x=np.linspace(0.0, 100.0, 256),
+                top=100,
                 width=1.0,
                 color=self.cmap(np.linspace(0.0, 1.0, 256)),
             )
@@ -1731,17 +1734,22 @@ class ConfusionMatrixPlot(Plot):
             scale_fig.yaxis.minor_tick_line_alpha = 0.0
             scale_fig.xaxis.axis_line_alpha = 0.0
             scale_fig.yaxis.axis_line_alpha = 0.0
-            scale_fig.xaxis.major_label_text_alpha = 0.0
+            scale_fig.xaxis.major_label_text_alpha = 1.0
+
+            # Change axis captions from numbers to percentages,
+            # e.g.: 10 -> 10%.
+            scale_fig.xaxis.major_label_overrides = {
+                i: f"{i}%" for i in range(0, 120, 20)
+            }
 
             return scale_fig
 
         # === Saving to file ===
-
         grid_fig = gridplot(
             [
                 [confusion_matrix_fig, precision_fig],
                 [sensitivity_fig, accuracy_fig],
-                [create_scale_figure(), None],
+                [create_color_scale_figure(), None],
             ],
             merge_tools=True,
             toolbar_location="above",
@@ -2507,11 +2515,11 @@ class LinePlot(Plot):
                 for legend in legends
             ]
 
-            final_plot = column(
+            plot_fig = column(
                 children=[plot_fig, legend_fig], sizing_mode="scale_both"
             )
 
-        self._output_bokeh_figure(final_plot, output_path, output_formats)
+        self._output_bokeh_figure(plot_fig, output_path, output_formats)
 
 
 class Barplot(Plot):

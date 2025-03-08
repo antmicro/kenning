@@ -38,7 +38,7 @@ def main():
 
     Creates and manages parsers, runs subcommands, and handle errors.
     """
-    verbosity = "WARNING"
+    verbosity = "INFO"
     for i, arg in enumerate(sys.argv):
         if arg.startswith("--verbosity"):
             if "=" in arg:

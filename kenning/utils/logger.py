@@ -29,6 +29,8 @@ from tqdm import tqdm
 
 from kenning.utils.singleton import Singleton
 
+PROGRESS_BAR_STACKLEVEL = 9
+
 CUSTOM_LEVEL_STYLES = {
     "renode": {"color": "blue"},
     "verbose": {"color": "cyan"},
@@ -246,14 +248,16 @@ class LoggerProgressBar(io.StringIO):
         if self.capture_stdout:
             sys.stdout = self.prev_stdout
 
-        _KLogger().info(self.buf)
+        _KLogger().info(self.buf, stacklevel=PROGRESS_BAR_STACKLEVEL)
 
         return False
 
     def write(self, buf):
         buf = buf.lstrip("\r\n\t\x08 ")
         for newline in re.finditer(r"\r?\n", buf):
-            _KLogger().info(buf[: newline.start()])
+            _KLogger().info(
+                buf[: newline.start()], stacklevel=PROGRESS_BAR_STACKLEVEL
+            )
             buf = buf[newline.end() :]
 
         self.buf = buf
@@ -266,7 +270,7 @@ class LoggerProgressBar(io.StringIO):
                     prev_terminators.append((handler, handler.terminator))
                     handler.terminator = "\r"
 
-        _KLogger().info(self.buf)
+        _KLogger().info(self.buf, stacklevel=PROGRESS_BAR_STACKLEVEL)
         # restore previous terminator
         for handler, terminator in prev_terminators:
             handler.terminator = terminator

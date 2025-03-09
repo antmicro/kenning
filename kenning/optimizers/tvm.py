@@ -360,8 +360,8 @@ class TVMCompiler(Optimizer):
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "onnx",
-            "enum": list(inputtypes.keys()),
+            "default": "any",
+            "enum": list(inputtypes.keys()) + ["any"],
         },
         "target": {
             "description": "The kind or tag of the target device",
@@ -465,7 +465,7 @@ class TVMCompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
-        model_framework: str = "onnx",
+        model_framework: str = "any",
         target: str = "llvm",
         target_attrs: str = "",
         target_microtvm_board: Optional[str] = None,

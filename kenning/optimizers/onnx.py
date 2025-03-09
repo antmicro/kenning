@@ -164,8 +164,8 @@ class ONNXCompiler(Optimizer):
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "keras",
-            "enum": list(inputtypes.keys()),
+            "default": "any",
+            "enum": list(inputtypes.keys()) + ["any"],
         }
     }
 
@@ -174,7 +174,7 @@ class ONNXCompiler(Optimizer):
         dataset: Dataset,
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
-        model_framework: str = "keras",
+        model_framework: str = "any",
     ):
         """
         The ONNX compiler.

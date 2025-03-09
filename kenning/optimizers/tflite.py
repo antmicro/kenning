@@ -111,8 +111,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "onnx",
-            "enum": list(inputtypes.keys()),
+            "default": "any",
+            "enum": list(inputtypes.keys()) + ["any"],
         },
         "target": {
             "description": "The TFLite target device scenario",
@@ -190,7 +190,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         optimizer: str = "adam",
         disable_from_logits: bool = False,
         save_to_zip: bool = False,
-        model_framework: str = "onnx",
+        model_framework: str = "any",
         inferenceinputtype: str = "float32",
         inferenceoutputtype: str = "float32",
         dataset_percentage: float = 0.25,

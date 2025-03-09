@@ -172,8 +172,8 @@ class IREECompiler(Optimizer):
         "model_framework": {
             "argparse_name": "--model-framework",
             "description": "The input type of the model, framework-wise",
-            "default": "keras",
-            "enum": list(inputtypes.keys()),
+            "default": "any",
+            "enum": list(inputtypes.keys()) + ["any"],
         },
         "backend": {
             "argparse_name": "--backend",
@@ -238,10 +238,7 @@ class IREECompiler(Optimizer):
         else:
             self.parsed_compiler_args = []
 
-        if model_framework in ("keras", "tensorflow"):
-            self.compiler_input_type = "mhlo"
-        elif model_framework == "tflite":
-            self.compiler_input_type = "tosa"
+        self.set_input_type(model_framework)
 
         super().__init__(
             dataset=dataset,
@@ -257,6 +254,13 @@ class IREECompiler(Optimizer):
         if io_spec is None:
             io_spec = self.load_io_specification(input_model_path)
 
+        input_type = self.get_input_type(input_model_path)
+
+        if input_type in ("keras", "tensorflow"):
+            self.compiler_input_type = "mhlo"
+        elif input_type == "tflite":
+            self.compiler_input_type = "tosa"
+
         try:
             input_spec = (
                 io_spec["processed_input"]
@@ -265,8 +269,6 @@ class IREECompiler(Optimizer):
             )
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError("No input specification found")
-
-        input_type = self.get_input_type(input_model_path)
 
         imported_model = self.inputtypes[input_type](
             input_model_path, input_spec

@@ -549,6 +549,12 @@ class ViolinComparisonPlot(Plot):
                 )
                 legend_items[sample_name].append(renderer)
 
+                # Range of values on X axis.
+                padding_percentage = 0.10
+                padding = padding_percentage * (x_max - x_min)
+                violin_figs[name].x_range.start = x_min - padding
+                violin_figs[name].x_range.end = x_max + padding
+
                 # Add lines for min and max
                 for line_start, line_end in (
                     ([x_min, x_max], [i, i]),

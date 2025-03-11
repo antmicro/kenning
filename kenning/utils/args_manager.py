@@ -452,7 +452,7 @@ def get_parsed_args_dict(
             **{
                 name: arg
                 for name, arg in curr_cls.arguments_structure.items()
-                if not override_only or arg.get("overridable")
+                if not override_only or arg.get("overridable", True)
             },
         )
 
@@ -697,11 +697,7 @@ def add_argparse_argument(
             keywords["help"] = prop["description"]
         if "default" in prop and not override_only:
             keywords["default"] = prop["default"]
-        if (
-            "required" in prop
-            and prop["required"]
-            and ("overridable" not in prop or not prop["overridable"])
-        ):
+        if "required" in prop and prop["required"] and not override_only:
             keywords["required"] = prop["required"]
         if "enum" in prop:
             keywords["choices"] = prop["enum"]
@@ -907,7 +903,7 @@ class ArgumentsHandler(ABC):
                 struct={
                     name: arg
                     for name, arg in curr_cls.arguments_structure.items()
-                    if not override_only or arg.get("overridable")
+                    if not override_only or arg.get("overridable", True)
                 },
                 args=args,
                 override_only=override_only,

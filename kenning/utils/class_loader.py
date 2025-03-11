@@ -309,13 +309,16 @@ def objs_from_json(
             ConfigKey.dataset,
             ConfigKey.runtime,
             ConfigKey.runtime_builder,
-            ConfigKey.report,
+            ConfigKey.automl,
         ]
     ).intersection(keys)
 
     if override:
         args, not_parsed = override
         merge_argparse_and_json(keys_regular, json_cfg, args, not_parsed)
+
+    if ConfigKey.automl in keys_regular:
+        keys_regular.remove(ConfigKey.automl)
 
     objs = {key: obj_from_json(json_cfg, key) for key in keys_regular}
 

@@ -296,6 +296,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         "run_west_update": {
             "description": "Whether to update the project before build",
             "type": bool,
+            "default": False,
         },
     }
 

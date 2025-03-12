@@ -31,7 +31,7 @@ from tqdm.contrib.logging import logging_redirect_tqdm
 
 from kenning.utils.singleton import Singleton
 
-PROGRESS_BAR_STACKLEVEL = 9
+PROGRESS_BAR_STACKLEVEL = 2
 
 CUSTOM_LEVEL_STYLES = {
     "renode": {"color": "blue"},
@@ -241,13 +241,15 @@ class LoggerProgressBar(io.StringIO):
         self.redirect_stdout = (
             redirect_stdout(self) if capture_stdout else None
         )
-        self.desc = None
+        self.format = ""
         self.verbosity = verbosity
         self.disable = None
 
     def __enter__(self) -> "LoggerProgressBar":
         self.redirect_tqdm.__enter__()
-        fn, lno, func, sinfo = KLogger.findCaller(stacklevel=2)
+        fn, lno, func, sinfo = KLogger.findCaller(
+            stacklevel=PROGRESS_BAR_STACKLEVEL
+        )
         record = KLogger.makeRecord(
             KLogger.name,
             KLogger.level,
@@ -259,7 +261,8 @@ class LoggerProgressBar(io.StringIO):
             func=func,
             sinfo=sinfo,
         )
-        self.desc = KLogger.handlers[0].formatter.format(record)
+        # Take tqdm-wrapped handler
+        self.format = KLogger.handlers[-1].formatter.format(record)
         self.disable = self.verbosity < KLogger.level
 
         if self.redirect_stdout:
@@ -275,6 +278,13 @@ class LoggerProgressBar(io.StringIO):
         self.redirect_tqdm.__exit__(exc_type, exc_value, traceback)
         if self.redirect_stdout:
             self.redirect_stdout.__exit__(exc_type, exc_value, traceback)
+
+    @property
+    def kwargs(self) -> Dict[str, Any]:
+        return {
+            "bar_format": self.format + "{l_bar}{bar}{r_bar}",
+            "disable": self.disable,
+        }
 
 
 class DownloadError(Exception):

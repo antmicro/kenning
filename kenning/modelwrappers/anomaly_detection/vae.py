@@ -386,7 +386,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             with LoggerProgressBar() as logger_progress_bar:
                 for batch_start in tqdm(
                     range(0, len(X_train), self.batch_size),
-                    file=logger_progress_bar,
+                    **logger_progress_bar.kwargs,
                 ):
                     x = X_train[batch_start : batch_start + self.batch_size]
                     x = torch.stack(x)

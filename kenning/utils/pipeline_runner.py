@@ -692,7 +692,7 @@ class PipelineRunner(object):
             )
 
             with LoggerProgressBar() as logger_progress_bar:
-                for sample in tqdm(iterable, file=logger_progress_bar):
+                for sample in tqdm(iterable, **logger_progress_bar.kwargs):
                     if self.should_cancel:
                         break
 

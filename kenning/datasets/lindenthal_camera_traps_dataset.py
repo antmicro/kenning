@@ -424,7 +424,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
             for f in tqdm(
                 iterable=iterable,
                 total=len(iterable),
-                file=logger_progress_bar,
+                **logger_progress_bar.kwargs,
             ):
                 zip.extract(member=f, path=self.root)
                 self.convert_bag_to_images(

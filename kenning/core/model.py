@@ -473,7 +473,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
 
         with LoggerProgressBar() as logger_progress_bar:
             for X, y in TqdmCallback(
-                "runtime", self.dataset.iter_test(), file=logger_progress_bar
+                "runtime",
+                self.dataset.iter_test(),
+                **logger_progress_bar.kwargs,
             ):
                 if self.should_cancel:
                     break

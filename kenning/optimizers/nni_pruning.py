@@ -597,7 +597,7 @@ class NNIPruningOptimizer(Optimizer):
         with LoggerProgressBar() as logger_progress_bar:
             for batch_begin in tqdm(
                 range(0, len(self.train_data[0]), self.finetuning_batch_size),
-                file=logger_progress_bar,
+                **logger_progress_bar.kwargs,
             ):
                 data, label = self.prepare_input_output_data(batch_begin)
                 optimizer.zero_grad()
@@ -650,7 +650,7 @@ class NNIPruningOptimizer(Optimizer):
         with torch.no_grad(), LoggerProgressBar() as logger_progress_bar:
             for batch_begin in tqdm(
                 range(0, data_len, self.finetuning_batch_size),
-                file=logger_progress_bar,
+                **logger_progress_bar.kwargs,
             ):
                 data, target = self.prepare_input_output_data(batch_begin)
                 output = model(*data)

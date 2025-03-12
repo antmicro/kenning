@@ -163,7 +163,7 @@ def download_all_images(
             total=len(image_list),
             desc="Downloading images",
             leave=True,
-            file=logger_progress_bar,
+            **logger_progress_bar.kwargs,
         ) as progress_bar,
         futures.ThreadPoolExecutor(max_workers=num_processes) as executor,
     ):

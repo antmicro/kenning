@@ -58,7 +58,7 @@ def extract_zip(target_dir: Path, src_path: Path):
         for f in tqdm(
             iterable=zip.namelist(),
             total=len(zip.namelist()),
-            file=logger_progress_bar,
+            **logger_progress_bar.kwargs,
         ):
             zip.extract(member=f, path=target_dir)
 

@@ -721,7 +721,7 @@ class Dataset(ArgumentsHandler, ABC):
         else:
             X = self.prepare_external_calibration_dataset(percentage, seed)
         with LoggerProgressBar() as logger_progress_bar:
-            for x in tqdm(X, file=logger_progress_bar):
+            for x in tqdm(X, **logger_progress_bar.kwargs):
                 yield self.prepare_input_samples([x])
 
     def prepare_external_calibration_dataset(

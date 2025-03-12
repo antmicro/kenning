@@ -325,8 +325,8 @@ def download_url(url: str, output_path: str):
             unit="B",
             unit_scale=True,
             miniters=1,
-            file=logger_progress_bar,
             desc=url.split("/")[-1],
+            **logger_progress_bar.kwargs,
         ) as t,
     ):
         try:

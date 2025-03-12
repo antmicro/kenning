@@ -238,7 +238,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
             loss_sum = torch.zeros(1).to(self.device)
             loss_count = 0
             with LoggerProgressBar() as logger_progress_bar:
-                bar = tqdm(train_loader, file=logger_progress_bar)
+                bar = tqdm(train_loader, **logger_progress_bar.kwargs)
                 for input, labels in bar:
                     input = input.to(self.device)
                     labels = labels.to(self.device)
@@ -265,7 +265,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
             predicted = np.array([])
             true = np.array([])
             with torch.no_grad(), LoggerProgressBar() as logger_progress_bar:
-                bar = tqdm(test_loader, file=logger_progress_bar)
+                bar = tqdm(test_loader, **logger_progress_bar.kwargs)
                 for input, labels in bar:
                     input = input.to(self.device)
                     labels = labels.to(self.device)

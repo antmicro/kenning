@@ -564,6 +564,7 @@ class PipelineManagerGraphCreator:
                 specification=spec_path,
                 specification_version=SPECIFICATION_VERSION,
             )
+
         self.graph = self.graph_builder.create_graph()
 
         self.inp_interface_map = {}
@@ -630,15 +631,11 @@ class PipelineManagerGraphCreator:
         self.graph.create_connection(from_interface_id, to_interface_id)
 
     def start_new_graph(self):
+        if self.graph_builder.graphs:
+            del self.graph_builder.graphs[0]
         self.graph = self.graph_builder.create_graph()
 
     def flush_graph(self):
-        finished_graph = self.graph.to_json()
-        raw_graph = self.graph.to_json()
-        graph = (
-            raw_graph if isinstance(raw_graph, Dict) else json.loads(raw_graph)
-        )
-        finished_graph = {"version": SPECIFICATION_VERSION, "graphs": [graph]}
-        del self.graph_builder.graphs[0]
+        finished_graph = self.graph_builder.to_json(as_str=False)
         self.start_new_graph()
         return finished_graph

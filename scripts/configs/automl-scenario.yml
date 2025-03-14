@@ -1,46 +1,69 @@
-platform:
-  type: ZephyrPlatform
-  parameters:
-    simulated: True
-    name: max32690fthr/max32690/m4
-    uart_port: /tmp/uart
-    uart_log_port: /tmp/uart-log
-    profiler_dump_path: ./build/renode_profiler.dump
-runtime_builder:
-  type: ZephyrRuntimeBuilder
-  parameters:
-    workspace: ./
-    run_west_update: false
-    output_path: ./build
-    extra_targets: [board-repl]
-dataset:
-  type: AnomalyDetectionDataset
-  parameters:
-    dataset_root: build/CATS
-    csv_file: ./data.csv
-    split_seed: 12345
-    split_fraction_test: 0.0001
-    inference_batch_size: 1
-    reduce_dataset: 0.1
+# This scenario demonstrates AutoML flow on example of Anomaly Detection in time series
+# for MAX32960 Evaluation Kit.
+#
+# Configures AutoML flow
 automl:
   type: AutoPyTorchML
   parameters:
-    output_directory: ./build/automl-results
-    time_limit: 30
+    # Time limit for AutoML task (in minutes)
+    time_limit: 20
+    # List of model architectures used for AutoML,
+    # represented by ModelWrapper (has to implement AutoMLModel class)
     use_models:
       - PyTorchAnomalyDetectionVAE
+    # Folder storing AutoML results
+    output_directory: ./workspace/automl-results
+    # Maximum number of models returned by the flow
     n_best_models: 5
+
     # AutoPyTorch specific options
+    # Chosen metric to optimize
     optimize_metric: f1
+    # Type of budget for training models, either epochs or time limit
     budget_type: epochs
+    # Lower and upper limit of the budger
     min_budget: 1
     max_budget: 5
-    application_size: 74.01
+    # Size of the application that will use generated models
+    application_size: 75.5
+
+# Chooses the platform to run
+platform:
+  type: ZephyrPlatform
+  parameters:
+    # Chooses MAX32690 Evaluation Kit
+    name: max32690evkit/max32690/m4
+    # Use Renode to simulate the platform
+    simulated: True
+
+# Defines dataset for anomaly detection
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: ./workspace/CATS
+    csv_file: kenning:///datasets/anomaly_detection/cats_nano.csv
+    split_fraction_test: 0.1
+    split_seed: 12345
+    inference_batch_size: 1
+
+# Remaining configurations, despite not being directly
+# used for a AutoML flow, are copied to resulting scenarios,
+# and influences the standard Kenning flow run with generated models
+
 optimizers:
 - type: TFLiteCompiler
   parameters:
     target: default
-    compiled_model_path: ./build/fp32.tflite
+    compiled_model_path: ./workspace/automl-results/vae.tflite
     inference_input_type: float32
     inference_output_type: float32
+
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    workspace: .
+    # venv_dir: ../.venv
+    output_path: ./workspace/kzr_build
+    run_west_update: false
+    extra_targets: [board-repl]
 

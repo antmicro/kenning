@@ -28,6 +28,7 @@ from kenning.utils.class_loader import (
     get_base_classes_dict,
 )
 from kenning.utils.pipeline_runner import PipelineRunner
+from kenning.utils.resource_manager import ResourceManager
 
 
 class PipelineHandler(BaseDataflowHandler):
@@ -38,11 +39,12 @@ class PipelineHandler(BaseDataflowHandler):
 
     def __init__(self, **kwargs):
         if not (assets_dir := kwargs.pop("workspace_dir", None)):
-            assets_dir = Path("/tmp") / uuid.uuid4().hex
+            assets_dir = ResourceManager().cache_dir / uuid.uuid4().hex
             build_prepare(assets_dir)
 
         self.spec_builder = specification_builder.SpecificationBuilder(
-            spec_version=SPECIFICATION_VERSION, assets_dir=assets_dir
+            spec_version=SPECIFICATION_VERSION,
+            assets_dir=ResourceManager().cache_dir / assets_dir,
         )
         nodes, io_mapping = PipelineHandler.get_nodes(self.spec_builder)
         super().__init__(

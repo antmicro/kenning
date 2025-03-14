@@ -9,7 +9,6 @@ Provides classes for managing Kenning applications from Pipeline Manager.
 import itertools
 import uuid
 from collections import defaultdict
-from pathlib import Path
 from typing import Dict, Iterable, List, Union
 
 from pipeline_manager import specification_builder
@@ -30,6 +29,7 @@ from kenning.utils.class_loader import (
     get_base_classes_dict,
     load_class,
 )
+from kenning.utils.resource_manager import ResourceManager
 
 
 class KenningFlowHandler(BaseDataflowHandler):
@@ -39,11 +39,12 @@ class KenningFlowHandler(BaseDataflowHandler):
 
     def __init__(self, **kwargs):
         if not (assets_dir := kwargs.pop("workspace_dir", None)):
-            assets_dir = Path("/tmp") / uuid.uuid4().hex
+            assets_dir = ResourceManager().cache_dir / uuid.uuid4().hex
             build_prepare(assets_dir)
 
         self.spec_builder = specification_builder.SpecificationBuilder(
-            spec_version=SPECIFICATION_VERSION, assets_dir=assets_dir
+            spec_version=SPECIFICATION_VERSION,
+            assets_dir=ResourceManager().cache_dir / assets_dir,
         )
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(
             self.spec_builder

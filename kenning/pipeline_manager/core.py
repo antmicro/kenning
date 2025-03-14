@@ -8,8 +8,6 @@ with Pipeline Manager.
 """
 
 import itertools
-import json
-import tempfile
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple, Union
@@ -386,33 +384,45 @@ class BaseDataflowHandler(ABC):
             is an error that occurred during parsing process.
         """
         try:
-            interface_to_id = {}
+            # in case that control flow comes from KenningFlowHandler
             try:
-                graph = dataflow["graphs"][0]
+                dataflow["graphs"] = [dataflow.pop("graph")]
             except Exception:
-                graph = dataflow["graph"]
+                pass
 
-            for dataflow_node in graph["nodes"]:
-                kenning_node = self.nodes[dataflow_node["name"]]
-                parameters = dataflow_node["properties"]
+            spec = self.spec_builder.create_and_validate_spec(
+                workspacedir=self.spec_builder.assets_dir
+            )
+            graph = GraphBuilder(
+                specification_version=self.spec_builder.version,
+                specification=spec,
+                workspace_directory=self.spec_builder.assets_dir,
+            ).create_graph(based_on=dataflow)
+
+            interface_to_id = {}
+
+            for dataflow_node in graph.get(AttributeType.NODE):  # zaimportowć
+                kenning_node = self.nodes[dataflow_node.name]
+                parameters = dataflow_node.properties
                 parameters = {
-                    parameter["name"]: parameter["value"]
+                    parameter.name: parameter.value
                     for parameter in parameters
                     if not (
-                        isinstance(parameter["value"], str)
-                        and parameter["value"] == ""
+                        isinstance(parameter.value, str)
+                        and parameter.value == ""
                     )
                 }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node, parameters
                 )
 
-                for interface in dataflow_node["interfaces"]:
-                    interface_to_id[interface["id"]] = node_id
+                for interface in dataflow_node.interfaces:
+                    interface_to_id[interface.id] = node_id
 
-            for conn in graph["connections"]:
+            for conn in graph.get(AttributeType.CONNECTION):
                 self.dataflow_graph.create_connection(
-                    interface_to_id[conn["from"]], interface_to_id[conn["to"]]
+                    interface_to_id[conn.from_interface.id],
+                    interface_to_id[conn.to_interface.id],
                 )
 
             return True, self.dataflow_graph.flush_graph()
@@ -550,20 +560,10 @@ class PipelineManagerGraphCreator:
         self.node_width = node_width
         self.specification = specification
 
-        with tempfile.TemporaryDirectory() as tmpdir:
-            spec_path = Path(tmpdir) / "spec.json"
-            with open(spec_path, "w") as spec_file:
-                json.dump(
-                    specification,
-                    spec_file,
-                    indent=4,
-                    sort_keys=True,
-                    ensure_ascii=False,
-                )
-            self.graph_builder = GraphBuilder(
-                specification=spec_path,
-                specification_version=SPECIFICATION_VERSION,
-            )
+        self.graph_builder = GraphBuilder(
+            specification=specification,
+            specification_version=SPECIFICATION_VERSION,
+        )
 
         self.graph = self.graph_builder.create_graph()
 

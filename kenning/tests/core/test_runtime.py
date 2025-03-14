@@ -308,17 +308,16 @@ class TestRuntime:
         """
         Tests the `load_input` method.
         """
-        runtime, dataset, model, assets_id = prepare_objects(
-            runtime_cls, inputtype
-        )
-
-        assert runtime.prepare_local()
-
-        X, _ = next(dataset)
-        prepX = model._preprocess_input(X)
-        assert runtime.load_input(prepX)
-        assert not runtime.load_input([])
-        DatasetModelRegistry.remove(assets_id)
+        with prepare_objects(runtime_cls, inputtype) as (
+            runtime,
+            dataset,
+            model,
+        ):
+            assert runtime.prepare_local()
+            X, _ = next(dataset)
+            prepX = model._preprocess_input(X)
+            assert runtime.load_input(prepX)
+            assert not runtime.load_input([])
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(

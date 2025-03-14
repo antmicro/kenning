@@ -4,6 +4,8 @@
 
 from contextlib import contextmanager
 from typing import Iterator, Tuple, Type
+from contextlib import contextmanager
+from typing import Iterator, Tuple, Type
 
 import pytest
 
@@ -11,6 +13,7 @@ from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import CompilationError, ConversionError, Optimizer
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.core.conftest import (
+    DatasetModelRegistry,
     DatasetModelRegistry,
     UnknownFramework,
 )
@@ -26,23 +29,26 @@ OPTIMIZER_INPUTTYPES = [
 
 
 @contextmanager
+@contextmanager
 def prepare_objects(
     opt_cls: Type[Optimizer], inputtype: str
 ) -> Iterator[Tuple[Optimizer, ModelWrapper]]:
-    assets_id = None
     try:
-        with get_default_dataset_model(inputtype) as (dataset, model):
-            optimizer = opt_cls(
-                dataset,
-                compiled_model_path,
-                model_framework=inputtype,
-            )
+        compiled_model_path = get_tmp_path()
+        try:
+            dataset, model, id = DatasetModelRegistry.get(inputtype)
+        except UnknownFramework:
+            pytest.xfail(f"Unknown framework: {inputtype}")
+
+        optimizer = opt_cls(
+            dataset,
+            compiled_model_path,
+            model_framework=inputtype,
+        )
         optimizer.set_input_type(inputtype)
-
-    except UnknownFramework:
-        pytest.xfail(f"Unknown framework: {inputtype}")
-
-    return optimizer, model
+        yield optimizer, model
+    finally:
+        DatasetModelRegistry.remove(id)
 
 
 class TestOptimizer:
@@ -69,6 +75,8 @@ class TestOptimizer:
         """
         Tests optimizer initialization.
         """
+        with prepare_objects(opt_cls, inputtype):
+            pass
         with prepare_objects(opt_cls, inputtype):
             pass
 
@@ -112,6 +120,15 @@ class TestOptimizer:
                 pytest.xfail(f"compilation error {e}")
             except ConversionError as e:
                 pytest.xfail(f"conversion error {e}")
+        with prepare_objects(opt_cls, inputtype) as (optimizer, model):
+            try:
+                optimizer.init()
+                optimizer.compile(model.model_path)
+                assert optimizer.compiled_model_path.exists()
+            except CompilationError as e:
+                pytest.xfail(f"compilation error {e}")
+            except ConversionError as e:
+                pytest.xfail(f"conversion error {e}")
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -140,5 +157,7 @@ class TestOptimizer:
         """
         Tests `get_framework_and_version` method.
         """
+        with prepare_objects(opt_cls, inputtype) as (optimizer, _):
+            assert optimizer.get_framework_and_version() is not None
         with prepare_objects(opt_cls, inputtype) as (optimizer, _):
             assert optimizer.get_framework_and_version() is not None

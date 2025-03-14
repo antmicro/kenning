@@ -7,9 +7,9 @@ import os
 import random
 import shutil
 import tempfile
-from contextlib import contextmanager
 from pathlib import Path
-from typing import Iterator, Optional, Tuple, Type, Union
+from typing import Dict, Optional, Tuple, Type, Union
+from uuid import uuid4
 
 import pytest
 from tensorflow.keras.models import load_model as load_keras_model
@@ -99,32 +99,69 @@ def remove_file_or_dir(path: Union[Path, str]):
         shutil.rmtree(path)
 
 
-@contextmanager
-def get_default_dataset_model(
-    framework: str
-) -> Iterator[Tuple[Dataset, ModelWrapper]]:
+class DatasetModelRegistry:
     """
-    Returns default model and dataset for given framework. Returned dataset is
-    a mock of default dataset of returned model.
+    Singleton containing registry of pairs with dataset mocks and
+    temporary models.
+    """
+
+    debug: bool = False
+    _registry: Dict[str, Tuple[Dataset, ModelWrapper]] = {}
+
+    @classmethod
+    def remove(cls, id: str):
+        if DatasetModelRegistry.debug:
+            return
+        if id not in DatasetModelRegistry._registry:
+            raise KeyError(
+                f"Cannot remove (dataset, model) pair with id = `{id}` "
+                "because it is not present in the registry."
+            )
+
+        pair = DatasetModelRegistry._registry[id]
+        if pair[0].root.exists():
+            remove_file_or_dir(pair[0].root)
+        if pair[1].get_path().exists():
+            remove_file_or_dir(pair[1].get_path())
+        del DatasetModelRegistry._registry[id]
+
+    @classmethod
+    def get(cls, framework: str) -> Tuple[Dataset, ModelWrapper, str]:
+        """
+        Returns a default model and dataset for a given framework.
+        The returned dataset is a mock of a default dataset of the
+        returned model.
 
         Parameters
         ----------
         framework : str
             Name of framework.
+        Parameters
+        ----------
+        framework : str
+            Name of framework.
 
-    Returns
-    -------
-    Iterator[Tuple[Dataset, ModelWrapper]]
-        Iterator with tuple with dataset and model for given framework.
-    """
-    model_path = None
-    if framework == "keras":
-        dataset = get_dataset_random_mock(MagicWandDataset)
-        model_path = copy_model_to_tmp(
-            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-        )
-        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
+        Returns
+        -------
+        Tuple[Dataset, ModelWrapper, str]
+            Iterator with tuple with dataset and model for given framework.
+        """
+        if framework == "keras":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = copy_model_to_tmp(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            )
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
+        elif framework == "tensorflow":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = get_tmp_path()
+            keras_model = load_keras_model(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
+                compile=False,
+            )
+            keras_model.save(model_path)
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
         elif framework == "tensorflow":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = get_tmp_path()
@@ -143,7 +180,24 @@ def get_default_dataset_model(
                 ).with_suffix(".tflite")
             )
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
+        elif framework == "tflite":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = copy_model_to_tmp(
+                ResourceURI(
+                    MagicWandModelWrapper.pretrained_model_uri
+                ).with_suffix(".tflite")
+            )
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
+        elif framework == "onnx":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = get_tmp_path(suffix=".onnx")
+            onnx_compiler = ONNXCompiler(dataset, model_path)
+            onnx_compiler.init()
+            onnx_compiler.compile(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            )
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
         elif framework == "onnx":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = get_tmp_path(suffix=".onnx")
@@ -156,7 +210,16 @@ def get_default_dataset_model(
 
         elif framework == "torch":
             import dill
+        elif framework == "torch":
+            import dill
 
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            onnx_model_path = get_tmp_path(suffix=".onnx")
+            onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
+            onnx_compiler.init()
+            onnx_compiler.compile(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            )
             dataset = get_dataset_random_mock(MagicWandDataset)
             onnx_model_path = get_tmp_path(suffix=".onnx")
             onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
@@ -166,10 +229,14 @@ def get_default_dataset_model(
             )
 
             torch_model = onnx2torch.convert(onnx_model_path)
+            torch_model = onnx2torch.convert(onnx_model_path)
 
             model_path = get_tmp_path(suffix=".pth")
             torch_save(torch_model, model_path, pickle_module=dill)
+            model_path = get_tmp_path(suffix=".pth")
+            torch_save(torch_model, model_path, pickle_module=dill)
 
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
         elif framework == "darknet":
@@ -178,7 +245,22 @@ def get_default_dataset_model(
                 ResourceURI(TVMDarknetCOCOYOLOV3.pretrained_model_uri)
             )
             model = TVMDarknetCOCOYOLOV3(model_path, dataset)
+        elif framework == "darknet":
+            dataset = get_dataset_random_mock(COCODataset2017)
+            model_path = copy_model_to_tmp(
+                ResourceURI(TVMDarknetCOCOYOLOV3.pretrained_model_uri)
+            )
+            model = TVMDarknetCOCOYOLOV3(model_path, dataset)
 
+        elif framework == "iree":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = get_tmp_path(suffix=".vmfb")
+            iree_compiler = IREECompiler(dataset, model_path)
+            iree_compiler.init()
+            iree_compiler.compile(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            )
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
         elif framework == "iree":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = get_tmp_path(suffix=".vmfb")
@@ -210,14 +292,33 @@ def get_default_dataset_model(
             )
         else:
             raise UnknownFramework(f"Unknown framework: {framework}")
+        elif framework == "tvm":
+            dataset = get_dataset_random_mock(MagicWandDataset)
+            model_path = get_tmp_path(suffix=".tar")
+            tvm_compiler = TVMCompiler(
+                dataset, model_path, model_framework="keras"
+            )
+            tvm_compiler.init()
+            tvm_compiler.compile(
+                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+            )
+            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
+        elif framework in [
+            "safetensors-native",
+            "safetensors-awq",
+            "safetensors-gptq",
+        ]:
+            raise UnknownFramework(
+                f"LLM frameworks are not supported yet - {framework}"
+            )
+        else:
+            raise UnknownFramework(f"Unknown framework: {framework}")
 
-    model.save_io_specification(model.model_path)
-    # A temporary path is removed as soon as contextmanager goes out of scope.
-    try:
-        yield dataset, model
-    finally:
-        if model_path is not None:
-            remove_file_or_dir(model_path)
+        model.save_io_specification(model.model_path)
+
+        id = str(uuid4())
+        DatasetModelRegistry._registry[id] = (dataset, model)
+        return dataset, model, id
 
 
 def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:

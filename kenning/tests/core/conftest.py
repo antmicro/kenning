@@ -99,9 +99,18 @@ def remove_file_or_dir(path: Union[Path, str]):
         shutil.rmtree(path)
 
 
+class NonExistentAssetError(Exception):
+    """
+    Exception raised when a non-existent identifier is requested
+    from DatasetModelRegistry.
+    """
+
+    pass
+
+
 class DatasetModelRegistry:
     """
-    Singleton containing registry of pairs with dataset mocks and
+    Singleton containing a registry of pairs made of dataset mocks and
     temporary models.
     """
 
@@ -110,10 +119,32 @@ class DatasetModelRegistry:
 
     @classmethod
     def remove(cls, id: str):
+        """
+        Remove assets associated with the provided id.
+
+        The method removes an associated pair of a mock dataset and
+        model wrapper from the disk. Both of them are stored in a
+        temporary location. But they may be removed earlier to reclaim
+        some disk space. Not calling the method is not fatal;
+        the temporary location is always purged at the end
+        of life of a process.
+
+        Parameters
+        ----------
+        id : str
+            Unique identifier for a dataset and model.
+
+        Raises
+        ------
+        NonExistentAssetError
+            Raised if a method is called with `id` not present
+            in the registry.
+
+        """
         if DatasetModelRegistry.debug:
             return
         if id not in DatasetModelRegistry._registry:
-            raise KeyError(
+            raise NonExistentAssetError(
                 f"Cannot remove (dataset, model) pair with id = `{id}` "
                 "because it is not present in the registry."
             )
@@ -129,8 +160,10 @@ class DatasetModelRegistry:
     def get(cls, framework: str) -> Tuple[Dataset, ModelWrapper, str]:
         """
         Returns a default model and dataset for a given framework.
+
         The returned dataset is a mock of a default dataset of the
-        returned model.
+        returned model. The third element of a tuple is id.
+        Id is used to clear resources by call to `remove` method.
 
         Parameters
         ----------
@@ -144,7 +177,8 @@ class DatasetModelRegistry:
         Returns
         -------
         Tuple[Dataset, ModelWrapper, str]
-            Iterator with tuple with dataset and model for given framework.
+            Tuple with: dataset, model for given framework,
+            and id for the resources.
         """
         if framework == "keras":
             dataset = get_dataset_random_mock(MagicWandDataset)

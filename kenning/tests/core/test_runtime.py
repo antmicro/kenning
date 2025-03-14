@@ -2,8 +2,9 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+from contextlib import contextmanager
 from time import sleep
-from typing import Any, Tuple, Type
+from typing import Any, Iterator, Tuple, Type
 
 import numpy as np
 import pytest
@@ -13,8 +14,8 @@ from kenning.core.measurements import MeasurementsCollector
 from kenning.core.model import ModelWrapper
 from kenning.core.runtime import ModelNotPreparedError, Runtime
 from kenning.tests.core.conftest import (
+    DatasetModelRegistry,
     UnknownFramework,
-    get_default_dataset_model,
 )
 from kenning.utils.class_loader import get_all_subclasses
 
@@ -27,17 +28,20 @@ RUNTIME_INPUTTYPES = [
 ]
 
 
+@contextmanager
 def prepare_objects(
     runtime_cls: Type[Runtime], inputtype: str, **runtime_kwargs: Any
-) -> Tuple[Runtime, Dataset, ModelWrapper]:
+) -> Iterator[Tuple[Runtime, Dataset, ModelWrapper]]:
+    assets_id = None
     try:
-        dataset, model = get_default_dataset_model(inputtype)
+        dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
+        runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
+        yield runtime, dataset, model
     except UnknownFramework:
         pytest.xfail(f"Unknown framework: {inputtype}")
-
-    runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
-
-    return runtime, dataset, model
+    finally:
+        if assets_id is not None:
+            DatasetModelRegistry.remove(assets_id)
 
 
 class TestRuntime:
@@ -64,7 +68,8 @@ class TestRuntime:
         """
         Tests runtime initialization.
         """
-        _ = prepare_objects(runtime_cls, inputtype)
+        with prepare_objects(runtime_cls, inputtype):
+            pass
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -92,12 +97,13 @@ class TestRuntime:
         """
         Tests the `preprocess_input` method.
         """
-        runtime, _, _ = prepare_objects(runtime_cls, inputtype)
-
-        try:
-            assert runtime.prepare_local()
-        except NotImplementedError:
-            pytest.xfail(f"{runtime_cls.__name__} does not support local run")
+        with prepare_objects(runtime_cls, inputtype) as (runtime, _, _):
+            try:
+                assert runtime.prepare_local()
+            except NotImplementedError:
+                pytest.xfail(
+                    f"{runtime_cls.__name__} does not support local run"
+                )
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -126,22 +132,22 @@ class TestRuntime:
         """
         Tests the inference session without statistics collection.
         """
-        runtime, dataset, model = prepare_objects(
+        with prepare_objects(
             runtime_cls, inputtype, disable_performance_measurements=True
-        )
-        runtime.inference_session_start()
+        ) as (runtime, dataset, model):
+            runtime.inference_session_start()
 
-        assert runtime.prepare_local()
+            assert runtime.prepare_local()
 
-        for _ in range(8):
-            X, _ = next(dataset)
-            prepX = model.preprocess_input(X)
+            for _ in range(8):
+                X, _ = next(dataset)
+                prepX = model.preprocess_input(X)
 
-            assert runtime.load_input(prepX)
-            runtime.run()
+                assert runtime.load_input(prepX)
+                runtime.run()
 
-        assert runtime.statsmeasurements is None
-        assert len(MeasurementsCollector.measurements.data) == 0
+            assert runtime.statsmeasurements is None
+            assert len(MeasurementsCollector.measurements.data) == 0
 
         runtime.inference_session_end()
         MeasurementsCollector.clear()
@@ -173,27 +179,26 @@ class TestRuntime:
         """
         Tests the inference session statistics collection.
         """
-        runtime, dataset, model = prepare_objects(
+        with prepare_objects(
             runtime_cls, inputtype, disable_performance_measurements=False
-        )
-        runtime.inference_session_start()
+        ) as (runtime, dataset, model):
+            runtime.inference_session_start()
+            assert runtime.prepare_local()
 
-        assert runtime.prepare_local()
+            for _ in range(8):
+                X, _ = next(dataset)
+                prepX = model._preprocess_input(X)
 
-        for _ in range(8):
-            X, _ = next(dataset)
-            prepX = model._preprocess_input(X)
+                assert runtime.load_input(prepX)
+                runtime._run()
+                sleep(0.01)
 
-            assert runtime.load_input(prepX)
-            runtime._run()
-            sleep(0.01)
+            assert runtime.statsmeasurements is not None
+            assert len(runtime.statsmeasurements.get_measurements().data) > 0
 
-        assert runtime.statsmeasurements is not None
-        assert len(runtime.statsmeasurements.get_measurements().data) > 0
-
-        runtime.inference_session_end()
-        assert runtime.statsmeasurements is None
-        assert len(MeasurementsCollector.measurements.data) > 0
+            runtime.inference_session_end()
+            assert runtime.statsmeasurements is None
+            assert len(MeasurementsCollector.measurements.data) > 0
 
         MeasurementsCollector.clear()
 
@@ -222,17 +227,15 @@ class TestRuntime:
         """
         Tests the `prepare_model` method.
         """
-        runtime, _, _ = prepare_objects(runtime_cls, inputtype)
+        with prepare_objects(runtime_cls, inputtype) as (runtime, _, _):
+            assert runtime.prepare_model(None) is True
+            assert runtime.prepare_model(b"") is True
 
-        assert runtime.prepare_model(None) is True
+            with open(runtime.model_path, "rb") as model_f:
+                assert b"" != model_f.read()
 
-        assert runtime.prepare_model(b"") is True
-
-        with open(runtime.model_path, "rb") as model_f:
-            assert b"" != model_f.read()
-
-        with pytest.raises(Exception):
-            assert runtime.prepare_model(b"Kenning") is False
+            with pytest.raises(Exception):
+                assert runtime.prepare_model(b"Kenning") is False
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -259,16 +262,16 @@ class TestRuntime:
         """
         Tests the `load_input` method.
         """
-        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
-
-        assert runtime.prepare_local()
-
-        X, _ = next(dataset)
-        prepX = model._preprocess_input(X)
-
-        assert runtime.load_input(prepX)
-
-        assert not runtime.load_input([])
+        with prepare_objects(runtime_cls, inputtype) as (
+            runtime,
+            dataset,
+            model,
+        ):
+            assert runtime.prepare_local()
+            X, _ = next(dataset)
+            prepX = model._preprocess_input(X)
+            assert runtime.load_input(prepX)
+            assert not runtime.load_input([])
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -297,17 +300,19 @@ class TestRuntime:
         """
         Tests the `load_input` method.
         """
-        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
+        with prepare_objects(runtime_cls, inputtype) as (
+            runtime,
+            dataset,
+            model,
+        ):
+            assert runtime.prepare_local()
 
-        assert runtime.prepare_local()
+            X, _ = next(dataset)
+            prepX = model._preprocess_input(X)
+            prepX = model.convert_input_to_bytes(prepX)
 
-        X, _ = next(dataset)
-        prepX = model._preprocess_input(X)
-        prepX = model.convert_input_to_bytes(prepX)
-
-        assert runtime.load_input_from_bytes(prepX)
-
-        assert not runtime.load_input_from_bytes(b"")
+            assert runtime.load_input_from_bytes(prepX)
+            assert not runtime.load_input_from_bytes(b"")
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -335,16 +340,18 @@ class TestRuntime:
         """
         Tests the `run_locally` method.
         """
-        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
+        with prepare_objects(runtime_cls, inputtype) as (
+            runtime,
+            dataset,
+            model,
+        ):
+            assert runtime.prepare_local()
 
-        assert runtime.prepare_local()
+            X, _ = next(dataset)
+            prepX = model._preprocess_input(X)
+            assert runtime.load_input(prepX)
 
-        X, _ = next(dataset)
-        prepX = model._preprocess_input(X)
-
-        assert runtime.load_input(prepX)
-
-        runtime.run()
+            runtime.run()
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -371,26 +378,30 @@ class TestRuntime:
         """
         Tests the `upload_output` method.
         """
-        runtime, dataset, model = prepare_objects(runtime_cls, inputtype)
+        with prepare_objects(runtime_cls, inputtype) as (
+            runtime,
+            dataset,
+            model,
+        ):
+            model_output_size = sum(
+                [
+                    np.prod(output["shape"])
+                    * np.dtype(output["dtype"]).itemsize
+                    for output in model.get_io_specification()["output"]
+                ]
+            )
 
-        model_output_size = sum(
-            [
-                np.prod(output["shape"]) * np.dtype(output["dtype"]).itemsize
-                for output in model.get_io_specification()["output"]
-            ]
-        )
+            with pytest.raises(ModelNotPreparedError):
+                runtime.upload_output(b"")
 
-        with pytest.raises(ModelNotPreparedError):
-            runtime.upload_output(b"")
+            assert runtime.prepare_local()
 
-        assert runtime.prepare_local()
+            X, _ = next(dataset)
+            prepX = model._preprocess_input(X)
 
-        X, _ = next(dataset)
-        prepX = model._preprocess_input(X)
+            assert runtime.load_input(prepX)
 
-        assert runtime.load_input(prepX)
+            runtime.run()
 
-        runtime.run()
-
-        data = runtime.upload_output(b"")
-        assert len(data) == model_output_size
+            data = runtime.upload_output(b"")
+            assert len(data) == model_output_size

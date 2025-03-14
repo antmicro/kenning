@@ -4,12 +4,15 @@
 
 import shutil
 import threading
+from contextlib import contextmanager
 from pathlib import Path
 from time import sleep
-from typing import Any, Dict, List, Literal, Optional, Tuple
+from typing import Any, Dict, Iterator, List, Literal, Optional, Tuple
 
 import pytest
 
+from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.protocol import RequestFailure
 from kenning.dataconverters.modelwrapper_dataconverter import (
@@ -18,9 +21,31 @@ from kenning.dataconverters.modelwrapper_dataconverter import (
 from kenning.protocols.network import NetworkProtocol
 from kenning.runtimes.tflite import TFLiteRuntime
 from kenning.scenarios.inference_server import InferenceServer
-from kenning.tests.core.conftest import get_default_dataset_model
+from kenning.tests.core.conftest import DatasetModelRegistry
 from kenning.utils.pipeline_runner import PipelineRunner
 from kenning.utils.resource_manager import PathOrURI
+
+
+@contextmanager
+def prepare_objects(framework: str) -> Iterator[Tuple[Dataset, ModelWrapper]]:
+    """
+    Context manager to prepare mock dataset and model wrapper for tests.
+
+    Parameters
+    ----------
+    framework : str
+        Name of the framework.
+
+    Yields
+    ------
+    Iterator[Tuple[Dataset, ModelWrapper]]
+        Tuple with dataset mock and model wrapper in a temporary location.
+    """
+    dataset, model_wrapper, assets_id = DatasetModelRegistry.get(framework)
+    try:
+        yield dataset, model_wrapper
+    finally:
+        DatasetModelRegistry.remove(assets_id)
 
 
 class OptimizerMock(Optimizer):
@@ -82,20 +107,20 @@ class TestServerSideOptimization:
             model_path=Path("./build/compiled_model.tflite"),
         )
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
 
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime_host,
-        )
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime_host,
+            )
 
-        model_path = pipeline_runner._handle_optimizations()
+            model_path = pipeline_runner._handle_optimizations()
 
-        assert model_path.exists()
+            assert model_path.exists()
 
     @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize(
@@ -145,42 +170,42 @@ class TestServerSideOptimization:
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
-        runtime_host = TFLiteRuntime(
-            model_path=Path("./build/compiled_model.tflite"),
-        )
-        protocol_host = NetworkProtocol("localhost", 12345, 32768)
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+            runtime_host = TFLiteRuntime(
+                model_path=Path("./build/compiled_model.tflite"),
+            )
+            protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime_host,
-            protocol=protocol_host,
-        )
-
-        server_thread = threading.Thread(target=inference_server.run)
-        try:
-            server_thread.start()
-            sleep(0.1)
-
-            assert server_thread.is_alive()
-
-            protocol_host.initialize_client()
-
-            model_path = pipeline_runner._handle_optimizations()
-            assert model_path.exists()
-            assert (
-                model_path.read_bytes()
-                == model_wrapper.model_path.read_bytes()
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime_host,
+                protocol=protocol_host,
             )
 
-        finally:
-            inference_server.close()
-            server_thread.join()
-            assert not server_thread.is_alive()
+            server_thread = threading.Thread(target=inference_server.run)
+            try:
+                server_thread.start()
+                sleep(0.1)
+
+                assert server_thread.is_alive()
+
+                protocol_host.initialize_client()
+
+                model_path = pipeline_runner._handle_optimizations()
+                assert model_path.exists()
+                assert (
+                    model_path.read_bytes()
+                    == model_wrapper.model_path.read_bytes()
+                )
+
+            finally:
+                inference_server.close()
+                server_thread.join()
+                assert not server_thread.is_alive()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_optimization_fail_when_server_is_not_running(self):
@@ -196,24 +221,24 @@ class TestServerSideOptimization:
             for i, location in enumerate(("target", "host", "target"))
         ]
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
-        runtime = TFLiteRuntime(
-            model_path=Path("./build/compiled_model.tflite"),
-        )
-        protocol = NetworkProtocol("localhost", 12345, 32768)
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+            runtime = TFLiteRuntime(
+                model_path=Path("./build/compiled_model.tflite"),
+            )
+            protocol = NetworkProtocol("localhost", 12345, 32768)
 
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime,
-            protocol=protocol,
-        )
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime,
+                protocol=protocol,
+            )
 
-        with pytest.raises(RequestFailure):
-            pipeline_runner._handle_optimizations()
+            with pytest.raises(RequestFailure):
+                pipeline_runner._handle_optimizations()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_target_side_optimization_compile_fail(self):
@@ -246,38 +271,38 @@ class TestServerSideOptimization:
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
-        runtime_host = TFLiteRuntime(
-            model_path=Path("./build/compiled_model.tflite"),
-        )
-        protocol_host = NetworkProtocol("localhost", 12345, 32768)
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+            runtime_host = TFLiteRuntime(
+                model_path=Path("./build/compiled_model.tflite"),
+            )
+            protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime_host,
-            protocol=protocol_host,
-        )
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime_host,
+                protocol=protocol_host,
+            )
 
-        server_thread = threading.Thread(target=inference_server.run)
-        try:
-            server_thread.start()
-            sleep(0.1)
+            server_thread = threading.Thread(target=inference_server.run)
+            try:
+                server_thread.start()
+                sleep(0.1)
 
-            assert server_thread.is_alive()
+                assert server_thread.is_alive()
 
-            protocol_host.initialize_client()
+                protocol_host.initialize_client()
 
-            with pytest.raises(RequestFailure):
-                pipeline_runner._handle_optimizations()
+                with pytest.raises(RequestFailure):
+                    pipeline_runner._handle_optimizations()
 
-        finally:
-            inference_server.close()
-            server_thread.join()
-            assert not server_thread.is_alive()
+            finally:
+                inference_server.close()
+                server_thread.join()
+                assert not server_thread.is_alive()
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_optimization_when_protocol_is_not_specified(self):
@@ -293,25 +318,28 @@ class TestServerSideOptimization:
             for i, location in enumerate(("target", "host", "target"))
         ]
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
-        runtime = TFLiteRuntime(
-            model_path=Path("./build/compiled_model.tflite"),
-        )
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+            runtime = TFLiteRuntime(
+                model_path=Path("./build/compiled_model.tflite"),
+            )
 
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime,
-            protocol=None,
-        )
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime,
+                protocol=None,
+            )
 
-        model_path = pipeline_runner._handle_optimizations()
+            model_path = pipeline_runner._handle_optimizations()
 
-        assert model_path.exists()
-        assert model_path.read_bytes() == model_wrapper.model_path.read_bytes()
+            assert model_path.exists()
+            assert (
+                model_path.read_bytes()
+                == model_wrapper.model_path.read_bytes()
+            )
 
     @pytest.mark.xdist_group(name="use_socket")
     @pytest.mark.parametrize("max_optimizers", (1, 2, 4, 8))
@@ -350,37 +378,37 @@ class TestServerSideOptimization:
             runtime=runtime_target, protocol=protocol_target
         )
 
-        dataset, model_wrapper = get_default_dataset_model("keras")
-        dataconverter = ModelWrapperDataConverter(model_wrapper)
-        runtime_host = TFLiteRuntime(
-            model_path=Path("./build/compiled_model.tflite"),
-        )
-        protocol_host = NetworkProtocol("localhost", 12345, 32768)
-
-        pipeline_runner = PipelineRunner(
-            dataset=dataset,
-            dataconverter=dataconverter,
-            model_wrapper=model_wrapper,
-            optimizers=optimizers,
-            runtime=runtime_host,
-            protocol=protocol_host,
-        )
-
-        server_thread = threading.Thread(target=inference_server.run)
-        try:
-            server_thread.start()
-            sleep(0.1)
-
-            assert server_thread.is_alive()
-
-            protocol_host.initialize_client()
-
-            pipeline_runner._handle_optimizations(
-                max_target_side_optimizers=max_optimizers
+        with prepare_objects("keras") as (dataset, model_wrapper):
+            dataconverter = ModelWrapperDataConverter(model_wrapper)
+            runtime_host = TFLiteRuntime(
+                model_path=Path("./build/compiled_model.tflite"),
             )
-            assert max_loaded_optimizers <= max_optimizers
+            protocol_host = NetworkProtocol("localhost", 12345, 32768)
 
-        finally:
-            inference_server.close()
-            server_thread.join()
-            assert not server_thread.is_alive()
+            pipeline_runner = PipelineRunner(
+                dataset=dataset,
+                dataconverter=dataconverter,
+                model_wrapper=model_wrapper,
+                optimizers=optimizers,
+                runtime=runtime_host,
+                protocol=protocol_host,
+            )
+
+            server_thread = threading.Thread(target=inference_server.run)
+            try:
+                server_thread.start()
+                sleep(0.1)
+
+                assert server_thread.is_alive()
+
+                protocol_host.initialize_client()
+
+                pipeline_runner._handle_optimizations(
+                    max_target_side_optimizers=max_optimizers
+                )
+                assert max_loaded_optimizers <= max_optimizers
+
+            finally:
+                inference_server.close()
+                server_thread.join()
+                assert not server_thread.is_alive()

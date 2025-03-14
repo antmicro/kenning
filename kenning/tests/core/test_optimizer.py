@@ -33,10 +33,11 @@ OPTIMIZER_INPUTTYPES = [
 def prepare_objects(
     opt_cls: Type[Optimizer], inputtype: str
 ) -> Iterator[Tuple[Optimizer, ModelWrapper]]:
+    assets_id = None
     try:
         compiled_model_path = get_tmp_path()
         try:
-            dataset, model, id = DatasetModelRegistry.get(inputtype)
+            dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
         except UnknownFramework:
             pytest.xfail(f"Unknown framework: {inputtype}")
 
@@ -48,7 +49,7 @@ def prepare_objects(
         optimizer.set_input_type(inputtype)
         yield optimizer, model
     finally:
-        DatasetModelRegistry.remove(id)
+        DatasetModelRegistry.remove(assets_id)
 
 
 class TestOptimizer:

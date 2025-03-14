@@ -36,6 +36,7 @@ RUNTIME_INPUTTYPES = [
 def prepare_objects(
     runtime_cls: Type[Runtime], inputtype: str, **runtime_kwargs: Any
 ) -> Iterator[Tuple[Runtime, Dataset, ModelWrapper]]:
+    assets_id = None
     try:
         try:
             dataset, model, assets_id = DatasetModelRegistry.get(inputtype)

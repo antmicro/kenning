@@ -7,9 +7,9 @@ import os
 import random
 import shutil
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Dict, Optional, Tuple, Type, Union
-from uuid import uuid4
+from typing import Iterator, Optional, Tuple, Type, Union
 
 import pytest
 from tensorflow.keras.models import load_model as load_keras_model
@@ -99,89 +99,31 @@ def remove_file_or_dir(path: Union[Path, str]):
         shutil.rmtree(path)
 
 
-class NonExistentAssetError(Exception):
+@contextmanager
+def get_default_dataset_model(
+    framework: str
+) -> Iterator[Tuple[Dataset, ModelWrapper]]:
     """
-    Exception raised when a non-existent identifier is requested
-    from DatasetModelRegistry.
-    """
-
-    pass
-
-
-class DatasetModelRegistry:
-    """
-    Singleton containing a registry of pairs made of dataset mocks and
-    temporary models.
-    """
-
-    debug: bool = False
-    _registry: Dict[str, Tuple[Dataset, ModelWrapper]] = {}
-
-    @classmethod
-    def remove(cls, id: str):
-        """
-        Remove assets associated with the provided id.
-
-        The method removes an associated pair of a mock dataset and
-        model wrapper from the disk. Both of them are stored in a
-        temporary location. But they may be removed earlier to reclaim
-        some disk space. Not calling the method is not fatal;
-        the temporary location is always purged at the end
-        of life of a process.
-
-        Parameters
-        ----------
-        id : str
-            Unique identifier for a dataset and model.
-
-        Raises
-        ------
-        NonExistentAssetError
-            Raised if a method is called with `id` not present
-            in the registry.
-
-        """
-        if DatasetModelRegistry.debug:
-            return
-        if id not in DatasetModelRegistry._registry:
-            raise NonExistentAssetError(
-                f"Cannot remove (dataset, model) pair with id = `{id}` "
-                "because it is not present in the registry."
-            )
-
-        pair = DatasetModelRegistry._registry[id]
-        if pair[0].root.exists():
-            remove_file_or_dir(pair[0].root)
-        if pair[1].get_path().exists():
-            remove_file_or_dir(pair[1].get_path())
-        del DatasetModelRegistry._registry[id]
-
-    @classmethod
-    def get(cls, framework: str) -> Tuple[Dataset, ModelWrapper, str]:
-        """
-        Returns a default model and dataset for a given framework.
-
-        The returned dataset is a mock of a default dataset of the
-        returned model. The third element of a tuple is id.
-        Id is used to clear resources by call to `remove` method.
+    Returns default model and dataset for given framework. Returned dataset is
+    a mock of default dataset of returned model.
 
         Parameters
         ----------
         framework : str
             Name of framework.
 
-        Returns
-        -------
-        Tuple[Dataset, ModelWrapper, str]
-            Tuple with: dataset, model for given framework,
-            and id for the resources.
-        """
-        if framework == "keras":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = copy_model_to_tmp(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            )
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
+    Returns
+    -------
+    Iterator[Tuple[Dataset, ModelWrapper]]
+        Iterator with tuple with dataset and model for given framework.
+    """
+    model_path = None
+    if framework == "keras":
+        dataset = get_dataset_random_mock(MagicWandDataset)
+        model_path = copy_model_to_tmp(
+            ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
+        )
+        model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
         elif framework == "tensorflow":
             dataset = get_dataset_random_mock(MagicWandDataset)
@@ -269,11 +211,13 @@ class DatasetModelRegistry:
         else:
             raise UnknownFramework(f"Unknown framework: {framework}")
 
-        model.save_io_specification(model.model_path)
-
-        id = str(uuid4())
-        DatasetModelRegistry._registry[id] = (dataset, model)
-        return dataset, model, id
+    model.save_io_specification(model.model_path)
+    # A temporary path is removed as soon as contextmanager goes out of scope.
+    try:
+        yield dataset, model
+    finally:
+        if model_path is not None:
+            remove_file_or_dir(model_path)
 
 
 def get_dataset_download_path(dataset_cls: Type[Dataset]) -> Path:

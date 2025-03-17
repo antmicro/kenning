@@ -44,6 +44,8 @@ Seamless nature of Kenning also allows developers to quickly evaluate the model 
 
 ### Module installation with pip
 
+`NOTE`: Kenning supports Python up to 3.11.
+
 To install Kenning with its basic dependencies with `pip`, run:
 
 ```bash test-skip

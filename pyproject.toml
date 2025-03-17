@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "kenning"
-version = "0.0.2"
+version = "0.0.3"
 description = "Kenning - a framework for implementing and testing deployment pipelines for deep learning applications on edge devices"
 authors = [
     {name = "Antmicro Ltd.", email = "contact@antmicro.com"},

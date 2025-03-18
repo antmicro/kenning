@@ -2,11 +2,14 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import logging
+import socket
 from pathlib import Path
 from typing import Dict
 from urllib.parse import urlparse
 
 import pytest
+import requests
 
 from kenning.modelwrappers.classification.tflite_magic_wand import (
     MagicWandModelWrapper,
@@ -14,6 +17,7 @@ from kenning.modelwrappers.classification.tflite_magic_wand import (
 from kenning.modelwrappers.classification.tflite_person_detection import (
     PersonDetectionModelWrapper,
 )
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import (
     ResourceManager,
     Resources,
@@ -423,3 +427,47 @@ class TestResources:
 
         with pytest.raises(KeyError):
             _ = resources["nested", "model_1"]
+
+    def test_calculating_remote_checksum_without_connectivity(self):
+        """
+        Test calculating a checksum on a remote resource
+        despite a lack of the Internet connection.
+        """
+
+        # Handler to gather all logs.
+        class ListHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.logs = []
+
+            def emit(self, record):
+                self.logs.append(self.format(record))
+
+            def get_logs(self):
+                return self.logs
+
+        list_handler = ListHandler()
+        KLogger.addHandler(list_handler)
+
+        uri = "https://ftp.icm.edu.pl/pub/Linux/dist/archlinux/iso/2025.03.01/sha256sums.txt"
+        _ = ResourceURI(uri)
+
+        # Disable the Internet connection.
+        def socket_guard(*args, **kwargs):
+            raise requests.exceptions.ConnectionError(
+                "Internet connection disabled."
+            )
+
+        original_socket = socket.socket
+        socket.socket = socket_guard
+
+        # Fetch the resource again.
+        _ = ResourceURI(uri)
+
+        # Ensure that proper logs were emitted.
+        logs = list_handler.get_logs()
+        logs = "\n".join(logs)
+        assert "Cannot check the remote state, using local file" in logs
+
+        # Restore the Internet connection.
+        socket.socket = original_socket

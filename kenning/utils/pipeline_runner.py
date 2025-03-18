@@ -140,21 +140,8 @@ class PipelineRunner(object):
             self.model_wrapper or self.dataconverter
         ), "Provide either dataconverter or model_wrapper."
 
-        if (
-            type(self.runtime_builder).__name__ == "ZephyrRuntimeBuilder"
-        ) and type(self.platform).__name__ in (
-            "BareMetalPlatform",
-            "ZephyrPlatform",
-        ):
-            self.platform.zephyr_build_path = self.runtime_builder.output_path
-            KLogger.info(
-                "Set platform Zephyr build path to "
-                f"{self.platform.zephyr_build_path}"
-            )
-            self.runtime_builder.board = self.platform.name
-            KLogger.info(
-                f"Set runtime builder board to {self.runtime_builder.board}"
-            )
+        if self.runtime_builder:
+            self.runtime_builder.read_platform(self.platform)
 
         for optim in optimizers:
             optim.read_platform(self.platform)

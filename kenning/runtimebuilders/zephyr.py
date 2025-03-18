@@ -15,6 +15,7 @@ from functools import wraps
 from pathlib import Path
 from typing import List, Optional, Union
 
+from kenning.core.platform import Platform
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.utils.logger import KLogger
 
@@ -493,3 +494,18 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             )
         except subprocess.CalledProcessError as e:
             raise RuntimeError("Module preparation failed") from e
+
+    def read_platform(self, platform: Platform):
+        if (type(self).__name__ == "ZephyrRuntimeBuilder") and type(
+            platform
+        ).__name__ in (
+            "BareMetalPlatform",
+            "ZephyrPlatform",
+        ):
+            platform.zephyr_build_path = self.output_path
+            KLogger.info(
+                "Set platform Zephyr build path to "
+                f"{platform.zephyr_build_path}"
+            )
+            self.board = platform.name
+            KLogger.info(f"Set runtime builder board to {self.board}")

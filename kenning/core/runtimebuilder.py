@@ -10,6 +10,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Optional
 
+from kenning.core.platform import Platform
 from kenning.utils.args_manager import ArgumentsHandler
 
 
@@ -85,3 +86,20 @@ class RuntimeBuilder(ArgumentsHandler, ABC):
 
     def set_model_path(self, model_path):
         self.model_path = model_path
+
+    @abstractmethod
+    def read_platform(self, platform: Platform):
+        """
+        Reads and integrates Platform data to configure model building.
+
+        By default no data is neither read or integrate.
+
+        It is important to take into account that different
+        Platform-based classes come with a different sets of attributes.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
+        """
+        pass

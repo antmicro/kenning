@@ -89,6 +89,21 @@ pytest-automl:
             - log_docs/*.log
         when: always
 
+pytest-compatibility:
+    <<: *common_only
+    stage: tests
+    variables:
+        MARKS: "compat_matrix"
+    script:
+        - /scripts/prepare_environment.sh .
+        - pip install -e ".[test,llm]"
+        - PYTHONPATH=$(pwd):$PYTHONPATH timeout --preserve-status -s INT -k 17m 15m pytest kenning/tests/compatibility -m "$MARKS" -n=1 --xfail-tb
+    artifacts:
+        paths:
+            - log.json
+            - compatibility/*
+        when: always
+
 .pytest-docs: &pytest-docs
     image: $CI_MINIMAL_IMAGE
     dependencies: []

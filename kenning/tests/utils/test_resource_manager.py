@@ -434,23 +434,30 @@ class TestResources:
         despite a lack of the Internet connection.
         """
 
+        def request_remote_resource():
+            uri = "https://ftp.icm.edu.pl/pub/Linux/dist/archlinux/iso/2025.03.01/sha256sums.txt"
+            _ = ResourceURI(uri)
+
         # Handler to gather all logs.
         class ListHandler(logging.Handler):
             def __init__(self):
                 super().__init__()
-                self.logs = []
+                self.logs = ""
 
             def emit(self, record):
-                self.logs.append(self.format(record))
+                self.logs += f"{self.format(record)}\n"
 
-            def get_logs(self):
+            def get_logs(self) -> str:
                 return self.logs
 
         list_handler = ListHandler()
         KLogger.addHandler(list_handler)
 
-        uri = "https://ftp.icm.edu.pl/pub/Linux/dist/archlinux/iso/2025.03.01/sha256sums.txt"
-        _ = ResourceURI(uri)
+        request_remote_resource()
+        assert (
+            "Cannot check the remote state, using local file"
+            not in list_handler.get_logs()
+        )
 
         # Disable the Internet connection.
         def socket_guard(*args, **kwargs):
@@ -461,13 +468,11 @@ class TestResources:
         original_socket = socket.socket
         socket.socket = socket_guard
 
-        # Fetch the resource again.
-        _ = ResourceURI(uri)
-
-        # Ensure that proper logs were emitted.
-        logs = list_handler.get_logs()
-        logs = "\n".join(logs)
-        assert "Cannot check the remote state, using local file" in logs
+        request_remote_resource()
+        assert (
+            "Cannot check the remote state, using local file"
+            in list_handler.get_logs()
+        )
 
         # Restore the Internet connection.
         socket.socket = original_socket

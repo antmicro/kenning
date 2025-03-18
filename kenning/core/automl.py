@@ -8,19 +8,38 @@ Provides an API for AutoML flow.
 
 from abc import ABC, abstractmethod
 from argparse import Namespace
+from copy import deepcopy
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Type
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    Union,
+)
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
-from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import ArgumentsHandler, get_type
 
 
 class AutoMLInvalidSchemaError(Exception):
     """
     Raised when `arguments_structure` contains not enough information
     or when data are invalid.
+    """
+
+    ...
+
+
+class AutoMLInvalidArgumentsError(Exception):
+    """
+    Raised when provided arguments (in `use_model`) do not match with
+    model wrapper `arguments_structure`.
     """
 
     ...
@@ -64,32 +83,58 @@ class AutoMLModel(ArgumentsHandler, ABC):
             }
             schema = automl_params | schema
         # Check whether merged schema contains necessary params
-        for config in schema.values():
+        for name, config in schema.items():
             if any(
                 [config.get(arg, None) is None for arg in ("type", "default")]
             ):
                 raise AutoMLInvalidSchemaError(
                     f"{cls.__name__}:{config} misses `type` or `default`"
                 )
-            _type = config["type"]
-            if _type is list and any(
-                config.get(arg, None) is None
-                for arg in ("list_range", "items", "item_range")
-            ):
-                raise AutoMLInvalidSchemaError(
-                    f"{cls.__name__}:{config} has to define "
-                    "`list_range`, `items` and `item_range`"
-                )
+
+            _type, sub_type = get_type(config["type"])
+            if _type is list:
+                if not sub_type:
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} misses list element type"
+                    )
+                if len(sub_type) > 1:
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} list contains"
+                        " more than one sub-type"
+                    )
+                if any(isinstance(t, tuple) for t in sub_type):
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} union types ({_type}) "
+                        "are not supported for AutoML params"
+                    )
+                sub_type = sub_type[0]
+
+                if sub_type in (int, float) and any(
+                    config.get(arg, None) is None
+                    for arg in ("list_range", "item_range")
+                ):
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} has to define "
+                        "`list_range` and `item_range`"
+                    )
+                if sub_type is str and any(
+                    config.get(arg, None) is None
+                    for arg in ("list_range", "enum")
+                ):
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} has to define "
+                        "`list_range` and `enum`"
+                    )
             if (
                 _type in (int, float)
                 and config.get("item_range", None) is None
             ):
                 raise AutoMLInvalidSchemaError(
-                    f"{cls.__name__}:{config} has to define `item_range`"
+                    f"{cls.__name__}:{name} has to define `item_range`"
                 )
             if _type is str and config.get("enum", None) is None:
                 raise AutoMLInvalidSchemaError(
-                    f"{cls.__name__}:{config} has to define `enum`"
+                    f"{cls.__name__}:{name} has to define `enum`"
                 )
 
         return schema
@@ -111,6 +156,70 @@ class AutoMLModel(ArgumentsHandler, ABC):
         """
         ...
 
+    @classmethod
+    def update_automl_range(cls, name: str, conf: Dict[str, Tuple]):
+        """
+        Updates the ranges of AutoML parameters.
+
+        Parameters
+        ----------
+        name : str
+            The name of parameter, should match with the `arguments_structure`.
+        conf : Dict[str, Tuple]
+            The dictionary with new parameters configuration.
+
+        Raises
+        ------
+        AutoMLInvalidArgumentsError
+            If parameter or its configuration does not exist.
+        """
+        if name not in cls.arguments_structure:
+            raise AutoMLInvalidArgumentsError(
+                f"Class `{cls.__name__}` does not have `{name}` parameter"
+            )
+        for conf_key, conf_value in conf.items():
+            if conf_key not in cls.arguments_structure[name]:
+                raise AutoMLInvalidArgumentsError(
+                    f"Parameter `{name}` of class `{cls.__name__}` "
+                    f"does not have `{conf}` option"
+                )
+            cls.arguments_structure[name][conf_key] = conf_value
+        cls.update_automl_defaults(name)
+
+    @classmethod
+    def update_automl_defaults(cls, name: str):
+        """
+        Updates the default value of the AutoML parameter
+        to make sure they fit into ranges.
+
+        Parameters
+        ----------
+        name : str
+            The name of parameter, should match with the `arguments_structure`.
+        """
+        arg = cls.arguments_structure[name]
+        _type, _ = get_type(arg["type"])
+        default = arg["default"]
+        if _type is int or _type is float:
+            range = arg["item_range"]
+            if not (range[0] <= default <= range[1]):
+                arg["default"] = range[0]
+        elif _type is str:
+            enum = arg["enum"]
+            if default not in enum:
+                arg["default"] = enum[0]
+        elif _type is list:
+            range = arg["item_range"]
+            len_range = arg["list_range"]
+            if len_range[0] >= len(default):
+                default += [range[0]] * (len_range[0] - len(default))
+            elif len_range[1] <= len(default):
+                default = default[: (len_range[1])]
+            for i, v in enumerate(default):
+                if not (range[0] <= v <= range[1]):
+                    default[i] = range[0]
+            arg["default"] = default
+
 
 class AutoML(ArgumentsHandler, ABC):
     """
@@ -131,8 +240,7 @@ class AutoML(ArgumentsHandler, ABC):
         },
         "use_models": {
             "description": "The list of class paths or names of models wrapper to use, classes have to implement AutoMLModel",  # noqa: E501
-            "type": list,
-            "items": str,
+            "type": list[object | str],
             "default": [],
         },
         "time_limit": {
@@ -162,7 +270,7 @@ class AutoML(ArgumentsHandler, ABC):
         dataset: Dataset,
         platform: Platform,
         output_directory: Path,
-        use_models: List[str] = [],
+        use_models: List[Union[str, Dict[str, Tuple]]] = [],
         time_limit: float = 5.0,
         optimize_metric: str = "accuracy",
         n_best_models: int = 5,
@@ -180,9 +288,12 @@ class AutoML(ArgumentsHandler, ABC):
         output_directory : Path
             The path to the directory where found models
             and their measurements will be stored.
-        use_models : List[str]
-            The list of class paths or names of models wrapper to use,
-            classes have to implement AutoMLModel.
+        use_models : List[Union[str, Dict[str, Tuple]]]
+            List of either:
+                * class paths or names of models wrapper to use,
+            classes have to implement AutoMLModel, or
+                * dictionaries with class path/name as a key
+            and overrides for AutoML parameters ranges.
         time_limit : float
             The time limit in minutes.
         optimize_metric : str
@@ -208,7 +319,12 @@ class AutoML(ArgumentsHandler, ABC):
         if not use_models:
             use_models = self.supported_models
         self.use_models: List[Type[AutoMLModel]] = [
-            load_class_by_type(module_path, MODEL_WRAPPERS)
+            load_class_by_type(
+                module_path
+                if isinstance(module_path, str)
+                else list(module_path.keys())[0],
+                MODEL_WRAPPERS,
+            )
             for module_path in use_models
         ]
         assert all(
@@ -217,6 +333,17 @@ class AutoML(ArgumentsHandler, ABC):
                 for cls in self.use_models
             ]
         ), "All provided classes in `use_models` have to inherit from AutoMLModel"  # noqa: E501
+
+        # Override ranges of AutoML parameter
+        for i, (_class, model_with_conf) in enumerate(
+            zip(self.use_models, use_models)
+        ):
+            if not isinstance(model_with_conf, dict):
+                continue
+            self.use_models[i] = _class = deepcopy(_class)
+            for key, conf in list(model_with_conf.values())[0].items():
+                _class.update_automl_range(key, conf)
+
         self.output_directory.mkdir(exist_ok=True, parents=True)
 
     @abstractmethod

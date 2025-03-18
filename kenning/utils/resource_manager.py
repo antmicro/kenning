@@ -586,7 +586,17 @@ class ResourceManager(metaclass=Singleton):
             f".{self.HASHING_ALGORITHM}{'?' + args if args else ''}"
         )
 
-        response = requests.get(checksum_url, allow_redirects=True)
+        try:
+            response = requests.get(
+                checksum_url, allow_redirects=True, timeout=60
+            )
+        except requests.exceptions.RequestException:
+            KLogger.warning(
+                f"Cannot check the remote state, using local file {file_path} "
+                "instead."
+            )
+            return None
+
         if 200 != response.status_code:
             KLogger.warning(f"Cannot verify {file_path} checksum")
             return None

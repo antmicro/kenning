@@ -38,13 +38,10 @@ class KenningFlowHandler(BaseDataflowHandler):
     """
 
     def __init__(self, **kwargs):
-        if not (assets_dir := kwargs.pop("workspace_dir", None)):
-            assets_dir = ResourceManager().cache_dir / uuid.uuid4().hex
-            build_prepare(assets_dir)
-
+        self.assets_dir = self._get_asset_dir(kwargs)
         self.spec_builder = specification_builder.SpecificationBuilder(
             spec_version=SPECIFICATION_VERSION,
-            assets_dir=ResourceManager().cache_dir / assets_dir,
+            assets_dir=ResourceManager().cache_dir / self.assets_dir,
         )
         pipeline_nodes, pipeline_io_dict = PipelineHandler.get_nodes(
             self.spec_builder
@@ -81,6 +78,13 @@ class KenningFlowHandler(BaseDataflowHandler):
             self.spec_builder,
             **kwargs,
         )
+
+    def _get_asset_dir(self, kwargs):
+        if not (assets_dir := getattr(self, "assets_dir", None)):
+            if not (assets_dir := kwargs.pop("workspace_dir", None)):
+                assets_dir = ResourceManager().cache_dir / uuid.uuid4().hex
+                build_prepare(assets_dir)
+        return assets_dir
 
     def parse_json(self, json_cfg):
         return KenningFlow.from_json(json_cfg)

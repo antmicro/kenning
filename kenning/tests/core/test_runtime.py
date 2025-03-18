@@ -38,15 +38,14 @@ def prepare_objects(
 ) -> Iterator[Tuple[Runtime, Dataset, ModelWrapper]]:
     assets_id = None
     try:
-        try:
-            dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
-        except UnknownFramework:
-            pytest.xfail(f"Unknown framework: {inputtype}")
-
+        dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
         runtime = runtime_cls(**runtime_kwargs, model_path=model.model_path)
         yield runtime, dataset, model
+    except UnknownFramework:
+        pytest.xfail(f"Unknown framework: {inputtype}")
     finally:
-        DatasetModelRegistry.remove(assets_id)
+        if assets_id is not None:
+            DatasetModelRegistry.remove(assets_id)
 
 
 class TestRuntime:

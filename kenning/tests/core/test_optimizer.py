@@ -35,12 +35,8 @@ def prepare_objects(
 ) -> Iterator[Tuple[Optimizer, ModelWrapper]]:
     assets_id = None
     try:
+        dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
         compiled_model_path = get_tmp_path()
-        try:
-            dataset, model, assets_id = DatasetModelRegistry.get(inputtype)
-        except UnknownFramework:
-            pytest.xfail(f"Unknown framework: {inputtype}")
-
         optimizer = opt_cls(
             dataset,
             compiled_model_path,
@@ -48,8 +44,11 @@ def prepare_objects(
         )
         optimizer.set_input_type(inputtype)
         yield optimizer, model
+    except UnknownFramework:
+        pytest.xfail(f"Unknown framework: {inputtype}")
     finally:
-        DatasetModelRegistry.remove(assets_id)
+        if assets_id is not None:
+            DatasetModelRegistry.remove(assets_id)
 
 
 class TestOptimizer:

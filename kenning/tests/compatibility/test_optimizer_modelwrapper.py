@@ -5,10 +5,106 @@
 import os
 import uuid
 from pathlib import Path
+from typing import Tuple
 
 import pytest
+from schema import Type
 
-from kenning.tests.conftest import Samples
+from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
+from kenning.optimizers.gptq import GPTQOptimizer
+from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
+from kenning.optimizers.model_inserter import ModelInserter
+from kenning.tests.conftest import (
+    Samples,
+    get_tmp_path,
+)
+from kenning.tests.core.conftest import (
+    get_dataset_random_mock,
+    remove_file_or_dir,
+)
+from kenning.tests.core.test_model import create_model
+from kenning.utils.class_loader import get_all_subclasses
+
+MODELWRAPPER_SUBCLASSES = get_all_subclasses(
+    "kenning.modelwrappers", ModelWrapper, raise_exception=True
+)
+OPTIMIZER_SUBCLASSES = get_all_subclasses(
+    "kenning.optimizers", Optimizer, raise_exception=True
+)
+
+EXPECTED_FAIL = [
+    ("Llama", "AWQOptimizer"),
+    ("Llama", "GPTQOptimizer"),
+    ("Llama", "GPTQSparseGPTOptimizer"),
+    ("MagicWandModelWrapper", "NNIPruningOptimizer"),
+    ("MistralInstruct", "AWQOptimizer"),
+    ("MistralInstruct", "GPTQOptimizer"),
+    ("MistralInstruct", "GPTQSparseGPTOptimizer"),
+    ("ONNXYOLOV4", "NNIPruningOptimizer"),
+    ("PHI2", "AWQOptimizer"),
+    ("PHI2", "GPTQOptimizer"),
+    ("PHI2", "GPTQSparseGPTOptimizer"),
+    ("PyTorchAnomalyDetectionVAE", "NNIPruningOptimizer"),
+    ("PyTorchAnomalyDetectionVAE", "ONNXCompiler"),
+    ("PyTorchAnomalyDetectionVAE", "TFLiteCompiler"),
+    ("PyTorchAnomalyDetectionVAE", "TVMCompiler"),
+    ("PyTorchCOCOMaskRCNN", "NNIPruningOptimizer"),
+    ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
+    ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
+    ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
+    ("PyTorchPetDatasetMobileNetV2", "NNIPruningOptimizer"),
+    ("PyTorchPetDatasetMobileNetV2", "ONNXCompiler"),
+    ("PyTorchPetDatasetMobileNetV2", "TFLiteCompiler"),
+    ("PyTorchPetDatasetMobileNetV2", "TVMCompiler"),
+    ("TFLiteCompiler", "MagicWandModelWrapper"),
+    ("TFLiteCompiler", "TensorFlowPetDatasetMobileNetV2"),
+    ("TVMCompiler", "MagicWandModelWrapper"),
+    ("TVMCompiler", "TensorFlowPetDatasetMobileNetV2"),
+    ("TVMDarknetCOCOYOLOV3", "TVMCompiler"),
+    ("TensorFlowImageNet", "NNIPruningOptimizer"),
+    ("TensorFlowImageNet", "TFLiteCompiler"),
+    ("TensorFlowImageNet", "TVMCompiler"),
+    ("TensorFlowImageNet", "TensorFlowClusteringOptimizer"),
+    ("TensorFlowImageNet", "TensorFlowPruningOptimizer"),
+    ("TensorFlowPetDatasetMobileNetV2", "NNIPruningOptimizer"),
+    ("TensorFlowPruningOptimizer", "TensorFlowImageNet"),
+    ("TensorFlowPruningOptimizer", "TensorFlowImageNet"),
+    ("YOLACT", "NNIPruningOptimizer"),
+    ("YOLACTWithPostprocessing", "NNIPruningOptimizer"),
+    ("YOLACTWithPostprocessing", "TVMCompiler"),
+]
+expected_mark = pytest.mark.xfail(reason="Expected incompatible")
+
+
+def prepare_objects(
+    model_cls: Type[ModelWrapper],
+    optimizer_cls: Type[Optimizer],
+) -> Tuple[ModelWrapper, Optimizer]:
+    if optimizer_cls is ModelInserter:
+        pytest.skip("ModelInserter is not supported")
+
+    try:
+        model_type = Optimizer.consult_model_type(optimizer_cls, model_cls)
+    except ValueError:
+        pytest.skip("Blocks do not match")
+
+    dataset_cls = model_cls.default_dataset
+    dataset = get_dataset_random_mock(dataset_cls, model_cls)
+    model = create_model(model_cls, dataset)
+
+    kwargs = {}
+    if optimizer_cls not in (GPTQOptimizer, GPTQSparseGPTOptimizer):
+        kwargs["model_framework"] = model_type
+
+    optimizer = optimizer_cls(
+        model.dataset,
+        get_tmp_path(),
+        **kwargs,
+    )
+    optimizer.init()
+
+    return model, optimizer
 
 
 @pytest.mark.slow
@@ -115,3 +211,28 @@ class TestOptimizerModelWrapper:
                 assert os.path.exists(compiled_model_path)
                 os.remove(compiled_model_path)
             os.remove(filepath)
+
+    @pytest.mark.compat_matrix(ModelWrapper, Optimizer)
+    @pytest.mark.xdist_group(name="use_resources")
+    @pytest.mark.parametrize(
+        "model_cls,optimizer_cls",
+        [
+            pytest.param(cls1, cls2, marks=[expected_mark])
+            if (cls1.__name__, cls2.__name__) in EXPECTED_FAIL
+            else (cls1, cls2)
+            for cls1 in MODELWRAPPER_SUBCLASSES
+            for cls2 in OPTIMIZER_SUBCLASSES
+        ],
+    )
+    def test_matrix(
+        self,
+        model_cls: Type[ModelWrapper],
+        optimizer_cls: Type[Optimizer],
+    ):
+        model, optimizer = prepare_objects(model_cls, optimizer_cls)
+        try:
+            optimizer.compile(model.model_path, model.get_io_specification())
+            assert optimizer.compiled_model_path.exists()
+        finally:
+            optimizer.compiled_model_path.unlink(missing_ok=True)
+            remove_file_or_dir(model.model_path)

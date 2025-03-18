@@ -166,6 +166,7 @@ class LLM(ModelWrapper, ABC):
             prompt_config = {"user_message", message}
             if hasattr(self.dataset, "system_message"):
                 prompt_config["system_message"] = self.dataset.system_message
+            message = self.message_to_instruction(prompt_config)
             conversations.append(message)
         return [conversations]
 

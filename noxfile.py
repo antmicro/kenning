@@ -204,7 +204,7 @@ def run_pytest(session: nox.Session, device):
         "--ignore=kenning/tests/utils/test_class_loader.py",
         "-n=auto",
         "-m",
-        "(not docs_gallery) and (not docs) and (not gpu) and (not automl)",
+        "(not docs_gallery) and (not docs) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
         f"--report-log={report_path}",
     )
 

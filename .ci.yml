@@ -60,7 +60,7 @@ pytest:
     dependencies: []
     stage: tests
     variables:
-        MARKS: "(not docs_gallery) and (not docs) and (not gpu) and (not automl)"
+        MARKS: "(not docs_gallery) and (not docs) and (not gpu) and (not automl) and (not compat_matrix)"
     script:
         - /scripts/prepare_environment.sh .
         - pip install -e ".[pipeline_manager,test,llm]"

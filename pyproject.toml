@@ -226,6 +226,7 @@ markers = [
     "docs_gallery",  # marks tests extracted from Kenning gallery
     "gpu",           # marks tests requiring GPU for running
     "automl",        # marks tests for AutoML flow
+    "compat_matrix", # marks tests for creating compatibility matrices
 ]
 log_cli = true
 log_level = "DEBUG"

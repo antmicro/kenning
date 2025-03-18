@@ -8,7 +8,7 @@ Provides wrapper for Llama 2 model.
 https://huggingface.co/meta-llama
 """
 
-from typing import Optional
+from typing import Dict, Optional, override
 
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.llm.llm import LLM
@@ -63,12 +63,18 @@ class Llama(LLM):
         )
         super().__init__(model_path, dataset, from_file, model_name)
 
-    def message_to_instruction(
-        self, user_message: str, system_message: Optional[str] = None
-    ):
-        if system_message is None:
-            return f"[INST] {user_message} [/INST] "
-        return (
-            f"<<SYS>>\n{system_message}\n<</SYS>>\n\n"
-            + "[INST] {user_message} [/INST] "
+    @override
+    def message_to_instruction(self, prompt_config: Dict | str) -> str:
+        prompt_config = LLM._transform_prompt_config(prompt_config)
+
+        if "system_message" in prompt_config:
+            template = (
+                "<s>[INST] <<SYS>>\n{{system_message}}\n<</SYS>>\n\n"
+                "{{user_message}} [/INST]"
+            )
+        else:
+            template = "<s>[INST] {user_message} [/INST] "
+
+        return LLM._template_to_str(
+            template=template, user_prompt_config=prompt_config
         )

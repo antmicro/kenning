@@ -9,6 +9,7 @@ Provides base methods for using LLMs in Kenning.
 from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Tuple
 
+from jinja2 import Template
 from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
@@ -16,6 +17,15 @@ from kenning.core.model import ModelWrapper
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
+
+
+class MissingUserMessage(Exception):
+    """
+    Exception raised if a template configuration lacks a user message
+    under `user_message` key.
+    """
+
+    pass
 
 
 class LLM(ModelWrapper, ABC):
@@ -34,21 +44,53 @@ class LLM(ModelWrapper, ABC):
     ):
         super().__init__(model_path, dataset, from_file, model_name)
 
+    @staticmethod
+    def _transform_prompt_config(prompt_config: Dict | str) -> Dict:
+        if (
+            isinstance(prompt_config, Dict)
+            and "user_message" not in prompt_config
+        ):
+            raise MissingUserMessage(
+                "`user_message` key is missing in the "
+                "`prompt_config` dictionary."
+            )
+        elif isinstance(prompt_config, str):
+            prompt_config = {"user_message": prompt_config}
+        return prompt_config
+
+    @staticmethod
+    def _template_to_str(
+        template: Template,
+        user_prompt_config: Dict,
+        default_prompt_config: Dict = {},
+    ) -> str:
+        prompt_config = default_prompt_config | user_prompt_config
+        return template.render(prompt_config)
+
     @abstractmethod
     def message_to_instruction(
-        self, user_message: str, system_message: Optional[str] = None
-    ):
+        self,
+        prompt_config: Dict | str,
+    ) -> str:
         """
-        Converts given `user_message` to a prompt that can be
+        Generate a textual prompt based on a prompt template
+        and template configuration.
+
+        Convert the provided `user_message` to a prompt that can be
         passed to a model. Format of the prompt may differ depending
         on the model architecture.
 
         Parameters
         ----------
-        user_message : str
-            Message to the model.
-        system_message : Optional[str]
-            System message that is embedded into the message.
+        prompt_config : Dict | str
+            Dictionary key-value mapping for Jinja2 template.
+            `user_message` key is the only one required for all models.
+            Also, str is allowed if solely a user message is provided.
+
+        Returns
+        -------
+        str
+            Formatted prompt for a given model.
         """
         ...
 
@@ -121,12 +163,9 @@ class LLM(ModelWrapper, ABC):
         """
         conversations = []
         for message in X[0]:
+            prompt_config = {"user_message", message}
             if hasattr(self.dataset, "system_message"):
-                message = self.message_to_instruction(
-                    message, self.dataset.system_message
-                )
-            else:
-                message = self.message_to_instruction(message)
+                prompt_config["system_message"] = self.dataset.system_message
             conversations.append(message)
         return [conversations]
 

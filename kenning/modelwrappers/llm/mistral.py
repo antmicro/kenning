@@ -8,7 +8,7 @@ Provides wrapper for Mistral-instruct model.
 https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1
 """
 
-from typing import Optional
+from typing import Dict, override
 
 from kenning.modelwrappers.llm.llm import LLM
 
@@ -22,9 +22,17 @@ class MistralInstruct(LLM):
 
     pretrained_model_uri = "hf://mistralai/Mistral-7B-Instruct-v0.1"
 
-    def message_to_instruction(
-        self, user_message: str, system_message: Optional[str] = None
-    ):
-        if system_message is None:
-            return f"<s>[INST] {user_message} [/INST] "
-        return f"<s>[INST] {system_message}\n{user_message} [/INST] "
+    @override
+    def message_to_instruction(self, prompt_config: Dict | str):
+        prompt_config = LLM._transform_prompt_config(prompt_config)
+
+        if "system_message" in prompt_config:
+            template = (
+                "<s>[INST] {{system_message}}\n{{user_message}} [/INST] "
+            )
+        else:
+            template = "<s>[INST] {{user_message}} [/INST] "
+
+        return LLM._template_to_str(
+            template=template, user_prompt_config=prompt_config
+        )

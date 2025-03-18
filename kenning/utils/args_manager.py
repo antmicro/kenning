@@ -10,12 +10,26 @@ import argparse
 import json
 import os.path
 from abc import ABC
+from functools import partial
 from pathlib import Path
-from typing import Any, Dict, Iterable, Optional, Sequence, Tuple
+from types import UnionType
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    GenericAlias,
+    Iterable,
+    List,
+    Optional,
+    Sequence,
+    Tuple,
+    Union,
+)
 
 import jsonschema
 import numpy as np
 
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import ResourceURI
 
 """
@@ -32,22 +46,23 @@ argparse_name: Name that is prompted as an argparse argument.
     E.g. --some-name -> some_name.
 description: Description of the argument.
 type: Same as 'type' in argparse. The argument is converted to this value.
-    Possible values for type: [int, float, str, bool, Path].
+    Possible values for type: [int, float, str, bool, Path, list, object].
 
     Note that for bool types, the argument has to declare its default value.
 default: Default value of the argument.
 required: Determines whether the argument is required.
 enum: List of possible values of the argument.
-is_list: Determines whether the argument is a list of arguments.
-    Possible values for is_list: [True, False].
-    By default it is False.
-    List of bool arguments is not supported
 nullable: Determines whether the argument can be None.
     Possible values for nullable: [True, False].
     By default it is False.
     It is used only for JSON.
     Note that for a property to be nullable it has to be either a list
     or have a type defined.
+AutoML: Bool specifying whether parameter is used by AutoML.
+list_range: Tuple with lower and upper bound of list length.
+    Available only if `type` is list.
+item_range: Tuple with lower and upper bound of value or list's elements.
+    Available only if `type` is int, float or list.
 
 Examples:
 
@@ -61,10 +76,18 @@ Examples:
 
 'inputdims': {
     'description': 'Dimensionality of the inputs',
-    'type': int,
+    'type': list[int],
     'default': [224, 224, 3],
-    'is_list': True,
     'nullable': True
+}
+
+'encoder_neuron_list': {
+    'description': 'List of dense layer dimensions of encoder',
+    'type': list[int],
+    'default': [16, 8],
+    'AutoML': True,
+    'list_range': (2, 6),
+    'item_range': (4, 48),
 }
 """
 
@@ -72,11 +95,9 @@ supported_keywords = [
     "argparse_name",
     "description",
     "type",
-    "items",
     "default",
     "required",
     "enum",
-    "is_list",
     "nullable",
     "subcommands",
     # AutoML specific keys
@@ -196,6 +217,59 @@ jsontype_to_type = {
     "boolean": bool,
 }
 
+# Dictionary with custom converter methods
+converter_override = {
+    object: dict,
+}
+
+
+class ArgsManagerConvertError(Exception):
+    """
+    Raised when provided value cannot be converted
+    by any of specified converters.
+    """
+
+    ...
+
+
+def convert(converters: Iterable[Callable], v: Any) -> Any:
+    """
+    Converts value using given converter
+    or raises exception if it is not possible.
+
+    Parameters
+    ----------
+    converters : Iterable[Callable]
+        List of convertes.
+    v : Any
+        Value to be converted.
+
+    Returns
+    -------
+    Any
+        Converted value.
+
+    Raises
+    ------
+    ArgsManagerConvertError
+        If value cannot be converted.
+    """
+    c_value = None
+    for converter in converters:
+        try:
+            c_value = converter_override.get(converter, converter)(v)
+        except Exception:
+            KLogger.warn(
+                f"Cannot convert value {v} with converter {converter}"
+            )
+        else:
+            break
+    if c_value is None:
+        raise ArgsManagerConvertError(
+            f"Value {v} cannot be converted by {converters}"
+        )
+    return c_value
+
 
 def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
     """
@@ -240,18 +314,20 @@ def get_parsed_json_dict(schema: Dict, json_dict: Dict) -> Dict:
 
         # do not convert to an object as this should be done by the class
         # which called this function
-        if keywords["convert-type"] == object:
+        if keywords["convert-type"] is object:
             converted_json_dict[name] = value
             continue
 
         converter = keywords["convert-type"]
+        if not isinstance(converter, (list, tuple)):
+            converter = [converter]
 
         if "type" in keywords and "array" in keywords["type"]:
             converted_json_dict[name] = [
-                converter(v) if v else v for v in value
+                convert(converter, v) if v else v for v in value
             ]
         else:
-            converted_json_dict[name] = converter(value)
+            converted_json_dict[name] = convert(converter, value)
 
     # Changing names so they match the constructor arguments
     converted_json_dict = {
@@ -313,7 +389,7 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
                 )
 
         # For arguments of type 'object' value is embedded in a JSON file
-        if "type" in arg_properties and arg_properties["type"] == object:
+        if "type" in arg_properties and arg_properties["type"] is object:
             if value is None:
                 try:
                     value = arg_properties["default"]
@@ -341,6 +417,35 @@ def get_parsed_args_dict(cls: type, args: argparse.Namespace) -> Dict:
         parsed_args[arg_name] = value
 
     return parsed_args
+
+
+def get_type(
+    _type: Union[type, GenericAlias],
+) -> Tuple[type, Optional[List[Union[type, Tuple[type, ...]]]]]:
+    """
+    Returns proper type and its optional sub types.
+
+    Parameters
+    ----------
+    _type : Union[type, GenericAlias]
+        Type like str, int or list[int | float, str].
+
+    Returns
+    -------
+    Tuple[type, Optional[List[Union[type, Tuple[type, ...]]]]]
+        * The main type,
+        * The list of subtypes of e.g. list,
+        where union types are gathered in tuple. Currently, do not
+        support nested types.
+    """
+    if not isinstance(_type, GenericAlias):
+        return _type, None
+    main_type = _type.__origin__
+    sub_types = [
+        arg.__args__ if isinstance(arg, UnionType) else arg
+        for arg in _type.__args__
+    ]
+    return main_type, sub_types
 
 
 def add_argparse_argument(
@@ -384,10 +489,6 @@ def add_argparse_argument(
     for name in names:
         prop = struct[name]
 
-        if "items" in prop and (
-            "type" not in prop or prop["type"] is not list
-        ):
-            raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
                 raise KeyError(f"{p} is not a supported keyword")
@@ -405,14 +506,24 @@ def add_argparse_argument(
 
         keywords = {}
         if "type" in prop:
-            if prop["type"] is bool:
+            prop_type, prop_sub_types = get_type(prop["type"])
+            if prop_type is bool:
                 assert "default" in prop and prop["default"] in [True, False]
 
                 keywords["action"] = (
                     "store_false" if prop["default"] else "store_true"
                 )
+            elif prop_type is list:
+                keywords["nargs"] = "+"
+                converters = set()
+                for sub_type in prop_sub_types:
+                    if isinstance(sub_type, (list, tuple)):
+                        converters.update(sub_type)
+                    else:
+                        converters.add(sub_type)
+                keywords["type"] = partial(convert, converters=converters)
             else:
-                keywords["type"] = prop["type"]
+                keywords["type"] = prop_type
         if "description" in prop:
             keywords["help"] = prop["description"]
         if "default" in prop:
@@ -421,8 +532,6 @@ def add_argparse_argument(
             keywords["required"] = prop["required"]
         if "enum" in prop:
             keywords["choices"] = prop["enum"]
-        if "is_list" in prop and prop["is_list"]:
-            keywords["nargs"] = "+"
 
         group.add_argument(argparse_name, **keywords)
 
@@ -466,10 +575,6 @@ def add_parameterschema_argument(
     for name in names:
         prop = struct[name]
 
-        if "items" in prop and (
-            "type" not in prop or prop["type"] is not list
-        ):
-            raise KeyError("'items' key available only when 'type' is list")
         for p in prop:
             if p not in supported_keywords:
                 raise KeyError(f"{p} is not a supported keyword")
@@ -494,26 +599,24 @@ def add_parameterschema_argument(
         keywords = schema["properties"][argschema_name]
         keywords["real_name"] = name
 
-        # Case for a list of keywords
-        if "is_list" in prop and prop["is_list"]:
-            keywords["type"] = ["array"]
-
-            if "type" in prop:
-                assert prop["type"] is not bool
-
-                keywords["convert-type"] = prop["type"]
-                keywords["items"] = {"type": type_to_jsontype[prop["type"]]}
-        # Case for a single argument
-        else:
-            if "items" in prop:
-                keywords["type"] = [type_to_jsontype[prop["type"]]]
+        # Set type based on provided Python type
+        if "type" in prop:
+            prop_type, prop_sub_type = get_type(prop["type"])
+            if prop_type is list and prop_sub_type:
+                keywords["convert-type"] = prop_sub_type[0]
                 keywords["items"] = {
-                    "type": type_to_jsontype[prop["items"]],
-                    "convert-type": prop["type"],
+                    "type": [
+                        type_to_jsontype[t]
+                        for t in (
+                            prop_sub_type[0]
+                            if isinstance(prop_sub_type[0], (list, tuple))
+                            else [prop_sub_type[0]]
+                        )
+                    ],
                 }
-            elif "type" in prop:
-                keywords["convert-type"] = prop["type"]
-                keywords["type"] = [type_to_jsontype[prop["type"]]]
+            else:
+                keywords["convert-type"] = prop_type
+            keywords["type"] = [type_to_jsontype[prop_type]]
 
         if "description" in prop:
             keywords["description"] = prop["description"]

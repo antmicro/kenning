@@ -28,6 +28,7 @@ from sklearn.pipeline import Pipeline
 from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
 from kenning.core.platform import Platform
+from kenning.utils.args_manager import get_type
 from kenning.utils.logger import KLogger
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
@@ -103,13 +104,12 @@ class AutoPyTorchModel(AutoMLModel):
         args = cls.form_automl_schema()
         cs = CS.ConfigurationSpace()
         for name, config in args.items():
-            c_type = config["type"]
+            c_type, item_type = get_type(config["type"])
             c_default = config["default"]
             if c_type in (int, float, str, bool):
                 _add_single_hyperparameter(cs, name, config, c_type, c_default)
             else:  # c_type is list
                 list_range = config["list_range"]
-                item_type = config["items"]
                 list_min_len, list_max_len = list_range
                 list_len_param = _add_single_hyperparameter(
                     cs, name, config, c_type, len(c_default)
@@ -120,7 +120,7 @@ class AutoPyTorchModel(AutoMLModel):
                         cs,
                         f"{name}_{i}",
                         config,
-                        item_type,
+                        item_type[0],
                         c_default[min(i, len(c_default) - 1)],
                     )
                     # Add condition for element of the list
@@ -224,7 +224,8 @@ class AutoPyTorchModel(AutoMLModel):
                     f"Missing {name} config"
                 )
             args[name] = self.config[name]
-            if config.get("type", None) is not list:
+            _type, _ = get_type(config.get("type", None))
+            if _type is not list:
                 continue
             args[name] = [
                 self.config.get(f"{name}_{i}", None)
@@ -377,7 +378,7 @@ class AutoPyTorchModel(AutoMLModel):
                 raise MissingConfigForAutoPyTorchModel(
                     f"Missing {name} in AutoPyTorch config"
                 )
-            c_type = config["type"]
+            c_type, _ = get_type(config["type"])
             if c_type is not list:
                 model_wrapper_params[name] = backbone_conf[name]
             else:

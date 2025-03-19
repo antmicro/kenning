@@ -247,7 +247,8 @@ class InferenceServer(object):
             def __init__(self):
                 self.compiled_model_path = Path(prev_block_cfg["model_path"])
 
-            def get_output_formats(self):
+            @classmethod
+            def get_output_formats(cls):
                 return prev_block_cfg["model_type"]
 
             def save_io_specification(self, model_path: Path):

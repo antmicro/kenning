@@ -42,7 +42,8 @@ class TVMDarknetCOCOYOLOV3(YOLOWrapper):
             "output": [],
         }
 
-    def get_output_formats(self):
+    @classmethod
+    def get_output_formats(cls):
         return ["darknet"]
 
     def get_framework_and_version(self):

@@ -147,7 +147,8 @@ class PyTorchWrapper(ModelWrapper, ABC):
 
         return ("torch", torch.__version__)
 
-    def get_output_formats(self):
+    @classmethod
+    def get_output_formats(cls):
         return ["onnx", "torch"]
 
     def convert_input_to_bytes(self, inputdata: List[Any]) -> bytes:

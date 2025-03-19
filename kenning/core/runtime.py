@@ -133,7 +133,8 @@ class Runtime(ArgumentsHandler, ABC):
         """
         return super().from_json(json_dict)
 
-    def get_input_formats(self) -> List[str]:
+    @classmethod
+    def get_input_formats(cls) -> List[str]:
         """
         Returns list of names of possible input formats names.
 
@@ -142,7 +143,7 @@ class Runtime(ArgumentsHandler, ABC):
         List[str]
             List of possible input format names.
         """
-        return self.inputtypes
+        return cls.inputtypes
 
     def inference_session_start(self):
         """

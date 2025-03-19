@@ -158,7 +158,8 @@ class PersonDetectionModelWrapper(ModelWrapper):
         if self.from_file:
             self.model_prepared = True
 
-    def get_output_formats(self) -> List[str]:
+    @classmethod
+    def get_output_formats(cls) -> List[str]:
         return ["tflite"]
 
     def get_framework_and_version(self) -> Tuple[str, str]:

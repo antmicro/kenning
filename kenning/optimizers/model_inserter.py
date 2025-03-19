@@ -8,7 +8,7 @@ in specified format to an existing flow.
 """
 
 import shutil
-from typing import Dict, List, Literal, Optional, Union
+from typing import Dict, List, Literal, Optional, Type, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -88,7 +88,12 @@ class ModelInserter(Optimizer):
 
     def consult_model_type(
         self,
-        previous_block: Union["ModelWrapper", "Optimizer"],
+        previous_block: Union[
+            "ModelWrapper",
+            "Optimizer",
+            Type["ModelWrapper"],
+            Type["Optimizer"],
+        ],
         force_onnx: bool = False,
     ) -> str:
         """
@@ -99,7 +104,7 @@ class ModelInserter(Optimizer):
 
         Parameters
         ----------
-        previous_block : Union[ModelWrapper, Optimizer]
+        previous_block : Union["ModelWrapper", "Optimizer", Type["ModelWrapper"], Type["Optimizer"]]
             Previous block in the optimization chain.
         force_onnx : bool
             Forces ONNX format.
@@ -113,7 +118,7 @@ class ModelInserter(Optimizer):
         ------
         ValueError:
             Raised when ONNX is not supported for conversion
-        """
+        """  # noqa: E501
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx and self.model_framework != "onnx":

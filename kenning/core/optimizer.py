@@ -10,7 +10,7 @@ import json
 from abc import ABC, abstractmethod
 from argparse import Namespace
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Tuple, Union
+from typing import Dict, List, Literal, Optional, Tuple, Type, Union
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
@@ -233,7 +233,8 @@ class Optimizer(ArgumentsHandler, ABC):
         """
         ...
 
-    def get_input_formats(self) -> List[str]:
+    @classmethod
+    def get_input_formats(cls) -> List[str]:
         """
         Returns list of names of possible input formats.
 
@@ -242,9 +243,10 @@ class Optimizer(ArgumentsHandler, ABC):
         List[str]
             Names of possible input formats.
         """
-        return list(self.inputtypes.keys())
+        return list(cls.inputtypes.keys())
 
-    def get_output_formats(self) -> List[str]:
+    @classmethod
+    def get_output_formats(cls) -> List[str]:
         """
         Returns list of names of possible output formats.
 
@@ -253,11 +255,16 @@ class Optimizer(ArgumentsHandler, ABC):
         List[str]
             List of possible output formats.
         """
-        return self.outputtypes
+        return cls.outputtypes
 
     def consult_model_type(
         self,
-        previous_block: Union["ModelWrapper", "Optimizer"],
+        previous_block: Union[
+            "ModelWrapper",
+            "Optimizer",
+            Type["ModelWrapper"],
+            Type["Optimizer"],
+        ],
         force_onnx: bool = False,
     ) -> str:
         """
@@ -266,7 +273,7 @@ class Optimizer(ArgumentsHandler, ABC):
 
         Parameters
         ----------
-        previous_block : Union[ModelWrapper, Optimizer]
+        previous_block : Union["ModelWrapper", "Optimizer", Type["ModelWrapper"], Type["Optimizer"]]
             Previous block in the optimization chain.
         force_onnx : bool
             Forces ONNX format.
@@ -280,7 +287,7 @@ class Optimizer(ArgumentsHandler, ABC):
         ------
         ValueError
             Raised if there is no matching format.
-        """
+        """  # noqa: E501
         possible_outputs = previous_block.get_output_formats()
 
         if force_onnx:
@@ -302,7 +309,7 @@ class Optimizer(ArgumentsHandler, ABC):
                 return input
 
         raise ValueError(
-            f"No matching formats between two objects: {self} and "
+            f"No matching formats between two object: {self} and "
             f"{previous_block}\n"
             f"Input block supported formats: {', '.join(possible_outputs)}\n"
             f"Output block supported formats: {', '.join(self.get_input_formats())}"  # noqa: E501

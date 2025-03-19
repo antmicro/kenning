@@ -74,7 +74,8 @@ class TensorFlowWrapper(ModelWrapper, ABC):
 
         return ("tensorflow", tf.__version__)
 
-    def get_output_formats(self):
+    @classmethod
+    def get_output_formats(cls):
         return ["onnx", "keras"]
 
     def save_to_onnx(self, model_path: PathOrURI):

@@ -440,8 +440,9 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         """
         ...
 
+    @classmethod
     @abstractmethod
-    def get_output_formats(self) -> List[str]:
+    def get_output_formats(cls) -> List[str]:
         """
         Returns list of names of possible output formats.
 

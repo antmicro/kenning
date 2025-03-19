@@ -231,5 +231,6 @@ class LLM(ModelWrapper, ABC):
     def get_framework_and_version(self) -> Tuple[str, str]:
         return "transformers", transformers_version
 
-    def get_output_formats(self):
+    @classmethod
+    def get_output_formats(cls):
         return ["safetensors-native", "safetensors-awq"]

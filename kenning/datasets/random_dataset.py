@@ -48,9 +48,8 @@ class RandomizedClassificationDataset(Dataset):
         "inputdims": {
             "argparse_name": "--input-dims",
             "description": "Dimensionality of the inputs",
-            "type": int,
+            "type": list[int],
             "default": [224, 224, 3],
-            "is_list": True,
         },
     }
 
@@ -184,9 +183,8 @@ class RandomizedDetectionSegmentationDataset(
         "inputdims": {
             "argparse_name": "--input-dims",
             "description": "Dimensionality of the inputs",
-            "type": int,
+            "type": list[int],
             "default": [224, 224, 3],
-            "is_list": True,
         },
     }
 

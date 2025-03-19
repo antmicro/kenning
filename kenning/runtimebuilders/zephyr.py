@@ -277,14 +277,12 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
         },
         "extra_targets": {
             "description": "Extra targets to be built",
-            "type": str,
-            "is_list": True,
+            "type": list[str],
             "default": [],
         },
         "extra_build_args": {
             "description": "Extra build arguments",
-            "type": str,
-            "is_list": True,
+            "type": list[str],
             "default": [],
         },
         "use_llext": {

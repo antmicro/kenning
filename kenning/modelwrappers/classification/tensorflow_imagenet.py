@@ -46,8 +46,7 @@ class TensorFlowImageNet(TensorFlowWrapper):
         "inputshape": {
             "argparse_name": "--input-shape",
             "description": "Input shape",
-            "type": int,
-            "is_list": True,
+            "type": list[int],
             "default": [1, 224, 224, 3],
         },
         "numclasses": {

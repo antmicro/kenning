@@ -59,8 +59,7 @@ class SimulatablePlatform(Platform, ABC):
         },
         "resc_dependencies": {
             "description": "Renode script dependencies",
-            "type": ResourceURI,
-            "is_list": True,
+            "type": list[ResourceURI],
             "nullable": True,
             "default": None,
         },
@@ -68,8 +67,7 @@ class SimulatablePlatform(Platform, ABC):
             "description": (
                 "Renode commands executed after starting the machine"
             ),
-            "type": str,
-            "is_list": True,
+            "type": list[str],
             "nullable": True,
             "default": None,
         },

@@ -36,7 +36,7 @@ class ONNXRuntime(Runtime):
         },
         "execution_providers": {
             "description": "List of execution providers ordered by priority",
-            "is_list": True,
+            "type": list[str],
             "default": ["CPUExecutionProvider"],
         },
     }

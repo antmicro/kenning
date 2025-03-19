@@ -63,8 +63,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
     arguments_structure = {
         "encoder_neuron_list": {
             "description": "List of dense layer dimensions of encoder",
-            "type": list,
-            "items": int,
+            "type": list[int],
             "default": [16, 8],
             "AutoML": True,
             "list_range": (2, 6),
@@ -72,8 +71,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         },
         "decoder_neuron_list": {
             "description": "List of dense layer dimensions of decoder",
-            "type": list,
-            "items": int,
+            "type": list[int],
             "default": [16, 32],
             "AutoML": True,
             "list_range": (2, 6),

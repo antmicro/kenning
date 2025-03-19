@@ -55,9 +55,8 @@ class CNNDailymailDataset(Dataset):
         },
         "metrics": {
             "description": "Types of rouge metrics gathered during evaluation",
-            "type": str,
+            "type": list[str],
             "default": ["rouge1", "rouge2", "rouge3", "rougeL"],
-            "is_list": True,
         },
     }
 

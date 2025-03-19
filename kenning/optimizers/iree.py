@@ -184,8 +184,8 @@ class IREECompiler(Optimizer):
         "compiler_args": {
             "argparse_name": "--compiler-args",
             "description": "Additional options that are passed to compiler",
+            "type": list[str],
             "default": None,
-            "is_list": True,
             "nullable": True,
         },
     }

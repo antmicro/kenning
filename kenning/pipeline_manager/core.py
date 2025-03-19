@@ -296,7 +296,7 @@ class BaseDataflowHandler(ABC):
                     elif property_type == "array":
                         new_property["type"] = "list"
                         if "items" in props and "type" in props["items"]:
-                            new_property["dtype"] = props["items"]["type"]
+                            new_property["dtype"] = props["items"]["type"][0]
                         else:
                             # Lists cannot have dtype set to None
                             # so string is used by default

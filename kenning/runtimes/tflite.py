@@ -37,8 +37,8 @@ class TFLiteRuntime(Runtime):
         "delegates": {
             "argparse_name": "--delegates-list",
             "description": "List of runtime delegates for the TFLite runtime",
+            "type": list,
             "default": None,
-            "is_list": True,
             "nullable": True,
         },
         "num_threads": {

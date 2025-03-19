@@ -249,8 +249,7 @@ class NNIPruningOptimizer(Optimizer):
         },
         "config_list": {
             "description": "Pruning specification, for more information please see NNI documentation - Compression Config Specification",  # noqa: E501
-            "type": list,
-            "items": object,
+            "type": list[object],
             "required": True,
         },
         "mode": {

@@ -8,7 +8,9 @@ Provides wrapper for Phi-2 model.
 https://huggingface.co/microsoft/phi-2
 """
 
-from typing import Dict, override
+from typing import Dict
+
+from typing_extensions import override
 
 from kenning.modelwrappers.llm.llm import LLM
 

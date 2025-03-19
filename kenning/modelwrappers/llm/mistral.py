@@ -8,7 +8,9 @@ Provides wrapper for Mistral-instruct model.
 https://huggingface.co/mistralai/Mistral-7B-Instruct-v0.1
 """
 
-from typing import Dict, override
+from typing import Dict
+
+from typing_extensions import override
 
 from kenning.modelwrappers.llm.llm import LLM
 

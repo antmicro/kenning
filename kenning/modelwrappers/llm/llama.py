@@ -8,7 +8,9 @@ Provides wrapper for Llama 2 model.
 https://huggingface.co/meta-llama
 """
 
-from typing import Dict, Optional, override
+from typing import Dict, Optional
+
+from typing_extensions import override
 
 from kenning.core.dataset import Dataset
 from kenning.modelwrappers.llm.llm import LLM

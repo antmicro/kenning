@@ -2459,6 +2459,7 @@ class RenderReport(CommandTemplate):
 
     @staticmethod
     def run(args, **kwargs):
+        from kenning.cli.config import get_used_subcommands
         from kenning.core.drawing import (
             KENNING_COLORS,
             RED_GREEN_CMAP,
@@ -2467,6 +2468,7 @@ class RenderReport(CommandTemplate):
         )
 
         command = get_command()
+        subcommands = get_used_subcommands(args)
 
         if args.to_html:
             if not isinstance(args.to_html, (str, Path)):
@@ -2494,11 +2496,17 @@ class RenderReport(CommandTemplate):
                 "rendered, please use '--to-html' flag",
             )
         if args.comparison_only and len(args.measurements) <= 1:
-            raise argparse.ArgumentError(
-                None,
-                "'--comparison-only' applies only if there are more than one "
-                "measurements' file.",
+            if AUTOML not in subcommands:
+                raise argparse.ArgumentError(
+                    None,
+                    "'--comparison-only' applies only if there are more "
+                    "than one measurements' file.",
+                )
+            KLogger.warn(
+                "'--comparison-only' used, but only one measurements file"
+                " provided - creating standard report"
             )
+            args.comparison_only = False
 
         root_dir = args.root_dir
         if root_dir is None:

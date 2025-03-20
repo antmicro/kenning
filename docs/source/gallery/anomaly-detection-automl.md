@@ -11,19 +11,18 @@ Assuming `git` and `docker` are available in the system, first let's clone the r
 
 ```bash
 git clone https://github.com/antmicro/kenning-zephyr-runtime-example-app.git sample-app
-cd ./sample-app
 ```
 
 Then, let's build the Docker image based on `ghcr.io/antmicro/kenning-zephyr-runtime:latest` for quicker environment setup:
 
 ```bash
-docker build -t kenning-automl ./environments
+docker build -t kenning-automl ./sample-app/environments
 ```
 
 After successful build of the image, run:
 
 ```bash
-docker run --rm -it --name automl -w $(pwd) -v $(pwd):$(pwd) kenning-automl:latest bash
+docker run --rm -it --name automl -w $(realpath sample-app) -v $(pwd):$(pwd) kenning-automl:latest bash
 ```
 
 Then, in the Docker container, initialize the Zephyr application and Kenning Zephyr Runtime as follows:

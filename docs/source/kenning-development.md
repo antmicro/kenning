@@ -213,15 +213,19 @@ The fields describing the argument are as follows:
 * `description` - description of the node, displayed for a parsing error for JSON, or in help in case of command-line access,
 * `type` - type of argument, i.e.:
     * `Path` from `pathlib` module,
+    * `ResourceURI` - `Path` based supporting non-local resources, e.g. from GitHub (`gh://`), Kenning (`kenning://`) or HTTPS (`https://`),
     * `str`,
     * `float`,
     * `int`,
     * `bool`,
-* `default` - default value for the argument,
+    * `list` or `list[type]` or `list[type1 | type2 | ...]`,
+* `default` - default value for the argument (used for AutoML - the value should be in the defined ranges/enum),
 * `required` - boolean, tells if argument is required or not,
-* `enum` - a list of possible values for the argument,
-* `is_list` - tells if argument is a list of objects of types given in `type` field,
-* `nullable` - tells if argument can be empty (`None`).
+* `enum` - a list of possible values for the argument (used for AutoML),
+* `nullable` - tells if argument can be empty (`None`),
+* `AutoML` - specify whether argument is used for AutoML flow, supported only in model wrappers,
+* `item_range` - tuple of lower and upper bound of numerical argument (`type` is either `int` or `float`) or elements of list argument (`type` is list) (used only for AutoML),
+* `list_range` - tuple of lower and upper bound of list argument length (used only for AutoML).
 
 Let's add parameters to the example class:
 

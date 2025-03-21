@@ -588,7 +588,9 @@ class ResourceManager(metaclass=Singleton):
 
         try:
             response = requests.get(
-                checksum_url, allow_redirects=True, timeout=60
+                checksum_url,
+                allow_redirects=True,
+                timeout=15,
             )
         except requests.exceptions.RequestException:
             KLogger.warning(

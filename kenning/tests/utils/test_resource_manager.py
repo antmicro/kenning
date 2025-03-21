@@ -435,7 +435,7 @@ class TestResources:
         """
 
         def request_remote_resource():
-            uri = "https://ftp.icm.edu.pl/pub/Linux/dist/archlinux/iso/2025.03.01/sha256sums.txt"
+            uri = "https://dl.antmicro.com/kenning/models/detection/yolov4.onnx.json"
             _ = ResourceURI(uri)
 
         # Handler to gather all logs.

@@ -453,26 +453,31 @@ class TestResources:
         list_handler = ListHandler()
         KLogger.addHandler(list_handler)
 
-        request_remote_resource()
-        assert (
-            "Cannot check the remote state, using local file"
-            not in list_handler.get_logs()
-        )
-
-        # Disable the Internet connection.
         def socket_guard(*args, **kwargs):
             raise requests.exceptions.ConnectionError(
                 "Internet connection disabled."
             )
 
-        original_socket = socket.socket
-        socket.socket = socket_guard
+        try:
+            request_remote_resource()
+            assert (
+                "Cannot check the remote state, using local file"
+                not in list_handler.get_logs()
+            )
 
-        request_remote_resource()
-        assert (
-            "Cannot check the remote state, using local file"
-            in list_handler.get_logs()
-        )
+            # Disable the Internet connection.
+            original_socket = socket.socket
+            socket.socket = socket_guard
 
-        # Restore the Internet connection.
-        socket.socket = original_socket
+            request_remote_resource()
+            assert (
+                "Cannot check the remote state, using local file"
+                in list_handler.get_logs()
+            )
+        except Exception as e:
+            assert False, e
+
+        finally:
+            # Restore the Internet connection.
+            socket.socket = original_socket
+            KLogger.removeHandler(list_handler)

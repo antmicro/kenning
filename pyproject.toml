@@ -95,7 +95,7 @@ tflite = [
     "tflite",
 ]
 tvm = [
-    "apache-tvm",
+    "apache-tvm==0.14.dev273",
 ]
 iree = [
     "iree-compiler==20230209.425",

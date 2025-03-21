@@ -496,12 +496,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             raise RuntimeError("Module preparation failed") from e
 
     def read_platform(self, platform: Platform):
-        if (type(self).__name__ == "ZephyrRuntimeBuilder") and type(
-            platform
-        ).__name__ in (
-            "BareMetalPlatform",
-            "ZephyrPlatform",
-        ):
+        if type(platform).__name__ == "ZephyrPlatform":
             platform.zephyr_build_path = self.output_path
             KLogger.info(
                 "Set platform Zephyr build path to "
@@ -509,3 +504,8 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
             )
             self.board = platform.name
             KLogger.info(f"Set runtime builder board to {self.board}")
+        else:
+            KLogger.warning(
+                f"Provided platform {type(platform).__name__}\
+                    is not a ZephyrPlatform"
+            )

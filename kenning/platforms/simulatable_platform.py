@@ -376,6 +376,7 @@ class SimulatablePlatform(Platform, ABC):
             self.profiler_dump_path = Path(
                 tempfile.mktemp(prefix="renode_profiler_", suffix=".dump")
             )
+        self.profiler_dump_path.parent.mkdir(exist_ok=True)
 
         self.machine.EnableProfiler(str(self.profiler_dump_path.resolve()))
         KLogger.info(

@@ -639,21 +639,27 @@ class AutoPyTorchML(AutoML):
             )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
-        self._api.search(
-            X_train=self.X_train,
-            y_train=self.y_train,
-            X_test=self.X_test,
-            y_test=self.y_test,
-            optimize_metric=self.optimize_metric,
-            total_walltime_limit=self.time_limit * 60,
-            func_eval_time_limit_secs=self.max_evaluation_time * 60,
-            memory_limit=self.max_memory_usage,
-            budget_type=self.budget_type,
-            min_budget=self.min_budget,
-            max_budget=self.max_budget,
-            # Disable non NN-based methods
-            enable_traditional_pipeline=False,
-        )
+        try:
+            self._api.search(
+                X_train=self.X_train,
+                y_train=self.y_train,
+                X_test=self.X_test,
+                y_test=self.y_test,
+                optimize_metric=self.optimize_metric,
+                total_walltime_limit=self.time_limit * 60,
+                func_eval_time_limit_secs=self.max_evaluation_time * 60,
+                memory_limit=self.max_memory_usage,
+                budget_type=self.budget_type,
+                min_budget=self.min_budget,
+                max_budget=self.max_budget,
+                # Disable non NN-based methods
+                enable_traditional_pipeline=False,
+            )
+        except ValueError as e:
+            if "No valid model" in str(e):
+                KLogger.error(str(e))
+            else:
+                raise
 
     def extract_model(self, pipeline: Pipeline) -> PyTorchModel:
         """

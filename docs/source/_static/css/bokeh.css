@@ -94,3 +94,33 @@ div.bk-tooltip-custom {
 .md-typeset .figure.align-center, .md-typeset .figure.align-right, .md-typeset figure.align-center, .md-typeset figure.align-right, .md-typeset img.align-center, .md-typeset img.align-right, .md-typeset object.align-center, .md-typeset object.align-right {
   margin: 0;
 }
+
+/* DataTable styles */
+.bk-root .slick-cell,
+.bk.root .slick-cell.bk-cell-index {
+  background: var(--md-code-bg-color) !important;
+  border-right-style: none !important;
+  text-align: left;
+}
+.bk-root .slick-header-column:hover {
+  background-color: var(--md-default-bg-color);
+}
+.bk-root .slick-header-column.ui-state-default {
+  font-weight: bold;
+  border-style: none;
+}
+.bk-root .slick-cell.active {
+  border-style: none;
+}
+.bk-root .slick-header-column-sorted {
+  font-style: normal;
+}
+.bk-root .slick-sort-indicator-asc,
+.bk-root .slick-sort-indicator-desc {
+  display: none;
+}
+.bk-root .slick-row,
+.bk-root .slick-row.odd,
+.bk-root .slick-row.even {
+  background: none;
+}

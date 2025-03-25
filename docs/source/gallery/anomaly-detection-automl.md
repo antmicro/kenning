@@ -97,7 +97,7 @@ kenning automl optimize test report \
   --cfg ./kenning-zephyr-runtime/kenning-scenarios/renode-zephyr-auto-tflite-automl-vae-max32690.yml \
   --report-path ./workspace/automl-report/report.md \
   --allow-failures --to-html --ver INFO \
-  --comparison-only --skip-general-information
+  --skip-general-information
 ```
 
 The command above:

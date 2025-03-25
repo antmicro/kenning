@@ -2206,6 +2206,7 @@ def generate_html_report(
     report_path: Path,
     output_folder: Path,
     debug: bool = False,
+    override_conf: Optional[Dict] = None,
 ):
     """
     Runs Sphinx with HTML builder for generated report.
@@ -2218,13 +2219,15 @@ def generate_html_report(
         Where generated HTML report should be saved
     debug : bool
         Debug mode -- allows to print more information
+    override_conf : Optional[Dict]
+        Custom configuration of Sphinx app
     """
     from sphinx.application import Sphinx
     from sphinx.cmd.build import handle_exception
     from sphinx.util.docutils import docutils_namespace, patch_docutils
 
     with path(reports, "conf.py") as _conf:
-        override_conf = {
+        override_conf = (override_conf or {}) | {
             # Include only report file
             "include_patterns": [f"{report_path.name}"],
             # Ensure report file isn't excluded

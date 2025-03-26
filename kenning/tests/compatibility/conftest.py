@@ -27,6 +27,7 @@ from kenning.utils.class_loader import (
     get_base_classes_dict,
 )
 
+ANSI_COLOR = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
 COMPATIBILITY_PYTEST_MARKER = "compat_matrix"
 COMPATIBILITY_MARKER = "COMPAT"
 DELIM = ":"
@@ -69,6 +70,7 @@ def pytest_terminal_summary(
 ):
     path_to_cls = {path: cls for path, cls in get_base_classes_dict().values()}
     dataframes = {}
+    logs = {}
     stats = defaultdict(
         # Do not include "skipped" into displayed statistics
         lambda: {
@@ -89,9 +91,10 @@ def pytest_terminal_summary(
                     dataframes=dataframes,
                     stats=stats,
                     path_to_cls=path_to_cls,
+                    logs=logs,
                 )
 
-    generate_compatibility_report(stats, dataframes, config)
+    generate_compatibility_report(stats, dataframes, logs, config)
 
 
 def get_compatibility_mark(marks: Iterable[str]) -> Optional[str]:
@@ -107,6 +110,7 @@ def report_to_entry(
     dataframes: Dict[Tuple[Type, Type], pd.DataFrame],
     stats: Dict,
     path_to_cls: Dict[str, Type],
+    logs: Dict[str, Dict],
 ):
     # Extract concrete classes
     _, path1, path2 = mark.split(DELIM)
@@ -125,10 +129,31 @@ def report_to_entry(
             data=data, index=[cls.__name__ for cls in subclasses1]
         )
 
+    # Save data
     pair_stats = stats[pair_to_str(base1, base2)]
     if status in pair_stats:
         pair_stats[status] += 1
     dataframes[(base1, base2)].loc[concrete1, concrete2] = status
+    logs[f"{concrete1}-{concrete2}"] = get_report_log(report)
+
+
+def get_report_log(report: pytest.TestReport):
+    sections = report.sections[:]
+    if report.longreprtext.strip():
+        sections.append(("Test result", report.longreprtext))
+
+    new_sections = {}
+    for caption, content in sections:
+        lines = []
+        for line in content.split("\n"):
+            line = ANSI_COLOR.sub("", line)
+            line = line.replace("\r", "")
+            line = line.replace("\x08", "")
+            lines.append(line)
+        content = "\n".join(lines)
+        new_sections[caption] = content
+
+    return new_sections
 
 
 class CompatibilityPlot(Plot):
@@ -179,25 +204,35 @@ class CompatibilityPlot(Plot):
     def formatter(column_name: str):
         return HTMLTemplateFormatter(
             template=f"""
-            <div <%=(function formatter(){{
-                if ({column_name} == 'Compatible')
-                    return 'class="compatible"'
-                else if ({column_name} == 'Incompatible')
-                    return 'class="incompatible"'
-                else if ({column_name} == 'Fixed')
-                    return 'class="fixed"'
-                else if ({column_name} == 'Failed')
-                    return 'class="failed"'
-                return 'style="color: var(--md-default-fg-color)"'
-            }}()) %>>
-            <%= value %>
-            </div>"""
+            <%=(function formatter(){{
+                const cls1 = Block;
+                const cls2 = "{column_name}";
+                const supported = [
+                    'Compatible',
+                    'Incompatible',
+                    'Fixed',
+                    'Failed',
+                ];
+                if (supported.includes(value))
+                    return `
+                        <a
+                          class="${{value.toLowerCase()}}"
+                          href="logs/${{cls1}}-${{cls2}}.html"
+                        >${{value}}</a>
+                    `;
+                return `
+                    <div
+                      style="color: var(--md-default-fg-color)"
+                    >${{value}}</div>
+                `;
+            }}()) %>"""
         )
 
 
 def generate_compatibility_report(
     stats: Dict,
     dataframes: Dict[Tuple[Type, Type], pd.DataFrame],
+    logs: Dict[str, Dict],
     config: pytest.Config,
 ):
     root = Path(config.option.test_compat_dir)
@@ -205,8 +240,20 @@ def generate_compatibility_report(
         shutil.rmtree(root)
     report_path = root / "index.md"
     html_path = root / "html"
+    logdir = root / "logs"
     imgdir = root / "img"
+    logdir.mkdir(exist_ok=True, parents=True)
     imgdir.mkdir(exist_ok=True, parents=True)
+
+    # Save logs
+    for log, sections in logs.items():
+        content = "\n".join(
+            f"{'-' * 20} {section_name} {'-' * 20}\n{content}"
+            for section_name, content in sections.items()
+        )
+        (logdir / f"{log}.log").write_text(content)
+        content = content.replace("<", "&lt;").replace(">", "&gt;")
+        (logdir / f"{log}.html").write_text(f"<pre>{content}</pre>")
 
     # Create plots and collect report data
     data = {

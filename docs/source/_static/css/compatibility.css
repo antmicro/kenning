@@ -12,18 +12,18 @@
 
 /* Custom colors */
 .compatible {
-  color: var(--md-primary-fg-color);
+  color: var(--md-primary-fg-color) !important;
 }
 
 .incompatible {
-  color: var(--md-accent-fg-color);
+  color: var(--md-accent-fg-color) !important;
 }
 
 .error,
 .failed {
-  color: var(--md-code-hl-special-color);
+  color: var(--md-code-hl-special-color) !important;
 }
 
 .fixed {
-  color: var(--md-code-hl-constant-color);
+  color: var(--md-code-hl-constant-color) !important;
 }

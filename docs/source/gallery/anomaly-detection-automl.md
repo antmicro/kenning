@@ -74,7 +74,20 @@ The main parameters affecting the model search process are:
   By taking into account the provided size of the application ran on the board and the size of RAM (received from the platform class), the flow will automatically reject (before training) all models that do not fit into available space.
   This ensures than time is not wasted on models that cannot be run on the hardware (or its simulation).
 * `use_models` - provides models for the algorithm to take into account.
-  Models provided in the list contribute to the search space of available configurations, providing their hyperparameters and structure definition.
+  Models provided in the list contribute to the search space of available configurations, providing their hyperparameters with acceptable ranges and structure definition.
+  It is possible to override default ranges specifying them right after chosen model:
+  ```yaml
+  use_models:
+    - PyTorchAnomalyDetectionVAE:
+        encoder_neuron_list:
+          list_range: [4, 15]
+          item_range: [6, 128]
+        dropout_rate:
+          item_range: [0.1, 0.4]
+        output_activation:
+          enum: [tanh]
+  ```
+  The list of AutoML specific options is available in [Defining arguments for classes section](defining-arguments-for-core-classes).
 
 :::{note}
 To use the microTVM runtime, change the optimizer to:

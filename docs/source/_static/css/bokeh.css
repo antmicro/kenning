@@ -102,6 +102,9 @@ div.bk-tooltip-custom {
   border-right-style: none !important;
   text-align: left;
 }
+.bk-root .slick-cell a:hover {
+  color: var(--md-code-hl-keyword-color) !important;
+}
 .bk-root .slick-header-column:hover {
   background-color: var(--md-default-bg-color);
 }

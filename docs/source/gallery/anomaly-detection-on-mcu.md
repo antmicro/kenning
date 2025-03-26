@@ -46,7 +46,7 @@ source .venv/bin/activate
 :::
 
 An environment configured this way will allow you to work with Kenning and Zephyr RTOS.
-For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#building-the-project).
+For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#user-content-building-the-project).
 
 Now create a `workspace` director where intermediate results of commands executed further will be stored:
 

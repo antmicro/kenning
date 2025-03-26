@@ -54,7 +54,7 @@ mkdir -p workspace
 ```
 
 :::{note}
-For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#building-the-project).
+For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#user-content-building-the-project).
 :::
 
 ## Run AutoML flow

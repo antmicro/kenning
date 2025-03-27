@@ -401,7 +401,7 @@ class BaseDataflowHandler(ABC):
 
             interface_to_id = {}
 
-            for dataflow_node in graph.get(AttributeType.NODE):  # zaimportowć
+            for dataflow_node in graph.get(AttributeType.NODE):
                 kenning_node = self.nodes[dataflow_node.name]
                 parameters = dataflow_node.properties
                 parameters = {

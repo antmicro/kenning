@@ -14,6 +14,7 @@ from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import Dict
 
+import yaml
 from jsonrpc.exceptions import JSONRPCDispatchException
 from jsonschema.exceptions import ValidationError
 from pipeline_manager_backend_communication.misc_structures import (
@@ -92,13 +93,16 @@ class PipelineManagerRPC(ABC):
         Dict
             Pipeline Manager graph representing the scenario
         """
-        external_application_dataflow = json.loads(
-            convert_message_to_string(
-                message=external_application_dataflow,
-                mime=mime,
-                base64=base64,
-            )
+        message_string = convert_message_to_string(
+            message=external_application_dataflow,
+            mime=mime,
+            base64=base64,
         )
+        try:
+            external_application_dataflow = json.loads(message_string)
+        except Exception:
+            external_application_dataflow = yaml.safe_load(message_string)
+
         async with self.current_task_lock:
             if self.current_task is not None:
                 return {

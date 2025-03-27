@@ -57,6 +57,7 @@ nox-prepare-deps-manual:
 
 pytest:
     <<: *common_only
+    dependencies: []
     stage: tests
     variables:
         MARKS: "(not docs_gallery) and (not docs) and (not gpu) and (not automl)"
@@ -75,6 +76,7 @@ pytest:
 
 pytest-automl:
     <<: *common_only
+    dependencies: []
     stage: tests
     variables:
         MARKS: "automl"
@@ -89,6 +91,7 @@ pytest-automl:
 
 .pytest-docs: &pytest-docs
     image: $CI_MINIMAL_IMAGE
+    dependencies: []
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
@@ -173,6 +176,7 @@ docs-gallery-tests:
 
 sample-compilation:
     <<: *common_only
+    dependencies: []
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
@@ -184,6 +188,7 @@ sample-compilation:
 
 sample-pipeline-optimization:
     <<: *common_only
+    dependencies: []
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
@@ -194,6 +199,7 @@ sample-pipeline-optimization:
 
 sample-client-server-scenario:
     <<: *common_only
+    dependencies: []
     stage: tests
     script:
         - /scripts/prepare_environment.sh .
@@ -210,6 +216,7 @@ sample-client-server-scenario:
 docs:
     image: $CI_DOCS_IMAGE
     <<: *common_only
+    dependencies: []
     stage: docs
     dependencies:
         - pytest

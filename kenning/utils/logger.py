@@ -21,6 +21,7 @@ import sys
 import urllib.request
 from dataclasses import dataclass
 from io import TextIOBase
+from pathlib import Path
 from types import TracebackType
 from typing import Any, Callable, Dict, List, Optional, Type, Union
 
@@ -276,6 +277,14 @@ class LoggerProgressBar(io.StringIO):
             handler.terminator = terminator
 
 
+class DownloadError(Exception):
+    """
+    Raised when given file was not downloaded.
+    """
+
+    ...
+
+
 def download_url(url: str, output_path: str):
     """
     Downloads the resource and renders the progress bar.
@@ -286,6 +295,11 @@ def download_url(url: str, output_path: str):
         URL to file to download
     output_path: str
         Path where to download the file
+
+    Raises
+    ------
+    DownloadError
+        If resources was not downloaded.
     """
     from tqdm import tqdm
 
@@ -305,9 +319,14 @@ def download_url(url: str, output_path: str):
             desc=url.split("/")[-1],
         ) as t,
     ):
-        urllib.request.urlretrieve(
-            url, filename=output_path, reporthook=t.update_to
-        )
+        try:
+            urllib.request.urlretrieve(
+                url, filename=output_path, reporthook=t.update_to
+            )
+        except urllib.request.ContentTooShortError as ex:
+            raise DownloadError(f"Error when downloading {url}") from ex
+    if not Path(output_path).exists():
+        raise DownloadError(f"File from {url} was not downloaded")
 
 
 # ----------------

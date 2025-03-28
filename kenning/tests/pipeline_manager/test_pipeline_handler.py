@@ -217,7 +217,16 @@ class TestPipelineHandler(HandlerTests):
 
     @pytest.fixture(scope="class")
     def handler(self):
-        return PipelineHandler(layout_algorithm="NoLayout")
+        from kenning.pipeline_manager.rpc_handler import FlowHandlerRPC
+
+        handler = PipelineHandler(layout_algorithm="NoLayout")
+        handler.get_specification(
+            handler.spec_builder.assets_dir,
+            actions=FlowHandlerRPC(
+                None, None, None, None
+            ).get_navbar_actions(),
+        )
+        return handler
 
     def equivalence_check(self, dataflow1, dataflow2):
         def compare_blocks(block1, block2):

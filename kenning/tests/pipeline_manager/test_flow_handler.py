@@ -201,7 +201,16 @@ class TestFlowHandler(HandlerTests):
 
     @pytest.fixture(scope="class")
     def handler(self):
-        return KenningFlowHandler(layout_algorithm="NoLayout")
+        from kenning.pipeline_manager.rpc_handler import OptimizationHandlerRPC
+
+        handler = KenningFlowHandler(layout_algorithm="NoLayout")
+        handler.get_specification(
+            handler.spec_builder.assets_dir,
+            actions=OptimizationHandlerRPC(
+                None, None, None, None
+            ).get_navbar_actions(),
+        )
+        return handler
 
     def equivalence_check(self, dataflow1, dataflow2):
         # There is a degree of freedom when naming global connections when

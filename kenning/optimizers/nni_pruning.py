@@ -24,6 +24,7 @@ from nni.compression.pytorch.pruning import (
 from nni.compression.pytorch.speedup import ModelSpeedup
 from nni.compression.pytorch.speedup.compress_modules import (
     convert_to_coarse_mask,
+    no_replace,
     replace_module,
 )
 from nni.compression.pytorch.speedup.compressor import _logger as nni_logger
@@ -438,6 +439,10 @@ class NNIPruningOptimizer(Optimizer):
                 "Add": add_replacer,
                 "Reshape": reshape_replacer,
                 "Expand": expand_conversion,
+                "Mul": no_replace,
+                "Concat": no_replace,
+                "LeakyRelu": no_replace,
+                "MaxPool": no_replace,
             }
         )
 

@@ -27,9 +27,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
     """
 
     default_dataset = PetDataset
-    pretrained_model_uri = (
-        "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2.pth"
-    )
+    pretrained_model_uri = "kenning:///models/classification/pytorch_pet_dataset_mobilenetv2_full_model.pth"
     arguments_structure = {
         "class_count": {
             "argparse_name": "--num-classes",
@@ -236,7 +234,7 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
                     0
                 ]
                 y = np.array(self.labels[idx])
-                X = torch.from_numpy(X.astype("float32")).permute(2, 0, 1)
+                X = torch.from_numpy(X.astype("float32"))
                 y = torch.from_numpy(y)
                 if self.transform:
                     X = self.transform(X)

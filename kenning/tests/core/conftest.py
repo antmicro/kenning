@@ -30,6 +30,9 @@ from kenning.datasets.random_dataset import (
     RandomizedTextDataset,
 )
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
+from kenning.modelwrappers.classification.pytorch_pet_dataset import (
+    PyTorchPetDatasetMobileNetV2,
+)
 from kenning.modelwrappers.classification.tflite_magic_wand import (
     MagicWandModelWrapper,
 )
@@ -328,11 +331,16 @@ def get_dataset_random_mock(
         Mock of given dataset class.
     """
     if dataset_cls is PetDataset:
+        kwargs = {}
+        if modelwrapper_cls is PyTorchPetDatasetMobileNetV2:
+            kwargs["image_memory_layout"] = "NCHW"
+
         return RandomizedClassificationDataset(
             get_tmp_path(),
             samplescount=37 * 5,
             numclasses=37,
             inputdims=(224, 224, 3),
+            **kwargs,
         )
     if dataset_cls is ImageNetDataset:
         return RandomizedClassificationDataset(

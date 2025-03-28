@@ -11,8 +11,8 @@ from pathlib import Path
 from string import ascii_letters
 from typing import Any, List, Optional, Tuple, Type
 
-import cv2
 import numpy as np
+from PIL import Image
 
 from kenning.core.dataset import Dataset
 from kenning.core.measurements import Measurements
@@ -51,6 +51,12 @@ class RandomizedClassificationDataset(Dataset):
             "type": list[int],
             "default": [224, 224, 3],
         },
+        "image_memory_layout": {
+            "argparse_name": "--image-memory-layout",
+            "description": "Determines if images should be delivered in NHWC or NCHW format",  # noqa: E501
+            "default": "NHWC",
+            "enum": ["NHWC", "NCHW"],
+        },
     }
 
     def __init__(
@@ -63,6 +69,7 @@ class RandomizedClassificationDataset(Dataset):
         numclasses: int = 3,
         integer_classes: bool = False,
         inputdims: List = [224, 224, 3],
+        image_memory_layout: str = "NHWC",
         dtype: Type = np.float32,
         seed: int = 1234,
         **kwargs: Any,
@@ -90,6 +97,9 @@ class RandomizedClassificationDataset(Dataset):
             instead of one-hot encoding.
         inputdims : List
             The dimensionality of the inputs.
+        image_memory_layout : str
+            Tells if the images should be delivered in NCHW or NHWC format.
+            The default format is NHWC.
         dtype : Type
             Type of the data.
         seed : int
@@ -104,6 +114,7 @@ class RandomizedClassificationDataset(Dataset):
         self.dtype = dtype
         self.classnames = self.get_class_names()
         self.seed = seed
+        self.image_memory_layout = image_memory_layout
 
         super().__init__(
             root,
@@ -132,7 +143,11 @@ class RandomizedClassificationDataset(Dataset):
         (self.root / "images").mkdir(parents=True, exist_ok=True)
         samples = self.prepare_input_samples(self.dataX)[0]
         for img_path, img_data in zip(self.dataX, samples):
-            cv2.imwrite(img_path, img_data)
+            if len(img_data.shape) == 2:
+                mode = "L"
+            else:
+                mode = "RGB"
+            Image.fromarray(img_data, mode).save(img_path)
 
     def download_dataset_fun(self):
         pass
@@ -140,7 +155,10 @@ class RandomizedClassificationDataset(Dataset):
     def prepare_input_samples(self, samples: List[str]) -> List[np.ndarray]:
         result = []
         for _ in samples:
-            result.append(np.random.randn(*self.inputdims).astype(self.dtype))
+            npimg = np.random.randn(*self.inputdims).astype(self.dtype)
+            if self.image_memory_layout == "NCHW":
+                npimg = np.transpose(npimg, (2, 0, 1))
+            result.append(npimg)
         return [np.array(result)]
 
     def prepare_output_samples(self, samples: List[Any]) -> List[np.ndarray]:

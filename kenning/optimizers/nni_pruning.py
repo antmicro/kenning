@@ -681,7 +681,9 @@ class NNIPruningOptimizer(Optimizer):
         ]
         data = self.dataset.prepare_input_samples(batch_x)
         if self.model_wrapper:
-            data = np.asarray(self.model_wrapper._preprocess_input(data))
+            data = self.model_wrapper._preprocess_input(data)
+            if isinstance(data[0], torch.Tensor):
+                data = torch.stack(data)
         data = np.asarray(data)
         batch_y = self.train_data[1][
             batch_begin : batch_begin + self.finetuning_batch_size
@@ -694,7 +696,7 @@ class NNIPruningOptimizer(Optimizer):
                 torch.from_numpy(np.asarray(_l)).to(self.device)
                 for _l in label
             ]
-        except TypeError:
+        except (ValueError, TypeError):
             pass
 
         return data, label

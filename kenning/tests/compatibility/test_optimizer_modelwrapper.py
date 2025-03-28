@@ -5,7 +5,7 @@
 import os
 import uuid
 from pathlib import Path
-from typing import Tuple
+from typing import Optional, Tuple
 
 import pytest
 from schema import Type
@@ -13,9 +13,11 @@ from schema import Type
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.core.platform import Platform
+from kenning.modelwrappers.object_detection.yolov4 import ONNXYOLOV4
 from kenning.optimizers.gptq import GPTQOptimizer
 from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
 from kenning.optimizers.model_inserter import ModelInserter
+from kenning.optimizers.nni_pruning import NNIPruningOptimizer
 from kenning.tests.conftest import (
     Samples,
     get_tmp_path,
@@ -26,6 +28,7 @@ from kenning.tests.core.conftest import (
 )
 from kenning.tests.core.test_model import create_model
 from kenning.utils.class_loader import get_all_subclasses
+from kenning.utils.pipeline_runner import PipelineRunner
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True
@@ -42,7 +45,6 @@ EXPECTED_FAIL = [
     ("MistralInstruct", "AWQOptimizer"),
     ("MistralInstruct", "GPTQOptimizer"),
     ("MistralInstruct", "GPTQSparseGPTOptimizer"),
-    ("ONNXYOLOV4", "NNIPruningOptimizer"),
     ("PHI2", "AWQOptimizer"),
     ("PHI2", "GPTQOptimizer"),
     ("PHI2", "GPTQSparseGPTOptimizer"),
@@ -84,7 +86,7 @@ expected_mark = pytest.mark.xfail(reason="Expected incompatible")
 def prepare_objects(
     model_cls: Type[ModelWrapper],
     optimizer_cls: Type[Optimizer],
-) -> Tuple[ModelWrapper, Optimizer]:
+) -> Tuple[ModelWrapper, Optimizer, Optional[Platform]]:
     if optimizer_cls is ModelInserter:
         pytest.skip("ModelInserter is not supported")
 
@@ -109,7 +111,9 @@ def prepare_objects(
     model = create_model(model_cls, dataset)
     if platform is not None:
         model.read_platform(platform)
-    if model_cls.pretrained_model_uri is None:
+    if model_cls.pretrained_model_uri is not None:
+        model.prepare_model()
+    else:
         model.model_path = model.model_path.with_suffix(
             next(  # Get suffix for chosen model_type
                 filter(
@@ -130,17 +134,19 @@ def prepare_objects(
     if optimizer_cls not in (GPTQOptimizer, GPTQSparseGPTOptimizer):
         kwargs["model_framework"] = model_type
 
+    if optimizer_cls is NNIPruningOptimizer:
+        kwargs["finetuning_epochs"] = 0
+        if model_cls is ONNXYOLOV4:
+            kwargs["criterion"] = "kenning.utils.yolov4_loss.YOLOv4Loss"
+            kwargs["confidence"] = 2
+
     optimizer = optimizer_cls(
         model.dataset,
         get_tmp_path(compiled_model_path_suffix),
         model_wrapper=model,
         **kwargs,
     )
-    if platform is not None:
-        optimizer.read_platform(platform)
-    optimizer.init()
-
-    return model, optimizer
+    return model, optimizer, platform
 
 
 @pytest.mark.slow
@@ -262,9 +268,15 @@ class TestOptimizerModelWrapper:
         model_cls: Type[ModelWrapper],
         optimizer_cls: Type[Optimizer],
     ):
-        model, optimizer = prepare_objects(model_cls, optimizer_cls)
+        model, optimizer, platform = prepare_objects(model_cls, optimizer_cls)
         try:
-            optimizer.compile(model.model_path, model.get_io_specification())
+            pipeline_runner = PipelineRunner(
+                dataset=model.dataset,
+                optimizers=[optimizer],
+                model_wrapper=model,
+                platform=platform,
+            )
+            pipeline_runner.run(run_benchmarks=False)
             assert optimizer.compiled_model_path.exists()
         finally:
             remove_file_or_dir(optimizer.compiled_model_path)

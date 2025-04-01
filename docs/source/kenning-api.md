@@ -201,6 +201,22 @@ Runtime examples:
    :members:
 ```
 
+(platform-api)=
+## Platform
+
+The `kenning.core.platform.Platform` classes represents the targeted environment providing additional context for optimization, compilation and evaluation of the model.
+
+Platform examples:
+* [LocalPlatform](https://github.com/antmicro/kenning/blob/main/kenning/platforms/local.py)
+* [BareMetalPlatform](https://github.com/antmicro/kenning/blob/main/kenning/platforms/bare_metal.py)
+* [ZephyrPlatform](https://github.com/antmicro/kenning/blob/main/kenning/platforms/zephyr.py)
+
+```{eval-rst}
+.. autoclass:: kenning.core.platform.Platform
+   :show-inheritance:
+   :members:
+```
+
 (protocol-api)=
 ## Protocol
 

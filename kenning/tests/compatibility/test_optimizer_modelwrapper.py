@@ -50,19 +50,12 @@ EXPECTED_FAIL = [
     ("PHI2", "GPTQSparseGPTOptimizer"),
     ("PyTorchAnomalyDetectionVAE", "Ai8xCompiler"),
     ("PyTorchAnomalyDetectionVAE", "NNIPruningOptimizer"),
-    ("PyTorchAnomalyDetectionVAE", "ONNXCompiler"),
-    ("PyTorchAnomalyDetectionVAE", "TFLiteCompiler"),
-    ("PyTorchAnomalyDetectionVAE", "TVMCompiler"),
     ("PyTorchCOCOMaskRCNN", "Ai8xCompiler"),
     ("PyTorchCOCOMaskRCNN", "NNIPruningOptimizer"),
     ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
     ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
     ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
     ("PyTorchPetDatasetMobileNetV2", "Ai8xCompiler"),
-    ("PyTorchPetDatasetMobileNetV2", "NNIPruningOptimizer"),
-    ("PyTorchPetDatasetMobileNetV2", "ONNXCompiler"),
-    ("PyTorchPetDatasetMobileNetV2", "TFLiteCompiler"),
-    ("PyTorchPetDatasetMobileNetV2", "TVMCompiler"),
     ("TFLiteCompiler", "MagicWandModelWrapper"),
     ("TFLiteCompiler", "TensorFlowPetDatasetMobileNetV2"),
     ("TVMCompiler", "MagicWandModelWrapper"),
@@ -269,6 +262,10 @@ class TestOptimizerModelWrapper:
         optimizer_cls: Type[Optimizer],
     ):
         model, optimizer, platform = prepare_objects(model_cls, optimizer_cls)
+        if model_cls.__name__ == "PHI2":
+            if optimizer_cls.__name__ == "GPTQSparseGPTOptimizer":
+                pytest.xfail("Running this test is currently not supported")
+
         try:
             pipeline_runner = PipelineRunner(
                 dataset=model.dataset,

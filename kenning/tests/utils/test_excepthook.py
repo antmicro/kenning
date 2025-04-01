@@ -24,6 +24,9 @@ IGNORED_MODULES = {
     # sparse kernel dependencies - installed separately
     "cutlass_library",
     "setuptools",
+    # modules from Zephyr repository
+    "zephyr_module",
+    "list_boards",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

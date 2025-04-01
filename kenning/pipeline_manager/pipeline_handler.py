@@ -116,8 +116,7 @@ class PipelineHandler(BaseDataflowHandler):
             )
             return temp
 
-        self.pm_graph.start_new_graph()
-
+        self.pm_graph.start_new_graph(graph_name="Kenning pipeline")
         node_ids = {}
 
         block_names = [
@@ -201,7 +200,6 @@ class PipelineHandler(BaseDataflowHandler):
                     self.pm_graph.create_connection(
                         node_ids["optimizer"][-1], node_ids["runtime"]
                     )
-
         return self.pm_graph.flush_graph()
 
     @staticmethod

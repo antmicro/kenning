@@ -121,6 +121,7 @@ class HandlerTests(ABC):
         """
         return {
             "graph": {
+                "name": "Test",
                 "nodes": self.dataflow_nodes,
                 "connections": self.dataflow_connections,
                 "inputs": {},

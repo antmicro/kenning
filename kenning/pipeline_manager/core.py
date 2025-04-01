@@ -577,6 +577,7 @@ class PipelineManagerGraphCreator:
         )
 
         self.graph = self.graph_builder.create_graph()
+        setattr(self.graph, "name", "Kenning pipeline")
 
         self.inp_interface_map = {}
         self.out_interface_map = {}
@@ -641,12 +642,14 @@ class PipelineManagerGraphCreator:
         )
         self.graph.create_connection(from_interface_id, to_interface_id)
 
-    def start_new_graph(self):
+    def start_new_graph(self, graph_name=None):
         if self.graph_builder.graphs:
             del self.graph_builder.graphs[0]
         self.graph = self.graph_builder.create_graph()
+        if graph_name:
+            setattr(self.graph, "name", graph_name)
 
-    def flush_graph(self):
+    def flush_graph(self, new_graph_name=None):
         finished_graph = self.graph_builder.to_json(as_str=False)
-        self.start_new_graph()
+        self.start_new_graph(graph_name=new_graph_name)
         return finished_graph

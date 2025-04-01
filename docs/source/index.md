@@ -16,5 +16,6 @@ sample-report
 kenning-flow
 kenning-development
 kenning-resources
+kenning-platforms
 kenning-api
 ```

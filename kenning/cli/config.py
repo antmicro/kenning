@@ -18,6 +18,7 @@ from kenning.cli.command_template import (
     COMPLETION,
     FINE_TUNE,
     FLOW,
+    GENERATE_PLATFORMS,
     HELP,
     INFO,
     LIST,
@@ -36,6 +37,7 @@ from kenning.scenarios import (
     class_info,
     configure_autocompletion,
     fuzzy_search_class,
+    generate_platforms,
     inference_server,
     inference_tester,
     json_flow_runner,
@@ -61,6 +63,7 @@ BASIC_COMMANDS = (
     INFO,
     SEARCH,
     COMPLETION,
+    GENERATE_PLATFORMS,
 )
 # All available subcommands and help flags
 AVAILABLE_COMMANDS = (
@@ -88,6 +91,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     CACHE: manage_cache.ManageCacheRunner,
     VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
     COMPLETION: configure_autocompletion.ConfigureCompletion,
+    GENERATE_PLATFORMS: generate_platforms.GeneratePlatformsCommand,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

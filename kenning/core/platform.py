@@ -9,15 +9,16 @@ Provides a wrapper for platforms.
 import sys
 from abc import ABC
 from time import perf_counter
-from typing import Optional
+from typing import List, Optional
 
 import yaml
 
 from kenning.core.measurements import Measurements
 from kenning.core.protocol import Protocol
 from kenning.resources import platforms
-from kenning.utils.args_manager import ArgumentsHandler
+from kenning.utils.args_manager import ArgumentsHandler, convert
 from kenning.utils.logger import KLogger
+from kenning.utils.resource_manager import ResourceURI
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -42,6 +43,13 @@ class Platform(ArgumentsHandler, ABC):
             "nullable": True,
             "default": None,
         },
+        "platforms_definitions": {
+            "description": "Files with platform definitions from the least to the most significant",  # noqa: E501
+            "type": list[ResourceURI],
+            "nullable": True,
+            "default": None,
+            "overridable": True,
+        },
     }
 
     # default values for data that is read from platforms.yml
@@ -50,6 +58,7 @@ class Platform(ArgumentsHandler, ABC):
     def __init__(
         self,
         name: Optional[str] = None,
+        platforms_definitions: Optional[List[ResourceURI]] = None,
     ):
         """
         Constructs platform and reads its data from platforms.yaml.
@@ -58,8 +67,15 @@ class Platform(ArgumentsHandler, ABC):
         ----------
         name : Optional[str]
             Name of the platform.
+        platforms_definitions : Optional[List[ResourceURI]]
+            Files with platform definitions
+            from the least to the most significant.
         """
         self.name = name
+        self.platforms_definitions = platforms_definitions
+        if self.platforms_definitions is None:
+            with path(platforms, "platforms.yml") as platforms_path:
+                self.platforms_definitions = [platforms_path]
         self.read_data_from_platforms_yaml()
 
     def init(self):
@@ -70,50 +86,53 @@ class Platform(ArgumentsHandler, ABC):
 
     def read_data_from_platforms_yaml(self):
         """
-        Retrieves platform data from platforms.yml.
+        Retrieves platform data from specified platform definition files.
         """
-        with path(platforms, "platforms.yml") as platforms_path:
-            with open(platforms_path, "r") as platforms_yaml:
-                platforms_dict = yaml.safe_load(platforms_yaml)
+        data, sources = [], []
+        for platform_def in self.platforms_definitions:
+            with platform_def.open("r") as platforms_yaml:
+                data.append(yaml.safe_load(platforms_yaml).get(self.name, {}))
+                sources.append(platform_def)
 
-            if self.name in platforms_dict:
-                platform_data = platforms_dict[self.name]
-            else:
-                platform_data = {}
-                KLogger.warning(
-                    f"Platform {self.name} not found in {platforms_path}"
-                )
+        if any(not platform for platform in data):
+            KLogger.warning(
+                f"Platform {self.name} not found in defined platforms"
+            )
 
-            default_attrs = self.__class__.platform_defaults
-            all_attrs = set(platform_data.keys()).union(default_attrs.keys())
+        default_attrs = self.__class__.platform_defaults
+        all_attrs = set()
+        for platform in data + [default_attrs]:
+            all_attrs = all_attrs.union(platform.keys())
 
-            for attr_name in all_attrs:
-                if getattr(self, attr_name, None) is not None:
+        attr_srcs = tuple(reversed(list(zip(data, map(str, sources))))) + (
+            (default_attrs, "defaults"),
+        )
+        param_schema = self.form_parameterschema()
+        for attr_name in all_attrs:
+            if getattr(self, attr_name, None) is not None:
+                KLogger.debug(f"Skipping {attr_name} attribute")
+                continue
+
+            for attr_src, attr_src_name in attr_srcs:
+                if attr_src.get(attr_name, None) is None:
                     continue
-
-                attr_srcs = (
-                    (platform_data, str(platforms_path)),
-                    (default_attrs, "defaults"),
+                attr_value = attr_src[attr_name]
+                arg_struct = param_schema["properties"].get(attr_name, None)
+                if arg_struct is not None:
+                    attr_type = arg_struct["convert-type"]
+                    if not isinstance(attr_type, (list, tuple)):
+                        attr_type = [attr_type]
+                    if "array" in arg_struct.get("type", []):
+                        attr_value = [
+                            convert(attr_type, v) for v in attr_value
+                        ]
+                    else:
+                        attr_value = convert(attr_type, attr_value)
+                setattr(self, attr_name, attr_value)
+                KLogger.debug(
+                    f"Setting {attr_name}={attr_value} from {attr_src_name}"
                 )
-                param_schema = self.form_parameterschema()
-                for attr_src, attr_src_name in attr_srcs:
-                    if attr_src.get(attr_name, None) is None:
-                        continue
-                    attr_value = attr_src[attr_name]
-                    arg_struct = param_schema["properties"].get(
-                        attr_name, None
-                    )
-                    if arg_struct is not None:
-                        attr_type = arg_struct["convert-type"]
-                        if "array" in arg_struct.get("type", []):
-                            attr_value = [attr_type(v) for v in attr_value]
-                        else:
-                            attr_value = attr_type(attr_value)
-                    setattr(self, attr_name, attr_value)
-                    KLogger.debug(
-                        f"Setting {attr_name}={attr_value} from {attr_src_name}"  # noqa: E501
-                    )
-                    break
+                break
 
     def deinit(self, measurements: Optional[Measurements] = None):
         """

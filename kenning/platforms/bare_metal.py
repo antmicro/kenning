@@ -72,6 +72,7 @@ class BareMetalPlatform(SimulatablePlatform):
     def __init__(
         self,
         name: Optional[str] = None,
+        platforms_definitions: Optional[List[ResourceURI]] = None,
         simulated: bool = True,
         runtime_binary_path: Optional[PathOrURI] = None,
         platform_resc_path: Optional[PathOrURI] = None,
@@ -97,6 +98,9 @@ class BareMetalPlatform(SimulatablePlatform):
         ----------
         name : Optional[str]
             Name of the platform.
+        platforms_definitions : Optional[List[ResourceURI]]
+            Files with platform definitions
+            from the least to the most significant.
         simulated : bool
             If True, then platform will be simulated in Renode
         runtime_binary_path : Optional[PathOrURI]
@@ -155,6 +159,7 @@ class BareMetalPlatform(SimulatablePlatform):
 
         super().__init__(
             name=name,
+            platforms_definitions=platforms_definitions,
             simulated=simulated,
             runtime_binary_path=runtime_binary_path,
             platform_resc_path=platform_resc_path,

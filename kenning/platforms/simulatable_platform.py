@@ -121,6 +121,7 @@ class SimulatablePlatform(Platform, ABC):
     def __init__(
         self,
         name: Optional[str] = None,
+        platforms_definitions: Optional[List[ResourceURI]] = None,
         simulated: bool = True,
         runtime_binary_path: Optional[PathOrURI] = None,
         platform_resc_path: Optional[PathOrURI] = None,
@@ -140,6 +141,9 @@ class SimulatablePlatform(Platform, ABC):
         ----------
         name : Optional[str]
             Name of the platform.
+        platforms_definitions : Optional[List[ResourceURI]]
+            Files with platform definitions
+            from the least to the most significant.
         simulated : bool
             If True, then platform will be simulated in Renode
         runtime_binary_path : Optional[PathOrURI]
@@ -186,7 +190,7 @@ class SimulatablePlatform(Platform, ABC):
         self.runtime_log_buffer = ""
         self.runtime_logs = []
 
-        super().__init__(name)
+        super().__init__(name, platforms_definitions)
 
     def init(self):
         super().init()

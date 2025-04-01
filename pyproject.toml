@@ -140,6 +140,13 @@ renode = [
 ]
 zephyr = [
     "west",
+    "dts2repl @ git+https://github.com/antmicro/dts2repl@main#egg=dts2repl",
+    "pykwalify",
+    "natsort",
+    "pyelftools",
+    "junitparser",
+    "ply",
+    "anytree",
 ]
 nni = [
     "kenning[torch]",

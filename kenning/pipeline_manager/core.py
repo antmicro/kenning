@@ -311,7 +311,18 @@ class BaseDataflowHandler(ABC):
                     elif property_type == "array":
                         new_property["type"] = "list"
                         if "items" in props and "type" in props["items"]:
-                            new_property["dtype"] = props["items"]["type"][0]
+                            if (
+                                dtype := props["items"]["type"][0]
+                            ) == "object":
+                                # List cannot have dtype set to "object"
+                                new_property["dtype"] = "string"
+                                KLogger.warning(
+                                    f"Usuported items type ({dtype}) for"
+                                    + f"{node.cls_name}.{name}. String is"
+                                    + "used by default."
+                                )
+                            else:
+                                new_property["dtype"] = dtype
                         else:
                             # Lists cannot have dtype set to None
                             # so string is used by default

@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 from argcomplete import DirectoriesCompleter, FilesCompleter
+from matplotlib.colors import to_hex
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -36,6 +37,7 @@ from kenning.cli.command_template import (
     CommandTemplate,
     generate_command_type,
 )
+from kenning.core.drawing import Plot
 from kenning.core.measurements import Measurements
 from kenning.core.metrics import (
     CLASSIFICATION_METRICS,
@@ -2541,9 +2543,17 @@ class RenderReport(CommandTemplate):
         if report_name is None:
             report_name = deduce_report_name(measurementsdata, report_types)
 
-        SERVIS_PLOT_OPTIONS["colormap"] = KENNING_COLORS
-        cmap = RED_GREEN_CMAP
         colors = KENNING_COLORS
+        # Fill missing colors with ones generated from nipy_spectral
+        if len(measurementsdata) > len(colors):
+            colors += [
+                to_hex(c)
+                for c in Plot._get_comparison_color_scheme(
+                    len(measurementsdata) - len(colors)
+                )
+            ]
+        SERVIS_PLOT_OPTIONS["colormap"] = colors
+        cmap = RED_GREEN_CMAP
 
         with choose_theme(
             custom_bokeh_theme=True,

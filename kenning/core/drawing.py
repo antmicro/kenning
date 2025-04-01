@@ -2351,6 +2351,7 @@ class LinePlot(Plot):
             y_axis_label=self.y_label,
             output_backend="webgl",
         )
+        plot_fig.toolbar.logo = None
 
         renderers = [
             plot_fig.line(x, y, color=color, line_width=2.0)
@@ -2551,6 +2552,7 @@ class Barplot(Plot):
             y_axis_label=self.y_label,
             output_backend="webgl",
         )
+        barplot_fig.toolbar.logo = None
 
         data = dict(self.y_data, xdata=self.x_data)
 

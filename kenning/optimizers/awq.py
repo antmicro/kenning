@@ -15,6 +15,7 @@ from awq import __version__ as awq_version
 from transformers import AutoTokenizer
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.resource_manager import PathOrURI
 
@@ -77,6 +78,7 @@ class AWQOptimizer(Optimizer):
         use_zero_point: bool = True,
         group_size: int = 128,
         mm_version: str = "GEMM",
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Initialize the AWQOptimizer optimizer.
@@ -100,12 +102,14 @@ class AWQOptimizer(Optimizer):
             Number of weights that share the same quantization parameters.
         mm_version : str
             Algorithm used for matrix multiplication.
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper for the optimized model (optional).
         """
         self.target_precision = target_precision
         self.use_zero_point = use_zero_point
         self.group_size = group_size
         self.mm_version = mm_version
-        super().__init__(dataset, compiled_model_path, location)
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(
         self,

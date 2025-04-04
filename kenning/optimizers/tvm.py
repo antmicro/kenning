@@ -15,6 +15,7 @@ import tvm
 import tvm.relay as relay
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     CompilationError,
     ConversionError,
@@ -482,6 +483,7 @@ class TVMCompiler(Optimizer):
         use_int8_precision: bool = False,
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         A TVM Compiler wrapper.
@@ -540,6 +542,8 @@ class TVMCompiler(Optimizer):
             If use_int8_precision is set, the given percentage of samples
             from the training dataset or external calibration dataset is
             used for calibrating the model.
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper for the optimized model (optional).
         """
         assert not (
             use_fp16_precision and use_int8_precision
@@ -574,11 +578,7 @@ class TVMCompiler(Optimizer):
         self.use_int8_precision = use_int8_precision
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
-        super().__init__(
-            dataset=dataset,
-            compiled_model_path=compiled_model_path,
-            location=location,
-        )
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def init(self):
         import tvm.micro.testing as mtvmt

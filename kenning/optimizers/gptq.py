@@ -11,6 +11,7 @@ https://github.com/PanQiWei/AutoGPTQ
 from typing import Dict, List, Literal, Optional, Tuple
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.sparsegpt.datautils import get_c4
 from kenning.utils.resource_manager import PathOrURI
@@ -66,6 +67,7 @@ class GPTQOptimizer(Optimizer):
         calibration_samples: int = 128,
         desc_act: bool = True,
         symmetric: bool = True,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.bits = bits
         self.group_size = group_size
@@ -73,7 +75,7 @@ class GPTQOptimizer(Optimizer):
         self.desc_act = desc_act
 
         self.symmetric = symmetric
-        super().__init__(dataset, compiled_model_path, location)
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(
         self,

@@ -298,6 +298,8 @@ def objs_from_json(
             json_cfg, ConfigKey.model_wrapper, dataset=dataset
         )
 
+    model_wrapper = objs.get(ConfigKey.model_wrapper)
+
     if ConfigKey.dataconverter in keys:
         objs[ConfigKey.dataconverter] = any_from_json(
             json_cfg.get(ConfigKey.runtime.name, {}).get("data_converted", {}),
@@ -310,6 +312,7 @@ def objs_from_json(
                 optimizer_cfg,
                 block_type=ConfigKey.optimizers.value,
                 dataset=dataset,
+                model_wrapper=model_wrapper,
             )
             for optimizer_cfg in json_cfg.get(
                 ConfigKey.optimizers.name,

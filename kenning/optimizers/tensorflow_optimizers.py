@@ -13,6 +13,7 @@ from typing import List, Literal, Optional, Tuple
 import tensorflow as tf
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -64,6 +65,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
         optimizer: str = "adam",
         disable_from_logits: bool = False,
         save_to_zip: bool = False,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         TensorFlowOptimizer framework.
@@ -92,6 +94,8 @@ class TensorFlowOptimizer(Optimizer, ABC):
         save_to_zip : bool
             Determines whether optimized model should additionally be saved in
             ZIP format.
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper for the optimized model (optional).
         """
         self.epochs = epochs
         self.batch_size = batch_size
@@ -102,6 +106,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            model_wrapper=model_wrapper,
         )
         assert (
             not self.save_to_zip or self.compiled_model_path.suffix != ".zip"

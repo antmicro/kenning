@@ -15,6 +15,7 @@ import numpy as np
 import tensorflow as tf
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -198,6 +199,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
         use_tf_select_ops: bool = False,
         resolver_template_path: Optional[ResourceURI] = None,
         resolver_output_path: Optional[ResourceURI] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The TFLite and EdgeTPU compiler.
@@ -258,6 +260,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
             If `resolver_template_path` is provided, it will be used as a
             template for the C file generation. Otherwise, default template
             will be used.
+        model_wrapper : Optional[ModelWrapper]
+            ModelWrapper for the optimized model (optional).
         """
         self.target = target
         self.model_framework = model_framework
@@ -278,6 +282,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
+            model_wrapper=model_wrapper,
         )
 
     @staticmethod
@@ -507,6 +512,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
                 for entry in self.dataset.calibration_dataset_generator(
                     self.dataset_percentage
                 ):
+                    entry = self.model_wrapper.preprocess_input(entry)
+
                     yield [
                         np.array(entry, dtype=np.float32).reshape(
                             io_spec.get("processed_input", io_spec["input"])[

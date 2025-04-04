@@ -10,6 +10,7 @@ sparsity_aware_kernel.
 from typing import Dict, List, Literal, Optional, Tuple
 
 from kenning.core.dataset import Dataset
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.resource_manager import PathOrURI
 
@@ -52,12 +53,13 @@ class GPTQSparseGPTOptimizer(Optimizer):
         group_size: int = 128,
         context_length: int = 2048,
         calibration_samples: int = 128,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         self.group_size = group_size
         self.context_length = context_length
         self.calibration_samples = calibration_samples
 
-        super().__init__(dataset, compiled_model_path, location)
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(
         self,

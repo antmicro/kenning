@@ -83,6 +83,7 @@ class Optimizer(ArgumentsHandler, ABC):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Prepares the Optimizer object.
@@ -98,12 +99,13 @@ class Optimizer(ArgumentsHandler, ABC):
             Specifies where optimization should be performed in client-server
             scenario.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            ModelWrapper used in shared pipeline.
         """
         assert location in Optimizer.locations, f"Invalid location: {location}"
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.location = location
+        self.model_wrapper = model_wrapper
         self.model_wrapper = model_wrapper
 
     def init(self):
@@ -141,6 +143,7 @@ class Optimizer(ArgumentsHandler, ABC):
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ) -> "Optimizer":
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -156,13 +159,16 @@ class Optimizer(ArgumentsHandler, ABC):
         dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
 
         Returns
         -------
         Optimizer
             Object of class Optimizer.
         """
+        return super().from_json(
+            json_dict, dataset=dataset, model_wrapper=model_wrapper
+        )
         return super().from_json(
             json_dict, dataset=dataset, model_wrapper=model_wrapper
         )

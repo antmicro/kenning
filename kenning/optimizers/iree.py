@@ -14,6 +14,7 @@ from iree.compiler import version
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     CompilationError,
     IOSpecificationNotFoundError,
@@ -200,6 +201,7 @@ class IREECompiler(Optimizer):
         model_framework: str = "keras",
         compiler_args: Optional[List[str]] = None,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Wrapper for IREE compiler.
@@ -227,7 +229,7 @@ class IREECompiler(Optimizer):
             'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
             listed by running 'iree-compile -h'.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)
@@ -244,6 +246,7 @@ class IREECompiler(Optimizer):
 
         self.set_input_type(model_framework)
 
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(

@@ -31,6 +31,7 @@ from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import CompilationError, Optimizer
 from kenning.onnxconverters.onnx2torch import convert
@@ -344,6 +345,7 @@ class NNIPruningOptimizer(Optimizer):
         pruning_on_cuda: bool = True,
         exclude_last_layer: bool = True,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The NNIPruning optimizer.
@@ -397,8 +399,9 @@ class NNIPruningOptimizer(Optimizer):
         exclude_last_layer : bool
             Condition for excluding last linear layer from pruning.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
         self.criterion_modulepath = criterion

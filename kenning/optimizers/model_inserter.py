@@ -49,6 +49,7 @@ class ModelInserter(Optimizer):
         input_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         A mock Optimizer for model injection.
@@ -67,11 +68,12 @@ class ModelInserter(Optimizer):
             Specifies where optimization should be performed in client-server
             scenario.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
         self.model_framework = model_framework
         self.input_model_path = input_model_path
         self.outputtypes = [self.model_framework]
+        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(

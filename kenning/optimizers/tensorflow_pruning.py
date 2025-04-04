@@ -13,6 +13,7 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -92,6 +93,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         pruning_frequency: int = 100,
         pruning_end: int = -1,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The TensorFlowPruning optimizer.
@@ -130,7 +132,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         pruning_end : int
             Last steps for which model can be pruned, -1 means no end.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
         self.model_framework = model_framework
         self.prune_dense = prune_dense
@@ -147,6 +149,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
+            model_wrapper=model_wrapper,
             model_wrapper=model_wrapper,
         )
 

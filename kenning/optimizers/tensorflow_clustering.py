@@ -12,6 +12,7 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -89,6 +90,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         preserve_sparsity: bool = False,
         fine_tune: bool = False,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The TensorFlowClustering optimizer.
@@ -127,7 +129,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         fine_tune : bool
             Determines whether to fine-tune the model after clustering.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
         self.model_framework = model_framework
         self.cluster_dense = cluster_dense
@@ -144,6 +146,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
+            model_wrapper=model_wrapper,
             model_wrapper=model_wrapper,
         )
 

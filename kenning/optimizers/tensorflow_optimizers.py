@@ -14,6 +14,7 @@ import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -66,6 +67,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
         disable_from_logits: bool = False,
         save_to_zip: bool = False,
         model_wrapper: Optional[ModelWrapper] = None,
+        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         TensorFlowOptimizer framework.
@@ -95,7 +97,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             Determines whether optimized model should additionally be saved in
             ZIP format.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper for the optimized model (optional).
+            The model wrapper object that is optionally used for optimization.
         """
         self.epochs = epochs
         self.batch_size = batch_size
@@ -106,6 +108,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             dataset=dataset,
             compiled_model_path=compiled_model_path,
             location=location,
+            model_wrapper=model_wrapper,
             model_wrapper=model_wrapper,
         )
         assert (

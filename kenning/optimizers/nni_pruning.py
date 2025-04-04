@@ -399,7 +399,7 @@ class NNIPruningOptimizer(Optimizer):
         exclude_last_layer : bool
             Condition for excluding last linear layer from pruning.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)

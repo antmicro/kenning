@@ -263,7 +263,7 @@ class TFLiteCompiler(TensorFlowOptimizer):
             template for the C file generation. Otherwise, default template
             will be used.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.target = target
         self.model_framework = model_framework

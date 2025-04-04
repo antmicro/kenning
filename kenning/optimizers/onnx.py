@@ -197,7 +197,7 @@ class ONNXCompiler(Optimizer):
             set to "any", then the optimizer will try to derive model framework
             from file extension.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)

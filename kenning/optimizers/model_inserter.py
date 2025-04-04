@@ -68,7 +68,7 @@ class ModelInserter(Optimizer):
             Specifies where optimization should be performed in client-server
             scenario.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.input_model_path = input_model_path

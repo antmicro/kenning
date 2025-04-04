@@ -99,7 +99,7 @@ class Optimizer(ArgumentsHandler, ABC):
             Specifies where optimization should be performed in client-server
             scenario.
         model_wrapper : Optional[ModelWrapper]
-            ModelWrapper used in shared pipeline.
+            ModelWrapper for the optimized model (optional).
         """
         assert location in Optimizer.locations, f"Invalid location: {location}"
         self.dataset = dataset
@@ -159,7 +159,7 @@ class Optimizer(ArgumentsHandler, ABC):
         dataset : Optional[Dataset]
             The dataset object that is optionally used for optimization.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
 
         Returns
         -------

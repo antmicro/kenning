@@ -132,7 +132,7 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         pruning_end : int
             Last steps for which model can be pruned, -1 means no end.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.prune_dense = prune_dense

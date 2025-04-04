@@ -97,7 +97,7 @@ class TensorFlowOptimizer(Optimizer, ABC):
             Determines whether optimized model should additionally be saved in
             ZIP format.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.epochs = epochs
         self.batch_size = batch_size

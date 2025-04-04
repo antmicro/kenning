@@ -229,7 +229,7 @@ class IREECompiler(Optimizer):
             'iree-cuda-llvm-target-arch=sm_60'). Full list of options can be
             listed by running 'iree-compile -h'.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)

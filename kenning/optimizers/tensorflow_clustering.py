@@ -129,7 +129,7 @@ class TensorFlowClusteringOptimizer(TensorFlowOptimizer):
         fine_tune : bool
             Determines whether to fine-tune the model after clustering.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.model_framework = model_framework
         self.cluster_dense = cluster_dense

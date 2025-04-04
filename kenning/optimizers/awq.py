@@ -105,7 +105,7 @@ class AWQOptimizer(Optimizer):
         mm_version : str
             Algorithm used for matrix multiplication.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         self.target_precision = target_precision
         self.use_zero_point = use_zero_point

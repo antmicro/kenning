@@ -545,7 +545,7 @@ class TVMCompiler(Optimizer):
             from the training dataset or external calibration dataset is
             used for calibrating the model.
         model_wrapper : Optional[ModelWrapper]
-            The model wrapper object that is optionally used for optimization.
+            ModelWrapper for the optimized model (optional).
         """
         assert not (
             use_fp16_precision and use_int8_precision

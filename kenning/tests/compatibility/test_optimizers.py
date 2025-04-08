@@ -11,7 +11,7 @@ from kenning.tests.conftest import (
     get_tmp_path,
 )
 from kenning.tests.core.conftest import (
-    get_default_dataset_model,
+    DatasetModelRegistry,
     remove_file_or_dir,
 )
 from kenning.utils.class_loader import get_all_subclasses
@@ -47,7 +47,7 @@ def prepare_objects(
         pytest.skip("Blocks do not match")
 
     model_type_input = list(optimizer_cls1.inputtypes.keys())[0]
-    dataset, model = get_default_dataset_model(model_type_input)
+    dataset, model, _ = DatasetModelRegistry.get(model_type_input)
 
     optimizers = []
     for cls, model_type in [

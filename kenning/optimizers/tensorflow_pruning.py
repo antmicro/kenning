@@ -13,7 +13,6 @@ import tensorflow_model_optimization as tfmot
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.model import ModelWrapper
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
@@ -93,7 +92,6 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
         pruning_frequency: int = 100,
         pruning_end: int = -1,
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The TensorFlowPruning optimizer.
@@ -149,7 +147,6 @@ class TensorFlowPruningOptimizer(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
-            model_wrapper=model_wrapper,
             model_wrapper=model_wrapper,
         )
 

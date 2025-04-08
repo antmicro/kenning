@@ -16,7 +16,6 @@ import tvm.relay as relay
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     CompilationError,
     ConversionError,
@@ -485,7 +484,6 @@ class TVMCompiler(Optimizer):
         use_tensorrt: bool = False,
         dataset_percentage: float = 0.25,
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         A TVM Compiler wrapper.
@@ -580,7 +578,6 @@ class TVMCompiler(Optimizer):
         self.use_int8_precision = use_int8_precision
         self.use_tensorrt = use_tensorrt
         self.dataset_percentage = dataset_percentage
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def init(self):

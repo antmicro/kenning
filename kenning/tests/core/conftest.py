@@ -169,10 +169,6 @@ class DatasetModelRegistry:
         ----------
         framework : str
             Name of framework.
-        Parameters
-        ----------
-        framework : str
-            Name of framework.
 
         Returns
         -------
@@ -196,24 +192,7 @@ class DatasetModelRegistry:
             )
             keras_model.save(model_path)
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-        elif framework == "tensorflow":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = get_tmp_path()
-            keras_model = load_keras_model(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri),
-                compile=False,
-            )
-            keras_model.save(model_path)
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-        elif framework == "tflite":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = copy_model_to_tmp(
-                ResourceURI(
-                    MagicWandModelWrapper.pretrained_model_uri
-                ).with_suffix(".tflite")
-            )
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
         elif framework == "tflite":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = copy_model_to_tmp(
@@ -232,18 +211,7 @@ class DatasetModelRegistry:
                 ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
             )
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-        elif framework == "onnx":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = get_tmp_path(suffix=".onnx")
-            onnx_compiler = ONNXCompiler(dataset, model_path)
-            onnx_compiler.init()
-            onnx_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            )
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-        elif framework == "torch":
-            import dill
         elif framework == "torch":
             import dill
 
@@ -254,31 +222,14 @@ class DatasetModelRegistry:
             onnx_compiler.compile(
                 ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
             )
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            onnx_model_path = get_tmp_path(suffix=".onnx")
-            onnx_compiler = ONNXCompiler(dataset, onnx_model_path)
-            onnx_compiler.init()
-            onnx_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            )
 
-            torch_model = onnx2torch.convert(onnx_model_path)
             torch_model = onnx2torch.convert(onnx_model_path)
 
             model_path = get_tmp_path(suffix=".pth")
             torch_save(torch_model, model_path, pickle_module=dill)
-            model_path = get_tmp_path(suffix=".pth")
-            torch_save(torch_model, model_path, pickle_module=dill)
 
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-        elif framework == "darknet":
-            dataset = get_dataset_random_mock(COCODataset2017)
-            model_path = copy_model_to_tmp(
-                ResourceURI(TVMDarknetCOCOYOLOV3.pretrained_model_uri)
-            )
-            model = TVMDarknetCOCOYOLOV3(model_path, dataset)
         elif framework == "darknet":
             dataset = get_dataset_random_mock(COCODataset2017)
             model_path = copy_model_to_tmp(
@@ -295,37 +246,7 @@ class DatasetModelRegistry:
                 ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
             )
             model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-        elif framework == "iree":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = get_tmp_path(suffix=".vmfb")
-            iree_compiler = IREECompiler(dataset, model_path)
-            iree_compiler.init()
-            iree_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            )
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
 
-        elif framework == "tvm":
-            dataset = get_dataset_random_mock(MagicWandDataset)
-            model_path = get_tmp_path(suffix=".tar")
-            tvm_compiler = TVMCompiler(
-                dataset, model_path, model_framework="keras"
-            )
-            tvm_compiler.init()
-            tvm_compiler.compile(
-                ResourceURI(MagicWandModelWrapper.pretrained_model_uri)
-            )
-            model = MagicWandModelWrapper(model_path, dataset, from_file=True)
-        elif framework in [
-            "safetensors-native",
-            "safetensors-awq",
-            "safetensors-gptq",
-        ]:
-            raise UnknownFramework(
-                f"LLM frameworks are not supported yet - {framework}"
-            )
-        else:
-            raise UnknownFramework(f"Unknown framework: {framework}")
         elif framework == "tvm":
             dataset = get_dataset_random_mock(MagicWandDataset)
             model_path = get_tmp_path(suffix=".tar")

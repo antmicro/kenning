@@ -16,7 +16,6 @@ from transformers import AutoTokenizer
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.utils.resource_manager import PathOrURI
 
@@ -80,7 +79,6 @@ class AWQOptimizer(Optimizer):
         group_size: int = 128,
         mm_version: str = "GEMM",
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Initialize the AWQOptimizer optimizer.
@@ -111,7 +109,6 @@ class AWQOptimizer(Optimizer):
         self.use_zero_point = use_zero_point
         self.group_size = group_size
         self.mm_version = mm_version
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(

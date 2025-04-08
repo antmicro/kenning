@@ -16,7 +16,6 @@ import tensorflow as tf
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import IOSpecificationNotFoundError
 from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -201,7 +200,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
         resolver_template_path: Optional[ResourceURI] = None,
         resolver_output_path: Optional[ResourceURI] = None,
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The TFLite and EdgeTPU compiler.
@@ -284,7 +282,6 @@ class TFLiteCompiler(TensorFlowOptimizer):
             optimizer=optimizer,
             disable_from_logits=disable_from_logits,
             save_to_zip=save_to_zip,
-            model_wrapper=model_wrapper,
             model_wrapper=model_wrapper,
         )
 

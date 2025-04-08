@@ -83,7 +83,6 @@ class Optimizer(ArgumentsHandler, ABC):
         compiled_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         Prepares the Optimizer object.
@@ -105,7 +104,6 @@ class Optimizer(ArgumentsHandler, ABC):
         self.dataset = dataset
         self.compiled_model_path = compiled_model_path
         self.location = location
-        self.model_wrapper = model_wrapper
         self.model_wrapper = model_wrapper
 
     def init(self):
@@ -143,7 +141,6 @@ class Optimizer(ArgumentsHandler, ABC):
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ) -> "Optimizer":
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -166,9 +163,6 @@ class Optimizer(ArgumentsHandler, ABC):
         Optimizer
             Object of class Optimizer.
         """
-        return super().from_json(
-            json_dict, dataset=dataset, model_wrapper=model_wrapper
-        )
         return super().from_json(
             json_dict, dataset=dataset, model_wrapper=model_wrapper
         )

@@ -2139,7 +2139,12 @@ def deduce_report_types(measurements_data: List[Dict]) -> List[str]:
     _append_type_if(
         CLASSIFICATION, lambda data: "eval_confusion_matrix" in data
     )
-    _append_type_if(DETECTION, lambda data: "eval_gtcount" in data)
+    _append_type_if(
+        DETECTION,
+        lambda data: any(
+            nested_data.startswith("eval_gtcount") for nested_data in data
+        ),
+    )
     _append_type_if(
         TEXT_SUMMARIZATION,
         lambda data: any([key.startswith("rouge") for key in data.keys()]),

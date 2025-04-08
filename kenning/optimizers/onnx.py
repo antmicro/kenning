@@ -12,7 +12,6 @@ import onnx
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import (
     CompilationError,
     ConversionError,
@@ -178,7 +177,6 @@ class ONNXCompiler(Optimizer):
         location: Literal["host", "target"] = "host",
         model_framework: str = "any",
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         The ONNX compiler.
@@ -201,7 +199,6 @@ class ONNXCompiler(Optimizer):
         """
         self.model_framework = model_framework
         self.set_input_type(model_framework)
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(

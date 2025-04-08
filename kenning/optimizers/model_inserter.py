@@ -49,7 +49,6 @@ class ModelInserter(Optimizer):
         input_model_path: PathOrURI,
         location: Literal["host", "target"] = "host",
         model_wrapper: Optional[ModelWrapper] = None,
-        model_wrapper: Optional[ModelWrapper] = None,
     ):
         """
         A mock Optimizer for model injection.
@@ -73,7 +72,6 @@ class ModelInserter(Optimizer):
         self.model_framework = model_framework
         self.input_model_path = input_model_path
         self.outputtypes = [self.model_framework]
-        super().__init__(dataset, compiled_model_path, location, model_wrapper)
         super().__init__(dataset, compiled_model_path, location, model_wrapper)
 
     def compile(

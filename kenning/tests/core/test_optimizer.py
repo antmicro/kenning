@@ -4,16 +4,13 @@
 
 from contextlib import contextmanager
 from typing import Iterator, Tuple, Type
-from contextlib import contextmanager
-from typing import Iterator, Tuple, Type
 
 import pytest
 
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import CompilationError, ConversionError, Optimizer
+from kenning.core.optimizer import ConversionError, Optimizer
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.core.conftest import (
-    DatasetModelRegistry,
     DatasetModelRegistry,
     UnknownFramework,
 )
@@ -28,7 +25,6 @@ OPTIMIZER_INPUTTYPES = [
 ]
 
 
-@contextmanager
 @contextmanager
 def prepare_objects(
     opt_cls: Type[Optimizer], inputtype: str
@@ -77,8 +73,6 @@ class TestOptimizer:
         """
         with prepare_objects(opt_cls, inputtype):
             pass
-        with prepare_objects(opt_cls, inputtype):
-            pass
 
     @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
@@ -116,17 +110,6 @@ class TestOptimizer:
                 optimizer.init()
                 optimizer.compile(model.model_path)
                 assert optimizer.compiled_model_path.exists()
-            except CompilationError as e:
-                pytest.xfail(f"compilation error {e}")
-            except ConversionError as e:
-                pytest.xfail(f"conversion error {e}")
-        with prepare_objects(opt_cls, inputtype) as (optimizer, model):
-            try:
-                optimizer.init()
-                optimizer.compile(model.model_path)
-                assert optimizer.compiled_model_path.exists()
-            except CompilationError as e:
-                pytest.xfail(f"compilation error {e}")
             except ConversionError as e:
                 pytest.xfail(f"conversion error {e}")
 
@@ -157,7 +140,5 @@ class TestOptimizer:
         """
         Tests `get_framework_and_version` method.
         """
-        with prepare_objects(opt_cls, inputtype) as (optimizer, _):
-            assert optimizer.get_framework_and_version() is not None
         with prepare_objects(opt_cls, inputtype) as (optimizer, _):
             assert optimizer.get_framework_and_version() is not None

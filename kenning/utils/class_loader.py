@@ -10,6 +10,7 @@ import abc
 import argparse
 import ast
 import importlib
+import importlib.util
 import inspect
 import sys
 from contextlib import contextmanager
@@ -62,6 +63,14 @@ RUNTIME_BUILDERS = "runtimebuilders"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
 AUTOML = "automl"
+
+
+class AmbiguousImport(Exception):
+    """
+    Exception raised if two or more classes with a provided name exist.
+    """
+
+    ...
 
 
 class ConfigKey(str, Enum):
@@ -612,24 +621,93 @@ def load_class_by_key(
     return load_class_from_json(json_cfg.get(key.name, {}), key.value)
 
 
-def load_class(module_path: str) -> Type:
+def load_class(module_path_or_name: str) -> Type:
     """
-    Loads class given in the module path.
+    Loads class given in the `module_path_or_name`.
 
     Parameters
     ----------
-    module_path : str
-        Module-like path to the class.
+    module_path_or_name : str
+        Either a module-like path to the class
+        or the name of the class.
 
     Returns
     -------
     Type
         Loaded class.
+
+    Raises
+    ------
+    ModuleNotFoundError
+        Raised if none of the classes matches `module_path_or_name`.
+    AmbiguousImport
+        Raised if more than one class matches `module_path_or_name`,
     """
-    module_name, cls_name = module_path.rsplit(".", 1)
+    if "." in module_path_or_name:
+        module_name, cls_name = module_path_or_name.rsplit(".", 1)
+    else:
+        matching_classes = get_classes(module_path_or_name)
+        matching_classes_count = len(matching_classes)
+        if matching_classes_count > 1:
+            raise ModuleNotFoundError(
+                f"More than one class matches {module_path_or_name!r}."
+                "Provide a full module path, instead."
+            )
+        if matching_classes_count < 1:
+            raise ModuleNotFoundError(
+                f"None of the classes match {module_path_or_name!r}."
+                "Check the class name for typos or provide a full module path."
+            )
+        [(module_name, cls_name)] = matching_classes
+
     module = importlib.import_module(module_name)
     cls = getattr(module, cls_name)
     return cls
+
+
+def get_classes(class_name: Optional[str] = None) -> List[Tuple[str, str]]:
+    """
+    Get names with their module paths of classes available in Kenning.
+
+    Parameters
+    ----------
+    class_name : Optional[str], optional
+        Name of the class to find.
+        If None, all classes are returned.
+        By default, None.
+
+
+    Returns
+    -------
+    List[Tuple[str, str]]
+        A list of classes and corresponding module paths.
+    """
+    base_classes = get_base_classes_dict()
+    subclasses_dict = {}
+
+    # Populate subclasses_dict with non-private subclasses.
+    for base_class in base_classes:
+        subclasses = get_all_subclasses(
+            module_path=base_classes[base_class][0],
+            cls=base_classes[base_class][1],
+            raise_exception=False,
+            import_classes=False,
+        )
+
+        subclasses_dict[base_classes[base_class][1]] = [
+            f"{module}.{cls_name}"
+            for cls_name, module in subclasses
+            if not cls_name.startswith("_")
+            and (class_name is None or cls_name == class_name)
+        ]
+
+    # Generate the resulting output based on base_classes.
+    return [
+        (subclass.rsplit(".", 1)[0], subclass.rsplit(".", 1)[1])
+        for base_class in base_classes
+        if base_classes[base_class][1] in subclasses_dict
+        for subclass in subclasses_dict[base_classes[base_class][1]]
+    ]
 
 
 def load_class_by_type(

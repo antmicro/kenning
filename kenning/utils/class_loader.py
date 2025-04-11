@@ -636,31 +636,14 @@ def load_class(module_path_or_name: str) -> Type:
     Type
         Loaded class.
 
-    Raises
-    ------
-    ModuleNotFoundError
-        Raised if none of the classes matches `module_path_or_name`.
-    AmbiguousImport
-        Raised if more than one class matches `module_path_or_name`,
     """
-    if "." in module_path_or_name:
-        module_name, cls_name = module_path_or_name.rsplit(".", 1)
+    if is_class_name(module_path_or_name):
+        cls_name = module_path_or_name
+        module_path = get_module_path(module_path_or_name)
     else:
-        matching_classes = get_classes(module_path_or_name)
-        matching_classes_count = len(matching_classes)
-        if matching_classes_count > 1:
-            raise ModuleNotFoundError(
-                f"More than one class matches {module_path_or_name!r}."
-                "Provide a full module path, instead."
-            )
-        if matching_classes_count < 1:
-            raise ModuleNotFoundError(
-                f"None of the classes match {module_path_or_name!r}."
-                "Check the class name for typos or provide a full module path."
-            )
-        [(module_name, cls_name)] = matching_classes
+        module_path, cls_name = module_path_or_name.rsplit(".", 1)
 
-    module = importlib.import_module(module_name)
+    module = importlib.import_module(module_path)
     cls = getattr(module, cls_name)
     return cls
 
@@ -708,6 +691,63 @@ def get_classes(class_name: Optional[str] = None) -> List[Tuple[str, str]]:
         if base_classes[base_class][1] in subclasses_dict
         for subclass in subclasses_dict[base_classes[base_class][1]]
     ]
+
+
+def is_class_name(name: str) -> bool:
+    """
+    Check if `name` is a valid class name.
+
+    It does not check if a class with the given class is implemented.
+    Only validity of `name` is verified.
+
+    Parameters
+    ----------
+    name : str
+        Potential class name to be checked.
+
+    Returns
+    -------
+    bool
+        Whether `name` is a valid class name.
+    """
+    return "." not in name or "_" not in name
+
+
+def get_module_path(class_name: str) -> str:
+    """
+    Get a path-like module for a provided class name.
+
+    Parameters
+    ----------
+    class_name : str
+        Name of the class.
+
+    Returns
+    -------
+    str
+        Path-like location of a Python module.
+
+    Raises
+    ------
+    AmbiguousImport
+        Raised if two or more classes named `class_name` exist.
+    ModuleNotFoundError
+        Raised if there is no class matching `class_name`.
+    """
+    matching_classes = get_classes(class_name)
+    matching_classes_count = len(matching_classes)
+    if matching_classes_count > 1:
+        raise ModuleNotFoundError(
+            f"More than one class matches {class_name!r}."
+            "Provide a full module path, instead."
+        )
+    if matching_classes_count < 1:
+        raise ModuleNotFoundError(
+            f"None of the classes match {class_name!r}."
+            "Check the class name for typos or provide a full module path."
+        )
+    [(module_path, _)] = matching_classes
+    return module_path
 
 
 def load_class_by_type(

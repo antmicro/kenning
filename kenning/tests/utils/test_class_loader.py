@@ -27,10 +27,10 @@ from kenning.utils.class_loader import (
 @pytest.mark.fast
 class TestLoadClass:
     def test_empty_string(self):
-        error_message = "not enough values to unpack (expected 2, got 1)"
-        with pytest.raises(ValueError) as execinfo:
+        with pytest.raises(
+            ModuleNotFoundError, match="None of the classes match"
+        ):
             load_class("")
-        assert error_message in str(execinfo.value)
 
     def test_invalid_import_path(self):
         error_message = "No module named 'something"
@@ -53,6 +53,15 @@ class TestLoadClass:
         with pytest.raises(ModuleNotFoundError) as execinfo:
             load_class("kenning.datasets.pet_dataset.....PetDataset")
         assert error_message in str(execinfo.value)
+
+    def test_class_name_only(self):
+        loaded = load_class("PetDataset")
+        assert loaded is kenning.datasets.pet_dataset.PetDataset
+
+    def test_invalid_class_name(self):
+        error_message = "None of the classes match"
+        with pytest.raises(ModuleNotFoundError, match=error_message):
+            load_class("NonExistentClass")
 
 
 @pytest.mark.fast

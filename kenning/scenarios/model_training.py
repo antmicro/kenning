@@ -123,9 +123,9 @@ class TrainModel(CommandTemplate):
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         TrainModel.prepare_args(args)
-        if args.help:
-            raise ParserHelpException
         if args.json_cfg:
+            if args.help:
+                raise ParserHelpException
             return TrainModel._run_from_cfg(args, not_parsed, **kwargs)
         return TrainModel._run_from_flags(args, not_parsed, **kwargs)
 

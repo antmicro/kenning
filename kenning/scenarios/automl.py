@@ -111,9 +111,9 @@ class AutoMLCommand(InferenceTester):
             "protocol_cls",
         ]
         args = AutoMLCommand.prepare_args(args, flag_config_names)
-        if args.help:
-            raise ParserHelpException
         if args.json_cfg:
+            if args.help:
+                raise ParserHelpException
             return AutoMLCommand._run_from_cfg(
                 args, command, not_parsed=not_parsed, **kwargs
             )

@@ -261,9 +261,9 @@ class InferenceTester(CommandTemplate):
         ]
         args = InferenceTester.prepare_args(args, flag_config_args)
 
-        if args.help:
-            raise ParserHelpException
         if args.json_cfg is not None:
+            if args.help:
+                raise ParserHelpException
             return InferenceTester._run_from_cfg(
                 args, command, not_parsed=not_parsed, **kwargs
             )

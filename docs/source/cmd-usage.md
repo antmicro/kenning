@@ -37,6 +37,15 @@ kenning train \
     -h
 ```
 
+To simplify usage of internal implementations of models, optimizations and other, we also support referring to classes just by their name, without module path:
+
+```bash
+kenning train \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls PetDataset \
+    -h
+```
+
 This will list the possible parameters that can be used to configure the dataset, the model, and the training parameters.
 For the above call, the output is as follows:
 
@@ -96,8 +105,8 @@ At the end, the training can be configured as follows:
 
 ```bash timeout=5
 kenning train \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls PetDataset \
     --logdir build/logs \
     --dataset-root build/pet-dataset \
     --model-path build/trained-model.h5 \
@@ -122,8 +131,8 @@ The example call for the method is as follows:
 
 ```bash timeout=5
 kenning test \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls PetDataset \
     --measurements build/tensorflow_pet_dataset_mobilenetv2.json \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --dataset-root build/pet-dataset/
@@ -159,11 +168,11 @@ To print the list of required arguments, run:
 
 ```bash
 kenning optimize test \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
-    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
-    --protocol-cls kenning.protocols.network.NetworkProtocol \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls TVMRuntime \
+    --dataset-cls PetDataset \
+    --compiler-cls TVMCompiler \
+    --protocol-cls NetworkProtocol \
     -h
 ```
 
@@ -288,12 +297,12 @@ An example script for the `inference_tester` is:
 
 ```bash test-skip
 kenning optimize test \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls TFLiteRuntime \
+    --dataset-cls PetDataset \
     --measurements ./build/google-coral-devboard-tflite-tensorflow.json \
-    --compiler-cls kenning.optimizers.tflite.TFLiteCompiler \
-    --protocol-cls kenning.protocols.network.NetworkProtocol \
+    --compiler-cls TFLiteCompiler \
+    --protocol-cls NetworkProtocol \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "edgetpu" \
@@ -313,8 +322,8 @@ The above runs with the following `inference_server` setup:
 
 ```bash test-skip
 kenning server \
-    --protocol-cls kenning.protocols.network.NetworkProtocol \
-    --runtime-cls kenning.runtimes.tflite.TFLiteRuntime \
+    --protocol-cls NetworkProtocol \
+    --runtime-cls TFLiteRuntime \
     --host 0.0.0.0 \
     --port 12344 \
     --packet-size 32768 \
@@ -332,11 +341,11 @@ The example call is as follows:
 
 ```bash timeout=5
 kenning optimize test \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --runtime-cls kenning.runtimes.tvm.TVMRuntime \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --runtime-cls TVMRuntime \
+    --dataset-cls PetDataset \
     --measurements ./build/local-cpu-tvm-tensorflow-classification.json \
-    --compiler-cls kenning.optimizers.tvm.TVMCompiler \
+    --compiler-cls TVMCompiler \
     --model-path kenning:///models/classification/tensorflow_pet_dataset_mobilenetv2.h5 \
     --model-framework keras \
     --target "llvm" \
@@ -370,7 +379,7 @@ To print the list of required arguments, run:
 ```bash test-skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
-    kenning.runtimes.tvm.TVMRuntime \
+    TVMRuntime \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
     --output-collectors kenning.outputcollectors.name_printer.NamePrinter \
     -h
@@ -426,7 +435,7 @@ An example script for `inference_runner`:
 ```bash test-skip
 python3 -m kenning.scenarios.inference_runner \
     kenning.modelwrappers.object_detection.darknet_coco.TVMDarknetCOCOYOLOV3 \
-    kenning.runtimes.tvm.TVMRuntime \
+    TVMRuntime \
     kenning.dataproviders.camera_dataprovider.CameraDataProvider \
     --output-collectors kenning.outputcollectors.detection_visualizer.DetectionVisualizer kenning.outputcollectors.name_printer.NamePrinter \
     --disable-performance-measurements \
@@ -480,7 +489,10 @@ To print available arguments run `python -m kenning.scenarios.list_classes -h`.
 * supported input and output formats,
 * arguments structure used in JSON configurations.
 
-The script uses a module-like path to the file (e.g. `kenning.runtimes.tflite`), but optionally a class can be specified by adding it to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`.
+The script accepts class names, e.g.: `TFLiteRuntime`.
+
+However, module-like paths to the files (e.g. `kenning.runtimes.tflite`) can be used, too.
+Additionally, a class can be added to the path like so: `kenning.runtimes.tflite.TFLiteRuntime`.
 To get more detailed information, an optional `--load-class-with-args` argument can be passed. This needs all required class arguments to be provided, and that all dependencies are available.
 
 For more detail, check `python -m kenning.scenarios.class_info -h`.

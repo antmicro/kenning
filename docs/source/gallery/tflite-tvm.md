@@ -21,8 +21,8 @@ The training of the above model can be performed using the following command:
 
 ```bash timeout=30
 kenning train \
-    --modelwrapper-cls kenning.modelwrappers.classification.tensorflow_pet_dataset.TensorFlowPetDatasetMobileNetV2 \
-    --dataset-cls kenning.datasets.pet_dataset.PetDataset \
+    --modelwrapper-cls TensorFlowPetDatasetMobileNetV2 \
+    --dataset-cls PetDataset \
     --logdir build/logs \
     --dataset-root build/pet-dataset \
     --model-path build/trained-model.h5 \

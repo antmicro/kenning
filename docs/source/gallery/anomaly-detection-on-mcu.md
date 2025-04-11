@@ -105,10 +105,10 @@ The model can be trained using the following command:
 
 ```bash
 kenning train test \
-    --dataset-cls kenning.datasets.anomaly_detection_dataset.AnomalyDetectionDataset \
+    --dataset-cls AnomalyDetectionDataset \
     --dataset-root ./dataset/ \
     --csv-file https://zenodo.org/records/8338435/files/data.csv \
-    --modelwrapper-cls kenning.modelwrappers.anomaly_detection.vae.PyTorchAnomalyDetectionVAE \
+    --modelwrapper-cls PyTorchAnomalyDetectionVAE \
     --model-path ./vae_cats.pth \
     --batch-size 256 --learning-rate 0.00002 --num-epochs 4 \
     --verbosity INFO \

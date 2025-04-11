@@ -162,9 +162,9 @@ class TFLiteCompiler(TensorFlowOptimizer):
             // ...
             tflite::MicroMutableOpResolver<{{opcode_names|length}}> resolver;
             // ...
-            {%- for opcode in opcode_names %}
+            {%%- for opcode in opcode_names %%}
                 g_tflite_resolver.Add{{opcode}}();
-            {%- endfor %}
+            {%%- endfor %%}
             // ...
             ```
             """,  # noqa: E501

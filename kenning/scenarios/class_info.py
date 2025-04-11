@@ -14,7 +14,7 @@ More precisely, it displays:
 * node's parameters, with their help and default values
 """
 import argparse
-import os.path
+import os
 import sys
 from typing import List, Optional, Tuple
 
@@ -27,6 +27,10 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.completers import ClassPathCompleter
 from kenning.utils.class_info import generate_class_info
+from kenning.utils.class_loader import (
+    get_module_path,
+    is_class_name,
+)
 
 
 class ClassInfoRunner(CommandTemplate):
@@ -114,8 +118,13 @@ class ClassInfoRunner(CommandTemplate):
         if not any([v for v in args_dict.values() if isinstance(v, bool)]):
             for k, v in args_dict.items():
                 args_dict[k] = True if isinstance(v, bool) else v
-        resulting_output = generate_class_info(**args_dict)
 
+        # Handle a class name without a module path.
+        target = args_dict["target"]
+        if is_class_name(target):
+            args_dict["target"] = get_module_path(target)
+
+        resulting_output = generate_class_info(**args_dict)
         for result_line in resulting_output:
             print(result_line, end="")
 

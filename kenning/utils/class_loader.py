@@ -710,7 +710,7 @@ def is_class_name(name: str) -> bool:
     bool
         Whether `name` is a valid class name.
     """
-    return "." not in name or "_" not in name
+    return "." not in name and "_" not in name
 
 
 def get_module_path(class_name: str) -> str:

@@ -23,6 +23,7 @@ from typing import (
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
 from kenning.utils.args_manager import ArgumentsHandler, get_type
 
@@ -270,6 +271,7 @@ class AutoML(ArgumentsHandler, ABC):
         dataset: Dataset,
         platform: Platform,
         output_directory: Path,
+        optimizers: List[Optimizer] = [],
         use_models: List[Union[str, Dict[str, Tuple]]] = [],
         time_limit: float = 5.0,
         optimize_metric: str = "accuracy",
@@ -288,6 +290,8 @@ class AutoML(ArgumentsHandler, ABC):
         output_directory : Path
             The path to the directory where found models
             and their measurements will be stored.
+        optimizers : List[Optimizer]
+            List of Optimizer objects that optimize the model.
         use_models : List[Union[str, Dict[str, Tuple]]]
             List of either:
                 * class paths or names of models wrapper to use,
@@ -311,6 +315,7 @@ class AutoML(ArgumentsHandler, ABC):
         self.dataset = dataset
         self.platform = platform
         self.output_directory = output_directory
+        self.optimizers = optimizers
         self.time_limit = time_limit
         self.optimize_metric = optimize_metric
         self.n_best_models = n_best_models
@@ -404,6 +409,7 @@ class AutoML(ArgumentsHandler, ABC):
         json_dict: Dict,
         dataset: Optional[Dataset] = None,
         platform: Optional[Platform] = None,
+        optimizers: Optional[List[Optimizer]] = None,
     ) -> "AutoML":
         """
         Constructor wrapper that takes the parameters from json dict.
@@ -420,10 +426,17 @@ class AutoML(ArgumentsHandler, ABC):
             The dataset object that is optionally used for optimization.
         platform : Optional[Platform]
             The platform on which generated models will be evaluated.
+        optimizers : Optional[List[Optimizer]]
+            The optional list with optimizers.
 
         Returns
         -------
         AutoML
             Object of class AutoML.
         """
-        return super().from_json(json_dict, dataset=dataset, platform=platform)
+        return super().from_json(
+            json_dict,
+            dataset=dataset,
+            platform=platform,
+            optimizers=optimizers,
+        )

@@ -6,9 +6,10 @@
 Provides runner for AutoML flow.
 """
 
+import argparse
 from copy import deepcopy
 from pathlib import Path
-from typing import Dict, Iterable, Tuple
+from typing import Dict, Iterable, List, Optional, Tuple
 
 import yaml
 
@@ -19,7 +20,7 @@ except ImportError:
 
 from kenning.core.automl import AutoML
 from kenning.core.dataset import Dataset
-from kenning.utils.class_loader import ConfigKey, obj_from_json
+from kenning.utils.class_loader import ConfigKey, obj_from_json, objs_from_json
 from kenning.utils.logger import KLogger
 
 
@@ -50,19 +51,32 @@ class AutoMLRunner(object):
         self.autoML = autoML
         self.pipeline_config = pipeline_config
 
+        for optim in self.autoML.optimizers:
+            optim.read_platform(self.autoML.platform)
+
     @classmethod
-    def from_json_cfg(cls, cfg: Dict):
-        dataset = obj_from_json(cfg, ConfigKey.dataset)
-        platform = obj_from_json(cfg, ConfigKey.platform)
+    def from_json_cfg(
+        cls,
+        cfg: Dict,
+        override: Optional[Tuple[argparse.Namespace, List[str]]] = None,
+    ):
+        keys = [
+            ConfigKey.dataset,
+            ConfigKey.platform,
+            ConfigKey.optimizers,
+        ]
+
+        objs = objs_from_json(cfg, set(keys), override)
         autoML = obj_from_json(
             cfg,
             ConfigKey.automl,
-            dataset=dataset,
-            platform=platform,
+            dataset=objs[ConfigKey.dataset],
+            platform=objs[ConfigKey.platform],
+            optimizers=objs[ConfigKey.optimizers],
         )
 
         return cls(
-            dataset=dataset,
+            dataset=objs[ConfigKey.dataset],
             autoML=autoML,
             pipeline_config=cfg,
         )

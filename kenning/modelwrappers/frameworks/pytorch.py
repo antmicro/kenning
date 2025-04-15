@@ -175,3 +175,19 @@ class PyTorchWrapper(ModelWrapper, ABC):
             result.append(arr.reshape(shape))
 
         return result
+
+    def get_model_size(self) -> float:
+        """
+        Calculates model size, combining parameters and buffers.
+
+        Returns
+        -------
+        float
+            The model size in KB.
+        """
+        model_size = 0
+        for param in self.model.parameters():
+            model_size += param.nelement() * param.element_size()
+        for buffer in self.model.buffers():
+            model_size += buffer.nelement() * buffer.element_size()
+        return model_size / 1024

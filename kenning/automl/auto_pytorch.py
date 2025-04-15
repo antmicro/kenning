@@ -6,9 +6,11 @@
 Provides an API for AutoML flow with AutoPyTorch framework.
 """
 
+from copy import copy
 from multiprocessing import cpu_count
 from pathlib import Path
 from shutil import rmtree
+from tempfile import NamedTemporaryFile
 from typing import (
     Dict,
     Iterable,
@@ -21,15 +23,16 @@ from typing import (
 )
 
 import numpy as np
-import pandas as pd
 import psutil
 from sklearn.pipeline import Pipeline
 
 from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
+from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
 from kenning.utils.args_manager import get_type
 from kenning.utils.logger import KLogger
+from kenning.utils.pipeline_runner import PipelineRunner
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
 BUDGET_TYPES = ["epochs", "runtime"]
@@ -45,6 +48,14 @@ class MissingConfigForAutoPyTorchModel(Exception):
     """
     Raised when required configuration to initialize
     AutoPyTorch model was not provided.
+    """
+
+    ...
+
+
+class ModelExtractionError(Exception):
+    """
+    Raised when Kenning model was not properly extracted from AutoPyTorch.
     """
 
     ...
@@ -379,6 +390,8 @@ class AutoPyTorchModel(AutoMLModel):
                     f"Missing {name} in AutoPyTorch config"
                 )
             c_type, _ = get_type(config["type"])
+            if backbone_conf[name] is None:
+                continue
             if c_type is not list:
                 model_wrapper_params[name] = backbone_conf[name]
             else:
@@ -435,6 +448,11 @@ class AutoPyTorchML(AutoML):
             "type": float,
             "default": None,
         },
+        "callback_max_samples": {
+            "description": "The maximum number of samples from dataset, which can be used in pre_training_callback method",  # noqa: E501
+            "type": int,
+            "default": 30,
+        },
     }
 
     def __init__(
@@ -442,6 +460,7 @@ class AutoPyTorchML(AutoML):
         dataset: Dataset,
         platform: Platform,
         output_directory: Path,
+        optimizers: List[Optimizer] = [],
         use_models: List[str] = [],
         time_limit: float = 5.0,
         optimize_metric: str = "accuracy",
@@ -453,6 +472,7 @@ class AutoPyTorchML(AutoML):
         min_budget: int = 3,
         max_budget: int = 10,
         application_size: Optional[float] = None,
+        callback_max_samples: int = 30,
     ):
         """
         Prepares the AutoML object.
@@ -466,6 +486,8 @@ class AutoPyTorchML(AutoML):
         output_directory : Path
             The path to the directory where found models
             and their measurements will be stored.
+        optimizers : List[Optimizer]
+            List of Optimizer objects that optimize the model.
         use_models : List[str]
             The list of class paths or names of models wrapper to use,
             classes have to implement AutoMLModel.
@@ -495,11 +517,17 @@ class AutoPyTorchML(AutoML):
             The size of an application (in KB) run on the platform.
             If platform has restricted amount of RAM, AutoPyTorch will train
             only models that fit into the platform.
+        callback_max_samples : int
+            The maximum number of samples from dataset,
+            which can be used in pre_training_callback method.
         """
+        from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+
         super().__init__(
             dataset=dataset,
             platform=platform,
             output_directory=output_directory,
+            optimizers=optimizers,
             use_models=use_models if use_models else self.supported_models,
             time_limit=time_limit,
             optimize_metric=optimize_metric,
@@ -507,14 +535,24 @@ class AutoPyTorchML(AutoML):
             seed=seed,
         )
         assert all(
-            [issubclass(model, AutoPyTorchModel) for model in self.use_models]
+            [
+                issubclass(model, AutoPyTorchModel)
+                and issubclass(model, PyTorchWrapper)
+                for model in self.use_models
+            ]
         ), (
             "All provided classes in `use_models` have to "
-            f"inherit from {AutoPyTorchModel.__name__}"
+            f"inherit from {AutoPyTorchModel.__name__} "
+            f"and {PyTorchWrapper.__name__}"
         )
         assert (
             budget_type in BUDGET_TYPES
         ), f"Budget has to be one of {BUDGET_TYPES}"
+        assert (
+            callback_max_samples > 0
+        ), "`callback_max_samples` has to be greater than 0"
+
+        self.reduced_dataset = self.dataset
 
         self.use_models: List[AutoPyTorchModel]
         self.max_memory_usage = max_memory_usage
@@ -534,6 +572,13 @@ class AutoPyTorchML(AutoML):
             ), f"Application ({self.application_size}) does not fit into the platform ({self.platform_ram})"  # noqa: E501
             self.max_model_size = self.platform_ram - self.application_size
             self.max_model_size *= 0.95
+            if callback_max_samples:
+                self.reduced_dataset = copy(self.dataset)
+                self.reduced_dataset.dataset_percentage = min(
+                    callback_max_samples, len(self.dataset)
+                ) / len(self.dataset)
+                if self.reduced_dataset.dataset_percentage < 1.0:
+                    self.reduced_dataset._reduce_dataset()
 
         self.X_train, self.y_train = None, None
         self.X_test, self.y_test = None, None
@@ -572,19 +617,10 @@ class AutoPyTorchML(AutoML):
         for X, y in self.dataset.iter_test():
             X_test += self._preprocess_input(X)
             y_test += y[0]
-        X_train = np.concatenate(X_train, axis=0)
-        y_train = np.asarray(y_train)
-        X_test = np.concatenate(X_test, axis=0)
-        y_test = np.asarray(y_test)
-
-        self.X_train = pd.DataFrame(
-            X_train.reshape(X_train.shape[0], -1), dtype=np.float32
-        )
-        self.y_train = pd.DataFrame(y_train, dtype=np.int16)
-        self.X_test = pd.DataFrame(
-            X_test.reshape(X_test.shape[0], -1), dtype=np.float32
-        )
-        self.y_test = pd.DataFrame(y_test, dtype=np.int16)
+        self.X_train = np.concatenate(X_train, axis=0)
+        self.y_train = np.asarray(y_train)
+        self.X_test = np.concatenate(X_test, axis=0)
+        self.y_test = np.asarray(y_test)
 
         # Register models components
         for model in self.use_models:
@@ -631,12 +667,8 @@ class AutoPyTorchML(AutoML):
             torch_num_threads=cpu_count(),
             use_tensorboard_logger=True,
             early_stopping=True,
+            pre_training_callback=self.pre_training_callback,
         )
-        if self.max_model_size:
-            KLogger.info(f"Restricting model size to {self.max_model_size} KB")
-            self._api.set_pipeline_options(
-                max_model_size_kb=self.max_model_size,
-            )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
         try:
@@ -728,3 +760,83 @@ class AutoPyTorchML(AutoML):
             )
             self.best_configs.append(kenning_conf)
             yield kenning_conf
+
+    def pre_training_callback(self, data: Dict) -> None:
+        """
+        Function called by AutoPyTorch right before training.
+
+        Parameters
+        ----------
+        data : Dict
+            The AutoPyTorch trainer data.
+
+        Raises
+        ------
+        ModelTooLargeError
+            If model size is too large to fit into the platform.
+        """
+        # Skip model size check if max size is not specified
+        if self.max_model_size is None:
+            return
+
+        import torch
+        from autoPyTorch.pipeline.components.training.trainer import (
+            ModelTooLargeError,
+        )
+
+        from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+
+        # Extract model and model wrapper class
+        model: torch.nn.Module = data["network_backbone"]
+        model_wrapper_class = None
+        extracted_model = None
+        for mw_class in self.use_models:
+            extracted_model = mw_class.extract_model(model)
+            if extracted_model is not None:
+                model_wrapper_class = mw_class
+                model = extracted_model
+                break
+        if model_wrapper_class is None:
+            raise ModelExtractionError(
+                f"Cannot extract Kenning model from: {model}"
+            )
+
+        with NamedTemporaryFile("w") as fd:
+            # Save model to file
+            model_wrapper: PyTorchWrapper = model_wrapper_class(
+                fd.name, self.reduced_dataset
+            )
+            model_wrapper.model = model
+            model_wrapper.model_prepared = True
+            model_wrapper.save_model(fd.name)
+
+            # Run Kenning optimize flow for the model
+            if self.optimizers:
+                runner = PipelineRunner(
+                    dataset=self.reduced_dataset,
+                    optimizers=self.optimizers,
+                    platform=self.platform,
+                    model_wrapper=model_wrapper,
+                )
+                try:
+                    for opt in self.optimizers:
+                        opt.model_wrapper = model_wrapper
+                        opt.dataset = self.reduced_dataset
+                    opt_model_path = runner._handle_optimizations()
+                finally:
+                    for opt in self.optimizers:
+                        opt.model_wrapper = None
+                        opt.dataset = self.dataset
+                model_size = opt_model_path.stat().st_size / 1024
+                # Cleanup optimized models
+                for opt in self.optimizers:
+                    opt.compiled_model_path.unlink()
+            else:
+                model_size = model_wrapper.get_model_size()
+
+        # Validate model size
+        if self.max_model_size < model_size:
+            raise ModelTooLargeError(
+                f"Model size ({model_size} KB) larger "
+                f"than maximum ({self.max_model_size} KB)"
+            )

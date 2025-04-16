@@ -539,49 +539,6 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         register_vae_trainer()
         return components
 
-    @staticmethod
-    def define_forbidden_clauses(cs, **kwargs):
-        import ConfigSpace as CS
-
-        from kenning.automl.auto_pytorch_components.utils import (
-            _create_forbidden_choices,
-        )
-
-        vae_component = PyTorchAnomalyDetectionVAE.get_component_name()
-        network_back = cs.get_hyperparameter("network_backbone:__choice__")
-        vae_only = (
-            len(network_back.choices) == 1
-            and vae_component in network_back.choices
-        )
-        network_back_vae = CS.ForbiddenEqualsClause(
-            network_back,
-            vae_component,
-        )
-
-        clauses = [
-            _create_forbidden_choices(cs, name, (choice,), vae_only)
-            for name, choice in (
-                ("imputer:numerical_strategy", "constant_zero"),
-                ("network_head:__choice__", "PassthroughHead"),
-                ("network_embedding:__choice__", "NoEmbedding"),
-                ("feature_preprocessor:__choice__", "NoFeaturePreprocessor"),
-                ("encoder:__choice__", "NoEncoder"),
-                ("coalescer:__choice__", "NoCoalescer"),
-                ("scaler:__choice__", "StandardScaler"),
-            )
-        ]
-
-        cs.add_forbidden_clauses(
-            [
-                CS.ForbiddenAndConjunction(
-                    network_back_vae,
-                    clause,
-                )
-                for clause in clauses
-            ]
-        )
-        return cs
-
     @classmethod
     def prepare_config(cls, configuration: Dict):
         kenning_conf = super().prepare_config(configuration)

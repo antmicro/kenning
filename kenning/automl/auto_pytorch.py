@@ -171,13 +171,16 @@ class AutoPyTorchModel(AutoMLModel):
         """
         raise NotImplementedError
 
-    @staticmethod
+    @classmethod
     def define_forbidden_clauses(
+        cls,
         cs: ConfigurationSpace,
         **kwargs: Dict,
     ) -> ConfigurationSpace:
         """
         Defines forbidden clauses for not compatible pairs of hyperparametrs.
+
+        By default, it disables all preprocessing features apart from scaling.
 
         Parameters
         ----------
@@ -190,13 +193,47 @@ class AutoPyTorchModel(AutoMLModel):
         -------
         ConfigurationSpace
             Updated Configuration Space with forbidden clauses.
-
-        Raises
-        ------
-        NotImplementedError
-            If method has not been implemented in child class.
         """
-        raise NotImplementedError
+        import ConfigSpace as CS
+
+        from kenning.automl.auto_pytorch_components.utils import (
+            _create_forbidden_choices,
+        )
+
+        model_component = cls.get_component_name()
+        network_back = cs.get_hyperparameter("network_backbone:__choice__")
+        one_model_only = (
+            len(network_back.choices) == 1
+            and model_component in network_back.choices
+        )
+        network_back = CS.ForbiddenEqualsClause(
+            network_back,
+            model_component,
+        )
+
+        clauses = [
+            _create_forbidden_choices(cs, name, (choice,), one_model_only)
+            for name, choice in (
+                ("imputer:numerical_strategy", "constant_zero"),
+                ("network_head:__choice__", "PassthroughHead"),
+                ("network_embedding:__choice__", "NoEmbedding"),
+                ("feature_preprocessor:__choice__", "NoFeaturePreprocessor"),
+                ("encoder:__choice__", "NoEncoder"),
+                ("coalescer:__choice__", "NoCoalescer"),
+                ("scaler:__choice__", "StandardScaler"),
+            )
+        ]
+
+        cs.add_forbidden_clauses(
+            [
+                CS.ForbiddenAndConjunction(
+                    network_back,
+                    clause,
+                )
+                for clause in clauses
+            ]
+        )
+        return cs
 
     @classmethod
     def build_backbone(

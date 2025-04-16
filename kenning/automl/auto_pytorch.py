@@ -545,6 +545,21 @@ class AutoPyTorchML(AutoML):
             "type": int,
             "default": 30,
         },
+        "all_supported_metrics": {
+            "description": "Calculate all supported metrics by AutoPyTorch during training",  # noqa: E501
+            "type": bool,
+            "default": True,
+        },
+        "use_cuda": {
+            "description": "Whether to use CUDA-compatible accelerator, if GPU is not available this option is ignored",  # noqa: E501
+            "type": bool,
+            "default": False,
+        },
+        "data_loader_workers": {
+            "description": "The number of workers to use for data loaders",
+            "type": int,
+            "default": cpu_count() // 2,
+        },
     }
 
     def __init__(
@@ -565,6 +580,9 @@ class AutoPyTorchML(AutoML):
         max_budget: int = 10,
         application_size: Optional[float] = None,
         callback_max_samples: int = 30,
+        all_supported_metrics: bool = True,
+        use_cuda: bool = False,
+        data_loader_workers: int = -1,
     ):
         """
         Prepares the AutoML object.
@@ -612,6 +630,12 @@ class AutoPyTorchML(AutoML):
         callback_max_samples : int
             The maximum number of samples from dataset,
             which can be used in pre_training_callback method.
+        all_supported_metrics : bool
+            Calculate all supported metrics by AutoPyTorch during training.
+        use_cuda : bool
+            Whether to use CUDA-compatible accelerator.
+        data_loader_workers : int
+            The number of workers to use for data loaders.
         """
         from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
@@ -655,6 +679,9 @@ class AutoPyTorchML(AutoML):
         self.min_budget = min_budget
         self.max_budget = max_budget
         self.application_size = application_size
+        self.all_supported_metrics = all_supported_metrics
+        self.use_cuda = use_cuda
+        self.data_loader_workers = data_loader_workers
 
         self.platform_ram = getattr(self.platform, "ram_size_kb", None)
         self.max_model_size = None
@@ -682,37 +709,21 @@ class AutoPyTorchML(AutoML):
         self.model_paths: List[Path] = []
         self.best_configs: List[Path] = []
 
-    def _preprocess_input(self, X: List[Iterable]) -> List[np.array]:
-        """
-        Flattens the input preserving a batch size.
-
-        Parameters
-        ----------
-        X : List[Iterable]
-            Input data.
-
-        Returns
-        -------
-        List[np.array]
-            Preprocessed input data.
-        """
-        X = [np.asarray(x) for x in X]
-        return [x.reshape(x.shape[0], -1) for x in X]
-
     def prepare_framework(self):
-        # Prepare dataset
-        X_train, y_train = [], []
-        for X, y in self.dataset.iter_train():
-            X_train += self._preprocess_input(X)
-            y_train += y[0]
-        X_test, y_test = [], []
-        for X, y in self.dataset.iter_test():
-            X_test += self._preprocess_input(X)
-            y_test += y[0]
-        self.X_train = np.concatenate(X_train, axis=0)
-        self.y_train = np.asarray(y_train)
-        self.X_test = np.concatenate(X_test, axis=0)
-        self.y_test = np.asarray(y_test)
+        # Split and flatten the dataset
+        Xtr, Xte, Ytr, Yte = self.dataset.train_test_split_representations()
+        self.X_train = np.asarray(
+            self.dataset.prepare_input_samples(Xtr)
+        ).reshape(len(Xtr), -1)
+        self.X_test = np.asarray(
+            self.dataset.prepare_input_samples(Xte)
+        ).reshape(len(Xte), -1)
+        self.y_train = np.asarray(
+            self.dataset.prepare_output_samples(Ytr)
+        ).reshape(len(Ytr), -1)
+        self.y_test = np.asarray(
+            self.dataset.prepare_output_samples(Yte)
+        ).reshape(len(Yte), -1)
 
         # Register models components
         for model in self.use_models:
@@ -755,11 +766,12 @@ class AutoPyTorchML(AutoML):
             delete_tmp_folder_after_terminate=False,
         )
         self._api.set_pipeline_options(
-            device="cpu",
+            device="cuda" if self.use_cuda else "cpu",
             torch_num_threads=cpu_count(),
             use_tensorboard_logger=True,
             early_stopping=True,
             pre_training_callback=self.pre_training_callback,
+            data_loader_workers=self.data_loader_workers,
         )
         self.initial_run_num = self._api._backend.get_next_num_run()
 
@@ -778,6 +790,7 @@ class AutoPyTorchML(AutoML):
                 max_budget=self.max_budget,
                 # Disable non NN-based methods
                 enable_traditional_pipeline=False,
+                all_supported_metrics=self.all_supported_metrics,
             )
         except ValueError as e:
             if "No valid model" in str(e):

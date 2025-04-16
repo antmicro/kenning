@@ -12,9 +12,21 @@ import ast
 import importlib
 import inspect
 import sys
+from contextlib import contextmanager
 from enum import Enum
 from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional, Set, Tuple, Type, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    Type,
+    Union,
+)
 
 from kenning.cli.parser import ParserHelpException
 from kenning.core.automl import AutoML
@@ -666,6 +678,31 @@ def load_class_by_type(
     if cls_type is not None:
         return load_class(cls_type)
     return None
+
+
+@contextmanager
+def append_to_sys_path(paths: List[Path]) -> Generator[None, None, None]:
+    """
+    Context manager extending `sys.path` with given directories.
+
+    Parameters
+    ----------
+    paths : List[Path]
+        The list with directories to extend `sys.path` with.
+
+    Yields
+    ------
+    None
+    """
+    prev_sys_path = sys.path
+    sys.path = list(map(str, paths)) + sys.path[:]
+
+    KLogger.debug(f"Paths added to sys.path: {paths}")
+
+    try:
+        yield
+    finally:
+        sys.path = prev_sys_path
 
 
 def get_kenning_submodule_from_path(module_path: str) -> str:

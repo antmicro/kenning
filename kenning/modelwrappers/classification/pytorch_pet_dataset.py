@@ -9,17 +9,15 @@ Pretrained on ImageNet dataset, trained on Pet Dataset.
 """
 
 from pathlib import Path
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Tuple
 
 import numpy as np
-from tqdm import tqdm
 
 from kenning.cli.command_template import TRAIN
 from kenning.core.dataset import Dataset
 from kenning.core.model import TrainingParametersMissingError
 from kenning.datasets.pet_dataset import PetDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -291,70 +289,14 @@ class PyTorchPetDatasetMobileNetV2(PyTorchWrapper):
 
         opt = optim.Adam(self.model.parameters(), lr=self.learning_rate)
 
-        best_acc = 0
-
-        from torch.utils.tensorboard import SummaryWriter
-
-        writer = SummaryWriter(log_dir=self.logdir)
-
-        for epoch in range(self.num_epochs):
-            self.model.train()
-            loss_sum = torch.zeros(1).to(self.device)
-            loss_count = 0
-            with LoggerProgressBar() as logger_progress_bar:
-                bar = tqdm(trainloader, file=logger_progress_bar)
-                for images, labels in bar:
-                    images = images.to(self.device)
-                    labels = labels.to(self.device)
-                    opt.zero_grad()
-
-                    outputs = self.model(images)
-                    loss = criterion(outputs, labels)
-
-                    loss.backward()
-                    opt.step()
-
-                    loss_sum += loss
-                    loss_count += 1
-                    bar.set_description(
-                        f"train epoch: {epoch:3d} loss: "
-                        f"{loss_sum.data.cpu().numpy().sum() / loss_count:.3f}"
-                    )
-
-            writer.add_scalar(
-                "Loss/train", loss_sum.data.cpu().numpy() / loss_count, epoch
+        def postprocess(
+            outputs: Any, labels: torch.Tensor
+        ) -> Tuple[torch.Tensor, torch.Tensor]:
+            return (
+                torch.max(outputs.data, 1)[1],
+                labels if labels.dim() == 1 else torch.max(labels, 1)[1],
             )
 
-            self.model.eval()
-            with torch.no_grad(), LoggerProgressBar() as logger_progress_bar:
-                bar = tqdm(validloader, file=logger_progress_bar)
-                total = 0
-                correct = 0
-                for images, labels in bar:
-                    images = images.to(self.device)
-                    labels = labels.to(self.device)
-                    outputs = self.model(images)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
-                    _, labels = torch.max(labels, 1)
-                    correct += (predicted == labels).sum().item()
-                    bar.set_description(
-                        f"valid epoch: {epoch:3d} "
-                        f"accuracy: {correct / total:.3f}"
-                    )
-
-                acc = 100 * correct / total
-                writer.add_scalar("Accuracy/valid", acc, epoch)
-
-                if acc > best_acc:
-                    self.save_model(self.model_path)
-                    best_acc = acc
-
-        self.save_model(
-            self.model_path.with_stem(f"{self.model_path.stem}_final")
+        self._train_model(
+            trainloader, validloader, opt, criterion, postprocess
         )
-
-        self.dataset.standardize = True
-
-        writer.close()
-        self.model.eval()

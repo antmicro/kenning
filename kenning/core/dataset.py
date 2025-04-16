@@ -694,7 +694,9 @@ class Dataset(ArgumentsHandler, ABC):
         return ret
 
     def calibration_dataset_generator(
-        self, percentage: float = 0.25, seed: int = 12345
+        self,
+        percentage: float = 0.25,
+        seed: Optional[int] = None,
     ) -> Generator[List[Any], None, None]:
         """
         Creates generator for the calibration data.
@@ -703,14 +705,17 @@ class Dataset(ArgumentsHandler, ABC):
         ----------
         percentage : float
             The fraction of data to use for calibration.
-        seed : int
-            The seed for random state.
+        seed : Optional[int]
+            The seed for random state,
+            by default seed used for the dataset split.
 
         Yields
         ------
         List[Any]
             List with batch input samples for calibration
         """
+        if seed is None:
+            seed = self.split_seed
         if self.external_calibration_dataset is None:
             X = self.train_test_split_representations(percentage, seed=seed)[1]
         else:

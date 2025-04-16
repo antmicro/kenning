@@ -22,6 +22,7 @@ from kenning.core.measurements import (
     tagmeasurements,
     timemeasurements,
 )
+from kenning.core.platform import Platform
 from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.logger import LoggerProgressBar, TqdmCallback
@@ -628,5 +629,24 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
         List[Any]
             List of output data from a model. The converted data should be
             compatible with the ``postprocess_outputs`` method.
+        """
+        ...
+
+    def read_platform(self, platform: Platform):
+        """
+        Reads Platform data to configure model.
+
+        Platform-based entities come with lots of information on hardware
+        architecture that can be used by the ModelWrapper class.
+
+        By default no data is read.
+
+        It is important to take into account that different
+        Platform-based classes come with a different sets of attributes.
+
+        Parameters
+        ----------
+        platform: Platform
+            object with platform details
         """
         ...

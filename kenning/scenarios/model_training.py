@@ -25,9 +25,11 @@ from kenning.cli.command_template import (
 )
 from kenning.cli.completers import DATASETS, ClassPathCompleter
 from kenning.core.model import ModelWrapper
+from kenning.core.platform import Platform
 from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import (
     MODEL_WRAPPERS,
+    PLATFORMS,
     ConfigKey,
     get_command,
     load_class,
@@ -88,6 +90,10 @@ class TrainModel(CommandTemplate):
             "--dataset-cls",
             help=_("Dataset-based class with dataset to import"),
         ).completer = ClassPathCompleter(DATASETS)
+        groups[FLAG_CONFIG].add_argument(
+            "--platform-cls",
+            help="Platform-based class that wraps platform being tested",
+        ).completer = ClassPathCompleter(PLATFORMS)
 
         return parser, groups
 
@@ -136,9 +142,12 @@ class TrainModel(CommandTemplate):
             cfg = yaml.safe_load(f)
 
         dataset = obj_from_json(cfg, ConfigKey.dataset)
-        model = obj_from_json(cfg, ConfigKey.model_wrapper, dataset=dataset)
+        model = obj_from_json(
+            cfg, ConfigKey.model_wrapper, dataset=dataset, from_file=False
+        )
+        platform = obj_from_json(cfg, ConfigKey.platform)
 
-        TrainModel._run(model)
+        TrainModel._run(model, platform)
 
     @staticmethod
     def _run_from_flags(
@@ -150,6 +159,9 @@ class TrainModel(CommandTemplate):
             else None
         )
         datasetcls = load_class(args.dataset_cls) if args.dataset_cls else None
+        platformcls = (
+            load_class(args.platform_cls) if args.platform_cls else None
+        )
 
         parser = argparse.ArgumentParser(
             " ".join(map(lambda x: x.strip(), get_command(with_slash=False))),
@@ -159,7 +171,8 @@ class TrainModel(CommandTemplate):
                 if modelwrappercls
                 else []
             )
-            + ([datasetcls.form_argparse(args)[0]] if datasetcls else []),
+            + ([datasetcls.form_argparse(args)[0]] if datasetcls else [])
+            + ([platformcls.form_argparse(args)[0]] if platformcls else []),
             add_help=False,
         )
 
@@ -169,11 +182,16 @@ class TrainModel(CommandTemplate):
 
         dataset = datasetcls.from_argparse(args)
         model = modelwrappercls.from_argparse(dataset, args, from_file=False)
+        platform = None
+        if platformcls:
+            platform = platformcls.from_argparse(args)
 
-        TrainModel._run(model)
+        TrainModel._run(model, platform)
 
     @staticmethod
-    def _run(model: ModelWrapper):
+    def _run(model: ModelWrapper, platform: Optional[Platform]):
+        if platform:
+            model.read_platform(platform)
         model.prepare_model()
         model.train_model()
         model.save_model(model.get_path())

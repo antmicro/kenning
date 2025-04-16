@@ -141,6 +141,9 @@ class PipelineRunner(object):
             self.model_wrapper or self.dataconverter
         ), "Provide either dataconverter or model_wrapper."
 
+        if self.model_wrapper:
+            self.model_wrapper.read_platform(self.platform)
+
         if self.runtime_builder:
             self.runtime_builder.read_platform(self.platform)
 

@@ -241,6 +241,7 @@ class AutoPyTorchModel(AutoMLModel):
         self: NetworkBackboneComponent,
         input_shape: Tuple[int, ...],
         dataset: Optional[Dataset] = None,
+        processed_input: Optional[Tuple[int, ...]] = None,
     ) -> PyTorchModel:
         """
         AutoPyTorch component method preparing model object.
@@ -253,6 +254,8 @@ class AutoPyTorchModel(AutoMLModel):
             The shape of input data.
         dataset : Optional[Dataset]
             Dataset used for the model.
+        processed_input: Optional[Tuple[int, ...]]
+            The shape of input that should be provided to the model.
 
         Returns
         -------
@@ -264,6 +267,12 @@ class AutoPyTorchModel(AutoMLModel):
         MissingConfigForAutoPyTorchModel
             If config requaries for model is missing.
         """
+        assert (
+            input_shape is not None
+        ), "AutoPyTorch has not provided input shape"
+
+        from torch.nn import Sequential, Unflatten
+
         schema = cls.form_automl_schema()
         args = {}
         for name, config in schema.items():
@@ -283,9 +292,19 @@ class AutoPyTorchModel(AutoMLModel):
                 raise MissingConfigForAutoPyTorchModel(
                     f"Missing values in {name} config"
                 )
-        return cls._create_model_structure(
+        model = cls._create_model_structure(
             **args, input_shape=input_shape, dataset=dataset
         )
+        if processed_input and input_shape != processed_input[1:]:
+            KLogger.info(
+                "Adding Unflatten layer to match model inupt shape - "
+                f"{input_shape} -> {processed_input[1:]}"
+            )
+            return Sequential(
+                Unflatten(-1, processed_input[1:]),
+                model,
+            )
+        return model
 
     @classmethod
     def get_properties(
@@ -316,6 +335,30 @@ class AutoPyTorchModel(AutoMLModel):
         }
 
     @classmethod
+    def get_io_specification_from_dataset(
+        cls, dataset: Dataset
+    ) -> Dict[str, List[Dict]]:
+        """
+        Creates IO specification based on the Dataset.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            Dataset used for the model.
+
+        Returns
+        -------
+        Dict[str, List[Dict]]
+            Prepared IO specification.
+
+        Raises
+        ------
+        NotImplementedError
+            If method has not been implemented in child class.
+        """
+        raise NotImplementedError
+
+    @classmethod
     def register_components(
         cls,
         dataset: Dataset,
@@ -341,6 +384,15 @@ class AutoPyTorchModel(AutoMLModel):
             NetworkBackboneComponent,
         )
 
+        from kenning.automl.auto_pytorch_components.network_head_passthrough import (  # noqa: E501
+            register_passthrough,
+        )
+
+        io_spec = cls.get_io_specification_from_dataset(cls, dataset)
+        processed_input = io_spec.get("processed_input", io_spec["input"])[0][
+            "shape"
+        ]
+
         component = type(
             cls.get_component_name(),
             (NetworkBackboneComponent,),
@@ -358,6 +410,7 @@ class AutoPyTorchModel(AutoMLModel):
                     *args,
                     **kwargs,
                     dataset=dataset,
+                    processed_input=processed_input,
                 ),
                 "get_properties": staticmethod(cls.get_properties),
             }
@@ -372,6 +425,8 @@ class AutoPyTorchModel(AutoMLModel):
             ),
         )
         add_backbone(component)
+        # Register passthought head to not change the model output
+        register_passthrough()
         return [component]
 
     @classmethod

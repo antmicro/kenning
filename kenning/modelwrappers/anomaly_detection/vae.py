@@ -10,7 +10,7 @@ Compatible with AnomalyDetectionDataset.
 
 from enum import Enum
 from random import shuffle
-from typing import Any, Dict, List, Optional, Tuple, Type
+from typing import Any, Dict, List, Optional, Type
 
 import numpy as np
 from sklearn.metrics import f1_score, roc_auc_score
@@ -19,6 +19,7 @@ from tqdm import tqdm
 from kenning.automl.auto_pytorch import AutoPyTorchModel
 from kenning.cli.command_template import TRAIN
 from kenning.core.model import TrainingParametersMissingError
+from kenning.core.platform import Platform
 from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
 from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 from kenning.utils.logger import KLogger, LoggerProgressBar
@@ -58,6 +59,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
     'Understanding disentangling in beta-VAE'
     <https://arxiv.org/pdf/1804.03599.pdf>
     """
+
+    DEFAULT_SAVE_MODEL_EXPORT_DICT = False
 
     default_dataset = AnomalyDetectionDataset
     arguments_structure = {
@@ -120,16 +123,19 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             "description": "Parameter of the VAE loss function - scales KL divegence",  # noqa: E501
             "type": float,
             "default": 1.0,
+            "subcommands": [TRAIN],
         },
         TrainerParams.CAPACITY.value: {
             "description": "Parameter of the VAE loss function - defines upper limit of KL divegence",  # noqa: E501
             "type": float,
             "default": 0.0,
+            "subcommands": [TRAIN],
         },
         TrainerParams.CLIP_GRAD.value: {
             "description": "Max norm for clipping gradients",
             "type": float,
             "default": 2.0,
+            "subcommands": [TRAIN],
         },
         "batch_size": {
             "argparse_name": "--batch-size",
@@ -160,7 +166,7 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         },
     }
 
-    model_class = "AnomalyDetectionVAE"
+    model_class = "kenning.modelwrappers.anomaly_detection.models.vae.AnomalyDetectionVAE"  # noqa: E501
 
     def __init__(
         self,
@@ -246,37 +252,23 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         if dataset:
             self.mean, self.std = self.dataset.get_input_mean_std()
 
-    @staticmethod
-    def _create_model_structure(
-        input_shape: Tuple[int, ...],
-        encoder_neuron_list: List[int],
-        decoder_neuron_list: List[int],
-        latent_dim: int,
-        hidden_activation: str,
-        output_activation: str,
-        batch_norm: bool,
-        dropout_rate: float,
+    @classmethod
+    def model_params_from_context(
+        cls,
         dataset: AnomalyDetectionDataset,
+        platform: Optional[Platform] = None,
     ):
+        return {
+            "window_size": dataset.window_size,
+            "feature_size": dataset.num_features,
+        }
+
+    def create_model_structure(self):
         from kenning.modelwrappers.anomaly_detection.models.vae import (
             AnomalyDetectionVAE,
         )
 
-        return AnomalyDetectionVAE(
-            window_size=dataset.window_size,
-            feature_size=dataset.num_features,
-            encoder_neuron_list=encoder_neuron_list,
-            decoder_neuron_list=decoder_neuron_list,
-            latent_dim=latent_dim,
-            hidden_activation_name=hidden_activation,
-            output_activation_name=output_activation,
-            batch_norm=batch_norm,
-            dropout_rate=dropout_rate,
-        )
-
-    def create_model_structure(self):
-        self.model = self._create_model_structure(
-            input_shape=None,
+        self.model = AnomalyDetectionVAE(
             encoder_neuron_list=self.encoder_neuron_list,
             decoder_neuron_list=self.decoder_neuron_list,
             latent_dim=self.latent_dim,
@@ -284,7 +276,8 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
             output_activation=self.output_activation,
             batch_norm=self.batch_norm,
             dropout_rate=self.dropout_rate,
-            dataset=self.dataset,
+            input_shape=None,
+            **self.model_params_from_context(self.dataset),
         )
 
     def prepare_model(self):
@@ -460,9 +453,6 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
 
         self.dataset.set_batch_size(default_batch_size)
 
-    def save_model(self, model_path: PathOrURI, export_dict: bool = False):
-        super().save_model(model_path, export_dict)
-
     @classmethod
     def derive_io_spec_from_json_params(
         cls, json_dict: Dict
@@ -517,25 +507,29 @@ class PyTorchAnomalyDetectionVAE(PyTorchWrapper, AutoPyTorchModel):
         }
 
     def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
-        return PyTorchAnomalyDetectionVAE._get_io_specification(
-            self.dataset.num_features,
-            self.dataset.window_size,
-            self.dataset.batch_size,
+        return self.get_io_specification_from_dataset(self.dataset)
+
+    def get_io_specification_from_dataset(
+        cls,
+        dataset,
+    ) -> Dict[str, List[Dict]]:
+        return cls._get_io_specification(
+            dataset.num_features,
+            dataset.window_size,
+            dataset.batch_size,
         )
 
     @classmethod
     def register_components(
-        cls, dataset: Optional[AnomalyDetectionDataset] = None
+        cls,
+        dataset: AnomalyDetectionDataset,
+        platform: Platform,
     ) -> List[Type]:
-        from kenning.automl.auto_pytorch_components.network_head_passthrough import (  # noqa: E501
-            register_passthrough,
-        )
         from kenning.automl.auto_pytorch_components.vae_trainer import (
             register_vae_trainer,
         )
 
-        components = super().register_components(dataset)
-        register_passthrough()
+        components = super().register_components(dataset, platform)
         register_vae_trainer()
         return components
 

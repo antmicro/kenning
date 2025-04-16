@@ -25,13 +25,14 @@ class AnomalyDetectionVAE(VAEModel):
 
     def __init__(
         self,
+        input_shape: Tuple[int, ...],
         feature_size: int,
         window_size: int,
         encoder_neuron_list: List[int] = [64, 16],
         decoder_neuron_list: List[int] = [16, 32],
         latent_dim: int = 2,
-        hidden_activation_name: str = "relu",
-        output_activation_name: str = "sigmoid",
+        hidden_activation: str = "relu",
+        output_activation: str = "sigmoid",
         batch_norm: bool = False,
         dropout_rate: float = 0.0,
     ):
@@ -40,6 +41,8 @@ class AnomalyDetectionVAE(VAEModel):
 
         Parameters
         ----------
+        input_shape : Tuple[int, ...]
+            The shape of the input data provided to the model.
         feature_size : int
             The number of features per timestamp.
         window_size : int
@@ -50,9 +53,9 @@ class AnomalyDetectionVAE(VAEModel):
             List of dense layer dimensions of decoder.
         latent_dim : int
             Dimensions of latent layer.
-        hidden_activation_name : str
+        hidden_activation : str
             Activation of hidden layers.
-        output_activation_name : str
+        output_activation : str
             Activation of output layers.
         batch_norm : bool
             Whether batch norm should be enabled.
@@ -61,14 +64,14 @@ class AnomalyDetectionVAE(VAEModel):
         """
         self.window_size = window_size
         super().__init__(
-            feature_size,
-            encoder_neuron_list,
-            decoder_neuron_list,
-            latent_dim,
-            hidden_activation_name,
-            output_activation_name,
-            batch_norm,
-            dropout_rate,
+            feature_size=feature_size,
+            encoder_neuron_list=encoder_neuron_list,
+            decoder_neuron_list=decoder_neuron_list,
+            latent_dim=latent_dim,
+            hidden_activation_name=hidden_activation,
+            output_activation_name=output_activation,
+            batch_norm=batch_norm,
+            dropout_rate=dropout_rate,
         )
 
         self.threshold = torch.nn.parameter.Parameter(

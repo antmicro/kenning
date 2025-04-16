@@ -103,6 +103,7 @@ class AnomalyDetectionDataset(Dataset):
         if not isinstance(self.csv_file, ResourceURI):
             self.csv_file = ResourceURI(self.csv_file)
         self.num_features = None
+        self.window_size = window_size
         super().__init__(
             root,
             batch_size,
@@ -114,7 +115,6 @@ class AnomalyDetectionDataset(Dataset):
             split_seed,
             dataset_percentage=dataset_percentage,
         )
-        self.window_size = window_size
         self.gather_predictions = gather_predictions
         self.classnames = self.get_class_names()
 
@@ -136,6 +136,14 @@ class AnomalyDetectionDataset(Dataset):
         # Simplify anomaly categories into one class
         self.dataY[self.dataY > 0] = 1
         self.num_features = self.dataX.shape[1]
+
+        # Prepare data in format (window_size, num_features)
+        self.dataX = [
+            self.dataX[i : i + self.window_size]
+            for i in range(0, self.dataX.shape[0] - self.window_size)
+        ]
+        self.dataX = np.asarray(self.dataX)
+        self.dataY = self.dataY[self.window_size :]
 
     def evaluate(self, predictions, truth) -> Measurements:
         confusion_matrix = metrics.confusion_matrix(
@@ -166,26 +174,3 @@ class AnomalyDetectionDataset(Dataset):
 
     def get_class_names(self) -> List[str]:
         return ["normal", "anomaly"]
-
-    def __next__(self) -> Tuple[List, List]:
-        # Handle the case when the next method is called without the iterator
-        if self._dataindex == 0 and not self._dataindices:
-            self._dataindices = list(range(len(self.dataX)))
-
-        if self._dataindex < len(self._dataindices):
-            samples = self._dataindices[
-                self._dataindex : self._dataindex + self.batch_size
-            ]
-            self._dataindex += len(samples)
-            dataX = [
-                self.dataX[i - self.window_size + 1 : i + 1]
-                if i >= self.window_size - 1
-                else self.dataX[0 : self.window_size]
-                for i in samples
-            ]
-            dataY = [self.dataY[i] for i in samples]
-            return (
-                self.prepare_input_samples(dataX),
-                self.prepare_output_samples(dataY),
-            )
-        raise StopIteration

@@ -1,0 +1,27 @@
+platform:
+  type: LocalPlatform
+  parameters:
+    name: max78002evkit/max78002/m4
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: ./build/CATS
+    csv_file: https://zenodo.org/records/8338435/files/data.csv
+    split_seed: 12345
+    split_fraction_test: 0.25
+    inference_batch_size: 2048
+model_wrapper:
+  type: Ai8xAnomalyDetectionCNN
+  parameters:
+    model_path: ./build/anomaly_detection_cnn.pth
+    # Training parameters
+    batch_size: 2048
+    learning_rate: 2.0e-5
+    num_epochs: 5
+    logdir: ./build/training-logdir
+    # QAT-specific params
+    qat_start_epoch: 3
+    qat_weight_bits: 2
+    quantize_activation: True
+    # Requires cloned https://github.com/analogdevicesinc/ai8x-training.git
+    ai8x_training_path: ./ai8x-training

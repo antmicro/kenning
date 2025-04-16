@@ -98,13 +98,15 @@ def _add_single_hyperparameter(
         Newly added hyperparameter
     """
     if c_type in (int, float):
-        c_range = config["item_range"]
+        c_range = config.get("enum", config.get("item_range", None))
     elif c_type is list:
         c_range = config["list_range"]
     elif c_type is str:
         c_range = config["enum"]
     else:  # is bool
         c_range = (True, False)
+    if config.get("nullable", False):
+        c_range = [*c_range, None]
 
     param = get_hyperparameter(
         HyperparameterSearchSpace(
@@ -112,7 +114,9 @@ def _add_single_hyperparameter(
             value_range=c_range,
             default_value=c_default,
         ),
-        TYPE_TO_CATEGORIES[c_type],
+        CategoricalHyperparameter
+        if config.get("enum", None)
+        else TYPE_TO_CATEGORIES[c_type],
     )
     cs.add_hyperparameter(param)
     return param

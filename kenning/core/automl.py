@@ -85,9 +85,7 @@ class AutoMLModel(ArgumentsHandler, ABC):
             schema = automl_params | schema
         # Check whether merged schema contains necessary params
         for name, config in schema.items():
-            if any(
-                [config.get(arg, None) is None for arg in ("type", "default")]
-            ):
+            if config.get("type", None) is None or "default" not in config:
                 raise AutoMLInvalidSchemaError(
                     f"{cls.__name__}:{config} misses `type` or `default`"
                 )
@@ -110,13 +108,17 @@ class AutoMLModel(ArgumentsHandler, ABC):
                     )
                 sub_type = sub_type[0]
 
-                if sub_type in (int, float) and any(
-                    config.get(arg, None) is None
-                    for arg in ("list_range", "item_range")
+                if (
+                    sub_type in (int, float)
+                    and config.get("list_range", None) is None
+                    and all(
+                        config.get(arg, None) is None
+                        for arg in ("enum", "item_range")
+                    )
                 ):
                     raise AutoMLInvalidSchemaError(
                         f"{cls.__name__}:{name} has to define "
-                        "`list_range` and `item_range`"
+                        "`list_range` and `item_range` or `enum`"
                     )
                 if sub_type is str and any(
                     config.get(arg, None) is None
@@ -126,17 +128,23 @@ class AutoMLModel(ArgumentsHandler, ABC):
                         f"{cls.__name__}:{name} has to define "
                         "`list_range` and `enum`"
                     )
-            if (
-                _type in (int, float)
-                and config.get("item_range", None) is None
-            ):
-                raise AutoMLInvalidSchemaError(
-                    f"{cls.__name__}:{name} has to define `item_range`"
-                )
-            if _type is str and config.get("enum", None) is None:
-                raise AutoMLInvalidSchemaError(
-                    f"{cls.__name__}:{name} has to define `enum`"
-                )
+            if config.get("enum", None) is None:
+                if (
+                    _type in (int, float)
+                    and config.get("item_range", None) is None
+                ):
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} has to define "
+                        "`item_range` or `enum`"
+                    )
+                if _type is str:
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} has to define `enum`"
+                    )
+                if config.get("nullable", False):
+                    raise AutoMLInvalidSchemaError(
+                        f"{cls.__name__}:{name} can only be nullable for enum values"  # noqa: E501
+                    )
 
         return schema
 
@@ -201,23 +209,25 @@ class AutoMLModel(ArgumentsHandler, ABC):
         arg = cls.arguments_structure[name]
         _type, _ = get_type(arg["type"])
         default = arg["default"]
-        if _type is int or _type is float:
-            range = arg["item_range"]
-            if not (range[0] <= default <= range[1]):
-                arg["default"] = range[0]
-        elif _type is str:
+        if "enum" in arg and _type is not list:
             enum = arg["enum"]
             if default not in enum:
                 arg["default"] = enum[0]
-        elif _type is list:
+        elif _type is int or _type is float:
             range = arg["item_range"]
+            if not (range[0] <= default <= range[1]):
+                arg["default"] = range[0]
+        elif _type is list:
+            range = arg.get("enum", arg["item_range"])
             len_range = arg["list_range"]
             if len_range[0] >= len(default):
                 default += [range[0]] * (len_range[0] - len(default))
             elif len_range[1] <= len(default):
                 default = default[: (len_range[1])]
             for i, v in enumerate(default):
-                if not (range[0] <= v <= range[1]):
+                if (
+                    "item_range" in arg and not (range[0] <= v <= range[1])
+                ) or ("enum" in arg and v not in range):
                     default[i] = range[0]
             arg["default"] = default
 

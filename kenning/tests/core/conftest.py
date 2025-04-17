@@ -377,7 +377,7 @@ def get_dataset_random_mock(
             samplescount=16 * 16,
             numclasses=2,
             integer_classes=True,
-            num_features=10,
+            num_features=18,
             window_size=5,
         )
     raise NotImplementedError

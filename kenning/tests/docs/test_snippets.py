@@ -14,7 +14,6 @@ import venv
 from collections import defaultdict
 from glob import glob
 from pathlib import Path
-from time import sleep
 from typing import Callable, Dict, Generator, Optional, Tuple
 
 import pexpect
@@ -22,14 +21,32 @@ import pytest
 from filelock import FileLock
 from tuttest import Snippet, get_snippets
 
-# Regex for changing Kenning installation to local version
-
-# Regex for changing Kenning installation to local version
-KENNING_LINK_RE = r"(kenning(\[?[^\]]*\])?[ \t]*@[ \t]+)?git\+https.*\.git"
-# Regex for detecting Kenning installation
-PIP_INSTALL_RE = r"pip3? (?:.* )?install"
-PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + r" .*" + KENNING_LINK_RE
-PIP_INSTALL_KENNING_LOCAL_RE = r"(" + PIP_INSTALL_RE + r" [^\.]*)\."
+# Regexes for changing Kenning installation to local version
+KENNING_LINK_RE = (
+    # Optional group with Kenning module name, finished with @
+    r"("
+    r"kenning(\[[^\]]*\])?"
+    r"\s*@\s+"
+    r")?"
+    # Git and Http prefix
+    r"git\+https"
+    # Kenning included in the repository URL
+    r".*kenning.*\.git"
+)
+PIP_INSTALL_RE = r"pip3? (?:.* )?install (?:.*?)?"
+# Regex for detecting Kenning installation from Git
+PIP_INSTALL_KENNING_RE = PIP_INSTALL_RE + KENNING_LINK_RE
+# Regex for detecting Kenning installation from current folder
+PIP_INSTALL_KENNING_LOCAL_RE = (
+    # The main pip installation with flags
+    rf"({PIP_INSTALL_RE})"
+    # The current dir (represented by the dot,
+    # cannot be followed by subdirectories), optionally prepended with quote
+    r"(?:['\"]*\.(?='|\"|\[|$))"
+    # Kenning optional dependencies, all finished with optional quote
+    r"(\[?[^\]]*\])?['\"]?"
+)
+print(PIP_INSTALL_KENNING_LOCAL_RE)
 # Patterns of markdown files
 DOCS_DIR = Path(__file__).parent / "source"
 DOCS_MARKDOWNS = str(DOCS_DIR / "*.md")
@@ -208,7 +225,6 @@ def execute_script_and_wait(
         re.compile(EXPECT_RE.format(success)),
         re.compile(EXPECT_RE.format(failure)),
     ]
-    lock_pip = re.match(PIP_INSTALL_RE, script) is not None
     try:
         script = script.split("\n", 1)
         content = None
@@ -217,18 +233,6 @@ def execute_script_and_wait(
             script = script[0]
         else:
             script = "\n".join(script)
-
-        if lock_pip:
-            retry_count = 1000
-            while True:
-                try:
-                    PIP_LOCK_FILE.touch(exist_ok=False)
-                    break
-                except FileExistsError:
-                    retry_count -= 1
-                    if retry_count <= 0:
-                        pytest.fail("Failed to lock pip install")
-                    sleep(1)
 
         if not script.rstrip().endswith(" &"):
             # Use check command twice to make sure it used
@@ -251,9 +255,6 @@ def execute_script_and_wait(
         shell.sendline(check_cmd)
         shell.expect_list(expect_list)
         raise
-    finally:
-        if lock_pip:
-            PIP_LOCK_FILE.unlink()
 
 
 def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
@@ -388,7 +389,7 @@ def create_script(
         else:
             snippet.text = re.sub(
                 PIP_INSTALL_KENNING_LOCAL_RE,
-                rf"\1{kenning_path}",
+                rf"\1'{kenning_path}\2'",
                 snippet.text,
             )
         script = snippet.text

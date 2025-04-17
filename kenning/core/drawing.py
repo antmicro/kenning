@@ -201,6 +201,103 @@ class Plot(ABC, object):
         """
         ...
 
+    def _create_bokeh_legend_fig(
+        self,
+        legend_items: List,
+        safety_offset: int = 0,
+        click_policy: str = "none",
+        reverse: bool = False,
+    ) -> Any:
+        """
+        Creates bokeh figure with legend.
+
+        Parameters
+        ----------
+        legend_items : List
+            List with LegendItems.
+        safety_offset : int
+            Offset to be added to the figure.
+        click_policy : str
+            Click policy of legend items.
+        reverse : bool
+            Whether legend items order should be reversed.
+
+        Returns
+        -------
+        Any
+            Bokeh figure with legend.
+        """
+        from bokeh.models import Legend, Range1d
+        from bokeh.plotting import figure
+
+        # Line width + margin + padding + label width
+        legend_length = [
+            20 + 20 + 10 + 6 * len(x.label.value) for x in legend_items
+        ]
+
+        # Iterate over length of labels to find the number of columns
+        # that would fit under the plot
+        legend_columns = len(legend_length)
+        for i in range(len(legend_length) - 1):
+            for j in range(i + 1, len(legend_length)):
+                if sum(legend_length[i:j]) > self.width:
+                    if legend_columns > j - i - 1:
+                        legend_columns = j - i - 1
+                    break
+        legend_columns = max(1, legend_columns)
+
+        # Creating fake figure for legend
+        legend_fig = figure(
+            min_border_left=0,
+            frame_height=100 * len(legend_items) // legend_columns,
+            toolbar_location=None,
+            max_width=self.width,
+            max_height=self.height,
+            match_aspect=True,
+            sizing_mode="scale_both",
+            height_policy="max",
+            width_policy="auto",
+            styles={
+                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+                "height": "15vh",
+            },
+        )
+
+        merged_legend_items = {}
+
+        for item in legend_items:
+            label = str(item.label.value)
+            # Without renderers, no color will be shown
+            # next to a legend item.
+            legend_fig.renderers.extend(item.renderers)
+
+            if label not in merged_legend_items:
+                merged_legend_items[label] = item.renderers
+            else:
+                merged_legend_items[label].extend(item.renderers)
+
+        legend_fig.toolbar.logo = None
+
+        if reverse:
+            legend_items = list(reversed(legend_items))
+
+        legend = Legend(
+            items=legend_items,
+            orientation="vertical",
+            location="left",
+            click_policy=click_policy,
+            ncols=legend_columns,
+        )
+
+        legend_fig.xaxis.visible = False
+        legend_fig.yaxis.visible = False
+        legend_fig.outline_line_alpha = 0.0
+        legend_fig.add_layout(legend, place="center")
+        legend_fig.background_fill_color = None
+        legend_fig.x_range = Range1d(0, 0)
+
+        return legend_fig
+
     @staticmethod
     def _add_global_css(html_file: Path, additional_css: str) -> None:
         """
@@ -362,7 +459,7 @@ class Plot(ABC, object):
 
     @staticmethod
     def _matplotlib_color_to_bokeh(
-        color: Tuple[float, float, float, float]
+        color: Tuple[float, float, float, float],
     ) -> Tuple[int, int, int, float]:
         """
         Converts color from matplotlib format to bokeh format.
@@ -486,11 +583,10 @@ class ViolinComparisonPlot(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        from bokeh.layouts import column, gridplot
+        from bokeh.layouts import gridplot, layout
         from bokeh.models import (
             ColumnDataSource,
             Div,
-            Legend,
             LegendItem,
             Patch,
         )
@@ -498,6 +594,7 @@ class ViolinComparisonPlot(Plot):
         from scipy.stats import gaussian_kde
 
         margins = (0, 20, 0, 10)
+        legend_height = self.height // 2
 
         violin_figs = {
             metric_label: figure(
@@ -506,7 +603,7 @@ class ViolinComparisonPlot(Plot):
                 toolbar_location=None,
                 output_backend="webgl",
                 sizing_mode="scale_both",
-                max_height=self.height,
+                max_height=self.height + legend_height,
                 margin=margins,
                 match_aspect=True,
                 height_policy="max",
@@ -516,7 +613,7 @@ class ViolinComparisonPlot(Plot):
             for metric_label in self.metric_labels
         }
 
-        legend_items = {name: [] for name in self.metric_data.keys()}
+        legend_items: List[LegendItem] = []
         for i, (color, (sample_name, samples)) in enumerate(
             zip(self.colors, self.metric_data.items())
         ):
@@ -548,13 +645,23 @@ class ViolinComparisonPlot(Plot):
                         line_color=color,
                     ),
                 )
-                legend_items[sample_name].append(renderer)
+                legend_items.append(
+                    LegendItem(label=sample_name, renderers=[renderer])
+                )
 
-                # Range of values on X axis.
                 padding_percentage = 0.10
                 padding = padding_percentage * (x_max - x_min)
-                violin_figs[name].x_range.start = x_min - padding
-                violin_figs[name].x_range.end = x_max + padding
+
+                # Ensure a minimal width of a plot.
+                minimal_width = (0.1) ** 10
+                x_start = x_min - padding
+                x_end = x_max + padding
+                current_width = x_end - x_start
+                if current_width < minimal_width:
+                    missing_width = minimal_width - current_width
+                    half_of_missing_width = missing_width / 2
+                    x_start -= half_of_missing_width
+                    x_end += half_of_missing_width
 
                 # Add lines for min and max
                 for line_start, line_end in (
@@ -569,20 +676,30 @@ class ViolinComparisonPlot(Plot):
                         line_width=2,
                     )
 
-        # Create legend items
-        legend_items_list = []
-        for sample_name, renderers in legend_items.items():
-            legend_item = LegendItem(label=sample_name, renderers=renderers)
-            legend_items_list.append(legend_item)
+        # Adjust X range to the smallest and largest outlier plus paddings.
+        padding_percentage = 0.05
+        min_max = self._find_min_max_for_each_plot(self.metric_data)
+        for i, value in enumerate(violin_figs.values()):
+            x_min = min_max[i][0]
+            x_max = min_max[i][1]
+            padding = padding_percentage * (x_max - x_min)
 
-        # Create and add the legend to the first figure
-        if legend_items_list:
-            legend = Legend(
-                items=legend_items_list,
-                location="top_left",
-                click_policy="hide",
-            )
-            violin_figs[self.metric_labels[0]].add_layout(legend)
+            # Ensure a minimal width of a plot.
+            minimal_width = (0.1) ** 10
+            x_start = x_min - padding
+            x_end = x_max + padding
+            current_width = x_end - x_start
+            if current_width < minimal_width:
+                missing_width = minimal_width - current_width
+                half_of_missing_width = missing_width / 2
+                x_start -= half_of_missing_width
+                x_end += half_of_missing_width
+            value.x_range.start = x_start
+            value.x_range.end = x_end
+
+        legend_fig = self._create_bokeh_legend_fig(
+            legend_items, click_policy="hide", reverse=True
+        )
 
         if self.title is not None:
             violin_figs[self.metric_labels[0]].add_layout(
@@ -597,12 +714,55 @@ class ViolinComparisonPlot(Plot):
             sizing_mode="scale_both",
             height=DEFAULT_PLOT_SIZE // 3,
         )
+        grid_fig.css_classes = ["violin-plots"]
+
+        final_fig = layout(
+            children=[[grid_fig], [legend_fig]],
+            sizing_mode="scale_width",
+        )
 
         self._output_bokeh_figure(
-            column(children=[grid_fig], sizing_mode="scale_both"),
+            final_fig,
             output_path,
             output_formats,
         )
+
+    def _find_min_max_for_each_plot(
+        self, metrics_data: Dict[str, List[List[float]]]
+    ) -> List[Tuple[float, float]]:
+        """
+        Find min and max values for each violin plot.
+
+        Parameters
+        ----------
+        metrics_data : Dict[str, List[List[float]]]
+            Metrics data for each violin plot.
+
+        Returns
+        -------
+        List[Tuple[float, float]]
+            List of (min, max) tuples.
+            Each index corresponds to a violin plot.
+        """
+        index_lists = []
+
+        for key, lists in metrics_data.items():
+            while len(index_lists) < len(lists):
+                index_lists.append([])
+
+            for index, sublist in enumerate(lists):
+                index_lists[index].extend(sublist)
+
+        # Calculate min and max for each index list.
+        result = []
+        for index_list in index_lists:
+            if not index_list:
+                continue
+            min_value = min(index_list)
+            max_value = max(index_list)
+            result.append((min_value, max_value))
+
+        return result
 
 
 class RadarChart(Plot):
@@ -727,12 +887,12 @@ class RadarChart(Plot):
         )
 
     def plot_bokeh(self, output_path: Path, output_formats: Iterable[str]):
-        from bokeh.layouts import column
+        from bokeh.layouts import layout
         from bokeh.models import (
             ColumnDataSource,
             HoverTool,
             Label,
-            Legend,
+            LegendItem,
             Patch,
         )
         from bokeh.plotting import figure
@@ -829,9 +989,15 @@ class RadarChart(Plot):
                         values=[f"{100 * s:.2f}" for s in samples],
                         units=["%" for _ in samples],
                     ),
+                    toggleable=False,
                 )
             )
             legend_items[sample_name].append(renderer)
+
+        legend_items = [
+            LegendItem(label=label, renderers=renderers)
+            for label, renderers in legend_items.items()
+        ]
 
         # dummy patch for correct initial zoom
         radar_fig.add_glyph(
@@ -849,20 +1015,58 @@ class RadarChart(Plot):
             ),
         )
 
-        legend = Legend(
-            items=[
-                (name, renderers) for name, renderers in legend_items.items()
-            ],
-            orientation="horizontal",
-            label_text_font="Lato",
-            click_policy="mute",
-            location="center",
+        legend_fig = self._create_bokeh_legend_fig(
+            legend_items, click_policy="hide"
         )
-        radar_fig.add_layout(legend, "below")
 
-        final_fig = column(radar_fig, sizing_mode="stretch_width")
-        final_fig.max_width = self.width
+        RadarChart._remove_redirect_on_click(radar_fig)
+
+        final_fig = layout(
+            [[radar_fig], [legend_fig]], sizing_mode="scale_width"
+        )
         self._output_bokeh_figure(final_fig, output_path, output_formats)
+
+    @staticmethod
+    def _remove_redirect_on_click(bokeh_figure: object):
+        """
+        Remove a redirection occurring after clicking on a plot.
+
+        It requires `figclass: remove-href` in MyST `{figure}`.
+        The rationale for removing the redirection is that the legend
+        of a figure needs to be clickable without side effects
+        of redirecting to the image of a plot.
+
+        Parameters
+        ----------
+        bokeh_figure : object
+            Bokeh figure, from which a redirection should be removed.
+            Actual type is `plotting.bokeh.figure`, but it could not be
+            specified without importing bokeh module.
+
+        Raises
+        ------
+        TypeError
+            If `bokeh_figure` has type other than figure or its subtypes.
+        """
+        from bokeh.events import MouseEnter
+        from bokeh.models import CustomJS
+        from bokeh.plotting import figure
+
+        def remove_href() -> CustomJS:
+            return CustomJS(
+                code=(
+                    'document.querySelector(".prevent-redirection a")'
+                    '.removeAttribute("href");'
+                )
+            )
+
+        if not isinstance(bokeh_figure, figure):
+            raise TypeError(
+                f"{bokeh_figure.__qualname__} has to be of type {type(figure)}"
+                f" in {RadarChart._remove_redirect_on_click.__qualname__}()."
+            )
+
+        bokeh_figure.js_on_event(MouseEnter, remove_href())
 
 
 class BubblePlot(Plot):
@@ -1022,7 +1226,12 @@ class BubblePlot(Plot):
 
         box = ax.get_position()
         ax.set_position(
-            [box.x0, box.y0 + 0.05, box.width * 0.85, box.height - 0.05]
+            [
+                box.x0,
+                box.y0 + 0.05,
+                box.width * 0.85,
+                box.height - 0.05,
+            ]
         )
 
         if self.title:
@@ -1042,10 +1251,10 @@ class BubblePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
+        from bokeh.layouts import layout
         from bokeh.models import (
             ColumnDataSource,
             HoverTool,
-            Legend,
             LegendItem,
             Range1d,
         )
@@ -1094,20 +1303,13 @@ class BubblePlot(Plot):
         )
 
         # The legend of a bubble plot.
-        bubbleplot_fig.add_layout(
-            Legend(
-                orientation="horizontal",
-                label_text_font="Lato",
-                location="center",
-                items=[
-                    LegendItem(
-                        label=label, renderers=[scatter_renderer], index=i
-                    )
-                    for i, label in enumerate(self.bubble_labels)
-                ],
-            ),
-            "below",
-        )
+        legend_items = [
+            LegendItem(label=label, renderers=[scatter_renderer], index=i)
+            for i, label in enumerate(self.bubble_labels)
+        ]
+
+        legend_fig = self._create_bokeh_legend_fig(legend_items)
+
         # custom tooltips
         bubbleplot_fig.add_tools(
             HoverTool(
@@ -1118,8 +1320,12 @@ class BubblePlot(Plot):
             )
         )
 
+        final_fig = layout(
+            [[bubbleplot_fig], [legend_fig]], sizing_mode="stretch_width"
+        )
+
         self._output_bokeh_figure(
-            bubbleplot_fig,
+            final_fig,
             output_path,
             output_formats,
         )
@@ -1458,13 +1664,15 @@ class ConfusionMatrixPlot(Plot):
         )
         from bokeh.plotting import figure
 
-        small_height_value = 6
-        small_height = f"{small_height_value}vh"
-        small_width = small_height
-
+        small_height = "4vw"
+        small_width = "4vw"
+        max_width_percentage = "100%"
+        safety_offset = 20
         matrix_css_sizes = {
-            "width": f"{BOKEH_PLOT_WIDTH - small_height_value}vw",
-            "height": f"{BOKEH_PLOT_WIDTH - small_height_value}vw",
+            "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+            "min-width": "80%",
+            "max-width": max_width_percentage,
+            "aspect-ration": "1 / 1",
         }
 
         # Prepare figure
@@ -1552,6 +1760,8 @@ class ConfusionMatrixPlot(Plot):
             sizing_mode="scale_width",
             styles={
                 "height": small_height,
+                "max-width": max_width_percentage,
+                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
             },
         )
 
@@ -1603,6 +1813,7 @@ class ConfusionMatrixPlot(Plot):
             match_aspect=True,
             styles={
                 "width": small_width,
+                "max-width": max_width_percentage,
             },
         )
 
@@ -1724,6 +1935,8 @@ class ConfusionMatrixPlot(Plot):
                 margin=(40, 0, 0, 0),
                 styles={
                     "height": small_height,
+                    "max-width": max_width_percentage,
+                    "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
                 },
             )
 
@@ -1759,10 +1972,10 @@ class ConfusionMatrixPlot(Plot):
                 [create_color_scale_figure(), None],
             ],
             merge_tools=True,
-            toolbar_location="above",
-            toolbar_options={"logo": None},
+            toolbar_location=None,
             sizing_mode="scale_width",
         )
+        grid_fig.cols = ["1fr", "1fr"]
 
         self._output_bokeh_figure(
             grid_fig,
@@ -2476,8 +2689,11 @@ class LinePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.models import Legend, Range1d
-        from bokeh.plotting import column, figure
+        from bokeh.layouts import gridplot
+        from bokeh.models import LegendItem, Range1d
+        from bokeh.plotting import figure
+
+        safety_offset = 20
 
         plot_fig = figure(
             title=self.title,
@@ -2485,18 +2701,22 @@ class LinePlot(Plot):
             toolbar_location="above",
             width=self.width,
             height=self.height,
+            max_width=self.width,
+            max_height=self.height,
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
-            max_width=self.width,
-            max_height=self.height,
             match_aspect=True,
-            sizing_mode="scale_both",
+            sizing_mode="scale_width",
             height_policy="max",
             width_policy="auto",
             css_classes=["plot"],
             x_axis_type=self.x_scale,
             y_axis_type=self.y_scale,
+            styles={
+                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+                "height": "40vh",
+            },
         )
         plot_fig.toolbar.logo = None
 
@@ -2541,62 +2761,71 @@ class LinePlot(Plot):
             diff = 0.25
         plot_fig.x_range = Range1d(x_min - diff, x_max + diff)
 
+        # Adjust the range of X values.
+        plot_range = LinePlot.determine_range(
+            [x for x, _ in self.lines], padding_percentage=0.10
+        )
+        plot_fig.x_range = Range1d(*plot_range)
+
         if self.lines_labels is not None:
             legend_data = [
-                (label, renderer)
+                LegendItem(label=label, renderers=renderer)
                 for label, renderer in zip(self.lines_labels, renderers)
             ]
-            # Line width + margin + padding + label width
-            legend_length = [20 + 20 + 10 + 6 * len(x[0]) for x in legend_data]
 
-            # Iterate over length of labels to find the number of columns
-            # that would fit under the plot
-            legend_columns = len(legend_length)
-            for i in range(len(legend_length) - 1):
-                for j in range(i + 1, len(legend_length)):
-                    if sum(legend_length[i:j]) > self.width:
-                        if legend_columns > j - i - 1:
-                            legend_columns = j - i - 1
-                        break
-            legend_columns = max(1, legend_columns)
-
-            # Creating fake figure for legend
-            legend_fig = figure(
-                min_border_left=0,
-                frame_width=0,
-                frame_height=11 * len(legend_data),
-                toolbar_location=None,
-                max_width=self.width,
-                max_height=self.height,
-                match_aspect=True,
-                sizing_mode="scale_both",
-                height_policy="max",
-                width_policy="auto",
+            legend_fig = self._create_bokeh_legend_fig(
+                legend_data,
+                safety_offset=safety_offset,
+                click_policy="hide",
             )
-            # Creating few columns with legends
-            legends = []
-            for offset in range(legend_columns):
-                legends.append(
-                    Legend(
-                        items=legend_data[offset::legend_columns],
-                        orientation="vertical",
-                        location="center",
-                        click_policy="hide",
-                    )
-                )
 
-            legend_fig.xaxis.visible = False
-            legend_fig.yaxis.visible = False
-            legend_fig.outline_line_alpha = 0.0
-            for legend_item in legend_data:
-                legend_fig.renderers.extend(legend_item[1])
-            [legend_fig.add_layout(legend) for legend in legends]
-
-            plot_fig = column(
-                children=[plot_fig, legend_fig], sizing_mode="scale_both"
+            plot_fig = gridplot(
+                children=[[plot_fig], [legend_fig]], sizing_mode="scale_both"
             )
 
         self._output_bokeh_figure(plot_fig, output_path, output_formats)
+
+    @staticmethod
+    def determine_range(
+        X: List[List[float]], padding_percentage: float
+    ) -> Tuple[float, float]:
+        """
+        Determine an X range of values for a given padding.
+
+        Parameters
+        ----------
+        X : List[List[float]]
+            List of lists of x values.
+        padding_percentage : float
+            A number of percents of padding, which should be applied
+            to ends of the plot. Half of the padding is applied to
+            the left end and the second half - to the right.
+
+        Returns
+        -------
+        Tuple[float, float]
+            Padded lower and upper bound of a range of values.
+        """
+        global_max = -99999999
+        global_min = +99999999
+        for x in X:
+            local_max = max(x)
+            if local_max > global_max:
+                global_max = local_max
+
+            local_min = min(x)
+            if local_min < global_min:
+                global_min = local_min
+
+        padding = padding_percentage * (global_max - global_min)
+        global_min -= padding / 2
+        global_max += padding / 2
+
+        # Prevent the plot from having zero width.
+        if global_min == global_max:
+            global_max += (0.1) ** 10
+
+        return (global_min, global_max)
 
 
 class Barplot(Plot):

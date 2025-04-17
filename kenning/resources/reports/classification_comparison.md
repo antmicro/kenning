@@ -23,6 +23,7 @@ name: {{data['report_name_simple']}}_classification_metrics_radar
 alt: Metric comparison
 align: center
 width: 100%
+figclass: prevent-redirection
 ---
 
 Radar chart representing the accuracy, precision and recall for models

@@ -62,7 +62,7 @@ Plot represents changes of GPU RAM usage over time for all models.
 ```
 {% endif %}
 
-### Mean comparison plot
+### Mean comparison plots
 
 ```{figure} {{data["meanperformancepath"]}}
 ---

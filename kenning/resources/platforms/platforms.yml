@@ -38,6 +38,34 @@ max32690fthr/max32690/m4:
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690fthr.resc;branch=main
   default_platform: ZephyrPlatform
 
+max78002evkit/max78002/m4:
+  display_name: MAX78002 Evaluation Kit
+  ai8x_device: MAX78002
+  ai8x_device_id: 87
+  ai8x_weights_memory_kb: 2048
+  ai8x_data_memory_kb: 1280
+  flash_size_kb: 2560
+  ram_size_kb: 64
+  uart_port_wildcard: /dev/serial/by-id/usb-FTDI_FT231X_USB_UART_*-if00-port0
+  uart_baudrate: 115200
+  uart_log_baudrate: 115200
+  compilation_flags:
+  - "-keys=arm_cpu,cpu"
+  - "-device=arm_cpu"
+  - "-march=armv7e-m"
+  - "-mcpu=cortex-m4"
+  - "-model=max78002"
+  openocd_flash_cmd:
+  - source [find interface/cmsis-dap.cfg]
+  - source [find target/max78002.cfg]
+  - init
+  - targets
+  - reset init
+  - flash write_image erase {binary_path}
+  - reset run
+  - shutdown
+  default_platform: ZephyrPlatform
+
 rv32-springbok:
   display_name: RISC-V 32-bit Springbok
   runtime_binary_path: kenning:///renode/springbok/iree_runtime

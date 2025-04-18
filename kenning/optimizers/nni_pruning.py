@@ -33,7 +33,6 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.onnxconversion import SupportStatus
 from kenning.core.optimizer import CompilationError, Optimizer
-from kenning.interfaces.io_interface import IOInterface
 from kenning.onnxconverters.onnx2torch import convert
 from kenning.onnxconverters.pytorch import PyTorchONNXConversion
 from kenning.utils.class_loader import load_class
@@ -680,17 +679,14 @@ class NNIPruningOptimizer(Optimizer):
         batch_x = self.train_data[0][
             batch_begin : batch_begin + self.finetuning_batch_size
         ]
-        data = np.asarray(self.dataset.prepare_input_samples(batch_x))
+        data = self.dataset.prepare_input_samples(batch_x)
+        if self.model_wrapper:
+            data = np.asarray(self.model_wrapper._preprocess_input(data))
+        data = np.asarray(data)
         batch_y = self.train_data[1][
             batch_begin : batch_begin + self.finetuning_batch_size
         ]
         label = self.dataset.prepare_output_samples(batch_y)
-
-        output_spec = self.io_spec.get(
-            "processed_input", self.io_spec["input"]
-        )
-        output_spec[0]["shape"] = (-1, *output_spec[0]["shape"][1:])
-        IOInterface.assert_data_format(data, output_spec)
 
         data = [torch.from_numpy(_d).to(self.device) for _d in data]
         try:

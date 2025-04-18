@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -11,7 +11,7 @@ import pytest
 from schema import Type
 
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
 from kenning.optimizers.gptq import GPTQOptimizer
 from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
 from kenning.optimizers.model_inserter import ModelInserter
@@ -92,6 +92,21 @@ def prepare_objects(
     dataset_cls = model_cls.default_dataset
     dataset = get_dataset_random_mock(dataset_cls, model_cls)
     model = create_model(model_cls, dataset)
+    if model_cls.pretrained_model_uri is None:
+        model.model_path = model.model_path.with_suffix(
+            next(  # Get suffix for chosen model_type
+                filter(
+                    lambda suf_type: suf_type[1] == model_type,
+                    EXT_TO_FRAMEWORK.items(),
+                ),
+                ("", ""),
+            )[0]
+        )
+        model.prepare_model()
+        if model_type == "onnx":
+            model.save_to_onnx(model.model_path)
+        else:
+            model.save_model(model.model_path)
 
     kwargs = {}
     if optimizer_cls not in (GPTQOptimizer, GPTQSparseGPTOptimizer):
@@ -100,6 +115,7 @@ def prepare_objects(
     optimizer = optimizer_cls(
         model.dataset,
         get_tmp_path(),
+        model_wrapper=model,
         **kwargs,
     )
     optimizer.init()

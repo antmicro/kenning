@@ -27,6 +27,8 @@ IGNORED_MODULES = {
     # modules from Zephyr repository
     "zephyr_module",
     "list_boards",
+    # ai8x tools
+    "izer",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

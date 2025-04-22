@@ -256,10 +256,10 @@ class TestPipelineRunnerRun:
         model_mock.save_io_specification.return_value = True
         runner = PipelineRunner(dataset=None, model_wrapper=model_mock)
 
-        runner.run(run_optimizations=True, run_benchmarks=False)
+        runner.run(run_optimizations=False, run_benchmarks=True)
 
-        assert model_mock.get_path.called_once()
-        assert model_mock.save_io_specification.called_once()
+        model_mock.get_path.assert_called_once()
+        model_mock.save_io_specification.assert_called_once()
 
     def test_run_local_model_test_inference(self, model_mock: Mock):
         model_mock.get_path.return_value = "model_mock_path"
@@ -269,7 +269,7 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert model_mock.test_inference.called_once()
+        model_mock.test_inference.assert_called_once()
 
     def test_run_local_runtime(
         self, dataset_mock: Mock, model_mock: Mock, runtime_mock: Mock
@@ -285,11 +285,11 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert runtime_mock.inference_session_start.called_once()
-        assert runtime_mock.load_input.called_once()
-        assert runtime_mock._run.called_once()
-        assert runtime_mock.extract_output.called_once()
-        assert runtime_mock.inference_session_end.called_once()
+        runtime_mock.inference_session_start.assert_called_once()
+        runtime_mock.load_input.assert_called_once()
+        runtime_mock._run.assert_called_once()
+        runtime_mock.extract_output.assert_called_once()
+        runtime_mock.inference_session_end.assert_called_once()
 
     def test_run_local_output(
         self,
@@ -333,18 +333,19 @@ class TestPipelineRunnerRun:
             model_wrapper=model_mock,
             runtime=runtime_mock,
             protocol=protocol_mock,
+            platform=platform_mock,
         )
 
         runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert protocol_mock.initialize_client.called_once()
-        assert protocol_mock.upload_io_specification.called_once()
-        assert protocol_mock.upload_model.called_once()
-        assert protocol_mock.upload_input.called_once()
-        assert protocol_mock.request_processing.called_once()
-        assert protocol_mock.download_output.called_once()
-        assert protocol_mock.download_statistics.called_once()
-        assert protocol_mock.disconnect.called_once()
+        protocol_mock.initialize_client.assert_called_once()
+        protocol_mock.upload_io_specification.assert_called_once()
+        protocol_mock.upload_model.assert_called_once()
+        protocol_mock.upload_input.assert_called_once()
+        protocol_mock.request_processing.assert_called_once()
+        protocol_mock.download_output.assert_called_once()
+        protocol_mock.download_statistics.assert_called_once()
+        protocol_mock.disconnect.assert_called_once()
 
     def test_run_remote_no_runtime(
         self,
@@ -400,7 +401,7 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=False)
 
-        assert protocol_mock.request_optimization.called_once()
+        optimizer_mock.compile.assert_called_once()
 
     def test_run_local_optimizations_onnx(
         self,
@@ -438,7 +439,7 @@ class TestPipelineRunnerRun:
             run_optimizations=True, run_benchmarks=False, convert_to_onnx=True
         )
 
-        assert protocol_mock.request_optimization.called_once()
+        optimizer_mock.compile.assert_called_once()
 
     def test_run_remote_optimizations(
         self,
@@ -474,7 +475,7 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=False)
 
-        assert protocol_mock.request_optimization.called_once()
+        protocol_mock.request_optimization.assert_called_once()
 
     def test_run_remote_no_optimizations(
         self,
@@ -667,7 +668,7 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert runtime_builder_mock.build.called_once()
+        runtime_builder_mock.build.assert_called_once()
 
     def test_run_zephyr_runtime_builder(
         self,
@@ -702,8 +703,7 @@ class TestPipelineRunnerRun:
 
         runner.run(run_optimizations=True, run_benchmarks=True)
 
-        assert runtime_builder_mock.build.called_once()
-        assert protocol_mock.upload_runtime.called_once()
+        runtime_builder_mock.build.assert_called_once()
 
     def test_run_zephyr_runtime_builder_llext(
         self,
@@ -742,4 +742,5 @@ class TestPipelineRunnerRun:
 
             runner.run(run_optimizations=True, run_benchmarks=True)
 
-            assert runtime_builder_mock.build.called_once()
+            runtime_builder_mock.build.assert_called_once()
+            protocol_mock.upload_runtime.assert_called_once()

@@ -46,7 +46,6 @@ PIP_INSTALL_KENNING_LOCAL_RE = (
     # Kenning optional dependencies, all finished with optional quote
     r"(\[?[^\]]*\])?['\"]?"
 )
-print(PIP_INSTALL_KENNING_LOCAL_RE)
 # Patterns of markdown files
 DOCS_DIR = Path(__file__).parent / "source"
 DOCS_MARKDOWNS = str(DOCS_DIR / "*.md")
@@ -76,6 +75,8 @@ DATASET_DIR = "build"
 SNIPPET_ARGUMENTS = ("test-skip", "timeout", "name", "terminal", "save-as")
 # Key of the snippet's positional arguments
 SNIPPET_POSITIONAL_ARG = "__arg"
+# Key of the snippet's metadata containing markdown directory
+SNIPPET_MARKDOWN_PARENT = "__markdown_dir"
 
 
 def extract_snippet_args(snippet: Snippet):
@@ -145,10 +146,16 @@ def get_all_snippets(
             extract_snippet_args(snippet)
             if "save-as" in snippet.meta:
                 if snippet.lang == "{literalinclude}":
-                    file_path = (
-                        markdown.parent / snippet.meta[SNIPPET_POSITIONAL_ARG]
+                    # Take path to the markdown directory
+                    # starting with docs/source/...
+                    from_docs = []
+                    for p in markdown.resolve().parents:
+                        from_docs.append(p.name)
+                        if p.name == "docs":
+                            break
+                    snippet.meta[SNIPPET_MARKDOWN_PARENT] = Path(
+                        *from_docs[::-1]
                     )
-                    snippet.meta[SNIPPET_POSITIONAL_ARG] = file_path.resolve()
                 if last_snippet_name:
                     snippet.meta["depends"].append(last_snippet_name)
                 last_snippet_name = name
@@ -371,6 +378,8 @@ def create_script(
         Snippet with script information.
     gallery_snippet : bool
         Whether snippet is from gallery.
+    working_dir : Path
+        The path to the temporary directory with Kenning clone.
 
     Returns
     -------
@@ -402,15 +411,28 @@ def create_script(
     elif "save-as" in snippet.meta:
         save_as = Path(snippet.meta["save-as"])
         script = f"mkdir -p {save_as.parent}"
-        if SNIPPET_POSITIONAL_ARG in snippet.meta and isinstance(
-            snippet.meta[SNIPPET_POSITIONAL_ARG], Path
+        if SNIPPET_MARKDOWN_PARENT in snippet.meta and isinstance(
+            snippet.meta[SNIPPET_MARKDOWN_PARENT], Path
         ):
-            script += (
-                f" && cp {snippet.meta[SNIPPET_POSITIONAL_ARG]} {save_as}"
+            full_path = (
+                kenning_path
+                / snippet.meta[SNIPPET_MARKDOWN_PARENT]
+                / snippet.meta[SNIPPET_POSITIONAL_ARG]
             )
+            script += f" && cp {full_path} {save_as}"
         else:
+            text = snippet.text.split("\n")
+            # Remove directive's options
+            if text[0].startswith("---"):
+                for i, line in enumerate(text[1:]):
+                    if not line.startswith("---"):
+                        continue
+                    text = text[i + 2 :]
+                    break
+            text = "\n".join(text)
+
             script += f' && cat <<EOF > "{save_as}"\n'
-            script += snippet.text
+            script += text
             script += "\nEOF\n"
 
     return script

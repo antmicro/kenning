@@ -12,6 +12,7 @@ from pathlib import Path
 from shutil import rmtree
 from tempfile import NamedTemporaryFile
 from typing import (
+    Any,
     Dict,
     Iterable,
     List,
@@ -30,7 +31,8 @@ from kenning.core.automl import AutoML, AutoMLModel
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
-from kenning.utils.args_manager import get_type
+from kenning.utils.args_manager import get_type, traverse_parents_with_args
+from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
 
@@ -56,6 +58,14 @@ class MissingConfigForAutoPyTorchModel(Exception):
 class ModelExtractionError(Exception):
     """
     Raised when Kenning model was not properly extracted from AutoPyTorch.
+    """
+
+    ...
+
+
+class ModelClassNotValid(Exception):
+    """
+    Raised when provided model class cannot be imported.
     """
 
     ...
@@ -202,17 +212,13 @@ class AutoPyTorchModel(AutoMLModel):
 
         model_component = cls.get_component_name()
         network_back = cs.get_hyperparameter("network_backbone:__choice__")
-        one_model_only = (
-            len(network_back.choices) == 1
-            and model_component in network_back.choices
-        )
         network_back = CS.ForbiddenEqualsClause(
             network_back,
             model_component,
         )
 
         clauses = [
-            _create_forbidden_choices(cs, name, (choice,), one_model_only)
+            _create_forbidden_choices(cs, name, (choice,), True)
             for name, choice in (
                 ("imputer:numerical_strategy", "constant_zero"),
                 ("network_head:__choice__", "PassthroughHead"),
@@ -236,11 +242,34 @@ class AutoPyTorchModel(AutoMLModel):
         return cs
 
     @classmethod
+    def model_params_from_context(
+        cls, dataset: Dataset, platform: Optional[Platform] = None
+    ) -> Dict[str, Any]:
+        """
+        Extracts additional model parameters based on context
+        like dataset and platform.
+
+        Parameters
+        ----------
+        dataset : Dataset
+            The dataset used for processing.
+        platform : Optional[Platform]
+            The platform used for evaluation.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Generated dictionary with model parameters.
+        """
+        return {}
+
+    @classmethod
     def build_backbone(
         cls,
         self: NetworkBackboneComponent,
         input_shape: Tuple[int, ...],
         dataset: Optional[Dataset] = None,
+        platform: Optional[Platform] = None,
         processed_input: Optional[Tuple[int, ...]] = None,
     ) -> PyTorchModel:
         """
@@ -253,7 +282,9 @@ class AutoPyTorchModel(AutoMLModel):
         input_shape : Tuple[int, ...]
             The shape of input data.
         dataset : Optional[Dataset]
-            Dataset used for the model.
+            The dataset used for the model.
+        platform : Optional[Platform]
+            The platform used for the model.
         processed_input: Optional[Tuple[int, ...]]
             The shape of input that should be provided to the model.
 
@@ -273,6 +304,9 @@ class AutoPyTorchModel(AutoMLModel):
 
         from torch.nn import Sequential, Unflatten
 
+        model_class_obj = load_class(cls.model_class)
+        if model_class_obj is None:
+            raise ModelClassNotValid(f"{cls.model_class} cannot be imported")
         schema = cls.form_automl_schema()
         args = {}
         for name, config in schema.items():
@@ -292,8 +326,10 @@ class AutoPyTorchModel(AutoMLModel):
                 raise MissingConfigForAutoPyTorchModel(
                     f"Missing values in {name} config"
                 )
-        model = cls._create_model_structure(
-            **args, input_shape=input_shape, dataset=dataset
+        model = model_class_obj(
+            **args,
+            input_shape=input_shape,
+            **cls.model_params_from_context(dataset, platform),
         )
         if processed_input and input_shape != processed_input[1:]:
             KLogger.info(
@@ -362,6 +398,7 @@ class AutoPyTorchModel(AutoMLModel):
     def register_components(
         cls,
         dataset: Dataset,
+        platform: Platform,
     ) -> List[Type[NetworkBackboneComponent]]:
         """
         Dynamically creates new AutoPyTorch component classes,
@@ -370,7 +407,9 @@ class AutoPyTorchModel(AutoMLModel):
         Parameters
         ----------
         dataset : Dataset
-            Dataset used for the model.
+            The dataset used for the model.
+        platform : Platform
+            The platform used for the model.
 
         Returns
         -------
@@ -410,6 +449,7 @@ class AutoPyTorchModel(AutoMLModel):
                     *args,
                     **kwargs,
                     dataset=dataset,
+                    platform=platform,
                     processed_input=processed_input,
                 ),
                 "get_properties": staticmethod(cls.get_properties),
@@ -425,7 +465,7 @@ class AutoPyTorchModel(AutoMLModel):
             ),
         )
         add_backbone(component)
-        # Register passthought head to not change the model output
+        # Register passthrough head to not change the model output
         register_passthrough()
         return [component]
 
@@ -444,8 +484,9 @@ class AutoPyTorchModel(AutoMLModel):
         PyTorchModel
             Extracted Kenning compatible model.
         """
+        model_class_obj = load_class(cls.model_class)
         for module in network.modules():
-            if type(module).__name__ == cls.model_class:
+            if type(module).__name__ == model_class_obj.__name__:
                 return module
 
     @classmethod
@@ -491,6 +532,18 @@ class AutoPyTorchModel(AutoMLModel):
                     backbone_conf[f"{name}_{i}"]
                     for i in range(backbone_conf[name])
                 ]
+        # Append default non-AutoML params
+        arg_structure = {}
+        for cls_ in reversed(list(traverse_parents_with_args(cls))):
+            arg_structure |= cls_.arguments_structure
+        for name, config in arg_structure.items():
+            if (
+                name in model_wrapper_params
+                or "default" not in config
+                or config["default"] is None
+            ):
+                continue
+            model_wrapper_params[name] = config["default"]
         return {
             "model_wrapper": {
                 "type": f"{cls.__module__}.{cls.__name__}",
@@ -551,7 +604,7 @@ class AutoPyTorchML(AutoML):
             "default": True,
         },
         "use_cuda": {
-            "description": "Whether to use CUDA-compatible accelerator, if GPU is not available this option is ignored",  # noqa: E501
+            "description": "Whether to use GPU, if it is not available this option is ignored",  # noqa: E501
             "type": bool,
             "default": False,
         },
@@ -582,7 +635,7 @@ class AutoPyTorchML(AutoML):
         callback_max_samples: int = 30,
         all_supported_metrics: bool = True,
         use_cuda: bool = False,
-        data_loader_workers: int = -1,
+        data_loader_workers: int = cpu_count() // 2,
     ):
         """
         Prepares the AutoML object.
@@ -727,7 +780,9 @@ class AutoPyTorchML(AutoML):
 
         # Register models components
         for model in self.use_models:
-            self._components += model.register_components(self.dataset)
+            self._components += model.register_components(
+                self.dataset, self.platform
+            )
 
         self._prepared = True
 

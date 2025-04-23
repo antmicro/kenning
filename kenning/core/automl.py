@@ -25,7 +25,12 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
-from kenning.utils.args_manager import ArgumentsHandler, get_type
+from kenning.utils.args_manager import (
+    ArgumentsHandler,
+    get_type,
+    supported_keywords,
+    traverse_parents_with_args,
+)
 
 
 class AutoMLInvalidSchemaError(Exception):
@@ -182,31 +187,40 @@ class AutoMLModel(ArgumentsHandler, ABC):
         AutoMLInvalidArgumentsError
             If parameter or its configuration does not exist.
         """
-        if name not in cls.arguments_structure:
+        arg_structure = {}
+        for cls_ in reversed(list(traverse_parents_with_args(cls))):
+            arg_structure |= cls_.arguments_structure
+
+        if name not in arg_structure:
             raise AutoMLInvalidArgumentsError(
                 f"Class `{cls.__name__}` does not have `{name}` parameter"
             )
         for conf_key, conf_value in conf.items():
-            if conf_key not in cls.arguments_structure[name]:
+            if (
+                conf_key not in arg_structure[name]
+                and conf_key not in supported_keywords
+            ):
                 raise AutoMLInvalidArgumentsError(
                     f"Parameter `{name}` of class `{cls.__name__}` "
                     f"does not have `{conf}` option"
                 )
-            cls.arguments_structure[name][conf_key] = conf_value
-        cls.update_automl_defaults(name)
+            arg_structure[name][conf_key] = conf_value
+        cls.update_automl_defaults(arg_structure, name)
 
-    @classmethod
-    def update_automl_defaults(cls, name: str):
+    @staticmethod
+    def update_automl_defaults(arg_structure: Dict[str, Dict], name: str):
         """
         Updates the default value of the AutoML parameter
         to make sure they fit into ranges.
 
         Parameters
         ----------
+        arg_structure : Dict[str, Dict]
+            The combined arguments structure of current class and its parents.
         name : str
             The name of parameter, should match with the `arguments_structure`.
         """
-        arg = cls.arguments_structure[name]
+        arg = arg_structure[name]
         _type, _ = get_type(arg["type"])
         default = arg["default"]
         if "enum" in arg and _type is not list:

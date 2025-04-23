@@ -385,10 +385,12 @@ class InferenceTester(CommandTemplate):
                     output, unoptimized_output
                 )
         except ValidationError as ex:
-            KLogger.error(f"Validation error: {ex}", stack_info=True)
+            KLogger.error(
+                f"Validation error: {ex}", exc_info=ex, stack_info=True
+            )
             raise
         except Exception as ex:
-            KLogger.error(ex, stack_info=True)
+            KLogger.error(ex, exc_info=ex, stack_info=True)
             raise
 
         if ret is None:

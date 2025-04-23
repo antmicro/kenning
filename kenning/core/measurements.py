@@ -256,6 +256,12 @@ class MeasurementsCollector(object):
         resultpath : Path
             Path to the saved JSON file.
         """
+        results_dir = Path(resultpath).parent
+        if not results_dir.exists():
+            results_dir.mkdir(parents=True)
+            KLogger.info(
+                f"Created a directory for measurements: {results_dir}"
+            )
         with open(resultpath, "w") as measurementsfile:
             json.dump(
                 measurementsdata,

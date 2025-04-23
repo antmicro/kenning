@@ -9,6 +9,9 @@ import pytest
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
+    Ai8xAnomalyDetectionCNN,
+)
 from kenning.modelwrappers.llm.llm import LLM
 from kenning.tests.core.conftest import (
     copy_model_to_tmp,
@@ -145,6 +148,8 @@ class TestModelWrapper:
         """
         Tests the `prepare_model` method.
         """
+        if isinstance(model, Ai8xAnomalyDetectionCNN):
+            pytest.xfail("Ai8xAnomalyDetectionCNN requires ai8x-training")
         model.prepare_model()
 
     @pytest.mark.xdist_group(name="use_resources")

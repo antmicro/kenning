@@ -67,8 +67,11 @@ extensions = list(
             "sphinx.ext.githubpages",
             "sphinx.ext.napoleon",
             "sphinx.ext.extlinks",
+            # Extension injecting HTML to figures
             "kenning.utils.sphinx_html_as_figure",
+            # Extensions enabling save-as feature for directives
             "kenning.utils.sphinx_literalinclude",
+            "kenning.utils.sphinx_codeblock",
         ]
     )
 )

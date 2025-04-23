@@ -688,3 +688,257 @@ def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
 In the example above, the `run` method does not contain a `return` statement, because this runner does not have any outputs.
 If you want to create a runner with outputs, this method should return a similar dictionary containing outputs.
 ```
+
+## Implementing new AutoML-compatible ModelWrapper
+
+### Implementing a ModelWrapper
+
+To create AutoML model the default [](modelwrapper-api) has to implement [](automl-model-api) interface.
+The description of ModelWrapper implementation can be found in [](model-io-metadata) section.
+But it has to be extended with a few additional steps, like in the [AutoPyTorch](https://github.com/antmicro/auto-pytorch)-based [example with a simple fully-connected neural network](automl-model-example):
+* add {py:class}`kenning.core.automl.AutoMLModel` based class inheritance to the ModelWrapper (line 35),
+* implement the model class with parameters that can be tuned by AutoML (lines 14-32),
+* point to the model class in the ModelWrapper using full class path (line 52),
+* define which ModelWrapper arguments can be tuned (lines 41-49),
+  * names have to match with the model class parameters,
+  * AutoML-specific configuration is described in [](defining-arguments-for-core-classes),
+* implement or override inherited methods, in case of `AutoPyTorchModel`, they are:
+  * (required) `get_io_specification_from_dataset` - creates IO spec based on the dataset (lines 119-129),
+  * (optional) `model_params_from_context` - generates additional parameters for the model based on the dataset and optional platform (lines 65-75),
+  * (optional) `define_forbidden_clauses` - adds forbidden configurations to the search space,
+  * (optional) `register_components` - adds custom components to AutoPyTorch.
+
+```{code-block} python save-as=fc_automl.py
+---
+name: "automl-model-example"
+linenos:
+emphasize-lines: 20-25,35,41-49,51-52,65-75,119-129
+---
+
+from typing import Any, Dict, List, Optional, Tuple
+
+import numpy as np
+import torch
+from torch import nn
+
+from kenning.automl.auto_pytorch import AutoPyTorchModel
+from kenning.core.platform import Platform
+from kenning.datasets.anomaly_detection_dataset import AnomalyDetectionDataset
+from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+from kenning.utils.resource_manager import PathOrURI
+
+
+class FCNetwork(nn.Sequential):
+    """
+    The simple fully-connected neural network model.
+    """
+    def __init__(
+        self,
+        # The input shape is provided by AutoPyTorch
+        input_shape: Tuple[int, ...],
+        # Remaining arguments should have the same names as parameters
+        # from `arguments_structure` and `model_params_from_context` method
+        neurons: List[int],
+        outputs: int,
+    ):
+        self.neurons = neurons
+        super().__init__(
+            *[nn.Linear(in_, out) for in_, out in zip(
+                [input_shape[-1]] + neurons, neurons + [outputs]
+            )]
+        )
+
+
+class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
+    """
+    The example AutoML-compatible fully connected model.
+    """
+
+    arguments_structure = {
+        # Required: Example parameter which can be adjusted by AutoML flow
+        "neurons": {
+            "description": "List of neurons in consecutive layers",
+            "type": list[int],
+            "default": [8, 16, 8],
+            "AutoML": True,
+            "list_range": (1, 16),
+            "item_range": (1, 256),
+        },
+    }
+    # Required: The path to the class representing model
+    model_class = f"{FCNetwork.__module__}.{FCNetwork.__name__}"
+
+    def __init__(
+        self,
+        model_path: PathOrURI,
+        dataset: AnomalyDetectionDataset,
+        from_file: bool = True,
+        model_name: Optional[str] = None,
+        neurons: List[int] = [8, 16, 8],
+    ):
+        super().__init__(model_path, dataset, from_file, model_name)
+        self.neurons = neurons
+
+    # Optional: Method generating additional model parameters
+    # based on the dataset
+    @classmethod
+    def model_params_from_context(
+        cls,
+        dataset: AnomalyDetectionDataset,
+        platform: Optional[Platform] = None,
+    ):
+        return {
+            "outputs": len(dataset.get_class_names()),
+        }
+
+    def create_model_structure(self):
+        self.model = FCNetwork(
+            input_shape=(
+                -1,
+                self.dataset.window_size * self.dataset.num_features
+            ),
+            neurons=self.neurons,
+            **self.model_params_from_context(self.dataset)
+        )
+
+    def prepare_model(self):
+        if self.model_prepared:
+            return None
+
+        if self.from_file:
+            self.load_model(self.model_path)
+            self.model_prepared = True
+        else:
+            self.create_model_structure()
+
+            def weights_init(m):
+                torch.nn.init.xavier_uniform_(m.weight)
+                torch.nn.init.zeros_(m.bias)
+
+            self.model.classifier.apply(weights_init)
+            self.model_prepared = True
+            self.save_model(self.model_path)
+        self.model.to(self.device)
+
+    def preprocess_input(self, X: List[Any]) -> List[Any]:
+        import torch
+
+        X = np.asarray(X[0])
+        return [torch.from_numpy(X.reshape(X.shape[0], -1)).to(self.device)]
+
+    def postprocess_outputs(self, y: List[Any]) -> List[np.ndarray]:
+        output = np.argmax(
+            y[0].detach().cpu().numpy(),
+            axis=-1,
+        ).reshape(-1).astype(np.int8)
+        return (output,)
+
+    # Required: Method generating IO specification
+    # based on the dataset
+    def get_io_specification_from_dataset(
+        cls,
+        dataset,
+    ) -> Dict[str, List[Dict]]:
+        return cls._get_io_specification(
+            dataset.num_features,
+            dataset.window_size,
+            dataset.batch_size,
+        )
+
+    @classmethod
+    def _get_io_specification(
+        cls,
+        num_features,
+        window_size,
+        batch_size: int = -1,
+    ) -> Dict[str, List[Dict]]:
+        return {
+            "input": [
+                {
+                    "name": "input_1",
+                    "shape": (
+                        batch_size,
+                        window_size,
+                        num_features,
+                    ),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_input": [
+                {
+                    "name": "input_1",
+                    "shape": (
+                        batch_size,
+                        window_size * num_features
+                        if window_size > 0 and num_features > 0
+                        else -1,
+                    ),
+                    "dtype": "float32",
+                }
+            ],
+            "output": [
+                {
+                    "name": "distances",
+                    "shape": (batch_size, 2),
+                    "dtype": "float32",
+                }
+            ],
+            "processed_output": [
+                {
+                    "name": "anomalies",
+                    "shape": (batch_size,),
+                    "dtype": "int8",
+                }
+            ],
+        }
+
+    def get_io_specification_from_model(self) -> Dict[str, List[Dict]]:
+        return self.get_io_specification_from_dataset(self.dataset)
+
+    @classmethod
+    def derive_io_spec_from_json_params(
+        cls, json_dict: Dict
+    ) -> Dict[str, List[Dict]]:
+        cls.get_io_specification(-1, -1)
+```
+
+### Using the implemented model
+
+To use the model, its full path (or just name if it is placed under `kenning.modelwrappers`) has to be specified in the `use_models` parameter:
+
+```{code-block} yaml save-as=fc-scenario.yml
+---
+emphasize-lines: 15-16
+---
+
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: ./workspace/CATS
+    csv_file: kenning:///datasets/anomaly_detection/cats_nano.csv
+    split_fraction_test: 0.1
+    split_seed: 12345
+    inference_batch_size: 1
+
+automl:
+  type: AutoPyTorchML
+  parameters:
+    time_limit: 2
+    use_models:
+      # Use model wrapper defined in fc_automl.py
+      - fc_automl.PyTorchFullyConnected
+    output_directory: ./workspace/automl-results
+    n_best_models: 5
+    optimize_metric: f1
+    min_budget: 1
+    max_budget: 2
+```
+
+Running the simples AutoML flow, assuming the implementation and the scenario are saved under `fc_automl.py` and `fc-scenario.yml` respectively, boils down to:
+
+```bash
+# Make sure the required dependencies are installed
+pip install "kenning[torch,anomaly_detection,auto_pytorch] @ git+https://github.com/antmicro/kenning.git"
+# Run AutoML flow with new model
+PYTHONPATH="$(pwd):$PYTHONPATH" kenning automl --cfg ./fc-scenario.yml
+```

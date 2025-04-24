@@ -226,7 +226,7 @@ To create client/server scenario configuration it is required to add a `protocol
 
 ```{literalinclude} scripts/jsonconfigs/tflite-tvm-classification-client-server.json save-as=tflite-tvm-classification-client-server.json
 :language: json
-:emphasize-lines: 48-57
+:emphasize-lines: 43-45
 ```
 
 In the `protocol` entry, we specify a `kenning.protocols.network.NetworkProtocol` and provide a server address (`host`), an application port (`port`) and packet size (`packet_size`)

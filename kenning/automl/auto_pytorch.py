@@ -155,33 +155,6 @@ class AutoPyTorchModel(AutoMLModel):
 
         return cs
 
-    @staticmethod
-    def _create_model_structure(
-        input_shape: Iterable[int],
-        dataset: Optional[Dataset] = None,
-    ) -> PyTorchModel:
-        """
-        Recreates the model structure.
-
-        Parameters
-        ----------
-        input_shape : Iterable[int]
-            The shape of input data.
-        dataset : Optional[Dataset]
-            Dataset used for the model.
-
-        Returns
-        -------
-        PyTorchModel
-            Created PyTorch model.
-
-        Raises
-        ------
-        NotImplementedError
-            If method has not been implemented in child class.
-        """
-        raise NotImplementedError
-
     @classmethod
     def define_forbidden_clauses(
         cls,

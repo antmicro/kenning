@@ -217,6 +217,36 @@ Platform examples:
    :members:
 ```
 
+## AutoML
+
+The AutoML API is combined from two different elements - [](automl-model-api) and [](automl-api).
+
+AutoML examples:
+* [AutoPyTorchModel](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L74) and [AutoPyTorchML](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L555)
+
+(automl-model-api)=
+### AutoML model
+
+The `kenning.core.automl.AutoMLModel` represents a model that can be used for AutoML flow, and defines additional methods for registering and managing parameters.
+Moreover, the `arguments_structure` was extended with custom AutoML options, described in [](defining-arguments-for-core-classes).
+
+```{eval-rst}
+.. autoclass:: kenning.core.automl.AutoMLModel
+   :show-inheritance:
+   :members:
+```
+
+(automl-api)=
+### AutoML flow mechanism
+
+The `kenning.core.automl.AutoML` covers a standard AutoML flow: framework preparation, model searching and extraction to proper Kenning format.
+
+```{eval-rst}
+.. autoclass:: kenning.core.automl.AutoML
+   :show-inheritance:
+   :members:
+```
+
 (protocol-api)=
 ## Protocol
 

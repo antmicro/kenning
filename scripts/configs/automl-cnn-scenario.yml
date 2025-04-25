@@ -1,20 +1,14 @@
-dataset:
-  type: AnomalyDetectionDataset
-  parameters:
-    dataset_root: ./build/CATS
-    csv_file: https://zenodo.org/records/8338435/files/data.csv
-    split_seed: 12345
-    split_fraction_test: 0.1
-    inference_batch_size: 1
-    # Reduce dataset to speedup the AutoML flow
-    reduce_dataset: 0.1
+# This scenario demonstrates AutoML flow with model quantization
+# on example of Anomaly Detection in time series for MAX32960 Evaluation Kit.
+
 automl:
   type: AutoPyTorchML
   parameters:
-    output_directory: ./build/cnn-automl2
-    time_limit: 15
+    output_directory: ./workspace/automl-quant-results
+    time_limit: 3
     use_models:
       - PyTorchAnomalyDetectionCNN:
+          # Set custom ranges for CNN parameters
           conv_stride:
             item_range: [1, 1]
           conv_dilation:
@@ -29,12 +23,43 @@ automl:
     budget_type: epochs
     min_budget: 1
     max_budget: 5
+    # Increase size of the reduced dataset for quantization
+    callback_max_samples: 200
+    # Size of the application that will use generated models
+    application_size: 75.5
     # To use GPU uncomment line below
     # use_cuda: True
+
 optimizers:
 - type: TFLiteCompiler
   parameters:
+    # Quantize model to 8-bit integers
     target: int8
-    compiled_model_path: ./build/cnn_int8.tflite
+    compiled_model_path: ./workspace/automl-quant-results/cnn_int8.tflite
     inference_input_type: int8
     inference_output_type: int8
+
+# Chooses MAX32690 Evaluation Kit
+platform:
+  type: ZephyrPlatform
+  parameters:
+    name: max32690evkit/max32690/m4
+    simulated: True
+
+dataset:
+  type: AnomalyDetectionDataset
+  parameters:
+    dataset_root: ./workspace/CATS
+    csv_file: kenning:///datasets/anomaly_detection/cats_nano.csv
+    split_fraction_test: 0.1
+    split_seed: 12345
+    inference_batch_size: 1
+
+runtime_builder:
+  type: ZephyrRuntimeBuilder
+  parameters:
+    output_path: ./workspace/kzr_quant_build
+    workspace: ./kenning-zephyr-runtime
+    venv_dir: ../.venv
+    run_west_update: false
+    extra_targets: [board-repl]

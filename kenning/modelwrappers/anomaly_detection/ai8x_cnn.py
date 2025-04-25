@@ -8,6 +8,7 @@ Contains simple Convolution Neural Network (CNN) model wrapper.
 Compatible with AnomalyDetectionDataset.
 """
 
+import os
 from argparse import Namespace
 from pathlib import Path
 from typing import List, Literal, Optional
@@ -139,12 +140,15 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
             "outlier_removal_z_score": qat_outlier_removal_z_score,
         }
 
-        self.ai8x_training_path = None
-        if ai8x_training_path:
-            assert (
-                ai8x_training_path and ai8x_training_path.exists()
-            ), "ai8x-training location is not valid"
-            self.ai8x_training_path = ai8x_training_path.expanduser().resolve()
+        if ai8x_training_path is None and "AI8X_TRAINING_PATH" in os.environ:
+            ai8x_training_path = Path(os.environ["AI8X_TRAINING_PATH"])
+
+        if not ai8x_training_path:
+            raise ValueError("ai8x_training_path not specified")
+        if not ai8x_training_path.exists():
+            raise FileNotFoundError(f"{ai8x_training_path} not found")
+
+        self.ai8x_training_path = ai8x_training_path
 
     @staticmethod
     def _setup_device(platform: Platform, ai8x_training_path: Path):
@@ -213,6 +217,19 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
             self.model_prepared = True
             self.save_model(self.model_path)
         self.model.to(self.device)
+
+    def save_model(
+        self, model_path: PathOrURI, export_dict: Optional[bool] = None
+    ):
+        import torch
+
+        self.prepare_model()
+        if export_dict is None:
+            export_dict = self.DEFAULT_SAVE_MODEL_EXPORT_DICT
+        if export_dict:
+            torch.save(self.model.to_pure_torch().state_dict(), model_path)
+        else:
+            torch.save(self.model.to_pure_torch(), model_path)
 
     def train_model(self):
         (

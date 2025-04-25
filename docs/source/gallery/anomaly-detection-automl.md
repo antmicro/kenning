@@ -120,6 +120,29 @@ The command above:
 * Generates a full comparison report for the models so that user can pick the best one (located in `workspace/automl-report/report/report.html`)
 * Generates optimized models (`vae.<id>.tflite`), their AutoML-derived configuration (`automl_conf_<id>.yml`) and IO specification files for Kenning (`vae.<id>.tflite.json`) under `workspace/automl-results/`.
 
+## Run AutoML flow with quantization
+
+The AutoML flow can also take into account the model size after quantization.
+To make it possible, a scenario has to define at least one Optimizer which will quantize the model:
+
+```{literalinclude} ../scripts/configs/automl-cnn-scenario.yml save-as=automl_quantization.yml
+:name: automl-quantization-scenario
+:language: yaml
+:emphasize-lines: 31-38
+```
+
+In order to avoid training models that will not fit into available space, the flow triggers quantization on initialized models and rejects ones that cannot be optimized or (after quantization) are too large.
+Then the flow proceeds with training of default (non-quantized) models and only the best ones will be processed by Kenning accordingly to the scenario.
+Such flow can be run with the following command, assuming [the scenario](automl-quantization-scenario) is saved as `automl_quantization.yml`:
+
+```bash
+kenning automl optimize test report \
+  --cfg ./automl_quantization.yml \
+  --report-path ./workspace/automl-report/report.md \
+  --allow-failures --to-html --ver INFO \
+  --skip-general-information
+```
+
 ## Run sample app with a chosen model
 
 Once the best model is selected (e.g. `workspace/automl-results/vae.0.tflite`), let's compile the sample app with it:

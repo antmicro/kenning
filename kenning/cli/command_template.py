@@ -30,6 +30,7 @@ SEARCH = "search"
 COMPLETION = "completion"
 AUTOML = "automl"
 GENERATE_PLATFORMS = "generate-platforms"
+AVAILABLE_PLATFORMS = "available-platforms"
 HELP = {
     "flags": HELP_FLAGS,
     "msg": "show this help message and exit",

@@ -14,6 +14,7 @@ from typing import Dict, Generator, List, Optional, Tuple, Type, Union
 
 from kenning.cli.command_template import (
     AUTOML,
+    AVAILABLE_PLATFORMS,
     CACHE,
     COMPLETION,
     FINE_TUNE,
@@ -34,6 +35,7 @@ from kenning.cli.command_template import (
 from kenning.cli.formatter import Formatter
 from kenning.scenarios import (
     automl,
+    available_platforms,
     class_info,
     configure_autocompletion,
     fuzzy_search_class,
@@ -54,6 +56,7 @@ from kenning.scenarios import (
 SEQUENCED_COMMANDS = ([[TRAIN, OPTIMIZE], TEST, REPORT],)
 # Subcommands that can be used one at the time
 BASIC_COMMANDS = (
+    AVAILABLE_PLATFORMS,
     FLOW,
     SERVER,
     VISUAL_EDITOR,
@@ -92,6 +95,7 @@ MAP_COMMAND_TO_SCENARIO: Dict[str, Type[CommandTemplate]] = {
     VISUAL_EDITOR: pipeline_manager_client.PipelineManagerClient,
     COMPLETION: configure_autocompletion.ConfigureCompletion,
     GENERATE_PLATFORMS: generate_platforms.GeneratePlatformsCommand,
+    AVAILABLE_PLATFORMS: available_platforms.AvailablePlatformsCommand,
 }
 # Name of the subcommand group -- displayed in help message
 SUBCOMMANDS = "Subcommands"

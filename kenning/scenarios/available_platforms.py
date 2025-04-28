@@ -18,6 +18,8 @@ if sys.version_info.minor < 9:
 else:
     from importlib.resources import path
 
+import json
+
 import yaml
 
 import kenning.resources.platforms as platforms
@@ -30,7 +32,9 @@ from kenning.cli.command_template import (
 )
 
 
-def read_platform_definitions(verbosity: str = "list") -> List[str]:
+def read_platform_definitions(
+    verbosity: str = "list", as_json: bool = False
+) -> List[str]:
     """
     Reads and formats available platform information.
 
@@ -43,6 +47,9 @@ def read_platform_definitions(verbosity: str = "list") -> List[str]:
                     corresponding default platforms.
         'all'   - list platfors with all information available
 
+    as_json : bool
+        Returns all information on platforms in JSON format
+
     Returns
     -------
     List[str]
@@ -51,6 +58,10 @@ def read_platform_definitions(verbosity: str = "list") -> List[str]:
     with path(platforms, "platforms.yml") as defs_path:
         with open(defs_path, "r") as f:
             data = yaml.safe_load(f)
+
+    if as_json:
+        data_json = json.dumps(data, ensure_ascii=False, indent=4)
+        return [data_json]
 
     platforms_info = []
     for platform, info in data.items():
@@ -135,7 +146,12 @@ class AvailablePlatformsCommand(CommandTemplate):
 
         list_group.add_argument(
             "-v",
-            help="Display all available platforms details",
+            help="Display all available platforms details.",
+            action="store_true",
+        )
+        list_group.add_argument(
+            "--json",
+            help="Display all platforms data in JSON format.",
             action="store_true",
         )
 
@@ -147,12 +163,17 @@ class AvailablePlatformsCommand(CommandTemplate):
         if args.v:
             verbosity = "all"
 
-        resulting_output = read_platform_definitions(verbosity)
+        resulting_output = read_platform_definitions(verbosity, args.json)
+
+        if args.json:
+            print(resulting_output[0])
+            return 0
 
         for platform_name, details_names, details_values in resulting_output:
             print("\n" + platform_name + "\n")
             for d_n, d_v in zip(details_names, details_values):
                 print(f"\t{d_n}{d_v}")
+        return 0
 
 
 if __name__ == "__main__":

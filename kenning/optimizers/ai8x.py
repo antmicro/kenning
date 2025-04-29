@@ -6,6 +6,7 @@
 Wrapper for ai8x accelerator compiler.
 """
 
+import json
 import os
 import shutil
 import subprocess
@@ -14,11 +15,13 @@ from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
 import numpy as np
+import torch
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import ConversionError, Optimizer
 from kenning.core.platform import Platform
+from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -269,6 +272,77 @@ def ai8x_conversion(
         torch.save(model, output_model_path)
 
 
+def torch_conversion(
+    input_model_path: PathOrURI,
+    ai8x_model_path: Path,
+    ai8x_tools: _Ai8xTools,
+    device_id: int,
+):
+    """
+    Converts torch model into ai8x-compatible model.
+
+    Parameters
+    ----------
+    input_model_path : PathOrURI
+        Path to the torch model.
+    ai8x_model_path : Path
+        Path where ai8x-compatible model will be saved.
+    ai8x_tools : _Ai8xTools
+        AI8X tools wrapper.
+    device_id : int
+        AI8X device ID.
+
+    Raises
+    ------
+    ConversionError
+        When model with unsupported layers is passed.
+    """
+    model = torch.load(
+        input_model_path, weights_only=False, map_location=torch.device("cpu")
+    )
+
+    if not isinstance(model, torch.nn.Sequential):
+        raise ConversionError(
+            f"Only Sequential models are supported, got {type(model).__name__}"
+        )
+
+    ai8x_model = fuse_torch_sequential(
+        ai8x_tools.ai8x_training_path, device_id, model
+    )
+
+    torch.save(
+        {
+            "epoch": 0,
+            "state_dict": ai8x_model.state_dict(),
+        },
+        ai8x_model_path,
+    )
+
+    ai8x_model_tmp_path = ai8x_model_path.with_name(
+        ai8x_model_path.name + "_tmp"
+    )
+    torch.save(ai8x_model, ai8x_model_tmp_path)
+
+    io_spec = json.loads(
+        input_model_path.with_suffix(
+            input_model_path.suffix + ".json"
+        ).read_text()
+    )
+
+    yaml_cfg_path = ai8x_model_path.resolve().with_suffix(
+        ai8x_model_path.suffix + ".yaml"
+    )
+
+    ai8x_tools.yamlwriter(
+        ai8x_model_tmp_path,
+        io_spec.get("processed_input", io_spec["input"])[0]["shape"],
+        device_id,
+        yaml_cfg_path,
+    )
+
+    KLogger.info(f"Model YAML configuration saved in {yaml_cfg_path}")
+
+
 class Ai8xCompiler(Optimizer):
     """
     The ai8x accelerator compiler.
@@ -278,6 +352,7 @@ class Ai8xCompiler(Optimizer):
 
     inputtypes = {
         "ai8x": ai8x_conversion,
+        "torch": torch_conversion,
     }
 
     arguments_structure = {

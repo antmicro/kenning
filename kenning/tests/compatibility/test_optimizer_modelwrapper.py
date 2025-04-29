@@ -12,6 +12,7 @@ from schema import Type
 
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import EXT_TO_FRAMEWORK, Optimizer
+from kenning.core.platform import Platform
 from kenning.optimizers.gptq import GPTQOptimizer
 from kenning.optimizers.gptq_sparsegpt import GPTQSparseGPTOptimizer
 from kenning.optimizers.model_inserter import ModelInserter
@@ -89,9 +90,20 @@ def prepare_objects(
     except ValueError:
         pytest.skip("Blocks do not match")
 
+    # by default, do not enforce platforms
+    platform = None
+
+    # AI8X is specific to a limited set of platforms, hence
+    # platform definition below
+    if "Ai8x" in model_cls.__name__ or "Ai8x" in optimizer_cls.__name__:
+        platform = Platform("max78002evkit/max78002/m4")
+        platform.read_data_from_platforms_yaml()
+
     dataset_cls = model_cls.default_dataset
     dataset = get_dataset_random_mock(dataset_cls, model_cls)
     model = create_model(model_cls, dataset)
+    if platform is not None:
+        model.read_platform(platform)
     if model_cls.pretrained_model_uri is None:
         model.model_path = model.model_path.with_suffix(
             next(  # Get suffix for chosen model_type
@@ -118,6 +130,8 @@ def prepare_objects(
         model_wrapper=model,
         **kwargs,
     )
+    if platform is not None:
+        optimizer.read_platform(platform)
     optimizer.init()
 
     return model, optimizer
@@ -250,5 +264,5 @@ class TestOptimizerModelWrapper:
             optimizer.compile(model.model_path, model.get_io_specification())
             assert optimizer.compiled_model_path.exists()
         finally:
-            optimizer.compiled_model_path.unlink(missing_ok=True)
+            remove_file_or_dir(optimizer.compiled_model_path)
             remove_file_or_dir(model.model_path)

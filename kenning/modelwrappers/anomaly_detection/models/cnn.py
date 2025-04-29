@@ -93,6 +93,17 @@ class AnomalyDetectionCNN(nn.Sequential):
         self._conv_layers = self._prepare_conv()
         super().__init__(*self._conv_layers, nn.Flatten(), *self._prepare_fc())
 
+    def to_pure_torch(self) -> nn.Sequential:
+        """
+        Converts model to pure torch sequential model.
+
+        Returns
+        -------
+        nn.Sequential
+            Model in pure torch format.
+        """
+        return nn.Sequential(*list(self.children()))
+
     def _prepare_conv(self) -> List[nn.Module]:
         channels = [1] + self.filters
         if self.qat:

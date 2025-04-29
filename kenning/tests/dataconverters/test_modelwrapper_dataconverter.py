@@ -23,7 +23,7 @@ class TestModelWRapperDataConverter:
         ):
             converter = ModelWrapperDataConverter(model)
             assert converter.to_next_block(1) == 2
-            assert model._preprocess_input.called_once_with(1)
+            model._preprocess_input.assert_called_once_with(1)
 
     @patch("kenning.core.model.ModelWrapper.__abstractmethods__", set())
     def test_core_modelwrapper_to_previous_block(self):
@@ -38,4 +38,4 @@ class TestModelWRapperDataConverter:
         ):
             converter = ModelWrapperDataConverter(model)
             assert converter.to_previous_block(1) == 2
-            assert model._postprocess_outputs.called_once_with(1)
+            model._postprocess_outputs.assert_called_once_with(1)

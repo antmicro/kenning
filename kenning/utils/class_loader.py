@@ -680,8 +680,7 @@ def get_classes(class_name: Optional[str] = None) -> List[Tuple[str, str]]:
         subclasses_dict[base_classes[base_class][1]] = [
             f"{module}.{cls_name}"
             for cls_name, module in subclasses
-            if not cls_name.startswith("_")
-            and (class_name is None or cls_name == class_name)
+            if class_name is None or cls_name == class_name
         ]
 
     # Generate the resulting output based on base_classes.

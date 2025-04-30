@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import os
 from pathlib import Path
 from typing import Type
 
@@ -32,6 +33,13 @@ MODELWRAPPER_SUBCLASSES = get_all_subclasses(
 MODELWRAPPER_SUBCLASSES = [
     cls for cls in MODELWRAPPER_SUBCLASSES if not issubclass(cls, LLM)
 ]
+
+# mock ai8x tools paths
+if "AI8X_TRAINING_PATH" not in os.environ:
+    os.environ["AI8X_TRAINING_PATH"] = "."
+
+if "AI8X_SYNTHESIS_PATH" not in os.environ:
+    os.environ["AI8X_SYNTHESIS_PATH"] = "."
 
 
 @pytest.fixture(autouse=True, scope="module")

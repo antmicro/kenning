@@ -36,6 +36,7 @@ from kenning.cli.completers import (
     RUNTIMES,
     ClassPathCompleter,
 )
+from kenning.core.automl import AutoML
 from kenning.scenarios.inference_tester import (
     DEFAULT_GROUP,
     FLAG_CONFIG,
@@ -274,6 +275,9 @@ class AutoMLCommand(InferenceTester):
 
         # Set all available measurement for comparison report
         args.measurements = measurements
+        args.automl_stats = (
+            automl_runner.autoML.output_directory / AutoML.STATS_FILE_NAME
+        )
         args.model_names = model_names
         if not run_pipeline:
             return 0

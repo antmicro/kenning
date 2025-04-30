@@ -19,6 +19,7 @@ from typing import (
     Generator,
     Iterable,
     List,
+    Literal,
     Optional,
     Tuple,
     Union,
@@ -2357,6 +2358,10 @@ class LinePlot(Plot):
         height: int = DEFAULT_PLOT_SIZE,
         colors: Optional[List] = None,
         color_offset: int = 0,
+        x_scale: Literal["linear", "log"] = "linear",
+        y_scale: Literal["linear", "log"] = "linear",
+        dashed: Optional[List[bool]] = None,
+        add_points: bool = False,
     ):
         """
         Create line plot.
@@ -2386,6 +2391,15 @@ class LinePlot(Plot):
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
+        x_scale : Literal["linear", "log"]
+            The scale of the x-axis.
+        y_scale : Literal["linear", "log"]
+            The scale of the y-axis.
+        dashed : Optional[List[bool]]
+            Whether lines should be dashed (by default false). It has to be
+            the same length as lines.
+        add_points : bool
+            Whether data should be marked with points.
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -2398,6 +2412,15 @@ class LinePlot(Plot):
         self.y_label = y_label if y_unit is None else f"{y_label} [{y_unit}]"
         self.lines = lines
         self.lines_labels = lines_labels
+        self.x_scale = x_scale
+        self.y_scale = y_scale
+        self.add_points = add_points
+        self.dashed = dashed
+        if self.dashed is None:
+            self.dashed = [False for _ in self.lines]
+        assert len(self.dashed) == len(
+            self.lines
+        ), "`dashed` has to be defined for each line"
 
     def plot_matplotlib(
         self, output_path: Optional[Path], output_formats: Iterable[str]
@@ -2406,12 +2429,26 @@ class LinePlot(Plot):
 
         bbox_extra = []
 
-        for color, (x, y) in zip(self.colors, self.lines):
-            plt.plot(x, y, c=color, linewidth=3)
+        marker = "." if self.add_points else None
+        for color, (x, y), dashed in zip(self.colors, self.lines, self.dashed):
+            if dashed:
+                plt.plot(
+                    x,
+                    y,
+                    c=color,
+                    linewidth=2,
+                    marker=marker,
+                    linestyle="dashed",
+                    fillstyle="none",
+                )
+            else:
+                plt.plot(x, y, c=color, linewidth=2, marker=marker)
 
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
         plt.grid()
+        plt.xscale(self.x_scale)
+        plt.yscale(self.y_scale)
         if self.title:
             bbox_extra.append(plt.title(self.title))
         ncols = 2
@@ -2439,7 +2476,7 @@ class LinePlot(Plot):
     def plot_bokeh(
         self, output_path: Optional[Path], output_formats: Iterable[str]
     ):
-        from bokeh.models import Legend
+        from bokeh.models import Legend, Range1d
         from bokeh.plotting import column, figure
 
         plot_fig = figure(
@@ -2458,17 +2495,55 @@ class LinePlot(Plot):
             height_policy="max",
             width_policy="auto",
             css_classes=["plot"],
+            x_axis_type=self.x_scale,
+            y_axis_type=self.y_scale,
         )
         plot_fig.toolbar.logo = None
 
         renderers = [
-            plot_fig.line(x, y, color=color, line_width=2.0)
-            for color, (x, y) in zip(self.colors, self.lines)
+            [
+                plot_fig.line(
+                    x,
+                    y,
+                    color=color,
+                    line_width=2.0,
+                    line_dash="dashed" if dashed else "solid",
+                ),
+            ]
+            + (
+                [
+                    plot_fig.scatter(
+                        x,
+                        y,
+                        color=color,
+                        size=6 if dashed else 4,
+                        fill_alpha=0.0 if dashed else 1.0,
+                    ),
+                ]
+                if self.add_points
+                else []
+            )
+            for color, (x, y), dashed in zip(
+                self.colors, self.lines, self.dashed
+            )
         ]
+        # Adjust range of x-axis
+        x_min = min(
+            min([x for x in xs if not np.isnan(x)], default=float("inf"))
+            for xs, _ in self.lines
+        )
+        x_max = max(
+            max([x for x in xs if not np.isnan(x)], default=float("-inf"))
+            for xs, _ in self.lines
+        )
+        diff = (x_max - x_min) * 0.05
+        if diff < 1e-8:
+            diff = 0.25
+        plot_fig.x_range = Range1d(x_min - diff, x_max + diff)
 
         if self.lines_labels is not None:
             legend_data = [
-                (label, [renderer])
+                (label, renderer)
                 for label, renderer in zip(self.lines_labels, renderers)
             ]
             # Line width + margin + padding + label width
@@ -2513,13 +2588,9 @@ class LinePlot(Plot):
             legend_fig.xaxis.visible = False
             legend_fig.yaxis.visible = False
             legend_fig.outline_line_alpha = 0.0
-            legend_fig.renderers += [
-                legend_item[1][0] for legend_item in legend_data
-            ]
-            [
-                legend_fig.add_layout(legend, place="right")
-                for legend in legends
-            ]
+            for legend_item in legend_data:
+                legend_fig.renderers.extend(legend_item[1])
+            [legend_fig.add_layout(legend) for legend in legends]
 
             plot_fig = column(
                 children=[plot_fig, legend_fig], sizing_mode="scale_both"
@@ -2547,6 +2618,7 @@ class Barplot(Plot):
         height: int = DEFAULT_PLOT_SIZE * 5 // 6,
         colors: Optional[List] = None,
         color_offset: int = 0,
+        vertical_x_labels: bool = True,
     ):
         """
         Create barplot.
@@ -2577,6 +2649,8 @@ class Barplot(Plot):
             List with colors which should be used to draw plots.
         color_offset : int
             How many colors from default color list should be skipped.
+        vertical_x_labels : bool
+            Whether labels on x-axis should be vertiacal.
         """
         if colors is None:
             colors = self._get_comparison_color_scheme(
@@ -2589,6 +2663,10 @@ class Barplot(Plot):
         self.y_label = y_label if y_unit is None else f"{y_label} [{y_unit}]"
         self.x_data = x_data
         self.y_data = y_data
+        combined_data = []
+        for v in y_data.values():
+            combined_data.extend(v)
+        self.y_data_std = np.std(combined_data)
         self.max_bars_matplotlib = max_bars_matplotlib
         self.bar_width = 0.8 / len(self.y_data)
         if len(self.y_data) == 1:
@@ -2599,6 +2677,7 @@ class Barplot(Plot):
                 0.4 - self.bar_width / 2,
                 len(self.y_data),
             ).tolist()
+        self.vertical_x_labels = vertical_x_labels
 
     def plot_matplotlib(
         self, output_path: Optional[Path], output_formats: Iterable[str]
@@ -2626,7 +2705,8 @@ class Barplot(Plot):
                 label=label,
             )
 
-        plt.xticks(x_range, x_data, rotation=90)
+        if self.vertical_x_labels:
+            plt.xticks(x_range, x_data, rotation=90)
         plt.xlabel(self.x_label)
         plt.ylabel(self.y_label)
         plt.ticklabel_format(style="plain", axis="y")
@@ -2656,10 +2736,16 @@ class Barplot(Plot):
         from bokeh.plotting import figure
         from bokeh.transform import dodge
 
+        y_max = max([max(y) for y in self.y_data.values()]) * 1.01
+        y_min = 0
+        # If data have similar values, decrease range
+        if self.y_data_std / y_max < 0.1:
+            y_min = max(min([min(y) for y in self.y_data.values()]) * 0.95, 0)
+
         barplot_fig = figure(
             title=self.title,
             x_range=self.x_data,
-            y_range=Range1d(0, max([max(y) for y in self.y_data.values()])),
+            y_range=Range1d(y_min, y_max),
             tools="pan,box_zoom,wheel_zoom,reset,save",
             toolbar_location="above",
             width=self.width,
@@ -2705,7 +2791,8 @@ class Barplot(Plot):
                 )
             )
 
-        barplot_fig.xaxis.major_label_orientation = "vertical"
+        if self.vertical_x_labels:
+            barplot_fig.xaxis.major_label_orientation = "vertical"
 
         self._output_bokeh_figure(barplot_fig, output_path, output_formats)
 

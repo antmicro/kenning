@@ -10,6 +10,19 @@
   max-width: none
 }
 
+/* Proper aligning of table columns */
+td.text-right {
+  text-align: right !important;
+}
+
+td.text-center {
+  text-align: center !important;
+}
+
+td.text-left {
+  text-align: left !important;
+}
+
 /* Custom colors */
 .compatible {
   color: var(--md-primary-fg-color) !important;

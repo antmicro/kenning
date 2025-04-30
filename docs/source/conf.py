@@ -145,6 +145,7 @@ html_static_path = ["_static"]
 
 html_css_files = [
     "css/bokeh.css",
+    "css/compatibility.css",
 ]
 
 # -- Options for HTMLHelp output ---------------------------------------------

@@ -36,7 +36,7 @@ dependencies = [
     "scikit_learn>=0.24.1",
     "scipy",
     "tomli; python_version<'3.11'",
-    "tqdm>=4.56.2",
+    "tqdm>=4.60.0",
     "datasets",
     "pyyaml",
 ]

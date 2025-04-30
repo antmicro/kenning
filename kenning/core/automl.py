@@ -290,6 +290,9 @@ class AutoML(ArgumentsHandler, ABC):
         },
     }
 
+    # File name for the JSON with AutoML statistics
+    STATS_FILE_NAME = "automl_statistics.json"
+
     def __init__(
         self,
         dataset: Dataset,
@@ -398,6 +401,36 @@ class AutoML(ArgumentsHandler, ABC):
         ------
         Dict
             Configuration for found models (from the best one).
+        """
+        ...
+
+    @abstractmethod
+    def get_statistics(self) -> Dict[str, Union[int, float]]:
+        """
+        Returns statistic of the AutoML flow,
+        like number of successful or crashed runs.
+
+        The created dictionary has to contain
+        "general_info" - mapping of statisctics descriptions and values.
+
+        Optional fields:
+        * "trained_model_metrics" - mapping of models to dictionaries
+          with datasets and metrics of trained models,
+        * "training_data" - mapping of models to losses from different
+          parts of training, containing dictionaries with timestamps
+          and loss values (averaged from batch or whole epoch). Possible
+          parts of training: "training", "training_epoch", "validation",
+          "validation_epoch", "test" and "test_epoch",
+        * "training_start_time" - mapping of models to a list of times,
+          marking the beginning of trainings,
+        * "model_params" - mapping of models to dictionaries with parameters
+          descriptions and values.
+
+        Returns
+        -------
+        Dict[str, Union[int, float]]
+            Dictionary with AutoML statistics,
+            keys should describe given statistic.
         """
         ...
 

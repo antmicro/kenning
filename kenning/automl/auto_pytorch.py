@@ -6,6 +6,7 @@
 Provides an API for AutoML flow with AutoPyTorch framework.
 """
 
+from collections import defaultdict
 from copy import copy
 from multiprocessing import cpu_count
 from pathlib import Path
@@ -876,6 +877,110 @@ class AutoPyTorchML(AutoML):
                     mod_cls.prepare_config(pipeline.config),
                 )
 
+    def get_statistics(self) -> str:
+        from autoPyTorch.pipeline.components.training.metrics.metrics import (
+            CLASSIFICATION_METRICS,
+        )
+        from autoPyTorch.utils.results_manager import cost2metric
+
+        stats = self._api.get_statistics()
+        # Get metrics of trained models
+        metrics_over_time = {}
+        additional_info = {}
+        for run_key, run_hist in self._api.run_history.items():
+            if "num_run" not in run_hist.additional_info:
+                KLogger.warning(
+                    "`num_run` missing in run history "
+                    f"with status {run_hist.status}"
+                )
+                continue
+            num_run = int(run_hist.additional_info["num_run"])
+            metrics_over_time[num_run] = {
+                # Change losses to metrics
+                k: {
+                    m: cost2metric(v, CLASSIFICATION_METRICS[m])
+                    for m, v in run_hist.additional_info[f"{k}_loss"].items()
+                }
+                for k in ("train", "opt", "test")
+            }
+            additional_info[num_run] = run_hist.additional_info
+
+        # Get data from training with Tensorboard
+        training_data = defaultdict(lambda: defaultdict(dict))
+        training_start_time = defaultdict(list)
+        model_params = defaultdict(lambda: defaultdict(dict))
+        model_prefix = "Model/"
+        EVENT_TO_NAME = {
+            "Train/loss": "training",
+            "Train/epoch/avg_loss": "training_epoch",
+            "Val/loss": "validation",
+            "Val/epoch/avg_loss": "validation_epoch",
+            "Test/loss": "test",
+            "Test/epoch/avg_loss": "test_epoch",
+        }
+        try:
+            from tensorflow.core.util import event_pb2
+            from tensorflow.data import TFRecordDataset
+            from tensorflow.python.framework.errors_impl import DataLossError
+
+            for events_file in Path(self._api._temporary_directory).glob(
+                "events.out.tfevents.*"
+            ):
+                num_run = None
+                KLogger.debug(events_file)
+                try:
+                    for event in TFRecordDataset(str(events_file)):
+                        event = event_pb2.Event.FromString(event.numpy())
+                        # Retrieve num_run as a model ID
+                        if num_run is None:
+                            for e_val in event.summary.value:
+                                if e_val.tag == "num_run":
+                                    num_run = int(e_val.simple_value)
+                                    training_start_time[num_run].append(
+                                        event.wall_time
+                                    )
+                                    break
+                        # Gather metadata and data from training
+                        else:
+                            for e_val in event.summary.value:
+                                if e_val.tag.startswith(model_prefix):
+                                    v = e_val.simple_value
+                                    if abs(v - int(v)) < 1e-8:
+                                        v = int(v)
+                                    model_params[num_run][
+                                        e_val.tag[len(model_prefix) :]
+                                    ] = v
+                                else:
+                                    training_data[num_run][
+                                        EVENT_TO_NAME[e_val.tag]
+                                    ][event.wall_time] = e_val.simple_value
+                except DataLossError:
+                    KLogger.warning(f"Possible data loss in {events_file}")
+                    continue
+        except ImportError:
+            KLogger.warning(
+                "Cannot import data from tensorboard,"
+                " please install tensorflow"
+            )
+        return {
+            "general_info": {
+                "Optimized metric": self._api._metric.name,
+                "The number of generated models": stats["runs"],
+                "The number of trained and evaluated models": stats["success"],
+                "The number of models that caused a crash": stats["crash"],
+                "The number of models that failed due to the timeout": stats[
+                    "timeout"
+                ],
+                "The number of models that failed due to the too large size": stats[  # noqa: E501
+                    "memout"
+                ],
+            },
+            "trained_model_metrics": metrics_over_time,
+            "training_start_time": training_start_time,
+            "model_params": model_params,
+            "additional_info": additional_info,
+        } | ({"training_data": training_data} if training_data else {})
+
     def get_best_configs(self) -> Iterable[Dict]:
         import torch
         from smac.tae import StatusType
@@ -921,7 +1026,7 @@ class AutoPyTorchML(AutoML):
             self.best_configs.append(kenning_conf)
             yield kenning_conf
 
-    def pre_training_callback(self, data: Dict) -> None:
+    def pre_training_callback(self, data: Dict) -> Optional[float]:
         """
         Function called by AutoPyTorch right before training.
 
@@ -929,6 +1034,11 @@ class AutoPyTorchML(AutoML):
         ----------
         data : Dict
             The AutoPyTorch trainer data.
+
+        Returns
+        -------
+        Optional[float]
+            The model size after optimizations.
 
         Raises
         ------
@@ -1000,3 +1110,4 @@ class AutoPyTorchML(AutoML):
                 f"Model size ({model_size} KB) larger "
                 f"than maximum ({self.max_model_size} KB)"
             )
+        return model_size

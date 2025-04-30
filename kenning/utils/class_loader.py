@@ -648,50 +648,6 @@ def load_class(module_path_or_name: str) -> Type:
     return cls
 
 
-def get_classes(class_name: Optional[str] = None) -> List[Tuple[str, str]]:
-    """
-    Get names with their module paths of classes available in Kenning.
-
-    Parameters
-    ----------
-    class_name : Optional[str], optional
-        Name of the class to find.
-        If None, all classes are returned.
-        By default, None.
-
-
-    Returns
-    -------
-    List[Tuple[str, str]]
-        A list of classes and corresponding module paths.
-    """
-    base_classes = get_base_classes_dict()
-    subclasses_dict = {}
-
-    # Populate subclasses_dict with non-private subclasses.
-    for base_class in base_classes:
-        subclasses = get_all_subclasses(
-            module_path=base_classes[base_class][0],
-            cls=base_classes[base_class][1],
-            raise_exception=False,
-            import_classes=False,
-        )
-
-        subclasses_dict[base_classes[base_class][1]] = [
-            f"{module}.{cls_name}"
-            for cls_name, module in subclasses
-            if class_name is None or cls_name == class_name
-        ]
-
-    # Generate the resulting output based on base_classes.
-    return [
-        (subclass.rsplit(".", 1)[0], subclass.rsplit(".", 1)[1])
-        for base_class in base_classes
-        if base_classes[base_class][1] in subclasses_dict
-        for subclass in subclasses_dict[base_classes[base_class][1]]
-    ]
-
-
 def is_class_name(name: str) -> bool:
     """
     Check if `name` is a valid class name.
@@ -733,24 +689,33 @@ def get_module_path(class_name: str) -> str:
     ModuleNotFoundError
         Raised if there is no class matching `class_name`.
     """
-    matching_classes = get_classes(class_name)
-    matching_classes_count = len(matching_classes)
-    if matching_classes_count > 1:
-        raise ModuleNotFoundError(
-            f"More than one class matches {class_name!r}."
-            "Provide a full module path, instead."
+    matching_paths: List[str] = []
+    for block_name in get_base_classes_dict().keys():
+        cls = load_class_by_type(
+            path=class_name, block_type=block_name, log_errors=False
         )
-    if matching_classes_count < 1:
+        if cls:
+            matching_paths.append(cls.__module__)
+
+    matching_paths_count = len(matching_paths)
+    if matching_paths_count < 1:
         raise ModuleNotFoundError(
             f"None of the classes match {class_name!r}."
             "Check the class name for typos or provide a full module path."
         )
-    [(module_path, _)] = matching_classes
+    if matching_paths_count > 1:
+        raise ModuleNotFoundError(
+            f"More than one class matches {class_name!r}."
+            "Provide a full module path, instead."
+        )
+    [module_path] = matching_paths
     return module_path
 
 
 def load_class_by_type(
-    path: Optional[str], block_type: Optional[str] = None
+    path: Optional[str],
+    block_type: Optional[str] = None,
+    log_errors: bool = True,
 ) -> Optional[Type]:
     """
     Loads the class based on its name and type, or using full path.
@@ -762,6 +727,10 @@ def load_class_by_type(
     block_type : Optional[str]
         Type of Kenning block, i.e. "optimizers", "platforms". If specified
         then type in config does not require to specify full class path.
+    log_errors : bool
+        Whether errors should be logged. By default, True.
+        Useful to turn off to prevent logging false positives
+        when looking for a class across modules.
 
     Returns
     -------
@@ -787,13 +756,16 @@ def load_class_by_type(
                 cls_type = f"{subcls_module_path}.{subcls_name}"
                 break
 
-        if cls_type is None:
+        if cls_type is None and log_errors:
             KLogger.error(f"Could not find class of {path}")
     else:
         cls_type = path
 
     if cls_type is not None:
-        return load_class(cls_type)
+        module_path, class_name = cls_type.rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        cls = getattr(module, class_name)
+        return cls
     return None
 
 

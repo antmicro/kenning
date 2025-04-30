@@ -7,6 +7,7 @@ Provides runner for AutoML flow.
 """
 
 import argparse
+import json
 from copy import deepcopy
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Tuple
@@ -89,6 +90,8 @@ class AutoMLRunner(object):
         and saved to the output directory defined
         in AutoML object.
 
+        It also dumps the statistics gather during the AutoML run.
+
         Parameters
         ----------
         verbosity : str
@@ -104,10 +107,17 @@ class AutoMLRunner(object):
         self.autoML.prepare_framework()
         KLogger.debug("Running AutoML search")
         self.autoML.search()
-        KLogger.info(str(self.autoML._api.sprint_statistics()))
+        stats = self.autoML.get_statistics()
+        KLogger.info(
+            f"AutoML stats:\n{json.dumps(stats['general_info'], indent=2)}"
+        )
 
         out_dir = self.autoML.output_directory
+        # Dump statistics from the run
+        with (out_dir / AutoML.STATS_FILE_NAME).open("w") as fd:
+            json.dump(stats, fd)
 
+        # Get best models and prepare their configurations
         for i, conf in enumerate(self.autoML.get_best_configs()):
             conf = deepcopy(self.pipeline_config | conf)
             model_wrapper_path = conf["model_wrapper"]["parameters"][

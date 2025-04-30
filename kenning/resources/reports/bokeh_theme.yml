@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2023 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -26,4 +26,8 @@ attrs:
     border_line_alpha: 0.0
   Label:
     text_color: *text_color
+  LabelSet:
+    text_color: *text_color
+  Span:
+    line_color: *text_color
 

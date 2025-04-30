@@ -46,14 +46,17 @@ EXPECTED_FAIL = [
     ("PHI2", "AWQOptimizer"),
     ("PHI2", "GPTQOptimizer"),
     ("PHI2", "GPTQSparseGPTOptimizer"),
+    ("PyTorchAnomalyDetectionVAE", "Ai8xCompiler"),
     ("PyTorchAnomalyDetectionVAE", "NNIPruningOptimizer"),
     ("PyTorchAnomalyDetectionVAE", "ONNXCompiler"),
     ("PyTorchAnomalyDetectionVAE", "TFLiteCompiler"),
     ("PyTorchAnomalyDetectionVAE", "TVMCompiler"),
+    ("PyTorchCOCOMaskRCNN", "Ai8xCompiler"),
     ("PyTorchCOCOMaskRCNN", "NNIPruningOptimizer"),
     ("PyTorchCOCOMaskRCNN", "ONNXCompiler"),
     ("PyTorchCOCOMaskRCNN", "TFLiteCompiler"),
     ("PyTorchCOCOMaskRCNN", "TVMCompiler"),
+    ("PyTorchPetDatasetMobileNetV2", "Ai8xCompiler"),
     ("PyTorchPetDatasetMobileNetV2", "NNIPruningOptimizer"),
     ("PyTorchPetDatasetMobileNetV2", "ONNXCompiler"),
     ("PyTorchPetDatasetMobileNetV2", "TFLiteCompiler"),
@@ -119,6 +122,7 @@ def prepare_objects(
             model.save_to_onnx(model.model_path)
         else:
             model.save_model(model.model_path)
+    model.save_io_specification(model.model_path)
 
     kwargs = {}
     if optimizer_cls not in (GPTQOptimizer, GPTQSparseGPTOptimizer):

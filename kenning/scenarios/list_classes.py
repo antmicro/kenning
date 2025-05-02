@@ -12,7 +12,8 @@ import argparse
 import errno
 import os
 import sys
-from typing import List, Optional, Tuple
+from functools import cache
+from typing import List, Optional, Tuple, Type
 
 from argcomplete.completers import ChoicesCompleter
 
@@ -40,6 +41,41 @@ from kenning.utils.class_loader import (
     get_all_subclasses,
     get_base_classes_dict,
 )
+
+
+@cache
+def get_subclasses_dict(base_classes: List[str]) -> dict[Type, List[str]]:
+    """
+    Get subclasses of the provided base classes.
+
+    Parameters
+    ----------
+    base_classes : List[str]
+        A list of base classes, for which subclasses will be listed.
+
+    Returns
+    -------
+    dict[Type, List[str]]
+        Dictionary with base classes as keys and a list
+        of corresponding subclasses as values (in a textual form).
+    """
+    subclasses_dict = {}
+    kenning_base_classes = get_base_classes_dict()
+
+    for base_class in base_classes:
+        subclasses = get_all_subclasses(
+            module_path=kenning_base_classes[base_class][0],
+            cls=kenning_base_classes[base_class][1],
+            raise_exception=False,
+            import_classes=False,
+        )
+
+        subclasses_dict[kenning_base_classes[base_class][1]] = [
+            f"{module}.{class_name}"
+            for class_name, module in subclasses
+            if not class_name[0].startswith("_")
+        ]
+    return subclasses_dict
 
 
 def list_classes(
@@ -70,25 +106,10 @@ def list_classes(
         List of formatted strings to be printed out later
     """
     kenning_base_classes = get_base_classes_dict()
-
-    subclasses_dict = {}
+    subclasses_dict = get_subclasses_dict(base_classes)
 
     # list of strings to be printed later
     resulting_output = []
-
-    for base_class in base_classes:
-        subclasses = get_all_subclasses(
-            module_path=kenning_base_classes[base_class][0],
-            cls=kenning_base_classes[base_class][1],
-            raise_exception=False,
-            import_classes=False,
-        )
-
-        subclasses_dict[kenning_base_classes[base_class][1]] = [
-            f"{module}.{class_name}"
-            for class_name, module in subclasses
-            if class_name[0] != "_"
-        ]
 
     for base_class in base_classes:
         if kenning_base_classes[base_class][1] not in subclasses_dict.keys():

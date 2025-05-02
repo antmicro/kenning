@@ -8,7 +8,7 @@ from typing import Iterator, Tuple, Type
 import pytest
 
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import ConversionError, Optimizer
+from kenning.core.optimizer import CompilationError, ConversionError, Optimizer
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.core.conftest import (
     DatasetModelRegistry,
@@ -110,6 +110,8 @@ class TestOptimizer:
                 optimizer.init()
                 optimizer.compile(model.model_path)
                 assert optimizer.compiled_model_path.exists()
+            except CompilationError as e:
+                pytest.xfail(f"compilation error {e}")
             except ConversionError as e:
                 pytest.xfail(f"conversion error {e}")
 

@@ -263,11 +263,7 @@ def setup_base_parser(
     sequences.add(
         (
             AUTOML,
-            tuple(
-                sequence
-                for sequence in sequences
-                if TRAIN not in sequence and sequence[0] != "report"
-            ),
+            tuple(sequence for sequence in sequences if TRAIN not in sequence),
         )
     )
     for sequence in sorted(sequences, key=lambda x: x[0]):

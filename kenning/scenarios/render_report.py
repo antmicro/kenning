@@ -2683,11 +2683,12 @@ class RenderReport(CommandTemplate):
             help="Name of the report",
             type=str,
         )
+        is_report_path_required = "automl" not in types
         other_group.add_argument(
             "--report-path",
             help="Path to the output MyST file",
             type=Path,
-            required=True,
+            required=is_report_path_required,
         )
         other_group.add_argument(
             "--to-html",

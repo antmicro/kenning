@@ -14,14 +14,17 @@ It requires implementations of two classes as input:
 """
 
 import argparse
+import os
+import shutil
 import sys
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import yaml
 
 from kenning.cli.command_template import (
     OPTIMIZE,
+    REPORT,
     TEST,
     TRAIN,
     ArgumentsGroups,
@@ -48,7 +51,96 @@ from kenning.utils.class_loader import (
     get_command,
     load_class_by_type,
 )
+from kenning.utils.logger import KLogger
 from kenning.utils.pipeline_runner import PipelineRunner
+
+
+class AutoMLCache:
+    """
+    AutoML cache management class.
+    """
+
+    def _condition_run(func):
+        """
+        Conditions method execution based on AutoMLCache.cache_path presents.
+        """
+
+        def wrapper(*args, **kwargs):
+            if AutoMLCache.cache_path is not None:
+                return func(*args, **kwargs)
+
+        return wrapper
+
+    cache_path: Union[Path, None] = None
+
+    @_condition_run
+    @staticmethod
+    def ensure_created():
+        """
+        Creates cache directory or does nothing if it already exists.
+        """
+        if not AutoMLCache.cache_path.exists():
+            AutoMLCache.cache_path.mkdir(exist_ok=True)
+
+    @_condition_run
+    @staticmethod
+    def clean():
+        """
+        Walks through all files in cache directory and deets deletes them.
+        """
+        try:
+            shutil.rmtree(AutoMLCache.cache_path, ignore_errors=False)
+        except Exception as ex:
+            KLogger.warning(f"Unable to clean automl cache. Error: {ex}")
+
+    @_condition_run
+    @staticmethod
+    def files():
+        """
+        Yields cached file paths for easy iteration.
+        """
+        for root, dirs, files in os.walk(
+            str(AutoMLCache.cache_path), topdown=False
+        ):
+            for name in files:
+                yield Path(root) / name
+
+    @_condition_run
+    @staticmethod
+    def save(source_path):
+        """
+        Caches file by creating a symlink to given 'source_path'.
+        """
+        try:
+            (AutoMLCache.cache_path / source_path.name).symlink_to(
+                source_path.resolve()
+            )
+        except NotImplementedError as ex:
+            KLogger.warning(
+                f"Unable to save item into automl cache. Error: {ex}"
+            )
+
+    @_condition_run
+    @staticmethod
+    def delete(path):
+        """
+        Deletes file from the cache directory.
+        """
+        try:
+            (AutoMLCache.cache_path / path.resolve().name).unlink()
+        except FileNotFoundError as ex:
+            KLogger.warning(
+                f"Unable to remove item from automl cache. Error: {ex}"
+            )
+
+
+class AutoMLCacheError(Exception):
+    """
+    Raised when unable to fill AutoMLCache path attribute
+    and '--use-previous-results' flag is given.
+    """
+
+    ...
 
 
 class AutoMLCommand(InferenceTester):
@@ -97,21 +189,26 @@ class AutoMLCommand(InferenceTester):
             action="store_true",
         )
 
+        # Exclude the flag for a case without further subcommands
+        if len(types) != 1:
+            other_group.add_argument(
+                "--use-previous-results",
+                help="Provide necessary resources for automl optimization/evaluation/report preparation based on the previous latest automl results and therefore skip automl search",  # noqa: E501
+                action="store_true",
+            )
+
         return parser, groups
 
     @staticmethod
     def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
-
         flag_config_names = [
             "automl_cls",
-            "platform_cls",
             "dataset_cls",
-            "compiler_cls",
-            "runtime_cls",
-            "protocol_cls",
         ]
+
         args = AutoMLCommand.prepare_args(args, flag_config_names)
+
         if args.json_cfg:
             if args.help:
                 raise ParserHelpException
@@ -192,7 +289,6 @@ class AutoMLCommand(InferenceTester):
         if args.help:
             raise ParserHelpException(parser)
         args = parser.parse_args(not_parsed, namespace=args)
-
         platform = platformcls.from_argparse(args) if platformcls else None
         dataset = datasetcls.from_argparse(args) if datasetcls else None
         automl = (
@@ -233,36 +329,110 @@ class AutoMLCommand(InferenceTester):
     ):
         from kenning.cli.config import get_used_subcommands
 
-        best_configs = automl_runner.run(
-            args.verbosity,
-        )
-
         subcommands = get_used_subcommands(args)
         measurements = []
         model_names = []
         rets = []
         run_pipeline = bool({OPTIMIZE, TEST}.intersection(subcommands))
+        use_previous_results = (
+            args.use_previous_results if len(subcommands) > 1 else None
+        )
         n_valid_models = 0
+
+        run_benchmarks = TEST in subcommands
+        run_optimizations = None
+
+        AutoMLCache.cache_path = (
+            automl_runner.autoML.output_directory / ".cache"
+        ).resolve()
+
+        AutoMLCache.ensure_created()
+
+        if use_previous_results:
+            paths_cfgs = []
+            for file in AutoMLCache.files():
+                if str(file.name).startswith("automl_conf_"):
+                    with open(file, "r") as f:
+                        cfg = yaml.safe_load(f)
+                    paths_cfgs.append((AutoMLCache.cache_path / file, cfg))
+
+            def paths_cfgs_provider(*arg):
+                yield from paths_cfgs
+
+            automl_runner.run = paths_cfgs_provider
+        else:
+            AutoMLCache.clean()
+
+        # Run method can be overridden by cache
+        # and return results from previous runs
+        best_configs = automl_runner.run(
+            args.verbosity,
+        )
+
+        # Manage automl cache dir
+        if use_previous_results and run_benchmarks:
+            for file in AutoMLCache.files():
+                if "measurements" in str(file):
+                    AutoMLCache.delete(file)
+
         for path, conf in best_configs:
+            if not use_previous_results:
+                AutoMLCache.save(path)
+
             model_path = Path(
                 conf[ConfigKey.model_wrapper.name]["parameters"]["model_path"]
             )
-            if TEST in subcommands:
-                measurements.append(
-                    str(model_path.with_suffix(".measurements.json"))
-                )
+            if run_benchmarks or REPORT in subcommands:
                 model_names.append(path.stem)
-                args.measurements = [measurements[-1]]
+                if run_benchmarks:
+                    measurements.append(
+                        str(model_path.with_suffix(".measurements.json"))
+                    )
+                    args.measurements = [measurements[-1]]
+
             # Run InferenceTester flow - optimization and evaluation
             if run_pipeline:
                 pipeline_runner = PipelineRunner.from_json_cfg(
                     conf,
                     cfg_path=path,
                 )
+
+                run_optimizations = (
+                    OPTIMIZE in subcommands
+                    and len(pipeline_runner.optimizers) > 0
+                )
+
                 try:
                     ret = InferenceTester._run_pipeline(
                         args, command, pipeline_runner
                     )
+
+                    # Manage automl cache dir
+                    if run_benchmarks:
+                        measurements_path = Path(
+                            args.measurements[-1]
+                        ).resolve()
+                        AutoMLCache.save(measurements_path)
+
+                    test_output = (
+                        args.measurements[-1]
+                        if args.measurements[-1]
+                        else None
+                    )
+                    evaluate_unoptimized = getattr(
+                        args, "evaluate_unoptimized", False
+                    )
+                    if (
+                        evaluate_unoptimized
+                        and not ret
+                        and test_output
+                        and run_optimizations
+                    ):
+                        unoptimized_output = test_output.parent / (
+                            "unoptmized_" + test_output.name
+                        )
+                        AutoMLCache.save(unoptimized_output)
+
                 except Exception:
                     ret = 1
                     measurements.pop(-1)
@@ -273,10 +443,35 @@ class AutoMLCommand(InferenceTester):
                 if n_valid_models >= automl_runner.autoML.n_best_models:
                     break
 
+        if not use_previous_results:
+            AutoMLCache.save(
+                automl_runner.autoML.output_directory / AutoML.STATS_FILE_NAME
+            )
+
+        # In case of 'kenning automl report ...'
+        if use_previous_results and REPORT in subcommands:
+            if not args.report_path:
+                raise argparse.ArgumentError(
+                    None, "'--report_path' needs to be provided."
+                )
+
+            if not measurements:
+                for file in AutoMLCache.files():
+                    if "measurements" in file.name:
+                        measurements.append(file)
+
+            if not measurements:
+                raise argparse.ArgumentError(
+                    None,
+                    "'report' with '--use-previous-results' used, but no measurements found in cache.",  # noqa: E501
+                )
+
         # Set all available measurement for comparison report
         args.measurements = measurements
         args.automl_stats = (
-            automl_runner.autoML.output_directory / AutoML.STATS_FILE_NAME
+            AutoMLCache.cache_path / AutoML.STATS_FILE_NAME
+            if use_previous_results
+            else automl_runner.autoML.output_directory / AutoML.STATS_FILE_NAME
         )
         args.model_names = model_names
         if not run_pipeline:

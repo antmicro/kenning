@@ -13,6 +13,7 @@ from pathlib import Path
 from typing import Dict, List, Literal, Optional, Tuple, Type, Union
 
 from kenning.core.dataset import Dataset
+from kenning.core.helpers.utils import _get_model_size
 from kenning.core.model import ModelWrapper
 from kenning.core.platform import Platform
 from kenning.utils.args_manager import ArgumentsHandler
@@ -445,24 +446,21 @@ class Optimizer(ArgumentsHandler, ABC):
         """
         Returns the optimized model size.
 
-        By default, the size of file with optimized model is returned.
+        By default, the size of file with optimized
+        model is returned.
 
         Returns
         -------
         float
             The size of the optimized model in KB.
-
-        Raises
-        ------
-        OptimizedModelSizeError
-            If model size cannot be retrieved.
         """
-        if not self.compiled_model_path.exists():
-            raise OptimizedModelSizeError(
+        return _get_model_size(
+            self.compiled_model_path,
+            OptimizedModelSizeError(
                 "Compiled model path does not exist:"
                 f" {self.compiled_model_path}"
-            )
-        return self.compiled_model_path.stat().st_size / 1024
+            ),
+        )
 
     def read_platform(self, platform: Platform):
         """

@@ -15,6 +15,7 @@ from urllib.request import HTTPError
 import numpy as np
 
 from kenning.core.dataset import Dataset
+from kenning.core.helpers.utils import _get_model_size
 from kenning.core.measurements import (
     Measurements,
     MeasurementsCollector,
@@ -27,6 +28,14 @@ from kenning.interfaces.io_interface import IOInterface
 from kenning.utils.args_manager import ArgumentsHandler, get_parsed_json_dict
 from kenning.utils.logger import LoggerProgressBar, TqdmCallback
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
+
+class ModelSizeError(Exception):
+    """
+    Exception raised when retrieving size of the model failed.
+    """
+
+    pass
 
 
 class VariableBatchSizeNotSupportedError(Exception):
@@ -655,3 +664,19 @@ class ModelWrapper(IOInterface, ArgumentsHandler, ABC):
             object with platform details
         """
         ...
+
+    def get_model_size(self) -> float:
+        """
+        Returns the model size.
+
+        By default, the size of file with model is returned.
+
+        Returns
+        -------
+        float
+            The size of the optimized model in KB.
+        """
+        return _get_model_size(
+            self.model_path,
+            ModelSizeError("Model path does not exist:" f"{self.model_path}"),
+        )

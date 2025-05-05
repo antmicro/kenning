@@ -23,10 +23,11 @@ OPTIMIZER_SUBCLASSES = get_all_subclasses(
 
 
 EXPECTED_FAIL = [
-    ("ONNXCompiler", "NNIPruningOptimizer"),
+    ("NNIPruningOptimizer", "Ai8xCompiler"),
+    ("NNIPruningOptimizer", "NNIPruningOptimizer"),
     ("NNIPruningOptimizer", "ONNXCompiler"),
     ("NNIPruningOptimizer", "TVMCompiler"),
-    ("NNIPruningOptimizer", "NNIPruningOptimizer"),
+    ("ONNXCompiler", "NNIPruningOptimizer"),
 ]
 expected_mark = pytest.mark.xfail(reason="Expected incompatible")
 

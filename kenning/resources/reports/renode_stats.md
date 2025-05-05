@@ -153,7 +153,7 @@ Cumulative count of {{peripheral}} writes during benchmark
 
 ```{figure} {{data['exceptionsplotpath']['persec']}}
 ---
-name: {{basename}}_exceptionsplotpath
+name: {{basename}}_exceptionsplotpath_persecond
 alt: Count of raised exceptions per second
 align: center
 ---
@@ -163,7 +163,7 @@ Count of raised exceptions per second during benchmark
 
 ```{figure} {{data['exceptionsplotpath']['cumulative']}}
 ---
-name: {{basename}}_exceptionsplotpath
+name: {{basename}}_exceptionsplotpath_cumulative
 alt: Cumulative count of raised exceptions
 align: center
 ---

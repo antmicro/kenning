@@ -28,7 +28,7 @@ IGNORED_MODULES = {
     "zephyr_module",
     "list_boards",
     # ai8x tools
-    "izer",
+    "ai8x",
 } | stdlibs.py3.stdlib
 
 KNOWN_MAPS = {

@@ -117,8 +117,8 @@ def list_classes(
 
         if verbosity != "autocomplete":
             resulting_output.append(
-                f"{base_class.title()} "
-                f"(in {kenning_base_classes[base_class][0]}):\n\n"
+                f"# {base_class.title()} "
+                f"(in `{kenning_base_classes[base_class][0]}`)\n\n"
             )
 
         subclass_list = subclasses_dict[kenning_base_classes[base_class][1]]
@@ -145,7 +145,7 @@ def list_classes(
                 resulting_output.append((subclass, abbrev_description))
 
             elif verbosity == "list":
-                resulting_output.append(f"    {subclass}\n")
+                resulting_output.append(f"* {subclass}\n")
 
             elif verbosity == "docstrings":
                 output = generate_class_info(
@@ -268,9 +268,14 @@ class ListClassesRunner(CommandTemplate):
             else ListClassesRunner.base_class_arguments,
             verbosity=verbosity,
         )
+        resulting_content = "".join(resulting_output)
 
-        for line in resulting_output:
-            print(line, end="")
+        from rich.console import Console
+        from rich.markdown import Markdown
+
+        console = Console()
+        md = Markdown(resulting_content)
+        console.print(md)
 
 
 if __name__ == "__main__":

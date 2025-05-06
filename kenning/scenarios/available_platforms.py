@@ -65,26 +65,17 @@ def read_platform_definitions(
 
     platforms_info = []
     for platform, info in data.items():
-        details_names = []
-        details_values = []
-
-        def _add_list_details(k, v):
-            details_names.append("")
-            details_values.append("")
-            details_names.append(k.replace("_", " ").capitalize() + ":")
-            details_values.append(v[0])
-            for val in v[1:]:
-                details_names.append("")
-                details_values.append(val)
 
         def _add_single_detail(k, v):
-            details_names.append(k.replace("_", " ").capitalize() + ":")
-            details_values.append(v)
-            if len(str(v)) >= 80:
-                details_names.append("")
-                details_values.append("")
+            platforms_info.append(f"- `{k.replace('_', ' ').capitalize()}`\n")
+            platforms_info.append(f"    - {v}\n")
 
-        display_name = info["display_name"]
+        def _add_list_details(k, v):
+            platforms_info.append(f"- `{k.replace('_', ' ').capitalize()}`\n")
+            for val in v:
+                platforms_info.append(f"    - {val}\n")
+
+        platforms_info.append(f"# {info['display_name']}\n")
 
         _add_single_detail("platform_resc_path", info["platform_resc_path"])
         _add_single_detail("default_platform", info["default_platform"])
@@ -101,21 +92,6 @@ def read_platform_definitions(
                     _add_list_details(k, v)
                 else:
                     _add_single_detail(k, v)
-
-        platforms_info.append([display_name, details_names, details_values])
-
-    max_detail_name_len = 0
-    for i in range(len(platforms_info)):
-        display_n, details_ns, details_vs = platforms_info[i]
-        max_detail_name_len = max(
-            max_detail_name_len, max(map(lambda x: len(x), details_ns))
-        )
-
-    for i in range(len(platforms_info)):
-        display_n, details_ns, details_vs = platforms_info[i]
-        platforms_info[i][1] = list(
-            map(lambda x: f"{x:<{max_detail_name_len + 4}}", details_ns)
-        )
 
     return platforms_info
 
@@ -169,11 +145,14 @@ class AvailablePlatformsCommand(CommandTemplate):
             print(resulting_output[0])
             return 0
 
-        for platform_name, details_names, details_values in resulting_output:
-            print("\n" + platform_name + "\n")
-            for d_n, d_v in zip(details_names, details_values):
-                print(f"\t{d_n}{d_v}")
-        return 0
+        resulting_content = "".join(resulting_output)
+
+        from rich.console import Console
+        from rich.markdown import Markdown
+
+        console = Console()
+        md = Markdown(resulting_content)
+        console.print(md)
 
 
 if __name__ == "__main__":

@@ -125,8 +125,14 @@ class ClassInfoRunner(CommandTemplate):
             args_dict["target"] = get_module_path(target)
 
         resulting_output = generate_class_info(**args_dict)
-        for result_line in resulting_output:
-            print(result_line, end="")
+        resulting_content = "".join(resulting_output)
+
+        from rich.console import Console
+        from rich.markdown import Markdown
+
+        console = Console()
+        md = Markdown(resulting_content)
+        console.print(md)
 
 
 if __name__ == "__main__":

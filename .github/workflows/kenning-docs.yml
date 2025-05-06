@@ -37,9 +37,46 @@ jobs:
           name: inferencetest
           path: docs/source/generated
 
+  automl-test:
+    runs-on: ubuntu-latest
+    env:
+      ZEPHYR_WORKSPACE: zephyr-workspace
+      REPORT_NAME: sample-automl.md
+      DOCS_DIR: docs
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+      - name: Checkout LFS objects
+        run: git lfs checkout
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends ccache curl device-tree-compiler dfu-util file \
+            g++-multilib gcc gcc-multilib git jq libmagic1 libsdl2-dev make cmake ninja-build \
+            python3-dev python3-pip python3-setuptools python3-tk python3-wheel python3-venv \
+            mono-complete wget xxd xz-utils patch
+      - name: Prepare Kenning Zephyr Runtime and run AutoML
+        run: |
+          source ./scripts/prepare-kenning-zephyr-runtime.sh
+          pip3 install ".[torch,anomaly_detection,auto_pytorch,tensorflow,tflite,reports,renode,uart]"
+          export AUTOML_SCENARIO_CONFIG=$(realpath ./scripts/configs/automl-scenario.yml)
+          export DOCS_DIR=$(realpath $DOCS_DIR)
+          ./scripts/zephyr-automl-report.sh
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: automltest
+          path: docs/source/generated
+
   docs-generation:
     runs-on: ubuntu-latest
-    needs: [inference-test]
+    needs: [inference-test, automl-test]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
@@ -54,6 +91,7 @@ jobs:
       - name: Generate documentation
         run: |
           cp -r inferencetest docs/source/generated
+          cp -r automltest/. docs/source/generated
           cd docs
           make html latexpdf
           cp build/latex/*.pdf build/html/

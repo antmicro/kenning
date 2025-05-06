@@ -13,6 +13,7 @@ kenning-variables
 kenning-measurements
 pipeline-optimizer
 sample-report
+sample-automl-report
 kenning-flow
 kenning-development
 kenning-resources

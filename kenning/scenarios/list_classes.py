@@ -44,14 +44,14 @@ from kenning.utils.class_loader import (
 
 
 @cache
-def get_subclasses_dict(base_classes: List[str]) -> dict[Type, List[str]]:
+def get_subclasses_dict(base_classes: frozenset[str]) -> dict[Type, List[str]]:
     """
     Get subclasses of the provided base classes.
 
     Parameters
     ----------
-    base_classes : List[str]
-        A list of base classes, for which subclasses will be listed.
+    base_classes : frozenset[str]
+        A frozen set of base classes, for which subclasses will be listed.
 
     Returns
     -------
@@ -106,7 +106,7 @@ def list_classes(
         List of formatted strings to be printed out later
     """
     kenning_base_classes = get_base_classes_dict()
-    subclasses_dict = get_subclasses_dict(base_classes)
+    subclasses_dict = get_subclasses_dict(frozenset(base_classes))
 
     # list of strings to be printed later
     resulting_output = []

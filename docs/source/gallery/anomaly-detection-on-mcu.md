@@ -96,9 +96,13 @@ Once the environment is set up, the sample model can be trained.
 In this demo, a [Variational AutoEncoder (VAE)](https://en.wikipedia.org/wiki/Variational_autoencoder) will be used.
 In Kenning, there is a [PytorchAnomalyDetectionVAE](https://github.com/antmicro/kenning/blob/main/kenning/modelwrappers/anomaly_detection/vae.py) `ModelWrapper` encapsulating the model.
 
-][Controlled Anomalies Time Series (CATS)](https://data.niaid.nih.gov/resources?id=zenodo_7646896) will be used for a dataset.
+[Controlled Anomalies Time Series (CATS)](https://data.niaid.nih.gov/resources?id=zenodo_7646896) will be used for a dataset.
 It provides telemetry readings of a simulated complex dynamical system with external stimuli.
 It provides a representative set of time series for sensors with anomalies.
+
+:::{note}
+Check {ref}`anomaly-csv-format` for details on the expected structure of the dataset's CSV file to understand how to create custom dataset compliant with the class.
+:::
 
 The model can be trained using the following command:
 
@@ -325,3 +329,10 @@ The reports in HTML format will be available here:
 
 * `reports/vae-tflite-tvm-comparison-renode/report/report.html`
 * `reports/vae-tflite-tvm-comparison-hw/report/report.html`
+
+(anomaly-csv-format)=
+## Specification of the [kenning.datasets.anomaly_detection_dataset](https://github.com/antmicro/kenning/blob/main/kenning/datasets/anomaly_detection_dataset.py) module
+
+:::{include} ../generated/AnomalyDetectionDatasetInfo.md
+:heading-offset: 2
+:::

@@ -25,9 +25,38 @@ class AnomalyDetectionDataset(Dataset):
 
     It reads data from provided CSV file and prepares sequences of data.
 
-    CSV file is assumed to contain header, first column with timestamps
-    (will be discarded) and last column with anomaly classification.
-    """
+    CSV file has to follow the schema:
+
+    +------------------+------------------+------------------+-----+------------------+----------------+
+    | Timestamp column | Param 1 name     | Param 2 name     | ... | Param N name     | Label          |
+    +==================+==================+==================+=====+==================+================+
+    | timestamps       | Numerical values | Numerical values | ... | Numerical values | Integer values |
+    +------------------+------------------+------------------+-----+------------------+----------------+
+
+    Kenning automatically discards the timestamp column,
+    as well as the header row.
+
+    The numerical values of parameters are used as signals
+    or data from sensors, whereas the labels specify
+    anomaly occurrence (values greater than 0).
+
+    Each label describes whether an anomaly has been observed within `window_size`
+    previous samples.
+
+    This results with final version of dataset where one entry looks like:
+
+    +------------------------------------------+-----+------------------------------------------+-------------------------------+
+    | X                                        |     |                                          | Y                             |
+    +==========================================+=====+==========================================+===============================+
+    | Param 1 value from `t - window_size + 1` | ... | Param N value from `t - window_size + 1` |                               |
+    +------------------------------------------+-----+------------------------------------------+-------------------------------+
+    | ...                                      | ... | ...                                      |                               |
+    +------------------------------------------+-----+------------------------------------------+-------------------------------+
+    | Param 1 value from `t - 1`               | ... | Param N value from `t - 1`               |                               |
+    +------------------------------------------+-----+------------------------------------------+-------------------------------+
+    | Param 1 value from `t`                   | ... | Param N value from `t`                   | 0 (no anomaly) or 1 (anomaly) |
+    +------------------------------------------+-----+------------------------------------------+-------------------------------+
+    """  # noqa: E501
 
     arguments_structure = {
         "csv_file": {

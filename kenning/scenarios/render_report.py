@@ -1753,6 +1753,7 @@ def comparison_renode_stats_report(
                 )
                 for m in measurementsdata
             ],
+            lines_labels=labels,
             colors=SERVIS_PLOT_OPTIONS["colormap"],
         ).plot(cum_exceptions_plot_path, image_formats)
 

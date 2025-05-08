@@ -246,6 +246,12 @@ class ListClassesRunner(CommandTemplate):
             " the arguments",
             action="store_true",
         )
+        list_group.add_argument(
+            "-md",
+            "-markdown",
+            help="Display information in a raw Markdown",
+            action="store_true",
+        )
         return parser, groups
 
     @staticmethod
@@ -268,14 +274,18 @@ class ListClassesRunner(CommandTemplate):
             else ListClassesRunner.base_class_arguments,
             verbosity=verbosity,
         )
-        resulting_content = "".join(resulting_output)
 
-        from rich.console import Console
-        from rich.markdown import Markdown
+        if args.md:
+            for line in resulting_output:
+                print(line, end="")
+        else:
+            from rich.console import Console
+            from rich.markdown import Markdown
 
-        console = Console()
-        md = Markdown(resulting_content)
-        console.print(md)
+            resulting_content = "".join(resulting_output)
+            console = Console()
+            md = Markdown(resulting_content)
+            console.print(md)
 
 
 if __name__ == "__main__":

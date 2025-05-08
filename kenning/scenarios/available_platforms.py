@@ -75,7 +75,7 @@ def read_platform_definitions(
             for val in v:
                 platforms_info.append(f"    - {val}\n")
 
-        platforms_info.append(f"# {info['display_name']}\n")
+        platforms_info.append(f"\n# {info['display_name']}\n\n")
 
         _add_single_detail("platform_resc_path", info["platform_resc_path"])
         _add_single_detail("default_platform", info["default_platform"])
@@ -130,6 +130,12 @@ class AvailablePlatformsCommand(CommandTemplate):
             help="Display all platforms data in JSON format.",
             action="store_true",
         )
+        list_group.add_argument(
+            "-md",
+            "-markdown",
+            help="Display information in a raw Markdown",
+            action="store_true",
+        )
 
         return parser, groups
 
@@ -145,14 +151,17 @@ class AvailablePlatformsCommand(CommandTemplate):
             print(resulting_output[0])
             return 0
 
-        resulting_content = "".join(resulting_output)
+        if args.md:
+            for line in resulting_output:
+                print(line, end="")
+        else:
+            from rich.console import Console
+            from rich.markdown import Markdown
 
-        from rich.console import Console
-        from rich.markdown import Markdown
-
-        console = Console()
-        md = Markdown(resulting_content)
-        console.print(md)
+            resulting_content = "".join(resulting_output)
+            console = Console()
+            md = Markdown(resulting_content)
+            console.print(md)
 
 
 if __name__ == "__main__":

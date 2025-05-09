@@ -47,3 +47,8 @@ def get_default_runtime(
         from kenning.runtimes.iree import IREERuntime
 
         return IREERuntime(model_path)
+
+    if model_framework == "ai8x_c":
+        from kenning.runtimes.ai8x import Ai8xRuntime
+
+        return Ai8xRuntime(model_path)

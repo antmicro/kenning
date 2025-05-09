@@ -95,12 +95,14 @@ def prepare_objects(
 
     # by default, do not enforce platforms
     platform = None
+    compiled_model_path_suffix = ""
 
     # AI8X is specific to a limited set of platforms, hence
     # platform definition below
     if "Ai8x" in model_cls.__name__ or "Ai8x" in optimizer_cls.__name__:
         platform = Platform("max78002evkit/max78002/m4")
         platform.read_data_from_platforms_yaml()
+        compiled_model_path_suffix = ".bin"
 
     dataset_cls = model_cls.default_dataset
     dataset = get_dataset_random_mock(dataset_cls, model_cls)
@@ -130,7 +132,7 @@ def prepare_objects(
 
     optimizer = optimizer_cls(
         model.dataset,
-        get_tmp_path(),
+        get_tmp_path(compiled_model_path_suffix),
         model_wrapper=model,
         **kwargs,
     )

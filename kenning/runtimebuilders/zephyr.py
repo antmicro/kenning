@@ -300,6 +300,7 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
     allowed_frameworks = [
         "tflite",
         "tvm",
+        "ai8x_c",
     ]
 
     def __init__(

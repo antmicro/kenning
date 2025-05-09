@@ -48,7 +48,6 @@ def prepare_objects(
 
 
 class TestOptimizer:
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "opt_cls,inputtype",
         [
@@ -74,7 +73,6 @@ class TestOptimizer:
         with prepare_objects(opt_cls, inputtype):
             pass
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "opt_cls,inputtype",
         [
@@ -115,7 +113,6 @@ class TestOptimizer:
             except ConversionError as e:
                 pytest.xfail(f"conversion error {e}")
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "opt_cls,inputtype",
         [

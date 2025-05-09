@@ -83,7 +83,6 @@ def model(request):
 
 
 class TestModelWrapper:
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model_cls",
         [
@@ -104,7 +103,6 @@ class TestModelWrapper:
         """
         _ = create_model(model_cls, None)
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model_cls",
         [
@@ -130,7 +128,6 @@ class TestModelWrapper:
         dataset = get_dataset_random_mock(dataset_cls, model_cls)
         _ = create_model(model_cls, dataset)
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [
@@ -160,7 +157,6 @@ class TestModelWrapper:
             pytest.xfail("Ai8xAnomalyDetectionCNN requires ai8x-training")
         model.prepare_model()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [
@@ -191,7 +187,6 @@ class TestModelWrapper:
             pytest.xfail("save_model not implemented for this model")
         assert model_save_path.exists()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [
@@ -220,7 +215,6 @@ class TestModelWrapper:
         except NotImplementedError:
             pytest.xfail("test_inference not implemented for this model")
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [
@@ -255,7 +249,6 @@ class TestModelWrapper:
         except NotImplementedError:
             pytest.xfail("train_model not implemented for this model")
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [
@@ -280,7 +273,6 @@ class TestModelWrapper:
         """
         assert model.get_io_specification_from_model() is not None
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model",
         [

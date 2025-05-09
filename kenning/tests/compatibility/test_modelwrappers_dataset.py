@@ -51,7 +51,6 @@ class TestModelWrapperAndDatasetCompatibility:
         assert isinstance(mean_and_std, tuple)
 
     @pytest.mark.slow
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "wrappername",
         [

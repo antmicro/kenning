@@ -156,7 +156,6 @@ class HandlerTests(ABC):
         )
         assert status, pipeline_or_error_message
 
-    @pytest.mark.xdist_group(name="use_resources")
     def test_validate_dataflow(self, dataflow_json, handler):
         """
         Test whether the output of `parse_dataflow` can be successfully parsed

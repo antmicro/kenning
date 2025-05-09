@@ -53,7 +53,6 @@ def truncate_test_fraction(dataset: Dataset, batch_size: int):
     )
 
 
-@pytest.mark.xdist_group(name="use_resources")
 @pytest.mark.parametrize(
     "batch_size,expectation",
     [
@@ -118,7 +117,6 @@ def test_scenario_pet_dataset_tflite(batch_size, expectation, tmpfolder):
             assert runtime_input_spec["shape"][0] == batch_size
 
 
-@pytest.mark.xdist_group(name="use_resources")
 @pytest.mark.parametrize(
     "batch_size,expectation",
     [
@@ -196,7 +194,6 @@ def test_scenario_tflite_tvm_magic_wand(batch_size, expectation, tmpfolder):
 
 
 @pytest.mark.slow
-@pytest.mark.xdist_group(name="use_resources")
 @pytest.mark.parametrize(
     "batch_size,expectation",
     [

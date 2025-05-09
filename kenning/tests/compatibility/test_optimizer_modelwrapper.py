@@ -143,7 +143,6 @@ def prepare_objects(
 
 @pytest.mark.slow
 class TestOptimizerModelWrapper:
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "optimizername",
         [
@@ -193,7 +192,6 @@ class TestOptimizerModelWrapper:
         assert os.path.exists(filepath)
         os.remove(filepath)
 
-    @pytest.mark.xdist_group(name="use_resources")
     def test_onnx_model_optimization(
         self,
         tmpfolder: Path,
@@ -247,7 +245,6 @@ class TestOptimizerModelWrapper:
             os.remove(filepath)
 
     @pytest.mark.compat_matrix(ModelWrapper, Optimizer)
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "model_cls,optimizer_cls",
         [

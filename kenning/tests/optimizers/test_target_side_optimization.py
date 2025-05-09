@@ -90,7 +90,6 @@ class OptimizerFailMock(OptimizerMock):
 
 
 class TestServerSideOptimization:
-    @pytest.mark.xdist_group(name="use_resources")
     def test_local_optimization(self):
         """
         Test local compilation.

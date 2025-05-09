@@ -70,7 +70,6 @@ def prepare_objects(
 @pytest.mark.slow
 class TestOptimizersCompatibility:
     @pytest.mark.compat_matrix(Optimizer, Optimizer)
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "optimizer_cls1, optimizer_cls2",
         [

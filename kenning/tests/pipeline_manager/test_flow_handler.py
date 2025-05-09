@@ -181,7 +181,6 @@ def use_static_io_spec_parser():
     ModelRuntimeRunner.get_io_specification = get_io_specification
 
 
-@pytest.mark.xdist_group(name="use_resources")
 @pytest.mark.usefixtures("use_static_io_spec_parser")
 class TestFlowHandler(HandlerTests):
     dataflow_nodes = [

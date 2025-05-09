@@ -110,7 +110,6 @@ def invalid_argparse_namespace(tmp_path) -> argparse.Namespace:
 
 
 class TestModelRuntimeRunner:
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "json_dict,expectation",
         [
@@ -150,7 +149,6 @@ class TestModelRuntimeRunner:
 
             runner.cleanup()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "json_dict,expectation",
         [
@@ -183,7 +181,6 @@ class TestModelRuntimeRunner:
 
         assert runner is None
 
-    @pytest.mark.xdist_group(name="use_resources")
     def test_create_object_from_argparse_scenario_valid(
         self,
         valid_argparse_namespace,
@@ -211,7 +208,6 @@ class TestModelRuntimeRunner:
 
             runner.cleanup()
 
-    @pytest.mark.xdist_group(name="use_resources")
     def test_create_object_from_argparse_scenario_invalid(
         self,
         invalid_argparse_namespace,

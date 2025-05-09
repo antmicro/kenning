@@ -45,7 +45,6 @@ def prepare_objects(
 
 
 class TestRuntime:
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -71,7 +70,6 @@ class TestRuntime:
         with prepare_objects(runtime_cls, inputtype):
             pass
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -105,7 +103,6 @@ class TestRuntime:
                     f"{runtime_cls.__name__} does not support local run"
                 )
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -152,7 +149,6 @@ class TestRuntime:
         runtime.inference_session_end()
         MeasurementsCollector.clear()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -202,7 +198,6 @@ class TestRuntime:
 
         MeasurementsCollector.clear()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -237,7 +232,6 @@ class TestRuntime:
             with pytest.raises(Exception):
                 assert runtime.prepare_model(b"Kenning") is False
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -273,7 +267,6 @@ class TestRuntime:
             assert runtime.load_input(prepX)
             assert not runtime.load_input([])
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -314,7 +307,6 @@ class TestRuntime:
             assert runtime.load_input_from_bytes(prepX)
             assert not runtime.load_input_from_bytes(b"")
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [
@@ -353,7 +345,6 @@ class TestRuntime:
 
             runtime.run()
 
-    @pytest.mark.xdist_group(name="use_resources")
     @pytest.mark.parametrize(
         "runtime_cls,inputtype",
         [

@@ -4,6 +4,7 @@
 
 import shutil
 import tempfile
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from random import randint, random
@@ -129,15 +130,20 @@ def pytest_sessionstart(session: pytest.Session):
     """
     test_directory = Path(session.config.option.test_directory).resolve()
     pytest.test_directory = test_directory
-    # only master worker should do init
-    if hasattr(session.config, "workerinput"):
-        return
+
     # do nothing when only collecting tests
     if "--collect-only" in session.config.invocation_params.args:
         return
 
-    ResourceManager().set_cache_dir(test_directory / "cache")
-    (test_directory / "tmp").mkdir(parents=True, exist_ok=True)
+    # Assign a different cache directory for each worker.
+    worker_uuid = str(uuid.uuid4())
+    ResourceManager().set_cache_dir(
+        test_directory / f"worker_{worker_uuid}_cache"
+    )
+
+    # only master worker should do init
+    if not hasattr(session.config, "workerinput"):
+        (test_directory / "tmp").mkdir(parents=True, exist_ok=True)
 
 
 def pytest_sessionfinish(session: pytest.Session, exitstatus: int):

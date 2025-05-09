@@ -212,7 +212,7 @@ class ZephyrPlatform(BareMetalPlatform):
             platform_dts = dts_f.read()
 
         KLogger.debug(f"REPL path {repl_path.resolve()}")
-        KLogger.debug(f"Binary path{bin_path.resolve()}")
+        KLogger.debug(f"Binary path {bin_path.resolve()}")
 
         self.machine = emu.add_mach(board)
         self.machine.load_repl(repl_path.resolve())
@@ -220,6 +220,7 @@ class ZephyrPlatform(BareMetalPlatform):
 
         if self.uart_port is not None:
             kcomms_uart = find_uart_by_alias(platform_dts, "kcomms", True)
+            KLogger.debug(f"Communication UART: {kcomms_uart}")
             emu.CreateUartPtyTerminal(
                 "kcomms_uart_term", str(self.uart_port.resolve())
             )
@@ -227,10 +228,10 @@ class ZephyrPlatform(BareMetalPlatform):
                 getattr(self.machine.sysbus, kcomms_uart).internal,
                 emu.externals.kcomms_uart_term,
             )
-            KLogger.debug(f"Communication UART: {kcomms_uart}")
 
         if self.uart_log_port is not None:
             console_uart = find_uart_by_alias(platform_dts, "zephyr,console")
+            KLogger.debug(f"Logging UART: {console_uart}")
             emu.CreateUartPtyTerminal(
                 "console_uart_term", str(self.uart_log_port.resolve())
             )
@@ -238,7 +239,6 @@ class ZephyrPlatform(BareMetalPlatform):
                 getattr(self.machine.sysbus, console_uart).internal,
                 emu.externals.console_uart_term,
             )
-            KLogger.debug(f"Logging UART: {console_uart}")
 
         if not self.disable_opcode_counters:
             self._enable_opcode_counters()

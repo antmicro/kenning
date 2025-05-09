@@ -25,12 +25,12 @@ from kenning.protocols.uart import (
     MAX_LENGTH_MODEL_NAME,
     MAX_MODEL_INPUT_DIM,
     MAX_MODEL_INPUT_NUM,
-    MAX_MODEL_OUTPUTS,
-    MODEL_STRUCT_SIZE,
+    MAX_MODEL_OUTPUT_NUM,
     RUNTIME_STAT_NAME_MAX_LEN,
     UARTProtocol,
     _io_spec_to_struct,
     _parse_stats,
+    compute_iospec_struct_size,
 )
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.protocols.test_core_protocol import (
@@ -151,18 +151,20 @@ class TestIOSpecToStruct:
 
         struct = _io_spec_to_struct(io_spec)
 
-        assert len(struct) == MODEL_STRUCT_SIZE
+        assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "dtype,expectation",
         [
-            ("f32", does_not_raise()),
-            ("u8", does_not_raise()),
-            ("i16", does_not_raise()),
-            ("f", pytest.raises(ValueError)),
-            ("f31", pytest.raises(ValueError)),
-            ("f0", pytest.raises(ValueError)),
-            ("u9", pytest.raises(ValueError)),
+            ("float32", does_not_raise()),
+            ("uint8", does_not_raise()),
+            ("int16", does_not_raise()),
+            ("float", pytest.raises(ValueError)),
+            ("float6int", pytest.raises(ValueError)),
+            ("float332", pytest.raises(ValueError)),
+            ("float31", does_not_raise()),
+            ("float0", pytest.raises(ValueError)),
+            ("uint9", does_not_raise()),
         ],
     )
     def test_parse_io_spec_with_different_dtypes(
@@ -178,7 +180,7 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "inputs_num,expectation",
@@ -202,7 +204,7 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "input_dim,expectation",
@@ -232,15 +234,15 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "outputs_num,expectation",
         [
             (1, does_not_raise()),
-            (MAX_MODEL_OUTPUTS, does_not_raise()),
-            (MAX_MODEL_OUTPUTS + 1, pytest.raises(ValueError)),
-            (MAX_MODEL_OUTPUTS + 100, pytest.raises(ValueError)),
+            (MAX_MODEL_OUTPUT_NUM, does_not_raise()),
+            (MAX_MODEL_OUTPUT_NUM + 1, pytest.raises(ValueError)),
+            (MAX_MODEL_OUTPUT_NUM + 100, pytest.raises(ValueError)),
         ],
     )
     def test_parse_io_spec_with_different_outputs_num(
@@ -251,7 +253,7 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "entry_func_name_len,expectation",
@@ -270,7 +272,7 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec, entry_func=entry_func)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
     @pytest.mark.parametrize(
         "model_name_len,expectation",
@@ -289,7 +291,7 @@ class TestIOSpecToStruct:
         with expectation:
             struct = _io_spec_to_struct(valid_io_spec, model_name=model_name)
 
-            assert len(struct) == MODEL_STRUCT_SIZE
+            assert len(struct) == compute_iospec_struct_size()
 
 
 class TestParseAllocationStats:

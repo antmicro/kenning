@@ -8,7 +8,6 @@ Wrapper for ai8x accelerator compiler.
 
 import json
 import os
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -21,6 +20,10 @@ from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
 from kenning.core.optimizer import ConversionError, Optimizer
 from kenning.core.platform import Platform
+from kenning.optimizers.ai8x_codegen import (
+    generate_model_bin,
+    generate_model_source,
+)
 from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
@@ -228,6 +231,7 @@ class _Ai8xTools(object):
                     "--timer",
                     "0",
                     "--display-checkpoint",
+                    "--no-scale-output",
                 ],
                 stderr=subprocess.STDOUT,
                 cwd=str(self.ai8x_synthesis_path),
@@ -258,7 +262,7 @@ def ai8x_conversion(
     """
     import torch
 
-    model = torch.load(input_model_path)
+    model = torch.load(input_model_path, weights_only=False)
 
     if isinstance(model, torch.nn.Module):
         torch.save(
@@ -515,18 +519,38 @@ class Ai8xCompiler(Optimizer):
                 self.device,
             )
 
-            self.compiled_model_path.mkdir(exist_ok=True, parents=True)
+            # update quantization params in IO spec
+            io_spec["processed_input"][0]["dtype"] = "int8"
+            io_spec["processed_input"][0]["prequantized_dtype"] = "float32"
+            io_spec["processed_input"][0]["scale"] = 1.0 / 128
+            io_spec["processed_input"][0]["zero_point"] = 0
 
-            shutil.copy(
-                tmp_dir / "ai8xize" / "cnn.c", self.compiled_model_path
-            )
-            shutil.copy(
-                tmp_dir / "ai8xize" / "cnn.h", self.compiled_model_path
-            )
-            shutil.copy(
-                tmp_dir / "ai8xize" / "weights.h", self.compiled_model_path
-            )
+            io_spec["output"][0]["dtype"] = "int8"
+            io_spec["output"][0]["prequantized_dtype"] = "float32"
+            io_spec["output"][0]["scale"] = 1.0
+            io_spec["output"][0]["zero_point"] = 0
+
+            self.compiled_model_path.parent.mkdir(exist_ok=True, parents=True)
 
             self.save_io_specification(self.compiled_model_path, io_spec)
+
+            model_dir = self.compiled_model_path.with_suffix("")
+            if model_dir == self.compiled_model_path:
+                msg = "Compiled model path requires an extension"
+                raise ValueError(msg)
+
+            model_dir.mkdir(exist_ok=True, parents=True)
+
+            generate_model_source(
+                tmp_dir / "ai8xize" / "main.c",
+                tmp_dir / "ai8xize" / "cnn.c",
+                model_dir / "cnn_model.c",
+            )
+
+            generate_model_bin(
+                tmp_dir / "ai8xize" / "cnn.c",
+                tmp_dir / "ai8xize" / "weights.h",
+                self.compiled_model_path,
+            )
 
             KLogger.info(f"Compiled model saved in {self.compiled_model_path}")

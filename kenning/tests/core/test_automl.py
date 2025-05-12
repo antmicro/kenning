@@ -32,30 +32,28 @@ def automl_matrix_test(
     indirect: bool = False,
 ) -> Callable:
     def inner_func(func: Callable) -> Callable:
-        return pytest.mark.xdist_group(name="use_resources")(
-            pytest.mark.parametrize(
-                param_name,
-                [
-                    pytest.param(
-                        cls,
-                        marks=[
-                            pytest.mark.dependency(
-                                name=f"{func.__name__}[{cls.__name__}]",
-                                depends=[f"{depend}[{cls.__name__}]"]
-                                if depend
-                                else [],
-                            ),
-                            pytest.mark.xdist_group(
-                                name=f"TestAutoML_{cls.__name__}"
-                            ),
-                            pytest.mark.automl,
-                        ],
-                    )
-                    for cls in AUTOML_SUBCLASSES
-                ],
-                indirect=indirect,
-            )(func)
-        )
+        return pytest.mark.parametrize(
+            param_name,
+            [
+                pytest.param(
+                    cls,
+                    marks=[
+                        pytest.mark.dependency(
+                            name=f"{func.__name__}[{cls.__name__}]",
+                            depends=[f"{depend}[{cls.__name__}]"]
+                            if depend
+                            else [],
+                        ),
+                        pytest.mark.xdist_group(
+                            name=f"TestAutoML_{cls.__name__}"
+                        ),
+                        pytest.mark.automl,
+                    ],
+                )
+                for cls in AUTOML_SUBCLASSES
+            ],
+            indirect=indirect,
+        )(func)
 
     return inner_func
 

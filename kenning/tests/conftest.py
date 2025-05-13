@@ -4,13 +4,13 @@
 
 import shutil
 import tempfile
-import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from random import randint, random
 from typing import Generator, Optional
 
 import pytest
+import xdist
 from PIL import Image
 from pytest import Metafunc
 
@@ -124,6 +124,7 @@ def pytest_addoption(parser: pytest.Parser):
     )
 
 
+@pytest.hookimpl()
 def pytest_sessionstart(session: pytest.Session):
     """
     Initialize session.
@@ -136,9 +137,9 @@ def pytest_sessionstart(session: pytest.Session):
         return
 
     # Assign a different cache directory for each worker.
-    worker_uuid = str(uuid.uuid4())
+    worker_id = xdist.get_xdist_worker_id(session)
     ResourceManager().set_cache_dir(
-        test_directory / f"worker_{worker_uuid}_cache"
+        test_directory / f"worker_{worker_id}_cache"
     )
 
     # only master worker should do init

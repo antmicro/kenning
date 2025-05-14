@@ -8,6 +8,7 @@ Wrapper for ai8x accelerator compiler.
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -456,21 +457,35 @@ class Ai8xCompiler(Optimizer):
         with tempfile.TemporaryDirectory() as tmp_dir:
             tmp_dir = Path(tmp_dir)
 
+            tmp_input_model_path = tmp_dir / f"{input_model_path.stem}_tmp.pth"
+
+            if self.model_wrapper is not None:
+                input_model = self.model_wrapper
+                input_model.load_model(input_model_path)
+
+                input_model.save_model(tmp_input_model_path, export_dict=False)
+                input_model.save_io_specification(tmp_input_model_path)
+            else:
+                shutil.copy(input_model_path, tmp_input_model_path)
+                shutil.copy(
+                    input_model_path.with_suffix(
+                        input_model_path.suffix + ".json"
+                    ),
+                    tmp_input_model_path.with_suffix(
+                        tmp_input_model_path.suffix + ".json"
+                    ),
+                )
+
             # convert model
-            converted_model_path = (
-                tmp_dir / (input_model_path.name + "_c")
-            ).with_suffix(".pth")
+            converted_model_path = tmp_dir / f"{input_model_path.stem}_c.pth"
 
             converter = self.inputtypes[self.inputtype]
-            if converter is None:
-                converted_model_path = input_model_path
-            else:
-                converter(
-                    input_model_path,
-                    converted_model_path,
-                    self.ai8x_tools,
-                    self.device_id,
-                )
+            converter(
+                tmp_input_model_path,
+                converted_model_path,
+                self.ai8x_tools,
+                self.device_id,
+            )
 
             config_file = (
                 self.config_file
@@ -485,7 +500,7 @@ class Ai8xCompiler(Optimizer):
 
             if not config_file or not config_file.exists():
                 self.ai8x_tools.yamlwriter(
-                    input_model_path,
+                    tmp_input_model_path,
                     input_shape,
                     self.device_id,
                     config_file,
@@ -495,9 +510,7 @@ class Ai8xCompiler(Optimizer):
                 )
 
             # quantize model
-            quantized_model_path = (
-                tmp_dir / (input_model_path.name + "_q")
-            ).with_suffix(".pth")
+            quantized_model_path = tmp_dir / f"{input_model_path.stem}_q.pth"
             self.ai8x_tools.quantize(
                 converted_model_path, quantized_model_path, self.device
             )

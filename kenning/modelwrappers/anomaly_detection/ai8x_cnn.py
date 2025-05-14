@@ -224,12 +224,18 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
         import torch
 
         self.prepare_model()
+
+        model = (
+            self.model
+            if type(self.model) is torch.nn.Sequential
+            else self.model.to_pure_torch()
+        )
         if export_dict is None:
             export_dict = self.DEFAULT_SAVE_MODEL_EXPORT_DICT
         if export_dict:
-            torch.save(self.model.to_pure_torch().state_dict(), model_path)
+            torch.save(model.state_dict(), model_path)
         else:
-            torch.save(self.model.to_pure_torch(), model_path)
+            torch.save(model, model_path)
 
     def train_model(self):
         (

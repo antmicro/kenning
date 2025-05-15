@@ -60,7 +60,7 @@ tensorflow = [
 ]
 torch = [
     "onnx2torch",
-    "torch>=2.0.1",
+    "torch>=2.0.1,<=2.3.1",
     "torchvision>=0.15.0",
 ]
 mxnet = [
@@ -88,9 +88,10 @@ anomaly_detection = [
     "pyod",
 ]
 auto_pytorch = [
+    "kenning[torch]",
     "autoPyTorch @ git+https://github.com/antmicro/auto-pytorch.git",
     "ConfigSpace>=1.2.1",
-    "smac>=1.2,<2.0.0"
+    "smac>=1.2,<2.0.0",
 ]
 tflite = [
     "tflite",

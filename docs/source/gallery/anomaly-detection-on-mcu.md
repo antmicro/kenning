@@ -28,6 +28,14 @@ docker run --privileged --device /dev/ttyACM0 --device /dev/ttyUSB0 --rm -it -v 
 
 Then, in the Docker container, clone the Kenning Zephyr Runtime repository and install the latest Zephyr SDK:
 
+:::{note}
+Optionally, to use the latest Kenning version, install it in the image and reload the virtual environment:
+
+```bash
+pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
+```
+:::
+
 ```bash
 git clone https://github.com/antmicro/kenning-zephyr-runtime -b stable
 cd kenning-zephyr-runtime/
@@ -35,15 +43,6 @@ cd kenning-zephyr-runtime/
 ./scripts/prepare_modules.sh
 source .venv/bin/activate
 ```
-
-:::{note}
-Optionally, to use the latest Kenning version, install it in the image and reload the virtual environment:
-
-```bash
-pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,renode,uart] @ git+https://github.com/antmicro/kenning.git"
-source .venv/bin/activate
-```
-:::
 
 An environment configured this way will allow you to work with Kenning and Zephyr RTOS.
 For more step-by-step instructions on how to set up the environment locally, see [Kenning Zephyr Runtime build instructions](https://github.com/antmicro/kenning-zephyr-runtime/tree/main#user-content-building-the-project).

@@ -26,6 +26,7 @@ from kenning.optimizers.ai8x_codegen import (
     generate_model_source,
 )
 from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
+from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
@@ -462,6 +463,24 @@ class Ai8xCompiler(Optimizer):
             if self.model_wrapper is not None:
                 input_model = self.model_wrapper
                 input_model.load_model(input_model_path)
+                input_model.model_prepared = True
+
+                with append_to_sys_path([self.ai8x_tools.ai8x_training_path]):
+                    import ai8x
+
+                # Check if batch norm is fused
+                bn_fused = True
+                for module in input_model.model.modules():
+                    if (
+                        isinstance(module, ai8x.QuantizationAwareModule)
+                        and module.bn is not None
+                    ):
+                        KLogger.debug("Unfused batch norm found")
+                        bn_fused = False
+                        break
+                if not bn_fused:
+                    KLogger.info("Fusing batch norm layers")
+                    ai8x.fuse_bn_layers(input_model.model)
 
                 input_model.save_model(tmp_input_model_path, export_dict=False)
                 input_model.save_io_specification(tmp_input_model_path)

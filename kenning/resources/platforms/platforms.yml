@@ -22,6 +22,9 @@ max32690evkit/max32690/m4:
   - shutdown
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690evkit.resc;branch=main
   default_platform: ZephyrPlatform
+  default_optimizer:
+    - TFLiteCompiler
+    - TVMCompiler
 
 max32690fthr/max32690/m4:
   display_name: MAX32690FTHR
@@ -37,6 +40,9 @@ max32690fthr/max32690/m4:
   - "-model=max32690"
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/max32690fthr.resc;branch=main
   default_platform: ZephyrPlatform
+  default_optimizer:
+    - TFLiteCompiler
+    - TVMCompiler
 
 max78002evkit/max78002/m4:
   display_name: MAX78002 Evaluation Kit
@@ -65,6 +71,10 @@ max78002evkit/max78002/m4:
   - reset run
   - shutdown
   default_platform: ZephyrPlatform
+  default_optimizer:
+    - Ai8xCompiler
+    - TFLiteCompiler
+    - TVMCompiler
 
 rv32-springbok:
   display_name: RISC-V 32-bit Springbok
@@ -77,6 +87,8 @@ rv32-springbok:
   - sysbus.vec_controlblock WriteDoubleWord 0xc 0
   runtime_log_init_msg: Runtime started
   default_platform: BareMetalPlatform
+  default_optimizer:
+    - IREECompiler
 
 stm32f746g_disco:
   display_name: STM32F746G Discovery
@@ -85,9 +97,15 @@ stm32f746g_disco:
   uart_baudrate: 115200
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/stm32f746g_disco.resc;branch=main
   default_platform: ZephyrPlatform
+  default_optimizer:
+    - TFLiteCompiler
+    - TVMCompiler
 
 hifive_unmatched/fu740/s7:
   display_name: HiFive Unmatched
   uart_baudrate: 115200
   platform_resc_path: gh://antmicro:kenning-zephyr-runtime/renode/scripts/hifive_unmatched.resc;branch=main
   default_platform: ZephyrPlatform
+  default_optimizer:
+    - TFLiteCompiler
+    - TVMCompiler

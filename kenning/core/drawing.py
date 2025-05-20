@@ -1189,7 +1189,7 @@ class BubblePlot(Plot):
             bbox_to_anchor=[0.5, -0.08],
             ncol=2,
         )
-        for handler in legend.legendHandles:
+        for handler in legend.legend_handles:
             handler.set_sizes([40.0])
         ax.add_artist(legend)
         bbox_extra.append(legend)

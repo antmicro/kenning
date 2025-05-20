@@ -56,8 +56,8 @@ tensorflow = [
     "tensorflow_probability~=0.19.0; python_version<'3.11'",
     "tensorflow_probability~=0.22.0; python_version=='3.11'",
     "tensorflow~=2.14.0; python_version=='3.11'",
-    "numpy==1.23.5; python_version=='3.11'",
     "tf2onnx",
+    "tf2onnx>=1.16.1; python_version=='3.11'",
 ]
 torch = [
     "onnx2torch",

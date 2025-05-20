@@ -177,11 +177,14 @@ class Ai8xAnomalyDetectionCNN(PyTorchAnomalyDetectionCNN):
         dataset: AnomalyDetectionDataset,
         platform: Optional[Platform] = None,
     ):
-        if platform is not None:
-            cls._setup_device(
-                platform,
-                cls.arguments_structure["ai8x_training_path"]["default"],
+        ai8x_training_path = os.environ.get("AI8X_TRAINING_PATH", None)
+        if not ai8x_training_path:
+            raise ValueError(
+                "Missing `AI8X_TRAINING_PATH` env variable"
+                " with path to the ai8x-training"
             )
+        if platform is not None:
+            cls._setup_device(platform, ai8x_training_path)
 
         return {
             **super().model_params_from_context(dataset),

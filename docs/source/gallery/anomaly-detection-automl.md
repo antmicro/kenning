@@ -131,8 +131,9 @@ To make it possible, a scenario has to define at least one Optimizer which will 
 :emphasize-lines: 31-38
 ```
 
-In order to avoid training models that will not fit into available space, the flow triggers quantization on initialized models and rejects ones that cannot be optimized or (after quantization) are too large.
-Then the flow proceeds with training of default (non-quantized) models and only the best ones will be processed by Kenning accordingly to the scenario.
+In order to avoid training models that will not fit into available space, the flow triggers quantization on initialized models and rejects ones that are too large.
+If model fits in the memory, the flow proceeds with training of default (non-quantized) models.
+In the end, it quantizes and evaluates the best models based on the training process.
 Such flow can be run with the following command, assuming [the scenario](automl-quantization-scenario) is saved as `automl_quantization.yml`:
 
 ```bash

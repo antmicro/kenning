@@ -689,12 +689,12 @@ In the example above, the `run` method does not contain a `return` statement, be
 If you want to create a runner with outputs, this method should return a similar dictionary containing outputs.
 ```
 
-## Implementing new AutoML-compatible ModelWrapper
+## Adjusting ModelWrapper for AutoML flow
 
 ### Implementing a ModelWrapper
 
-To create AutoML model the default [](modelwrapper-api) has to implement [](automl-model-api) interface.
-The description of ModelWrapper implementation can be found in [](model-io-metadata) section.
+To create an AutoML model the default {doc}`modelwrapper-api` has to implement {doc}`automl-model-api` interface.
+The description of the ModelWrapper implementation can be found in {doc}`model-io-metadata` section.
 But it has to be extended with a few additional steps, like in the [AutoPyTorch](https://github.com/antmicro/auto-pytorch)-based [example with a simple fully-connected neural network](automl-model-example):
 * add {py:class}`kenning.core.automl.AutoMLModel` based class inheritance to the ModelWrapper (line 35),
 * implement the model class with parameters that can be tuned by AutoML (lines 14-32),
@@ -904,7 +904,7 @@ class PyTorchFullyConnected(PyTorchWrapper, AutoPyTorchModel):
 
 ### Using the implemented model
 
-To use the model, its full path (or just name if it is placed under `kenning.modelwrappers`) has to be specified in the `use_models` parameter:
+To use the model, its full module path has to be specified in the `use_models` parameter:
 
 ```{code-block} yaml save-as=fc-scenario.yml
 ---

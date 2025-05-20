@@ -10,6 +10,7 @@ import logging
 import os
 import shutil
 import subprocess
+import sys
 import venv
 from functools import wraps
 from pathlib import Path
@@ -424,6 +425,9 @@ class ZephyrRuntimeBuilder(RuntimeBuilder):
 
         extra_build_args = [
             f"-DMODULE_EXT_ROOT={self.workspace}",
+            # Make sure KZR uses the same Python and dependencies,
+            # required for Kenning installed with pipx
+            f'-DCONFIG_KENNING_PYTHON_PATH="{sys.executable}"',
         ]
 
         if self.model_path is not None:

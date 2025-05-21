@@ -697,11 +697,16 @@ class Protocol(ArgumentsHandler, ABC):
             return False, b""
         return self.receive_confirmation()
 
-    def download_statistics(self) -> Measurements:
+    def download_statistics(self, final: bool = False) -> Measurements:
         """
         Downloads inference statistics from the target device.
 
         By default no statistics are gathered.
+
+        Parameters
+        ----------
+        final : bool
+            If the inference is finished
 
         Returns
         -------
@@ -709,6 +714,8 @@ class Protocol(ArgumentsHandler, ABC):
             Inference statistics on target device.
         """
         measurements = Measurements()
+        if final is False:
+            return measurements
 
         KLogger.debug("Downloading statistics")
         if not self.send_message(Message(MessageType.STATS)):

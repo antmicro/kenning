@@ -6,9 +6,11 @@
 UART-based inference communication protocol.
 """
 
+import enum
 import json
 import re
 import selectors
+import struct
 from pathlib import Path
 from typing import Any, Dict, List, Literal, Optional, Tuple
 
@@ -30,8 +32,18 @@ MAX_LENGTH_MODEL_NAME = 20
 MODEL_STRUCT_SIZE = 160
 
 BARE_METAL_IREE_ALLOCATION_STATS_SIZE = 24
+
 RUNTIME_STAT_NAME_MAX_LEN = 32
-RUNTIME_STAT_VALUE_BITS = 8
+RUNTIME_STAT_FMT = f"{RUNTIME_STAT_NAME_MAX_LEN}sQQ"
+STAT_SIZE = struct.calcsize(RUNTIME_STAT_FMT)
+
+
+class RuntimeStatType(enum.IntEnum):
+    """An enum of statistic types returned by the protocol."""
+
+    RUNTIME_STATISTICS_DEFAULT = 0
+    RUNTIME_STATISTICS_ALLOCATION = 1
+    RUNTIME_STATISTICS_INFERENCE_TIME = 2
 
 
 def _io_spec_to_struct(
@@ -147,7 +159,7 @@ def _io_spec_to_struct(
     return result
 
 
-def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
+def _parse_stats(data: bytes, final: bool = False) -> dict:
     """
     Method used to parse allocation stats sent by runtime.
 
@@ -156,9 +168,12 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     data : bytes
         Byte array with stats sent by runtime.
 
+    final : bool
+            If the inference is finished
+
     Returns
     -------
-    Dict[str, int]
+    dict
         Parsed stats.
 
     Raises
@@ -166,31 +181,51 @@ def _parse_allocation_stats(data: bytes) -> Dict[str, int]:
     ValueError
         Raised when passed argument is of invalid size
     """
-    STAT_SIZE = RUNTIME_STAT_NAME_MAX_LEN + RUNTIME_STAT_VALUE_BITS
     if len(data) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE:
         stats = np.frombuffer(data, dtype=np.uint32, count=6)
         stats_json = {
-            "host_bytes_peak": int(stats[0]),
-            "host_bytes_allocated": int(stats[1]),
-            "host_bytes_freed": int(stats[2]),
-            "device_bytes_peak": int(stats[3]),
-            "device_bytes_allocated": int(stats[4]),
-            "device_bytes_freed": int(stats[5]),
+            "allocations": {
+                "host_bytes_peak": int(stats[0]),
+                "host_bytes_allocated": int(stats[1]),
+                "host_bytes_freed": int(stats[2]),
+                "device_bytes_peak": int(stats[3]),
+                "device_bytes_allocated": int(stats[4]),
+                "device_bytes_freed": int(stats[5]),
+            }
         }
     elif len(data) % STAT_SIZE == 0:
         stats_json = dict()
 
         for i in range(0, len(data), STAT_SIZE):
-            stat_name = (
-                data[i : i + RUNTIME_STAT_NAME_MAX_LEN].strip(b"\x00").decode()
+            stat_name, stat_type, stat_value = struct.unpack(
+                RUNTIME_STAT_FMT, data[i : i + STAT_SIZE]
             )
-            stat_value = int.from_bytes(
-                data[i + RUNTIME_STAT_NAME_MAX_LEN : i + STAT_SIZE],
-                "little",
-                signed=False,
-            )
+            stat_name = stat_name.strip(b"\x00").decode()
 
-            stats_json[stat_name] = stat_value
+            if stat_type == RuntimeStatType.RUNTIME_STATISTICS_DEFAULT:
+                if final is not False:
+                    continue
+
+                stats_json[stat_name] = stat_value
+
+            elif stat_type == RuntimeStatType.RUNTIME_STATISTICS_ALLOCATION:
+                if final is not True:
+                    continue
+
+                if "allocations" not in stats_json:
+                    stats_json["allocations"] = {}
+                stats_json["allocations"][stat_name] = stat_value
+
+            elif (
+                stat_type == RuntimeStatType.RUNTIME_STATISTICS_INFERENCE_TIME
+            ):
+                if final is not False:
+                    continue
+
+                stats_json[stat_name] = [stat_value / 1e9]
+
+            else:
+                raise ValueError(f"Invalid stat type: {stat_type}")
     else:
         raise ValueError(f"Invalid allocations stats size: {len(data)}")
 
@@ -291,13 +326,13 @@ class UARTProtocol(BytesBasedProtocol):
         self.send_message(message)
         return self.receive_confirmation()[0]
 
-    def download_statistics(self) -> "Measurements":
+    def download_statistics(self, final: bool = False) -> "Measurements":
         KLogger.debug("Downloading statistics")
         self.send_message(Message(MessageType.STATS))
         status, data = self.receive_confirmation()
         measurements = Measurements()
         if status and isinstance(data, bytes) and len(data) > 0:
-            measurements += {"allocation_stats": _parse_allocation_stats(data)}
+            measurements += _parse_stats(data, final=final)
         return measurements
 
     def initialize_server(self) -> bool:

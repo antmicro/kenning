@@ -287,9 +287,12 @@ class ROS2Protocol(Protocol):
         )(self.node, self.future)
         return True
 
-    def download_statistics(self) -> Measurements:
-        self.log_debug("Downloading statistics")
+    def download_statistics(self, final: bool = False) -> Measurements:
         measurements = Measurements()
+        if final is False:
+            return measurements
+
+        self.log_debug("Downloading statistics")
 
         if self.measurements_service is None:
             self.log_error("Measurements service is not initialized")

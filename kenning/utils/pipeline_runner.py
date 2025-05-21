@@ -708,6 +708,9 @@ class PipelineRunner(object):
 
                         if remote:
                             preds = self._remote_inference_step(prepX)
+                            measurements += self.protocol.download_statistics(
+                                final=False
+                            )
                         else:
                             preds = self._local_inference_step(prepX)
 
@@ -723,7 +726,7 @@ class PipelineRunner(object):
             KLogger.info("Stopping inference...")
         else:
             if remote:
-                measurements += self.protocol.download_statistics()
+                measurements += self.protocol.download_statistics(final=True)
         finally:
             if remote:
                 self._remote_inference_cleanup()

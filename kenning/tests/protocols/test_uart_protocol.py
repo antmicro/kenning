@@ -29,7 +29,7 @@ from kenning.protocols.uart import (
     RUNTIME_STAT_NAME_MAX_LEN,
     UARTProtocol,
     _io_spec_to_struct,
-    _parse_allocation_stats,
+    _parse_stats,
 )
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.protocols.test_core_protocol import (
@@ -294,7 +294,7 @@ class TestIOSpecToStruct:
 
 class TestParseAllocationStats:
     def test_parse_valid_iree_stats(self, valid_iree_stats: bytes):
-        stats_json = _parse_allocation_stats(valid_iree_stats)
+        stats_json = _parse_stats(valid_iree_stats)
 
         assert len(stats_json) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE // 4
         assert all(
@@ -304,7 +304,7 @@ class TestParseAllocationStats:
         assert json.loads(json.dumps(stats_json)) == stats_json
 
     def test_parse_valid_generic_stats(self, valid_generic_stats: bytes):
-        stats_json = _parse_allocation_stats(valid_generic_stats)
+        stats_json = _parse_stats(valid_generic_stats)
 
         assert len(stats_json) == len(valid_generic_stats) / (
             RUNTIME_STAT_NAME_MAX_LEN + 8
@@ -334,7 +334,7 @@ class TestParseAllocationStats:
         )
 
         with pytest.raises(ValueError):
-            _ = _parse_allocation_stats(invalid_stats)
+            _ = _parse_stats(invalid_stats)
 
     @pytest.mark.parametrize(
         "invalid_string",
@@ -352,7 +352,7 @@ class TestParseAllocationStats:
         )
 
         with pytest.raises(ValueError):
-            _ = _parse_allocation_stats(invalid_stats)
+            _ = _parse_stats(invalid_stats)
 
 
 class TestUARTProtocol(TestCoreProtocol):
@@ -700,5 +700,5 @@ class TestUARTProtocol(TestCoreProtocol):
         thread_send.join()
 
         assert {
-            "allocation_stats": _parse_allocation_stats(valid_iree_stats)
+            "allocation_stats": _parse_stats(valid_iree_stats)
         } == statistics.data

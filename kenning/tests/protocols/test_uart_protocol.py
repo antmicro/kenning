@@ -5,6 +5,7 @@
 import json
 import multiprocessing
 import os
+import struct
 import time
 from contextlib import nullcontext as does_not_raise
 from pathlib import Path
@@ -88,8 +89,7 @@ def valid_generic_stats() -> bytes:
 
     stats = b""
     for name, value in zip(stats_names, stats_values):
-        stats += name.encode().ljust(RUNTIME_STAT_NAME_MAX_LEN, b"\x00")
-        stats += value.tobytes()
+        struct.pack(f"{RUNTIME_STAT_NAME_MAX_LEN}sQQ", name.encode(), 0, value)
 
     return stats
 
@@ -294,7 +294,7 @@ class TestIOSpecToStruct:
 
 class TestParseAllocationStats:
     def test_parse_valid_iree_stats(self, valid_iree_stats: bytes):
-        stats_json = _parse_stats(valid_iree_stats)
+        stats_json = _parse_stats(valid_iree_stats)["allocations"]
 
         assert len(stats_json) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE // 4
         assert all(
@@ -695,10 +695,8 @@ class TestUARTProtocol(TestCoreProtocol):
         )
         thread_send.start()
 
-        statistics = client.download_statistics()
+        statistics = client.download_statistics(final=True)
 
         thread_send.join()
 
-        assert {
-            "allocation_stats": _parse_stats(valid_iree_stats)
-        } == statistics.data
+        assert _parse_stats(valid_iree_stats) == statistics.data

@@ -344,8 +344,12 @@ class TestPipelineRunnerRun:
         protocol_mock.upload_input.assert_called_once()
         protocol_mock.request_processing.assert_called_once()
         protocol_mock.download_output.assert_called_once()
-        protocol_mock.download_statistics.assert_called_once()
         protocol_mock.disconnect.assert_called_once()
+
+        assert protocol_mock.download_statistics.call_args_list == [
+            ({"final": False},),
+            ({"final": True},),
+        ]
 
     def test_run_remote_no_runtime(
         self,

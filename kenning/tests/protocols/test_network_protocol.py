@@ -522,7 +522,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             time.sleep(0.1)
             client.send_message(Message(MessageType.OK))
             client.receive_confirmation()
-            output = client.download_statistics()
+            output = client.download_statistics(final=True)
             queue.put(output)
 
         queue = multiprocessing.Queue()

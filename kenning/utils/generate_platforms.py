@@ -542,6 +542,7 @@ def get_platforms_definitions() -> Dict:
                     ("compilation_flags", compilation_flags),
                     ("image", image),
                     ("default_platform", "ZephyrPlatform"),
+                    ("default_optimizer", ["TFLiteCompiler", "TVMCompiler"]),
                 )
                 if v is not None
             }

@@ -178,7 +178,7 @@ class ResourceManager(metaclass=Singleton):
             KLogger.error("Kenning resources version cannot be validated")
             return
         if resources_version.rstrip("\n") != kenning.__version__:
-            KLogger.error(
+            KLogger.info(
                 "The newer version of Kenning is available, "
                 "some resources may not be compatible with current one"
             )

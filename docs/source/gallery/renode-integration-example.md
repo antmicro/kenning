@@ -27,7 +27,7 @@ Alternatively, install them manually by following the instructions in the [runti
 Optionally, to use the newest Kenning - install it in the image:
 
 ```bash
-pip install "kenning[tensorflow,reports,uart,renode,object_detection] @ git+https://github.com/antmicro/kenning.git"
+pip install "kenning[tensorflow,reports,uart,renode,object_detection] @ git+https://github.com/antmicro/kenning.git@v0.8.0"
 ```
 :::
 

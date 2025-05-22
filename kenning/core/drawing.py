@@ -251,15 +251,12 @@ class Plot(ABC, object):
             min_border_left=0,
             frame_height=100 * len(legend_items) // legend_columns,
             toolbar_location=None,
-            max_width=self.width,
             max_height=self.height,
-            match_aspect=True,
-            sizing_mode="scale_both",
-            height_policy="max",
+            aspect_ratio=None,
+            height_policy="fit",
             width_policy="auto",
             styles={
-                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
-                "height": "15vh",
+                "width": "100%",
             },
         )
 
@@ -2701,12 +2698,10 @@ class LinePlot(Plot):
             toolbar_location="above",
             width=self.width,
             height=self.height,
-            max_width=self.width,
             max_height=self.height,
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
-            match_aspect=True,
             sizing_mode="scale_width",
             height_policy="max",
             width_policy="auto",
@@ -2714,7 +2709,7 @@ class LinePlot(Plot):
             x_axis_type=self.x_scale,
             y_axis_type=self.y_scale,
             styles={
-                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+                "max-width": "100%",
                 "height": "40vh",
             },
         )

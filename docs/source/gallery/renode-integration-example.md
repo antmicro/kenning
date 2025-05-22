@@ -23,14 +23,6 @@ mkdir -p workspace && cd workspace
 ```
 Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
 
-:::{note}
-Optionally, to use the newest Kenning - install it in the image:
-
-```bash
-pip install "kenning[tensorflow,reports,uart,renode,object_detection] @ git+https://github.com/antmicro/kenning.git@v0.8.0"
-```
-:::
-
 Kenning uses [pyrenode3](https://github.com/antmicro/pyrenode3/) package, which requires Renode to work.
 To install it, download the latest Renode Arch package and store its location in `PYRENODE_PKG`:
 ```bash

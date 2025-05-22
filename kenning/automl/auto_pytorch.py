@@ -855,11 +855,13 @@ class AutoPyTorchML(AutoML):
             CLASSIFICATION_METRICS,
         )
         from autoPyTorch.utils.results_manager import cost2metric
+        from smac.tae import StatusType
 
         stats = self._api.get_statistics()
         # Get metrics of trained models
         metrics_over_time = {}
         additional_info = {}
+        successful_models = set()
         for run_key, run_hist in self._api.run_history.items():
             if "num_run" not in run_hist.additional_info:
                 KLogger.warning(
@@ -868,6 +870,11 @@ class AutoPyTorchML(AutoML):
                 )
                 continue
             num_run = int(run_hist.additional_info["num_run"])
+            if run_hist.status in (
+                StatusType.SUCCESS,
+                StatusType.DONOTADVANCE,
+            ):
+                successful_models.add(num_run)
             metrics_over_time[num_run] = {
                 # Change losses to metrics
                 k: {
@@ -881,6 +888,7 @@ class AutoPyTorchML(AutoML):
         # Get data from training with Tensorboard
         training_data = defaultdict(lambda: defaultdict(dict))
         training_start_time = defaultdict(list)
+        training_epochs = defaultdict(list)
         model_params = defaultdict(lambda: defaultdict(dict))
         model_prefix = "Model/"
         EVENT_TO_NAME = {
@@ -900,6 +908,7 @@ class AutoPyTorchML(AutoML):
                 "events.out.tfevents.*"
             ):
                 num_run = None
+                start_epoch = None
                 KLogger.debug(events_file)
                 try:
                     for event in TFRecordDataset(str(events_file)):
@@ -916,7 +925,25 @@ class AutoPyTorchML(AutoML):
                         # Gather metadata and data from training
                         else:
                             for e_val in event.summary.value:
-                                if e_val.tag.startswith(model_prefix):
+                                if e_val.tag == "start_epoch":
+                                    start_epoch = int(e_val.simple_value)
+                                elif e_val.tag == "end_epoch":
+                                    if start_epoch is None:
+                                        KLogger.warning(
+                                            "`end_epoch` received before `start_epoch`"  # noqa: E501
+                                        )
+                                        continue
+                                    training_epochs[num_run].append(
+                                        {
+                                            "epoch_range": (
+                                                start_epoch,
+                                                int(e_val.simple_value),
+                                            ),
+                                            "end_time": event.wall_time,
+                                        }
+                                    )
+                                    start_epoch = None
+                                elif e_val.tag.startswith(model_prefix):
                                     v = e_val.simple_value
                                     if abs(v - int(v)) < 1e-8:
                                         v = int(v)
@@ -935,24 +962,33 @@ class AutoPyTorchML(AutoML):
                 "Cannot import data from tensorboard,"
                 " please install tensorflow"
             )
-        return {
-            "general_info": {
-                "Optimized metric": self._api._metric.name,
-                "The number of generated models": stats["runs"],
-                "The number of trained and evaluated models": stats["success"],
-                "The number of models that caused a crash": stats["crash"],
-                "The number of models that failed due to the timeout": stats[
-                    "timeout"
-                ],
-                "The number of models that failed due to the too large size": stats[  # noqa: E501
-                    "memout"
-                ],
-            },
-            "trained_model_metrics": metrics_over_time,
-            "training_start_time": training_start_time,
-            "model_params": model_params,
-            "additional_info": additional_info,
-        } | ({"training_data": training_data} if training_data else {})
+        return (
+            {
+                "general_info": {
+                    "Optimized metric": self._api._metric.name,
+                    "The number of generated models": stats["runs"],
+                    "The number of trained and evaluated models": len(
+                        successful_models
+                    ),
+                    "The number of successful training processes": stats[
+                        "success"
+                    ],
+                    "The number of models that caused a crash": stats["crash"],
+                    "The number of models that failed due to the timeout": stats[  # noqa: E501
+                        "timeout"
+                    ],
+                    "The number of models that failed due to the too large size": stats[  # noqa: E501
+                        "memout"
+                    ],
+                },
+                "trained_model_metrics": metrics_over_time,
+                "training_start_time": training_start_time,
+                "model_params": model_params,
+                "additional_info": additional_info,
+            }
+            | ({"training_data": training_data} if training_data else {})
+            | ({"training_epochs": training_epochs} if training_epochs else {})
+        )
 
     def get_best_configs(self) -> Iterable[Dict]:
         import torch

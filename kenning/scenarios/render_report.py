@@ -2020,64 +2020,58 @@ def automl_report(
     # Create training overview
     training_plot = imgdir / "training_plot"
     comparison_training_plot = imgdir / "comparison_training_plot"
-    if (
-        "training_data" in automl_stats
-        and "training_start_time" in automl_stats
-    ):
+    if "training_data" in automl_stats and "training_epochs" in automl_stats:
         training_data = automl_stats["training_data"]
+        training_epochs = automl_stats["training_epochs"]
 
         gathered = []
-        # Retrieve beginning of each model's training
-        starting_times = {}
-        for model_id, stimes in automl_stats["training_start_time"].items():
-            for t in stimes:
-                starting_times[t] = model_id
-        ordered_stimes = sorted(starting_times.keys())
-
         for data_type in ("validation_epoch", "training_epoch"):
-            data_epochs = []
-            for model_trainign in training_data.values():
-                if data_type in model_trainign:
-                    data_epochs.extend(model_trainign[data_type].keys())
-            data_epochs = sorted(map(float, data_epochs))
-            data_time_epoch = dict(zip(data_epochs, range(len(data_epochs))))
-
-            # Detect whether training was stopped
-            prev_id, stime_id = 0, 0
-            model_train_change = {}
-            for v, epoch in data_time_epoch.items():
-                while (
-                    stime_id + 1 < len(ordered_stimes)
-                    and v > ordered_stimes[stime_id + 1]
-                ):
-                    stime_id += 1
-                model_train_change[epoch] = not prev_id == stime_id
-                prev_id = stime_id
-                epoch += 1
-
             # Process data to LinePlot format
             lines = defaultdict(lambda: ([], []))
             for m_id, data in training_data.items():
                 if data_type not in data:
                     continue
+                training_iter = 0
+                epoch = training_epochs[m_id][training_iter]["epoch_range"][0]
                 val_data = data[data_type]
-                for stime, loss in val_data.items():
-                    epoch = data_time_epoch[float(stime)]
+                for _stime, loss in val_data.items():
                     # Append NaN to make gap in the line
-                    if model_train_change[epoch]:
+                    if (
+                        epoch
+                        == training_epochs[m_id][training_iter]["epoch_range"][
+                            1
+                        ]
+                        + 1
+                        or float(_stime)
+                        >= training_epochs[m_id][training_iter]["end_time"]
+                    ):
                         lines[m_id][0].append(float("NaN"))
                         lines[m_id][1].append(0.0)
+                        training_iter += 1
+                        epoch = training_epochs[m_id][training_iter][
+                            "epoch_range"
+                        ][0]
+
                     lines[m_id][0].append(epoch)
                     lines[m_id][1].append(loss)
+                    epoch += 1
             gathered.append(lines)
 
         # Sort IDs in ascending order and convert back to strings
         model_ids = set(gathered[0].keys()) | set(gathered[1].keys())
         model_ids = list(map(str, sorted(map(int, model_ids))))
 
+        if len(colors) < len(model_ids):
+            colors += [
+                to_hex(c)
+                for c in Plot._get_comparison_color_scheme(
+                    len(model_ids) - len(colors)
+                )
+            ]
+
         LinePlot(
             lines=sum(
-                ([g[i] for i in model_ids if i in g] for g in gathered),
+                ([g[i] for g in gathered if i in g] for i in model_ids),
                 start=[],
             ),
             x_label="Epoch",
@@ -2085,18 +2079,30 @@ def automl_report(
             title="Loss across AutoML flow" if draw_titles else None,
             colors=sum(
                 (
-                    [colors[i] for i, _id in enumerate(model_ids) if _id in g]
-                    for g in gathered
+                    [colors[i] for g in gathered if _id in g]
+                    for i, _id in enumerate(model_ids)
                 ),
                 start=[],
             ),
             y_scale="log",
-            lines_labels=[
-                f"Model {i} (val)" for i in model_ids if i in gathered[0]
-            ]
-            + [f"Model {i} (train)" for i in model_ids if i in gathered[1]],
-            dashed=[False for i in gathered[0].keys()]
-            + [True for i in gathered[1].keys()],
+            lines_labels=sum(
+                (
+                    [
+                        f"Model {i} ({'val' if j == 0 else 'train'})"
+                        for j, g in enumerate(gathered)
+                        if i in g
+                    ]
+                    for i in model_ids
+                ),
+                start=[],
+            ),
+            dashed=sum(
+                (
+                    [j != 0 for j, g in enumerate(gathered) if i in g]
+                    for i in model_ids
+                ),
+                start=[],
+            ),
             add_points=True,
         ).plot(training_plot, image_formats)
         automl_data["training_plot"] = get_plot_wildcard_path(

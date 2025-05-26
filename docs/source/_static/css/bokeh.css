@@ -5,18 +5,8 @@
  */
 
 /* Background for bokeh plots */
-.bk-Column, .bk-GridPlot, .bk-Figure {
-	width: 90vw;
-	max-width: 100%;
-	margin: 0;
-}
-
-.bk-Column {
-  height: 95vh;
-}
-
-.md-grid {
-  max-width: 90vw !important;
+figure:has(div>.bk-GridPlot, div>.bk-Figure, div>.bk-Column, div.bk-Row) {
+  width: 95%;
 }
 
 /* Background for bokeh plots */

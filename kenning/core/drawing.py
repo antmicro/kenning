@@ -207,6 +207,7 @@ class Plot(ABC, object):
         safety_offset: int = 0,
         click_policy: str = "none",
         reverse: bool = False,
+        max_height: str = "15vh",
     ) -> Any:
         """
         Creates bokeh figure with legend.
@@ -221,6 +222,8 @@ class Plot(ABC, object):
             Click policy of legend items.
         reverse : bool
             Whether legend items order should be reversed.
+        max_height : str
+            CSS value used as max-height.
 
         Returns
         -------
@@ -251,13 +254,15 @@ class Plot(ABC, object):
             min_border_left=0,
             frame_height=100 * len(legend_items) // legend_columns,
             toolbar_location=None,
-            max_height=self.height,
             aspect_ratio=None,
-            height_policy="fit",
-            width_policy="auto",
+            height_policy="min",
+            width_policy="max",
             styles={
                 "width": "100%",
+                "max-height": max_height,
+                "overflow": "clip",
             },
+            css_classes=["legend"],
         )
 
         merged_legend_items = {}
@@ -284,6 +289,10 @@ class Plot(ABC, object):
             location="left",
             click_policy=click_policy,
             ncols=legend_columns,
+            styles={
+                "width": "100%",
+                "max-height": max_height,
+            },
         )
 
         legend_fig.xaxis.visible = False
@@ -601,10 +610,12 @@ class ViolinComparisonPlot(Plot):
                 output_backend="webgl",
                 sizing_mode="scale_both",
                 max_height=self.height + legend_height,
-                margin=margins,
+                margin=margins
+                if metric_label != self.metric_labels[-1]
+                else None,
                 match_aspect=True,
-                height_policy="max",
-                width_policy="auto",
+                height_policy="fit",
+                width_policy="max",
                 css_classes=["plot", "violin"],
             )
             for metric_label in self.metric_labels
@@ -907,8 +918,11 @@ class RadarChart(Plot):
             match_aspect=True,
             output_backend="webgl",
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="min",
+            width_policy="max",
+            styles={
+                "max-height": "70vh",
+            },
         )
 
         radar_fig.grid.visible = False
@@ -1279,14 +1293,14 @@ class BubblePlot(Plot):
             x_axis_label=self.x_label,
             y_axis_label=self.y_label,
             output_backend="webgl",
-            max_width=self.width * 2,
-            max_height=self.height,
-            match_aspect=True,
-            sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            sizing_mode="scale_width",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
             margin=margins,
+            styles={
+                "max-height": "70vh",
+            },
         )
         bubbleplot_fig.toolbar.logo = None
 
@@ -1305,7 +1319,9 @@ class BubblePlot(Plot):
             for i, label in enumerate(self.bubble_labels)
         ]
 
-        legend_fig = self._create_bokeh_legend_fig(legend_items)
+        legend_fig = self._create_bokeh_legend_fig(
+            legend_items, max_height="10vh"
+        )
 
         # custom tooltips
         bubbleplot_fig.add_tools(
@@ -1661,15 +1677,12 @@ class ConfusionMatrixPlot(Plot):
         )
         from bokeh.plotting import figure
 
-        small_height = "4vw"
-        small_width = "4vw"
         max_width_percentage = "100%"
-        safety_offset = 20
         matrix_css_sizes = {
-            "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
             "min-width": "80%",
             "max-width": max_width_percentage,
             "aspect-ration": "1 / 1",
+            "max-height": "70vh",
         }
 
         # Prepare figure
@@ -1756,9 +1769,10 @@ class ConfusionMatrixPlot(Plot):
             output_backend="webgl",
             sizing_mode="scale_width",
             styles={
-                "height": small_height,
+                "height": "5vh",
+                "min-width": "80%",
                 "max-width": max_width_percentage,
-                "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+                "max-height": "5vh",
             },
         )
 
@@ -1809,8 +1823,8 @@ class ConfusionMatrixPlot(Plot):
             sizing_mode="scale_height",
             match_aspect=True,
             styles={
-                "width": small_width,
-                "max-width": max_width_percentage,
+                "width": "5vh",
+                "max-width": "5vh",
             },
         )
 
@@ -1859,8 +1873,9 @@ class ConfusionMatrixPlot(Plot):
             sizing_mode="fixed",
             toolbar_location=None,
             styles={
-                "width": small_width,
-                "height": small_height,
+                "width": "5vh",
+                "height": "5vh",
+                "max-height": "5vh",
             },
         )
 
@@ -1931,9 +1946,10 @@ class ConfusionMatrixPlot(Plot):
                 sizing_mode="scale_width",
                 margin=(40, 0, 0, 0),
                 styles={
-                    "height": small_height,
+                    "height": "5vh",
                     "max-width": max_width_percentage,
-                    "width": f"{BOKEH_PLOT_WIDTH - safety_offset}vw",
+                    "min-width": "80%",
+                    "max-height": "5vh",
                 },
             )
 
@@ -1972,7 +1988,7 @@ class ConfusionMatrixPlot(Plot):
             toolbar_location=None,
             sizing_mode="scale_width",
         )
-        grid_fig.cols = ["1fr", "1fr"]
+        grid_fig.cols = ["6fr", "1fr"]
 
         self._output_bokeh_figure(
             grid_fig,
@@ -2086,8 +2102,8 @@ class RecallPrecisionCurvesPlot(Plot):
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
         )
 
@@ -2230,8 +2246,8 @@ class TruePositiveIoUHistogram(Plot):
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
         )
 
@@ -2340,8 +2356,8 @@ class TruePositivesPerIoURangeHistogram(Plot):
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
         )
 
@@ -2500,8 +2516,8 @@ class RecallPrecisionGradients(Plot):
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
         )
         color_mapper = LinearColorMapper(
@@ -2703,13 +2719,12 @@ class LinePlot(Plot):
             y_axis_label=self.y_label,
             output_backend="webgl",
             sizing_mode="scale_width",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
             x_axis_type=self.x_scale,
             y_axis_type=self.y_scale,
             styles={
-                "max-width": "100%",
                 "height": "40vh",
             },
         )
@@ -2772,6 +2787,7 @@ class LinePlot(Plot):
                 legend_data,
                 safety_offset=safety_offset,
                 click_policy="hide",
+                max_height="40vh",
             )
 
             plot_fig = gridplot(
@@ -2981,9 +2997,13 @@ class Barplot(Plot):
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
-            height_policy="max",
-            width_policy="auto",
+            height_policy="fit",
+            width_policy="max",
             css_classes=["plot"],
+            styles={
+                "max-width": "100%",
+                "max-height": "80vh",
+            },
         )
         barplot_fig.toolbar.logo = None
 

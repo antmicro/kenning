@@ -227,13 +227,21 @@ class TestFlowHandler(HandlerTests):
                 conn_name_mapping[global_name1] = global_name2
 
         for node1, node2 in zip(dataflow1, dataflow2):
-            for local_name in node1.get("inputs", {}):
-                connection_check(node1["inputs"], node2["inputs"], local_name)
+            found = False
+            for node2 in dataflow2:
+                if node1["type"] != node2["type"]:
+                    continue
+                found = True
+                for local_name in node1.get("inputs", {}):
+                    connection_check(
+                        node1["inputs"], node2.get("inputs", {}), local_name
+                    )
 
-            for local_name in node1.get("outputs", {}):
-                connection_check(
-                    node1["outputs"], node2["outputs"], local_name
-                )
+                for local_name in node1.get("outputs", {}):
+                    connection_check(
+                        node1["outputs"], node2.get("outputs", {}), local_name
+                    )
+            assert found, f"Could not find target node type:  {node1['type']}"
         return True
 
     PATH_TO_JSON_SCRIPTS = "./scripts/jsonflowconfigs"

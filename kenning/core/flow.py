@@ -125,7 +125,40 @@ class KenningFlow:
         output_specs = {}
         runners: List[Runner] = []
 
-        for runner_idx, runner_spec in enumerate(runners_specifications):
+        # order blocks to properly create variables
+        runners_idx_ordered = []
+
+        previous_len = 0
+        missing_vars = []
+
+        found_vars = []
+        while len(runners_idx_ordered) < len(runners_specifications):
+            for runner_idx, runner_spec in enumerate(runners_specifications):
+                if runner_idx in runners_idx_ordered:
+                    continue
+                inputs = runner_spec.get("inputs", {})
+                outputs = runner_spec.get("outputs", {})
+                missing_vars_runner = [
+                    var for var in inputs.values() if var not in found_vars
+                ]
+                if len(missing_vars_runner) > 0:
+                    missing_vars.extend(missing_vars_runner)
+                    continue
+                runners_idx_ordered.append(runner_idx)
+                for global_name in outputs.values():
+                    # leaving redefinition check to graph forming part
+                    if global_name not in found_vars:
+                        found_vars.append(global_name)
+            if previous_len == len(runners_idx_ordered):
+                raise Exception(
+                    f"Scenario has undeclared input variables:  {set(missing_vars)}"  # noqa: E501
+                )
+            previous_len = len(runners_idx_ordered)
+            missing_vars = []
+
+        # graph forming
+        for runner_idx in runners_idx_ordered:
+            runner_spec = runners_specifications[runner_idx]
             try:
                 runner_cls: Runner = load_class(runner_spec["type"])
                 cfg = runner_spec["parameters"]

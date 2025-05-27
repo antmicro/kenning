@@ -245,7 +245,9 @@ class ModelRuntimeRunner(Runner):
         return self._get_io_specification(self.model.get_io_specification())
 
     def run(self, inputs: Dict[str, Any]) -> Dict[str, Any]:
-        model_input = inputs.get("processed_input", inputs["input"])
+        model_input = inputs.get("processed_input", inputs.get("input", None))
+        if model_input is None:
+            raise RuntimeError("Cannot find input for the model")
 
         preds = self.runtime.infer(
             [model_input], self.model, postprocess=False

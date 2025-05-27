@@ -272,7 +272,7 @@ class PyTorchAnomalyDetectionCNN(PyTorchWrapper, AutoPyTorchModel):
 
     def preprocess_input(self, X) -> List[Any]:
         X = np.asarray(X[0])
-        X = (X - self.mean) / self.std
+        X = (X - self.mean) / (3 * self.std)
         X = np.expand_dims(X, -3)
         return [X]
 

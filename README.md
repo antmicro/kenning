@@ -259,7 +259,7 @@ Class: TFLiteCompiler
     The TFLite and EdgeTPU compiler.
 
 Dependencies:
-* onnx_tf.backend.prepare
+* onnx2tf
 * tensorflow
 * numpy
 * onnx

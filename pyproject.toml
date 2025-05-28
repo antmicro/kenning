@@ -41,6 +41,7 @@ dependencies = [
     "scipy<1.12.0",
     "tomli; python_version<'3.11'",
     "tqdm>=4.60.0",
+    "kenning[onnx2tf]",
 ]
 
 [project.optional-dependencies]
@@ -52,16 +53,13 @@ docs = [
     "sphinx>=8.2.3; python_version>'3.11'",
 ]
 tensorflow = [
-    "onnx_tf",
+    "kenning[onnx2tf]",
+    "tf_keras",
     "tensorflow_addons; python_version<'3.12'",
     "tensorflow_model_optimization",
-    "tensorflow~=2.11.0; python_version<'3.11'",
-    "tensorflow_probability~=0.19.0; python_version<'3.11'",
-    "tensorflow_probability~=0.22.0; python_version=='3.11'",
-    "tensorflow~=2.14.0; python_version=='3.11'",
-    "tensorflow~=2.18.0; python_version=='3.12'",
-    "tf2onnx",
-    "tf2onnx>=1.16.1; python_version=='3.11'",
+    "tensorflow",
+    "h5py",
+    "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
 ]
 torch = [
     "onnx2torch",
@@ -129,6 +127,9 @@ test = [
     "pytest-reportlog",
     "pytest-xdist",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
+    "tf2onnx",
+    "tf_keras",
+    "kenning[onnx2tf]",
 ]
 real_time_visualization = [
     "dearpygui>=1.6.2",
@@ -156,7 +157,7 @@ zephyr = [
     "pykwalify",
     "natsort",
     "pyelftools",
-    "junitparser",
+    "junitparser>3.1.0",
     "ply",
     "anytree",
 ]
@@ -175,15 +176,30 @@ albumentations = [
 
 llm = [
     "kenning[torch]",
-    "autoawq==0.2.5; python_version<'3.12'",
     "auto_gptq; python_version<'3.12'",
+    "autoawq==0.2.5; python_version<'3.12'",
     "rouge-score",
     "transformers==4.40.2",  # version fixed for sparsegpt+gptq optimization
-    "vllm==0.5.0.post1; python_version<'3.12'",
+    "vllm==0.5.0; python_version<'3.12'",
+]
+
+onnx2tf = [
+    "onnx2tf==1.17.5",
+    "onnx>=1.14.0,<=1.17.0",
+    "onnxruntime==1.18.1",
+    "onnx-simplifier==0.4.33",
+    "onnx_graphsurgeon",
+    "simple_onnx_processing_tools",
+    "tensorflow>=2.14.0,<=2.19.0",
+    "tf-keras>=2.14.0,<=2.19.0",
+    "ai-edge-litert==1.2.0",
+    "psutil==5.9.5",
+    "ml_dtypes>=0.2.0,<=0.5.1",
+    "flatbuffers>=23.1.21",
 ]
 
 all = [
-    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyrnni,ros2,albumentations,llm]"
+    "kenning[nvidia_perf,docs,tensorflow,torch,mxnet,object_detection,speech_to_text,anomaly_detection,auto_pytorch,tflite,tvm,iree,onnxruntime,test,real_time_visualization,pipeline_manager,reports,uart,renode,zephyr,nni,ros2,albumentations,llm,onnx2tf]"
 ]
 
 # pip does not distinguish between kenning.datasets and datasets

@@ -53,7 +53,15 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         tf.keras.backend.clear_session()
         if hasattr(self, "model") and self.model is not None:
             del self.model
-        self.model = tf.keras.models.load_model(str(model_path))
+        try:
+            import tf_keras
+
+            self.model = tf_keras.models.load_model(str(model_path))
+        except ValueError:
+            self.model = tf.keras.layers.TFSMLayer(
+                str(model_path), call_endpoint="serve"
+            )
+
         self.model.summary()
 
     def save_model(self, model_path: PathOrURI):

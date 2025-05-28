@@ -27,7 +27,7 @@ apt install -y --no-install-recommends ccache curl device-tree-compiler dfu-util
 Next, create a Zephyr workspace directory and clone there Kenning Zephyr Runtime repository:
 ```bash
 mkdir -p zephyr-workspace && cd zephyr-workspace
-git clone https://github.com/antmicro/kenning-zephyr-runtime -b stable
+git clone https://github.com/antmicro/kenning-zephyr-runtime
 cd kenning-zephyr-runtime
 ```
 

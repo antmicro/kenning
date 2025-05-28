@@ -37,7 +37,7 @@ pip install "kenning[iree,tvm,torch,anomaly_detection,tensorflow,tflite,reports,
 :::
 
 ```bash
-git clone https://github.com/antmicro/kenning-zephyr-runtime -b stable
+git clone https://github.com/antmicro/kenning-zephyr-runtime
 cd kenning-zephyr-runtime/
 ./scripts/prepare_zephyr_env.sh
 ./scripts/prepare_modules.sh

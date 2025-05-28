@@ -6,13 +6,18 @@
 ONNXConversion for TensorFlow models.
 """
 
-import onnx
+from pathlib import Path
+
+import onnx2tf
 import tensorflow as tf
 import tensorflow.keras.applications as apps
 import tf2onnx
-from onnx_tf.backend import prepare
 
-from kenning.core.onnxconversion import ONNXConversion, SupportStatus
+from kenning.core.onnxconversion import (
+    ModelEntry,
+    ONNXConversion,
+    SupportStatus,
+)
 
 
 class TensorFlowONNXConversion(ONNXConversion):
@@ -54,7 +59,9 @@ class TensorFlowONNXConversion(ONNXConversion):
         #         name="input"
         #     ),))
 
-    def onnx_export(self, modelentry, exportpath):
+    def onnx_export(
+        self, modelentry: ModelEntry, exportpath: Path
+    ) -> SupportStatus:
         model = modelentry.modelgenerator()
         spec = modelentry.parameters["tensor_spec"]
         modelproto, _ = tf2onnx.convert.from_keras(
@@ -63,9 +70,14 @@ class TensorFlowONNXConversion(ONNXConversion):
         del model
         return SupportStatus.SUPPORTED
 
-    def onnx_import(self, modelentry, importpath):
-        onnxmodel = onnx.load(importpath)
-        model = prepare(onnxmodel)
+    def onnx_import(
+        self, modelentry: ModelEntry, importpath: Path
+    ) -> SupportStatus:
+        model = onnx2tf.convert(
+            input_onnx_file_path=str(importpath),
+            non_verbose=True,
+        )
+
         spec = modelentry.parameters["tensor_spec"][0]
         inp = tf.random.normal(
             [s if s is not None else 1 for s in spec.shape], dtype=spec.dtype

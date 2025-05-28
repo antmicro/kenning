@@ -127,8 +127,6 @@ def get_class_module_docstrings(
 
     docstring = rst_to_myst(docstring).text
 
-    docstring = f"\n## Description\n{docstring}"
-
     if isinstance(syntax_node, ast.ClassDef):
         return f"# Class {syntax_node.name}\n\n{docstring}\n\n"
 

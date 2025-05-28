@@ -2048,6 +2048,13 @@ def automl_report(
                         lines[m_id][0].append(float("NaN"))
                         lines[m_id][1].append(0.0)
                         training_iter += 1
+                        if training_iter >= len(training_epochs[m_id]):
+                            KLogger.warning(
+                                "The epoch of AutoML training plot exceeds "
+                                "the range reported by the flow, "
+                                "further data from this model will be skipped."
+                            )
+                            break
                         epoch = training_epochs[m_id][training_iter][
                             "epoch_range"
                         ][0]

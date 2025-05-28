@@ -1,4 +1,1 @@
-include:
-    - project: kenning-ci-scripts
-      file: kenning.yml
-      ref: main
+include: kenning-ci-scripts@main:kenning.yml

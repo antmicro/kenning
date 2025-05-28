@@ -954,6 +954,18 @@ class AutoPyTorchML(AutoML):
                                     training_data[num_run][
                                         EVENT_TO_NAME[e_val.tag]
                                     ][event.wall_time] = e_val.simple_value
+                            # Add missing epoch range
+                            # if the end_epoch was not received
+                            if start_epoch:
+                                training_epochs[num_run].append(
+                                    {
+                                        "epoch_range": (
+                                            start_epoch,
+                                            float("inf"),
+                                        ),
+                                        "end_time": float("inf"),
+                                    }
+                                )
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
                     continue

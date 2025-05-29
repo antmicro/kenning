@@ -2834,7 +2834,8 @@ class LinePlot(Plot):
 
         # Prevent the plot from having zero width.
         if global_min == global_max:
-            global_max += (0.1) ** 10
+            global_max += 0.1
+            global_min -= 0.1
 
         return (global_min, global_max)
 

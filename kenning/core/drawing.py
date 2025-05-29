@@ -600,7 +600,7 @@ class ViolinComparisonPlot(Plot):
         from scipy.stats import gaussian_kde
 
         margins = (0, 20, 0, 10)
-        legend_height = self.height // 2
+        fig_num = len(self.metric_labels)
 
         violin_figs = {
             metric_label: figure(
@@ -609,7 +609,6 @@ class ViolinComparisonPlot(Plot):
                 toolbar_location=None,
                 output_backend="webgl",
                 sizing_mode="scale_both",
-                max_height=self.height + legend_height,
                 margin=margins
                 if metric_label != self.metric_labels[-1]
                 else None,
@@ -617,6 +616,7 @@ class ViolinComparisonPlot(Plot):
                 height_policy="fit",
                 width_policy="max",
                 css_classes=["plot", "violin"],
+                styles={"max-height": f"{70 // fig_num}vh"},
             )
             for metric_label in self.metric_labels
         }
@@ -716,13 +716,13 @@ class ViolinComparisonPlot(Plot):
 
         grid_fig = gridplot(
             [[violin_figs[name]] for name in self.metric_labels],
-            merge_tools=True,
+            merge_tools=False,
             toolbar_location=None,
             toolbar_options={"logo": None},
-            sizing_mode="scale_both",
-            height=DEFAULT_PLOT_SIZE // 3,
+            sizing_mode="stretch_width",
         )
         grid_fig.css_classes = ["violin-plots"]
+        grid_fig.styles = {"max-height": "70vh"}
 
         final_fig = layout(
             children=[[grid_fig], [legend_fig]],

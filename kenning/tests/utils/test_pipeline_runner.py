@@ -12,7 +12,7 @@ import pytest
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol
 from kenning.core.runtime import Runtime
@@ -100,6 +100,7 @@ def optimizer_mock():
         "framework_1",
         "0.0.1",
     )
+    mock.get_optimized_model_size.side_effect = OptimizedModelSizeError()
     return mock
 
 

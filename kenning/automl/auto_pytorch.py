@@ -7,11 +7,10 @@ Provides an API for AutoML flow with AutoPyTorch framework.
 """
 
 from collections import defaultdict
-from copy import copy
+from logging import Logger
 from multiprocessing import cpu_count
 from pathlib import Path
 from shutil import rmtree
-from tempfile import NamedTemporaryFile
 from typing import (
     Any,
     Dict,
@@ -28,14 +27,14 @@ import numpy as np
 import psutil
 from sklearn.pipeline import Pipeline
 
-from kenning.core.automl import AutoML, AutoMLModel
+from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
 from kenning.core.optimizer import Optimizer
 from kenning.core.platform import Platform
+from kenning.core.runtime import Runtime
 from kenning.utils.args_manager import get_type, traverse_parents_with_args
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
-from kenning.utils.pipeline_runner import PipelineRunner
 
 TOTAL_RAM = psutil.virtual_memory().total // 1024
 BUDGET_TYPES = ["epochs", "runtime"]
@@ -562,16 +561,6 @@ class AutoPyTorchML(AutoML):
             "type": int,
             "default": 10,
         },
-        "application_size": {
-            "description": "The size of an application running on the platform (in KB). If platform has restricted amount of RAM, AutoPyTorch will train only models that fit into the platform",  # noqa: E501
-            "type": float,
-            "default": None,
-        },
-        "callback_max_samples": {
-            "description": "The maximum number of samples from dataset, which can be used in pre_training_callback method",  # noqa: E501
-            "type": int,
-            "default": 30,
-        },
         "all_supported_metrics": {
             "description": "Calculate all supported metrics by AutoPyTorch during training",  # noqa: E501
             "type": bool,
@@ -595,18 +584,20 @@ class AutoPyTorchML(AutoML):
         platform: Platform,
         output_directory: Path,
         optimizers: List[Optimizer] = [],
+        runtime: Optional[Runtime] = None,
         use_models: List[str] = [],
         time_limit: float = 5.0,
         optimize_metric: str = "accuracy",
         n_best_models: int = 5,
+        application_size: Optional[float] = None,
+        skip_model_size_check: bool = False,
+        callback_max_samples: int = 30,
         seed: int = 1234,
         max_memory_usage: int = TOTAL_RAM,
         max_evaluation_time: Optional[float] = None,
         budget_type: str = BUDGET_TYPES[0],
         min_budget: int = 3,
         max_budget: int = 10,
-        application_size: Optional[float] = None,
-        callback_max_samples: int = 30,
         all_supported_metrics: bool = True,
         use_cuda: bool = False,
         data_loader_workers: int = cpu_count() // 2,
@@ -625,6 +616,8 @@ class AutoPyTorchML(AutoML):
             and their measurements will be stored.
         optimizers : List[Optimizer]
             List of Optimizer objects that optimize the model.
+        runtime : Optional[Runtime]
+            The runtime used for models evaluation.
         use_models : List[str]
             The list of class paths or names of models wrapper to use,
             classes have to implement AutoMLModel.
@@ -634,6 +627,15 @@ class AutoPyTorchML(AutoML):
             The metric to optimize.
         n_best_models : int
             The upper limit of number of models to return.
+        application_size : Optional[float]
+            The size of an application (in KB) run on the platform.
+            If platform has restricted amount of RAM, AutoPyTorch will train
+            only models that fit into the platform.
+        skip_model_size_check : bool
+            Whether the optimized model size check should be skipped.
+        callback_max_samples : int
+            The maximum number of samples from dataset,
+            which can be used in pre_training_callback method.
         seed : int
             The seed used for AutoML.
         max_memory_usage : int
@@ -650,13 +652,6 @@ class AutoPyTorchML(AutoML):
             The lower bound of the budget.
         max_budget : int
             The upper bound of the budget.
-        application_size : Optional[float]
-            The size of an application (in KB) run on the platform.
-            If platform has restricted amount of RAM, AutoPyTorch will train
-            only models that fit into the platform.
-        callback_max_samples : int
-            The maximum number of samples from dataset,
-            which can be used in pre_training_callback method.
         all_supported_metrics : bool
             Calculate all supported metrics by AutoPyTorch during training.
         use_cuda : bool
@@ -671,10 +666,14 @@ class AutoPyTorchML(AutoML):
             platform=platform,
             output_directory=output_directory,
             optimizers=optimizers,
+            runtime=runtime,
             use_models=use_models if use_models else self.supported_models,
             time_limit=time_limit,
             optimize_metric=optimize_metric,
             n_best_models=n_best_models,
+            application_size=application_size,
+            skip_model_size_check=skip_model_size_check,
+            callback_max_samples=callback_max_samples,
             seed=seed,
         )
         assert all(
@@ -695,8 +694,6 @@ class AutoPyTorchML(AutoML):
             callback_max_samples > 0
         ), "`callback_max_samples` has to be greater than 0"
 
-        self.reduced_dataset = self.dataset
-
         self.use_models: List[AutoPyTorchModel]
         self.max_memory_usage = max_memory_usage
         self.max_evaluation_time = max_evaluation_time
@@ -705,26 +702,9 @@ class AutoPyTorchML(AutoML):
         self.budget_type = budget_type
         self.min_budget = min_budget
         self.max_budget = max_budget
-        self.application_size = application_size
         self.all_supported_metrics = all_supported_metrics
         self.use_cuda = use_cuda
         self.data_loader_workers = data_loader_workers
-
-        self.platform_ram = getattr(self.platform, "ram_size_kb", None)
-        self.max_model_size = None
-        if self.application_size and self.platform_ram:
-            assert (
-                self.platform_ram > self.application_size
-            ), f"Application ({self.application_size}) does not fit into the platform ({self.platform_ram})"  # noqa: E501
-            self.max_model_size = self.platform_ram - self.application_size
-            self.max_model_size *= 0.95
-            if callback_max_samples:
-                self.reduced_dataset = copy(self.dataset)
-                self.reduced_dataset.dataset_percentage = min(
-                    callback_max_samples, len(self.dataset)
-                ) / len(self.dataset)
-                if self.reduced_dataset.dataset_percentage < 1.0:
-                    self.reduced_dataset._reduce_dataset()
 
         self.X_train, self.y_train = None, None
         self.X_test, self.y_test = None, None
@@ -882,6 +862,7 @@ class AutoPyTorchML(AutoML):
                     for m, v in run_hist.additional_info[f"{k}_loss"].items()
                 }
                 for k in ("train", "opt", "test")
+                if run_hist.additional_info.get(f"{k}_loss", None)
             }
             additional_info[num_run] = run_hist.additional_info
 
@@ -1047,7 +1028,9 @@ class AutoPyTorchML(AutoML):
             self.best_configs.append(kenning_conf)
             yield kenning_conf
 
-    def pre_training_callback(self, data: Dict) -> Optional[float]:
+    def pre_training_callback(
+        self, data: Dict, logger: Logger = KLogger
+    ) -> Optional[float]:
         """
         Function called by AutoPyTorch right before training.
 
@@ -1055,6 +1038,10 @@ class AutoPyTorchML(AutoML):
         ----------
         data : Dict
             The AutoPyTorch trainer data.
+        logger : Logger
+            The logger used by AutoPyTorch - default KLogger will
+            not work here as this callback is typically run in
+            a subprocess.
 
         Returns
         -------
@@ -1067,15 +1054,14 @@ class AutoPyTorchML(AutoML):
             If model size is too large to fit into the platform.
         """
         # Skip model size check if max size is not specified
-        if self.max_model_size is None:
+        if self.skip_model_size_check:
+            logger.info("Skipping the model size check")
             return
 
         import torch
         from autoPyTorch.pipeline.components.training.trainer import (
             ModelTooLargeError,
         )
-
-        from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
 
         # Extract model and model wrapper class
         model: torch.nn.Module = data["network_backbone"]
@@ -1092,43 +1078,29 @@ class AutoPyTorchML(AutoML):
                 f"Cannot extract Kenning model from: {model}"
             )
 
-        with NamedTemporaryFile("w") as fd:
-            # Save model to file
-            model_wrapper: PyTorchWrapper = model_wrapper_class(
-                fd.name, self.reduced_dataset
+        try:
+            model_size, available_size = self._pre_training_callback(
+                model_wrapper_class, model, logger
             )
-            model_wrapper.model = model
-            model_wrapper.model_prepared = True
-            model_wrapper.save_model(fd.name)
-
-            # Run Kenning optimize flow for the model
-            if self.optimizers:
-                runner = PipelineRunner(
-                    dataset=self.reduced_dataset,
-                    optimizers=self.optimizers,
-                    platform=self.platform,
-                    model_wrapper=model_wrapper,
-                )
-                try:
-                    for opt in self.optimizers:
-                        opt.model_wrapper = model_wrapper
-                        opt.dataset = self.reduced_dataset
-                    opt_model_path = runner._handle_optimizations()
-                finally:
-                    for opt in self.optimizers:
-                        opt.model_wrapper = None
-                        opt.dataset = self.dataset
-                model_size = opt_model_path.stat().st_size / 1024
-                # Cleanup optimized models
-                for opt in self.optimizers:
-                    opt.compiled_model_path.unlink()
-            else:
-                model_size = model_wrapper.get_model_size()
-
-        # Validate model size
-        if self.max_model_size < model_size:
+        except AutoMLModelSizeError as ex:
             raise ModelTooLargeError(
+                ex.model_size,
+                f"Model (with size {ex.model_size}) cannot be optimized"
+                " due to the size restriction",
+            ) from ex
+
+        if model_size is None or available_size is None:
+            logger.info(
+                "Cannot check the model size with "
+                f"{model_size=} and {available_size=}"
+            )
+            return
+        # Validate model size
+        max_model_size = available_size - self.application_size
+        if max_model_size < model_size:
+            raise ModelTooLargeError(
+                model_size,
                 f"Model size ({model_size} KB) larger "
-                f"than maximum ({self.max_model_size} KB)"
+                f"than maximum ({max_model_size} KB)",
             )
         return model_size

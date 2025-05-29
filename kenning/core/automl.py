@@ -8,10 +8,13 @@ Provides an API for AutoML flow.
 
 from abc import ABC, abstractmethod
 from argparse import Namespace
-from copy import deepcopy
+from copy import copy, deepcopy
+from logging import Logger
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
@@ -23,14 +26,17 @@ from typing import (
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
+from kenning.core.runtime import Runtime
+from kenning.runtimes.utils import get_default_runtime
 from kenning.utils.args_manager import (
     ArgumentsHandler,
     get_type,
     supported_keywords,
     traverse_parents_with_args,
 )
+from kenning.utils.logger import KLogger
 
 
 class AutoMLInvalidSchemaError(Exception):
@@ -49,6 +55,16 @@ class AutoMLInvalidArgumentsError(Exception):
     """
 
     ...
+
+
+class AutoMLModelSizeError(Exception):
+    """
+    Raised when model size is too big.
+    """
+
+    def __init__(self, model_size: float, *args):
+        super().__init__(*args)
+        self.model_size = model_size
 
 
 class AutoMLModel(ArgumentsHandler, ABC):
@@ -283,6 +299,22 @@ class AutoML(ArgumentsHandler, ABC):
             "type": int,
             "default": 5,
         },
+        "application_size": {
+            "description": "The size of an application running on the platform (in KB). If platform has restricted amount of RAM, AutoML flow will train only models that fit into the platform",  # noqa: E501
+            "type": float,
+            "nullable": True,
+            "default": None,
+        },
+        "skip_model_size_check": {
+            "description": "Whether the optimized model size check should be skipped",  # noqa: E501
+            "type": bool,
+            "default": False,
+        },
+        "callback_max_samples": {
+            "description": "The maximum number of samples from dataset, which can be used in pre_training_callback method",  # noqa: E501
+            "type": int,
+            "default": 30,
+        },
         "seed": {
             "description": "The seed used for AutoML",
             "type": int,
@@ -299,10 +331,14 @@ class AutoML(ArgumentsHandler, ABC):
         platform: Platform,
         output_directory: Path,
         optimizers: List[Optimizer] = [],
+        runtime: Optional[Runtime] = None,
         use_models: List[Union[str, Dict[str, Tuple]]] = [],
         time_limit: float = 5.0,
         optimize_metric: str = "accuracy",
         n_best_models: int = 5,
+        application_size: Optional[float] = None,
+        skip_model_size_check: bool = False,
+        callback_max_samples: int = 30,
         seed: int = 1234,
     ):
         """
@@ -319,6 +355,8 @@ class AutoML(ArgumentsHandler, ABC):
             and their measurements will be stored.
         optimizers : List[Optimizer]
             List of Optimizer objects that optimize the model.
+        runtime : Optional[Runtime]
+            The runtime used for models evaluation.
         use_models : List[Union[str, Dict[str, Tuple]]]
             List of either:
                 * class paths or names of models wrapper to use,
@@ -331,6 +369,15 @@ class AutoML(ArgumentsHandler, ABC):
             The metric to optimize.
         n_best_models : int
             The upper limit of number of models to return.
+        application_size : Optional[float]
+            The size of an application (in KB) run on the platform.
+            If platform has restricted amount of RAM, AutoML will train
+            only models that fit into the platform.
+        skip_model_size_check : bool
+            Whether the optimized model size check should be skipped.
+        callback_max_samples : int
+            The maximum number of samples from dataset,
+            which can be used in pre_training_callback method.
         seed : int
             The seed used for AutoML.
         """
@@ -343,6 +390,7 @@ class AutoML(ArgumentsHandler, ABC):
         self.platform = platform
         self.output_directory = output_directory
         self.optimizers = optimizers
+        self.runtime = runtime
         self.time_limit = time_limit
         self.optimize_metric = optimize_metric
         self.n_best_models = n_best_models
@@ -377,6 +425,21 @@ class AutoML(ArgumentsHandler, ABC):
                 _class.update_automl_range(key, conf)
 
         self.output_directory.mkdir(exist_ok=True, parents=True)
+
+        # Prepare reduced dataset for pre-training callback
+        self.application_size = application_size
+        if self.application_size is None:
+            self.application_size = 0
+        self.skip_model_size_check = skip_model_size_check
+        self.reduced_dataset = self.dataset
+        if not self.skip_model_size_check:
+            if callback_max_samples:
+                self.reduced_dataset = copy(self.dataset)
+                self.reduced_dataset.dataset_percentage = min(
+                    callback_max_samples, len(self.dataset)
+                ) / len(self.dataset)
+                if self.reduced_dataset.dataset_percentage < 1.0:
+                    self.reduced_dataset._reduce_dataset()
 
     @abstractmethod
     def prepare_framework(self):
@@ -497,3 +560,99 @@ class AutoML(ArgumentsHandler, ABC):
             platform=platform,
             optimizers=optimizers,
         )
+
+    def _pre_training_callback(
+        self,
+        model_wrapper_cls: Type[ModelWrapper],
+        model: Callable,
+        logger: Logger = KLogger,
+    ) -> Tuple[Optional[float], Optional[float]]:
+        """
+        Prepares PipelineRunner and triggers the defined optimizations.
+        It also extracts the optimized model size
+        and available space on a platform.
+
+        Parameters
+        ----------
+        model_wrapper_cls : Type[ModelWrapper]
+            The Kenning ModelWrapper class representing a model architecture.
+        model : Callable
+            The actual model object, not a ModelWrapper.
+        logger : Logger
+            The logger used by a AutoML framework.
+
+        Returns
+        -------
+        Optional[float]
+            The optimized model size.
+        Optional[float]
+            The available space on the platform.
+
+        Raises
+        ------
+        AutoMLModelSizeError
+            If model size is invalid from other reasons
+            than not fitting into the platform memory.
+        """
+        if self.skip_model_size_check:
+            return None, None
+
+        from kenning.optimizers.ai8x import Ai8xIzerError
+        from kenning.utils.pipeline_runner import PipelineRunner
+
+        available_size = None
+        model_size = None
+        with NamedTemporaryFile("w") as fd:
+            # Save model to file
+            model_wrapper: ModelWrapper = model_wrapper_cls(
+                Path(fd.name), self.reduced_dataset
+            )
+            model_wrapper.model = model
+            model_wrapper.model_prepared = True
+            model_wrapper.save_model(model_wrapper.model_path)
+
+            # Prepare PipelineRunner and get available_size
+            runtime = self.runtime
+            runner = PipelineRunner(
+                dataset=self.reduced_dataset,
+                optimizers=self.optimizers,
+                runtime=runtime,
+                platform=self.platform,
+                model_wrapper=model_wrapper,
+            )
+            if runtime is None:
+                model_framework = runner._guess_model_framework(False)
+                runtime = get_default_runtime(
+                    model_framework, model_wrapper.model_path
+                )
+                runner.runtime = runtime
+            if runtime:
+                available_size = runtime.get_available_ram(self.platform)
+
+            # Run Kenning optimize flow for the model
+            if self.optimizers:
+                try:
+                    for opt in self.optimizers:
+                        opt.model_wrapper = model_wrapper
+                        opt.dataset = self.reduced_dataset
+                    runner._handle_optimizations()
+                except Ai8xIzerError as ex:
+                    raise AutoMLModelSizeError(ex.model_size) from ex
+                finally:
+                    for opt in self.optimizers:
+                        opt.model_wrapper = None
+                        opt.dataset = self.dataset
+                try:
+                    model_size = runner.optimizers[
+                        -1
+                    ].get_optimized_model_size()
+                except OptimizedModelSizeError as ex:
+                    logger.warning(
+                        f"Cannot retrieve optimized model size: {ex}"
+                    )
+                # Cleanup optimized models
+                for opt in self.optimizers:
+                    opt.compiled_model_path.unlink()
+            else:
+                model_size = model_wrapper.get_model_size()
+        return model_size, available_size

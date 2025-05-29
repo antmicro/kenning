@@ -10,6 +10,7 @@ from typing import List, Optional
 
 import numpy as np
 
+from kenning.core.platform import Platform
 from kenning.core.runtime import Runtime
 from kenning.utils.resource_manager import PathOrURI
 
@@ -38,3 +39,7 @@ class Ai8xRuntime(Runtime):
 
     def extract_output(self) -> List[np.ndarray]:
         ...
+
+    @staticmethod
+    def get_available_ram(platform: Platform) -> Optional[float]:
+        return getattr(platform, "ai8x_weights_memory_kb", None)

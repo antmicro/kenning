@@ -24,6 +24,7 @@ from kenning.core.measurements import (
     timemeasurements,
 )
 from kenning.core.model import ModelWrapper
+from kenning.core.platform import Platform
 from kenning.interfaces.io_interface import IOSpecWrongFormat
 from kenning.utils.args_manager import ArgumentsHandler
 from kenning.utils.logger import KLogger
@@ -602,3 +603,21 @@ class Runtime(ArgumentsHandler, ABC):
             Current timestamp.
         """
         return time.perf_counter()
+
+    @staticmethod
+    def get_available_ram(platform: Platform) -> Optional[float]:
+        """
+        Gets size of the RAM (or other type of memory
+        where the model will be stored) for the given platform.
+
+        Parameters
+        ----------
+        platform : Platform
+            The platform representation.
+
+        Returns
+        -------
+        Optional[float]
+            The size of RAM.
+        """
+        return getattr(platform, "ram_size_kb", None)

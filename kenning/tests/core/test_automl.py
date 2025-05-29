@@ -90,7 +90,13 @@ class TestAutoML:
         This should assert that specified `supported_models`
         inherits from AutoMLModel.
         """
-        _ = automl_cls(None, None, Path("."))
+        from kenning.datasets.anomaly_detection_dataset import (
+            AnomalyDetectionDataset,
+        )
+
+        _ = automl_cls(
+            get_dataset_random_mock(AnomalyDetectionDataset), None, Path(".")
+        )
 
     @pytest.mark.xfail(strict=True, raises=AssertionError)
     @automl_matrix_test("automl_cls")

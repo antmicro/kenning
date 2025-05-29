@@ -1998,9 +1998,20 @@ def automl_report(
     if "trained_model_metrics" in automl_stats:
         models_metrics = automl_stats["trained_model_metrics"]
         models = list(models_metrics.keys())
+        stages = set()
+        for m in models:
+            stages = stages.union(models_metrics[m].keys())
+        models = list(
+            filter(
+                lambda x: any([s in models_metrics[x] for s in stages]), models
+            )
+        )
         metrics = {
-            k: [models_metrics[n][k][chosen_metric] for n in models_metrics]
-            for k in models_metrics[models[0]].keys()
+            k: [
+                models_metrics[n].get(k, {}).get(chosen_metric, float("NaN"))
+                for n in models
+            ]
+            for k in stages
         }
         Barplot(
             title="Metrics of models trained by AutoML flow"

@@ -214,5 +214,13 @@ class TensorFlowOptimizer(Optimizer, ABC):
         if self.save_to_zip:
             self.compress_model_to_zip()
 
+    def get_optimized_model_size(self):
+        # If model compressed in ZIP exists use its size
+        # It is more accurate for Keras models
+        zip_model_path = self.compiled_model_path.with_suffix(".zip")
+        if self.save_to_zip and zip_model_path.with_suffix(".zip").exists():
+            return zip_model_path.stat().st_size / 1024
+        return super().get_optimized_model_size()
+
     def get_framework_and_version(self):
         return ("tensorflow", tf.__version__)

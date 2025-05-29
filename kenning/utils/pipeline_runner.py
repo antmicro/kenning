@@ -21,7 +21,7 @@ from kenning.core.measurements import (
     tagmeasurements,
 )
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import Optimizer
+from kenning.core.optimizer import OptimizedModelSizeError, Optimizer
 from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol, check_request
 from kenning.core.runtime import Runtime
@@ -268,15 +268,19 @@ class PipelineRunner(object):
                 "class_names": self.dataset.get_class_names()
             }
 
-        if model_path:
-            model_path = Path(model_path)
-            # If model compressed in ZIP exists use its size
-            # It is more accurate for Keras models
-            if model_path.with_suffix(".zip").exists():
-                model_path = model_path.with_suffix(".zip")
+        model_size = None
+        if self.optimizers:
+            try:
+                model_size = self.optimizers[-1].get_optimized_model_size()
+                model_size *= 1024  # Convert to bytes
+            except OptimizedModelSizeError as e:
+                KLogger.warning(f"Cannot retrieve optimized model size: {e}")
+        if not model_size and model_path:
+            model_size = Path(model_path).stat().st_size
 
+        if model_size:
             MeasurementsCollector.measurements += {
-                "compiled_model_size": model_path.stat().st_size
+                "compiled_model_size": model_size
             }
 
     def run(

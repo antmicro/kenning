@@ -52,6 +52,14 @@ class IOSpecificationNotFoundError(Exception):
     pass
 
 
+class OptimizedModelSizeError(Exception):
+    """
+    Exception raised when retrieving size of the optimized model failed.
+    """
+
+    pass
+
+
 class Optimizer(ArgumentsHandler, ABC):
     """
     Compiles the given model to a different format or runtime.
@@ -432,6 +440,29 @@ class Optimizer(ArgumentsHandler, ABC):
             raise Exception("Could not determine input model type")
 
         return input_type
+
+    def get_optimized_model_size(self) -> float:
+        """
+        Returns the optimized model size.
+
+        By default, the size of file with optimized model is returned.
+
+        Returns
+        -------
+        float
+            The size of the optimized model in KB.
+
+        Raises
+        ------
+        OptimizedModelSizeError
+            If model size cannot be retrieved.
+        """
+        if not self.compiled_model_path.exists():
+            raise OptimizedModelSizeError(
+                "Compiled model path does not exist:"
+                f" {self.compiled_model_path}"
+            )
+        return self.compiled_model_path.stat().st_size / 1024
 
     def read_platform(self, platform: Platform):
         """

@@ -8,6 +8,7 @@ Wrapper for ai8x accelerator compiler.
 
 import json
 import os
+import re
 import shutil
 import subprocess
 import tempfile
@@ -19,7 +20,11 @@ import torch
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
-from kenning.core.optimizer import ConversionError, Optimizer
+from kenning.core.optimizer import (
+    ConversionError,
+    OptimizedModelSizeError,
+    Optimizer,
+)
 from kenning.core.platform import Platform
 from kenning.optimizers.ai8x_codegen import (
     generate_model_bin,
@@ -29,6 +34,16 @@ from kenning.optimizers.ai8x_fuse import fuse_torch_sequential
 from kenning.utils.class_loader import append_to_sys_path
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
+
+
+class Ai8xIzerError(Exception):
+    """
+    Raised when ai8xizer.py script fails.
+    """
+
+    def __init__(self, model_size: Optional[float] = None, *args):
+        super().__init__(*args)
+        self.model_size = model_size
 
 
 class _Ai8xTools(object):
@@ -178,6 +193,38 @@ class _Ai8xTools(object):
             KLogger.error(f"output: {e.output.decode().strip()}")
             raise
 
+    def _extract_size_from_ai8xize(self, logs: str) -> Optional[float]:
+        """
+        Extracts size of the optimized model
+        from the output of executed ai8xize.py script.
+
+        Parameters
+        ----------
+        logs : str
+            The output of the ai8xize.py script.
+
+        Returns
+        -------
+        Optional[float]
+            The optimized model size.
+        """
+        match = re.search(
+            r"TOTAL: (?P<layers>[0-9,]+) parameter layers,"
+            r" (?P<parameters>[0-9,]+) parameters,"
+            r" (?P<bytes>[0-9,]+) bytes",
+            logs,
+        )
+        if not match:
+            KLogger.warning(
+                "Cannot find compiled model size in the ai8xize output"
+            )
+            return
+        KLogger.info(
+            f"ai8xize processed model with {match.group('layers')} layers "
+            f"and {match.group('parameters')}"
+        )
+        return int(match.group("bytes").replace(",", "")) / 1024
+
     def ai8xize(
         self,
         test_dir: Path,
@@ -185,7 +232,7 @@ class _Ai8xTools(object):
         config_file: Path,
         sample_input_path: Path,
         device: str,
-    ):
+    ) -> Optional[float]:
         """
         Executes ai8xize.py from ai8x_synthesis which generates CNN accelerator
         configuration code.
@@ -207,6 +254,11 @@ class _Ai8xTools(object):
         ------
         CalledProcessError
             Raised when executed script fails.
+
+        Return
+        ------
+        Optional[float]
+            Size of the generated model.
         """
         try:
             KLogger.info("Running ai8xize")
@@ -242,7 +294,10 @@ class _Ai8xTools(object):
         except subprocess.CalledProcessError as e:
             KLogger.error(f"ai8xize failed: {e}")
             KLogger.error(f"output: {e.output.decode().strip()}")
-            raise
+            raise Ai8xIzerError(
+                self._extract_size_from_ai8xize(e.output.decode().strip())
+            ) from e
+        return self._extract_size_from_ai8xize(outp.decode().strip())
 
 
 def ai8x_conversion(
@@ -427,6 +482,7 @@ class Ai8xCompiler(Optimizer):
         self.device = None
         self.device_id = None
         self.ai8x_tools = _Ai8xTools(ai8x_training_path, ai8x_synthesis_path)
+        self.ai8x_model_size = None
 
         super().__init__(
             dataset=dataset,
@@ -446,6 +502,13 @@ class Ai8xCompiler(Optimizer):
             self.device_id = device_id
         else:
             raise ValueError(f"Unsupported platform {platform.name}")
+
+    def get_optimized_model_size(self):
+        if self.ai8x_model_size is None:
+            raise OptimizedModelSizeError(
+                "Cannot retrieve model size before compilation"
+            )
+        return self.ai8x_model_size
 
     def compile(
         self,
@@ -543,13 +606,18 @@ class Ai8xCompiler(Optimizer):
             np.save(sample_input_path, sample_input)
 
             # compile model
-            self.ai8x_tools.ai8xize(
-                tmp_dir,
-                quantized_model_path,
-                config_file,
-                sample_input_path,
-                self.device,
-            )
+            try:
+                self.ai8x_model_size = self.ai8x_tools.ai8xize(
+                    tmp_dir,
+                    quantized_model_path,
+                    config_file,
+                    sample_input_path,
+                    self.device,
+                )
+            except Ai8xIzerError as e:
+                # Retrieve calculated model size and reraise the exception
+                self.ai8x_model_size = e.model_size
+                raise
 
             # update quantization params in IO spec
             io_spec["processed_input"][0]["dtype"] = "int8"

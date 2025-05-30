@@ -45,6 +45,7 @@ def kerasconversion(
     import tf2onnx
 
     model = tf.keras.models.load_model(str(model_path), compile=False)
+    model.output_names = ["output"]
 
     input_spec = [
         tf.TensorSpec(spec["shape"], spec["dtype"], name=spec["name"])

@@ -21,6 +21,44 @@ from kenning.optimizers.tensorflow_optimizers import TensorFlowOptimizer
 from kenning.utils.resource_manager import PathOrURI, ResourceURI
 
 
+def update_h5_file(h5_filepath: PathOrURI) -> None:
+    """
+    Update an H5 file to be compatible with the newest version of Tensorflow.
+
+    Parameters
+    ----------
+    h5_filepath : PathOrURI
+        Path to the H5 file to be updated.
+    """
+    if not str(h5_filepath).endswith((".h5", ".hdf5")):
+        return
+
+    import h5py
+
+    with h5py.File(str(h5_filepath), mode="r+") as fd:
+        model_configuration = fd.attrs.get("model_config")
+
+        if model_configuration.find('"groups": 1,') != -1:
+            model_configuration = model_configuration.replace(
+                '"groups": 1,', ""
+            )
+            fd.attrs.modify("model_config", model_configuration)
+            fd.flush()
+
+            model_configuration = fd.attrs.get("model_config")
+            assert model_configuration.find('"groups": 1,') == -1
+
+        if model_configuration.find('"loss": "mae"') != -1:
+            model_configuration = model_configuration.replace(
+                '"loss": "mae"', '"loss": "mean_absolute_error"'
+            )
+            fd.attrs.modify("training_config", model_configuration)
+            fd.flush()
+
+            model_configuration = fd.attrs.get("training_config")
+            assert model_configuration.find('"loss": "mae"') == -1
+
+
 class EdgeTPUCompilerError(Exception):
     """
     Exception occurs when edgetpu_compiler fails to compile the model.
@@ -43,6 +81,9 @@ def kerasconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     tf.lite.TFLiteConverter
         TFLite converter for model
     """
+    if str(model_path).endswith((".h5", ".hdf5")):
+        update_h5_file(model_path)
+
     model = tf.keras.models.load_model(str(model_path), compile=False)
     converter = tf.lite.TFLiteConverter.from_keras_model(model)
     return converter
@@ -83,15 +124,37 @@ def onnxconversion(model_path: PathOrURI) -> tf.lite.TFLiteConverter:
     from datetime import datetime
 
     import onnx
-    from onnx_tf.backend import prepare
+    import onnx2tf
 
-    onnxmodel = onnx.load(str(model_path))
-    model = prepare(onnxmodel)
-    convertedpath = model_path.with_suffix(
+    onnx_model = onnx.load(str(model_path))
+    input_names = [input.name for input in onnx_model.graph.input]
+
+    # Use multiple options to prevent dynamic shape and symbolic tensor issues
+    # - keep_nwc_or_nhwc_or_ndhwc_input_names: for NHWC input arrangements
+    # - keep_shape_absolutely_input_names: force all shapes to remain static
+    # - disable_strict_mode: skip strict accuracy correction for
+    #   speed/compatibility
+    # - batch_size: fix dynamic batch to static batch size of 1
+    try:
+        model = onnx2tf.convert(
+            str(model_path),
+            keep_nwc_or_nhwc_or_ndhwc_input_names=input_names,
+            keep_shape_absolutely_input_names=input_names,
+            disable_strict_mode=True,
+            batch_size=1,
+        )
+    except (TypeError, ValueError) as e:
+        # Fallback: try simpler conversion without input name preservation
+        # This may lose some shape information but should avoid symbolic issues
+        if "symbolic inputs/outputs do not implement `__len__`" in str(e):
+            model = onnx2tf.convert(
+                str(model_path), disable_strict_mode=True, batch_size=1
+            )
+    converted_path = model_path.with_suffix(
         f'.{datetime.now().strftime("%Y%m%d-%H%M%S")}.pb'
     )
-    model.export_graph(str(convertedpath))
-    converter = tf.lite.TFLiteConverter.from_saved_model(str(convertedpath))
+    model.export(str(converted_path))
+    converter = tf.lite.TFLiteConverter.from_saved_model(str(converted_path))
     return converter
 
 
@@ -456,6 +519,8 @@ class TFLiteCompiler(TensorFlowOptimizer):
 
         if self.quantization_aware_training:
             assert self.inputtype == "keras"
+            if str(input_model_path).endswith((".h5", ".hdf5")):
+                update_h5_file(str(input_model_path))
             model = tf.keras.models.load_model(str(input_model_path))
 
             def annotate_model(layer):
@@ -545,7 +610,23 @@ class TFLiteCompiler(TensorFlowOptimizer):
         def update_io_spec(sig_det, int_det, key):
             for order, spec in enumerate(io_spec[key]):
                 old_name = spec["name"]
-                new_name = sig_det[old_name]["name"]
+                new_name = None
+                if old_name in sig_det:
+                    new_name = sig_det[old_name]["name"]
+                else:
+                    if "index" in spec:
+                        for v in sig_det.values():
+                            if v.get("index", None) == spec["index"]:
+                                new_name = v["name"]
+                                break
+                    # Fallback: use the first available name.
+                    if new_name is None:
+                        sig_det_values = list(sig_det.values())
+                        if sig_det_values:
+                            idx = min(order, len(sig_det_values) - 1)
+                            new_name = sig_det_values[idx]["name"]
+                        else:
+                            new_name = ""
                 spec["name"] = new_name
                 spec["order"] = order
 

@@ -57,7 +57,7 @@ tensorflow = [
     "tf_keras",
     "tensorflow_addons; python_version<'3.12'",
     "tensorflow_model_optimization",
-    "tensorflow",
+    "tensorflow==2.15.0",
     "h5py",
     "tensorflow_probability>=0.19.0,<0.23.0; python_version>='3.10' and python_version<'3.13'",
 ]
@@ -128,7 +128,6 @@ test = [
     "pytest-xdist",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
     "tf2onnx",
-    "tf_keras",
     "kenning[onnx2tf]",
 ]
 real_time_visualization = [
@@ -190,8 +189,8 @@ onnx2tf = [
     "onnx-simplifier==0.4.33",
     "onnx_graphsurgeon",
     "simple_onnx_processing_tools",
-    "tensorflow>=2.14.0,<=2.19.0",
-    "tf-keras>=2.14.0,<=2.19.0",
+    "tensorflow==2.15.0",
+    "tf-keras==2.15.0",
     "ai-edge-litert==1.2.0",
     "psutil==5.9.5",
     "ml_dtypes>=0.2.0,<=0.5.1",

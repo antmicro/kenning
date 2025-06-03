@@ -198,11 +198,14 @@ def run_pytest(session: nox.Session, device):
     _fix_pyximport(session)
 
     report_path = Path("pytest-reports") / f"{name}.json"
+
     session.run(
         "pytest",
         "kenning",
         "--ignore=kenning/tests/utils/test_class_loader.py",
         "-n=auto",
+        "--cov=kenning",
+        "--cov-report=html",
         "-m",
         "(not snippets) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
         f"--report-log={report_path}",

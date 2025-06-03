@@ -14,7 +14,7 @@ import venv
 from collections import defaultdict
 from glob import glob
 from pathlib import Path
-from typing import Callable, Dict, Generator, Optional, Tuple
+from typing import Dict, Generator, Optional, Tuple
 
 import pexpect
 import pytest
@@ -46,11 +46,7 @@ PIP_INSTALL_KENNING_LOCAL_RE = (
     # Kenning optional dependencies, all finished with optional quote
     r"(\[?[^\]]*\])?['\"]?"
 )
-# Patterns of markdown files
-DOCS_DIR = Path(__file__).parent / "source"
-DOCS_MARKDOWNS = str(DOCS_DIR / "*.md")
-GALLERY_DIR = DOCS_DIR / "gallery"
-GALLERY_MARKDOWNS = str(GALLERY_DIR / "*.md")
+
 # List of snippet executables types
 EXECUTABLE_TYPES = ("bash",)
 # Kenning repo root path
@@ -364,9 +360,7 @@ def get_subshell(
     return SHELLS[markdown][_id]
 
 
-def create_script(
-    snippet: Snippet, gallery_snippet: bool, working_dir: Path
-) -> str:
+def create_script(snippet: Snippet, working_dir: Path) -> str:
     """
     Extract script from snippet and prepare it to be executed.
 
@@ -438,27 +432,42 @@ def create_script(
     return script
 
 
-def factory_test_snippet(
-    markdown_pattern: str,
-    docs_gallery: bool,
-) -> Callable:
-    """
-    Factory creating tests for snippets from documentation.
+class TestDocsSnippets:
+    @pytest.mark.parametrize(
+        "markdown",
+        [
+            pytest.param(
+                markdown,
+                marks=[
+                    pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
+                    pytest.mark.order(-1),
+                    pytest.mark.snippets,
+                ],
+            )
+            for markdown in map(
+                lambda p: Path(p).with_suffix("").name,
+                glob(str(pytest.input_file_pattern)),
+            )
+        ],
+    )
+    def test_cleanup(self, markdown: str):
+        """
+        Checks if subshell is alive after the tests and cleanup used resources.
 
-    Parameters
-    ----------
-    markdown_pattern : str
-        Defines from which files snippets should be extracted.
-    docs_gallery : bool
-        Defines if markdowns are part of gallery, marks tests as `docs_gallery`
-        and run then in separate environment.
-
-    Returns
-    -------
-    Callable
-        Parametrized test
-    """
-    tmpfolder = pytest.test_directory / "tmp"
+        Parameters
+        ----------
+        self : TestDocsSnippets
+            Instance of TestDocsSnippets class
+        markdown : str
+            Name of markdown file
+        """
+        shells = SHELLS[markdown]
+        for shell in shells.values():
+            if not shell.isalive():
+                pytest.fail(reason="Shell does not work after the tests")
+            if shell.logfile_read:
+                shell.logfile_read.close()
+            shell.terminate(force=True)
 
     @pytest.mark.parametrize(
         "script,snippet,markdown",
@@ -466,8 +475,9 @@ def factory_test_snippet(
             pytest.param(
                 create_script(
                     snippet,
-                    docs_gallery,
-                    get_working_directory(markdown, tmpfolder),
+                    get_working_directory(
+                        markdown, pytest.test_directory / "tmp"
+                    ),
                 ),
                 snippet,
                 markdown,
@@ -481,19 +491,15 @@ def factory_test_snippet(
                             for dep in snippet.meta["depends"]
                         ],
                     ),
-                ]
-                + (
-                    [pytest.mark.docs_gallery]
-                    if docs_gallery
-                    else [pytest.mark.docs]
-                ),
+                    pytest.mark.snippets,
+                ],
             )
             for markdown, snippet_name, snippet in get_all_snippets(
-                markdown_pattern
+                str(pytest.input_file_pattern)
             )
         ],
     )
-    def _test_snippet(
+    def test_snippet(
         self,
         script: str,
         snippet: Snippet,
@@ -521,7 +527,9 @@ def factory_test_snippet(
         docs_log_dir : Optional[Path]
             Path to folder where subshell logs will be saved.
         """
-        working_dir = get_working_directory(markdown, tmpfolder)
+        working_dir = get_working_directory(
+            markdown, pytest.test_directory / "tmp"
+        )
         subshell = get_subshell(
             markdown, snippet.meta["terminal"], working_dir, docs_log_dir
         )
@@ -547,72 +555,3 @@ def factory_test_snippet(
             pytest.fail(
                 reason=f"'{script}' finished without printing status message"
             )
-
-    return _test_snippet
-
-
-def factory_cleanup(markdown_pattern: str, docs_gallery: bool) -> Callable:
-    """
-    Factory creating tests for releasing resources.
-
-    Parameters
-    ----------
-    markdown_pattern : str
-        Defines for which files cleanup should be created.
-    docs_gallery : bool
-        Defines if markdowns are part of gallery
-        and marks tests as `docs_gallery`.
-
-    Returns
-    -------
-    Callable
-        Parametrized test
-    """
-
-    @pytest.mark.parametrize(
-        "markdown",
-        [
-            pytest.param(
-                markdown,
-                marks=[
-                    pytest.mark.xdist_group(f"TestDocsGallery_{markdown}"),
-                    pytest.mark.order(-1),
-                ]
-                + (
-                    [pytest.mark.docs_gallery]
-                    if docs_gallery
-                    else [pytest.mark.docs]
-                ),
-            )
-            for markdown in map(
-                lambda p: Path(p).with_suffix("").name, glob(markdown_pattern)
-            )
-        ],
-    )
-    def _cleanup(self, markdown: str):
-        """
-        Checks if subshell is alive after the tests and cleanup used resources.
-
-        Parameters
-        ----------
-        self : TestDocsSnippets
-            Instance of TestDocsSnippets class
-        markdown : str
-            Name of markdown file
-        """
-        shells = SHELLS[markdown]
-        for shell in shells.values():
-            if not shell.isalive():
-                pytest.fail(reason="Shell does not work after the tests")
-            if shell.logfile_read:
-                shell.logfile_read.close()
-            shell.terminate(force=True)
-
-    return _cleanup
-
-
-class TestDocsSnippets:
-    test_snippet = factory_test_snippet(DOCS_MARKDOWNS, False)
-    test_gallery_snippet = factory_test_snippet(GALLERY_MARKDOWNS, True)
-    test_cleanup = factory_cleanup(DOCS_MARKDOWNS, False)
-    test_cleanup_gallery = factory_cleanup(GALLERY_MARKDOWNS, True)

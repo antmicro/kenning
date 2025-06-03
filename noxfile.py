@@ -204,7 +204,7 @@ def run_pytest(session: nox.Session, device):
         "--ignore=kenning/tests/utils/test_class_loader.py",
         "-n=auto",
         "-m",
-        "(not docs_gallery) and (not docs) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
+        "(not snippets) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
         f"--report-log={report_path}",
     )
 
@@ -218,16 +218,24 @@ def run_gallery_tests(session: nox.Session):
 
     name = _fix_name(session.name)
 
+    pattern_md = (
+        "docs/source/gallery/*.md"
+        if not session.posargs
+        else session.posargs[0]
+    )
+
     report_path = Path("pytest-reports") / f"{name}.json"
     test_docs_log_dir = Path("log_docs") / f"{name}"
     test_docs_log_dir.mkdir(parents=True)
     session.run(
         "pytest",
         "kenning/tests/docs/test_snippets.py",
+        "--input-file-pattern",
+        pattern_md,
+        "-m",
+        "snippets",
         "--capture=fd",
         "-n=4",
-        "-m",
-        "docs_gallery",
         f"--report-log={report_path}",
         f"--test-docs-log-dir={test_docs_log_dir}",
     )

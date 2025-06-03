@@ -122,6 +122,12 @@ def pytest_addoption(parser: pytest.Parser):
         help="If defined saves additional logs of docs tests to specified "
         "folder",
     )
+    parser.addoption(
+        "--input-file-pattern",
+        action="store",
+        default="docs/source/*.md",
+        help="",
+    )
 
 
 @pytest.hookimpl()
@@ -131,6 +137,11 @@ def pytest_sessionstart(session: pytest.Session):
     """
     test_directory = Path(session.config.option.test_directory).resolve()
     pytest.test_directory = test_directory
+
+    input_file_pattern = Path(
+        session.config.option.input_file_pattern
+    ).resolve()
+    pytest.input_file_pattern = input_file_pattern
 
     # do nothing when only collecting tests
     if "--collect-only" in session.config.invocation_params.args:

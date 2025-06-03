@@ -233,8 +233,7 @@ markers = [
     "slow",          # marks tests as slow (deselect with '-m "not slow"')
     "fast",          # marks tests as fast (deselect with '-m "not fast"')
     "serial",
-    "docs",          # marks tests extracted from Kenning documentation (without gallery)
-    "docs_gallery",  # marks tests extracted from Kenning gallery
+    "snippets",      # marks tests extracted from Kenning documentation
     "gpu",           # marks tests requiring GPU for running
     "automl",        # marks tests for AutoML flow
     "compat_matrix", # marks tests for creating compatibility matrices

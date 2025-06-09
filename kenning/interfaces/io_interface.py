@@ -28,6 +28,7 @@ from typing import (
 import numpy as np
 from numpy.typing import ArrayLike
 
+from kenning.interfaces.io_spec_serializer import IOSpecSerializer
 from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
@@ -522,6 +523,12 @@ class IOInterface(ABC):
             Dictionary that conveys input and output layers specification.
         """
         ...
+
+    @staticmethod
+    def serialize_io_specification_for_uart(
+        json_dict: Dict[str, List[Dict]]
+    ) -> bytes:
+        return IOSpecSerializer.io_spec_to_struct(json_dict)
 
     def save_io_specification(self, path: PathOrURI):
         """

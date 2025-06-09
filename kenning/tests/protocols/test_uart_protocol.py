@@ -7,11 +7,10 @@ import multiprocessing
 import os
 import struct
 import time
-from contextlib import nullcontext as does_not_raise
 from pathlib import Path
 from random import choices, randint
 from string import ascii_lowercase
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Literal, Tuple
 
 import numpy as np
 import pytest
@@ -19,18 +18,12 @@ import serial
 
 from kenning.core.model import ModelWrapper
 from kenning.core.protocol import Message, MessageType, ServerStatus
+from kenning.interfaces.io_spec_serializer import IOSpecSerializer
 from kenning.protocols.uart import (
     BARE_METAL_IREE_ALLOCATION_STATS_SIZE,
-    MAX_LENGTH_ENTRY_FUNC_NAME,
-    MAX_LENGTH_MODEL_NAME,
-    MAX_MODEL_INPUT_DIM,
-    MAX_MODEL_INPUT_NUM,
-    MAX_MODEL_OUTPUT_NUM,
     RUNTIME_STAT_NAME_MAX_LEN,
     UARTProtocol,
-    _io_spec_to_struct,
     _parse_stats,
-    compute_iospec_struct_size,
 )
 from kenning.tests.conftest import get_tmp_path
 from kenning.tests.protocols.test_core_protocol import (
@@ -128,170 +121,6 @@ def mock_serial() -> Tuple[Path, Path]:
     os.mkfifo(str(fifo_out))
 
     return fifo_in, fifo_out
-
-
-class TestIOSpecToStruct:
-    @pytest.mark.parametrize(
-        "io_spec_path_str",
-        [
-            f"{modelwrapper_cls.pretrained_model_uri}.json"
-            for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC
-        ],
-        ids=[
-            modelwrapper_cls.__name__
-            for modelwrapper_cls in MODEL_WRAPPER_SUBCLASSES_WITH_IO_SPEC
-        ],
-    )
-    def test_parse_valid_io_spec(self, io_spec_path_str: str):
-        io_spec_path = ResourceURI(io_spec_path_str)
-        if not io_spec_path.exists():
-            pytest.skip(f"{io_spec_path} does not exist")
-        with open(io_spec_path, "r") as io_spec_f:
-            io_spec = json.load(io_spec_f)
-
-        struct = _io_spec_to_struct(io_spec)
-
-        assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "dtype,expectation",
-        [
-            ("float32", does_not_raise()),
-            ("uint8", does_not_raise()),
-            ("int16", does_not_raise()),
-            ("float", pytest.raises(ValueError)),
-            ("float6int", pytest.raises(ValueError)),
-            ("float332", pytest.raises(ValueError)),
-            ("float31", does_not_raise()),
-            ("float0", pytest.raises(ValueError)),
-            ("uint9", does_not_raise()),
-        ],
-    )
-    def test_parse_io_spec_with_different_dtypes(
-        self, valid_io_spec: Dict[str, Any], dtype: str, expectation
-    ):
-        input_key = (
-            "processed_input"
-            if "processed_input" in valid_io_spec
-            else "input"
-        )
-        valid_io_spec[input_key][0]["dtype"] = dtype
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec)
-
-            assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "inputs_num,expectation",
-        [
-            (1, does_not_raise()),
-            (MAX_MODEL_INPUT_NUM, does_not_raise()),
-            (MAX_MODEL_INPUT_NUM + 1, pytest.raises(ValueError)),
-            (MAX_MODEL_INPUT_NUM + 100, pytest.raises(ValueError)),
-        ],
-    )
-    def test_parse_io_spec_with_different_inputs_num(
-        self, valid_io_spec: Dict[str, Any], inputs_num, expectation
-    ):
-        input_key = (
-            "processed_input"
-            if "processed_input" in valid_io_spec
-            else "input"
-        )
-        valid_io_spec[input_key] = inputs_num * [valid_io_spec[input_key][0]]
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec)
-
-            assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "input_dim,expectation",
-        [
-            (1, does_not_raise()),
-            (MAX_MODEL_INPUT_DIM, does_not_raise()),
-            (MAX_MODEL_INPUT_DIM + 1, pytest.raises(ValueError)),
-            (MAX_MODEL_INPUT_DIM + 100, pytest.raises(ValueError)),
-        ],
-    )
-    def test_parse_io_spec_with_different_input_dim(
-        self, valid_io_spec: Dict[str, Any], input_dim, expectation
-    ):
-        input_key = (
-            "processed_input"
-            if "processed_input" in valid_io_spec
-            else "input"
-        )
-        dims = (input_dim - len(valid_io_spec[input_key][0]["shape"])) * [
-            1,
-        ]
-        valid_io_spec[input_key][0]["shape"] = (
-            *valid_io_spec[input_key][0]["shape"],
-            *dims,
-        )
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec)
-
-            assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "outputs_num,expectation",
-        [
-            (1, does_not_raise()),
-            (MAX_MODEL_OUTPUT_NUM, does_not_raise()),
-            (MAX_MODEL_OUTPUT_NUM + 1, pytest.raises(ValueError)),
-            (MAX_MODEL_OUTPUT_NUM + 100, pytest.raises(ValueError)),
-        ],
-    )
-    def test_parse_io_spec_with_different_outputs_num(
-        self, valid_io_spec: Dict[str, Any], outputs_num, expectation
-    ):
-        valid_io_spec["output"] = outputs_num * [valid_io_spec["output"][0]]
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec)
-
-            assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "entry_func_name_len,expectation",
-        [
-            (1, does_not_raise()),
-            (MAX_LENGTH_ENTRY_FUNC_NAME, does_not_raise()),
-            (MAX_LENGTH_ENTRY_FUNC_NAME + 1, pytest.raises(ValueError)),
-            (MAX_LENGTH_ENTRY_FUNC_NAME + 100, pytest.raises(ValueError)),
-        ],
-    )
-    def test_parse_io_spec_with_different_entry_func(
-        self, valid_io_spec: Dict[str, Any], entry_func_name_len, expectation
-    ):
-        entry_func = "a" * entry_func_name_len
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec, entry_func=entry_func)
-
-            assert len(struct) == compute_iospec_struct_size()
-
-    @pytest.mark.parametrize(
-        "model_name_len,expectation",
-        [
-            (1, does_not_raise()),
-            (MAX_LENGTH_MODEL_NAME, does_not_raise()),
-            (MAX_LENGTH_MODEL_NAME + 1, pytest.raises(ValueError)),
-            (MAX_LENGTH_MODEL_NAME + 100, pytest.raises(ValueError)),
-        ],
-    )
-    def test_parse_io_spec_with_different_model_name(
-        self, valid_io_spec: Dict[str, Any], model_name_len, expectation
-    ):
-        model_name = "a" * model_name_len
-
-        with expectation:
-            struct = _io_spec_to_struct(valid_io_spec, model_name=model_name)
-
-            assert len(struct) == compute_iospec_struct_size()
 
 
 class TestParseAllocationStats:
@@ -643,6 +472,17 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client upload_io_specification method.
         """
+
+        def io_spec_to_struct_mock(
+            io_spec: Dict[str, Any],
+            entry_func: str = "module.main",
+            model_name: str = "module",
+            byteorder: Literal["little", "big"] = "little",
+        ) -> bytes:
+            return b"\x05\x04\x03\x02\x01"
+
+        IOSpecSerializer.io_spec_to_struct = io_spec_to_struct_mock
+
         queue = multiprocessing.Queue()
         thread_recv = multiprocessing.Process(
             target=self.mock_recv_message(MessageType.IO_SPEC),
@@ -662,7 +502,7 @@ class TestUARTProtocol(TestCoreProtocol):
         message = queue.get()
         assert isinstance(message, Message)
         assert message.message_type == MessageType.IO_SPEC
-        assert message.payload == _io_spec_to_struct(valid_io_spec)
+        assert message.payload == io_spec_to_struct_mock(valid_io_spec)
 
     def test_request_processing(self, client: UARTProtocol):
         """

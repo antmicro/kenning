@@ -341,20 +341,5 @@ class ROS2Protocol(Protocol):
         self.node.destroy_node()
         self.log_debug("Successfully disconnected")
 
-    def gather_data(self, timeout):
-        raise NotImplementedError
-
-    def initialize_server(self):
-        raise NotImplementedError
-
-    def receive_data(self, connection, mask):
-        raise NotImplementedError
-
-    def receive_message(self, timeout):
-        raise NotImplementedError
-
-    def send_data(self, data):
-        raise NotImplementedError
-
-    def send_message(self, message):
+    def initialize_server(self) -> bool:
         raise NotImplementedError

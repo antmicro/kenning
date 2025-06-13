@@ -345,148 +345,6 @@ class Protocol(ArgumentsHandler, ABC):
         """
         return super().from_json(json_dict)
 
-    @abstractmethod
-    def initialize_server(self) -> bool:
-        """
-        Initializes server side of the protocol.
-
-        The server side is supposed to run on target hardware.
-
-        The parameters for the server should be provided in the constructor.
-
-        Returns
-        -------
-        bool
-            True if succeeded.
-        """
-        ...
-
-    @abstractmethod
-    def initialize_client(self) -> bool:
-        """
-        Initializes client side of the protocol.
-
-        The client side is supposed to run on host testing the target hardware.
-
-        The parameters for the client should be provided in the constructor.
-
-        Returns
-        -------
-        bool
-            True if succeeded.
-        """
-        ...
-
-    @abstractmethod
-    def send_message(self, message: Message) -> bool:
-        """
-        Sends message to the target device.
-
-        Parameters
-        ----------
-        message : Message
-            Message to be sent.
-
-        Returns
-        -------
-        bool
-            True if succeeded.
-        """
-        ...
-
-    @abstractmethod
-    def receive_message(
-        self, timeout: Optional[float] = None
-    ) -> Tuple[ServerStatus, Message]:
-        """
-        Waits for incoming data from the other side of connection.
-
-        This method should wait for the input data to arrive and return the
-        appropriate status code along with received data.
-
-        Parameters
-        ----------
-        timeout : Optional[float]
-            Receive timeout in seconds. If timeout > 0, this specifies the
-            maximum wait time, in seconds. If timeout <= 0, the call won't
-            block, and will report the currently ready file objects. If timeout
-            is None, the call will block until a monitored file object becomes
-            ready.
-
-        Returns
-        -------
-        Tuple[ServerStatus, Message]
-            Tuple containing server status and received message. The status is
-            NOTHING if message is incomplete and DATA_READY if it is complete.
-        """
-        ...
-
-    @abstractmethod
-    def send_data(self, data: Any) -> bool:
-        """
-        Sends data to the target device.
-
-        Data can be model to use, input to process, additional configuration.
-
-        Parameters
-        ----------
-        data : Any
-            Data to send.
-
-        Returns
-        -------
-        bool
-            True if successful.
-        """
-        ...
-
-    @abstractmethod
-    def receive_data(
-        self, connection: Any, mask: int
-    ) -> Tuple[ServerStatus, Optional[Any]]:
-        """
-        Receives data from the target device.
-
-        Parameters
-        ----------
-        connection : Any
-            Connection used to read data.
-        mask : int
-            Selector mask from the event.
-
-        Returns
-        -------
-        Tuple[ServerStatus, Optional[Any]]
-            Status of receive and optionally data that was received.
-        """
-        ...
-
-    @abstractmethod
-    def gather_data(
-        self, timeout: Optional[float] = None
-    ) -> Tuple[ServerStatus, Optional[Any]]:
-        """
-        Gathers data from the client.
-
-        This method should be called by receive_message in order to get data
-        from the client.
-
-        Parameters
-        ----------
-        timeout : Optional[float]
-            Receive timeout in seconds. If timeout > 0, this specifies the
-            maximum wait time, in seconds. If timeout <= 0, the call won't
-            block, and will report the currently ready file objects. If timeout
-            is None, the call will block until a monitored file object becomes
-            ready.
-
-        Returns
-        -------
-        Tuple[ServerStatus, Optional[Any]]
-            Receive status along with received data.
-        """
-        ...
-
     def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
         """
         Waits until the OK message is received.
@@ -528,6 +386,39 @@ class Protocol(ArgumentsHandler, ABC):
                 KLogger.error("Receive timeout")
                 return False, None
 
+    @abstractmethod
+    def initialize_server(self) -> bool:
+        """
+        Initializes server side of the protocol.
+
+        The server side is supposed to run on target hardware.
+
+        The parameters for the server should be provided in the constructor.
+
+        Returns
+        -------
+        bool
+            True if succeeded.
+        """
+        ...
+
+    @abstractmethod
+    def initialize_client(self) -> bool:
+        """
+        Initializes client side of the protocol.
+
+        The client side is supposed to run on host testing the target hardware.
+
+        The parameters for the client should be provided in the constructor.
+
+        Returns
+        -------
+        bool
+            True if succeeded.
+        """
+        ...
+
+    @abstractmethod
     def upload_input(self, data: bytes) -> bool:
         """
         Uploads input to the target device and waits for acknowledgement.

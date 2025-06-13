@@ -38,13 +38,10 @@ from kenning.cli.completers import (
     ClassPathCompleter,
 )
 from kenning.core.optimizer import Optimizer
-from kenning.core.protocol import (
-    MessageType,
-    Protocol,
-    ServerStatus,
-)
+from kenning.core.protocol import Protocol
 from kenning.core.runtime import Runtime
 from kenning.platforms.local import LocalPlatform
+from kenning.protocols.bytes_based_protocol import MessageType, ServerStatus
 from kenning.utils.args_manager import (
     report_missing,
     to_namespace_name,

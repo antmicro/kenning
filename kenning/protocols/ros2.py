@@ -336,6 +336,12 @@ class ROS2Protocol(Protocol):
         self.log_debug("Output downloaded successfully")
         return True, result.result
 
+    def request_success(self, data: Optional[bytes] = bytes()) -> bool:
+        raise NotImplementedError
+
+    def request_failure(self) -> bool:
+        raise NotImplementedError
+
     def disconnect(self):
         self.log_debug("Disconnecting node")
         self.node.destroy_node()

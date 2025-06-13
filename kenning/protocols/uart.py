@@ -17,9 +17,13 @@ import numpy as np
 import serial
 
 from kenning.core.measurements import Measurements
-from kenning.core.protocol import Message, MessageType, ServerStatus
 from kenning.interfaces.io_interface import IOInterface
-from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.protocols.bytes_based_protocol import (
+    BytesBasedProtocol,
+    Message,
+    MessageType,
+    ServerStatus,
+)
 from kenning.utils.logger import KLogger
 
 BARE_METAL_IREE_ALLOCATION_STATS_SIZE = 24

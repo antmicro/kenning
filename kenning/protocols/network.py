@@ -10,8 +10,10 @@ import selectors
 import socket
 from typing import Optional, Tuple
 
-from kenning.core.protocol import ServerStatus
-from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.protocols.bytes_based_protocol import (
+    BytesBasedProtocol,
+    ServerStatus,
+)
 from kenning.utils.logger import KLogger
 
 

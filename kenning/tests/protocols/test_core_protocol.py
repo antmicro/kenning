@@ -6,24 +6,7 @@ from unittest.mock import patch
 
 import pytest
 
-from kenning.core.protocol import MessageType, Protocol
-
-
-@pytest.mark.fast
-class TestMessageType:
-    def test_to_bytes(self):
-        """
-        Test converting message to bytes.
-        """
-        byte_num = (1).to_bytes(2, "little", signed=False)
-        assert MessageType.ERROR.to_bytes() == byte_num
-
-    def test_from_bytes(self):
-        """
-        Test converting message from bytes.
-        """
-        byte_num = (1).to_bytes(2, "little", signed=False)
-        assert MessageType.ERROR == MessageType.from_bytes(byte_num, "little")
+from kenning.core.protocol import Protocol
 
 
 @pytest.mark.fast

@@ -9,8 +9,14 @@ from unittest.mock import patch
 import numpy as np
 import pytest
 
-from kenning.core.protocol import Message, MessageType, Protocol, ServerStatus
+from kenning.core.protocol import Protocol
 from kenning.core.runtime import Runtime
+from kenning.protocols.bytes_based_protocol import (
+    BytesBasedProtocol,
+    Message,
+    MessageType,
+    ServerStatus,
+)
 from kenning.scenarios.inference_server import InferenceServer
 
 
@@ -21,9 +27,9 @@ def runtime():
 
 
 @pytest.fixture
-@patch.multiple(Protocol, __abstractmethods__=set())
+@patch.multiple(BytesBasedProtocol, __abstractmethods__=set())
 def protocol():
-    return Protocol()
+    return BytesBasedProtocol()
 
 
 class TestInferenceServerRunner:

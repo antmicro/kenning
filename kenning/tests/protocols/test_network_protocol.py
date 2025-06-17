@@ -13,10 +13,10 @@ from typing import Optional, Tuple
 import pytest
 
 from kenning.core.measurements import Measurements
-from kenning.core.protocol import (
+from kenning.core.protocol import Protocol
+from kenning.protocols.bytes_based_protocol import (
     Message,
     MessageType,
-    Protocol,
     ServerStatus,
 )
 from kenning.protocols.network import NetworkProtocol

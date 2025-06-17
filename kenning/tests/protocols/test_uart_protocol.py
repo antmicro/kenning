@@ -17,8 +17,12 @@ import pytest
 import serial
 
 from kenning.core.model import ModelWrapper
-from kenning.core.protocol import Message, MessageType, ServerStatus
 from kenning.interfaces.io_spec_serializer import IOSpecSerializer
+from kenning.protocols.bytes_based_protocol import (
+    Message,
+    MessageType,
+    ServerStatus,
+)
 from kenning.protocols.uart import (
     BARE_METAL_IREE_ALLOCATION_STATS_SIZE,
     RUNTIME_STAT_NAME_MAX_LEN,

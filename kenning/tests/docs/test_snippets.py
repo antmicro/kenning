@@ -289,13 +289,17 @@ def get_working_directory(markdown: str, tmpfolder: Path) -> Path:
         venv_path = working_dir_path / "venv"
         if not venv_path.exists():
             venv.create(venv_path, with_pip=True, upgrade_deps=True)
-
         kenning_path = working_dir_path / "kenning"
         if not kenning_path.exists():
+            patch_file = "temp.patch"
+            subprocess.check_output(["git", "clone", "/ci", str(kenning_path)])
+            with open(str(kenning_path / patch_file), "wb") as file:
+                file.write(subprocess.check_output(["git", "diff"]))
             subprocess.check_output(
-                ["git", "clone", "/ci", str(working_dir_path / "kenning")]
+                ["git", "apply", patch_file, "--allow-empty"],
+                cwd=str(kenning_path),
             )
-
+            os.remove(str(kenning_path / patch_file))
         WORKING_DIRS[markdown] = working_dir_path
         return working_dir_path
 

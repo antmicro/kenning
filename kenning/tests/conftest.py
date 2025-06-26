@@ -170,7 +170,7 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
         return
     test_directory_tmp = pytest.test_directory / "tmp"
     if test_directory_tmp.exists():
-        shutil.rmtree(test_directory_tmp)
+        shutil.rmtree(test_directory_tmp, ignore_errors=True)
 
 
 def pytest_generate_tests(metafunc: Metafunc):

@@ -12,6 +12,7 @@ include kenning/resources/coco_detection/*.json
 include kenning/resources/pyproject/pyproject.toml
 include kenning/resources/templates/**/*
 include kenning/resources/templates/*
+include kenning/resources/visual_editor_resources/*
 include kenning/resources/platforms/platforms.yml
 include kenning/resources/zephyr_dts/CMakeLists.txt
 

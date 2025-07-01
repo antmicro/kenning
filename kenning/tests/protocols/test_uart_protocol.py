@@ -227,7 +227,9 @@ class TestUARTProtocol(TestCoreProtocol):
                     read = serial_f.read()
                     if read is not None:
                         data += read
-                    message, data_parsed = Message.from_bytes(data)
+                    message, data_parsed, checksum_valid = Message.from_bytes(
+                        data
+                    )
                     if message is not None:
                         break
                     time.sleep(0.01)
@@ -256,7 +258,9 @@ class TestUARTProtocol(TestCoreProtocol):
                     read = serial_f.read()
                     if read is not None:
                         data += read
-                    message, data_parsed = Message.from_bytes(data)
+                    message, data_parsed, checksum_valid = Message.from_bytes(
+                        data
+                    )
                     if message is not None:
                         break
                     time.sleep(0.01)
@@ -345,7 +349,9 @@ class TestUARTProtocol(TestCoreProtocol):
         client.send_message(message)
         with open(self.port_out, "rb", 0) as serial_f:
             os.set_blocking(serial_f.fileno(), False)
-            received_message, bytes_read = Message.from_bytes(serial_f.read())
+            received_message, bytes_read, checksum_valid = Message.from_bytes(
+                serial_f.read()
+            )
 
         assert bytes_read == len(message.to_bytes())
         assert received_message is not None

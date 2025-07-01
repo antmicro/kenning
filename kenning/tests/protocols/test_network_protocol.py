@@ -421,9 +421,8 @@ class TestNetworkProtocol(TestCoreProtocol):
         receive_status, received_data = queue.get()
         assert queue.get()
         assert receive_status == ServerStatus.DATA_READY
-        answer = Message(MessageType.MODEL, random_byte_data)
-        parsed_message = client.parse_message(received_data)
-        assert parsed_message == answer, f"{parsed_message}!={answer}"
+        answer = Message(MessageType.MODEL, random_byte_data).to_bytes()
+        assert received_data == answer, f"{received_data}!={answer}"
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_upload_io_specification(
@@ -473,9 +472,8 @@ class TestNetworkProtocol(TestCoreProtocol):
         assert send_message_status
         assert receive_status == ServerStatus.DATA_READY
         encoded_data = (json.dumps(io_specification)).encode()
-        answer = Message(MessageType.IO_SPEC, encoded_data)
-        parsed_message = client.parse_message(received_data)
-        assert parsed_message == answer, f"{parsed_message}!={answer}"
+        answer = Message(MessageType.IO_SPEC, encoded_data).to_bytes()
+        assert received_data == answer, f"{received_data}!={answer}"
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_download_output(

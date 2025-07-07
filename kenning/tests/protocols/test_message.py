@@ -2,13 +2,12 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-
 from contextlib import nullcontext as does_not_raise
 from typing import Optional
 
 import pytest
 
-from kenning.protocols.bytes_based_protocol import (
+from kenning.protocols.message import (
     HEADER_SIZE,
     FlagName,
     Flags,

@@ -595,6 +595,19 @@ class PipelineManagerGraphCreator:
             interfaces.append(interface)
             self.out_interface_map[interface.id] = io_spec
 
+        # Ensure that each property has the value other than None.
+        for parameter in parameters:
+            if not isinstance(parameter, dict):
+                raise TypeError(
+                    "An invalid type of a parameter provided in "
+                    f"{self.create_connection.__qualname__}()."
+                    " Expected a dictionary, but "
+                    f"received '{parameter}' of "
+                    f"type {type(parameter).__name__}."
+                )
+            if parameter["value"] is None:
+                parameter["value"] = ""
+
         node_kwargs = {
             "width": self.node_width,
             "properties": [
@@ -603,7 +616,6 @@ class PipelineManagerGraphCreator:
             "interfaces": interfaces,
             "two_column": True,
         }
-
         node = self.graph.create_node(node.name, **node_kwargs)
         return node.id
 

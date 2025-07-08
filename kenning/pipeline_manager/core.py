@@ -416,12 +416,13 @@ class BaseDataflowHandler(ABC):
                 kenning_node = self.nodes[dataflow_node.name]
                 parameters = dataflow_node.properties
                 parameters = {
-                    parameter.name: parameter.value
-                    for parameter in parameters
-                    if not (
+                    parameter.name: None
+                    if (
                         isinstance(parameter.value, str)
                         and parameter.value == ""
                     )
+                    else parameter.value
+                    for parameter in parameters
                 }
                 node_id = self.dataflow_graph.create_node(
                     kenning_node, parameters

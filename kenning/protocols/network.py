@@ -11,13 +11,13 @@ import socket
 from typing import Optional, Tuple
 
 from kenning.protocols.bytes_based_protocol import (
-    BytesBasedProtocol,
     ServerStatus,
 )
+from kenning.protocols.kenning_protocol import KenningProtocol
 from kenning.utils.logger import KLogger
 
 
-class NetworkProtocol(BytesBasedProtocol):
+class NetworkProtocol(KenningProtocol):
     """
     A TCP-based protocol.
 

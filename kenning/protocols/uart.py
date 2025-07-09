@@ -18,11 +18,11 @@ import serial
 
 from kenning.core.measurements import Measurements
 from kenning.interfaces.io_interface import IOInterface
-from kenning.protocols.bytes_based_protocol import (
-    BytesBasedProtocol,
+from kenning.protocols.bytes_based_protocol import ServerStatus
+from kenning.protocols.kenning_protocol import (
+    KenningProtocol,
     Message,
     MessageType,
-    ServerStatus,
 )
 from kenning.utils.logger import KLogger
 
@@ -114,7 +114,7 @@ def _parse_stats(data: bytes, final: bool = False) -> dict:
     return stats_json
 
 
-class UARTProtocol(BytesBasedProtocol):
+class UARTProtocol(KenningProtocol):
     """
     An UART-base protocol. It supports only client-side as a server is
     expected to be bare-metal platform.

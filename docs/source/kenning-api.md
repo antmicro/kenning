@@ -222,7 +222,7 @@ Platform examples:
 The AutoML API is combined from two different elements - [](automl-model-api) and [](automl-api).
 
 AutoML examples:
-* [AutoPyTorchModel](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L74) and [AutoPyTorchML](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L555)
+* [AutoPyTorchModel](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L74) and [AutoPyTorchML](https://github.com/antmicro/kenning/blob/main/kenning/automl/auto_pytorch.py#L528)
 
 (automl-model-api)=
 ### AutoML model

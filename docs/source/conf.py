@@ -200,3 +200,5 @@ myst_substitutions = {
     "json_flow_runner_script": "`kenning.scenarios.json_flow_runner`",
     "optimization_runner_script": "`kenning.scenarios.optimization_runner`",
 }
+
+linkcheck_anchors_ignore_for_url = ("https:\/\/github\.com.*",)

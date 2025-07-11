@@ -14,9 +14,9 @@ from importlib.util import find_spec
 from typing import Dict, List, Optional, Tuple, Type, Union
 
 import astunparse
+import pandoc
 from isort import place_module
 from jsonschema.exceptions import ValidationError
-from rst_to_myst.mdformat_render import rst_to_myst
 
 from kenning.core.dataprovider import DataProvider
 from kenning.core.dataset import Dataset
@@ -125,7 +125,8 @@ def get_class_module_docstrings(
     if not docstring:
         return f"# Class {syntax_node.name}\n\n"
 
-    docstring = rst_to_myst(docstring).text
+    docstring = pandoc.read(docstring, format="rst")
+    docstring = pandoc.write(docstring, format="gfm")
 
     if isinstance(syntax_node, ast.ClassDef):
         return f"# Class {syntax_node.name}\n\n{docstring}\n\n"

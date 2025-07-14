@@ -2,28 +2,33 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
-import time
+import multiprocessing
+import socket
 from math import ceil
-from threading import Event, Thread
-from typing import Callable, List, Optional, Tuple
-from unittest.mock import patch
+from multiprocessing.pool import ThreadPool
+from threading import Event, Lock, Thread
+from typing import Any, Callable, List, Optional, Tuple
+from unittest.mock import Mock, patch
 
 import pytest
 
 from kenning.protocols.bytes_based_protocol import TransmissionFlag
 from kenning.protocols.kenning_protocol import (
+    FLAG_BINDINGS,
     MAX_MESSAGE_PAYLOAD_SIZE,
     FlowControlFlags,
+    IncomingEventType,
     IncomingRequest,
     IncomingTransmission,
+    KenningProtocol,
     Listen,
     MessageType,
     OutgoingRequest,
     OutgoingTransmission,
     ProtocolEvent,
-    Transmission,
 )
 from kenning.protocols.message import FlagName, Flags, Message
+from kenning.tests.utils.test_serializable import serializables_equal
 from kenning.utils.event_with_args import EventWithArgs
 
 DEFAULT_MESSAGE_TYPE = MessageType.DATA
@@ -35,9 +40,16 @@ def message_type():
 
 
 @pytest.fixture
+@patch.multiple(KenningProtocol, __abstractmethods__=set())
+def protocol():
+    protocol = KenningProtocol()
+    return protocol
+
+
+@pytest.fixture
 @patch.multiple(ProtocolEvent, __abstractmethods__=set())
-def protocol_event(message_type: MessageType):
-    protocol_event = ProtocolEvent(message_type)
+def protocol_event(message_type: MessageType, protocol: KenningProtocol):
+    protocol_event = ProtocolEvent(message_type, protocol)
     protocol_event.INITIAL_ACTIVE_STATE = ProtocolEvent.State.NEW
     return protocol_event
 
@@ -294,6 +306,42 @@ def assert_signal_callback_mock_request_failure(
         assert not event.has_succeeded()
 
 
+class MockKenningProtocol(KenningProtocol):
+    """
+    Fake KenningProtocol class, that can be passed to ProtocolEvent
+    object. It overrides send_messages method, that is called by
+    some ProtocolEvent objects, so that it doesn't raise an exception
+    trying to actually send messages.
+    """
+
+    def __init__(self):
+        self.receiver_thread = None
+        self.transmitter = None
+        self.receiver_running = False
+
+    def send_messages(self, message_type: MessageType, messages):
+        pass
+
+    def disconnect(self):
+        pass
+
+    def initialize_server(
+        self,
+        client_connected_callback: Optional[Callable[Any, None]] = None,
+        client_disconnected_callback: Optional[Callable[None, None]] = None,
+    ):
+        pass
+
+    def initialize_client(self):
+        pass
+
+    def receive_data(self, socket: socket.socket, mask: int):
+        pass
+
+    def send_data(self, data: bytes):
+        pass
+
+
 class TestProtocolEvent:
     @pytest.mark.parametrize(
         "event_success",
@@ -304,11 +352,12 @@ class TestProtocolEvent:
     )
     def test_blocking_mode(
         self,
+        protocol: KenningProtocol,
         protocol_event: ProtocolEvent,
         message_type: MessageType,
         event_success: bool,
     ):
-        example_object = IncomingRequest(message_type)
+        example_object = IncomingRequest(message_type, protocol)
         protocol_event.start_blocking()
 
         def test_thread():
@@ -316,7 +365,7 @@ class TestProtocolEvent:
 
         thread = Thread(target=test_thread)
         thread.start()
-        is_successful, returned_object = protocol_event.wait()
+        is_successful, returned_object = protocol_event.wait(120)
         assert event_success == is_successful
         assert example_object == returned_object
         thread.join()
@@ -330,11 +379,12 @@ class TestProtocolEvent:
     )
     def test_non_blocking_mode(
         self,
+        protocol: KenningProtocol,
         protocol_event: ProtocolEvent,
         message_type: MessageType,
         event_success: bool,
     ):
-        example_object = IncomingRequest(message_type)
+        example_object = IncomingRequest(message_type, protocol)
         callback_finished_event = Event()
 
         def test_success_callback(protocol_event: ProtocolEvent):
@@ -400,17 +450,27 @@ class TestOutgoingTransmission:
     ):
         # Generating payload
         payload = bytes([i % 256 for i in range(payload_size)])
-        transmission = OutgoingTransmission(message_type, payload, flags)
-        with patch(
-            signal_callback_method_path("OutgoingTransmission")
-        ) as signal_callback_mock:
+        transmission = OutgoingTransmission(
+            message_type, Mock(), payload, flags
+        )
+        with (
+            patch(
+                signal_callback_method_path("OutgoingTransmission")
+            ) as signal_callback_mock,
+            patch.object(
+                transmission.protocol, "send_messages"
+            ) as send_messages_mock,
+        ):
             transmission.start_blocking()
             message_number = ceil(payload_size / MAX_MESSAGE_PAYLOAD_SIZE)
             # Checking all outgoing messages
-            for i in range(message_number):
-                assert transmission.has_messages_to_send()
-                assert not transmission.accepts_messages()
-                message = transmission.get_next_message()
+            assert 1 == send_messages_mock.call_count
+            _message_type, messages = send_messages_mock.call_args.args
+            assert message_number == len(messages)
+            assert message_type == _message_type
+            transmission.messages_sent(message_number)
+            for i in range(len(messages)):
+                message = messages[i]
                 msg_flags = message.flags
                 assert msg_flags.has_payload
                 # If it's the first message we test user facing flags and the
@@ -421,7 +481,7 @@ class TestOutgoingTransmission:
                     # be the last.
                     if message_number != 1:
                         assert not msg_flags.last
-                    for key, value in Transmission.FLAG_BINDINGS.items():
+                    for key, value in FLAG_BINDINGS.items():
                         if key in flags and key.for_type(message_type):
                             assert getattr(msg_flags, str(value))
                         else:
@@ -445,7 +505,6 @@ class TestOutgoingTransmission:
                     FlowControlFlags.TRANSMISSION == message.flow_control_flags
                 )
             # Checking if the transmission in the final state
-            assert not transmission.has_messages_to_send()
             assert not transmission.accepts_messages()
             assert transmission.has_succeeded()
             assert 1 == signal_callback_mock.call_count
@@ -459,7 +518,6 @@ class TestIncomingTransmission:
     def _assert_state_receiving(transmission: IncomingTransmission):
         assert IncomingTransmission.State.RECEIVING == transmission.state
         assert transmission.accepts_messages()
-        assert not transmission.has_messages_to_send()
         assert not transmission.has_succeeded()
         assert not transmission.is_completed()
 
@@ -467,7 +525,6 @@ class TestIncomingTransmission:
     def _assert_state_confirmed(transmission: IncomingTransmission):
         assert IncomingTransmission.State.CONFIRMED == transmission.state
         assert not transmission.accepts_messages()
-        assert not transmission.has_messages_to_send()
         assert transmission.has_succeeded()
         assert transmission.is_completed()
 
@@ -475,23 +532,18 @@ class TestIncomingTransmission:
     def _assert_state_denied(transmission: IncomingTransmission):
         assert IncomingTransmission.State.DENIED == transmission.state
         assert not transmission.accepts_messages()
-        assert not transmission.has_messages_to_send()
         assert not transmission.has_succeeded()
         assert transmission.is_completed()
 
     @staticmethod
     def _get_receiving_object(
         message_type: MessageType,
-        timeout: float = -1.0,
-        timestamp: float = time.perf_counter(),
     ):
-        transmission = IncomingTransmission(message_type)
+        transmission = IncomingTransmission(message_type, Mock())
         transmission.state = IncomingTransmission.State.RECEIVING
-        transmission.timeout = timeout
         transmission.flags = Flags()
         transmission.run_callback_on_thread = False
         transmission.completed_event = EventWithArgs()
-        transmission.last_message_timestamp = timestamp
         return transmission
 
     @pytest.mark.parametrize(
@@ -509,7 +561,7 @@ class TestIncomingTransmission:
         payload: bytes,
         flags: List[TransmissionFlag],
     ):
-        transmission = IncomingTransmission(message_type)
+        transmission = IncomingTransmission(message_type, Mock())
         with patch(
             signal_callback_method_path("IncomingTransmission")
         ) as signal_callback_mock:
@@ -520,31 +572,6 @@ class TestIncomingTransmission:
             self._assert_state_confirmed(transmission)
             assert_signal_callback_mock_incoming_transmission_success(
                 signal_callback_mock, 1, message_type, payload, flags
-            )
-
-    def test_full_lifecycle_timeout(self):
-        timeout = 0.001
-        transmission = IncomingTransmission(MessageType.MODEL, timeout)
-        with patch(
-            signal_callback_method_path("IncomingTransmission")
-        ) as signal_callback_mock:
-            transmission.start_blocking()
-            transmission.receive_message(MODEL_TRANSMISSION[0][0])
-            timestamp = transmission.last_message_timestamp
-            with patch(
-                "time.perf_counter", return_value=timestamp + (timeout / 2)
-            ):
-                transmission.refresh()
-            self._assert_state_receiving(transmission)
-            with patch(
-                "time.perf_counter", return_value=timestamp + 2 * timeout
-            ):
-                transmission.refresh()
-            assert transmission.is_completed()
-            assert not transmission.has_succeeded()
-            assert transmission.State.DENIED == transmission.state
-            assert_signal_callback_mock_incoming_transmission_failure(
-                signal_callback_mock, 1
             )
 
     @pytest.mark.parametrize(
@@ -595,47 +622,6 @@ class TestIncomingTransmission:
                 [TransmissionFlag.FAIL] if first_flag_set else [],
             )
 
-    @pytest.mark.parametrize(
-        "timeout,time_passed,denied",
-        [
-            (
-                5.0,
-                4.3,
-                False,
-            ),
-            (
-                2.3,
-                5.0,
-                True,
-            ),
-            (
-                -1.0,
-                45488485565465475766576578.0,
-                False,
-            ),
-        ],
-    )
-    def test_refresh(
-        self,
-        message_type: MessageType,
-        timeout: float,
-        time_passed: float,
-        denied: bool,
-    ):
-        transmission = self._get_receiving_object(message_type, timeout, 0)
-        with patch(
-            signal_callback_method_path("Transmission")
-        ) as signal_callback_mock:
-            with patch("time.perf_counter", return_value=time_passed):
-                transmission.refresh()
-            if denied:
-                self._assert_state_denied(transmission)
-            else:
-                self._assert_state_receiving(transmission)
-            assert_signal_callback_mock_incoming_transmission_failure(
-                signal_callback_mock, 1 if denied else 0
-            )
-
 
 class TestOutgoingRequest:
     # Helper functions for verifying if the request is in the correct state:
@@ -645,7 +631,6 @@ class TestOutgoingRequest:
         assert not request.accepts_messages()
         with pytest.raises(ValueError):
             request.receive_message(MODEL_TRANSMISSION[0][0])
-        assert request.has_messages_to_send()
         assert OutgoingRequest.State.PENDING == request.state
         assert not request.is_completed()
         assert not request.has_succeeded()
@@ -653,9 +638,7 @@ class TestOutgoingRequest:
     @staticmethod
     def _assert_state_sent(request: OutgoingRequest):
         assert OutgoingRequest.State.SENT == request.state
-        assert request.request_sent_timestamp is not None
         assert request.accepts_messages()
-        assert not request.has_messages_to_send()
         assert not request.is_completed()
         assert not request.has_succeeded()
 
@@ -664,7 +647,6 @@ class TestOutgoingRequest:
         assert OutgoingRequest.State.ACCEPTED == request.state
         assert request.incoming_transmission is not None
         assert request.accepts_messages()
-        assert not request.has_messages_to_send()
         assert not request.is_completed()
         assert not request.has_succeeded()
 
@@ -672,7 +654,6 @@ class TestOutgoingRequest:
     def _assert_state_confirmed(request: OutgoingRequest):
         assert OutgoingRequest.State.CONFIRMED == request.state
         assert not request.accepts_messages()
-        assert not request.has_messages_to_send()
         assert request.is_completed()
         assert request.has_succeeded()
 
@@ -680,22 +661,46 @@ class TestOutgoingRequest:
     def _assert_state_denied(request: OutgoingRequest):
         assert OutgoingRequest.State.DENIED == request.state
         assert not request.accepts_messages()
-        assert not request.has_messages_to_send()
         assert request.is_completed()
         assert not request.has_succeeded()
 
-    # Helper function for checking if the request message
+    # Helper functions for checking if the request message
     # generated by the tested class is correct
     @staticmethod
-    def _check_request_message(message: Message, message_type: MessageType):
+    def _check_request_message(
+        message: Message,
+        message_type: MessageType,
+        payload: bytes,
+        flags: List[TransmissionFlag],
+    ):
         assert FlowControlFlags.REQUEST == message.flow_control_flags
-        assert b"" == message.payload
+        assert payload == message.payload
         assert message.flags.first
         assert message.flags.last
-        assert not message.flags.has_payload
+        if payload == b"":
+            assert not message.flags.has_payload
+        else:
+            assert message.flags.has_payload
         assert not message.flags.success
         assert not message.flags.fail
+        for flag in flags:
+            if flag.for_type(message_type):
+                assert getattr(message.flags, str(FLAG_BINDINGS[flag]))
         assert message_type == message.message_type
+
+    def _check_request_message_from_mock(
+        self,
+        mock: Callable[Tuple[MessageType, List[Message]], None],
+        message_type: MessageType,
+        payload: bytes = b"",
+        flags: List[TransmissionFlag] = [],
+    ):
+        assert 1 == mock.call_count
+        _message_type, messages = mock.call_args.args
+        assert message_type == _message_type
+        assert 1 == len(messages)
+        self._check_request_message(messages[0], message_type, payload, flags)
+        mock.reset_mock()
 
     # Helper functions for getting object in a specific state
 
@@ -703,39 +708,32 @@ class TestOutgoingRequest:
     def _get_sent_object(
         message_type: MessageType,
         retries: int = 0,
-        timeout: float = -1.0,
-        timestamp: float = time.perf_counter(),
     ):
-        request = OutgoingRequest(message_type)
+        request = OutgoingRequest(message_type, Mock())
         request.state = OutgoingRequest.State.SENT
-        request.timeout = timeout
         request.retry = retries
         request.run_callback_on_thread = False
         request.completed_event = EventWithArgs()
-        request.request_sent_timestamp = timestamp
         return request
 
     @staticmethod
     def _get_accepted_object(
         message_type: MessageType,
         retries: int = 0,
-        timeout: float = -1.0,
-        timestamp: float = time.perf_counter(),
     ):
-        request = OutgoingRequest(message_type)
+        request = OutgoingRequest(message_type, Mock())
         request.state = OutgoingRequest.State.ACCEPTED
         request.retry = retries
-        request.incoming_transmission = IncomingTransmission(message_type)
+        request.incoming_transmission = IncomingTransmission(
+            message_type, Mock()
+        )
         request.incoming_transmission.state = (
             IncomingTransmission.State.RECEIVING
         )
         request.incoming_transmission.run_callback_on_thread = False
         request.incoming_transmission.completed_event = EventWithArgs()
-        request.incoming_transmission.last_message_timestamp = timestamp
-        request.incoming_transmission.timeout = timeout
         request.run_callback_on_thread = False
         request.completed_event = EventWithArgs()
-        request.request_sent_timestamp = None
         return request
 
     @pytest.mark.parametrize(
@@ -753,16 +751,22 @@ class TestOutgoingRequest:
         payload: bytes,
         flags: List[TransmissionFlag],
     ):
-        request = OutgoingRequest(message_type)
-        with patch(
-            signal_callback_method_path("OutgoingRequest")
-        ) as signal_callback_mock:
+        request = OutgoingRequest(message_type, Mock())
+        with (
+            patch(
+                signal_callback_method_path("OutgoingRequest")
+            ) as signal_callback_mock,
+            patch.object(
+                request.protocol, "send_messages"
+            ) as send_messages_mock,
+        ):
             request.start_blocking()
             # State before sending request
             self._assert_state_pending(request)
-            request_message = request.get_next_message()
-            # OutgoingRequest message assertions
-            self._check_request_message(request_message, message_type)
+            self._check_request_message_from_mock(
+                send_messages_mock, message_type
+            )
+            request.messages_sent(1)
             # State after sending request
             self._assert_state_sent(request)
             for i in range(len(messages)):
@@ -785,15 +789,23 @@ class TestOutgoingRequest:
         ],
     )
     def test_full_lifecycle_deny(self, retries: int):
-        request = OutgoingRequest(message_type, 3, retries)
-        with patch(
-            signal_callback_method_path("OutgoingRequest")
-        ) as signal_callback_mock:
+        request = OutgoingRequest(message_type, Mock(), retries, None, [])
+        assert retries == request.retry
+        with (
+            patch(
+                signal_callback_method_path("OutgoingRequest")
+            ) as signal_callback_mock,
+            patch.object(
+                request.protocol, "send_messages"
+            ) as send_messages_mock,
+        ):
             request.start_blocking()
             self._assert_state_pending(request)
-            assert retries == request.retry
-            request_message = request.get_next_message()
-            self._check_request_message(request_message, message_type)
+            self._check_request_message_from_mock(
+                send_messages_mock, message_type
+            )
+            request.messages_sent(1)
+
             self._assert_state_sent(request)
             deny_message = Message(
                 message_type,
@@ -812,108 +824,11 @@ class TestOutgoingRequest:
                 assert (retries - i) == request.retry
                 request.receive_message(deny_message)
                 self._assert_state_pending(request)
-                request_message = request.get_next_message()
-                self._check_request_message(request_message, message_type)
-            request.receive_message(deny_message)
-            self._assert_state_denied(request)
-            assert_signal_callback_mock_request_failure(
-                signal_callback_mock, 1
-            )
-
-    @pytest.mark.parametrize(
-        "retries,timeout",
-        [
-            (0, 0.001),
-            (7, 0.002),
-            (15, 0.003),
-        ],
-    )
-    def test_full_lifecycle_timeout(
-        self, retries: int, timeout: float, message_type: MessageType
-    ):
-        request = OutgoingRequest(message_type, timeout, retries)
-        with patch(
-            signal_callback_method_path("OutgoingRequest")
-        ) as signal_callback_mock:
-            request.start_blocking()
-            self._assert_state_pending(request)
-            assert retries == request.retry
-            request_message = request.get_next_message()
-            self._check_request_message(request_message, message_type)
-            self._assert_state_sent(request)
-            for i in range(retries):
-                assert (retries - i) == request.retry
-                timestamp = request.request_sent_timestamp
-                with patch(
-                    "time.perf_counter", return_value=timestamp + (timeout / 2)
-                ):
-                    request.refresh()
-                self._assert_state_sent(request)
-                with patch(
-                    "time.perf_counter", return_value=timestamp + 2 * timeout
-                ):
-                    request.refresh()
-                self._assert_state_pending(request)
-                request_message = request.get_next_message()
-                self._check_request_message(request_message, message_type)
-            with patch(
-                "time.perf_counter",
-                return_value=request.request_sent_timestamp + 2 * timeout,
-            ):
-                request.refresh()
-            self._assert_state_denied(request)
-            assert_signal_callback_mock_request_failure(
-                signal_callback_mock, 1
-            )
-
-    @pytest.mark.parametrize(
-        "retries,timeout",
-        [
-            (0, 0.001),
-            (7, 0.002),
-            (15, 0.003),
-        ],
-    )
-    def test_full_lifecycle_transmission_timeout(
-        self, retries: int, timeout: float
-    ):
-        message_type = MessageType.MODEL
-        request = OutgoingRequest(message_type, timeout, retries)
-        with patch(
-            signal_callback_method_path("OutgoingRequest")
-        ) as signal_callback_mock:
-            request.start_blocking()
-            self._assert_state_pending(request)
-            assert retries == request.retry
-            request_message = request.get_next_message()
-            self._check_request_message(request_message, message_type)
-            self._assert_state_sent(request)
-            for i in range(retries):
-                assert (retries - i) == request.retry
-                request.receive_message(MODEL_TRANSMISSION[0][0])
-                timestamp = (
-                    request.incoming_transmission.last_message_timestamp
+                self._check_request_message_from_mock(
+                    send_messages_mock, message_type
                 )
-                self._assert_state_accepted(request)
-                with patch(
-                    "time.perf_counter", return_value=timestamp + timeout / 2
-                ):
-                    request.refresh()
-                self._assert_state_accepted(request)
-                with patch(
-                    "time.perf_counter", return_value=timestamp + 2 * timeout
-                ):
-                    request.refresh()
-                self._assert_state_pending(request)
-                request_message = request.get_next_message()
-                self._check_request_message(request_message, message_type)
-            request.receive_message(MODEL_TRANSMISSION[0][0])
-            with patch(
-                "time.perf_counter",
-                return_value=request.incoming_transmission.last_message_timestamp
-                + 2 * timeout,
-            ):
-                request.refresh()
+                request.messages_sent(1)
+            request.receive_message(deny_message)
             self._assert_state_denied(request)
             assert_signal_callback_mock_request_failure(
                 signal_callback_mock, 1
@@ -923,14 +838,14 @@ class TestOutgoingRequest:
     # discarded without changing state of the object (as should any message
     # other than negative acknowledgment or transmission)
     @pytest.mark.parametrize(
-        "fail_flag_set,retries, state_checker",
+        "fail_flag_set,retries, state_checker, request_sent_again",
         [
-            (False, 0, _assert_state_sent),
-            (False, 1, _assert_state_sent),
-            (False, 15, _assert_state_sent),
-            (True, 0, _assert_state_denied),
-            (True, 1, _assert_state_pending),
-            (True, 7, _assert_state_pending),
+            (False, 0, _assert_state_sent, False),
+            (False, 1, _assert_state_sent, False),
+            (False, 15, _assert_state_sent, False),
+            (True, 0, _assert_state_denied, False),
+            (True, 1, _assert_state_pending, True),
+            (True, 7, _assert_state_pending, True),
         ],
     )
     def test_receive_message_acknowledge_sent(
@@ -939,21 +854,29 @@ class TestOutgoingRequest:
         fail_flag_set: bool,
         retries: int,
         state_checker: Callable[ProtocolEvent, None],
+        request_sent_again: bool,
     ):
         request = self._get_sent_object(message_type, retries)
-        request.receive_message(
-            Message(
-                message_type,
-                None,
-                FlowControlFlags.ACKNOWLEDGE,
-                Flags(
-                    {
-                        FlagName.FAIL: fail_flag_set,
-                    }
-                ),
+        with patch.object(
+            request.protocol, "send_messages"
+        ) as send_messages_mock:
+            request.receive_message(
+                Message(
+                    message_type,
+                    None,
+                    FlowControlFlags.ACKNOWLEDGE,
+                    Flags(
+                        {
+                            FlagName.FAIL: fail_flag_set,
+                        }
+                    ),
+                )
             )
-        )
-        state_checker(request)
+            if request_sent_again:
+                self._check_request_message_from_mock(
+                    send_messages_mock, message_type
+                )
+            state_checker(request)
 
     @pytest.mark.parametrize(
         "outgoing_request,last_flag_set,state_checker",
@@ -1012,129 +935,27 @@ class TestOutgoingRequest:
             else:
                 assert 0 == signal_callback_mock.call_count
 
-    def test_get_next_message_pending(self, message_type: MessageType):
-        request = OutgoingRequest(message_type)
+    def test_messages_sent_pending(self, message_type: MessageType):
+        request = OutgoingRequest(message_type, Mock())
         request.state = OutgoingRequest.State.PENDING
-        request_message = Message(
-            message_type, None, FlowControlFlags.REQUEST, Flags()
+        request.messages_sent(1)
+        request.state == OutgoingRequest.State.SENT
+
+    def test_init(self, message_type: MessageType, random_byte_data: bytes):
+        request = OutgoingRequest(
+            message_type,
+            Mock(),
+            5,
+            random_byte_data,
+            [TransmissionFlag.IS_HOST_MESSAGE],
         )
-        request.request_message = request_message
-        assert request_message == request.get_next_message()
-
-    def test_init(self, message_type: MessageType):
-        request = OutgoingRequest(message_type)
-        self._check_request_message(request.request_message, message_type)
-
-    @pytest.mark.parametrize(
-        "object_generator,timeout,retries,time_passed,retries_left,state_checker",
-        [
-            (
-                _get_sent_object,
-                5.0,
-                2,
-                4.3,
-                2,
-                _assert_state_sent,
-            ),
-            (
-                _get_sent_object,
-                -1.0,
-                2,
-                5843857435743597543574357435747,
-                2,
-                _assert_state_sent,
-            ),
-            (
-                _get_sent_object,
-                2.3,
-                0,
-                1.0,
-                0,
-                _assert_state_sent,
-            ),
-            (
-                _get_sent_object,
-                5.0,
-                2,
-                7.3,
-                1,
-                _assert_state_pending,
-            ),
-            (
-                _get_sent_object,
-                2.3,
-                0,
-                5.0,
-                None,
-                _assert_state_denied,
-            ),
-            (
-                _get_accepted_object,
-                3.1,
-                1,
-                4.1,
-                0,
-                _assert_state_pending,
-            ),
-            (
-                _get_accepted_object,
-                1.5,
-                0,
-                2.0,
-                None,
-                _assert_state_denied,
-            ),
-            (
-                _get_accepted_object,
-                3.1,
-                9,
-                2.1,
-                9,
-                _assert_state_accepted,
-            ),
-            (
-                _get_accepted_object,
-                1.5,
-                0,
-                1.0,
-                0,
-                _assert_state_accepted,
-            ),
-            (
-                _get_accepted_object,
-                -1.0,
-                9,
-                25656.1,
-                9,
-                _assert_state_accepted,
-            ),
-        ],
-    )
-    def test_refresh(
-        self,
-        message_type: MessageType,
-        object_generator: Callable[
-            Tuple[MessageType, int, float, float], OutgoingRequest
-        ],
-        timeout: float,
-        retries: int,
-        time_passed: float,
-        retries_left: int,
-        state_checker: Callable[ProtocolEvent, None],
-    ):
-        request = object_generator(message_type, retries, timeout, 0)
-        with patch(
-            signal_callback_method_path("OutgoingRequest")
-        ) as signal_callback_mock:
-            with patch("time.perf_counter", return_value=time_passed):
-                request.refresh()
-            state_checker(request)
-            if retries_left is not None:
-                assert retries_left == request.retry
-            state_denied = time_passed > timeout and retries == 0
-            assert_signal_callback_mock_request_failure(
-                signal_callback_mock, 1 if state_denied else 0
-            )
+        self._check_request_message(
+            request.request_message,
+            message_type,
+            random_byte_data,
+            [TransmissionFlag.IS_HOST_MESSAGE],
+        )
+        assert 5 == request.retry
 
 
 class TestListen:
@@ -1144,7 +965,6 @@ class TestListen:
     def _assert_state_listening(listen: Listen):
         assert listen.State.LISTENING == listen.state
         assert listen.accepts_messages()
-        assert not listen.has_messages_to_send()
         assert not listen.is_completed()
         assert not listen.has_succeeded()
 
@@ -1160,7 +980,6 @@ class TestListen:
         assert listen.is_completed()
         assert listen.has_succeeded()
         assert not listen.accepts_messages()
-        assert not listen.has_messages_to_send()
         assert listen.State.CONFIRMED == listen.state
 
     # Helper functions for getting object in a specific state
@@ -1169,18 +988,17 @@ class TestListen:
     def _get_receiving_object(
         message_type: MessageType,
         limit: Optional[int] = 1,
-        timeout: float = 0.001,
     ) -> Listen:
-        listen = Listen(message_type)
+        listen = Listen(message_type, Mock())
         listen.state = listen.State.RECEIVING_TRANSMISSION
-        listen.incoming_transmission = IncomingTransmission(message_type)
+        listen.incoming_transmission = IncomingTransmission(
+            message_type, Mock()
+        )
         listen.incoming_transmission.state = (
             IncomingTransmission.State.RECEIVING
         )
         listen.incoming_transmission.flags = Flags()
         listen.incoming_transmission.start_blocking()
-        listen.incoming_transmission.timeout = timeout
-        listen.timeout = timeout
         listen.limit = limit
         return listen
 
@@ -1188,7 +1006,7 @@ class TestListen:
     def _get_listening_object(
         message_type: MessageType, limit: Optional[int] = 1
     ) -> Listen:
-        listen = Listen(message_type)
+        listen = Listen(message_type, Mock())
         listen.state = listen.State.LISTENING
         listen.limit = limit
         return listen
@@ -1209,7 +1027,7 @@ class TestListen:
         limit: int,
     ):
         messages, message_type, payload, flags = transmission
-        listen = Listen(message_type, limit)
+        listen = Listen(message_type, Mock(), limit)
         with patch(
             signal_callback_method_path("Listen")
         ) as signal_callback_mock:
@@ -1229,55 +1047,6 @@ class TestListen:
                 )
             self._assert_state_confirmed(listen)
 
-    def test_full_lifecycle_transmission_timeout(self):
-        timeout = 0.001
-        listen = Listen(MessageType.MODEL, 2, timeout)
-        with patch(
-            signal_callback_method_path("Listen")
-        ) as signal_callback_mock:
-
-            def do_nothing_callback(event: ProtocolEvent):
-                pass
-
-            listen.start(do_nothing_callback, do_nothing_callback)
-            self._assert_state_listening(listen)
-            # Limit is set to 2, so after first failed transmission the object
-            # should go back to state 'LISTENING'
-            listen.receive_message(MODEL_TRANSMISSION[0][0])
-            self._assert_state_receiving(listen)
-            timestamp = listen.incoming_transmission.last_message_timestamp
-            with patch(
-                "time.perf_counter", return_value=timestamp + (timeout / 2)
-            ):
-                listen.refresh()
-            self._assert_state_receiving(listen)
-            with patch(
-                "time.perf_counter", return_value=timestamp + 2 * timeout
-            ):
-                listen.refresh()
-            self._assert_state_listening(listen)
-            assert_signal_callback_mock_incoming_transmission_failure(
-                signal_callback_mock, 1
-            )
-            # Second failed transmission - object IncomingTransmission passed
-            # to the callback should be in state 'DENIED', but the listening
-            # object itself in state 'CONFIRMED'
-            listen.receive_message(MODEL_TRANSMISSION[0][0])
-            timestamp = listen.incoming_transmission.last_message_timestamp
-            with patch(
-                "time.perf_counter", return_value=timestamp + (timeout / 2)
-            ):
-                listen.refresh()
-            self._assert_state_receiving(listen)
-            with patch(
-                "time.perf_counter", return_value=timestamp + 2 * timeout
-            ):
-                listen.refresh()
-            self._assert_state_confirmed(listen)
-            assert_signal_callback_mock_incoming_transmission_failure(
-                signal_callback_mock, 2
-            )
-
     @pytest.mark.parametrize(
         "limit",
         [
@@ -1289,7 +1058,7 @@ class TestListen:
     def test_full_lifecycle_request(
         self, message_type: MessageType, limit: int
     ):
-        listen = Listen(message_type, limit)
+        listen = Listen(message_type, Mock(), limit)
         with patch(
             signal_callback_method_path("Listen")
         ) as signal_callback_mock:
@@ -1344,7 +1113,7 @@ class TestListen:
     def test_receive_message_transmission_listening(
         self, message_type: MessageType
     ):
-        listen = Listen(message_type)
+        listen = Listen(message_type, Mock())
         listen.state = listen.State.LISTENING
         transmission_message = Message(
             message_type,
@@ -1426,39 +1195,692 @@ class TestListen:
                 signal_callback_mock, 1, message_type, payload, []
             )
 
-    @pytest.mark.parametrize(
-        "timeout_passed,limit,state_checker,desired_limit",
-        [
-            (False, 1, _assert_state_receiving, None),
-            (True, 1, _assert_state_confirmed, None),
-            (True, 2, _assert_state_listening, 1),
-            (True, 18, _assert_state_listening, 17),
-        ],
-    )
-    def test_refresh_timeout(
+
+class MockEvent(ProtocolEvent):
+    def __init__(
         self,
         message_type: MessageType,
-        timeout_passed: bool,
-        limit: int,
-        state_checker: Callable[ProtocolEvent, None],
-        desired_limit: int,
+        messages_expected: int,
     ):
-        timeout = 1.0
-        listen = self._get_receiving_object(message_type, limit, timeout)
-        # We're tricking the object into thinking the timeout has passed or not
-        listen.incoming_transmission.last_message_timestamp = (
-            (time.perf_counter() - timeout)
-            if timeout_passed
-            else time.perf_counter()
+        self.state = None
+        self.message_type = message_type
+        self.rec_messages = []
+        self.messages_sent_count = 0
+        self.messages_expected = messages_expected
+        self.lock = Lock()
+
+    def is_completed(self) -> bool:
+        return len(self.rec_messages) == self.messages_expected
+
+    def accepts_messages(self) -> bool:
+        return not (len(self.rec_messages) == self.messages_expected)
+
+    def receive_message(self, message: Message):
+        self.rec_messages.append(message)
+
+    def messages_sent(self, message_count: int):
+        self.messages_sent_count += message_count
+
+    def __str__(self):
+        return "Test Mock Event"
+
+
+class TestKenningProtocol:
+    PROTOCOL_EVENT_CLASS_PATH = (
+        "kenning.protocols.kenning_protocol.ProtocolEvent"
+    )
+
+    @staticmethod
+    def _assert_messages_equal(left: Message, right: Message):
+        assert left.message_type == right.message_type
+        assert left.payload == right.payload
+        serializables_equal(left.flags, right.flags)
+        assert left.flow_control_flags == right.flow_control_flags
+
+    def _assert_message_lists_equal(
+        self, left: List[Message], right: List[Message]
+    ):
+        assert len(left) == len(right)
+        for i in range(len(left)):
+            self._assert_messages_equal(left[i], right[i])
+
+    EXAMPLE_MIXED_MESSAGE_STREAM = [
+        Message(
+            DEFAULT_MESSAGE_TYPE,
+            b"\x3F\x4C",
+            FlowControlFlags.TRANSMISSION,
+            Flags(),
+        ),
+        Message(MessageType.MODEL, None),
+        Message(
+            DEFAULT_MESSAGE_TYPE,
+            b"\5G\x12\x63",
+            FlowControlFlags.REQUEST,
+            Flags(
+                {
+                    FlagName.SPEC_FLAG_1: True,
+                }
+            ),
+        ),
+        Message(
+            DEFAULT_MESSAGE_TYPE,
+            b"\x3F\x4C",
+            FlowControlFlags.ACKNOWLEDGE,
+            Flags(
+                {
+                    FlagName.FIRST: True,
+                }
+            ),
+        ),
+    ]
+
+    @pytest.mark.parametrize(
+        "incoming_message_buffer, expected_dump_buffer",
+        [
+            (
+                [EXAMPLE_MIXED_MESSAGE_STREAM[0]],
+                [EXAMPLE_MIXED_MESSAGE_STREAM[0]],
+            ),
+            (
+                EXAMPLE_MIXED_MESSAGE_STREAM[0:1],
+                [EXAMPLE_MIXED_MESSAGE_STREAM[0]],
+            ),
+            (
+                EXAMPLE_MIXED_MESSAGE_STREAM,
+                [EXAMPLE_MIXED_MESSAGE_STREAM[0]]
+                + EXAMPLE_MIXED_MESSAGE_STREAM[2:],
+            ),
+        ],
+    )
+    def test_receiver(
+        self,
+        protocol: KenningProtocol,
+        incoming_message_buffer: List[Message],
+        expected_dump_buffer: List[Message],
+    ):
+        (
+            CONNECTION_PROTOCOL_SIDE,
+            CONNECTION_OTHER_DEVICE_SIDE,
+        ) = multiprocessing.Pipe(duplex=True)
+        event_mock = MockEvent(DEFAULT_MESSAGE_TYPE, len(expected_dump_buffer))
+
+        def kenning_protocol_receive_message_mock(timeout: float):
+            if CONNECTION_PROTOCOL_SIDE.poll(timeout):
+                return CONNECTION_PROTOCOL_SIDE.recv()
+            else:
+                return None
+
+        protocol.receive_message = kenning_protocol_receive_message_mock
+
+        protocol.start()
+
+        protocol.current_protocol_events = {
+            DEFAULT_MESSAGE_TYPE: event_mock,
+        }
+
+        for message in incoming_message_buffer:
+            CONNECTION_OTHER_DEVICE_SIDE.send(message)
+
+        while not event_mock.is_completed():
+            pass
+
+        protocol.stop()
+        self._assert_message_lists_equal(
+            expected_dump_buffer, event_mock.rec_messages
         )
-        with patch(
-            signal_callback_method_path("Listen")
-        ) as signal_callback_mock:
-            listen.refresh()
-            assert_signal_callback_mock_incoming_transmission_failure(
-                signal_callback_mock, 1 if timeout_passed else 0
+
+    def test_send_messages(self, protocol: KenningProtocol):
+        message_dump_buffer = []
+        event_mock = MockEvent(MessageType.OUTPUT, 0)
+        event_mock_2 = MockEvent(None, 0)
+        event_mock_3 = MockEvent(MessageType.IO_SPEC, 0)
+        event_mock_4 = MockEvent(MessageType.MODEL, 0)
+        messages = [
+            Message(
+                MessageType.IO_SPEC,
+                b"\x3F\x4C",
+                FlowControlFlags.TRANSMISSION,
+                Flags(),
+            ),
+            Message(MessageType.MODEL, None),
+        ]
+
+        def kenning_protocol_send_message_mock(message: Message):
+            message_dump_buffer.append(message)
+
+        protocol.send_message = kenning_protocol_send_message_mock
+
+        protocol.start()
+
+        # The 'send_messages' method should choose the proper event based
+        # on matching the key with the message type passed as it's argument
+        # (not message type from sent messages, nor the one stored in the
+        # calling object)
+        protocol.current_protocol_events = {
+            None: event_mock,
+            MessageType.OUTPUT: event_mock_2,
+            MessageType.MODEL: event_mock_4,
+            MessageType.IO_SPEC: event_mock_3,
+        }
+        protocol.send_messages(None, messages)
+        protocol.stop()
+
+        assert len(messages) == event_mock.messages_sent_count
+        assert 0 == event_mock_2.messages_sent_count
+        assert 0 == event_mock_3.messages_sent_count
+        assert 0 == event_mock_4.messages_sent_count
+
+        self._assert_message_lists_equal(messages, message_dump_buffer)
+
+    @staticmethod
+    def _assert_ougoing_transmission_success(
+        message_type, message_number, payload, flags, queue
+    ):
+        assert message_number == queue.qsize()
+        for i in range(message_number):
+            message = queue.get()
+            assert message_type == message.message_type
+            if i == 0:
+                assert message.flags.first
+            if i == message_number - 1:
+                assert message.flags.last
+            for flag in FLAG_BINDINGS.keys():
+                message_flag = getattr(message.flags, str(FLAG_BINDINGS[flag]))
+                if flag in flags and flag.for_type(message_type):
+                    assert message_flag
+                else:
+                    assert not message_flag
+            assert message.flags.has_payload
+            assert FlowControlFlags.TRANSMISSION == message.flow_control_flags
+            assert (
+                payload[
+                    i * MAX_MESSAGE_PAYLOAD_SIZE : (i + 1)
+                    * MAX_MESSAGE_PAYLOAD_SIZE
+                ]
+                == message.payload
             )
 
-            state_checker(listen)
-            if desired_limit is not None:
-                assert desired_limit == listen.limit
+    @pytest.mark.parametrize(
+        "message_type, payload_size, flags",
+        [
+            (
+                MessageType.MODEL,
+                1000,
+                [TransmissionFlag.IS_HOST_MESSAGE, TransmissionFlag.SUCCESS],
+            ),
+            (
+                MessageType.OUTPUT,
+                1000,
+                [
+                    TransmissionFlag.IS_HOST_MESSAGE,
+                    TransmissionFlag.SERIALIZED,
+                ],
+            ),
+            (
+                MessageType.IO_SPEC,
+                1000,
+                [
+                    TransmissionFlag.IS_HOST_MESSAGE,
+                    TransmissionFlag.SERIALIZED,
+                ],
+            ),
+            (
+                MessageType.MODEL,
+                5968,
+                [TransmissionFlag.IS_HOST_MESSAGE, TransmissionFlag.SUCCESS],
+            ),
+            (
+                MessageType.IO_SPEC,
+                10000,
+                [
+                    TransmissionFlag.IS_HOST_MESSAGE,
+                    TransmissionFlag.SERIALIZED,
+                ],
+            ),
+        ],
+    )
+    def test_transmit(
+        self,
+        protocol: KenningProtocol,
+        message_type: MessageType,
+        payload_size: int,
+        flags: List[TransmissionFlag],
+    ):
+        payload = bytes([i % 256 for i in range(payload_size)])
+        message_number = ceil(len(payload) / MAX_MESSAGE_PAYLOAD_SIZE)
+
+        (
+            CONNECTION_PROTOCOL_SIDE,
+            CONNECTION_OTHER_DEVICE_SIDE,
+        ) = multiprocessing.Pipe(duplex=True)
+
+        SENT_MESSAGES = multiprocessing.Queue()
+
+        def kenning_protocol_receive_message_mock(
+            timeout: Optional[float] = None
+        ):
+            if CONNECTION_PROTOCOL_SIDE.poll(timeout):
+                return CONNECTION_PROTOCOL_SIDE.recv()
+            else:
+                return None
+
+        def kenning_protocol_send_message_mock(message: Message):
+            CONNECTION_PROTOCOL_SIDE.send(message)
+
+        def other_device_mock(connection, sent_messages):
+            message = connection.recv()
+            sent_messages.put(message)
+
+        protocol.send_message = kenning_protocol_send_message_mock
+        protocol.receive_message = kenning_protocol_receive_message_mock
+        other_device = multiprocessing.Process(
+            target=other_device_mock,
+            args=(CONNECTION_OTHER_DEVICE_SIDE, SENT_MESSAGES),
+        )
+        other_device.start()
+        protocol.start()
+
+        protocol.transmit_blocking(message_type, payload, flags)
+        protocol.stop()
+        other_device.terminate()
+        self._assert_ougoing_transmission_success(
+            message_type, message_number, payload, flags, SENT_MESSAGES
+        )
+
+        SENT_MESSAGES = multiprocessing.Queue()
+        other_device = multiprocessing.Process(
+            target=other_device_mock,
+            args=(CONNECTION_OTHER_DEVICE_SIDE, SENT_MESSAGES),
+        )
+        other_device.start()
+        protocol.start()
+
+        protocol.transmit(message_type, payload, flags)
+        while len(protocol.current_protocol_events) != 0:
+            pass
+
+        protocol.stop()
+        other_device.terminate()
+
+        self._assert_ougoing_transmission_success(
+            message_type, message_number, payload, flags, SENT_MESSAGES
+        )
+
+    @pytest.mark.parametrize(
+        "transmission, accepted, retry",
+        [
+            (MODEL_TRANSMISSION, False, 0),
+            (IO_SPEC_TRANSMISSION_SINGLE_MESSAGE, False, 0),
+            (IO_SPEC_TRANSMISSION_NO_PAYLOAD, False, 0),
+            (MODEL_TRANSMISSION, True, 3),
+            (IO_SPEC_TRANSMISSION_SINGLE_MESSAGE, True, 3435),
+            (IO_SPEC_TRANSMISSION_NO_PAYLOAD, True, 1),
+            (MODEL_TRANSMISSION, True, 0),
+            (IO_SPEC_TRANSMISSION_SINGLE_MESSAGE, True, 15),
+            (IO_SPEC_TRANSMISSION_NO_PAYLOAD, True, -4),
+        ],
+    )
+    def test_request(
+        self,
+        protocol: KenningProtocol,
+        transmission: Tuple[
+            List[Message], MessageType, bytes, List[TransmissionFlag]
+        ],
+        accepted: bool,
+        retry: int,
+        random_byte_data: bytes,
+    ):
+        (
+            CONNECTION_PROTOCOL_SIDE,
+            CONNECTION_OTHER_DEVICE_SIDE,
+        ) = multiprocessing.Pipe(duplex=True)
+        messages, message_type, payload, flags = transmission
+
+        REQUEST_MESSAGES = multiprocessing.Queue()
+
+        def kenning_protocol_receive_message_mock(
+            timeout: Optional[float] = None
+        ):
+            if CONNECTION_PROTOCOL_SIDE.poll(timeout):
+                return CONNECTION_PROTOCOL_SIDE.recv()
+            else:
+                return None
+
+        def kenning_protocol_send_message_mock(message: Message):
+            CONNECTION_PROTOCOL_SIDE.send(message)
+
+        protocol.send_message = kenning_protocol_send_message_mock
+        protocol.receive_message = kenning_protocol_receive_message_mock
+        success_callback_called = 0
+        failure_callback_called = 0
+
+        success_callback_message_type = None
+        success_callback_payload = None
+        success_callback_flags = None
+
+        def success_callback(message_type, payload, flags):
+            nonlocal success_callback_called
+            nonlocal success_callback_message_type
+            nonlocal success_callback_payload
+            nonlocal success_callback_flags
+            success_callback_called += 1
+            success_callback_message_type = message_type
+            success_callback_payload = payload
+            success_callback_flags = flags
+
+        deny_callback_message_type = None
+
+        def deny_callback(event):
+            nonlocal failure_callback_called
+            nonlocal deny_callback_message_type
+            failure_callback_called += 1
+            deny_callback_message_type = event
+
+        def other_device_mock(
+            accepted,
+            retry,
+            message_type,
+            messages,
+            connection,
+            request_messages,
+        ):
+            for _ in range(1 if accepted else retry + 1):
+                while not connection.poll():
+                    pass
+                request_message = connection.recv()
+                request_messages.put(request_message)
+                if accepted:
+                    for message in messages:
+                        connection.send(message)
+                else:
+                    connection.send(
+                        Message(
+                            message_type,
+                            None,
+                            FlowControlFlags.ACKNOWLEDGE,
+                            Flags(
+                                {
+                                    FlagName.FIRST: True,
+                                    FlagName.LAST: True,
+                                    FlagName.FAIL: True,
+                                }
+                            ),
+                        )
+                    )
+
+        other_device = multiprocessing.Process(
+            target=other_device_mock,
+            args=(
+                accepted,
+                retry,
+                message_type,
+                messages,
+                CONNECTION_OTHER_DEVICE_SIDE,
+                REQUEST_MESSAGES,
+            ),
+        )
+        other_device.start()
+        protocol.start()
+        response = protocol.request_blocking(
+            message_type,
+            success_callback,
+            random_byte_data,
+            [TransmissionFlag.IS_KENNING],
+            1,
+            retry,
+            deny_callback,
+        )
+        protocol.stop()
+        other_device.terminate()
+
+        if accepted:
+            assert 1 == success_callback_called
+            assert not failure_callback_called
+            assert message_type == success_callback_message_type
+            assert payload == success_callback_payload
+            assert flags == success_callback_flags
+            assert payload == response[0]
+            assert flags == response[1]
+        else:
+            assert 1 == failure_callback_called
+            assert not success_callback_called
+            assert message_type == deny_callback_message_type
+            assert (None, None) == response
+
+        failure_callback_called = 0
+        success_callback_called = 0
+        success_callback_message_type = None
+        success_callback_payload = None
+        success_callback_flags = None
+        deny_callback_message_type = None
+        other_device = multiprocessing.Process(
+            target=other_device_mock,
+            args=(
+                accepted,
+                retry,
+                message_type,
+                messages,
+                CONNECTION_OTHER_DEVICE_SIDE,
+                REQUEST_MESSAGES,
+            ),
+        )
+        other_device.start()
+        protocol.start()
+
+        protocol.request(
+            message_type,
+            success_callback,
+            random_byte_data,
+            [TransmissionFlag.IS_KENNING],
+            retry,
+            deny_callback,
+        )
+
+        while len(protocol.current_protocol_events) != 0:
+            pass
+
+        protocol.stop()
+        other_device.terminate()
+        ProtocolEvent.callback_runner.close()
+        ProtocolEvent.callback_runner.join()
+        ProtocolEvent.callback_runner = ThreadPool(1)
+        if accepted:
+            assert 1 == success_callback_called
+            assert not failure_callback_called
+            assert message_type == success_callback_message_type
+            assert payload == success_callback_payload
+            assert flags == success_callback_flags
+        else:
+            assert 1 == failure_callback_called
+            assert not success_callback_called
+            assert message_type == deny_callback_message_type
+
+        while not REQUEST_MESSAGES.empty():
+            request_message = REQUEST_MESSAGES.get()
+            assert request_message.flags.first
+            assert request_message.flags.last
+            assert request_message.flags.has_payload
+            assert request_message.flags.is_kenning
+            assert random_byte_data == request_message.payload
+            assert (
+                FlowControlFlags.REQUEST == request_message.flow_control_flags
+            )
+            assert message_type == request_message.message_type
+
+    @pytest.mark.parametrize(
+        "transmission, limit",
+        [
+            (IO_SPEC_TRANSMISSION_SINGLE_MESSAGE, 4),
+            (MODEL_TRANSMISSION, 20),
+            (IO_SPEC_TRANSMISSION_NO_PAYLOAD, 13),
+        ],
+    )
+    def test_listen(
+        self,
+        protocol: KenningProtocol,
+        transmission: Tuple[
+            List[Message], MessageType, bytes, List[TransmissionFlag]
+        ],
+        limit: int,
+        random_byte_data: bytes,
+    ):
+        (
+            CONNECTION_PROTOCOL_SIDE,
+            CONNECTION_OTHER_DEVICE_SIDE,
+        ) = multiprocessing.Pipe(duplex=True)
+        messages, message_type, payload, flags = transmission
+
+        def kenning_protocol_receive_message_mock(
+            timeout: Optional[float] = None
+        ):
+            if CONNECTION_PROTOCOL_SIDE.poll(timeout):
+                return CONNECTION_PROTOCOL_SIDE.recv()
+            else:
+                return None
+
+        def kenning_protocol_send_message_mock(message: Message):
+            CONNECTION_PROTOCOL_SIDE.send(message)
+
+        protocol.send_message = kenning_protocol_send_message_mock
+        protocol.receive_message = kenning_protocol_receive_message_mock
+
+        def other_device_wait():
+            nonlocal protocol
+            while message_type not in protocol.current_protocol_events.keys():
+                pass
+
+        def other_device_send_transmission(messages, connection):
+            other_device_wait()
+            for message in messages:
+                connection.send(message)
+
+        def other_device_send_request(message_type, connection):
+            other_device_wait()
+            connection.send(
+                Message(
+                    message_type,
+                    random_byte_data,
+                    FlowControlFlags.REQUEST,
+                    Flags(
+                        {
+                            FlagName.FIRST: True,
+                            FlagName.LAST: True,
+                            FlagName.IS_ZEPHYR: True,
+                        }
+                    ),
+                )
+            )
+
+        transmission_count = 0
+        request_count = 0
+
+        def other_device_send_transmissions_and_requests(
+            limit, messages, message_type, connection
+        ):
+            nonlocal transmission_count
+            nonlocal request_count
+            for i in range(limit):
+                if i % 2 == 1:
+                    other_device_send_transmission(messages, connection)
+                    transmission_count += 1
+                else:
+                    other_device_send_request(message_type, connection)
+                    request_count += 1
+
+        protocol.start()
+        other_device = Thread(
+            target=other_device_send_request,
+            args=(message_type, CONNECTION_OTHER_DEVICE_SIDE),
+        )
+        other_device.start()
+        type, _message_type, _payload, _flags = protocol.listen_blocking(
+            message_type, None, None, 1
+        )
+        other_device.join()
+        assert IncomingEventType.REQUEST == type
+        assert message_type == _message_type
+        assert random_byte_data == _payload
+        assert [TransmissionFlag.IS_ZEPHYR] == _flags
+
+        other_device = Thread(
+            target=other_device_send_transmission,
+            args=(messages, CONNECTION_OTHER_DEVICE_SIDE),
+        )
+        other_device.start()
+        type, _message_type, _payload, _flags = protocol.listen_blocking(
+            message_type, None, None, 1
+        )
+        other_device.join()
+        assert payload == _payload
+        assert flags == _flags
+        assert message_type == _message_type
+        assert IncomingEventType.TRANSMISSION == type
+
+        protocol.stop()
+
+        transmission_callback_called = 0
+        request_callback_called = 0
+
+        transmission_callback_message_type = []
+        transmission_callback_payload = []
+        transmission_callback_flags = []
+
+        def transmission_callback(message_type, payload, flags):
+            nonlocal transmission_callback_called
+            nonlocal transmission_callback_message_type
+            nonlocal transmission_callback_payload
+            nonlocal transmission_callback_flags
+            transmission_callback_called += 1
+            transmission_callback_message_type.append(message_type)
+            transmission_callback_payload.append(payload)
+            transmission_callback_flags.append(flags)
+
+        request_callback_message_type = []
+        request_callback_payload = []
+        request_callback_flags = []
+
+        def request_callback(message_type, payload, flags):
+            nonlocal request_callback_called
+            nonlocal request_callback_message_type
+            request_callback_called += 1
+            request_callback_message_type.append(message_type)
+            request_callback_payload.append(payload)
+            request_callback_flags.append(flags)
+
+        protocol.start()
+
+        protocol.listen(
+            message_type, transmission_callback, request_callback, limit
+        )
+
+        other_device = Thread(
+            target=other_device_send_transmissions_and_requests,
+            args=(limit, messages, message_type, CONNECTION_OTHER_DEVICE_SIDE),
+        )
+        other_device.start()
+
+        while len(protocol.current_protocol_events) != 0:
+            pass
+
+        other_device.join()
+        protocol.stop()
+        ProtocolEvent.callback_runner.close()
+        ProtocolEvent.callback_runner.join()
+        ProtocolEvent.callback_runner = ThreadPool(1)
+
+        assert limit == transmission_callback_called + request_callback_called
+        assert transmission_count == transmission_callback_called
+        assert request_count == request_callback_called
+
+        for _message_type in transmission_callback_message_type:
+            assert message_type == _message_type
+        for _payload in transmission_callback_payload:
+            assert payload == _payload
+        for _flags in transmission_callback_flags:
+            assert flags == _flags
+        for _message_type in request_callback_message_type:
+            assert message_type == _message_type
+        for _flags in request_callback_flags:
+            assert [TransmissionFlag.IS_ZEPHYR] == _flags
+        for _payload in request_callback_payload:
+            assert random_byte_data == _payload

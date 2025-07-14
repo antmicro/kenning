@@ -43,7 +43,6 @@ class NetworkProtocol(KenningProtocol):
         port: int = 12345,
         timeout: int = -1,
         packet_size: int = 4096,
-        endianness: str = "little",
     ):
         """
         Initializes NetworkProtocol.
@@ -59,17 +58,14 @@ class NetworkProtocol(KenningProtocol):
             responses forever.
         packet_size : int
             Receive packet sizes.
-        endianness : str
-            Endianness of the communication.
         """
         self.host = host
         self.port = port
         self.collecteddata = bytes()
         self.serversocket = None
         self.socket = None
-        super().__init__(
-            timeout=timeout, packet_size=packet_size, endianness=endianness
-        )
+        self.packet_size = packet_size
+        super().__init__(timeout)
 
     def accept_client(
         self, socket: socket.socket, mask: int

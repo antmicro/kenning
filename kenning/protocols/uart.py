@@ -141,7 +141,6 @@ class UARTProtocol(KenningProtocol):
         baudrate: int = 9600,
         timeout: int = -1,
         packet_size: int = 4096,
-        endianness: str = "little",
     ):
         """
         Initializes UARTProtocol.
@@ -157,16 +156,13 @@ class UARTProtocol(KenningProtocol):
             responses forever.
         packet_size : int
             Size of the packet.
-        endianness : str
-            Endianness of the communication.
         """
         self.port = port
         self.baudrate = baudrate
         self.collecteddata = bytes()
         self.connection = None
-        super().__init__(
-            timeout=timeout, packet_size=packet_size, endianness=endianness
-        )
+        self.packet_size = packet_size
+        super().__init__(timeout)
 
     def initialize_client(self) -> bool:
         self.connection = serial.Serial(self.port, self.baudrate, timeout=0)

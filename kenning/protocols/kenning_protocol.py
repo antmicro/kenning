@@ -7,18 +7,24 @@ Implementation of Kenning Protocol (a communication protocol for
 exchanging inference data between devices).
 """
 
+import selectors
 import time
 from abc import ABC, abstractmethod
 from enum import Enum
 from math import ceil
 from multiprocessing.pool import ThreadPool
 from typing import (
+    Any,
     Callable,
     List,
+    Optional,
     Tuple,
 )
 
-from kenning.protocols.bytes_based_protocol import BytesBasedProtocol
+from kenning.protocols.bytes_based_protocol import (
+    BytesBasedProtocol,
+    ServerStatus,
+)
 from kenning.protocols.message import (
     FlagName,
     Flags,
@@ -1032,7 +1038,175 @@ class Listen(ProtocolEvent):
 
 class KenningProtocol(BytesBasedProtocol, ABC):
     """
-    Class for managing the flow of Kenning Protocol (unimplemented yet).
+    Class for managing the flow of Kenning Protocol.
     """
 
-    ...
+    def send_message(self, message: Message) -> bool:
+        """
+        Sends message to the target device.
+
+        Parameters
+        ----------
+        message : Message
+            Message to be sent.
+
+        Returns
+        -------
+        bool
+            True if succeeded.
+        """
+        KLogger.debug(f"Sending message {message}")
+        ret = self.send_data(message.to_bytes())
+        if not ret:
+            KLogger.error(f"Error sending message {message}")
+        return ret
+
+    def receive_message(
+        self, timeout: Optional[float] = None
+    ) -> Tuple[ServerStatus, Message]:
+        """
+        Waits for incoming data from the other side of connection.
+
+        This method should wait for the input data to arrive and return the
+        appropriate status code along with received data.
+
+        Parameters
+        ----------
+        timeout : Optional[float]
+            Receive timeout in seconds. If timeout > 0, this specifies the
+            maximum wait time, in seconds. If timeout <= 0, the call won't
+            block, and will report the currently ready file objects. If timeout
+            is None, the call will block until a monitored file object becomes
+            ready.
+
+        Returns
+        -------
+        Tuple[ServerStatus, Message]
+            Tuple containing server status and received message. The status is
+            NOTHING if message is incomplete and DATA_READY if it is complete.
+        """
+        server_status, data = self.gather_data(timeout)
+        if data is None:
+            return server_status, None
+
+        self.input_buffer += data
+
+        message, data_parsed, checksum_valid = Message.from_bytes(
+            self.input_buffer
+        )
+        if message is None:
+            return ServerStatus.NOTHING, None
+
+        self.input_buffer = self.input_buffer[data_parsed:]
+        KLogger.debug(f"Received message {message}")
+
+        return ServerStatus.DATA_READY, message
+
+    @abstractmethod
+    def send_data(self, data: Any) -> bool:
+        """
+        Sends data to the target device.
+
+        Data can be model to use, input to process, additional configuration.
+
+        Parameters
+        ----------
+        data : Any
+            Data to send.
+
+        Returns
+        -------
+        bool
+            True if successful.
+        """
+        ...
+
+    @abstractmethod
+    def receive_data(
+        self, connection: Any, mask: int
+    ) -> Tuple[ServerStatus, Optional[Any]]:
+        """
+        Receives data from the target device.
+
+        Parameters
+        ----------
+        connection : Any
+            Connection used to read data.
+        mask : int
+            Selector mask from the event.
+
+        Returns
+        -------
+        Tuple[ServerStatus, Optional[Any]]
+            Status of receive and optionally data that was received.
+        """
+        ...
+
+    def gather_data(
+        self, timeout: Optional[float] = None
+    ) -> Tuple[ServerStatus, Optional[bytes]]:
+        """
+        Gathers data from the client.
+
+        This method should be called by receive_message in order to get data
+        from the client.
+
+        Parameters
+        ----------
+        timeout : Optional[float]
+            Receive timeout in seconds. If timeout > 0, this specifies the
+            maximum wait time, in seconds. If timeout <= 0, the call won't
+            block, and will report the currently ready file objects. If timeout
+            is None, the call will block until a monitored file object becomes
+            ready.
+
+        Returns
+        -------
+        Tuple[ServerStatus, Optional[bytes]]
+            Receive status along with received data.
+        """
+        start_time = time.perf_counter()
+        while True:
+            events = self.selector.select(timeout=timeout)
+
+            results = b""
+            for key, mask in events:
+                if mask & selectors.EVENT_READ:
+                    callback = key.data
+                    server_status, data = callback(key.fileobj, mask)
+                    if (
+                        server_status == ServerStatus.CLIENT_DISCONNECTED
+                        or data is None
+                    ):
+                        return server_status, None
+
+                    results += data
+
+            if results:
+                return ServerStatus.DATA_READY, results
+            elif not timeout or (time.perf_counter() - start_time > timeout):
+                return ServerStatus.NOTHING, None
+
+    def parse_message(self, message: bytes) -> Message:
+        """
+        Parses message from bytes.
+
+        Parameters
+        ----------
+        message : bytes
+            Received message.
+
+        Returns
+        -------
+        Message
+            Parsed message.
+        """
+        return Message.from_bytes(message)[0]
+
+    def __init__(
+        self,
+        timeout: int = -1,
+    ):
+        self.selector = selectors.DefaultSelector()
+        self.input_buffer = b""
+        super().__init__(timeout)

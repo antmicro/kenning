@@ -13,17 +13,14 @@ from abc import ABC, abstractmethod
 from enum import Enum
 from math import ceil
 from multiprocessing.pool import ThreadPool
-from typing import (
-    Any,
-    Callable,
-    List,
-    Optional,
-    Tuple,
-)
+from threading import Lock, Thread
+from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from kenning.protocols.bytes_based_protocol import (
     BytesBasedProtocol,
-    ServerStatus,
+    IncomingEventType,
+    ProtocolFailureCallback,
+    ProtocolSuccessCallback,
     TransmissionFlag,
 )
 from kenning.protocols.message import (
@@ -36,7 +33,22 @@ from kenning.protocols.message import (
 from kenning.utils.event_with_args import EventWithArgs
 from kenning.utils.logger import KLogger
 
-MAX_MESSAGE_PAYLOAD_SIZE = 1024
+MAX_MESSAGE_PAYLOAD_SIZE = 1024 * 1024
+
+# Used for translating internal message flags to transmission flags.
+FLAG_BINDINGS = {
+    TransmissionFlag.SUCCESS: FlagName.SUCCESS,
+    TransmissionFlag.FAIL: FlagName.FAIL,
+    TransmissionFlag.IS_HOST_MESSAGE: FlagName.IS_HOST_MESSAGE,
+    TransmissionFlag.SERIALIZED: FlagName.SPEC_FLAG_1,
+}
+
+
+class ProtocolNotStartedError(Exception):
+    """
+    Exception raised by the protocol, when attempting to use a protocol
+    object, that is not initialized/started.
+    """
 
 
 class ProtocolEvent(ABC):
@@ -44,16 +56,28 @@ class ProtocolEvent(ABC):
     Class representing a protocol flow control event (OutgoingRequest,
     Transmission etc.).
 
-    Events operate as finite state machines - they are created by the main
-    thread and are serviced and deleted by the receiver and transmitter
-    threads. Transmitter is constantly checking, whether any event has
-    messages to send. Receiver is waiting for messages and upon receiving
-    a message, sends it to the proper event (mased on 'message_type').
+    Events operate as finite state machines - they are stored in a Dict
+    in the KenningProtocol class.
 
-    Every time an event receives or sends a message, it's state is changed
-    until it reaches it's final state. Therefore every time after changing
-    the Event's state, receiver/transmitter should check if the event is in
-    it's final state (using the 'is_completed' method) and if so - remove it.
+    Each event has to be started ('start_blocking' or 'start' method).
+
+    Receiver thread is waiting for messages and upon receiving a message,
+    sends it to the proper event (based on 'message_type'), it is done
+    by calling the 'receive_message' method, which then changes the state
+    of the event, based on the current state and the message received.
+
+    When an event wants to send messages, it calls the 'send_messages'
+    method in KenningProtocol. After the messages are sent, 'messages_sent'
+    method is called on the appropriate event (based on 'message_type').
+    This is done on a separate worker thread (transmitter).
+
+    Every time an event receives or sends a message, its state is changed
+    until it reaches it's final state, when it should trigger the callback
+    system, by calling 'signal_callback'.
+
+    In some cases events may contain another events (child events). In such
+    a case, methods like 'receive_message' and 'messages_sent' are called on
+    the main event, which then should call it on its child events.
     """
 
     # Using 1 thread to prevent race conditions between callbacks.
@@ -79,19 +103,23 @@ class ProtocolEvent(ABC):
     # This has to be overridden by a subclass with a valid state
     INITIAL_ACTIVE_STATE = None
 
-    def __init__(self, message_type: MessageType):
+    def __init__(
+        self, message_type: Optional[MessageType], protocol: "KenningProtocol"
+    ):
         self.state = self.State.NEW
         self.message_type = message_type
         self.run_callback_on_thread = None
+        self.lock = Lock()
+        self.protocol = protocol
 
     def _activate(self):
         """
         Sets the state to the initial active state (which means the event is
-        not active and can receive/send messages).
+        now active and can receive/send messages).
         """
         if self.INITIAL_ACTIVE_STATE is None:
             raise NotImplementedError(
-                f"Protocol Event {type(self)} has undefined initial active"
+                f"Protocol Event {self} has undefined initial active"
                 " state and cannot be activated."
             )
         self.state = self.INITIAL_ACTIVE_STATE
@@ -136,15 +164,22 @@ class ProtocolEvent(ABC):
         will be returned by the 'wait' method, this includes the object, that
         would normally be passed as callback argument.
         """
-        self.completed_event = EventWithArgs()
+        # Setting arguments, that will be returned by the wait method of the
+        # event, in case timeout is reached.
+        self.completed_event = EventWithArgs((False, self))
         self.completed_event.clear()
         self.run_callback_on_thread = False
         self._activate()
 
-    def wait(self) -> Tuple[bool, "ProtocolEvent"]:
+    def wait(self, timeout: Optional[float]) -> Tuple[bool, "ProtocolEvent"]:
         """
         Blocks the thread until the Protocol Event is completed. Can be used
         only after calling 'start_blocking'.
+
+        Parameters
+        ----------
+        timeout: Optional[float]
+            Waiting timeout in seconds or None, which denotes infinite timeout.
 
         Returns
         -------
@@ -160,10 +195,9 @@ class ProtocolEvent(ABC):
         """
         if self.run_callback_on_thread:
             raise ValueError(
-                "Attempted to wait for a non-blocking protocol event:"
-                f" {type(self)} of type {self.message_type}"
+                f"Attempted to wait for a non-blocking protocol event: {self}"
             )
-        return self.completed_event.wait()
+        return self.completed_event.wait(timeout)
 
     def signal_callback(
         self,
@@ -188,8 +222,7 @@ class ProtocolEvent(ABC):
         is_successful: bool
             If true, success_callback will be called, if not.
         callback_argument: "ProtocolEvent"
-            Argument to pass to the callback 'is_successful' is True (otherwise
-            the message type will be passed)
+            Argument to pass to the callback.
 
         Raises
         ------
@@ -203,8 +236,8 @@ class ProtocolEvent(ABC):
         # started yet.
         if self.run_callback_on_thread is None:
             raise ValueError(
-                f"Attempted to trigger the callback/wait mechanism on a {self}"
-                "  object, that wasn't yet started."
+                "Attempted to trigger the callback/wait mechanism on a"
+                f" {self} object, that wasn't yet started."
             )
         # To see whether we are in blocking or non-blocking mode, we check the
         # value that is set by 'start' and 'start_blocking' methods.
@@ -240,18 +273,6 @@ class ProtocolEvent(ABC):
         return self.state == self.State.DENIED or self.has_succeeded()
 
     @abstractmethod
-    def has_messages_to_send(self) -> bool:
-        """
-        Checks whether the Event has any pending messages to send.
-
-        Returns
-        -------
-        bool
-            True if there are pending messages to send, False otherwise.
-        """
-        ...
-
-    @abstractmethod
     def accepts_messages(self) -> bool:
         """
         Checks whether the Event is waiting for any incoming messages.
@@ -263,27 +284,19 @@ class ProtocolEvent(ABC):
         """
         ...
 
-    def get_next_message(self) -> Message:
+    @abstractmethod
+    def messages_sent(self, message_count: int):
         """
-        Gets next message, that the Event wants to send. Base class
-        method validates object state and should be called at the
-        beginning of all overriding methods.
+        Informs the object, that its messages has been sent (after
+        it called 'send_messages' method). Updates state of the
+        object accordingly.
 
-        Returns
-        -------
-        Message
-            Message to send.
-
-        Raises
-        ------
-        ValueError
-            Event has no messages to send.
+        Parameters
+        ----------
+        message_count: int
+            Number of messages sent from this event.
         """
-        if not self.has_messages_to_send():
-            raise ValueError(
-                f"Attempted to send a message from a {self.message_type}"
-                f"{self} with no messages to send"
-            )
+        ...
 
     def receive_message(self, message: Message):
         """
@@ -304,39 +317,98 @@ class ProtocolEvent(ABC):
         """
         if not self.accepts_messages():
             raise ValueError(
-                f"Attempted to pass a message to a {self.message_type}"
-                f"{self} with no messages to send"
+                f"Attempted to pass a message to a {self}, that is not"
+                " waiting for messages."
             )
         if message.message_type != self.message_type:
             raise ValueError(
-                f"Message of type {message.message_type} passed to a request"
-                f" of type {self.message_type}."
+                f"Message type {message.message_type} passed to a {self}"
             )
 
-    def refresh(self):
-        """
-        Method called regularly on every protocol event by the transmitter
-        thread, to trigger any potential event state changes without sending
-        or receiving a message.
-        """
-        pass
+    def __str__(self):
+        return f"{self.__class__.__name__}({self.message_type})"
 
 
-class Transmission(ProtocolEvent, ABC):
+class IncomingEvent(ProtocolEvent, ABC):
     """
-    Class representing a transmission.
+    Abstract class for all Protocol Events, that may return payload and
+    user-facing flags.
     """
 
-    # Used for translating internal message flags to transmission flags.
-    FLAG_BINDINGS = {
-        TransmissionFlag.SUCCESS: FlagName.SUCCESS,
-        TransmissionFlag.FAIL: FlagName.FAIL,
-        TransmissionFlag.IS_HOST_MESSAGE: FlagName.IS_HOST_MESSAGE,
-        TransmissionFlag.SERIALIZED: FlagName.SPEC_FLAG_1,
-    }
+    def __init__(
+        self,
+        message_type: MessageType,
+        protocol: "KenningProtocol",
+    ):
+        super().__init__(message_type, protocol)
+        self.payload = b""
+        self.flags = Flags()
+
+    def get_contents(
+        self
+    ) -> Tuple[MessageType, bytes, List[TransmissionFlag]]:
+        """
+        Gets data received in the event (payload, flags and other data).
+
+        Returns
+        -------
+        Tuple[MessageType, bytes, List[TransmissionFlag]]
+            Information received in the event.
+
+        Raises
+        ------
+        ValueError
+            Method was called, before the event was fully completed.
+        """
+        if self.state != self.State.CONFIRMED:
+            raise ValueError(f"Attempted to unpack unfinished {self}.")
+        flags = []
+        for field, _, _ in self.flags.serializable_fields:
+            if (
+                getattr(self.flags, str(field)) == 1
+                and field in FLAG_BINDINGS.values()
+            ):
+                for key, value in FLAG_BINDINGS.items():
+                    if value == field and key.for_type(self.message_type):
+                        flags.append(key)
+        return self.message_type, self.payload, flags
 
 
-class OutgoingTransmission(Transmission):
+class OutgoingEvent(ProtocolEvent, ABC):
+    """
+    Abstract class for all Protocol Events, that involve sending messages
+    with payload and flags.
+    """
+
+    @staticmethod
+    def translate_flags(
+        message_type: MessageType, flags: List[TransmissionFlag]
+    ) -> Dict[FlagName, bool]:
+        """
+        Converts a list of user-facing TransmissionFlags to a Dict of
+        message flags (FlagName enum).
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Message type for the transmission flags (this is relevant,
+            because some flags are only for a specific message type).
+        flags: List[TransmissionFlag]
+            Transmission flags, that are supposed to be set.
+
+        Returns
+        -------
+        Dict[FlagName, bool]
+            A dict of all message flags, that were in the list.
+        """
+        return {
+            str(FLAG_BINDINGS[flag]): True
+            for flag in flags
+            if flag.for_type(message_type)
+        }
+
+
+class OutgoingTransmission(OutgoingEvent):
     """
     Class representing a transmission, that is being sent.
 
@@ -350,11 +422,11 @@ class OutgoingTransmission(Transmission):
         Enum with states specific to the outgoing transmission.
 
         List of states and possible state transitions for each state:
-        * PENDING - Messages waiting to be sent.
+        * PENDING - Called 'send_messages' on KenningProtocol.
           Transitions:
-            * CONFIRMED - 'get_next_message' called N times (where N is the
-              number of messages to send in the transmission). Callback/wait
-              mechanism will be triggered (protocol success),
+            * CONFIRMED - 'messages_sent' called with the N value (where N is
+              the number of messages to send in the transmission).
+              Callback/wait mechanism will be triggered (protocol success),
         """
 
         PENDING = 3
@@ -366,7 +438,8 @@ class OutgoingTransmission(Transmission):
     def __init__(
         self,
         message_type: MessageType,
-        payload: bytes,
+        protocol: "KenningProtocol",
+        payload: Optional[bytes],
         set_flags: List[TransmissionFlag],
     ):
         """
@@ -377,15 +450,22 @@ class OutgoingTransmission(Transmission):
         ----------
         message_type: MessageType
             Type of messages.
-        payload: bytes
-            Payload for the transmission.
+        protocol: KenningProtocol
+            A KenningProtocol instance, that this object was spawned by.
+        payload: Optional[bytes]
+            Payload for the transmission or None, if there is no payload.
         set_flags: List[TransmissionFlag]
             List of transmission flags, that will be passed to the other
             side (if flag is in the list it will be set to True, otherwise
             will be set to False).
         """
-        super().__init__(message_type)
-        self.messages_to_send = ceil(len(payload) / MAX_MESSAGE_PAYLOAD_SIZE)
+        super().__init__(message_type, protocol)
+        if payload is None:
+            payload = b""
+        self.messages_to_send = max(
+            1, ceil(len(payload) / MAX_MESSAGE_PAYLOAD_SIZE)
+        )
+        user_facing_flags = self.translate_flags(message_type, set_flags)
         self.messages = [
             Message(
                 self.message_type,
@@ -402,40 +482,42 @@ class OutgoingTransmission(Transmission):
                             == (self.messages_to_send - 1),
                         },
                         # Attaching user-facing flags.
-                        **{
-                            str(self.FLAG_BINDINGS[flag]): flag.for_type(
-                                message_type
-                            )
-                            for flag in set_flags
-                        },
+                        **user_facing_flags,
                     )
                 ),
             )
             for i in range(self.messages_to_send)
         ]
 
-    def get_next_message(self) -> Message:
-        # Validating with the base class method.
-        super().get_next_message()
-        message = self.messages[len(self.messages) - self.messages_to_send]
-        self.messages_to_send -= 1
-        if self.messages_to_send == 0:
-            self.state = self.State.CONFIRMED
-            self.signal_callback(True, self)
-        return message
+    def _activate(self):
+        """
+        Sets the state to the initial active state (which means the event is
+        not active and can receive/send messages). Gives KenningProtocol
+        messages to send.
+        """
+        super()._activate()
+        self.protocol.send_messages(self.message_type, self.messages)
 
-    def has_messages_to_send(self) -> bool:
-        return self.state == self.State.PENDING
+    def messages_sent(self, message_count: int):
+        if self.state == self.State.PENDING:
+            self.messages_to_send -= message_count
+            if self.messages_to_send == 0:
+                self.state = self.State.CONFIRMED
+                self.signal_callback(True, self)
+            elif self.messages_to_send < 0:
+                raise ValueError(
+                    f"Invalid number of messages sent: {message_count}"
+                    f" (should be no more than {self.messages_to_send})"
+                )
 
     def receive_message(self, message: Message):
-        super().receive_message(message)
         raise NotImplementedError
 
     def accepts_messages(self) -> bool:
         return False
 
 
-class IncomingTransmission(Transmission):
+class IncomingTransmission(IncomingEvent):
     """
     Class representing a transmission, that is being received.
 
@@ -458,10 +540,6 @@ class IncomingTransmission(Transmission):
           Transitions:
             * CONFIRMED - Received a message with the LAST flag set to True.
               Callback/wait mechanism will be triggered (protocol success).
-            * DENIED - Message was received, but next message didn't arrive
-              within the given timeout (transition  is triggered by the
-              'refresh' method call).  Callback/wait mechanism will be
-              triggered (protocol  failure).
         """
 
         RECEIVING = 4
@@ -473,7 +551,7 @@ class IncomingTransmission(Transmission):
     def __init__(
         self,
         message_type: MessageType,
-        timeout: float = -1.0,
+        protocol: "KenningProtocol",
     ):
         """
         Initializes the transmission, sets the initial state.
@@ -482,14 +560,10 @@ class IncomingTransmission(Transmission):
         ----------
         message_type: MessageType
             Type of messages.
-        timeout: float
-            Maximum time between messages in seconds. Negative number denotes
-            infinite timeout.
+        protocol: KenningProtocol
+            A KenningProtocol instance, that this object was spawned by.
         """
-        super().__init__(message_type)
-        self.timeout = timeout
-        self.payload = b""
-        self.last_message_timestamp = None
+        super().__init__(message_type, protocol)
 
     def receive_message(self, message: Message):
         if self.message_type != message.message_type:
@@ -502,9 +576,6 @@ class IncomingTransmission(Transmission):
                 "Other side started a new transmission before finishing"
                 f" transmission of type: {self.message_type}."
             )
-        # Saving the time when last message was received, so that we know when
-        # timeout is violated (see the 'refresh' method).
-        self.last_message_timestamp = time.perf_counter()
         # User facing transmission flags are taken from the first message, so
         # we are saving them for later to be translated by the 'get_contents'
         # method.
@@ -521,56 +592,11 @@ class IncomingTransmission(Transmission):
     def accepts_messages(self) -> bool:
         return self.state == self.State.RECEIVING
 
-    def has_messages_to_send(self) -> bool:
-        return False
-
-    def get_contents(
-        self
-    ) -> Tuple[MessageType, bytes, List[TransmissionFlag]]:
-        """
-        Gets data received in the transmission (payload, flags and other data).
-
-        Returns
-        -------
-        Tuple[MessageType, bytes, List[TransmissionFlag]]
-            Information received in the transmission.
-
-        Raises
-        ------
-        ValueError
-            Method was called, before the transmission was fully received.
-        """
-        if self.state != self.State.CONFIRMED:
-            raise ValueError(
-                f"Attempted to unpack unfinished transmission of type:"
-                f" {self.message_type}"
-            )
-        flags = []
-        for field, _, _ in self.flags.serializable_fields:
-            if (
-                getattr(self.flags, str(field)) == 1
-                and field in self.FLAG_BINDINGS.values()
-            ):
-                for key, value in self.FLAG_BINDINGS.items():
-                    if value == field and key.for_type(self.message_type):
-                        flags.append(key)
-        return self.message_type, self.payload, flags
-
-    def refresh(self):
-        """
-        Checks whether time since last message is larger than the timeout set.
-        """
-        if self.state == self.State.RECEIVING:
-            if (
-                self.timeout >= 0
-                and (time.perf_counter() - self.last_message_timestamp)
-                > self.timeout
-            ):
-                self.state = self.State.DENIED
-                self.signal_callback(False, self)
+    def messages_sent(self, message_count: int):
+        raise NotImplementedError
 
 
-class OutgoingRequest(ProtocolEvent):
+class OutgoingRequest(OutgoingEvent):
     """
     Class representing a request being sent.
 
@@ -586,43 +612,38 @@ class OutgoingRequest(ProtocolEvent):
         Enum with all states specific to an outgoing request.
 
         List of states and possible state transitions for each state:
-        * PENDING - Request message is waiting to be sent.
+        * PENDING - Called 'messages_sent' on KenningProtocol with the
+          request message, waiting for sending to complete.
           Transitions:
-          * SENT - 'get_next_message' was called (and it returned the request
-            message, which was presumably sent).
+          * SENT - 'messages_sent' was called with 1 as argument (informing
+            that the request message has been sent).
         * SENT - Request message has been sent.
           Transitions:
-          * PENDING - either time since sending the request message has
-            exceeded the set timeout (in which case the transition is
-            triggered by a 'refresh' method call), or ACKNOWLEDGE message
-            with the FAIL flag set was received. However the 'retry' value
-            is still larger than 0 (in which case it will be decremented)
-            or it is negative (which means infinite retries).
-          * DENIED - either time since sending the request message has
-            exceeded the set timeout (in which case the transition is
-            triggered by a 'refresh' method call), or ACKNOWLEDGE message
-            with the FAIL flag set was received. However the 'retry' value
-            is set to 0. Callback/wait mechanism will be triggered (protocol
-            failure).
+          * PENDING - ACKNOWLEDGE message with the FAIL flag set was
+            received. However the 'retry' value is still larger than 0
+            (in which case it will be decremented) or it is negative
+            (which means infinite retries).
+          * DENIED - ACKNOWLEDGE message with the FAIL flag set was received.
+            However the 'retry' value is set to 0. Callback/wait mechanism
+            will be triggered (protocol failure).
           * ACCEPTED - A TRANSMISSION message was received (it's FIRST flag
             should be set to 1).
         * ACCEPTED - A Transmission message has been received, further
           communication managed by a 'IncomingTransmission' class object
           created inside this object.
           Transitions:
-          * PENDING - After calling 'refresh' or passing a received message
-            into the inner 'IncomingTransmission' object, the object changed
-            state to DENIED. However the 'retry' value is still larger than
-            0 (in which case it will be decremented or it is negative (which
-            means infinite retries).
-          * DENIED - After calling 'refresh' or passing a received message
-            into the inner 'IncomingTransmission' object, the object changed
-            state to DENIED. However the 'retry' value is set to 0.
+          * PENDING - After passing a received message into the inner
+            'IncomingTransmission' object, that object changed state to DENIED.
+            However the 'retry' value is still larger than 0 (in which case
+            it will be decremented or it is negative (which means infinite
+            retries).
+          * DENIED - After passing a received message into the inner
+            'IncomingTransmission' object, that object changed state to DENIED.
+            However the 'retry' value is set to 0.
             Callback/wait mechanism will be triggered (protocol failure).
-          * CONFIRMED - After calling 'refresh' or passing a received message
-            into the inner 'IncomingTransmission' object, the object changed
-            state to CONFIRMED. Callback/wait mechanism will be triggered
-            (protocol success).
+          * CONFIRMED - After passing a received message into the inner
+            'IncomingTransmission' object, it changed state to CONFIRMED.
+            Callback/wait mechanism will be triggered (protocol success).
         """
 
         PENDING = 4
@@ -636,8 +657,10 @@ class OutgoingRequest(ProtocolEvent):
     def __init__(
         self,
         message_type: MessageType,
-        timeout: float = -1.0,
+        protocol: "KenningProtocol",
         retry: int = 0,
+        payload: Optional[bytes] = None,
+        set_flags: List[TransmissionFlag] = [],
     ):
         """
         Initializes the request, sets the initial state, creates the request
@@ -647,28 +670,43 @@ class OutgoingRequest(ProtocolEvent):
         ----------
         message_type: MessageType
             Type of messages.
-        timeout: float
-            Timeout in seconds. Negative number denotes infinite timeout.
+        protocol: KenningProtocol
+            A KenningProtocol instance, that this object was spawned by.
         retry: int
             How many times the request will be retried in case of failure. If
             a negative number is given, request will be retried indefinitely.
+        payload: Optional[bytes]
+            Payload to send with the request message, or None if there is to
+            be no payload.
+        set_flags: List[TransmissionFlag]
+            User-facing flags, that are to be sent with the request message.
         """
-        super().__init__(message_type)
+        super().__init__(message_type, protocol)
         self.retry = retry
-        self.timeout = timeout
         self.incoming_transmission = None
-        self.request_sent_timestamp = None
+        user_facing_flags = self.translate_flags(message_type, set_flags)
         self.request_message = Message(
             message_type,
-            None,
+            payload,
             FlowControlFlags.REQUEST,
             Flags(
-                {
-                    FlagName.FIRST: True,
-                    FlagName.LAST: True,
-                }
+                dict(
+                    {
+                        FlagName.FIRST: True,
+                        FlagName.LAST: True,
+                    },
+                    **user_facing_flags,
+                )
             ),
         )
+
+    def _send_request(self):
+        self.state = self.State.PENDING
+        self.protocol.send_messages(self.message_type, [self.request_message])
+
+    def _activate(self):
+        super()._activate()
+        self._send_request()
 
     def _deny(self):
         """
@@ -676,10 +714,10 @@ class OutgoingRequest(ProtocolEvent):
         """
         # Negative numbers denotes infinite retries.
         if self.retry < 0:
-            self.state = self.State.PENDING
+            self._send_request()
         elif self.retry > 0:
-            self.state = self.State.PENDING
             self.retry -= 1
+            self._send_request()
         else:
             self.state = self.State.DENIED
             # If not retrying, we signal the Callback/wait mechanism.
@@ -716,7 +754,7 @@ class OutgoingRequest(ProtocolEvent):
                 # to handle the transmission.
                 self.state = self.State.ACCEPTED
                 self.incoming_transmission = IncomingTransmission(
-                    self.message_type, self.timeout
+                    self.message_type, self.protocol
                 )
                 # We start the incoming transmission in blocking mode, but not
                 # calling wait, so the call is not actually blocking anything.
@@ -732,79 +770,72 @@ class OutgoingRequest(ProtocolEvent):
             self._poll_transmission()
         else:
             KLogger.error(
-                f"Unexpected message: {message.message_type}"
+                f"Unexpected message: {message.message_type},"
                 f" {message.flow_control_flags} (during a request)."
             )
 
     def accepts_messages(self) -> bool:
         return self.state in (self.State.SENT, self.State.ACCEPTED)
 
-    def has_messages_to_send(self) -> bool:
-        return self.state == self.State.PENDING or (
-            self.state == self.State.ACCEPTED
-            and self.incoming_transmission.has_messages_to_send()
-        )
-
-    def get_next_message(self) -> Message:
-        super().get_next_message()
+    def messages_sent(self, message_count: int):
         if self.state == self.State.PENDING:
-            # Request message is waiting to be sent.
+            if message_count != 1:
+                raise ValueError(
+                    f"Invalid message count: {message_count}"
+                    " (only 1 request message at a time should be sent)."
+                )
             self.state = self.state.SENT
-            self.request_sent_timestamp = time.perf_counter()
-            return self.request_message
         if self.state == self.State.ACCEPTED:
             # The other side accepted our request, so communication
             # is managed by an internal IncomingTransmission class
-            # object. If we have messages to send, then these messages
-            # are coming from that object.
-            return self.incoming_transmission.get_next_message()
-            # This operation could change the state of the transmission
-            # (for example if it's the last message) so we check and update our
-            # state accordingly.
-            self._poll_transmission()
-
-    def refresh(self):
-        """
-        Sends the request message again if the timeout has been exceed. Passes
-        the 'refresh' method call to the child object, if it exists.
-        """
-        if (
-            self.state == self.State.SENT
-            and self.timeout >= 0
-            and self.timeout
-            < (time.perf_counter() - self.request_sent_timestamp)
-        ):
-            self._deny()
-        if self.state == self.State.ACCEPTED:
-            self.incoming_transmission.refresh()
-            # This operation could change the state of the transmission
-            # (for example if it's the last message) so we check and update our
-            # state accordingly.
+            # object.
+            self.incoming_transmission.messages_sent(message_count)
             self._poll_transmission()
 
 
-class IncomingRequest(ProtocolEvent):
+class IncomingRequest(IncomingEvent):
     """
-    Class representing an incoming request. It is only used by the Listen event
-    to pass information about a received request to the callback.
+    Class representing an incoming request.
+
+    Objects passed to the callback/wait mechanism (see 'signal_callback' method
+    in the base class for details):
+    * IncomingRequest - When a request message is received (protocol success).
     """
 
-    INITIAL_ACTIVE_STATE = ProtocolEvent.State.CONFIRMED
+    class State(Enum):
+        """
+        States specific to the Listen event.
 
-    def __init__(self, message_type: MessageType):
-        super().__init__(message_type)
-        self.state = ProtocolEvent.State.CONFIRMED
+        List of states and possible state transitions for each state:
+        * RECEIVING - Waiting for the request message.
+          Transitions:
+          * CONFIRMED - 'receive_message' was called with a valid request
+            message.
+        """
+
+        RECEIVING = 4
+
+    State._member_map_.update(ProtocolEvent.State._member_map_)
+
+    INITIAL_ACTIVE_STATE = State.RECEIVING
+
+    def __init__(self, message_type: MessageType, protocol: "KenningProtocol"):
+        super().__init__(message_type, protocol)
 
     def receive_message(self, message: Message):
-        raise NotImplementedError
+        super().receive_message(message)
+        if message.flow_control_flags == FlowControlFlags.REQUEST:
+            self.payload = message.payload
+            self.flags = message.flags
+            self.state = self.State.CONFIRMED
+            self.signal_callback(True, self)
+        else:
+            KLogger.error("Non-request message passed to an Incoming Request")
 
     def accepts_messages(self) -> bool:
-        return False
+        return self.state == self.State.RECEIVING
 
-    def has_messages_to_send(self) -> bool:
-        return False
-
-    def get_next_message(self) -> Message:
+    def messages_sent(self, message_count: int):
         raise NotImplementedError
 
 
@@ -841,21 +872,21 @@ class Listen(ProtocolEvent):
           * CONFIRMED - Request message was received and after decrementing
             the 'limit' value it is equal to 0.
         * RECEIVING_TRANSMISSION - Incoming transmission is ongoing. All
-          messages received (and 'refresh' calls) are passed to the inner
-          'IncomingTransmission' object ('self.incoming_transmission').
+          messages received (and 'messages_sent' calls) are passed to the
+          inner 'IncomingTransmission' object ('self.incoming_transmission').
           Except request messages (those will be handled in the exact same
           way as in the LISTENING state).
           Transitions:
-          * LISTENING - After passing a message (or a 'refresh') call to
-            'self.incoming_transmission' it changed state to a final state
+          * LISTENING - After passing a message to 'self.incoming_transmission'
+            or calling 'messages_sent', it changed state to a final state
             (CONFIRMED or DENIED). Callback system will be triggered with
             that object. 'limit' value will be decremented, and as long as
             it is not 0 now (so greater than 0 or None), this 'Listen'
             object will return to LISTENING state.
           * CONFIRMED - The 'limit' value is equal to 1 and either a request
-            message was received, or after passing a message (or a 'refresh')
-            call to 'self.incoming_transmission' it changed state to a final
-            state (CONFIRMED or DENIED). Callback/wait system will be triggered
+            message was received, or after passing a message to
+            'self.incoming_transmission' it changed state to a final state
+            (CONFIRMED or DENIED). Callback/wait system will be triggered
             for either the IncomingRequest or the IncomingTransmission.
             NOTE: If the 'limit' is set to 1 and during an ongoing transmission
             a request is received, that transmission will be discarded.
@@ -870,9 +901,9 @@ class Listen(ProtocolEvent):
 
     def __init__(
         self,
-        message_type: MessageType,
+        message_type: Optional[MessageType],
+        protocol: "KenningProtocol",
         limit: int = -1,
-        timeout: float = -1.0,
     ):
         """
         Initializes the request, sets the initial state, creates the request
@@ -880,17 +911,18 @@ class Listen(ProtocolEvent):
 
         Parameters
         ----------
-        message_type: MessageType
-            Type of messages.
+        message_type: Optional[MessageType]
+            Type of messages to listen for. If set to None, it will listen
+            for any message type (and infer type from the first incoming
+            message)
+        protocol: KenningProtocol
+            A KenningProtocol instance, that this object was spawned by.
         limit: int
             How many transmissions or requests can the object receive before
             de-activating. Non-positive number denotes no limit.
-        timeout: float
-            Timeout in seconds. Negative number denotes infinite timeout.
         """
-        super().__init__(message_type)
+        super().__init__(message_type, protocol)
         self.limit = limit
-        self.timeout = timeout
 
     def _decrement_limit(self):
         """
@@ -937,17 +969,23 @@ class Listen(ProtocolEvent):
             self.limit = 1
 
     def receive_message(self, message: Message):
-        super().receive_message(message)
+        # If no type was specified, we infer type from the first arriving
+        # message.
         if message.flow_control_flags == FlowControlFlags.REQUEST:
             # Regardless of the state, we always receive an incoming request
             # message and trigger caallback.
-            self.signal_callback(True, IncomingRequest(self.message_type))
+            incoming_request = IncomingRequest(
+                message.message_type, self.protocol
+            )
+            incoming_request.start_blocking()
+            incoming_request.receive_message(message)
+            self.signal_callback(True, incoming_request)
             self._decrement_limit()
         elif self.state == self.State.LISTENING:
             if message.flow_control_flags == FlowControlFlags.TRANSMISSION:
                 self.state = self.State.RECEIVING_TRANSMISSION
                 self.incoming_transmission = IncomingTransmission(
-                    self.message_type, self.timeout
+                    message.message_type, self.protocol
                 )
                 self.incoming_transmission.start_blocking()
                 self.incoming_transmission.receive_message(message)
@@ -968,30 +1006,64 @@ class Listen(ProtocolEvent):
             and self.incoming_transmission.accepts_messages()
         ) or self.state == self.State.LISTENING
 
-    def has_messages_to_send(self):
-        return (
-            self.state == self.State.RECEIVING_TRANSMISSION
-            and self.incoming_transmission.has_messages_to_send()
-        )
-
-    def get_next_message(self):
-        super().get_next_message()
-        return self.incoming_transmission.get_next_message()
-        self._poll_transmission()
-
-    def refresh(self):
-        """
-        Cancels the incoming transmissing if it's timeout has been exceeded.
-        """
+    def messages_sent(self, message_count: int):
         if self.state == self.State.RECEIVING_TRANSMISSION:
-            self.incoming_transmission.refresh()
-            self._poll_transmission()
+            self.incoming_transmission.messages_sent(message_count)
+        else:
+            raise ValueError("Unexpected messages sent from this object.")
 
 
 class KenningProtocol(BytesBasedProtocol, ABC):
     """
     Class for managing the flow of Kenning Protocol.
     """
+
+    def __init__(
+        self,
+        timeout: int = -1,
+    ):
+        self.selector = selectors.DefaultSelector()
+        self.input_buffer = b""
+        self.current_protocol_events = {}
+        self.event_lock = Lock()
+        self.receiver_thread = None
+        self.transmitter = None
+        self.protocol_running = False
+        super().__init__(timeout)
+
+    def start(self):
+        """
+        Starts the protocol, creates and runs threads for receiving and
+        transmitting messages.
+        """
+        if self.receiver_thread is None:
+            self.input_buffer = b""
+            self.current_protocol_events = {}
+            self.protocol_running = True
+            self.receiver_thread = Thread(target=self.receiver, args=())
+            self.receiver_thread.start()
+            self.transmitter = ThreadPool(1)
+        else:
+            ValueError("Protocol already started.")
+
+    def stop(self):
+        """
+        Stops the protocol and joins all threads.
+        """
+        self.protocol_running = False
+        if (
+            self.receiver_thread is not None
+            and self.receiver_thread.is_alive()
+        ):
+            self.receiver_thread.join()
+        self.receiver_thread = None
+        if self.transmitter is not None:
+            self.transmitter.close()
+            self.transmitter.terminate()
+            self.transmitter = None
+
+    def __del__(self):
+        self.stop()
 
     def send_message(self, message: Message) -> bool:
         """
@@ -1015,7 +1087,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
 
     def receive_message(
         self, timeout: Optional[float] = None
-    ) -> Tuple[ServerStatus, Message]:
+    ) -> Optional[Message]:
         """
         Waits for incoming data from the other side of connection.
 
@@ -1033,26 +1105,25 @@ class KenningProtocol(BytesBasedProtocol, ABC):
 
         Returns
         -------
-        Tuple[ServerStatus, Message]
-            Tuple containing server status and received message. The status is
-            NOTHING if message is incomplete and DATA_READY if it is complete.
+        Optional[Message]
+            Received message, or None if message was not received.
         """
-        server_status, data = self.gather_data(timeout)
-        if data is None:
-            return server_status, None
-
-        self.input_buffer += data
-
-        message, data_parsed, checksum_valid = Message.from_bytes(
-            self.input_buffer
-        )
-        if message is None:
-            return ServerStatus.NOTHING, None
-
-        self.input_buffer = self.input_buffer[data_parsed:]
-        KLogger.debug(f"Received message {message}")
-
-        return ServerStatus.DATA_READY, message
+        while True:
+            message, data_parsed, checksum_valid = Message.from_bytes(
+                self.input_buffer
+            )
+            if message is not None:
+                self.input_buffer = self.input_buffer[data_parsed:]
+                KLogger.debug(f"Received message {message}")
+                return message
+            if timeout <= 0:
+                return None
+            if timeout is None or timeout > 0:
+                data = self.gather_data(timeout)
+                if data is not None:
+                    self.input_buffer += data
+                if data is None and timeout is not None:
+                    return None
 
     @abstractmethod
     def send_data(self, data: Any) -> bool:
@@ -1074,9 +1145,7 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         ...
 
     @abstractmethod
-    def receive_data(
-        self, connection: Any, mask: int
-    ) -> Tuple[ServerStatus, Optional[Any]]:
+    def receive_data(self, connection: Any, mask: int) -> Optional[Any]:
         """
         Receives data from the target device.
 
@@ -1089,14 +1158,12 @@ class KenningProtocol(BytesBasedProtocol, ABC):
 
         Returns
         -------
-        Tuple[ServerStatus, Optional[Any]]
+        Optional[Any]
             Status of receive and optionally data that was received.
         """
         ...
 
-    def gather_data(
-        self, timeout: Optional[float] = None
-    ) -> Tuple[ServerStatus, Optional[bytes]]:
+    def gather_data(self, timeout: Optional[float] = None) -> Optional[bytes]:
         """
         Gathers data from the client.
 
@@ -1114,8 +1181,8 @@ class KenningProtocol(BytesBasedProtocol, ABC):
 
         Returns
         -------
-        Tuple[ServerStatus, Optional[bytes]]
-            Receive status along with received data.
+        Optional[bytes]
+            Received data.
         """
         start_time = time.perf_counter()
         while True:
@@ -1125,40 +1192,377 @@ class KenningProtocol(BytesBasedProtocol, ABC):
             for key, mask in events:
                 if mask & selectors.EVENT_READ:
                     callback = key.data
-                    server_status, data = callback(key.fileobj, mask)
-                    if (
-                        server_status == ServerStatus.CLIENT_DISCONNECTED
-                        or data is None
-                    ):
-                        return server_status, None
-
+                    data = callback(key.fileobj, mask)
+                    if data is None:
+                        return None
                     results += data
-
             if results:
-                return ServerStatus.DATA_READY, results
+                return results
             elif not timeout or (time.perf_counter() - start_time > timeout):
-                return ServerStatus.NOTHING, None
+                return None
 
-    def parse_message(self, message: bytes) -> Message:
+    def receiver(self):
         """
-        Parses message from bytes.
+        Method sitting in a loop, receiving messages and passing them to the
+        relevant ProtocolEvent class object in the 'current_protocol_events'
+        dict, based on message type.
+
+        This method is meant to be running constantly on a separate thread, if
+        the protocol is active.
+        """
+        while self.protocol_running:
+            message = self.receive_message(1)
+            if message is not None:
+                relevant_event = None
+                if message.message_type in self.current_protocol_events.keys():
+                    relevant_event = self.current_protocol_events[
+                        message.message_type
+                    ]
+                # If the message type doesn't directly match any event, we
+                # check if a None type event (so an event acceting any message
+                # type) is in the dict.
+                elif None in self.current_protocol_events:
+                    relevant_event = self.current_protocol_events[None]
+                if relevant_event is not None:
+                    with relevant_event.lock:
+                        if relevant_event.accepts_messages():
+                            relevant_event.receive_message(message)
+
+    def send_messages(
+        self, message_type: MessageType, messages: List[Message]
+    ):
+        """
+        Gives a job to the 'transmitter' thread pool, that will send messages
+        and call 'messages_sent' method on the appropriate ProtocolEvent
+        object in the 'self.current_protocol_events' dict (based on message
+        type).
+
+        This is meant be be called by the ProtocolEvent objects to send
+        messages and update their state.
 
         Parameters
         ----------
-        message : bytes
-            Received message.
+        message_type: MessageType
+            Message type of the ProtocolEvent, that sends the messages. This
+            is needed, so that we can later find that object in the
+            'self.current_protocol_events' dict and call 'messages_sent'.
+            We could not use a reference here, because for example if
+            a Listen object in the dict has an IncomingTransmission object
+            inside, and that inner object calls this method, we need to call
+            'message_sent' on the whole Listen object, not just the inner one.
+        messages: List[Message]
+            List of messages to send.
+        """
+
+        def sender():
+            relevant_event = None
+            if message_type in self.current_protocol_events.keys():
+                relevant_event = self.current_protocol_events[message_type]
+            elif None in self.current_protocol_events:
+                relevant_event = self.current_protocol_events[None]
+            if relevant_event is not None:
+                with relevant_event.lock:
+                    for message in messages:
+                        self.send_message(message)
+                    relevant_event.messages_sent(len(messages))
+            else:
+                KLogger.warning(
+                    "Event that attempted to send messages no longer exists."
+                )
+
+        self.transmitter.apply_async(sender)
+
+    def run_event_blocking(
+        self,
+        event: ProtocolEvent,
+        timeout: Optional[float],
+    ) -> Tuple[bool, ProtocolEvent]:
+        """
+        Adds a protocol event to the 'current_protocol_events' dict, so that
+        it will be serviced by the receiver thread, starts it in blocking
+        mode and blocks the current thread until it completes.
+
+        Parameters
+        ----------
+        event: ProtocolEvent
+            Event to start.
+        timeout: Optional[float]
+            Maximum blocking time in seconds (or None for infinite timeout).
 
         Returns
         -------
-        Message
-            Parsed message.
-        """
-        return Message.from_bytes(message)[0]
+        Tuple[bool, ProtocolEvent]
+            True if event succeeded, False if not, ProtocolEvent object
+            returned by the event (see the dostring of the relevant
+            ProtocolEvent to see what object will be passed here).
 
-    def __init__(
+        Raises
+        ------
+        ValueError
+            Attempted to start the event, while another event of the same
+            type was already in progress.
+        ProtocolNotStartedError
+            Protocol is not active, call 'start' first.
+        """
+        if not self.protocol_running:
+            raise ProtocolNotStartedError("Protocol not started.")
+        event_started = False
+        with self.event_lock:
+            if event.message_type not in self.current_protocol_events.keys():
+                self.current_protocol_events[event.message_type] = event
+                event.start_blocking()
+                KLogger.debug(f"{event} has been started in blocking mode.")
+                event_started = True
+        if event_started:
+            return event.wait(timeout)
+        else:
+            raise ValueError(
+                f"{event} attempted to start while another event of the same"
+                " type was in progress."
+            )
+
+    def run_event(
         self,
-        timeout: int = -1,
+        event: ProtocolEvent,
+        success_callback: Callable[ProtocolEvent, None],
+        deny_callback: Callable[ProtocolEvent, None],
     ):
-        self.selector = selectors.DefaultSelector()
-        self.input_buffer = b""
-        super().__init__(timeout)
+        """
+        Adds a protocol event to the 'current_protocol_events' dict, so that
+        it will be serviced by the receiver thread, starts it in non-blocking
+        mode and passes callbacks.
+
+        Parameters
+        ----------
+        event: ProtocolEvent
+            Event to start.
+        success_callback: Callable[ProtocolEvent, None]
+            Function, that will be called if the event succeeds.
+        deny_callback: Callable[ProtocolEvent, None]
+            Function, that will be called if the event fails.
+
+        Raises
+        ------
+        ValueError
+            Attempted to start the event, while another event of the same
+            type was already in progress.
+        ProtocolNotStartedError
+            Protocol is not active, call 'start' first.
+        """
+        if not self.protocol_running:
+            raise ProtocolNotStartedError("Protocol not started.")
+        with self.event_lock:
+            if event.message_type not in self.current_protocol_events.keys():
+                self.current_protocol_events[event.message_type] = event
+                event.start(success_callback, deny_callback)
+                KLogger.debug(
+                    f"{event} has been started in non-blocking mode."
+                )
+            else:
+                raise ValueError(
+                    f"{event} attempted to start while another event of the"
+                    " same type was in progress."
+                )
+
+    def finish_event(self, event: ProtocolEvent):
+        """
+        Removes an event from the 'current_protocol_events' dict and
+        logs it's success or failure.
+
+        Parameters
+        ----------
+        event: ProtocolEvent
+            Event to finish
+        """
+        if event.has_succeeded():
+            KLogger.debug(f"{event} has succeeded.")
+        else:
+            KLogger.error(f"{event} has failed.")
+        with self.event_lock:
+            if event.message_type in self.current_protocol_events.keys():
+                self.current_protocol_events.pop(event.message_type)
+
+    def transmit(
+        self,
+        message_type: MessageType,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        def handle_success(event: ProtocolEvent):
+            self.finish_event(event)
+
+        def handle_failure(event: ProtocolEvent):
+            self.finish_event(event)
+            if failure_callback is not None:
+                failure_callback(event.message_type)
+
+        self.run_event(
+            OutgoingTransmission(message_type, self, payload, flags),
+            handle_success,
+            handle_failure,
+        )
+
+    def transmit_blocking(
+        self,
+        message_type: MessageType,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        timeout: Optional[float] = None,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        is_successful, event = self.run_event_blocking(
+            OutgoingTransmission(message_type, self, payload, flags), timeout
+        )
+        self.finish_event(event)
+        if not is_successful:
+            if failure_callback is not None:
+                failure_callback(event.message_type)
+
+    def request(
+        self,
+        message_type: MessageType,
+        callback: ProtocolSuccessCallback,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        retry: int = 1,
+        deny_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        def handle_success(transmission: IncomingTransmission):
+            self.finish_event(transmission)
+            message_type, data, flags = transmission.get_contents()
+            callback(message_type, data, flags)
+
+        def handle_failure(event: ProtocolEvent):
+            self.finish_event(event)
+            if deny_callback is not None:
+                deny_callback(event.message_type)
+
+        self.run_event(
+            OutgoingRequest(message_type, self, retry, payload, flags),
+            handle_success,
+            handle_failure,
+        )
+
+    def request_blocking(
+        self,
+        message_type: MessageType,
+        callback: Optional[ProtocolSuccessCallback] = None,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        timeout: Optional[float] = None,
+        retry: int = 1,
+        deny_callback: Optional[ProtocolFailureCallback] = None,
+    ) -> Tuple[Optional[bytes], Optional[List[TransmissionFlag]]]:
+        is_successful, event = self.run_event_blocking(
+            OutgoingRequest(message_type, self, retry, payload, flags), timeout
+        )
+        self.finish_event(event)
+        if is_successful:
+            _, data, flags = event.get_contents()
+            if callback is not None:
+                callback(message_type, data, flags)
+            return data, flags
+        else:
+            if deny_callback is not None:
+                deny_callback(event.message_type)
+            return None, None
+
+    def listen(
+        self,
+        message_type: Optional[MessageType] = None,
+        transmission_callback: Optional[ProtocolSuccessCallback] = None,
+        request_callback: Optional[ProtocolSuccessCallback] = None,
+        limit: int = -1,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        listen_event = Listen(message_type, self, limit)
+
+        def handle_success(event: ProtocolEvent):
+            # We log the incoming event separately.
+            KLogger.debug(f"{listen_event}: {event} has succeeded.")
+            if listen_event.is_completed():
+                self.finish_event(listen_event)
+            message_type, data, flags = event.get_contents()
+            if type(event) is IncomingRequest:
+                request_callback(message_type, data, flags)
+            elif type(event) is IncomingTransmission:
+                transmission_callback(message_type, data, flags)
+            else:
+                raise ValueError(
+                    "Object of invalid class passed to the success callback by"
+                    f" Listen in non-blocking mode: {event}"
+                )
+
+        def handle_failure(event: ProtocolEvent):
+            # We log the incoming event separately.
+            KLogger.debug(f"{listen_event}: {event} has failed.")
+            if listen_event.is_completed():
+                self.finish_event(listen_event)
+            if type(event) is IncomingTransmission:
+                if failure_callback is not None:
+                    failure_callback(event.message_type)
+            else:
+                raise ValueError(
+                    "Object of invalid class passed to the failure callback by"
+                    f" Listen in non-blocking mode: {event}"
+                )
+
+        self.run_event(
+            listen_event,
+            handle_success,
+            handle_failure,
+        )
+
+    def listen_blocking(
+        self,
+        message_type: Optional[MessageType] = None,
+        transmission_callback: Optional[ProtocolSuccessCallback] = None,
+        request_callback: Optional[ProtocolSuccessCallback] = None,
+        timeout: Optional[float] = None,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ) -> Tuple[
+        Optional[IncomingEventType],
+        Optional[MessageType],
+        Optional[bytes],
+        Optional[List[TransmissionFlag]],
+    ]:
+        is_successful, event = self.run_event_blocking(
+            Listen(message_type, self, 1), timeout
+        )
+        self.finish_event(event)
+        if is_successful:
+            message_type, data, flags = event.get_contents()
+            if type(event) is IncomingRequest:
+                if request_callback is not None:
+                    request_callback(message_type, data, flags)
+                return IncomingEventType.REQUEST, message_type, data, flags
+            elif type(event) is IncomingTransmission:
+                if transmission_callback is not None:
+                    transmission_callback(message_type, data, flags)
+                return (
+                    IncomingEventType.TRANSMISSION,
+                    message_type,
+                    data,
+                    flags,
+                )
+            else:
+                raise ValueError(
+                    "Object of invalid class returned by Listen in blocking "
+                    f"mode: {event}"
+                )
+        else:
+            if failure_callback is not None:
+                failure_callback(event.message_type)
+            return None, None, None, None
+
+    def event_active(self, message_type: Optional[MessageType] = None) -> bool:
+        return message_type in self.current_protocol_events.keys()
+
+    def kill_event(self, message_type: Optional[MessageType] = None):
+        KLogger.debug(f"Event of type {message_type} killed.")
+        with self.event_lock:
+            if self.event_active(message_type):
+                self.current_protocol_events.pop(message_type)
+            else:
+                raise ValueError(f"Event {message_type} does not exist.")

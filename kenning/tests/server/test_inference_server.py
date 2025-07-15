@@ -1,22 +1,22 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
 import threading
-from time import sleep
+from typing import Optional
 from unittest.mock import patch
 
 import numpy as np
 import pytest
 
-from kenning.core.protocol import Protocol
-from kenning.core.runtime import Runtime
-from kenning.protocols.bytes_based_protocol import (
-    BytesBasedProtocol,
-    Message,
-    MessageType,
+from kenning.core.protocol import (
+    Protocol,
+    ServerAction,
+    ServerDownloadCallback,
     ServerStatus,
+    ServerUploadCallback,
 )
+from kenning.core.runtime import Runtime
 from kenning.scenarios.inference_server import InferenceServer
 
 
@@ -26,10 +26,51 @@ def runtime():
     return Runtime()
 
 
+class ProtocolMock(Protocol):
+    def initialize_server(
+        self, client_connected_callback, client_disconnected_callback
+    ):
+        return True
+
+    def disconnect(self):
+        pass
+
+    def serve(
+        self,
+        upload_input_callback: Optional[ServerUploadCallback] = None,
+        upload_model_callback: Optional[ServerUploadCallback] = None,
+        process_input_callback: Optional[ServerUploadCallback] = None,
+        download_output_callback: Optional[ServerDownloadCallback] = None,
+        download_stats_callback: Optional[ServerDownloadCallback] = None,
+        upload_iospec_callback: Optional[ServerUploadCallback] = None,
+        upload_optimizers_callback: Optional[ServerUploadCallback] = None,
+        upload_unoptimized_model_callback: Optional[
+            ServerUploadCallback
+        ] = None,
+        download_optimized_model_callback: Optional[
+            ServerDownloadCallback
+        ] = None,
+        upload_runtime_callback: Optional[ServerUploadCallback] = None,
+    ):
+        self.upload_input_callback = upload_input_callback
+        self.upload_model_callback = upload_model_callback
+        self.process_input_callback = process_input_callback
+        self.upload_iospec_callback = upload_iospec_callback
+        self.upload_optimizers_callback = upload_optimizers_callback
+        self.upload_unoptimized_model_callback = (
+            upload_unoptimized_model_callback
+        )
+        self.download_optimized_model_callback = (
+            download_optimized_model_callback
+        )
+        self.download_stats_callback = download_stats_callback
+        self.download_output_callback = download_output_callback
+
+
 @pytest.fixture
-@patch.multiple(BytesBasedProtocol, __abstractmethods__=set())
+@patch.multiple(ProtocolMock, __abstractmethods__=set())
 def protocol():
-    return BytesBasedProtocol()
+    return ProtocolMock()
 
 
 class TestInferenceServerRunner:
@@ -44,15 +85,15 @@ class TestInferenceServerRunner:
         Test inference server close method.
         """
         inference_server = InferenceServer(runtime, protocol)
-        inference_server.should_work = True
 
         inference_server.close()
 
-        assert not inference_server.should_work
+        assert inference_server.close_server_event.is_set()
+        assert ServerStatus(ServerAction.IDLE) == inference_server.status
 
     def test_run(self, runtime: Runtime, protocol: Protocol):
         """
-        Test inference server close method.
+        Test inference server run method.
         """
         inference_server = InferenceServer(runtime, protocol)
 
@@ -60,88 +101,24 @@ class TestInferenceServerRunner:
             patch.object(
                 protocol, "initialize_server"
             ) as protocol_initialize_server_mock,
-            patch.object(
-                protocol, "receive_message"
-            ) as protocol_receive_message_mock,
+            patch.object(protocol, "serve") as protocol_serve_mock,
             patch.object(protocol, "disconnect") as protocol_disconnect_mock,
         ):
             protocol_initialize_server_mock.return_value = True
-            protocol_receive_message_mock.return_value = (
-                ServerStatus.NOTHING,
-                None,
-            )
 
             server_thread = threading.Thread(target=inference_server.run)
             server_thread.start()
 
-            protocol_initialize_server_mock.assert_called_once()
-            assert inference_server.should_work
+            assert not inference_server.close_server_event.is_set()
             assert server_thread.is_alive()
 
             inference_server.close()
             server_thread.join()
 
-            assert not inference_server.should_work
-            protocol_disconnect_mock.assert_called_once()
-
-    @pytest.mark.parametrize(
-        "message_type,callback_name",
-        (
-            (MessageType.DATA, "_data_callback"),
-            (MessageType.MODEL, "_model_callback"),
-            (MessageType.PROCESS, "_process_callback"),
-            (MessageType.OUTPUT, "_output_callback"),
-            (MessageType.STATS, "_stats_callback"),
-            (MessageType.IO_SPEC, "_io_spec_callback"),
-        ),
-    )
-    def test_callback(
-        self,
-        runtime: Runtime,
-        protocol: Protocol,
-        message_type: MessageType,
-        callback_name: str,
-    ):
-        """
-        Test inference server callback.
-        """
-        inference_server = InferenceServer(runtime, protocol)
-
-        with (
-            patch.object(
-                inference_server, callback_name
-            ) as server_callback_mock,
-            patch.object(
-                protocol, "initialize_server"
-            ) as protocol_initialize_server_mock,
-            patch.object(
-                protocol, "receive_message"
-            ) as protocol_receive_message_mock,
-            patch.object(protocol, "disconnect") as protocol_disconnect_mock,
-        ):
-            inference_server.callbacks[message_type] = server_callback_mock
-            protocol_initialize_server_mock.return_value = True
-            data = np.random.bytes(128)
-            protocol_receive_message_mock.return_value = (
-                ServerStatus.DATA_READY,
-                Message(message_type, data),
-            )
-
-            server_thread = threading.Thread(target=inference_server.run)
-            server_thread.start()
-
             protocol_initialize_server_mock.assert_called_once()
-            assert inference_server.should_work
-            assert server_thread.is_alive()
+            protocol_serve_mock.assert_called_once()
 
-            sleep(0.01)
-
-            inference_server.close()
-            server_thread.join()
-
-            server_callback_mock.assert_called_with(data)
-
-            assert not inference_server.should_work
+            assert inference_server.close_server_event.is_set()
             protocol_disconnect_mock.assert_called_once()
 
     def test_data_callback(self, runtime: Runtime, protocol: Protocol):
@@ -149,45 +126,43 @@ class TestInferenceServerRunner:
         Test inference server data callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         data = np.random.bytes(128)
 
         with (
             patch.object(
                 runtime, "load_input_from_bytes"
             ) as runtime_load_input_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
             runtime_load_input_mock.return_value = True
 
-            inference_server.callbacks[MessageType.DATA](data)
+            assert ServerStatus(
+                ServerAction.UPLOADING_INPUT, True
+            ) == protocol.upload_input_callback(data)
 
             runtime_load_input_mock.assert_called_once_with(data)
-            protocol_request_success_mock.assert_called_once()
 
         with (
             patch.object(
                 runtime, "load_input_from_bytes"
             ) as runtime_load_input_mock,
-            patch.object(
-                protocol, "request_failure"
-            ) as protocol_request_failure_mock,
         ):
             runtime_load_input_mock.return_value = False
 
-            inference_server.callbacks[MessageType.DATA](data)
+            assert ServerStatus(
+                ServerAction.UPLOADING_INPUT, False
+            ) == protocol.upload_input_callback(data)
 
             runtime_load_input_mock.assert_called_once_with(data)
-            protocol_request_failure_mock.assert_called_once()
 
     def test_model_callback(self, runtime: Runtime, protocol: Protocol):
         """
         Test inference server model callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         model = np.random.bytes(128)
 
         with (
@@ -197,17 +172,15 @@ class TestInferenceServerRunner:
             patch.object(
                 runtime, "inference_session_start"
             ) as runtime_inference_session_start_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
             runtime_prepare_model_mock.return_value = True
 
-            inference_server.callbacks[MessageType.MODEL](model)
+            assert ServerStatus(
+                ServerAction.UPLOADING_MODEL, True
+            ) == protocol.upload_model_callback(model)
 
             runtime_prepare_model_mock.assert_called_once_with(model)
             runtime_inference_session_start_mock.assert_called_once()
-            protocol_request_success_mock.assert_called_once()
 
         with (
             patch.object(
@@ -216,128 +189,121 @@ class TestInferenceServerRunner:
             patch.object(
                 runtime, "inference_session_start"
             ) as runtime_inference_session_start_mock,
-            patch.object(
-                protocol, "request_failure"
-            ) as protocol_request_failure_mock,
         ):
             runtime_prepare_model_mock.return_value = False
 
-            inference_server.callbacks[MessageType.MODEL](model)
+            assert ServerStatus(
+                ServerAction.UPLOADING_MODEL, False
+            ) == protocol.upload_model_callback(model)
 
             runtime_prepare_model_mock.assert_called_once_with(model)
             runtime_inference_session_start_mock.assert_called_once()
-            protocol_request_failure_mock.assert_called_once()
 
     def test_process_callback(self, runtime: Runtime, protocol: Protocol):
         """
         Test inference server process callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         with (
             patch.object(runtime, "run") as runtime_run_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
-            inference_server.callbacks[MessageType.PROCESS](b"")
+            assert ServerStatus(
+                ServerAction.PROCESSING_INPUT, True
+            ) == protocol.process_input_callback(b"")
 
             runtime_run_mock.assert_called_once()
-            protocol_request_success_mock.assert_called_once()
 
     def test_output_callback(self, runtime: Runtime, protocol: Protocol):
         """
         Test inference server output callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         data = np.random.bytes(128)
 
         with (
             patch.object(
                 runtime, "upload_output"
             ) as runtime_upload_output_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
             runtime_upload_output_mock.return_value = data
 
-            inference_server.callbacks[MessageType.OUTPUT](b"")
+            assert (
+                ServerStatus(ServerAction.EXTRACTING_OUTPUT, True),
+                data,
+            ) == protocol.download_output_callback()
 
             runtime_upload_output_mock.assert_called_once()
-            protocol_request_success_mock.assert_called_once_with(data)
 
         with (
             patch.object(
                 runtime, "upload_output"
             ) as runtime_upload_output_mock,
-            patch.object(
-                protocol, "request_failure"
-            ) as protocol_request_failure_mock,
         ):
             runtime_upload_output_mock.return_value = None
 
-            inference_server.callbacks[MessageType.OUTPUT](b"")
+            assert (
+                ServerStatus(ServerAction.EXTRACTING_OUTPUT, False),
+                None,
+            ) == protocol.download_output_callback()
 
             runtime_upload_output_mock.assert_called_once()
-            protocol_request_failure_mock.assert_called_once()
 
     def test_stats_callback(self, runtime: Runtime, protocol: Protocol):
         """
         Test inference server stats callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         data = np.random.bytes(128)
 
         with (
             patch.object(runtime, "upload_stats") as runtime_upload_stats_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
             runtime_upload_stats_mock.return_value = data
 
-            inference_server.callbacks[MessageType.STATS](b"")
+            assert (
+                ServerStatus(ServerAction.COMPUTING_STATISTICS, True),
+                data,
+            ) == protocol.download_stats_callback()
 
             runtime_upload_stats_mock.assert_called_once()
-            protocol_request_success_mock.assert_called_once_with(data)
 
     def test_io_spec_callback(self, runtime: Runtime, protocol: Protocol):
         """
         Test inference server io_spec callback.
         """
         inference_server = InferenceServer(runtime, protocol)
-
+        inference_server.close()
+        inference_server.run()
         data = np.random.bytes(128)
 
         with (
             patch.object(
                 runtime, "prepare_io_specification"
             ) as runtime_prepare_io_spec_mock,
-            patch.object(
-                protocol, "request_success"
-            ) as protocol_request_success_mock,
         ):
             runtime_prepare_io_spec_mock.return_value = True
 
-            inference_server.callbacks[MessageType.IO_SPEC](data)
+            assert ServerStatus(
+                ServerAction.UPLOADING_IOSPEC, True
+            ) == protocol.upload_iospec_callback(data)
 
             runtime_prepare_io_spec_mock.assert_called_once_with(data)
-            protocol_request_success_mock.assert_called_once()
 
         with (
             patch.object(
                 runtime, "prepare_io_specification"
             ) as runtime_prepare_io_spec_mock,
-            patch.object(
-                protocol, "request_failure"
-            ) as protocol_request_failure_mock,
         ):
             runtime_prepare_io_spec_mock.return_value = False
 
-            inference_server.callbacks[MessageType.IO_SPEC](data)
+            assert ServerStatus(
+                ServerAction.UPLOADING_IOSPEC, False
+            ) == protocol.upload_iospec_callback(data)
 
             runtime_prepare_io_spec_mock.assert_called_once_with(data)
-            protocol_request_failure_mock.assert_called_once()

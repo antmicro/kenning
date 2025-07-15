@@ -34,6 +34,18 @@ class EventWithArgs(Event):
     A wrapper for threading.Event, allowing to pass a value with the event.
     """
 
+    def __init__(self, default_args: Tuple = (None)):
+        """
+        Initializes the event.
+
+        Parameters
+        ----------
+        default_args: Tuple
+            Value, that will be return by 'wait', if timeout is reached.
+        """
+        super().__init__()
+        self.args = default_args
+
     def set(self, args: Tuple = ()):
         """
         Sets the internal flag to 1, notifying all waiting threads (those,
@@ -47,14 +59,20 @@ class EventWithArgs(Event):
         self.args = args
         super().set()
 
-    def wait(self) -> Tuple:
+    def wait(self, timeout: float = None) -> Tuple:
         """
         Stops the thread until the internal flag is set to 1.
+
+        Parameters
+        ----------
+        timeout: float
+            Waiting timeout in seconds. If set to None, there
+            is no timeout.
 
         Returns
         -------
         Tuple
             Values passed by the notifying thread.
         """
-        super().wait()
+        super().wait(timeout)
         return self.args

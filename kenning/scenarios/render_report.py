@@ -358,12 +358,22 @@ def comparison_performance_report(
         "report_name": measurementsdata[0]["report_name"],
         "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
+    names = [data["model_name"] for data in measurementsdata]
+    report_variables["model_names"] = names
 
     plot_options = copy.deepcopy(SERVIS_PLOT_OPTIONS)
     if plot_options["backend"] == "bokeh":
         plot_options["figsize"] = "responsive"
 
+    available_metrics = None
     for data in measurementsdata:
+        performance_metrics = compute_performance_metrics(data)
+        report_variables[data["model_name"]] = performance_metrics 
+
+        metrics = set(performance_metrics.keys())
+        if available_metrics is None:
+            available_metrics = metrics
+
         if "target_inference_step" in data:
             data["inference_step"] = data["target_inference_step"]
             data["inference_step_timestamp"] = data[
@@ -376,8 +386,7 @@ def comparison_performance_report(
             ]
 
         if "session_utilization_cpus_percent" in data:
-            metrics = compute_performance_metrics(data)
-            data["session_utilization_cpus_percent_avg"] = metrics[
+            data["session_utilization_cpus_percent_avg"] = performance_metrics[
                 "session_utilization_cpus_percent_avg"
             ]
 
@@ -391,6 +400,8 @@ def comparison_performance_report(
 
         modelmetrics = set(data.keys())
         common_metrics &= modelmetrics
+    available_metrics.remove("session_utilization_cpus_percent_avg")
+    report_variables["available_metrics"] = available_metrics
 
     for metric, (metric_name, unit) in metric_names.items():
         metric_data = {}
@@ -647,6 +658,7 @@ def comparison_classification_report(
         "report_name_simple": measurementsdata[0]["report_name_simple"],
     }
     names = [data["model_name"] for data in measurementsdata]
+
     metric_visualization = {}
     bubble_plot_data, mean_inference_time, model_sizes = [], [], []
     skip_inference_metrics = False

@@ -368,7 +368,7 @@ def comparison_performance_report(
     available_metrics = None
     for data in measurementsdata:
         performance_metrics = compute_performance_metrics(data)
-        report_variables[data["model_name"]] = performance_metrics 
+        report_variables[data["model_name"]] = performance_metrics
 
         metrics = set(performance_metrics.keys())
         if available_metrics is None:

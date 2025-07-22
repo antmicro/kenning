@@ -23,16 +23,14 @@ align: center
 * - Metric
   - Time
 
-* - First inference duration 
-  - **{{ data['inferencetime'][0] }}** 
-
-* - Mean 
-  - **{{ data['inferencetime_mean'] }}s** 
-* - Standard deviation 
-  - **{{ data['inferencetime_std'] }}s** 
-
-* - Median 
-  - **{{ data['inferencetime_median'] }}s** 
+* - First inference duration
+  - **{{'%.6f' % data['inferencetime'][0] }} s**
+* - Mean
+  - **{{'%.6f' % data['inferencetime_mean'] }} s**
+* - Median
+  - **{{'%.6f' % data['inferencetime_median'] }} s**
+* - Standard deviation
+  - **{{'%.6f' % data['inferencetime_std'] }} s**
 ```
 {% endif %}
 
@@ -58,11 +56,11 @@ align: center
   - Percentage
 
 * - Mean
-  - **{{ data['session_utilization_cpus_percent_avg_mean'] }} %**
+  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_mean'] }} %**
 * - Standard deviation
-  - **{{ data['session_utilization_cpus_percent_avg_std'] }} %**
+  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_std'] }} %**
 * - Median
-  - **{{ data['session_utilization_cpus_percent_avg_median'] }} %**
+  - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_median'] }} %**
 
 ```
 {% endif %}
@@ -89,11 +87,11 @@ align: center
   - Percentage
 
 * - Mean
-  - **{{ data['session_utilization_mem_percent_mean'] }} %**
+  - **{{'%.3f' %  data['session_utilization_mem_percent_mean'] }} %**
 * - Standard deviation
-  - **{{ data['session_utilization_mem_percent_std'] }} %**
+  - **{{'%.3f' %  data['session_utilization_mem_percent_std'] }} %**
 * - Median
-  - **{{ data['session_utilization_mem_percent_median'] }} %**
+  - **{{'%.3f' %  data['session_utilization_mem_percent_median'] }} %**
 
 ```
 {% endif %}
@@ -121,11 +119,11 @@ align: center
   - Percentage
 
 * - Mean
-  - **{{ data['session_utilization_gpu_utilization_mean'] }} %**
+  - **{{'%.3f' % data['session_utilization_gpu_utilization_mean'] }} %**
 * - Standard deviation
-  - **{{ data['session_utilization_gpu_utilization_std'] }} %**
+  - **{{'%.3f' % data['session_utilization_gpu_utilization_std'] }} %**
 * - Median
-  - **{{ data['session_utilization_gpu_utilization_median'] }} %**
+  - **{{'%.3f' % data['session_utilization_gpu_utilization_median'] }} %**
 
 ```
 {% endif %}
@@ -152,11 +150,11 @@ align: center
   - Memory used
 
 * - Mean
-  - **{{ data['session_utilization_gpu_mem_utilization_mean'] }} MB**
+  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_mean'] }} MB**
 * - Standard deviation
-  - **{{ data['session_utilization_gpu_mem_utilization_std'] }} MB**
+  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_std'] }} MB**
 * - Median
-  - **{{ data['session_utilization_gpu_mem_utilization_median'] }} MB**
+  - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_median'] }} MB**
 
 ```
 {% endif %}

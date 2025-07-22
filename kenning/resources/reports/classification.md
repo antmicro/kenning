@@ -23,12 +23,12 @@ align: center
 {%- for metric in data['available_metrics'] %}
 {%- if metric.name.endswith("_CLASS") %}
 {%- for class_, score in zip(data['class_names'], data[metric]) %}
-* - *{{metric.value}} for {{ class_ }}* 
-  - **{{ score }}**
+* - *{{metric.value}} for {{ class_ }}*
+  - **{{'%.6f' % score }}**
 {%- endfor %}
 {%- else %}
-* - *{{ metric.value }}* 
-  - **{{ data[metric] }}**
+* - *{{ metric.value }}*
+  - **{{'%.6f' %  data[metric] }}**
 {%- endif %}
 {%- endfor %}
 ```

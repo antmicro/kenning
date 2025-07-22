@@ -13,15 +13,25 @@ align: center
 Confusion matrix
 ```
 
+```{list-table} Inference quality metrics
+---
+header-rows: 1
+align: center
+---
+* - Metric
+  - Value
 {%- for metric in data['available_metrics'] %}
 {%- if metric.name.endswith("_CLASS") %}
 {%- for class_, score in zip(data['class_names'], data[metric]) %}
-  * *{{metric.value}} for {{ class_ }}*: **{{ score }}**
+* - *{{metric.value}} for {{ class_ }}* 
+  - **{{ score }}**
 {%- endfor %}
 {%- else %}
-* *{{ metric.value }}*: **{{ data[metric] }}**
+* - *{{ metric.value }}* 
+  - **{{ data[metric] }}**
 {%- endif %}
 {%- endfor %}
+```
 
 {%- endif %}
 

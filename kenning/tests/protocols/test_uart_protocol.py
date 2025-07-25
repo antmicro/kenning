@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -17,11 +17,14 @@ import pytest
 import serial
 
 from kenning.core.model import ModelWrapper
+from kenning.core.protocol import ServerAction
 from kenning.interfaces.io_spec_serializer import IOSpecSerializer
-from kenning.protocols.bytes_based_protocol import (
+from kenning.protocols.message import (
+    FlagName,
+    Flags,
+    FlowControlFlags,
     Message,
     MessageType,
-    ServerStatus,
 )
 from kenning.protocols.uart import (
     BARE_METAL_IREE_ALLOCATION_STATS_SIZE,
@@ -237,16 +240,39 @@ class TestUARTProtocol(TestCoreProtocol):
                 queue.put(message)
 
             if message.message_type == message_type:
-                response = Message(MessageType.OK)
+                response = Message(
+                    message_type,
+                    None,
+                    FlowControlFlags.TRANSMISSION,
+                    Flags(
+                        {
+                            FlagName.SUCCESS: True,
+                            FlagName.IS_ZEPHYR: True,
+                            FlagName.FIRST: True,
+                            FlagName.LAST: True,
+                        }
+                    ),
+                )
             else:
-                response = Message(MessageType.ERROR)
-
+                response = Message(
+                    message_type,
+                    None,
+                    FlowControlFlags.TRANSMISSION,
+                    Flags(
+                        {
+                            FlagName.FAIL: True,
+                            FlagName.IS_ZEPHYR: True,
+                            FlagName.FIRST: True,
+                            FlagName.LAST: True,
+                        }
+                    ),
+                )
             with open(self.port_in, "wb", 0) as serial_f:
                 serial_f.write(response.to_bytes())
 
         return recv_message
 
-    def mock_send_response(
+    def mock_send_response_to_request(
         self, message_type: MessageType, payload: bytes = b""
     ):
         def send_message():
@@ -267,9 +293,31 @@ class TestUARTProtocol(TestCoreProtocol):
 
             # send stats
             if message.message_type == message_type:
-                response = Message(MessageType.OK, payload)
+                response = Message(
+                    message.message_type,
+                    payload,
+                    FlowControlFlags.TRANSMISSION,
+                    Flags(
+                        {
+                            FlagName.SUCCESS: True,
+                            FlagName.FIRST: True,
+                            FlagName.LAST: True,
+                        }
+                    ),
+                )
             else:
-                response = Message(MessageType.ERROR)
+                response = Message(
+                    message.message_type,
+                    ServerAction.COMPUTING_STATISTICS.to_bytes(),
+                    FlowControlFlags.TRANSMISSION,
+                    Flags(
+                        {
+                            FlagName.FAIL: True,
+                            FlagName.FIRST: True,
+                            FlagName.LAST: True,
+                        }
+                    ),
+                )
 
             with open(self.port_in, "wb", 0) as serial_f:
                 serial_f.write(response.to_bytes())
@@ -292,11 +340,11 @@ class TestUARTProtocol(TestCoreProtocol):
         assert client.initialize_client()
 
         client.disconnect()
-        assert client.send_message(Message(MessageType.OK)) is False
+        assert client.send_message(Message(MessageType.MODEL)) is False
         assert client.connection.is_open is False
 
     @pytest.mark.parametrize(
-        "message_type", [MessageType.OK, MessageType.ERROR]
+        "message_type", [MessageType.DATA, MessageType.IO_SPEC]
     )
     def test_receive_message(
         self,
@@ -307,16 +355,17 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client receive_message method.
         """
-        status, message = client.receive_message(timeout=1)
-        assert status == ServerStatus.NOTHING
+        # We need to stop the KenningProtocol receiver thread, because it is
+        # calling 'receive_message' too, which causes a race condition.
+        client.stop()
+        message = client.receive_message(timeout=1)
         assert message is None
 
         # send data
         self.port_in.write_bytes(
             Message(message_type, random_byte_data).to_bytes()
         )
-        status, message = client.receive_message(timeout=1)
-        assert status == ServerStatus.DATA_READY
+        message = client.receive_message(timeout=1)
         assert (
             message.payload == random_byte_data
             and message.message_type == message_type
@@ -327,12 +376,12 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client receive_message method.
         """
         self.port_in.write_bytes(b"")
-        status, message = client.receive_message(timeout=1)
-        assert status == ServerStatus.NOTHING
+        message = client.receive_message(timeout=1)
         assert message is None
 
     @pytest.mark.parametrize(
-        "message_type", [MessageType.OK, MessageType.ERROR, MessageType.DATA]
+        "message_type",
+        [MessageType.STATUS, MessageType.IO_SPEC, MessageType.DATA],
     )
     def test_send_message(
         self,
@@ -391,43 +440,16 @@ class TestUARTProtocol(TestCoreProtocol):
         """
         Test client send_data method.
         """
+        # We need to stop the KenningProtocol receiver thread, because it is
+        # calling 'receive_message', which calls 'receive_data', which
+        # causes a race condition.
+        client.stop()
         with open(self.port_in, "wb", 0) as serial_f:
             serial_f.write(random_byte_data)
 
-        status, received_data = client.receive_data(None, None)
+        received_data = client.receive_data(None, None)
 
-        assert status == ServerStatus.DATA_READY
         assert random_byte_data == received_data
-
-    def test_request_success(self, client: UARTProtocol):
-        """
-        Test client request success.
-        """
-        with open(self.port_in, "wb", 0) as serial_f:
-            serial_f.write(Message(MessageType.OK).to_bytes())
-
-        status, data = client.receive_data(None, None)
-
-        assert status == ServerStatus.DATA_READY
-        assert data is not None
-        message = client.parse_message(data)
-        assert message.message_type == MessageType.OK
-        assert message.payload == b""
-
-    def test_request_failure(self, client: UARTProtocol):
-        """
-        Test client request failure.
-        """
-        with open(self.port_in, "wb", 0) as serial_f:
-            serial_f.write(Message(MessageType.ERROR).to_bytes())
-
-        status, data = client.receive_data(None, None)
-
-        assert status == ServerStatus.DATA_READY
-        assert data is not None
-        message = client.parse_message(data)
-        assert message.message_type == MessageType.ERROR
-        assert message.payload == b""
 
     def test_upload_input(self, client: UARTProtocol, random_byte_data: bytes):
         """
@@ -443,7 +465,6 @@ class TestUARTProtocol(TestCoreProtocol):
         ret = client.upload_input(random_byte_data)
 
         thread_recv.join()
-
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -464,11 +485,9 @@ class TestUARTProtocol(TestCoreProtocol):
 
         model_path = get_tmp_path()
         model_path.write_bytes(random_byte_data)
-
         ret = client.upload_model(model_path)
 
         thread_recv.join()
-
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -499,14 +518,12 @@ class TestUARTProtocol(TestCoreProtocol):
             args=(queue,),
         )
         thread_recv.start()
-
         io_spec_path = get_tmp_path()
         io_spec_path.write_text(json.dumps(valid_io_spec))
 
         ret = client.upload_io_specification(io_spec_path)
 
         thread_recv.join()
-
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -524,11 +541,9 @@ class TestUARTProtocol(TestCoreProtocol):
             args=(queue,),
         )
         thread_recv.start()
-
         ret = client.request_processing()
 
         thread_recv.join()
-
         assert ret
         assert queue.qsize() == 1
         message = queue.get()
@@ -543,12 +558,13 @@ class TestUARTProtocol(TestCoreProtocol):
         Test client download_statistics method.
         """
         thread_send = multiprocessing.Process(
-            target=self.mock_send_response(MessageType.STATS, valid_iree_stats)
+            target=self.mock_send_response_to_request(
+                MessageType.STATS, valid_iree_stats
+            )
         )
-        thread_send.start()
 
+        thread_send.start()
         statistics = client.download_statistics(final=True)
 
         thread_send.join()
-
         assert _parse_stats(valid_iree_stats) == statistics.data

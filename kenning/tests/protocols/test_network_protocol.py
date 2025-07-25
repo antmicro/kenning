@@ -8,22 +8,42 @@ import socket
 import time
 import uuid
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Any, Tuple
 
 import pytest
 
 from kenning.core.measurements import Measurements
-from kenning.core.protocol import Protocol
-from kenning.protocols.bytes_based_protocol import (
+from kenning.core.protocol import Protocol, ServerAction
+from kenning.protocols.bytes_based_protocol import TransmissionFlag
+from kenning.protocols.kenning_protocol import ProtocolNotStartedError
+from kenning.protocols.message import (
+    FlagName,
+    Flags,
+    FlowControlFlags,
     Message,
     MessageType,
-    ServerStatus,
 )
 from kenning.protocols.network import NetworkProtocol
 from kenning.tests.protocols.conftest import random_network_port
 from kenning.tests.protocols.test_core_protocol import (
     TestCoreProtocol,
 )
+
+
+def valid_status_message(action: ServerAction):
+    return Message(
+        MessageType.STATUS,
+        action.to_bytes(),
+        FlowControlFlags.TRANSMISSION,
+        Flags(
+            {
+                FlagName.FIRST: True,
+                FlagName.LAST: True,
+                FlagName.SPEC_FLAG_2: True,
+                FlagName.SUCCESS: True,
+            }
+        ),
+    )
 
 
 class TestNetworkProtocol(TestCoreProtocol):
@@ -63,30 +83,6 @@ class TestNetworkProtocol(TestCoreProtocol):
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_receive_message(
-        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
-    ):
-        """
-        Tests client status using `receive_message()` method.
-        """
-        server, client = server_and_client
-
-        # Connect via Client
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.CLIENT_CONNECTED
-        assert message is None
-
-        # Disconnect client
-        client.disconnect()
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.CLIENT_DISCONNECTED
-        assert message is None
-
-        # Timeout is reached
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.NOTHING and message is None
-
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_receive_message_send_data(
         self,
         server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
         random_byte_data: bytes,
@@ -95,40 +91,16 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `receive_message()` method by sending data.
         """
         server, client = server_and_client
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.CLIENT_CONNECTED
+        server.stop()
+        message = server.receive_message(timeout=1)
         assert message is None
 
         # Send data
-        client.send_message(Message(MessageType.OK, random_byte_data))
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.DATA_READY
+        client.send_message(Message(MessageType.OUTPUT, random_byte_data))
+        message = server.receive_message(timeout=1)
         assert (
             message.payload == random_byte_data
-            and message.message_type == MessageType.OK
-        )
-
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_receive_message_send_error(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        random_byte_data: bytes,
-    ):
-        """
-        Tests the `receive_message()` method by sending error message.
-        """
-        server, client = server_and_client
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.CLIENT_CONNECTED
-        assert message is None
-
-        # Send error message
-        client.send_message(Message(MessageType.ERROR, random_byte_data))
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.DATA_READY
-        assert (
-            message.payload == random_byte_data
-            and message.message_type == MessageType.ERROR
+            and message.message_type == MessageType.OUTPUT
         )
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -139,9 +111,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `receive_message()` method by sending empty message.
         """
         server, client = server_and_client
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.CLIENT_CONNECTED
-        assert message is None
+        server.stop()
 
         # Send empty message
         class EmptyMessage(object):
@@ -149,9 +119,8 @@ class TestNetworkProtocol(TestCoreProtocol):
                 return b""
 
         client.send_message(EmptyMessage())
-        status, message = server.receive_message(timeout=1)
+        message = server.receive_message(timeout=1)
         assert message is None
-        assert status == ServerStatus.NOTHING, status
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_send_data(
@@ -163,6 +132,7 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `send_data()` method.
         """
         server, client = server_and_client
+        server.stop()
         assert client.send_data(random_byte_data)
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -170,10 +140,12 @@ class TestNetworkProtocol(TestCoreProtocol):
         self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
     ):
         """
-        Tests the `receive_data()` method with not initialized client.
+        Tests the `receive_data()` method with not initialized server.
         """
         server, client = server_and_client
-        with pytest.raises(AttributeError):
+        server.stop()
+        server.disconnect()
+        with pytest.raises(ProtocolNotStartedError):
             server.receive_data(None, None)
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -186,11 +158,9 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `receive_data()` method with data being sent.
         """
         server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
+        server.stop()
         assert client.send_data(random_byte_data)
-        status, received_data = server.receive_data(None, None)
-        assert status is ServerStatus.DATA_READY
+        received_data = server.receive_data(None, None)
         assert random_byte_data == received_data
 
     @pytest.mark.xdist_group(name="use_socket")
@@ -201,12 +171,19 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `receive_data()` method with client being disconnected.
         """
         server, client = server_and_client
-        server.accept_client(server.serversocket, None)
+        server.stop()
 
+        mock_client_disconnected_callback_call_count = 0
+
+        def mock_client_disconnected_callback():
+            nonlocal mock_client_disconnected_callback_call_count
+            mock_client_disconnected_callback_call_count += 1
+
+        server.client_disconnected_callback = mock_client_disconnected_callback
         client.disconnect()
-        status, received_data = server.receive_data(None, None)
-        assert status == ServerStatus.CLIENT_DISCONNECTED
+        received_data = server.receive_data(None, None)
         assert received_data is None
+        assert 1 == mock_client_disconnected_callback_call_count
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_accept_client(self):
@@ -236,7 +213,7 @@ class TestNetworkProtocol(TestCoreProtocol):
             Tuple['ServerStatus', bytes]
                 Client addition status
             """
-            output: ServerStatus
+            output = False
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                 s.bind((self.host, self.port))
@@ -249,11 +226,13 @@ class TestNetworkProtocol(TestCoreProtocol):
         # There's already established connection
         protocol = self.init_protocol()
         protocol.socket = True
-        assert run_test(protocol)[0] == ServerStatus.CLIENT_IGNORED
+        run_test(protocol)
+        assert socket
 
         # There was no connection yet
         protocol = self.init_protocol()
-        assert run_test(protocol)[0] == ServerStatus.CLIENT_CONNECTED
+        run_test(protocol)
+        assert socket is not None
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_wait_send(
@@ -265,16 +244,15 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `wait_send()` method.
         """
         server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
+        server.stop()
+        client.stop()
         for _ in range(10):
             # Send the data
             client_out = client.wait_send(random_byte_data)
             assert client_out == len(random_byte_data)
 
             # Receive data
-            server_status, server_data = server.receive_data(None, None)
-            assert server_status == ServerStatus.DATA_READY
+            server_data = server.receive_data(None, None)
             assert (
                 server_data == random_byte_data
             ), f"{server_data}!={random_byte_data}"
@@ -289,297 +267,157 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `send_message(Message())` method.
         """
         server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
+        server.stop()
+        client.stop()
         assert client.send_message(Message(MessageType.DATA, random_byte_data))
         assert server.send_message(Message(MessageType.DATA, random_byte_data))
 
         client.disconnect()
         with pytest.raises(ConnectionResetError):
-            server.send_message(Message(MessageType.OK))
+            server.send_message(Message(MessageType.DATA))
 
-    @pytest.mark.xdist_group(name="use_socket")
-    @pytest.mark.parametrize(
-        "message,expected",
-        [
-            (Message(MessageType.OK), (True, b"")),
-            (Message(MessageType.ERROR), (False, None)),
-            (Message(MessageType.DATA), (False, None)),
-            (Message(MessageType.MODEL), (False, None)),
-            (Message(MessageType.PROCESS), (False, None)),
-            (Message(MessageType.OUTPUT), (False, None)),
-            (Message(MessageType.STATS), (False, None)),
-            (Message(MessageType.IO_SPEC), (False, None)),
-        ],
-    )
-    def test_receive_confirmation(
+    def _receive_request(
         self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        message: Message,
-        expected: Tuple[bool, Optional[bytes]],
-    ):
-        """
-        Tests the `receive_confirmation()` method.
-        """
-        server, client = server_and_client
-        client.send_message(message)
-        output = server.receive_confirmation()
-        assert output == expected
+        response_payload: bytes,
+        method: str,
+        argument: Any,
+        message_type: MessageType,
+    ) -> bytes:
+        def receive(
+            host: str,
+            port: int,
+            response_payload: bytes,
+            server_started_event: multiprocessing.Event,
+            queue: multiprocessing.Queue,
+        ):
+            server = NetworkProtocol(host, port)
+            server.initialize_server()
+            server_started_event.set()
+            type, message_type, data, flags = server.listen_blocking(
+                None, None, None, 1
+            )
+            queue.put(data)
+            server.transmit_blocking(
+                message_type,
+                response_payload,
+                [TransmissionFlag.SUCCESS, TransmissionFlag.IS_KENNING],
+            )
+            server.disconnect()
 
-        # Check if client is disconnected
+        queue = multiprocessing.Queue()
+        server_started_event = multiprocessing.Event()
+        thread = multiprocessing.Process(
+            target=receive,
+            args=(
+                self.host,
+                self.port,
+                response_payload,
+                server_started_event,
+                queue,
+            ),
+        )
+        thread.start()
+        server_started_event.wait()
+        client = NetworkProtocol(self.host, self.port)
+        assert client.initialize_client()
+        if argument is not None:
+            return_value = getattr(client, method)(argument)
+        else:
+            return_value = getattr(client, method)()
         client.disconnect()
-        output = server.receive_confirmation()
-        assert output == (False, None)
+        thread.join()
+        return queue.get(), return_value
 
     @pytest.mark.xdist_group(name="use_socket")
-    def test_upload_input(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        random_byte_data: bytes,
-    ):
+    def test_upload_input(self, random_byte_data: bytes):
         """
         Tests the `upload_input()` method.
         """
-        server, client = server_and_client
-
-        def upload(
-            client: NetworkProtocol,
-            data: bytes,
-            queue: multiprocessing.Queue,
-        ):
-            """
-            Waits for confirmation message and sends input data.
-
-            Parameters
-            ----------
-            client : NetworkProtocol
-                Initialized NetworkProtocol client
-            data : bytes
-                Input data to be sent
-            queue : multiprocessing.Queue
-                Shared list to append output of `upload_input()` method
-            """
-            output = client.upload_input(data)
-            queue.put(output)
-
-        server.accept_client(server.serversocket, None)
-        queue = multiprocessing.Queue()
-        thread = multiprocessing.Process(
-            target=upload, args=(client, random_byte_data, queue)
+        assert (random_byte_data, True) == self._receive_request(
+            ServerAction.UPLOADING_INPUT.to_bytes(),
+            "upload_input",
+            random_byte_data,
+            MessageType.DATA,
         )
 
-        thread.start()
-        status, message = server.receive_message(timeout=1)
-        server.send_message(Message(MessageType.OK))
-        thread.join()
-        assert status == ServerStatus.DATA_READY
-        assert message.payload == random_byte_data
-        assert queue.get()
-
+    @pytest.mark.parametrize(
+        "method, action, message_type",
+        [
+            ("upload_model", ServerAction.UPLOADING_MODEL, MessageType.MODEL),
+            (
+                "upload_runtime",
+                ServerAction.UPLOADING_RUNTIME,
+                MessageType.RUNTIME,
+            ),
+            (
+                "upload_io_specification",
+                ServerAction.UPLOADING_IOSPEC,
+                MessageType.IO_SPEC,
+            ),
+        ],
+    )
     @pytest.mark.xdist_group(name="use_socket")
-    def test_upload_model(
+    def test_upload_with_path(
         self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
         tmpfolder: Path,
         random_byte_data: bytes,
+        method: str,
+        action: ServerAction,
+        message_type: MessageType,
     ):
         """
         Tests the `upload_model()` method.
         """
-        server, client = server_and_client
         path = tmpfolder / uuid.uuid4().hex
         with open(path, "wb") as file:
             file.write(random_byte_data)
 
-        def receive_model(
-            server: NetworkProtocol, queue: multiprocessing.Queue
-        ):
-            """
-            Receives uploaded model.
-
-            Parameters
-            ----------
-            server : NetworkProtocol
-                Initialized NetworkProtocol server.
-            queue : multiprocessing.Queue
-                Shared list to to append received data.
-            """
-            time.sleep(0.1)
-            status, received_model = server.receive_data(None, None)
-            queue.put((status, received_model))
-            output = server.send_message(Message(MessageType.OK))
-            queue.put(output)
-
-        queue = multiprocessing.Queue()
-        thread_receive = multiprocessing.Process(
-            target=receive_model, args=(server, queue)
+        assert (random_byte_data, True) == self._receive_request(
+            action.to_bytes(),
+            method,
+            path,
+            message_type,
         )
-        server.accept_client(server.serversocket, None)
-        thread_receive.start()
-        assert client.upload_model(path)
-        thread_receive.join()
-        receive_status, received_data = queue.get()
-        assert queue.get()
-        assert receive_status == ServerStatus.DATA_READY
-        answer = Message(MessageType.MODEL, random_byte_data).to_bytes()
-        assert received_data == answer, f"{received_data}!={answer}"
 
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_upload_io_specification(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        tmpfolder: Path,
-    ):
-        """
-        Tests the `upload_io_specification()` method.
-        """
-        # FIXME: Add actual example with input/output data
-        server, client = server_and_client
-        io_specification = {1: "one", 2: "two", 3: "three"}
-        path = tmpfolder / uuid.uuid4().hex
-        with open(path, "w") as file:
-            json.dump(io_specification, file)
-
-        def receive_io(server: NetworkProtocol, queue: multiprocessing.Queue):
-            """
-            Receives input/output details.
-
-            Parameters
-            ----------
-            server : NetworkProtocol
-                Initialized NetworkProtocol server
-            queue : multiprocessing.Queue
-                Shared list to append received input/output details
-            """
-            time.sleep(0.1)
-            status, received = server.receive_data(None, None)
-            queue.put((status, received))
-            output = server.send_message(Message(MessageType.OK))
-            queue.put(output)
-
-        queue = multiprocessing.Queue()
-        thread_receive = multiprocessing.Process(
-            target=receive_io, args=(server, queue)
+    def test_request_processing(self):
+        assert (b"", True) == self._receive_request(
+            ServerAction.PROCESSING_INPUT.to_bytes(),
+            "request_processing",
+            time.perf_counter,
+            MessageType.PROCESS,
         )
-        server.accept_client(server.serversocket, None)
-
-        thread_receive.start()
-        assert client.upload_io_specification(path)
-        thread_receive.join()
-
-        receive_status, received_data = queue.get()
-        send_message_status = queue.get()
-        assert send_message_status
-        assert receive_status == ServerStatus.DATA_READY
-        encoded_data = (json.dumps(io_specification)).encode()
-        answer = Message(MessageType.IO_SPEC, encoded_data).to_bytes()
-        assert received_data == answer, f"{received_data}!={answer}"
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_download_output(
         self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
         random_byte_data: bytes,
     ):
         """
         Tests the `download_output()` method.
         """
-        server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
-        assert server.send_message(Message(MessageType.OK, random_byte_data))
-        status, downloaded_data = client.download_output()
-        assert status
-        assert downloaded_data == random_byte_data
+        assert (b"", (True, random_byte_data)) == self._receive_request(
+            random_byte_data,
+            "download_output",
+            None,
+            MessageType.OUTPUT,
+        )
 
     @pytest.mark.xdist_group(name="use_socket")
-    def test_download_statistics(
-        self, server_and_client: Tuple[NetworkProtocol, NetworkProtocol]
-    ):
+    def test_download_statistics(self):
         """
         Tests the `download_statistics()` method.
         """
-        server, client = server_and_client
         data = {"1": "one", "2": "two", "3": "three"}
         to_send = json.dumps(data).encode()
-        server.accept_client(server.serversocket, None)
-
-        def download_stats(
-            client: NetworkProtocol, queue: multiprocessing.Queue
-        ):
-            """
-            Downloads statistics sent by server.
-
-            Parameters
-            ----------
-            client : NetworkProtocol
-                Initialized NetworkProtocol client
-            queue : multiprocessing.Queue
-                Shared list to append downloaded statistics
-            """
-            time.sleep(0.1)
-            client.send_message(Message(MessageType.OK))
-            client.receive_confirmation()
-            output = client.download_statistics(final=True)
-            queue.put(output)
-
-        queue = multiprocessing.Queue()
-        thread_send = multiprocessing.Process(
-            target=download_stats, args=(client, queue)
+        sent_bytes, downloaded_stats = self._receive_request(
+            to_send,
+            "download_statistics",
+            True,
+            MessageType.STATS,
         )
-        thread_send.start()
-
-        output = server.receive_confirmation()
-        assert output == (True, b"")
-        server.send_message(Message(MessageType.OK))
-
-        time.sleep(0.1)
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.DATA_READY
-        assert (
-            message.message_type == MessageType.STATS
-            and message.payload == b""
-        )
-        assert server.send_message(Message(MessageType.OK, to_send))
-        thread_send.join()
-
-        downloaded_stats = queue.get()
+        assert b"" == sent_bytes
         assert isinstance(downloaded_stats, Measurements)
         assert downloaded_stats.data == data
-
-    @pytest.mark.xdist_group(name="use_socket")
-    @pytest.mark.parametrize(
-        "message_type",
-        [
-            MessageType.OK,
-            MessageType.ERROR,
-            MessageType.DATA,
-            MessageType.MODEL,
-            MessageType.PROCESS,
-            MessageType.STATS,
-            MessageType.OUTPUT,
-            MessageType.IO_SPEC,
-        ],
-    )
-    def test_parse_message(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        message_type: MessageType,
-        random_byte_data: bytes,
-    ):
-        """
-        Tests the `parse_message()` method.
-        """
-        server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
-        client.send_message(Message(message_type, random_byte_data))
-        status, message = server.receive_message(timeout=1)
-        assert status == ServerStatus.DATA_READY
-        assert (
-            random_byte_data == message.payload
-            and message_type == message.message_type
-        )
 
     @pytest.mark.xdist_group(name="use_socket")
     def test_disconnect(self, server_and_client):
@@ -587,75 +425,15 @@ class TestNetworkProtocol(TestCoreProtocol):
         Tests the `disconnect()` method.
         """
         server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-        assert client.send_message(Message(MessageType.OK))
-        assert server.send_message(Message(MessageType.OK))
+        server.stop()
+        client.stop()
+        assert client.send_message(Message(MessageType.MODEL))
+        assert server.send_message(Message(MessageType.MODEL))
         client.disconnect()
-        with pytest.raises(OSError):
-            client.send_message(Message(MessageType.OK))
+        with pytest.raises(ProtocolNotStartedError):
+            client.send_message(Message(MessageType.MODEL))
         with pytest.raises(ConnectionResetError):
-            server.send_message(Message(MessageType.OK))
+            server.send_message(Message(MessageType.MODEL))
         server.disconnect()
-        with pytest.raises(OSError):
-            server.send_message(Message(MessageType.OK))
-
-    @pytest.mark.xdist_group(name="use_socket")
-    @pytest.mark.parametrize(
-        "client_response,expected",
-        [(Message(MessageType.OK), True), (Message(MessageType.ERROR), False)],
-    )
-    def test_request_processing(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        client_response: Message,
-        expected: bool,
-    ):
-        """
-        Tests the `request_processing()` method.
-        """
-        server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-
-        thread_send = multiprocessing.Process(
-            target=client.send_message, args=(client_response,)
-        )
-        thread_send.start()
-        response = server.request_processing()
-        assert response is expected, f"{response}!={expected}"
-        thread_send.join()
-
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_request_failure(self, server_and_client):
-        """
-        Tests the `request_failure()` method.
-        """
-        server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-        server.request_failure()
-        status, message = client.receive_data(None, None)
-        assert status == ServerStatus.DATA_READY
-        message = client.parse_message(message)
-        assert (
-            message.message_type == MessageType.ERROR
-            and message.payload == b""
-        )
-
-    @pytest.mark.xdist_group(name="use_socket")
-    def test_request_success(
-        self,
-        server_and_client: Tuple[NetworkProtocol, NetworkProtocol],
-        random_byte_data: bytes,
-    ):
-        """
-        Tests the `request_success()` method.
-        """
-        server, client = server_and_client
-        server.accept_client(server.serversocket, None)
-        server.request_success(random_byte_data)
-        status, message = client.receive_data(None, None)
-        assert status == ServerStatus.DATA_READY
-        message = client.parse_message(message)
-        assert (
-            message.message_type == MessageType.OK
-            and message.payload == random_byte_data
-        )
+        with pytest.raises(ProtocolNotStartedError):
+            server.send_message(Message(MessageType.MODEL))

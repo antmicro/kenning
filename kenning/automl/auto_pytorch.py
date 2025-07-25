@@ -634,6 +634,9 @@ class AutoPyTorchML(AutoML):
             The number of workers to use for data loaders.
         """
         from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
+        from kenning.automl.auto_pytorch_components.logger_progress_trackers import (
+            TrainingProgressLogger
+        )
 
         super().__init__(
             dataset=dataset,
@@ -689,6 +692,9 @@ class AutoPyTorchML(AutoML):
         self.initial_run_num: int = None
         self.model_paths: List[Path] = []
         self.best_configs: List[Path] = []
+        self.training_progress_tracker = TrainingProgressLogger(
+            time_limit*60
+        )
 
     def prepare_framework(self):
         # Split and flatten the dataset
@@ -754,6 +760,7 @@ class AutoPyTorchML(AutoML):
             use_tensorboard_logger=True,
             early_stopping=True,
             pre_training_callback=self.pre_training_callback,
+            training_tracker=self.training_progress_tracker,
             data_loader_workers=self.data_loader_workers,
         )
         self.initial_run_num = self._api._backend.get_next_num_run()

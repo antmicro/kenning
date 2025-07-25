@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -16,7 +16,8 @@ help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 source/generated/AnomalyDetectionDatasetInfo.md:
-	kenning info AnomalyDetectionDataset -md --docstrings > $@
+	mkdir -p source/generated
+	PYTHONPATH="${PYTHONPATH}:$$(realpath ..)" python3 -m kenning info AnomalyDetectionDataset -md --docstrings > $@
 
 .PHONY: help Makefile
 

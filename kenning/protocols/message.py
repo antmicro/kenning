@@ -61,8 +61,8 @@ class MessageType(Enum):
 
     Message type denotes what kind of data is being sent:
 
-    OK - message indicating success of previous command.
-    ERROR - message indicating failure of previous command.
+    PING - message for checking the connection
+    STATUS - message contains inference server stauts report.
     DATA - message contains inference input/output/statistics.
     MODEL - message contains model to load.
     PROCESS - message means the data should be processed.
@@ -72,11 +72,12 @@ class MessageType(Enum):
     OPTIMIZERS - message contains optimizers config.
     OPTIMIZE_MODEL - message means the model should be optimized.
     RUNTIME - message contains runtime that should be used for inference
-        (i.e. LLEXT binary)
+        (i.e. LLEXT binary).
+    UNOPTIMIZED_MODEL - message contains an unoptimized model.
     """
 
-    OK = 0
-    ERROR = 1
+    PING = 0
+    STATUS = 1
     DATA = 2
     MODEL = 3
     PROCESS = 4
@@ -86,6 +87,7 @@ class MessageType(Enum):
     OPTIMIZERS = 8
     OPTIMIZE_MODEL = 9
     RUNTIME = 10
+    UNOPTIMIZED_MODEL = 11
 
     def __int__(self):
         return self.value

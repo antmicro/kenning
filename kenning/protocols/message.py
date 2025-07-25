@@ -459,4 +459,7 @@ class Message(object):
         return data
 
     def __repr__(self) -> str:
-        return f"Message(type={self.message_type}, size={self.message_size})"
+        return (
+            f"Message(type={self.message_type}, size={self.message_size},"
+            f" flow_control_flags={self.flow_control_flags})"
+        )

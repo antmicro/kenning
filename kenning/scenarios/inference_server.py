@@ -21,6 +21,7 @@ import json
 import signal
 import sys
 from pathlib import Path
+from threading import Event
 from typing import Any, Dict, List, Optional, Tuple, Type
 
 import yaml
@@ -38,10 +39,9 @@ from kenning.cli.completers import (
     ClassPathCompleter,
 )
 from kenning.core.optimizer import Optimizer
-from kenning.core.protocol import Protocol
-from kenning.core.runtime import Runtime
+from kenning.core.protocol import Protocol, ServerAction, ServerStatus
+from kenning.core.runtime import ModelNotPreparedError, Runtime
 from kenning.platforms.local import LocalPlatform
-from kenning.protocols.bytes_based_protocol import MessageType, ServerStatus
 from kenning.utils.args_manager import (
     report_missing,
     to_namespace_name,
@@ -80,21 +80,14 @@ class InferenceServer(object):
     def __init__(self, runtime: Runtime, protocol: Protocol):
         self.runtime = runtime
         self.protocol = protocol
-        self.should_work = True
-
-        self.callbacks = {
-            MessageType.DATA: self._data_callback,
-            MessageType.MODEL: self._model_callback,
-            MessageType.PROCESS: self._process_callback,
-            MessageType.OUTPUT: self._output_callback,
-            MessageType.STATS: self._stats_callback,
-            MessageType.IO_SPEC: self._io_spec_callback,
-            MessageType.OPTIMIZERS: self._optimizers_callback,
-            MessageType.OPTIMIZE_MODEL: self._optimize_model_callback,
-        }
+        self.close_server_event = Event()
+        self.status = ServerStatus(ServerAction.IDLE)
 
     def close(self):
-        self.should_work = False
+        """
+        Stops the server.
+        """
+        self.close_server_event.set()
 
     def run(self):
         """
@@ -105,129 +98,191 @@ class InferenceServer(object):
         Based on requests, it loads the model, runs inference and provides
         statistics.
         """
-        status = self.protocol.initialize_server()
-        if not status:
+
+        def client_disconnected_callback():
+            self.status = ServerStatus(ServerAction.WAITING_FOR_CLIENT)
+
+        def client_connected_callback(addr):
+            self.status = ServerStatus(ServerAction.CLIENT_CONNECTED)
+
+        self.status = ServerStatus(
+            ServerAction.WAITING_FOR_CLIENT,
+            self.protocol.initialize_server(
+                client_connected_callback, client_disconnected_callback
+            ),
+        )
+
+        if not self.status.success:
             KLogger.error("Server prepare failed")
             return
 
-        self.should_work = True
         KLogger.info("Server started")
 
-        while self.should_work:
-            server_status, message = self.protocol.receive_message(timeout=1)
-            if server_status == ServerStatus.DATA_READY:
-                KLogger.debug(f"Received message {message}")
-                self.callbacks[message.message_type](message.payload)
-            elif server_status == ServerStatus.DATA_INVALID:
-                KLogger.error("Invalid message received")
-
+        self.protocol.serve(
+            self._data_callback,
+            self._model_callback,
+            self._process_callback,
+            self._output_callback,
+            self._stats_callback,
+            self._io_spec_callback,
+            self._optimizers_callback,
+            self._unoptimized_model_callback,
+            self._optimize_model_callback,
+        )
+        self.close_server_event.wait()
+        self.status = ServerStatus(ServerAction.IDLE)
         self.protocol.disconnect()
 
-    def _data_callback(self, input_data: bytes):
+    def _data_callback(self, payload: bytes) -> ServerStatus:
         """
-        Server callback for preparing an input for inference task.
+        Server callback for uploading an input for inference. You need to
+        upload the model before this can be executed.
 
         Parameters
         ----------
-        input_data : bytes
+        payload : bytes
             Input data for the model.
-        """
-        if self.runtime.load_input_from_bytes(input_data):
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
 
-    def _model_callback(self, input_data: bytes):
+        Returns
+        -------
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
         """
-        Server callback for preparing a model for inference task.
+        self.status.start_action(ServerAction.UPLOADING_INPUT)
+        self.status.finish_action(self.runtime.load_input_from_bytes(payload))
+        return self.status
+
+    def _model_callback(self, payload: bytes) -> ServerStatus:
+        """
+        Server callback for preparing a model for inference and starting an
+        inference session. You need to upload model iospec, before this can
+        be executed.
 
         Parameters
         ----------
-        input_data : bytes
+        payload : bytes
             Model data or None, if the model should be loaded from another
             source.
-        """
-        self.runtime.inference_session_start()
-        if self.runtime.prepare_model(input_data):
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
 
-    def _process_callback(self, input_data: bytes):
+        Returns
+        -------
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
+        """
+        self.status.start_action(ServerAction.UPLOADING_MODEL)
+        self.runtime.inference_session_start()
+        self.status.finish_action(self.runtime.prepare_model(payload))
+        return self.status
+
+    def _process_callback(self, payload: bytes) -> ServerStatus:
         """
         Server callback for processing received input and measuring the
-        performance quality.
+        performance quality. You need to upload input, before this can
+        be executed.
 
         Parameters
         ----------
-        input_data : bytes
+        payload : bytes
             Not used here.
+
+        Returns
+        -------
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
         """
+        self.status.start_action(ServerAction.PROCESSING_INPUT)
         KLogger.debug("Processing input")
         self.runtime.run()
-        self.protocol.request_success()
         KLogger.debug("Input processed")
+        self.status.finish_action(True)
+        return self.status
 
-    def _output_callback(self, input_data: bytes):
+    def _output_callback(self) -> Tuple[ServerStatus, Optional[bytes]]:
         """
-        Server callback for retrieving model output.
+        Server callback for retrieving model output. You need to call
+        '_process_callback' and wait for it to finish, before this can
+        be executed.
 
-        Parameters
-        ----------
-        input_data : bytes
-            Not used here.
+        Returns
+        -------
+        Tuple[ServerStatus, Optional[bytes]]
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
+            Inference output, or None if output extraction failed.
         """
-        out = self.runtime.upload_output(input_data)
+        self.status.start_action(ServerAction.EXTRACTING_OUTPUT)
+        out = None
+        try:
+            out = self.runtime.upload_output(b"")
+        except ModelNotPreparedError:
+            self.status.finish_action(False)
         if out:
-            self.protocol.request_success(out)
+            self.status.finish_action(True)
         else:
-            self.protocol.request_failure()
+            self.status.finish_action(False)
+        return self.status, out
 
-    def _stats_callback(self, input_data: bytes):
+    def _stats_callback(self) -> Tuple[ServerStatus, Optional[bytes]]:
         """
         Server callback for stopping measurements and retrieving stats.
 
-        Parameters
-        ----------
-        input_data : bytes
-            Not used here.
+        Returns
+        -------
+        Tuple[ServerStatus, Optional[bytes]]
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
+            Inference statistics, or None in case of failure.
         """
+        self.status.start_action(ServerAction.COMPUTING_STATISTICS)
         self.runtime.inference_session_end()
-        out = self.runtime.upload_stats(input_data)
-        self.protocol.request_success(out)
+        out = self.runtime.upload_stats(b"")
+        self.status.finish_action(True)
+        return self.status, out
 
-    def _io_spec_callback(self, input_data: bytes):
+    def _io_spec_callback(self, payload: bytes) -> ServerStatus:
         """
         Server callback for preparing model io specification.
 
         Parameters
         ----------
-        input_data : bytes
+        payload : bytes
             Input/output specification data or None, if the data
             should be loaded from another source.
-        """
-        if self.runtime.prepare_io_specification(input_data):
-            self.protocol.request_success()
-        else:
-            self.protocol.request_failure()
 
-    def _optimizers_callback(self, input_data: bytes) -> bool:
+        Returns
+        -------
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
+        """
+        self.status.start_action(ServerAction.UPLOADING_IOSPEC)
+        self.status.finish_action(
+            self.runtime.prepare_io_specification(payload)
+        )
+        return self.status
+
+    def _optimizers_callback(self, payload: bytes) -> ServerStatus:
         """
         Server callback for loading model optimizers.
 
         Parameters
         ----------
-        input_data : bytes
-            Not used here.
+        payload : bytes
+            Serialized JSON with optimizer configuration.
 
         Returns
         -------
-        bool
-            True if callback was successful
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
         """
+        self.status.start_action(ServerAction.UPLOADING_OPTIMIZERS)
         from kenning.utils.class_loader import load_class
 
-        json_cfg = yaml.safe_load(input_data.decode())
+        json_cfg = yaml.safe_load(payload.decode())
 
         optimizers_cfg = (
             json_cfg["optimizers"] if "optimizers" in json_cfg else []
@@ -262,29 +317,49 @@ class InferenceServer(object):
         )
         KLogger.info(f"Loaded optimizers: {optimizers_str}")
 
-        return self.protocol.request_success()
+        self.status.finish_action(True)
+        return self.status
 
-    def _optimize_model_callback(self, input_data: bytes) -> bool:
+    def _unoptimized_model_callback(self, payload: bytes) -> ServerStatus:
         """
-        Server callback for optimizing model.
+        Server callback for receiving a model to optimize.
 
         Parameters
         ----------
-        input_data : bytes
-            Not used here.
+        payload : bytes
+            Model to optimize.
 
         Returns
         -------
-        bool
-            True if successful
+        ServerStatus
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
         """
+        self.status.start_action(ServerAction.UPLOADING_UNOPTIMIZED_MODEL)
         prev_block = self.prev_block
         model_path = prev_block.compiled_model_path
-
         with open(model_path, "wb") as model_f:
-            model_f.write(input_data)
+            model_f.write(payload)
+        self.status.finish_action(True)
+        return self.status
 
+    def _optimize_model_callback(self) -> Tuple[ServerStatus, Optional[bytes]]:
+        """
+        Server callback for optimizing model. You need to upload optimizers
+        and an unoptimized model before this can be executed.
+
+        Returns
+        -------
+        Tuple[ServerStatus, Optional[bytes]]
+            Object containing information about the last task executed by the
+            server and whether that task succeeded or not.
+            Optimized model, or None if optimization was not successful.
+        """
+        self.status.start_action(ServerAction.OPTIMIZING_MODEL)
+        model_data = None
         try:
+            prev_block = self.prev_block
+            model_path = prev_block.compiled_model_path
             for optimizer in self.optimizers:
                 KLogger.info(f"Processing block: {type(optimizer).__name__}")
 
@@ -308,10 +383,11 @@ class InferenceServer(object):
             with open(model_path, "rb") as model_f:
                 model_data = model_f.read()
 
-            return self.protocol.request_success(model_data)
+            self.status.finish_action(True)
         except Exception as e:
             KLogger.error(f"Compilation error: {e}", stack_info=True)
-            return self.protocol.request_failure()
+            self.status.finish_action(False)
+        return self.status, model_data
 
 
 class InferenceServerRunner(CommandTemplate):

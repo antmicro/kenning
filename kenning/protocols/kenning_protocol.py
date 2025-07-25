@@ -40,6 +40,8 @@ FLAG_BINDINGS = {
     TransmissionFlag.SUCCESS: FlagName.SUCCESS,
     TransmissionFlag.FAIL: FlagName.FAIL,
     TransmissionFlag.IS_HOST_MESSAGE: FlagName.IS_HOST_MESSAGE,
+    TransmissionFlag.IS_ZEPHYR: FlagName.IS_ZEPHYR,
+    TransmissionFlag.IS_KENNING: FlagName.IS_KENNING,
     TransmissionFlag.SERIALIZED: FlagName.SPEC_FLAG_1,
 }
 

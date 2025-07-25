@@ -169,6 +169,8 @@ class FlagName(Enum):
     * HAS_PAYLOAD - Payload field is present in the message.
     * FIRST - First message in the transmission.
     * LAST - Last message in the transmission.
+    * IS_KENNING - Message sent by Kenning
+    * IS_ZEPHYR - Message sent by Kenning Zephyr Runtime
     * SPEC_FLAG_1..SPEC_FLAG_4 - Flags specific for a message type.
     """
 
@@ -178,6 +180,8 @@ class FlagName(Enum):
     HAS_PAYLOAD = "has_payload"
     FIRST = "first"
     LAST = "last"
+    IS_KENNING = "is_kenning"
+    IS_ZEPHYR = "is_zephyr"
     SPEC_FLAG_1 = "spec_flag_1"
     SPEC_FLAG_2 = "spec_flag_2"
     SPEC_FLAG_3 = "spec_flag_3"
@@ -213,7 +217,9 @@ class Flags(Serializable):
         (FlagName.HAS_PAYLOAD, bool, 1),
         (FlagName.FIRST, bool, 1),
         (FlagName.LAST, bool, 1),
-        ("reserved", int, 6),
+        (FlagName.IS_KENNING, bool, 1),
+        (FlagName.IS_ZEPHYR, bool, 1),
+        ("reserved", int, 4),
         (FlagName.SPEC_FLAG_1, bool, 1),
         (FlagName.SPEC_FLAG_2, bool, 1),
         (FlagName.SPEC_FLAG_3, bool, 1),

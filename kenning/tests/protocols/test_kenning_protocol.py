@@ -10,6 +10,7 @@ from unittest.mock import patch
 
 import pytest
 
+from kenning.protocols.bytes_based_protocol import TransmissionFlag
 from kenning.protocols.kenning_protocol import (
     MAX_MESSAGE_PAYLOAD_SIZE,
     FlowControlFlags,
@@ -21,7 +22,6 @@ from kenning.protocols.kenning_protocol import (
     OutgoingTransmission,
     ProtocolEvent,
     Transmission,
-    TransmissionFlag,
 )
 from kenning.protocols.message import FlagName, Flags, Message
 from kenning.utils.event_with_args import EventWithArgs
@@ -292,29 +292,6 @@ def assert_signal_callback_mock_request_failure(
         assert type(event) is OutgoingRequest
         assert event.is_completed()
         assert not event.has_succeeded()
-
-
-class TestTransmissionFlag:
-    @pytest.mark.parametrize(
-        "flag, message_type, return_value",
-        [
-            # General purpose flag and message type without special flags.
-            (TransmissionFlag.SUCCESS, MessageType.OUTPUT, True),
-            # General purpose flag and message type with special flags.
-            (TransmissionFlag.SUCCESS, MessageType.IO_SPEC, True),
-            # Message type specific flag with valid message type
-            (TransmissionFlag.SERIALIZED, MessageType.IO_SPEC, True),
-            # Message type specific flag with invalid message type
-            (TransmissionFlag.SERIALIZED, MessageType.MODEL, False),
-        ],
-    )
-    def test_for_type(
-        self,
-        flag: TransmissionFlag,
-        message_type: MessageType,
-        return_value: bool,
-    ):
-        assert return_value == flag.for_type(message_type)
 
 
 class TestProtocolEvent:

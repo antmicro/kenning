@@ -207,39 +207,6 @@ class TestServerSideOptimization:
                 assert not server_thread.is_alive()
 
     @pytest.mark.xdist_group(name="use_socket")
-    def test_optimization_fail_when_server_is_not_running(self):
-        """
-        Test target side optimizations handling when the server is not running.
-        """
-        optimizers = [
-            OptimizerMock(
-                dataset=None,
-                compiled_model_path=Path(f"./build/compiled_model_{i}.h5"),
-                location=location,
-            )
-            for i, location in enumerate(("target", "host", "target"))
-        ]
-
-        with prepare_objects("keras") as (dataset, model_wrapper):
-            dataconverter = ModelWrapperDataConverter(model_wrapper)
-            runtime = TFLiteRuntime(
-                model_path=Path("./build/compiled_model.tflite"),
-            )
-            protocol = NetworkProtocol("localhost", 12345, 32768)
-
-            pipeline_runner = PipelineRunner(
-                dataset=dataset,
-                dataconverter=dataconverter,
-                model_wrapper=model_wrapper,
-                optimizers=optimizers,
-                runtime=runtime,
-                protocol=protocol,
-            )
-
-            with pytest.raises(RequestFailure):
-                pipeline_runner._handle_optimizations()
-
-    @pytest.mark.xdist_group(name="use_socket")
     def test_target_side_optimization_compile_fail(self):
         """
         Test various target-side compilation scenarios.

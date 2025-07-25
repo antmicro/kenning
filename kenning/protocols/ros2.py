@@ -1,4 +1,4 @@
-# Copyright (c) 2020-2024 Antmicro <www.antmicro.com>
+# Copyright (c) 2020-2025 Antmicro <www.antmicro.com>
 #
 # SPDX-License-Identifier: Apache-2.0
 
@@ -12,7 +12,7 @@ in the environment.
 import json
 from pathlib import Path
 from time import perf_counter
-from typing import Callable, Optional, Tuple, TypeVar
+from typing import Any, Callable, Optional, Tuple, TypeVar
 
 import rclpy
 from rclpy.action import ActionClient
@@ -20,7 +20,11 @@ from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
 from kenning.core.measurements import Measurements, timemeasurements
-from kenning.core.protocol import Protocol
+from kenning.core.protocol import (
+    Protocol,
+    ServerDownloadCallback,
+    ServerUploadCallback,
+)
 from kenning.utils.class_loader import load_class
 from kenning.utils.logger import KLogger
 
@@ -336,16 +340,33 @@ class ROS2Protocol(Protocol):
         self.log_debug("Output downloaded successfully")
         return True, result.result
 
-    def request_success(self, data: Optional[bytes] = bytes()) -> bool:
-        raise NotImplementedError
-
-    def request_failure(self) -> bool:
-        raise NotImplementedError
-
     def disconnect(self):
         self.log_debug("Disconnecting node")
         self.node.destroy_node()
         self.log_debug("Successfully disconnected")
 
-    def initialize_server(self) -> bool:
+    def initialize_server(
+        self,
+        client_connected_callback: Optional[Callable[Any, None]] = None,
+        client_disconnected_callback: Optional[Callable[None, None]] = None,
+    ) -> bool:
+        raise NotImplementedError
+
+    def serve(
+        self,
+        upload_input_callback: Optional[ServerUploadCallback] = None,
+        upload_model_callback: Optional[ServerUploadCallback] = None,
+        process_input_callback: Optional[ServerUploadCallback] = None,
+        download_output_callback: Optional[ServerDownloadCallback] = None,
+        download_stats_callback: Optional[ServerDownloadCallback] = None,
+        upload_iospec_callback: Optional[ServerUploadCallback] = None,
+        upload_optimizers_callback: Optional[ServerUploadCallback] = None,
+        upload_unoptimized_model_callback: Optional[
+            ServerUploadCallback
+        ] = None,
+        download_optimized_model_callback: Optional[
+            ServerDownloadCallback
+        ] = None,
+        upload_runtime_callback: Optional[ServerUploadCallback] = None,
+    ):
         raise NotImplementedError

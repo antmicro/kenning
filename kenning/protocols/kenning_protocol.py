@@ -24,6 +24,7 @@ from typing import (
 from kenning.protocols.bytes_based_protocol import (
     BytesBasedProtocol,
     ServerStatus,
+    TransmissionFlag,
 )
 from kenning.protocols.message import (
     FlagName,
@@ -36,55 +37,6 @@ from kenning.utils.event_with_args import EventWithArgs
 from kenning.utils.logger import KLogger
 
 MAX_MESSAGE_PAYLOAD_SIZE = 1024
-
-
-class TransmissionFlag(Enum):
-    """
-    Flags sent in a transmission, that are available to the protocol user.
-
-    Some flags are specific for 1 message type, 'message_type' property is
-    storing this information ('None' means, that the flag is meant for any
-    message type).
-
-
-    * SUCCESS - Transmission is informing about a success.
-    * FAIL - Transmission is informing about a failure. Payload is an error
-      code sent by the other side.
-    * IS_HOST_MESSAGE - Not set if the transmission was sent by the target
-      device being evaluated. Set otherwise.
-    * SERIALIZED - Flag available only for IO_SPEC transmissions. Denotes
-      whether the model IO specifications are serialized.
-    """
-
-    SUCCESS = 1, None
-    FAIL = 2, None
-    IS_HOST_MESSAGE = 3, None
-    SERIALIZED = 4, MessageType.IO_SPEC
-
-    def __new__(cls, value, message_type):
-        member = object.__new__(cls)
-        member._value_ = value
-        member.message_type = message_type
-        return member
-
-    def for_type(self, message_type: MessageType) -> bool:
-        """
-        Method checks, whether a given transmission flag is valid for a given
-        message type (some flags are message type specific).
-
-        Parameters
-        ----------
-        message_type: MessageType
-            Message type to check.
-
-        Returns
-        -------
-        bool
-            True if the flag is valid for any message type or if the flag is
-            valid for the message type passed. False if the flag is specific
-            for a different message type.
-        """
-        return self.message_type is None or self.message_type == message_type
 
 
 class ProtocolEvent(ABC):

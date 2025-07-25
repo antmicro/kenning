@@ -49,6 +49,59 @@ class ServerStatus(Enum):
     DATA_INVALID = 5
 
 
+class TransmissionFlag(Enum):
+    """
+    Flags, that can be send between client and server.
+
+    Some flags are specific for 1 message type - 'message_type' property is
+    storing this information ('None' means, that the flag is meant for any
+    message type).
+
+
+    * SUCCESS - Transmission is informing about a success.
+    * FAIL - Transmission is informing about a failure. Payload is an error
+      code sent by the other side.
+    * IS_HOST_MESSAGE - Not set if the transmission was sent by the target
+      device being evaluated. Set otherwise.
+    * SERIALIZED - Flag available only for IO_SPEC transmissions. Denotes
+      whether the model IO specifications are serialized.
+    * IS_KENNING - Messages sent by Kenning.
+    * IS_ZEPHYR - Messages sent by Kenning Zephyr Runtime.
+    """
+
+    SUCCESS = 1, None
+    FAIL = 2, None
+    IS_HOST_MESSAGE = 3, None
+    SERIALIZED = 4, MessageType.IO_SPEC
+    IS_KENNING = 5, None
+    IS_ZEPHYR = 6, None
+
+    def __new__(cls, value, message_type):
+        member = object.__new__(cls)
+        member._value_ = value
+        member.message_type = message_type
+        return member
+
+    def for_type(self, message_type: MessageType) -> bool:
+        """
+        Checks, whether a given transmission flag is valid for a given
+        message type (some flags are message type specific).
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Message type to check.
+
+        Returns
+        -------
+        bool
+            True if the flag is valid for any message type or if the flag is
+            valid for the message type passed. False if the flag is specific
+            for a different message type.
+        """
+        return self.message_type is None or self.message_type == message_type
+
+
 class BytesBasedProtocol(Protocol, ABC):
     """
     Provides methods for simple data passing, e.g. for simple

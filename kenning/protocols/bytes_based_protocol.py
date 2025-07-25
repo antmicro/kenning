@@ -21,8 +21,16 @@ from typing import (
 )
 
 from kenning.core.measurements import Measurements, timemeasurements
-from kenning.core.protocol import Protocol
-from kenning.protocols.message import Message, MessageType
+from kenning.core.protocol import (
+    Protocol,
+    ServerAction,
+    ServerDownloadCallback,
+    ServerStatus,
+    ServerUploadCallback,
+)
+from kenning.protocols.message import (
+    MessageType,
+)
 from kenning.utils.logger import KLogger
 
 
@@ -34,30 +42,6 @@ class IncomingEventType(Enum):
 
     TRANSMISSION = 0
     REQUEST = 1
-
-
-class ServerStatus(Enum):
-    """
-    Enum representing the status of the NetworkProtocol.serve method.
-
-    This enum describes what happened in the last iteration of the server
-    application.
-
-    NOTHING - server reached timeout.
-    CLIENT_CONNECTED - new client is connected.
-    CLIENT_DISCONNECTED - current client is disconnected.
-    CLIENT_IGNORED - new client is ignored since there is already someone
-        connected.
-    DATA_READY - data ready to process.
-    DATA_INVALID - data is invalid (too few bytes for the message).
-    """
-
-    NOTHING = 0
-    CLIENT_CONNECTED = 1
-    CLIENT_DISCONNECTED = 2
-    CLIENT_IGNORED = 3
-    DATA_READY = 4
-    DATA_INVALID = 5
 
 
 class TransmissionFlag(Enum):
@@ -123,8 +107,9 @@ ProtocolSuccessCallback = Callable[
 
 class BytesBasedProtocol(Protocol, ABC):
     """
-    Provides methods for simple data passing, e.g. for simple
-    socket-based or serial-based communication.
+    Implements abstract methods from the Protocol class, using an underlying
+    mechanism of transmissions and requests (that mechanism needs to be
+    provided by this class'es extensions).
     """
 
     @abstractmethod
@@ -410,109 +395,102 @@ class BytesBasedProtocol(Protocol, ABC):
         """
         ...
 
-    def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
+    def check_status(
+        self,
+        status: ServerStatus,
+        artifacts: Tuple[bytes, List[TransmissionFlag]],
+    ) -> bool:
         """
-        Waits until the OK message is received.
+        Parses ServerStatus from the contents of a transmission (payload and
+        flags) and compares it against given status.
 
-        Method waits for the OK message from the other side of connection.
+        Parameters
+        ----------
+        status: ServerStatus
+            Status to compare against.
+        artifacts: Tuple[bytes, List[TransmissionFlag]]
+            Payload and bytes from a transmission. Flags should either
+            contain 'IS_ZEPHYR' flag or the 'IS_KENNING' flag.
 
         Returns
         -------
-        Tuple[bool, Optional[bytes]]
-            True if OK received and attached message data, False otherwise.
+        bool
+            True if status is equal, False if status is not as expected, or
+            if some or the 'artifacts' are None.
+
+        Raises
+        ------
+        ValueError
+            Flags do not containing 'IS_ZEPHYR' flag or the 'IS_KENNING' flag.
         """
-        start_time = time.perf_counter()
-
-        while True:
-            status, message = self.receive_message(0.01)
-
-            if status == ServerStatus.DATA_READY:
-                if message.message_type == MessageType.ERROR:
-                    KLogger.error("Error during uploading input")
-                    return False, None
-                if message.message_type != MessageType.OK:
-                    KLogger.error(f"Unexpected message {message}")
-                    return False, None
-                KLogger.debug("Upload finished successfully")
-                return True, message.payload
-
-            elif status == ServerStatus.CLIENT_DISCONNECTED:
-                KLogger.error("Client is disconnected")
-                return False, None
-
-            elif status == ServerStatus.DATA_INVALID:
-                KLogger.error("Received invalid packet")
-                return False, None
-
-            if (
-                self.timeout > 0
-                and time.perf_counter() > start_time + self.timeout
-            ):
-                KLogger.error("Receive timeout")
-                return False, None
+        payload, flags = artifacts
+        if payload is None or flags is None:
+            return False
+        elif TransmissionFlag.IS_KENNING in flags:
+            received_status = ServerStatus(
+                ServerAction.from_bytes(payload),
+                True
+                if TransmissionFlag.SUCCESS in flags
+                else False
+                if TransmissionFlag.FAIL in flags
+                else None,
+            )
+            return status == received_status
+        elif TransmissionFlag.IS_ZEPHYR in flags:
+            return TransmissionFlag.SUCCESS in flags
+        else:
+            raise ValueError("Received status from an unknown source.")
 
     def upload_input(self, data: bytes) -> bool:
         KLogger.debug("Uploading input")
-
-        message = Message(MessageType.DATA, data)
-
-        if not self.send_message(message):
-            return False
-        return self.receive_confirmation()[0]
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_INPUT),
+            self.request_blocking(MessageType.DATA, None, data),
+        )
 
     def upload_model(self, path: Path) -> bool:
         KLogger.debug("Uploading model")
         with open(path, "rb") as modfile:
             data = modfile.read()
-
-        message = Message(MessageType.MODEL, data)
-
-        if not self.send_message(message):
-            return False
-        return self.receive_confirmation()[0]
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_MODEL),
+            self.request_blocking(MessageType.MODEL, None, data),
+        )
 
     def upload_runtime(self, path: Path) -> bool:
         KLogger.debug("Uploading runtime")
 
         with open(path, "rb") as llext_file:
             data = llext_file.read()
-
-        message = Message(MessageType.RUNTIME, data)
-
-        if not self.send_message(message):
-            return False
-        return self.receive_confirmation()[0]
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_RUNTIME),
+            self.request_blocking(MessageType.RUNTIME, None, data),
+        )
 
     def upload_io_specification(self, path: Path) -> bool:
         KLogger.debug("Uploading io specification")
         with open(path, "rb") as detfile:
             data = detfile.read()
-
-        message = Message(MessageType.IO_SPEC, data)
-
-        if not self.send_message(message):
-            return False
-        return self.receive_confirmation()[0]
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_IOSPEC),
+            self.request_blocking(MessageType.IO_SPEC, None, data),
+        )
 
     def request_processing(
         self, get_time_func: Callable[[], float] = time.perf_counter
     ) -> bool:
         KLogger.debug("Requesting processing")
-        if not self.send_message(Message(MessageType.PROCESS)):
-            return False
-
         ret = timemeasurements("protocol_inference_step", get_time_func)(
-            self.receive_confirmation
-        )()[0]
-        if not ret:
-            return False
-        return True
+            self.request_blocking
+        )(MessageType.PROCESS)
+        return self.check_status(
+            ServerStatus(ServerAction.PROCESSING_INPUT), ret
+        )
 
     def download_output(self) -> Tuple[bool, Optional[bytes]]:
         KLogger.debug("Downloading output")
-        if not self.send_message(Message(MessageType.OUTPUT)):
-            return False, b""
-        return self.receive_confirmation()
+        output, flags = self.request_blocking(MessageType.OUTPUT)
+        return output is not None and TransmissionFlag.SUCCESS in flags, output
 
     def download_statistics(self, final: bool = False) -> Measurements:
         measurements = Measurements()
@@ -520,25 +498,26 @@ class BytesBasedProtocol(Protocol, ABC):
             return measurements
 
         KLogger.debug("Downloading statistics")
-        if not self.send_message(Message(MessageType.STATS)):
-            return measurements
 
-        status, data = self.receive_confirmation()
-        if status and isinstance(data, bytes) and len(data) > 0:
+        data, flags = self.request_blocking(MessageType.STATS)
+        if (
+            TransmissionFlag.SUCCESS in flags
+            and isinstance(data, bytes)
+            and len(data) > 0
+        ):
             measurements += json.loads(data.decode("utf8"))
         return measurements
 
     def upload_optimizers(self, optimizers_cfg: Dict[str, Any]) -> bool:
         KLogger.debug("Uploading optimizers config")
-
-        message = Message(
-            MessageType.OPTIMIZERS,
-            json.dumps(optimizers_cfg, default=str).encode(),
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_OPTIMIZERS),
+            self.request_blocking(
+                MessageType.OPTIMIZERS,
+                None,
+                json.dumps(optimizers_cfg, default=str).encode(),
+            ),
         )
-
-        if not self.send_message(message):
-            return False
-        return self.receive_confirmation()[0]
 
     def request_optimization(
         self,
@@ -548,25 +527,90 @@ class BytesBasedProtocol(Protocol, ABC):
         KLogger.debug("Requesting model optimization")
         with open(model_path, "rb") as model_f:
             model = model_f.read()
-
-        if not self.send_message(Message(MessageType.OPTIMIZE_MODEL, model)):
-            return False, None
-
-        ret, compiled_model_data = timemeasurements(
+        self.request_blocking(MessageType.UNOPTIMIZED_MODEL, None, model)
+        compiled_model_data, flags = timemeasurements(
             "protocol_model_optimization", get_time_func
-        )(self.receive_confirmation)()
-        if not ret:
-            return False, None
-        return ret, compiled_model_data
+        )(self.request_blocking)(MessageType.OPTIMIZE_MODEL)
+        return (
+            (
+                compiled_model_data is not None
+                and TransmissionFlag.SUCCESS in flags
+            ),
+            compiled_model_data,
+        )
 
-    def request_success(self, data: Optional[bytes] = bytes()) -> bool:
-        KLogger.debug("Sending OK")
+    def serve(
+        self,
+        upload_input_callback: Optional[ServerUploadCallback] = None,
+        upload_model_callback: Optional[ServerUploadCallback] = None,
+        process_input_callback: Optional[ServerUploadCallback] = None,
+        download_output_callback: Optional[ServerDownloadCallback] = None,
+        download_stats_callback: Optional[ServerDownloadCallback] = None,
+        upload_iospec_callback: Optional[ServerUploadCallback] = None,
+        upload_optimizers_callback: Optional[ServerUploadCallback] = None,
+        upload_unoptimized_model_callback: Optional[
+            ServerUploadCallback
+        ] = None,
+        download_optimized_model_callback: Optional[
+            ServerDownloadCallback
+        ] = None,
+        upload_runtime_callback: Optional[ServerUploadCallback] = None,
+    ):
+        self.server_upload_callbacks = {
+            MessageType.DATA: upload_input_callback,
+            MessageType.MODEL: upload_model_callback,
+            MessageType.PROCESS: process_input_callback,
+            MessageType.IO_SPEC: upload_iospec_callback,
+            MessageType.OPTIMIZERS: upload_optimizers_callback,
+            MessageType.UNOPTIMIZED_MODEL: upload_unoptimized_model_callback,
+            MessageType.RUNTIME: upload_runtime_callback,
+        }
 
-        message = Message(MessageType.OK, data)
+        self.server_download_callbacks = {
+            MessageType.OPTIMIZE_MODEL: download_optimized_model_callback,
+            MessageType.STATS: download_stats_callback,
+            MessageType.OUTPUT: download_output_callback,
+        }
 
-        return self.send_message(message)
+        def handle_request(
+            message_type: MessageType,
+            payload: bytes,
+            flags: List[TransmissionFlag],
+        ):
+            if (
+                message_type in self.server_download_callbacks
+                and self.server_download_callbacks[message_type] is not None
+            ):
+                status, data = self.server_download_callbacks[message_type]()
+                if status.success:
+                    self.transmit(
+                        message_type,
+                        data,
+                        [
+                            TransmissionFlag.SUCCESS,
+                            TransmissionFlag.IS_KENNING,
+                        ],
+                    )
+                else:
+                    self.transmit(
+                        message_type,
+                        status.last_action.to_bytes(),
+                        [TransmissionFlag.FAIL, TransmissionFlag.IS_KENNING],
+                    )
+            elif (
+                message_type in self.server_upload_callbacks
+                and self.server_upload_callbacks[message_type] is not None
+            ):
+                status = self.server_upload_callbacks[message_type](payload)
+                self.transmit(
+                    message_type,
+                    status.last_action.to_bytes(),
+                    [
+                        TransmissionFlag.IS_KENNING,
+                        TransmissionFlag.SUCCESS
+                        if status.success
+                        else TransmissionFlag.FAIL,
+                    ],
+                )
 
-    def request_failure(self) -> bool:
-        KLogger.debug("Sending ERROR")
-
-        return self.send_message(Message(MessageType.ERROR))
+        self.listen(None, None, handle_request)

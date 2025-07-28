@@ -8,13 +8,14 @@ Base class for bytes-based inference communication protocol.
 
 import json
 import time
-from abc import ABC
+from abc import ABC, abstractmethod
 from enum import Enum
 from pathlib import Path
 from typing import (
     Any,
     Callable,
     Dict,
+    List,
     Optional,
     Tuple,
 )
@@ -23,6 +24,16 @@ from kenning.core.measurements import Measurements, timemeasurements
 from kenning.core.protocol import Protocol
 from kenning.protocols.message import Message, MessageType
 from kenning.utils.logger import KLogger
+
+
+class IncomingEventType(Enum):
+    """
+    Enum representing types of events, that may be received by the 'listen'
+    or 'listen_blocking' methods.
+    """
+
+    TRANSMISSION = 0
+    REQUEST = 1
 
 
 class ServerStatus(Enum):
@@ -102,11 +113,302 @@ class TransmissionFlag(Enum):
         return self.message_type is None or self.message_type == message_type
 
 
+# Type definitions for callbacks, that are passed to lower-level methods of the
+# protocol (such as request, listen, transmit).
+ProtocolFailureCallback = Callable[MessageType, None]
+ProtocolSuccessCallback = Callable[
+    Tuple[MessageType, bytes, List[TransmissionFlag]], None
+]
+
+
 class BytesBasedProtocol(Protocol, ABC):
     """
     Provides methods for simple data passing, e.g. for simple
     socket-based or serial-based communication.
     """
+
+    @abstractmethod
+    def transmit(
+        self,
+        message_type: MessageType,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        """
+        Sends bytes and a set of flags to the other side, without blocking
+        the current thread.
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Value denoting what is being sent. It serves to differentiate
+            one transmission from another (analogous to port number in a
+            TCP protocol).
+        payload: Optional[bytes]
+            Bytes to send (or None if the payload is to be empty).
+        flags: List[TransmissionFlag]
+            A list of flags to be sent (available flags in the TransmissionFlag
+            enum above - please note that some flags are only allowed for a
+            specific message type).
+        failure_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if the transmission fails to send.
+            Note: This will be executed on a separate thread, so make sure the
+            function is thread-safe.
+        """
+        ...
+
+    @abstractmethod
+    def transmit_blocking(
+        self,
+        message_type: MessageType,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        timeout: Optional[float] = None,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        """
+        Sends bytes and a set of flags to the other side, blocks the current
+        thread until the transmission is completed.
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Value denoting what is being sent. It serves to differentiate
+            one transmission from another (analogous to port number in a
+            TCP protocol).
+        payload: Optional[bytes]
+            Bytes to send (or None if the payload is to be empty).
+        flags: List[TransmissionFlag]
+            A list of flags to be sent (available flags in the TransmissionFlag
+            enum above - please note that some flags are only allowed for a
+            specific message type).
+        timeout: Optional[float]
+            Maximum blocking time in seconds, or None to block indefinitely.
+            If that time passes the 'failure_callback' will be called.
+        failure_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if the transmission fails to send.
+        """
+        ...
+
+    @abstractmethod
+    def request(
+        self,
+        message_type: MessageType,
+        callback: ProtocolSuccessCallback,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        retry: int = 1,
+        deny_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        """
+        Prompts the other side for a transmission and waits for a response,
+        without blocking the current thread. Bytes and flags can also be sent
+        along with the request.
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Value denoting what type of transmission is being requested.
+        callback: ProtocolSuccessCallback
+            Function, that will be called when the transmission is received.
+            Message type, payload and flags from the transmission will be
+            passed to the function. Note: This will be executed on a separate
+            thread, so make sure the callback function is thread-safe.
+        payload: Optional[bytes]
+            Bytes to send along with the request (or None if the payload is to
+            be empty).
+        flags: List[TransmissionFlag]
+            A list of flags to be sent (available flags in the TransmissionFlag
+            enum above - please note that some flags are only allowed for a
+            specific message type).
+        retry: int
+            Denotes how many times the request will be re-sent after failing,
+            before calling 'deny_callback'. Negative number denotes infinite
+            retries.
+        deny_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if the request is denied or otherwise
+            fails. Note: This will be executed on a separate thread, so make
+            sure the callback function is thread-safe.
+        """
+        ...
+
+    @abstractmethod
+    def request_blocking(
+        self,
+        message_type: MessageType,
+        callback: Optional[ProtocolSuccessCallback] = None,
+        payload: Optional[bytes] = None,
+        flags: List[TransmissionFlag] = [],
+        timeout: Optional[float] = None,
+        retry: int = 1,
+        deny_callback: Optional[ProtocolFailureCallback] = None,
+    ) -> Tuple[Optional[bytes], Optional[List[TransmissionFlag]]]:
+        """
+        Prompts the other side for a transmission and blocks the current thread
+        until a response is received. Bytes and flags can also be sent along
+        with the request.
+
+        Parameters
+        ----------
+        message_type: MessageType
+            Value denoting what type of transmission is being requested.
+        callback: Optional[ProtocolSuccessCallback]
+            Function, that will be called when the transmission is received.
+            Message type, payload and flags from the transmission will be
+            passed to the function.
+        payload: Optional[bytes]
+            Bytes to send along with the request (or None if the payload is to
+            be empty).
+        flags: List[TransmissionFlag]
+            A list of flags to be sent (available flags in the TransmissionFlag
+            enum above - please note that some flags are only allowed for a
+            specific message type).
+        timeout: Optional[float]
+            Maximum blocking time in seconds, or None to block indefinitely.
+            If that time passes the 'deny_callback' will be called.
+        retry: int
+            Denotes how many times the request will be re-sent after failing,
+            before calling 'deny_callback'. Negative number denotes infinite
+            retries.
+        deny_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if the request is denied or otherwise
+            fails.
+
+        Returns
+        -------
+        Tuple[Optional[bytes], Optional[List[TransmissionFlag]]]
+            Payload and flags received as response to the request, or
+            (None, None) if the request was denied or otherwise failed.
+        """
+        ...
+
+    @abstractmethod
+    def listen(
+        self,
+        message_type: Optional[MessageType] = None,
+        transmission_callback: Optional[ProtocolSuccessCallback] = None,
+        request_callback: Optional[ProtocolSuccessCallback] = None,
+        limit: int = -1,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ):
+        """
+        Waits for transmissions and requests from the other side, without
+        blocking the current thread.
+
+        Parameters
+        ----------
+        message_type: Optional[MessageType]
+            Message type of the requests/transmissions to listen for, or
+            None (to listen to requests/transmissions of any message type).
+        transmission_callback: Optional[ProtocolSuccessCallback]
+            Function, that will be called when a transmission is successfully
+            received. Message type, payload and flags from the transmission
+            will be passed to the function. Note: This will be executed on a
+            separate thread, so make sure the callback function is thread-safe.
+        request_callback: Optional[ProtocolSuccessCallback]
+            Function, that will be called when a request is successfully
+            received. Message type, payload and flags from the request will
+            be passed to the function. Note: This will be executed on a
+            separate thread, so make sure the callback function is thread-safe.
+        limit: int
+            Meximum number of requests/transmissions (including failures), that
+            will be received before listening stops.
+        failure_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if a request/transmission is
+            attempted by the other side, but fails. Note: This will be executed
+            on a separate thread, so make sure the callback function is
+            thread-safe.
+        """
+        ...
+
+    @abstractmethod
+    def listen_blocking(
+        self,
+        message_type: Optional[MessageType] = None,
+        transmission_callback: Optional[ProtocolSuccessCallback] = None,
+        request_callback: Optional[ProtocolSuccessCallback] = None,
+        timeout: Optional[float] = None,
+        failure_callback: Optional[ProtocolFailureCallback] = None,
+    ) -> tuple[
+        Optional[IncomingEventType],
+        Optional[MessageType],
+        Optional[bytes],
+        Optional[List[TransmissionFlag]],
+    ]:
+        """
+        Blocks the current thread until a transmission or a request is
+        received.
+
+        Parameters
+        ----------
+        message_type: Optional[MessageType]
+            Message type of the requests/transmissions to listen for, or
+            None (to listen to requests/transmissions of any message type).
+        transmission_callback: Optional[ProtocolSuccessCallback]
+            Function, that will be called when a transmission is successfully
+            received. Message type, payload and flags from the transmission
+            will be passed to the function.
+        request_callback: Optional[ProtocolSuccessCallback]
+            Function, that will be called when a request is successfully
+            received. Message type, payload and flags from the request will
+            be passed to the function.
+        timeout: Optional[float]
+            Maximum blocking time in seconds, or None to block indefinitely.
+            If that time passes the 'deny_callback' will be called.
+        failure_callback: Optional[ProtocolFailureCallback]
+            Function, that will be called if a request/transmission is
+            attempted by the other side, but fails. Note: This will be executed
+            on a separate thread, so make sure the callback function is
+            thread-safe.
+
+        Returns
+        -------
+        tuple[Optional[IncomingEventType], Optional[MessageType], Optional[bytes], Optional[List[TransmissionFlag]]]
+            Enum denoting whether a request or a transmission was received,
+            message type of the received tranmsission/request, received
+            payload, received flags. Alternatively: (None, None, None, None)
+            if no request/transmission was received in the specified timeout
+            or if a request/transmission was attempted but failed.
+        """  # noqa: E501
+        ...
+
+    @abstractmethod
+    def event_active(self, message_type: Optional[MessageType] = None) -> bool:
+        """
+        Checks if an active protocol event (Transmission, Request etc.)
+        of a given message type exists.
+
+        Parameters
+        ----------
+        message_type: Optional[MessageType]
+            Message type to check, or None (which will check for an
+            event, that accepts all message types).
+
+        Returns
+        -------
+        bool
+            True if event exists, False otherwise.
+        """
+        ...
+
+    @abstractmethod
+    def kill_event(self, message_type: Optional[MessageType] = None):
+        """
+        Forcibly stops an active event (Transmission, Request etc.).
+
+        Parameters
+        ----------
+        message_type: Optional[MessageType]
+            Message type to check, or None (which will stop an
+            event, that accepts all message types).
+
+        Raises
+        ------
+        ValueError
+            There is no such event.
+        """
+        ...
 
     def receive_confirmation(self) -> Tuple[bool, Optional[bytes]]:
         """

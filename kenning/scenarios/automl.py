@@ -115,7 +115,7 @@ class AutoMLCache:
             (AutoMLCache.cache_path / source_path.name).symlink_to(
                 source_path.resolve()
             )
-        except NotImplementedError as ex:
+        except (NotImplementedError, FileNotFoundError) as ex:
             KLogger.warning(
                 f"Unable to save item into automl cache. Error: {ex}"
             )

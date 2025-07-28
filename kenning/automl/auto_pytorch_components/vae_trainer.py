@@ -6,7 +6,7 @@
 Module containing VAE-specific trained compatible with AutoPyTorch.
 """
 
-from typing import Dict, Optional, Tuple, Union
+from typing import Callable, Dict, Optional, Tuple, Union
 
 import ConfigSpace as CS
 import numpy as np
@@ -249,6 +249,7 @@ class VAETrainer(BaseTrainerComponent):
         train_loader: torch.utils.data.DataLoader,
         epoch: int,
         writer,
+        post_step_callback: Optional[Callable[float, torch.Tensor]] = None,
     ) -> Tuple[Optional[float], Dict[str, float]]:
         model = self._get_vae()
         model._forward = model._forward_distances
@@ -259,6 +260,7 @@ class VAETrainer(BaseTrainerComponent):
                 train_loader=train_loader,
                 epoch=epoch,
                 writer=writer,
+                post_step_callback=post_step_callback,
             )
             model.reparameterize = default_reparameterize
             if loss is None:

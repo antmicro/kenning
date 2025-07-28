@@ -8,12 +8,12 @@ TCP-based inference communication protocol.
 
 import selectors
 import socket
-from typing import Optional, Tuple
+from typing import Any, Callable, Optional
 
-from kenning.protocols.bytes_based_protocol import (
-    ServerStatus,
+from kenning.protocols.kenning_protocol import (
+    KenningProtocol,
+    ProtocolNotStartedError,
 )
-from kenning.protocols.kenning_protocol import KenningProtocol
 from kenning.utils.logger import KLogger
 
 
@@ -65,11 +65,11 @@ class NetworkProtocol(KenningProtocol):
         self.serversocket = None
         self.socket = None
         self.packet_size = packet_size
+        self.client_connected_callback = None
+        self.client_disconnected_callback = None
         super().__init__(timeout)
 
-    def accept_client(
-        self, socket: socket.socket, mask: int
-    ) -> Tuple["ServerStatus", Optional[bytes]]:
+    def accept_client(self, socket: socket.socket, mask: int) -> bool:
         """
         Accepts the new client.
 
@@ -82,30 +82,37 @@ class NetworkProtocol(KenningProtocol):
 
         Returns
         -------
-        Tuple['ServerStatus', Optional[bytes]]
-            Client accepted status and None.
+        bool
+            True if client connected successfully, False otherwise.
         """
         sock, addr = socket.accept()
         if self.socket is not None:
             KLogger.debug(f"Connection already established, rejecting {addr}")
             sock.close()
-            return ServerStatus.CLIENT_IGNORED, None
         else:
             self.socket = sock
             KLogger.info(f"Connected client {addr}")
-            self.socket.setblocking(False)
+            self.socket.setblocking(True)
+            self.socket.send(b"\x00")
             self.selector.register(
                 self.socket,
                 selectors.EVENT_READ | selectors.EVENT_WRITE,
                 self.receive_data,
             )
-            return ServerStatus.CLIENT_CONNECTED, None
+            if self.client_connected_callback is not None:
+                self.client_connected_callback(addr)
+        return None
 
-    def initialize_server(self) -> bool:
+    def initialize_server(
+        self,
+        # IP address will be passed to the 'client_connected_callback'
+        client_connected_callback: Optional[Callable[Any, None]] = None,
+        client_disconnected_callback: Optional[Callable[None, None]] = None,
+    ) -> bool:
         KLogger.debug(f"Initializing server at {self.host}:{self.port}")
         self.serversocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.serversocket.setblocking(False)
+        self.serversocket.setblocking(True)
         try:
             self.serversocket.bind((self.host, self.port))
         except OSError as execinfo:
@@ -116,31 +123,42 @@ class NetworkProtocol(KenningProtocol):
         self.selector.register(
             self.serversocket, selectors.EVENT_READ, self.accept_client
         )
+        self.client_connected_callback = client_connected_callback
+        self.client_disconnected_callback = client_disconnected_callback
+        self.start()
         return True
 
     def initialize_client(self) -> bool:
         KLogger.debug(f"Initializing client at {self.host}:{self.port}")
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.connect((self.host, self.port))
+        if not self.socket.recv(1):
+            self.socket = None
+            return False
         self.selector.register(
             self.socket,
             selectors.EVENT_READ | selectors.EVENT_WRITE,
             self.receive_data,
         )
+        self.start()
         return True
 
     def receive_data(
         self, socket: socket.socket, mask: int
-    ) -> Tuple[ServerStatus, Optional[bytes]]:
+    ) -> Optional[bytes]:
+        if self.socket is None:
+            raise ProtocolNotStartedError("Protocol not initialized.")
         data = self.socket.recv(self.packet_size)
         if not data:
             KLogger.info("Client disconnected from the server")
             self.selector.unregister(self.socket)
             self.socket.close()
             self.socket = None
-            return ServerStatus.CLIENT_DISCONNECTED, None
+            if self.client_disconnected_callback is not None:
+                self.client_disconnected_callback()
+            return None
         else:
-            return ServerStatus.DATA_READY, data
+            return data
 
     def wait_send(self, data: bytes) -> int:
         """
@@ -156,10 +174,15 @@ class NetworkProtocol(KenningProtocol):
         -------
         int
             The number of bytes sent.
+
+        Raises
+        ------
+        ProtocolNotStartedError
+            The protocol has not been initialized, or it has been initialized
+            as server, but no client has connected.
         """
         if self.socket is None:
-            return -1
-
+            raise ProtocolNotStartedError("Protocol not initialized.")
         ret = self.socket.send(data)
         while True:
             events = self.selector.select(timeout=1)
@@ -177,7 +200,10 @@ class NetworkProtocol(KenningProtocol):
         return True
 
     def disconnect(self):
+        self.stop()
         if self.serversocket:
             self.serversocket.close()
         if self.socket:
             self.socket.close()
+        self.socket = None
+        self.serversocket = None

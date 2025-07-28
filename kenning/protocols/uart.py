@@ -11,17 +11,21 @@ import json
 import selectors
 import struct
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional
 
 import numpy as np
 import serial
 
 from kenning.core.measurements import Measurements
+from kenning.core.protocol import ServerAction, ServerStatus
 from kenning.interfaces.io_interface import IOInterface
-from kenning.protocols.bytes_based_protocol import ServerStatus
+from kenning.protocols.bytes_based_protocol import (
+    TransmissionFlag,
+)
 from kenning.protocols.kenning_protocol import (
     KenningProtocol,
-    Message,
+)
+from kenning.protocols.message import (
     MessageType,
 )
 from kenning.utils.logger import KLogger
@@ -171,6 +175,7 @@ class UARTProtocol(KenningProtocol):
             selectors.EVENT_READ | selectors.EVENT_WRITE,
             self.receive_data,
         )
+        self.start()
         return self.connection.is_open
 
     def send_data(self, data: bytes) -> bool:
@@ -180,17 +185,20 @@ class UARTProtocol(KenningProtocol):
 
     def receive_data(
         self, connection: serial.Serial, mask: int
-    ) -> Tuple[ServerStatus, Optional[bytes]]:
+    ) -> Optional[bytes]:
         if self.connection is None or not self.connection.is_open:
-            return ServerStatus.CLIENT_DISCONNECTED, None
-
+            return None
         data = self.connection.read(self.packet_size)
 
-        return ServerStatus.DATA_READY, data
+        return data
 
     def disconnect(self):
+        self.stop()
         if self.connection is not None or self.connection.is_open:
             self.connection.close()
+
+    def initialize_server(self) -> bool:
+        raise NotImplementedError
 
     def upload_io_specification(self, path: Path) -> bool:
         KLogger.debug("Uploading io specification")
@@ -199,19 +207,24 @@ class UARTProtocol(KenningProtocol):
 
         data = IOInterface.serialize_io_specification_for_uart(io_spec)
 
-        message = Message(MessageType.IO_SPEC, data)
+        return self.check_status(
+            ServerStatus(ServerAction.UPLOADING_IOSPEC),
+            self.request_blocking(MessageType.IO_SPEC, None, data),
+        )
 
-        self.send_message(message)
-        return self.receive_confirmation()[0]
-
-    def download_statistics(self, final: bool = False) -> "Measurements":
-        KLogger.debug("Downloading statistics")
-        self.send_message(Message(MessageType.STATS))
-        status, data = self.receive_confirmation()
+    def download_statistics(self, final: bool = False) -> Measurements:
         measurements = Measurements()
-        if status and isinstance(data, bytes) and len(data) > 0:
+        if final is False:
+            return measurements
+
+        KLogger.debug("Downloading statistics")
+
+        data, flags = self.request_blocking(MessageType.STATS)
+        measurements = Measurements()
+        if (
+            TransmissionFlag.SUCCESS in flags
+            and isinstance(data, bytes)
+            and len(data) > 0
+        ):
             measurements += _parse_stats(data, final=final)
         return measurements
-
-    def initialize_server(self) -> bool:
-        raise NotImplementedError

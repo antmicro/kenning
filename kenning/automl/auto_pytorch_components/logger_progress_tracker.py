@@ -33,23 +33,36 @@ class TrainingProgressLogger(TrainingProgressTracker):
                 position=0,
                 **logger_progress_bar.kwargs
             )
+        self.total_time_passed = 0
+        self.lowest_cost = MAXINT
+        self.best_metrics = {}
 
-        self.time_passed = 0
 
-    def __del__(self):
+    def on_stop(self):
         cur_perc = self.pbar.n
         total_perc = int(self.total_time)
         self.pbar.update(total_perc - cur_perc)
         self.pbar.refresh()
         self.pbar.close()
 
+
     def report_progress(
         self,
-        total_time_passed: float,
-        total_time_left: float
+        time_passed: float,
+        metrics: dict,
+        model: str,
+        cost
     ) -> None:
-        update_time = total_time_passed - self.time_passed
-        self.time_passed = total_time_passed
-        self.pbar.update(int(update_time))
-        self.logger.info("time passed: %f, time left: %f", total_time_passed, total_time_left)
+        self.total_time_passed = self.total_time_passed + time_passed
+        self.pbar.update(int(time_passed))
+        if cost < self.lowest_cost:
+            self.lowest_cost = cost
+            self.best_metrics = metrics
+
+        self.logger.info(f"Model backbone: {model}")
+        if self.best_metrics != {}:
+            self.logger.info(f"so-far best configuration metrics:")
+            for name, metric in self.best_metrics.items():
+                self.logger.info(f"- {name}: {metric}")
+
 

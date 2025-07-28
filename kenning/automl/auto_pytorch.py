@@ -634,7 +634,7 @@ class AutoPyTorchML(AutoML):
             The number of workers to use for data loaders.
         """
         from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-        from kenning.automl.auto_pytorch_components.logger_progress_trackers import (
+        from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
             TrainingProgressLogger
         )
 

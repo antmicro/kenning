@@ -133,6 +133,16 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
     """
     computed_metrics = {}
 
+    def compute_min_max(metric_name: str, metric_value: Optional[Dict] = None):
+        if not metric_value:
+            metric_value = measurementsdata[metric_name]
+        operations = {
+            "min": np.min,
+            "max": np.max,
+        }
+        for op_name, op in operations.items():
+            computed_metrics[f"{metric_name}_{op_name}"] = op(metric_value)
+
     def compute_metrics(metric_name: str, metric_value: Optional[Dict] = None):
         """
         Evaluates and saves metric in `operations` dictionary.
@@ -164,6 +174,7 @@ def compute_performance_metrics(measurementsdata: Dict[str, List]) -> Dict:
 
     if inference_step:
         compute_metrics("inferencetime", measurementsdata[inference_step])
+        compute_min_max("inferencetime", measurementsdata[inference_step])
 
     # mem_percent
     if "session_utilization_mem_percent" in measurementsdata:

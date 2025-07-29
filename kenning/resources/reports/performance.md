@@ -31,6 +31,10 @@ align: center
   - **{{'%.6f' % data['inferencetime_median'] }}**
 * - Standard deviation
   - **{{'%.6f' % data['inferencetime_std'] }}**
+* - Minimum
+  - **{{'%.6f' % data['inferencetime_min'] }}**
+* - Maximum
+  - **{{'%.6f' % data['inferencetime_max'] }}**
 ```
 {% endif %}
 

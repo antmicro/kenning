@@ -214,7 +214,9 @@ class MagicWandModelWrapper(TensorFlowWrapper):
             )
 
         self.model.compile(
-            optimizer=tf.optimizers.Adam(learning_rate=self.learning_rate),
+            optimizer=tf.keras.optimizers.Adam(
+                learning_rate=self.learning_rate
+            ),
             loss="categorical_crossentropy",
             metrics=["accuracy"],
         )

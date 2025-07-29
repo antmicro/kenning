@@ -20,8 +20,8 @@ header-rows: 1
 align: center
 ---
 
-* - Metric
   - Time
+* - Statistic
 
 * - First inference duration
   - **{{'%.6f' % data['inferencetime'][0] }} s**
@@ -52,8 +52,8 @@ Average CPU usage during benchmark
 header-rows: 1
 align: center
 ---
-* - Metric
   - Percentage
+* - Statistic
 
 * - Mean
   - **{{'%.3f' %  data['session_utilization_cpus_percent_avg_mean'] }} %**
@@ -83,8 +83,8 @@ Memory usage during benchmark
 header-rows: 1
 align: center
 ---
-* - Metric
   - Percentage
+* - Statistic
 
 * - Mean
   - **{{'%.3f' %  data['session_utilization_mem_percent_mean'] }} %**
@@ -115,8 +115,8 @@ GPU utilization during benchmark
 header-rows: 1
 align: center
 ---
-* - Metric
   - Percentage
+* - Statistic
 
 * - Mean
   - **{{'%.3f' % data['session_utilization_gpu_utilization_mean'] }} %**
@@ -146,8 +146,8 @@ GPU memory usage during benchmark
 header-rows: 1
 align: center
 ---
-* - Metric
   - Memory used
+* - Statistic
 
 * - Mean
   - **{{'%.6f' % data['session_utilization_gpu_mem_utilization_mean'] }} MB**

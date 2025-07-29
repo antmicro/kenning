@@ -18,7 +18,7 @@ Confusion matrix
 header-rows: 1
 align: center
 ---
-* - Metric
+* - Statistic
   - Value
 {%- for metric in data['available_metrics'] %}
 {%- if metric.name.endswith("_CLASS") %}

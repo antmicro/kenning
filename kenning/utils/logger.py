@@ -81,13 +81,11 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         "[%(levelname)s] %(message)s"
     )
 
-    custom_log_backends = {}
-
-    def __init__(self):
+    def __init__(self, name: str):
         """
         Initialize the root logger.
         """
-        super().__init__("kenning", "NOTSET")
+        super().__init__(name, "NOTSET")
         # `coloredlogs` treats the given stream that is sys.stdout/sys.stderr
         # differently to avoid corresponding stream duplication. Duplication
         # is desired only for the client
@@ -96,7 +94,7 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         coloredlogs.install(
             logger=self,
             level="NOTSET",
-            fmt=_KLogger.FORMAT.format(package="kenning"),
+            fmt=_KLogger.FORMAT.format(package=name),
             level_styles=dict(
                 coloredlogs.DEFAULT_LEVEL_STYLES, **CUSTOM_LEVEL_STYLES
             ),
@@ -271,7 +269,12 @@ class _KLogger(logging.Logger, metaclass=Singleton):
         return exception(message)
 
 
-KLogger = _KLogger()
+# Doing this changes root logger to be correctly set to
+# python's built-in logging root logger, since all
+# loggers must be descendants of root logger.
+logging.setLoggerClass(_KLogger)
+KLogger = logging.getLogger("kenning")
+logging.setLoggerClass(logging.Logger)
 
 # ----------------
 # Tqdm Loading bar

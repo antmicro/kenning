@@ -142,9 +142,9 @@ class ONNXRuntime(Runtime):
             raise ModelNotPreparedError
         if self.input is None:
             raise InputNotPreparedError
-        self.scores = self.session.run(
-            [spec["name"] for spec in self.output_spec], self.input
-        )
+        # Use actual output names from the session instead of spec names.
+        output_names = [output.name for output in self.session.get_outputs()]
+        self.scores = self.session.run(output_names, self.input)
 
     def extract_output(self) -> List[np.ndarray]:
         if self.session is None:

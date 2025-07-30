@@ -26,7 +26,7 @@ class TrainingProgressLogger(TrainingProgressTracker):
         TrainingProgressTracker.__init__(self, total_time_expected_seconds)
 
 
-    def on_start(self):
+    def __enter__(self):
         with LoggerProgressBar() as logger_progress_bar:
             self.pbar = tqdm(
                 total=self.total_time,
@@ -36,14 +36,17 @@ class TrainingProgressLogger(TrainingProgressTracker):
         self.total_time_passed = 0
         self.lowest_cost = MAXINT
         self.best_metrics = {}
+        return super().__enter__()
 
 
-    def on_stop(self):
+    def __exit__(self, exc_type, exc_val, exc_tb ):
         cur_perc = self.pbar.n
         total_perc = int(self.total_time)
         self.pbar.update(total_perc - cur_perc)
         self.pbar.refresh()
         self.pbar.close()
+        super().__exit__(exc_type, exc_val, exc_tb )
+
 
 
     def report_progress(

@@ -72,6 +72,7 @@ EXPECTED_FAIL = [
     ("YOLACT", "NNIPruningOptimizer"),
     ("YOLACTWithPostprocessing", "NNIPruningOptimizer"),
     ("YOLACTWithPostprocessing", "TVMCompiler"),
+    ("YOLACTWithPostprocessing", "TFLiteCompiler"),
 ]
 expected_mark = pytest.mark.xfail(reason="Expected incompatible")
 

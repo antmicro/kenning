@@ -55,8 +55,19 @@ mAP values depending on threshold for the least detected recordings
 ```
 {% endif %}
 
-* *Mean Average Precision* for threshold 0.5: {{data[Metric.mAP]}}
-* Best *Mean Average Precision* occurs at threshold {{data[Metric.MAX_mAP_ID]}}  and it is: {{data[Metric.MAX_mAP]}}
+```{list-table} GPU memory usage metrics
+---
+header-rows: 1
+align: center
+---
+
+* - *Threshold*
+  - *Mean Average Precision*
+* - 0.0
+  - {{data[Metric.mAP]}}
+* - {{data[Metric.MAX_mAP_ID]}}
+  - {{data[Metric.MAX_mAP]}}
+```
 
 ```{figure} {{data["tpioupath"]}}
 ---

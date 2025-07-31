@@ -672,6 +672,10 @@ def comparison_classification_report(
 
         classification_metrics = compute_classification_metrics(data)
         model_metrics = {}
+        model_metrics["accuracy"] = classification_metrics[Metric.ACC]
+        model_metrics["inferencetime_mean"] = performance_metrics[
+            "inferencetime_mean"
+        ]
         metrics = []
         for metric in CLASSIFICATION_METRICS:
             if metric not in classification_metrics:
@@ -691,6 +695,7 @@ def comparison_classification_report(
 
         if "compiled_model_size" in data:
             model_sizes.append(data["compiled_model_size"])
+            model_metrics["size"] = data["compiled_model_size"]
         else:
             KLogger.warning(
                 "Missing information about model size in measurements"
@@ -699,6 +704,9 @@ def comparison_classification_report(
             model_sizes.append(
                 performance_metrics["session_utilization_mem_percent_mean"]
             )
+            model_metrics["size"] = performance_metrics[
+                "session_utilization_mem_percent_mean"
+            ]
 
         metric_visualization[data["model_name"]] = model_metrics
 

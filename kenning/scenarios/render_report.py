@@ -1083,6 +1083,13 @@ def comparison_detection_report(
     for data in measurementsdata:
         thresholds = np.arange(0.2, 1.05, 0.05)
         mapvalues = compute_map_per_threshold(data, thresholds)
+        max_map = max(mapvalues)
+        max_thr = thresholds[np.argmax(mapvalues)].round(2)
+
+        report_variables[data["model_name"]] = {}
+        report_variables[data["model_name"]]["best_map"] = max_map
+        report_variables[data["model_name"]]["best_map_thr"] = max_thr
+
         visualization_data.append((thresholds, mapvalues))
         report_variables["model_names"].append(data["model_name"])
 

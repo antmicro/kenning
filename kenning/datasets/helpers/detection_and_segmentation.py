@@ -144,8 +144,8 @@ def get_recall_precision(
         dets.sort(key=lambda d: -d[0])
         tps = np.array([entry[1] != 0.0 for entry in dets])
         fps = np.array([entry[1] == 0.0 for entry in dets])
-        tpacc = np.cumsum(tps).astype(dtype=np.float)
-        fpacc = np.cumsum(fps).astype(dtype=np.float)
+        tpacc = np.cumsum(tps).astype(dtype=np.float32)
+        fpacc = np.cumsum(fps).astype(dtype=np.float32)
 
         recalls = tpacc / gt_count
         precisions = tpacc / (fpacc + tpacc + np.spacing(1))

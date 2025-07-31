@@ -14,6 +14,23 @@ The accuracy of the model is presented on Y axis.
 The inference time of the model is presented on X axis.
 The size of the model is represented by the size of its point.
 ```
+```{list-table} Comparison of model inference time, accuracy and size
+---
+header-rows: 1
+align: center
+---
+
+* - Model name
+  - Mean Inference time [s]
+  - Size [MB]
+  - Accuracy
+{% for model_name in data["model_names"] %}
+* - {{model_name}}
+  - {{'%.6f' % data[model_name]["inferencetime_mean"]}}
+  - {{'%.3f' % (data[model_name]["size"]/1e6)}}
+  - {{'%.6f' % data[model_name]["accuracy"]}}
+{% endfor %}
+```
 
 ### Detailed metrics comparison
 

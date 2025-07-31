@@ -2137,7 +2137,6 @@ class RecallPrecisionCurvesPlot(Plot):
                 label_text_font="Lato",
                 click_policy="mute",
                 location="left",
-                padding=-10,
             )
             legend.label_width = 120
             precision_fig.add_layout(legend, "below")
@@ -2227,7 +2226,7 @@ class TruePositiveIoUHistogram(Plot):
             data=dict(
                 x=self.iou_data,
                 y=self.class_names,
-                y_idx=range(0, len(self.class_names)),
+                y_idx=list(range(0, len(self.class_names))),
             )
         )
 
@@ -2347,12 +2346,12 @@ class TruePositivesPerIoURangeHistogram(Plot):
             title=self.title,
             tools="pan,box_zoom,wheel_zoom,reset,save",
             toolbar_location="above",
-            width=self.width / 2,
+            width=self.width // 2,
             height=self.height,
             x_axis_label="IoU ranges",
             y_axis_label="Number of masks in IoU range",
             output_backend="webgl",
-            max_width=self.width / 2,
+            max_width=self.width // 2,
             max_height=self.height,
             match_aspect=True,
             sizing_mode="scale_both",
@@ -2365,9 +2364,9 @@ class TruePositivesPerIoURangeHistogram(Plot):
 
         source = ColumnDataSource(
             dict(
-                x_left=self.x_range[:-1],
-                x_right=self.x_range[1:],
-                x_mid=(self.x_range[:-1] + self.x_range[1:]) / 2,
+                x_left=list(self.x_range[:-1]),
+                x_right=list(self.x_range[1:]),
+                x_mid=list(self.x_range[:-1] + self.x_range[1:] / 2),
                 y=hist,
             )
         )
@@ -2474,8 +2473,11 @@ class RecallPrecisionGradients(Plot):
         plt.xticks(np.arange(0, 1.1, 0.1))
         plt.xlabel("recall")
         plt.ylabel("classes")
+        ax = plt.gca()
+        PCM = ax.get_children()[2]
         plt.colorbar(
-            plt.cm.ScalarMappable(norm=plt.Normalize(0, 1.0), cmap=self.cmap),
+            PCM,
+            ax=ax,
             orientation="vertical",
             label="precision",
             fraction=0.1,

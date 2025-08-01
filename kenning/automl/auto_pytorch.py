@@ -841,11 +841,6 @@ class AutoPyTorchML(AutoML):
                 )
                 continue
             num_run = int(run_hist.additional_info["num_run"])
-            if run_hist.status in (
-                StatusType.SUCCESS,
-                StatusType.DONOTADVANCE,
-            ):
-                successful_models.add(num_run)
             metrics_over_time[num_run] = {
                 # Change losses to metrics
                 k: {
@@ -871,6 +866,16 @@ class AutoPyTorchML(AutoML):
             "Test/loss": "test",
             "Test/epoch/avg_loss": "test_epoch",
         }
+        PIPELINE_EVENT_TO_NAME = {
+            "Pipeline/Loss": "opt_loss",
+            "Pipeline/Train/Loss": "train_loss",
+            "Pipeline/Val/Loss": "validation_loss",
+            "Pipeline/Test/Loss": "test_loss",
+            "Pipeline/Config": "configuration",
+            "Pipeline/Budget": "budget",
+            "Pipeline/Status": "status",
+        }
+        run_infos: Dict[Dict] = {}
         try:
             from tensorflow.core.util import event_pb2
             from tensorflow.data import TFRecordDataset
@@ -881,7 +886,6 @@ class AutoPyTorchML(AutoML):
             ):
                 num_run = None
                 start_epoch = None
-                KLogger.debug(events_file)
                 try:
                     for event in TFRecordDataset(str(events_file)):
                         event = event_pb2.Event.FromString(event.numpy())
@@ -941,6 +945,76 @@ class AutoPyTorchML(AutoML):
                 except DataLossError:
                     KLogger.warning(f"Possible data loss in {events_file}")
                     continue
+            KLogger.debug("Pipeline event files:")
+            temp_pipeline_event_dir = (
+                self._api._temporary_directory + "/pipeline"
+            )
+            for events_file in Path(temp_pipeline_event_dir).glob(
+                "events.out.tfevents.*"
+            ):
+                KLogger.debug(f"File: {events_file}")
+                num_run = None
+                start_epoch = None
+                try:
+                    for event in TFRecordDataset(str(events_file)):
+                        event = event_pb2.Event.FromString(event.numpy())
+                        # Retrieve num_run as a model ID
+                        if num_run is None:
+                            for e_val in event.summary.value:
+                                if e_val.tag == "num_run":
+                                    num_run = int(e_val.simple_value)
+                                    run_infos[num_run] = {}
+                                    break
+                        # Gather metadata and data from training
+                        else:
+                            for e_val in event.summary.value:
+                                if e_val.tag.endswith("text_summary"):
+                                    val = e_val.tensor.string_val[0].decode(
+                                        "utf-8"
+                                    )
+                                    name = e_val.tag.replace(
+                                        "/text_summary", ""
+                                    )
+                                    if (
+                                        PIPELINE_EVENT_TO_NAME[name]
+                                        == "configuration"
+                                    ):
+                                        # convert to dict
+                                        val = ast.literal_eval(val)
+                                    if (
+                                        PIPELINE_EVENT_TO_NAME[name]
+                                        == "status"
+                                    ):
+                                        val = eval(val)
+                                        if val in (
+                                            StatusType.SUCCESS,
+                                            StatusType.DONOTADVANCE,
+                                        ):
+                                            successful_models.add(num_run)
+                                            continue
+                                    run_infos[num_run][
+                                        PIPELINE_EVENT_TO_NAME[name]
+                                    ] = val
+                                elif e_val.tag in PIPELINE_EVENT_TO_NAME:
+                                    run_infos[num_run][
+                                        PIPELINE_EVENT_TO_NAME[e_val.tag]
+                                    ] = e_val.simple_value
+                                else:
+                                    key, metric = strip_metric_name(e_val.tag)
+                                    if metric:
+                                        run_infos[num_run][key][metric] = e_val.simple_value
+                                    else:
+                                        for e_val in event.summary.value:
+                                            for e_name, e_key in PIPELINE_EVENT_TO_NAME.items():
+                                                if e_val.tag.startswith(e_name + '/'):
+                                                    if e_key not in run_infos[num_run]:
+                                                        run_infos[num_run][e_key] = {}
+                                                    metric = e_val.tag.replace(e_name + '/', '')
+                                                    run_infos[num_run][e_key][metric] = e_val.simple_value
+                                                    break
+                    except DataLossError:
+                        KLogger.warning(f"Possible data loss in {events_file}")
+                        continue
         except ImportError:
             KLogger.warning(
                 "Cannot import data from tensorboard,"

@@ -24,4 +24,4 @@ model_wrapper:
     qat_weight_bits: 2
     quantize_activation: True
     # Requires cloned https://github.com/analogdevicesinc/ai8x-training.git
-    ai8x_training_path: ./ai8x-training
+    ai8x_training_path: ../ai8x-training

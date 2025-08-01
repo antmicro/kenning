@@ -63,6 +63,7 @@ RUNTIME_BUILDERS = "runtimebuilders"
 RUNTIME_PROTOCOLS = "protocols"
 RUNTIMES = "runtimes"
 AUTOML = "automl"
+REPORT = "report"
 
 
 class ConfigKey(str, Enum):
@@ -82,6 +83,7 @@ class ConfigKey(str, Enum):
     runtime_builder = RUNTIME_BUILDERS
     dataconverter = DATA_CONVERTERS
     automl = AUTOML
+    report = REPORT
 
 
 def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:

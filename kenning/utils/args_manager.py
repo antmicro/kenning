@@ -27,6 +27,8 @@ from typing import (
     Sequence,
     Tuple,
     Union,
+    get_args,
+    get_origin,
 )
 
 import jsonschema
@@ -459,7 +461,8 @@ def get_parsed_args_dict(
 
         # convert type
         if "type" in arg_properties and value is not None:
-            value = arg_properties["type"](value)
+            if get_origin(arg_properties["type"]) not in {UnionType, Union}:
+                value = arg_properties["type"](value)
 
         parsed_args[arg_name] = value
 
@@ -682,7 +685,21 @@ def add_parameterschema_argument(
         # Set type based on provided Python type
         if "type" in prop:
             prop_type, prop_sub_type = get_type(prop["type"])
-            if prop_type is list and prop_sub_type:
+
+            if get_origin(prop_type) in {UnionType, Union}:
+                types = []
+                for arg in get_args(prop_type):
+                    p_type, p_sub_type = get_type(arg)
+
+                    types.append(type_to_jsontype[p_type])
+
+                prop_type = object
+
+                keywords["convert-type"] = object
+
+                keywords["type"] = types
+
+            elif prop_type is list and prop_sub_type:
                 keywords["convert-type"] = prop_sub_type[0]
                 keywords["items"] = {
                     "type": [
@@ -694,9 +711,11 @@ def add_parameterschema_argument(
                         )
                     ],
                 }
+
+                keywords["type"] = [type_to_jsontype[prop_type]]
             else:
                 keywords["convert-type"] = prop_type
-            keywords["type"] = [type_to_jsontype[prop_type]]
+                keywords["type"] = [type_to_jsontype[prop_type]]
 
         if "description" in prop:
             keywords["description"] = prop["description"]

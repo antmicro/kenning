@@ -20,8 +20,11 @@ from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
+import yaml
 from argcomplete import DirectoriesCompleter, FilesCompleter
 from matplotlib.colors import to_hex
+
+from kenning.utils.resource_manager import ResourceURI
 
 if sys.version_info.minor < 9:
     from importlib_resources import path
@@ -35,6 +38,7 @@ from kenning.cli.command_template import (
     TEST,
     ArgumentsGroups,
     CommandTemplate,
+    ParserHelpException,
     generate_command_type,
 )
 from kenning.core.drawing import Plot
@@ -48,23 +52,18 @@ from kenning.core.metrics import (
     compute_renode_metrics,
     compute_text_summarization_metrics,
 )
+from kenning.core.report import (
+    CLASSIFICATION,
+    DETECTION,
+    PERFORMANCE,
+    RENODE,
+    REPORT_TYPES,
+    TEXT_SUMMARIZATION,
+    Report,
+)
 from kenning.resources import reports
 from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
-
-# REPORT_TYPES:
-PERFORMANCE = "performance"
-CLASSIFICATION = "classification"
-DETECTION = "detection"
-TEXT_SUMMARIZATION = "text_summarization"
-RENODE = "renode_stats"
-REPORT_TYPES = [
-    PERFORMANCE,
-    CLASSIFICATION,
-    DETECTION,
-    RENODE,
-    TEXT_SUMMARIZATION,
-]
 
 
 def get_model_name(filepath: Path) -> str:
@@ -2634,6 +2633,14 @@ def load_measurements_for_report(
     return measurementsdata, report_types, automl_stats
 
 
+FILE_CONFIG = "Inference configuration with JSON/YAML file"
+FLAG_CONFIG = "Inference configuration with flags"
+ARGS_GROUPS = {
+    FILE_CONFIG: f"Configuration with pipeline defined in JSON/YAML file. This section is not compatible with '{FLAG_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+    FLAG_CONFIG: f"Configuration with flags. This section is not compatible with '{FILE_CONFIG}'. Arguments with '*' are required.",  # noqa: E501
+}
+
+
 class RenderReport(CommandTemplate):
     """
     Command-line template for rendering reports.
@@ -2659,6 +2666,18 @@ class RenderReport(CommandTemplate):
         # doesn't have to be added to global groups
         report_group = parser.add_argument_group(GROUP_SCHEMA.format(REPORT))
         run_in_sequence = TEST in types
+
+        required_prefix = "* "
+        groups = CommandTemplate.add_groups(parser, groups, ARGS_GROUPS)
+
+        groups[FILE_CONFIG].add_argument(
+            "--json-cfg",
+            "--cfg",
+            help=f"{required_prefix}The path to the input JSON file with configuration of the report",  # noqa: E501
+            type=ResourceURI,
+        ).completer = FilesCompleter(
+            allowednames=("*.json", "*.yaml", "*.yml")
+        )
 
         if AUTOML not in types:
             other_group.add_argument(
@@ -2687,10 +2706,7 @@ class RenderReport(CommandTemplate):
             type=str,
         )
         other_group.add_argument(
-            "--report-path",
-            help="Path to the output MyST file",
-            type=Path,
-            required=True,
+            "--report-path", help="Path to the output MyST file", type=Path
         )
         other_group.add_argument(
             "--to-html",
@@ -2752,10 +2768,81 @@ class RenderReport(CommandTemplate):
             help="Removes beginning sections listing used configuration and commands",  # noqa: E501
             action="store_true",
         )
+
         return parser, groups
 
     @staticmethod
+    def _fill_missing_namespace_args(args: argparse.Namespace):
+        if "json_cfg" not in args:
+            args.json_cfg = None
+        if "measurements" not in args:
+            args.measurements = [None]
+        if "evaluate_unoptimized" not in args:
+            args.evaluate_unoptimized = False
+
+    @staticmethod
+    def prepare_args(
+        args: argparse.Namespace, required_flags: List[str]
+    ) -> argparse.Namespace:
+        """
+        Prepares and validates parased arguments.
+
+        Parameters
+        ----------
+        args : argparse.Namespace
+            Parsed arguments.
+        required_flags : List[str]
+            Flags required for this command.
+
+        Returns
+        -------
+        argparse.Namespace
+            Validated parsed arguments.
+        """
+        RenderReport._fill_missing_namespace_args(args)
+        return args
+
+    @staticmethod
+    def _run_from_cfg(
+        args: argparse.Namespace,
+        command: List[str],
+        **kwargs,
+    ):
+        with open(args.json_cfg, "r") as f:
+            json_cfg = yaml.safe_load(f)
+
+        KLogger.debug("Yaml file: {}".format(json_cfg))
+
+        obj = Report.from_json(json_cfg[REPORT])
+
+        return RenderReport._run_pipeline(args=obj, command=command)
+
+    @staticmethod
+    def _run_from_flags(
+        args: argparse.Namespace,
+        command: List[str],
+        **kwargs,
+    ):
+        obj = Report.from_argparse(args)
+
+        return RenderReport._run_pipeline(args=obj, command=command)
+
+    @staticmethod
     def run(args, **kwargs):
+        command = get_command()
+
+        flag_config_args = []
+
+        args = RenderReport.prepare_args(args, flag_config_args)
+
+        if args.json_cfg is not None:
+            if args.help:
+                raise ParserHelpException
+            return RenderReport._run_from_cfg(args, command, **kwargs)
+        return RenderReport._run_from_flags(args, command, **kwargs)
+
+    @staticmethod
+    def _run_pipeline(args: Report, command, **kwargs):
         from kenning.cli.config import get_used_subcommands
         from kenning.core.drawing import (
             KENNING_COLORS,
@@ -2764,8 +2851,17 @@ class RenderReport(CommandTemplate):
             choose_theme,
         )
 
-        command = get_command()
         subcommands = get_used_subcommands(args)
+
+        KLogger.debug("Measurements {}".format(args.measurements))
+
+        if not isinstance(args.measurements, list):
+            args.measurements = [args.measurements]
+
+        automl_stats = None
+
+        if hasattr(args, "automl_stats"):
+            automl_stats = args.automl_stats
 
         if args.to_html:
             if not isinstance(args.to_html, (str, Path)):
@@ -2837,7 +2933,7 @@ class RenderReport(CommandTemplate):
             args.model_names,
             args.skip_unoptimized_model,
             args.report_types,
-            args.automl_stats,
+            automl_stats,
         )
         report_name = args.report_name
         if report_name is None:

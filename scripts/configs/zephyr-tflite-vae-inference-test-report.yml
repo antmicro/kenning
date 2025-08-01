@@ -5,13 +5,7 @@
 #
 # west build -p always -b max32690evkit/max32690/m4 app -- -DEXTRA_CONF_FILE="tflite.conf"
 platform:
-  type: ZephyrPlatform
-  parameters:
-    name: max32690evkit/max32690/m4
-    # to run inference on actual hardwarem change simulated to false
-    simulated: true
-    zephyr_build_path: ./build/
-    uart_port: /dev/ttyUSB0
+  type: LocalPlatform
 
 # model wrapper for the VAE anomaly detection model
 model_wrapper:
@@ -39,3 +33,9 @@ optimizers:
       compiled_model_path: ./workspace/vae_cats.tflite
       inference_input_type: float32
       inference_output_type: float32
+
+report:
+  measurements: ./workspace/workspace/vae-tflite-renode.json
+  report_path: reports/vae-tflite-renode/report.md
+  report_types: [performance,classification]
+  to_html: true

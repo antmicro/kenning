@@ -176,7 +176,6 @@ class InferenceTester(CommandTemplate):
                     nargs=1,
                     type=Path,
                     default=[None],
-                    required=bool(types),
                 )
             other_group.add_argument(
                 "--evaluate-unoptimized",
@@ -286,6 +285,15 @@ class InferenceTester(CommandTemplate):
             override=(args, not_parsed),
         )
 
+        if ConfigKey.report in json_cfg:
+            # it should enough for now
+            report = json_cfg[ConfigKey.report]
+
+            args.measurements = report["measurements"]
+
+            if not isinstance(args.measurements, list):
+                args.measurements = [args.measurements]
+
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner
         )
@@ -334,6 +342,8 @@ class InferenceTester(CommandTemplate):
         pipeline_runner: PipelineRunner,
     ):
         from kenning.cli.config import get_used_subcommands
+
+        KLogger.debug("Measurements: {}".format(args.measurements))
 
         subcommands = get_used_subcommands(args)
         output = args.measurements[0] if args.measurements[0] else None

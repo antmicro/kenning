@@ -352,6 +352,9 @@ class ROS2Protocol(Protocol):
     ) -> bool:
         raise NotImplementedError
 
+    def listen_to_server_logs(self):
+        raise NotImplementedError
+
     def serve(
         self,
         upload_input_callback: Optional[ServerUploadCallback] = None,

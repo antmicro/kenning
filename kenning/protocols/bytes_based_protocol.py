@@ -7,6 +7,7 @@ Base class for bytes-based inference communication protocol.
 """
 
 import json
+import logging
 import time
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -32,6 +33,8 @@ from kenning.protocols.message import (
     MessageType,
 )
 from kenning.utils.logger import KLogger
+
+KLogger.add_custom_level(logging.INFO + 2, "DEVICE")
 
 
 class IncomingEventType(Enum):
@@ -538,6 +541,25 @@ class BytesBasedProtocol(Protocol, ABC):
             ),
             compiled_model_data,
         )
+
+    def listen_to_server_logs(self):
+        def parse_logs(
+            message_type: MessageType,
+            data: bytes,
+            flags: List[TransmissionFlag],
+        ):
+            if TransmissionFlag.IS_ZEPHYR in flags:
+                while len(data) > 0:
+                    size = data[0]
+                    KLogger.device(data[1:size].decode("ascii"))
+                    data = data[size:]
+            elif TransmissionFlag.IS_KENNING in flags:
+                raise NotImplementedError
+            else:
+                KLogger.warning("Received logs from unknown source.")
+
+        KLogger.debug("Receiving logs from the server...")
+        self.listen(MessageType.LOGS, parse_logs)
 
     def serve(
         self,

@@ -74,6 +74,7 @@ class MessageType(Enum):
     RUNTIME - message contains runtime that should be used for inference
         (i.e. LLEXT binary).
     UNOPTIMIZED_MODEL - message contains an unoptimized model.
+    LOGS - Log messages sent from the target device (server).
     """
 
     PING = 0
@@ -88,6 +89,7 @@ class MessageType(Enum):
     OPTIMIZE_MODEL = 9
     RUNTIME = 10
     UNOPTIMIZED_MODEL = 11
+    LOGS = 12
 
     def __int__(self):
         return self.value

@@ -2353,7 +2353,6 @@ class TruePositivesPerIoURangeHistogram(Plot):
             output_backend="webgl",
             max_width=self.width // 2,
             max_height=self.height,
-            match_aspect=True,
             sizing_mode="scale_both",
             height_policy="fit",
             width_policy="max",
@@ -2366,7 +2365,7 @@ class TruePositivesPerIoURangeHistogram(Plot):
             dict(
                 x_left=list(self.x_range[:-1]),
                 x_right=list(self.x_range[1:]),
-                x_mid=list(self.x_range[:-1] + self.x_range[1:] / 2),
+                x_mid=list((self.x_range[:-1] + self.x_range[1:]) / 2),
                 y=hist,
             )
         )

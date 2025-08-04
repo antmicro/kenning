@@ -875,8 +875,19 @@ class AutoPyTorchML(AutoML):
             "Pipeline/Budget": "budget",
             "Pipeline/Status": "status",
         }
+
+        def strip_metric_name(tag):
+            for e_name, e_key in PIPELINE_EVENT_TO_NAME.items():
+                if tag.startswith(e_name + "/"):
+                    if e_key not in run_infos[num_run]:
+                        run_infos[num_run][e_key] = {}
+                    return e_key, tag.replace(e_name + "/", "")
+            return None, None
+
         run_infos: Dict[Dict] = {}
         try:
+            import ast
+
             from tensorflow.core.util import event_pb2
             from tensorflow.data import TFRecordDataset
             from tensorflow.python.framework.errors_impl import DataLossError
@@ -1002,19 +1013,21 @@ class AutoPyTorchML(AutoML):
                                 else:
                                     key, metric = strip_metric_name(e_val.tag)
                                     if metric:
-                                        run_infos[num_run][key][metric] = e_val.simple_value
+                                        run_infos[num_run][key][
+                                            metric
+                                        ] = e_val.simple_value
                                     else:
-                                        for e_val in event.summary.value:
-                                            for e_name, e_key in PIPELINE_EVENT_TO_NAME.items():
-                                                if e_val.tag.startswith(e_name + '/'):
-                                                    if e_key not in run_infos[num_run]:
-                                                        run_infos[num_run][e_key] = {}
-                                                    metric = e_val.tag.replace(e_name + '/', '')
-                                                    run_infos[num_run][e_key][metric] = e_val.simple_value
-                                                    break
-                    except DataLossError:
-                        KLogger.warning(f"Possible data loss in {events_file}")
-                        continue
+                                        raise RuntimeError(
+                                            f"Unknown log tag: {e_val.tag}"
+                                        )
+                except DataLossError:
+                    KLogger.warning(f"Possible data loss in {events_file}")
+                    continue
+                except RuntimeError as e:
+                    KLogger.warning(
+                        f"Couldin't read all data from {events_file}: {e}"
+                    )
+                    continue
         except ImportError:
             KLogger.warning(
                 "Cannot import data from tensorboard,"
@@ -1045,7 +1058,7 @@ class AutoPyTorchML(AutoML):
                 "trained_model_metrics": metrics_over_time,
                 "training_start_time": training_start_time,
                 "model_params": model_params,
-                "additional_info": additional_info,
+                "additional_info": run_infos,
             }
             | ({"training_data": training_data} if training_data else {})
             | ({"training_epochs": training_epochs} if training_epochs else {})

@@ -363,6 +363,13 @@ class PipelineRunner(object):
 
         if protocol_required_by_optimizers:
             check_request(self.protocol.initialize_client(), "prepare client")
+            try:
+                self.protocol.listen_to_server_logs()
+            except NotImplementedError:
+                KLogger.warning(
+                    "Server logs not available for this protocol:"
+                    f" {type(self.protocol)}."
+                )
 
         # handle model optimizations
         model_path = self._handle_optimizations(
@@ -410,6 +417,13 @@ class PipelineRunner(object):
                         check_request(
                             self.protocol.initialize_client(), "prepare client"
                         )
+                        try:
+                            self.protocol.listen_to_server_logs()
+                        except NotImplementedError:
+                            KLogger.warning(
+                                "Server logs not available for this protocol:"
+                                f" {type(self.protocol)}."
+                            )
 
                     # Handle LLEXT upload
                     self._handle_runtime_upload()

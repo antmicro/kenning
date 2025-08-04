@@ -36,6 +36,7 @@ PROGRESS_BAR_STACKLEVEL = 2
 CUSTOM_LEVEL_STYLES = {
     "renode": {"color": "blue"},
     "verbose": {"color": "cyan"},
+    "device": {"color": "magenta"},
 }
 
 

@@ -6,8 +6,8 @@
 
 set -e
 
-python -m kenning test \
-    --json-cfg ./scripts/jsonconfigs/yolact-tvm-gpu-detection.json \
+python -m kenning optimize test \
+    --json-cfg ./scripts/jsonconfigs/yolact-tvm-cpu-detection.json \
     --measurements ./build/yolact-tvm.json \
     --verbosity INFO
 

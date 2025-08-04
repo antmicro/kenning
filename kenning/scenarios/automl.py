@@ -15,7 +15,6 @@ It requires implementations of two classes as input:
 
 import argparse
 import os
-import shutil
 import sys
 from pathlib import Path
 from typing import List, Optional, Tuple, Union
@@ -88,10 +87,8 @@ class AutoMLCache:
         """
         Walks through all files in cache directory and deets deletes them.
         """
-        try:
-            shutil.rmtree(AutoMLCache.cache_path, ignore_errors=False)
-        except Exception as ex:
-            KLogger.warning(f"Unable to clean automl cache. Error: {ex}")
+        for file in AutoMLCache.files():
+            AutoMLCache.delete(file)
 
     @_condition_run
     @staticmethod
@@ -450,11 +447,6 @@ class AutoMLCommand(InferenceTester):
 
         # In case of 'kenning automl report ...'
         if use_previous_results and REPORT in subcommands:
-            if not args.report_path:
-                raise argparse.ArgumentError(
-                    None, "'--report_path' needs to be provided."
-                )
-
             if not measurements:
                 for file in AutoMLCache.files():
                     if "measurements" in file.name:

@@ -65,7 +65,7 @@ def check_request(
 class ServerAction(Enum):
     """
     Enum with all types of actions/operations, that may be executed
-    by a Kenning inference server using the protocol.
+    by Kenning inference server using the protocol.
     """
 
     WAITING_FOR_CLIENT = 0
@@ -511,6 +511,12 @@ class Protocol(ArgumentsHandler, ABC):
         Tuple[bool, Optional[bytes]]
             First element is equal to True if optimization finished
             successfully and the second element contains compiled model.
+        """
+        ...
+
+    def listen_to_server_logs(self):
+        """
+        Starts continuously receiving and printing logs sent by the server.
         """
         ...
 

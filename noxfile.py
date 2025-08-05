@@ -214,7 +214,8 @@ def run_pytest(session: nox.Session, device):
 
 
 @nox.session(python=PYTHON_VERSIONS)
-def run_gallery_tests(session: nox.Session):
+@nox.parametrize("specification", ["cpu", "gpu", "all"])
+def run_gallery_tests(session: nox.Session, specification):
     """
     Install Kenning with minimal dependencies and run gallery tests.
     """
@@ -228,6 +229,14 @@ def run_gallery_tests(session: nox.Session):
         else session.posargs[0]
     )
 
+    marks = "snippets"
+    if specification == "cpu":
+        marks = "(snippets) and (not gpu)"
+    elif specification == "gpu":
+        marks = "(snippets) and (gpu)"
+    elif specification == "all":
+        marks = "snippets"
+
     report_path = Path("pytest-reports") / f"{name}.json"
     test_docs_log_dir = Path("log_docs") / f"{name}"
     test_docs_log_dir.mkdir(parents=True)
@@ -237,7 +246,7 @@ def run_gallery_tests(session: nox.Session):
         "--input-file-pattern",
         pattern_md,
         "-m",
-        "snippets",
+        marks,
         "--save-tmp-pattern",
         "_autoPyTorch_tmp",
         "--capture=fd",

@@ -108,6 +108,13 @@ def extract_snippet_args(snippet: Snippet):
             raise KeyError(f"Snippet cannot have {arg[0]} argument")
 
 
+def find_string_in_file(filename: Path, text: str):
+    with open(filename) as f:
+        if text in f.read():
+            return True
+    return False
+
+
 def get_all_snippets(
     markdown_pattern: str,
 ) -> Generator[Tuple[str, str, Snippet], None, None]:

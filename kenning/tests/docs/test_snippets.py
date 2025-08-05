@@ -117,7 +117,8 @@ def find_string_in_file(filename: Path, text: str):
 
 def get_all_snippets(
     markdown_pattern: str,
-) -> Generator[Tuple[str, str, Snippet], None, None]:
+    uses_gpu_flag: str = "{{uses_gpu}}",
+) -> Generator[Tuple[str, str, Snippet, bool], None, None]:
     """
     Finds all executable snippets from gallery of examples
     and dumps named JSON snippets to files.
@@ -126,6 +127,8 @@ def get_all_snippets(
     ----------
     markdown_pattern : str
         Pattern with markdowns, has to be supported by `glob`.
+    uses_gpu_flag: str
+        Pattern of a docs gpu flag, '{{uses_gpu}}' by default.
 
     Yields
     ------
@@ -135,9 +138,12 @@ def get_all_snippets(
         Name of the found snippet.
     Snippet :
         Found snippet.
+    bool :
+        Flag whether this snippet uses GPU or not
     """
     for markdown in glob(markdown_pattern):
         markdown = Path(markdown)
+        uses_gpu = find_string_in_file(filename=markdown, text=uses_gpu_flag)
 
         python_snippet = None
         last_snippet_name = None
@@ -162,7 +168,7 @@ def get_all_snippets(
                 if last_snippet_name:
                     snippet.meta["depends"].append(last_snippet_name)
                 last_snippet_name = name
-                yield markdown.with_suffix("").name, name, snippet
+                yield markdown.with_suffix("").name, name, snippet, uses_gpu
             if snippet.lang not in EXECUTABLE_TYPES + ("python",):
                 continue
 
@@ -191,7 +197,12 @@ def get_all_snippets(
                     if last_snippet_name:
                         line_snippet.meta["depends"].append(last_snippet_name)
                     last_snippet_name = f"{name}_{id}"
-                    yield markdown.stem, last_snippet_name, line_snippet
+                    yield (
+                        markdown.stem,
+                        last_snippet_name,
+                        line_snippet,
+                        uses_gpu,
+                    )
             # Python snippet -- combine and yield at the end of function
             elif snippet.lang == "python":
                 if python_snippet:
@@ -202,7 +213,7 @@ def get_all_snippets(
 
         # Yield combined python snippets
         if python_snippet:
-            yield markdown.stem, name, python_snippet
+            yield markdown.stem, name, python_snippet, uses_gpu
 
 
 def execute_script_and_wait(
@@ -503,9 +514,10 @@ class TestDocsSnippets:
                         ],
                     ),
                     pytest.mark.snippets,
-                ],
+                ]
+                + ([pytest.mark.gpu] if uses_gpu else []),
             )
-            for markdown, snippet_name, snippet in get_all_snippets(
+            for markdown, snippet_name, snippet, uses_gpu in get_all_snippets(
                 str(pytest.input_file_pattern)
             )
         ],

@@ -81,6 +81,19 @@ myst_heading_anchors = 3
 
 dev = "https://github.com/antmicro/kenning"
 
+gpu_info_admonition = """
+:::{info}
+This example requires a CUDA-enabled GPU for proper execution, along with following dependencies:
+
+* CUDA (11.8 is recommended version)
+* CUDNN (8 is recommended version)
+* NVCC
+* NVRTC
+* CUDA Toolkit
+* NVML (for report generation)
+:::
+"""
+
 extlinks = {"issue": (dev + "issues/%s", "#")}
 
 # If your documentation needs a minimal Sphinx version, state it here.
@@ -199,6 +212,7 @@ myst_substitutions = {
     "json_compilation_script": "`kenning.scenarios.inference_tester`",
     "json_flow_runner_script": "`kenning.scenarios.json_flow_runner`",
     "optimization_runner_script": "`kenning.scenarios.optimization_runner`",
+    "uses_gpu": gpu_info_admonition,
 }
 
 linkcheck_anchors_ignore_for_url = ("https:\/\/github\.com.*",)

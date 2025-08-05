@@ -74,8 +74,7 @@ python -m kenning report \
 
 ## GPU Experiments
 
-The next section requires CUDA-enabled GPU to run.
-
+{{uses_gpu}}
 
 ### TVM optimization
 

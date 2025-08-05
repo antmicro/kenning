@@ -24,12 +24,9 @@ mkdir -p workspace && cd workspace
 Alternatively, install them manually by following the instructions in the [runtime's README.md](https://github.com/antmicro/kenning-bare-metal-iree-runtime/blob/main/README.md):
 
 Kenning uses [pyrenode3](https://github.com/antmicro/pyrenode3/) package, which requires Renode to work.
-To install it, download the latest Renode Arch package and store its location in `PYRENODE_PKG`:
-```bash
-wget https://builds.renode.io/renode-latest.pkg.tar.xz
-export PYRENODE_PKG=$(realpath renode-latest.pkg.tar.xz)
-```
-For other configuration options check [pyrenode3 README.md](https://github.com/antmicro/pyrenode3/blob/main/README.md).
+Here there is no need to install it, because it is already included in the `docker` image (path under the `PYRENODE_PKG` environmental variable).
+
+For other Renode configuration options check [pyrenode3 README.md](https://github.com/antmicro/pyrenode3/blob/main/README.md).
 
 ## Evaluating the model in Kenning
 

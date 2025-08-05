@@ -13,6 +13,8 @@ import numpy as np
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.runtime import ModelNotLoadedError
+from kenning.utils.logger import KLogger
 from kenning.utils.resource_manager import PathOrURI
 
 
@@ -53,14 +55,28 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         tf.keras.backend.clear_session()
         if hasattr(self, "model") and self.model is not None:
             del self.model
-        try:
-            import tf_keras
 
-            self.model = tf_keras.models.load_model(str(model_path))
-        except ValueError:
-            self.model = tf.keras.layers.TFSMLayer(
-                str(model_path), call_endpoint="serve"
+        self.model = None
+
+        try:
+            self.model = tf.keras.models.load_model(str(model_path))
+        except Exception:
+            KLogger.warning(
+                "The model %s could not be loaded with tf.keras loader.",
+                str(model_path),
             )
+            KLogger.info("Attempting another method to load the model.")
+
+        if self.model is None:
+            try:
+                import tf_keras
+
+                self.model = tf_keras.models.load_model(str(model_path))
+            except Exception as e:
+                KLogger.error(
+                    "All methods to load the model %s failed.", str(model_path)
+                )
+                raise ModelNotLoadedError(f"Cannot load a model: {e}")
 
         self.model.summary()
 

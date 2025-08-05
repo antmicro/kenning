@@ -60,6 +60,10 @@ class InputNotPreparedError(Exception):
         super().__init__(msg, *args, **kwargs)
 
 
+class ModelNotLoadedError(Exception):
+    """Exception raised if a model could not be loaded."""
+
+
 class Runtime(ArgumentsHandler, ABC):
     """
     Runtime object provides an API for testing inference on target devices.

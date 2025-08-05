@@ -11,6 +11,7 @@ import pytest
 
 from kenning.core.dataset import Dataset
 from kenning.core.model import ModelWrapper
+from kenning.core.runtime import ModelNotLoadedError
 from kenning.modelwrappers.anomaly_detection.ai8x_cnn import (
     Ai8xAnomalyDetectionCNN,
 )
@@ -300,8 +301,8 @@ class TestModelWrapper:
 
     def test_substitutive_method_of_loading_tf_model(self):
         """
-        Test inference on a (re)loaded Keras model/layer with SavedModel
-        that was saved via tf.saved_model.save.
+        Test inference on a loaded model with the backup model
+        loading method.
         """
         from kenning.modelwrappers.classification.tensorflow_imagenet import (
             TensorFlowImageNet,
@@ -319,10 +320,11 @@ class TestModelWrapper:
         )
 
         def mock_load_model(*args, **kwargs):
-            raise RuntimeError("This model loading method will always fail.")
+            raise ModelNotLoadedError(
+                "This model loading method will always fail."
+            )
 
         with patch("tensorflow.keras.models.load_model", mock_load_model):
-            with patch("tf_keras.models.load_model", mock_load_model):
-                loaded_model = create_model(TensorFlowImageNet, dataset)
-                loaded_model.load_model(model_path)
-                loaded_model.test_inference()
+            loaded_model = create_model(TensorFlowImageNet, dataset)
+            loaded_model.load_model(model_path)
+            loaded_model.test_inference()

@@ -126,6 +126,7 @@ test = [
     "pytest-order",
     "pytest-reportlog",
     "pytest-xdist",
+    "pytest-timeout",
     "tuttest @ git+https://github.com/antmicro/tuttest.git",
     "tf2onnx",
     "kenning[onnx2tf]",

@@ -206,6 +206,7 @@ def run_pytest(session: nox.Session, device):
         "-n=auto",
         "--cov=kenning",
         "--cov-report=html",
+        "--timeout=720",
         "-m",
         "(not snippets) and (not gpu) and (not automl) and (not compat_matrix)",  # noqa: E501
         f"--report-log={report_path}",

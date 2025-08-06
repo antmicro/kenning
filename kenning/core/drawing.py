@@ -609,9 +609,7 @@ class ViolinComparisonPlot(Plot):
                 toolbar_location=None,
                 output_backend="webgl",
                 sizing_mode="scale_both",
-                margin=margins
-                if metric_label != self.metric_labels[-1]
-                else None,
+                margin=margins,
                 match_aspect=True,
                 height_policy="fit",
                 width_policy="max",
@@ -625,6 +623,7 @@ class ViolinComparisonPlot(Plot):
         for i, (color, (sample_name, samples)) in enumerate(
             zip(self.colors, self.metric_data.items())
         ):
+            renderers = []
             for name, sample in zip(self.metric_labels, samples):
                 x_min = min(sample)
                 x_max = max(sample)
@@ -653,9 +652,7 @@ class ViolinComparisonPlot(Plot):
                         line_color=color,
                     ),
                 )
-                legend_items.append(
-                    LegendItem(label=sample_name, renderers=[renderer])
-                )
+                renderers.append(renderer)
 
                 padding_percentage = 0.10
                 padding = padding_percentage * (x_max - x_min)
@@ -683,6 +680,9 @@ class ViolinComparisonPlot(Plot):
                         color=color,
                         line_width=2,
                     )
+            legend_items.append(
+                LegendItem(label=sample_name, renderers=renderers)
+            )
 
         # Adjust X range to the smallest and largest outlier plus paddings.
         padding_percentage = 0.05

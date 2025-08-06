@@ -27,7 +27,12 @@ import numpy as np
 import psutil
 from sklearn.pipeline import Pipeline
 
-from kenning.core.automl import AutoML, AutoMLModel
+from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
+    EpochEvaluationStepLogger,
+    EpochTrainingStepLogger,
+    TrainingProgressLogger,
+)
+from kenning.core.automl import AutoML, AutoMLModel, AutoMLModelSizeError
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelClassNotValidError,
@@ -634,9 +639,6 @@ class AutoPyTorchML(AutoML):
             The number of workers to use for data loaders.
         """
         from kenning.modelwrappers.frameworks.pytorch import PyTorchWrapper
-        from kenning.automl.auto_pytorch_components.logger_progress_tracker import (
-            TrainingProgressLogger
-        )
 
         super().__init__(
             dataset=dataset,
@@ -693,7 +695,13 @@ class AutoPyTorchML(AutoML):
         self.model_paths: List[Path] = []
         self.best_configs: List[Path] = []
         self.training_progress_tracker = TrainingProgressLogger(
-            time_limit*60
+            time_limit * 60
+        )
+        self.training_epoch_tracker = EpochTrainingStepLogger(
+            progress_tracker=self.training_progress_tracker
+        )
+        self.eval_epoch_tracker = EpochEvaluationStepLogger(
+            progress_tracker=self.training_progress_tracker
         )
 
     def prepare_framework(self):
@@ -761,6 +769,8 @@ class AutoPyTorchML(AutoML):
             early_stopping=True,
             pre_training_callback=self.pre_training_callback,
             training_tracker=self.training_progress_tracker,
+            training_epoch_tracker=self.training_epoch_tracker,
+            evaluation_epoch_tracker=self.eval_epoch_tracker,
             data_loader_workers=self.data_loader_workers,
         )
         self.initial_run_num = self._api._backend.get_next_num_run()

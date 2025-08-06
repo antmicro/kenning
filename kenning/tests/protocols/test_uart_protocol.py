@@ -5,6 +5,7 @@
 import json
 import multiprocessing
 import os
+import selectors
 import struct
 import time
 from pathlib import Path
@@ -212,12 +213,18 @@ class TestUARTProtocol(TestCoreProtocol):
             Initialized UART protocol client.
         """
         client = self.init_protocol()
-        if client.initialize_client() is False:
-            pytest.fail("Client initialization failed")
-
+        client.connection = serial.Serial(
+            client.port, client.baudrate, timeout=0
+        )
+        client.selector.register(
+            client.connection,
+            selectors.EVENT_READ | selectors.EVENT_WRITE,
+            client.receive_data,
+        )
+        client.start()
         yield client
-
-        client.disconnect()
+        client.stop()
+        client.connection.close()
 
     def mock_recv_message(self, message_type: MessageType):
         def recv_message(queue: multiprocessing.Queue):
@@ -324,22 +331,38 @@ class TestUARTProtocol(TestCoreProtocol):
 
         return send_message
 
-    def test_initialize_client(self):
-        """
-        Test the `initialize_client method.
-        """
-        client = self.init_protocol()
-        assert client.initialize_client()
-        client.disconnect()
-
-    def test_disconnect(self, client: UARTProtocol):
+    def test_initialize_client_disconnect(self, client: UARTProtocol):
         """
         Test disconnect client method.
         """
-        client = self.init_protocol()
-        assert client.initialize_client()
-
+        queue = multiprocessing.Queue()
+        thread_recv = multiprocessing.Process(
+            target=self.mock_recv_message(MessageType.PING),
+            args=(queue,),
+        )
+        thread_recv.start()
+        ret = client.initialize_client()
+        thread_recv.join()
+        assert ret
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.PING
+        assert message.payload == b""
+        assert message.flags.success
+        thread_recv = multiprocessing.Process(
+            target=self.mock_recv_message(MessageType.PING),
+            args=(queue,),
+        )
+        thread_recv.start()
         client.disconnect()
+        thread_recv.join()
+        assert queue.qsize() == 1
+        message = queue.get()
+        assert isinstance(message, Message)
+        assert message.message_type == MessageType.PING
+        assert message.payload == b""
+        assert message.flags.fail
         assert client.send_message(Message(MessageType.MODEL)) is False
         assert client.connection.is_open is False
 

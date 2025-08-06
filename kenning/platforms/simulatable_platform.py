@@ -186,7 +186,7 @@ class SimulatablePlatform(Platform, ABC):
         self.renode_log_file = None
         self.renode_log_buffer = ""
         self.renode_logs = []
-        self.runtime_log_enabled = False
+        self.zephyr_console_enabled = True
         self.runtime_log_buffer = ""
         self.runtime_logs = []
 
@@ -388,7 +388,7 @@ class SimulatablePlatform(Platform, ABC):
 
     def _wait_for_runtime_init(self):
         if self.runtime_log_init_msg is not None and (
-            self.runtime_log_enabled or self.simulated
+            self.zephyr_console_enabled and self.simulated
         ):
             KLogger.info("Waiting for runtime init")
             timeout = perf_counter() + self.runtime_init_timeout

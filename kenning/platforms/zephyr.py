@@ -231,14 +231,18 @@ class ZephyrPlatform(BareMetalPlatform):
 
         if self.uart_log_port is not None:
             console_uart = find_uart_by_alias(platform_dts, "zephyr,console")
-            KLogger.debug(f"Logging UART: {console_uart}")
-            emu.CreateUartPtyTerminal(
-                "console_uart_term", str(self.uart_log_port.resolve())
-            )
-            emu.Connector.Connect(
-                getattr(self.machine.sysbus, console_uart).internal,
-                emu.externals.console_uart_term,
-            )
-
+            if console_uart != kcomms_uart:
+                KLogger.debug(f"Logging UART: {console_uart}")
+                emu.CreateUartPtyTerminal(
+                    "console_uart_term", str(self.uart_log_port.resolve())
+                )
+                emu.Connector.Connect(
+                    getattr(self.machine.sysbus, console_uart).internal,
+                    emu.externals.console_uart_term,
+                )
+            else:
+                self.zephyr_console_enabled = False
+        else:
+            self.zephyr_console_enabled = False
         if not self.disable_opcode_counters:
             self._enable_opcode_counters()

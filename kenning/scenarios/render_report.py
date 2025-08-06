@@ -400,7 +400,8 @@ def comparison_performance_report(
 
         modelmetrics = set(data.keys())
         common_metrics &= modelmetrics
-    available_metrics.remove("session_utilization_cpus_percent_avg")
+    if "session_utilization_cpus_percent_avg" in available_metrics:
+        available_metrics.remove("session_utilization_cpus_percent_avg")
     report_variables["available_metrics"] = available_metrics
 
     for metric, (metric_name, unit) in metric_names.items():
@@ -672,10 +673,12 @@ def comparison_classification_report(
 
         classification_metrics = compute_classification_metrics(data)
         model_metrics = {}
-        model_metrics["accuracy"] = classification_metrics[Metric.ACC]
-        model_metrics["inferencetime_mean"] = performance_metrics[
-            "inferencetime_mean"
-        ]
+        if Metric.ACC in classification_metrics:
+            model_metrics["accuracy"] = classification_metrics[Metric.ACC]
+        if "inferencetime_mean" in performance_metrics:
+            model_metrics["inferencetime_mean"] = performance_metrics[
+                "inferencetime_mean"
+            ]
         metrics = []
         for metric in CLASSIFICATION_METRICS:
             if metric not in classification_metrics:

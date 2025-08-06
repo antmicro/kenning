@@ -1189,15 +1189,13 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         start_time = time.perf_counter()
         while True:
             events = self.selector.select(timeout=timeout)
-
             results = b""
             for key, mask in events:
                 if mask & selectors.EVENT_READ:
                     callback = key.data
                     data = callback(key.fileobj, mask)
-                    if data is None:
-                        return None
-                    results += data
+                    if data is not None:
+                        results += data
             if results:
                 return results
             elif not timeout or (time.perf_counter() - start_time > timeout):

@@ -175,8 +175,14 @@ class UARTProtocol(KenningProtocol):
             selectors.EVENT_READ | selectors.EVENT_WRITE,
             self.receive_data,
         )
-        self.start()
-        return self.connection.is_open
+        if self.connection.is_open:
+            self.start()
+            _, flags = self.request_blocking(
+                MessageType.PING, None, None, [TransmissionFlag.SUCCESS]
+            )
+            return flags is not None and TransmissionFlag.SUCCESS in flags
+        else:
+            return False
 
     def send_data(self, data: bytes) -> bool:
         if self.connection is None or not self.connection.is_open:
@@ -193,8 +199,11 @@ class UARTProtocol(KenningProtocol):
         return data
 
     def disconnect(self):
-        self.stop()
-        if self.connection is not None or self.connection.is_open:
+        if self.connection is not None and self.connection.is_open:
+            self.request_blocking(
+                MessageType.PING, None, None, [TransmissionFlag.FAIL]
+            )
+            self.stop()
             self.connection.close()
 
     def initialize_server(self) -> bool:

@@ -5,6 +5,7 @@
 import os
 from pathlib import Path
 from typing import Type
+from unittest.mock import patch
 
 import pytest
 
@@ -21,7 +22,7 @@ from kenning.tests.core.conftest import (
     remove_file_or_dir,
 )
 from kenning.utils.class_loader import get_all_subclasses
-from kenning.utils.resource_manager import ResourceURI
+from kenning.utils.resource_manager import ResourceManager, ResourceURI
 
 MODELWRAPPER_SUBCLASSES = get_all_subclasses(
     "kenning.modelwrappers", ModelWrapper, raise_exception=True
@@ -296,3 +297,32 @@ class TestModelWrapper:
         Tests the `train_model` method.
         """
         assert model.get_framework_and_version() is not None
+
+    def test_substitutive_method_of_loading_tf_model(self):
+        """
+        Test inference on a (re)loaded Keras model/layer with SavedModel
+        that was saved via tf.saved_model.save.
+        """
+        from kenning.modelwrappers.classification.tensorflow_imagenet import (
+            TensorFlowImageNet,
+        )
+
+        if TensorFlowImageNet.default_dataset is None:
+            raise ValueError("The dataset class is not available.")
+
+        model_path = get_tmp_path(suffix=".keras")
+        dataset = get_dataset_random_mock(TensorFlowImageNet.default_dataset)
+
+        assert TensorFlowImageNet.pretrained_model_uri is not None
+        ResourceManager().get_resource(
+            TensorFlowImageNet.pretrained_model_uri, model_path
+        )
+
+        def mock_load_model(*args, **kwargs):
+            raise RuntimeError("This model loading method will always fail.")
+
+        with patch("tensorflow.keras.models.load_model", mock_load_model):
+            with patch("tf_keras.models.load_model", mock_load_model):
+                loaded_model = create_model(TensorFlowImageNet, dataset)
+                loaded_model.load_model(model_path)
+                loaded_model.test_inference()

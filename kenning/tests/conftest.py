@@ -2,6 +2,7 @@
 #
 # SPDX-License-Identifier: Apache-2.0
 
+import glob
 import shutil
 import tempfile
 from dataclasses import dataclass
@@ -128,6 +129,12 @@ def pytest_addoption(parser: pytest.Parser):
         default="docs/source/*.md",
         help="",
     )
+    parser.addoption(
+        "--save-tmp-pattern",
+        action="store",
+        default="",
+        help="File pattern to move from tmp to workdir ('|' separator)",
+    )
 
 
 @pytest.hookimpl()
@@ -142,6 +149,9 @@ def pytest_sessionstart(session: pytest.Session):
         session.config.option.input_file_pattern
     ).resolve()
     pytest.input_file_pattern = input_file_pattern
+
+    save_tmp_pattern = session.config.option.save_tmp_pattern
+    pytest.save_tmp_pattern = save_tmp_pattern
 
     # do nothing when only collecting tests
     if "--collect-only" in session.config.invocation_params.args:
@@ -168,8 +178,16 @@ def pytest_sessionfinish(session: pytest.Session, exitstatus: int):
     # do nothing when only collecting tests
     if "--collect-only" in session.config.invocation_params.args:
         return
+
     test_directory_tmp = pytest.test_directory / "tmp"
     if test_directory_tmp.exists():
+        if pytest.save_tmp_pattern and pytest.save_tmp_pattern != "":
+            for pattern in pytest.save_tmp_pattern.split("|"):
+                pattern = pytest.save_tmp_pattern
+                pattern = str(test_directory_tmp) + "/**/" + pattern
+                for file in glob.iglob(pattern, recursive=True):
+                    shutil.move(file, Path.cwd() / Path(file).name)
+
         shutil.rmtree(test_directory_tmp, ignore_errors=True)
 
 

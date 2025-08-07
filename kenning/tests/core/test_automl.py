@@ -3,8 +3,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 from pathlib import Path
-from shutil import rmtree
-from tempfile import mkdtemp
 from typing import Callable, Optional, Type
 
 import pytest
@@ -70,15 +68,13 @@ def automl(request):
     dataset_cls = model_cls.default_dataset
 
     dataset = get_dataset_random_mock(dataset_cls, model_cls)
-    tmp_dir = Path(mkdtemp())
+    tmp_dir = Path(pytest.test_directory / "tmp")
 
     yield automl_cls(
         dataset=dataset,
         platform=LocalPlatform(),
         output_directory=tmp_dir,
     )
-
-    rmtree(tmp_dir)
 
 
 class TestAutoML:

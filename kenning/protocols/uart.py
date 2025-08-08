@@ -33,6 +33,7 @@ from kenning.utils.logger import KLogger
 
 BARE_METAL_IREE_ALLOCATION_STATS_SIZE = 24
 RUNTIME_STAT_NAME_MAX_LEN = 32
+RUNTIME_ALLOCATION_STATS_KEY = "allocation_stats"
 
 RUNTIME_STAT_FMT = f"{RUNTIME_STAT_NAME_MAX_LEN}sQQ"
 STAT_SIZE = struct.calcsize(RUNTIME_STAT_FMT)
@@ -76,7 +77,7 @@ def _parse_stats(data: bytes, final: bool = False) -> dict:
     if len(data) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE:
         stats = np.frombuffer(data, dtype=np.uint32, count=6)
         stats_json = {
-            "allocations": {
+            RUNTIME_ALLOCATION_STATS_KEY: {
                 "host_bytes_peak": int(stats[0]),
                 "host_bytes_allocated": int(stats[1]),
                 "host_bytes_freed": int(stats[2]),
@@ -104,9 +105,11 @@ def _parse_stats(data: bytes, final: bool = False) -> dict:
                 if final is not True:
                     continue
 
-                if "allocations" not in stats_json:
-                    stats_json["allocations"] = {}
-                stats_json["allocations"][stat_name] = stat_value
+                if RUNTIME_ALLOCATION_STATS_KEY not in stats_json:
+                    stats_json[RUNTIME_ALLOCATION_STATS_KEY] = {}
+                stats_json[RUNTIME_ALLOCATION_STATS_KEY][
+                    stat_name
+                ] = stat_value
 
             elif (
                 stat_type == RuntimeStatType.RUNTIME_STATISTICS_INFERENCE_TIME

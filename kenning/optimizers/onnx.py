@@ -151,6 +151,30 @@ def tfliteconversion(
     return modelproto
 
 
+def onnxconversion(
+    model_path: PathOrURI, input_spec: Dict, output_names: List
+) -> Any:
+    """
+    Loads onnx model from file.
+
+    Parameters
+    ----------
+    model_path: PathOrURI
+        Path to the model to convert
+    input_spec: Dict
+        Dictionary representing inputs
+    output_names: List
+        Names of outputs to include in the final model
+
+    Returns
+    -------
+    Any
+        Loaded ONNX model, a variant of ModelProto
+    """
+    onnx_model = onnx.load_model(str(model_path))
+    return onnx_model
+
+
 class ONNXCompiler(Optimizer):
     """
     The ONNX compiler.
@@ -160,6 +184,7 @@ class ONNXCompiler(Optimizer):
         "keras": kerasconversion,
         "torch": torchconversion,
         "tflite": tfliteconversion,
+        "onnx": onnxconversion,
     }
 
     outputtypes = ["onnx"]

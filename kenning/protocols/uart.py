@@ -143,6 +143,11 @@ class UARTProtocol(KenningProtocol):
             "type": int,
             "default": 9600,
         },
+        "endianness": {
+            "description": "Endianness of the bytes",
+            "type": str,
+            "default": "little",
+        },
     }
 
     def __init__(

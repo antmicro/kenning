@@ -22,6 +22,7 @@ from kenning.utils.class_loader import (
     OPTIMIZERS,
     OUTPUT_COLLECTORS,
     PLATFORMS,
+    REPORT,
     RUNNERS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
@@ -40,6 +41,7 @@ ALL_TYPES = (
     RUNNERS,
     RUNTIMES,
     RUNTIME_PROTOCOLS,
+    REPORT,
 )
 
 

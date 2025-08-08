@@ -587,7 +587,26 @@ def add_argparse_argument(
         keywords = {}
         if "type" in prop:
             prop_type, prop_sub_types = get_type(prop["type"])
-            if prop_type is bool:
+
+            if get_origin(prop_type) in {UnionType, Union}:
+                union_types = get_args(prop_type)
+
+                def union_converter(
+                    x, arg1=union_types[0], arg2=union_types[1]
+                ):
+                    if isinstance(x, arg1):
+                        return arg1(x)
+
+                    return arg2(x)
+
+                keywords["type"] = union_converter
+
+                if bool in union_types:
+                    keywords["default"] = False
+                    keywords["const"] = True
+                    keywords["nargs"] = "?"
+
+            elif prop_type is bool:
                 assert "default" in prop and prop["default"] in [True, False]
 
                 if override_only:

@@ -21,9 +21,10 @@ from typing import Any, Callable, Dict, List, Optional, Set, Tuple
 
 import numpy as np
 import yaml
-from argcomplete import DirectoriesCompleter, FilesCompleter
+from argcomplete import FilesCompleter
 from matplotlib.colors import to_hex
 
+from kenning.cli.completers import ClassPathCompleter
 from kenning.utils.resource_manager import ResourceURI
 
 if sys.version_info.minor < 9:
@@ -33,7 +34,6 @@ else:
 from kenning.cli.command_template import (
     AUTOML,
     DEFAULT_GROUP,
-    GROUP_SCHEMA,
     REPORT,
     TEST,
     ArgumentsGroups,
@@ -57,12 +57,16 @@ from kenning.core.report import (
     DETECTION,
     PERFORMANCE,
     RENODE,
-    REPORT_TYPES,
     TEXT_SUMMARIZATION,
     Report,
 )
 from kenning.resources import reports
-from kenning.utils.class_loader import get_command
+from kenning.utils.class_loader import (
+    ConfigKey,
+    get_command,
+    load_class_by_type,
+    obj_from_json,
+)
 from kenning.utils.logger import KLogger
 
 
@@ -2646,7 +2650,7 @@ class RenderReport(CommandTemplate):
     Command-line template for rendering reports.
     """
 
-    parse_all = True
+    parse_all = False
     description = __doc__.split("\n\n")[0]
     ID = generate_command_type()
 
@@ -2664,7 +2668,6 @@ class RenderReport(CommandTemplate):
         other_group = groups[DEFAULT_GROUP]
         # Group specific for this scenario,
         # doesn't have to be added to global groups
-        report_group = parser.add_argument_group(GROUP_SCHEMA.format(REPORT))
         run_in_sequence = TEST in types
 
         required_prefix = "* "
@@ -2700,74 +2703,12 @@ class RenderReport(CommandTemplate):
                 type=Path,
                 default=None,
             )
-        report_group.add_argument(
-            "--report-name",
-            help="Name of the report",
-            type=str,
-        )
+
+        other_group = groups[FLAG_CONFIG]
         other_group.add_argument(
-            "--report-path", help="Path to the output MyST file", type=Path
-        )
-        other_group.add_argument(
-            "--to-html",
-            help="Generate HTML version of the report, it can receive path to the folder where HTML will be saved",  # noqa: E501
-            nargs="?",
-            default=False,
-            const=True,
-            type=Path,
-        ).completer = DirectoriesCompleter()
-        report_group.add_argument(
-            "--root-dir",
-            help="Path to root directory for documentation (paths in the MyST file are relative to this directory)",  # noqa: E501
-            type=Path,
-        )
-        report_group.add_argument(
-            "--report-types",
-            help="List of types that implement this report",
-            nargs="+",
-            choices=REPORT_TYPES,
-        )
-        report_group.add_argument(
-            "--img-dir",
-            help="Path to the directory where images will be stored",
-            type=Path,
-        )
-        report_group.add_argument(
-            "--model-names",
-            help="Names of the models used to create measurements in order",
-            nargs="+",
-            type=str,
-        )
-        report_group.add_argument(
-            "--only-png-images",
-            help="Forcing to generate images only in PNG format, if not specified also images in HTML will be generated",  # noqa: E501
-            action="store_true",
-        )
-        report_group.add_argument(
-            "--comparison-only",
-            help="Creates only sections with comparisons of metrics and time series",  # noqa: E501
-            action="store_true",
-        )
-        report_group.add_argument(
-            "--skip-unoptimized-model",
-            help="Do not use measurements of unoptimized model",
-            action="store_true",
-        )
-        report_group.add_argument(
-            "--smaller-header",
-            help="Use smaller size for header containing report name",
-            action="store_true",
-        )
-        report_group.add_argument(
-            "--save-summary",
-            help="Saves JSON file with summary data from the report, to file specified in report-path with suffix `.summary.json`",  # noqa: E501
-            action="store_true",
-        )
-        report_group.add_argument(
-            "--skip-general-information",
-            help="Removes beginning sections listing used configuration and commands",  # noqa: E501
-            action="store_true",
-        )
+            "--report-cls",
+            help="Report type that will be used in report generation",
+        ).completer = ClassPathCompleter(REPORT)
 
         return parser, groups
 
@@ -2806,6 +2747,7 @@ class RenderReport(CommandTemplate):
     def _run_from_cfg(
         args: argparse.Namespace,
         command: List[str],
+        not_parsed: List[str] = [],
         **kwargs,
     ):
         with open(args.json_cfg, "r") as f:
@@ -2813,7 +2755,11 @@ class RenderReport(CommandTemplate):
 
         KLogger.debug("Yaml file: {}".format(json_cfg))
 
-        obj = Report.from_json(json_cfg[REPORT])
+        obj = obj_from_json(json_cfg, ConfigKey.report)
+
+        KLogger.debug("Loaded {}".format(obj))
+
+        # obj = Report.from_json(json_cfg[REPORT])
 
         return RenderReport._run_pipeline(args=obj, command=command)
 
@@ -2821,14 +2767,32 @@ class RenderReport(CommandTemplate):
     def _run_from_flags(
         args: argparse.Namespace,
         command: List[str],
+        not_parsed: List[str] = [],
         **kwargs,
     ):
-        obj = Report.from_argparse(args)
+        reportcls: Report = load_class_by_type(
+            getattr(args, "report_cls", None), REPORT
+        )
 
-        return RenderReport._run_pipeline(args=obj, command=command)
+        KLogger.debug("Report-cls {}".format(reportcls))
+
+        parser = argparse.ArgumentParser(
+            " ".join(map(lambda x: x.strip(), get_command(with_slash=False)))
+            + "\n",
+            parents=[reportcls.form_argparse(args)[0]],
+            add_help=False,
+        )
+
+        if args.help:
+            raise ParserHelpException(parser)
+        args = parser.parse_args(not_parsed, namespace=args)
+
+        report = reportcls.from_argparse(args)
+
+        return RenderReport._run_pipeline(args=report, command=command)
 
     @staticmethod
-    def run(args, **kwargs):
+    def run(args: argparse.Namespace, not_parsed: List[str] = [], **kwargs):
         command = get_command()
 
         flag_config_args = []
@@ -2838,8 +2802,12 @@ class RenderReport(CommandTemplate):
         if args.json_cfg is not None:
             if args.help:
                 raise ParserHelpException
-            return RenderReport._run_from_cfg(args, command, **kwargs)
-        return RenderReport._run_from_flags(args, command, **kwargs)
+            return RenderReport._run_from_cfg(
+                args, command, not_parsed, **kwargs
+            )
+        return RenderReport._run_from_flags(
+            args, command, not_parsed, **kwargs
+        )
 
     @staticmethod
     def _run_pipeline(args: Report, command, **kwargs):

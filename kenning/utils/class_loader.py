@@ -40,6 +40,7 @@ from kenning.core.optimizer import Optimizer
 from kenning.core.outputcollector import OutputCollector
 from kenning.core.platform import Platform
 from kenning.core.protocol import Protocol
+from kenning.core.report import Report
 from kenning.core.runner import Runner
 from kenning.core.runtime import Runtime
 from kenning.core.runtimebuilder import RuntimeBuilder
@@ -110,6 +111,7 @@ def get_base_classes_dict() -> Dict[str, Tuple[str, Type]]:
         RUNTIME_PROTOCOLS: ("kenning.protocols", Protocol),
         RUNTIMES: ("kenning.runtimes", Runtime),
         AUTOML: ("kenning.automl", AutoML),
+        REPORT: ("kenning.report", Report),
     }
 
 
@@ -413,6 +415,8 @@ def objs_from_argparse(
     if required:
         required(classes)
 
+    KLogger.debug("Classes: {}".format(classes.values()))
+
     args = parse_classes(list(classes.values()), args, not_parsed)
 
     objs = {
@@ -424,6 +428,7 @@ def objs_from_argparse(
             ConfigKey.protocol,
             ConfigKey.dataset,
             ConfigKey.runtime,
+            ConfigKey.report,
         ]
     }
 
@@ -487,6 +492,8 @@ def parse_classes(
         Raised when report types cannot be deduced from measurements data.
     """
     command = get_command(with_slash=False)
+    KLogger.debug("Command: {}".format(command))
+
     parser = argparse.ArgumentParser(
         " ".join(map(lambda x: x.strip(), command)) + "\n",
         parents=[

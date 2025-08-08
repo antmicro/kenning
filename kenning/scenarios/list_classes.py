@@ -35,6 +35,7 @@ from kenning.utils.class_loader import (
     OPTIMIZERS,
     OUTPUT_COLLECTORS,
     PLATFORMS,
+    REPORT,
     RUNNERS,
     RUNTIME_PROTOCOLS,
     RUNTIMES,
@@ -202,6 +203,7 @@ class ListClassesRunner(CommandTemplate):
         RUNTIME_PROTOCOLS,
         RUNTIMES,
         AUTOML,
+        REPORT,
     ]
 
     @staticmethod

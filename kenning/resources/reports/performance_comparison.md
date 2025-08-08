@@ -135,24 +135,6 @@ align: center
 ---
 Violin chart representing distribution of values for performance metrics for models
 ```
-{% macro displayStatsM(name, unit, prec, model_name) %}
-    ```{list-table}
-    ---
-    header-rows: 0
-    align: center
-    ---
-{%- for metric in data["available_metrics"] %}
-{%- if name in metric -%} {{"\n    * - "}}
-{%- if 'mean' in metric %}Mean  {%- endif -%}
-{%- if 'median' in metric %}Median {%- endif -%}
-{%- if 'std' in metric %}Standard deviation {%- endif -%}
-{%- if 'min' in metric %}Minimum {%- endif -%}
-{%- if 'max' in metric %}Maximum {%- endif -%}
-{{" ["}}{{unit}}{{"]\n      - "}}{{prec % data[model_name][metric]}}{{"\n"}}
-{%- endif -%}
-{% endfor %}
-    ```
-{% endmacro %}
 
 ```{list-table} Performance metric for models
 ---
@@ -160,19 +142,27 @@ header-rows: 1
 align: center
 ---
 * - Model name
-  - Inference time
-  - CPU usage
-  - Memory usage
-{% for model_name in data["model_names"] -%}
-* - {{model_name}}
-  -
-{{- displayStatsM('inferencetime', 's', '%.6f', model_name) -}}
-{{"  -"}}
-{{- displayStatsM('cpus_percent_avg', '%', '%.3f', model_name) -}}
-{{"  -"}}
-{{- displayStatsM('utilization_mem_percent', '%', '%.3f', model_name) -}}
+{% if 'inference_step_path' in data %}  - Inference time [s]
+{%- endif -%}
+{% if 'session_utilization_cpus_percent_avg_path' in data %}
+  - CPU usage [%]
+{%- endif -%}
+{% if 'session_utilization_mem_percent_path' in data %}
+  - Memory usage [%]
+{%- endif -%}
 
-{%- endfor -%}
+{%- for model_name in data["model_names"] %}
+* - {{model_name}}
+{% if 'inference_step_path' in data %}  - {{'%.6f' % data[model_name]['inferencetime_mean']}}
+{%- endif -%}
+{% if 'session_utilization_cpus_percent_avg_path' in data %}
+  - {{'%.3f' % data[model_name]['session_utilization_cpus_percent_avg_mean']}}
+{%- endif -%}
+{% if 'session_utilization_mem_percent_path' in data %}
+  - {{'%.3f' % data[model_name]['session_utilization_mem_percent_mean']}}
+{%- endif -%}
+
+{%- endfor %}
 ```
 
 {%- if 'hardwareusagepath' in data %}
@@ -194,7 +184,7 @@ align: center
 * - Model name
   - Average CPU usage [%]
   - Average memory usage [%]
-{% if 'session_utilization_gpu_mem_utilization_mean' in data[model_name] %}
+{% if 'session_utilization_gpu_mem_utilization_path' in data %}
   - Average GPU usage [%]
   - Average GPU memory usage [MB]
 {% endif %}

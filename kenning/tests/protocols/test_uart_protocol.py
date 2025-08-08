@@ -133,7 +133,7 @@ def mock_serial() -> Tuple[Path, Path]:
 
 class TestParseAllocationStats:
     def test_parse_valid_iree_stats(self, valid_iree_stats: bytes):
-        stats_json = _parse_stats(valid_iree_stats)["allocations"]
+        stats_json = _parse_stats(valid_iree_stats)["allocation_stats"]
 
         assert len(stats_json) == BARE_METAL_IREE_ALLOCATION_STATS_SIZE // 4
         assert all(

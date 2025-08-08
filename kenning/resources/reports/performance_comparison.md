@@ -2,23 +2,6 @@
 
 ### Performance metrics
 
-{% if 'inference_step_path' in data -%}
-```{figure} {{data["inference_step_path"]}}
----
-name: {{data["report_name_simple"]}}_inference_step_comparison
-alt: Inference time comparison
-align: center
----
-
-Plot represents changes of inference time over time for all models.
-```
-
-```{list-table} Summary of inference time metrics for models
----
-header-rows: 1
-align: center
----
-
 {% macro displayMetrics(name, unit, prec) %}
 * - Model name {{"\n"}}
 {%- for metric in data["available_metrics"] -%}
@@ -38,6 +21,23 @@ align: center
 {%- endfor -%}
 {%- endfor -%}
 {% endmacro %}
+
+{% if 'inference_step_path' in data -%}
+```{figure} {{data["inference_step_path"]}}
+---
+name: {{data["report_name_simple"]}}_inference_step_comparison
+alt: Inference time comparison
+align: center
+---
+
+Plot represents changes of inference time over time for all models.
+```
+
+```{list-table} Summary of inference time metrics for models
+---
+header-rows: 1
+align: center
+---
 
 {{ displayMetrics('inferencetime', 's', '%.6f') }}
 

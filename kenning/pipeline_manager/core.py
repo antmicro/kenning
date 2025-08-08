@@ -309,9 +309,9 @@ class BaseDataflowHandler(ABC):
                                 # List cannot have dtype set to "object"
                                 new_property["dtype"] = "string"
                                 KLogger.warning(
-                                    f"Usuported items type ({dtype}) for"
-                                    + f"{node.cls_name}.{name}. String is"
-                                    + "used by default."
+                                    f"Unsupported items of type {dtype}"
+                                    f"for {node.cls_name}.{name}. "
+                                    "String will used by default."
                                 )
                             else:
                                 new_property["dtype"] = dtype

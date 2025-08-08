@@ -35,7 +35,8 @@ optimizers:
       inference_output_type: float32
 
 report:
-  measurements: ./workspace/workspace/vae-tflite-renode.json
-  report_path: reports/vae-tflite-renode/report.md
-  report_types: [performance,classification]
-  to_html: true
+  parameters:
+    measurements: ./workspace/workspace/vae-tflite-renode.json
+    report_path: reports/vae-tflite-renode/report.md
+    report_types: [performance,classification]
+    to_html: true

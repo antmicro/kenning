@@ -299,6 +299,7 @@ def objs_from_json(
             ConfigKey.dataset,
             ConfigKey.runtime,
             ConfigKey.runtime_builder,
+            ConfigKey.report,
         ]
     ).intersection(keys)
 
@@ -415,7 +416,7 @@ def objs_from_argparse(
     if required:
         required(classes)
 
-    KLogger.debug("Classes: {}".format(classes.values()))
+    KLogger.debug(f"Classes: {classes}")
 
     args = parse_classes(list(classes.values()), args, not_parsed)
 
@@ -492,7 +493,7 @@ def parse_classes(
         Raised when report types cannot be deduced from measurements data.
     """
     command = get_command(with_slash=False)
-    KLogger.debug("Command: {}".format(command))
+    KLogger.debug(f"Command: {command}")
 
     parser = argparse.ArgumentParser(
         " ".join(map(lambda x: x.strip(), command)) + "\n",
@@ -565,6 +566,9 @@ def any_from_json(
         If a class is available and contains `from_json` method, it
         returns object of this class.
     """
+    if block_type == ConfigKey.report.value and "type" not in json_cfg:
+        json_cfg["type"] = "kenning.report.markdown_report.MarkdownReport"
+
     if cls := load_class_from_json(json_cfg, block_type):
         return cls.from_json(json_cfg.get("parameters", {}), **kwargs)
 

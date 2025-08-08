@@ -11,7 +11,6 @@ import argparse
 import json
 import os.path
 from abc import ABC
-from functools import partial
 from pathlib import Path
 from types import UnionType
 from typing import (
@@ -460,9 +459,12 @@ def get_parsed_args_dict(
                 continue
 
         # convert type
-        if "type" in arg_properties and value is not None:
-            if get_origin(arg_properties["type"]) not in {UnionType, Union}:
-                value = arg_properties["type"](value)
+        if (
+            "type" in arg_properties
+            and value is not None
+            and get_origin(arg_properties["type"]) not in (UnionType, Union)
+        ):
+            value = arg_properties["type"](value)
 
         parsed_args[arg_name] = value
 
@@ -591,15 +593,9 @@ def add_argparse_argument(
             if get_origin(prop_type) in {UnionType, Union}:
                 union_types = get_args(prop_type)
 
-                def union_converter(
-                    x, arg1=union_types[0], arg2=union_types[1]
-                ):
-                    if isinstance(x, arg1):
-                        return arg1(x)
-
-                    return arg2(x)
-
-                keywords["type"] = union_converter
+                keywords["type"] = lambda v: convert(
+                    v=v, converters=get_args(prop_type)
+                )
 
                 if bool in union_types:
                     keywords["default"] = False
@@ -623,7 +619,11 @@ def add_argparse_argument(
                         converters.update(sub_type)
                     else:
                         converters.add(sub_type)
-                keywords["type"] = partial(convert, converters=converters)
+
+                def conversion(x, conv_list=converters):
+                    return convert(v=x, converters=conv_list)
+
+                keywords["type"] = conversion
             else:
                 keywords["type"] = prop_type
         if "description" in prop:
@@ -705,7 +705,7 @@ def add_parameterschema_argument(
         if "type" in prop:
             prop_type, prop_sub_type = get_type(prop["type"])
 
-            if get_origin(prop_type) in {UnionType, Union}:
+            if get_origin(prop_type) in (UnionType, Union):
                 types = []
                 for arg in get_args(prop_type):
                     p_type, p_sub_type = get_type(arg)

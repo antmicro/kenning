@@ -66,10 +66,12 @@ from kenning.cli.completers import (
     ClassPathCompleter,
 )
 from kenning.core.measurements import MeasurementsCollector
+from kenning.core.report import Report
 from kenning.utils.args_manager import ensure_exclusive_cfg_or_flags
 from kenning.utils.class_loader import (
     ConfigKey,
     get_command,
+    obj_from_json,
     objs_from_argparse,
 )
 from kenning.utils.logger import KLogger
@@ -176,6 +178,7 @@ class InferenceTester(CommandTemplate):
                     nargs=1,
                     type=Path,
                     default=[None],
+                    required=bool(types),
                 )
             other_group.add_argument(
                 "--evaluate-unoptimized",
@@ -285,14 +288,10 @@ class InferenceTester(CommandTemplate):
             override=(args, not_parsed),
         )
 
-        if ConfigKey.report in json_cfg:
-            # it should enough for now
-            report = json_cfg[ConfigKey.report]
+        if ConfigKey.report in json_cfg.keys():
+            report: Report = obj_from_json(json_cfg, ConfigKey.report)
 
-            args.measurements = report["measurements"]
-
-            if not isinstance(args.measurements, list):
-                args.measurements = [args.measurements]
+            args.measurements = report.measurements
 
         return InferenceTester._run_pipeline(
             args=args, command=command, pipeline_runner=pipeline_runner
@@ -313,6 +312,7 @@ class InferenceTester(CommandTemplate):
             ConfigKey.optimizers,
             ConfigKey.protocol,
             ConfigKey.dataconverter,
+            ConfigKey.report,
         ]
 
         def required(objs: Dict[ConfigKey, Type]):
@@ -342,8 +342,6 @@ class InferenceTester(CommandTemplate):
         pipeline_runner: PipelineRunner,
     ):
         from kenning.cli.config import get_used_subcommands
-
-        KLogger.debug("Measurements: {}".format(args.measurements))
 
         subcommands = get_used_subcommands(args)
         output = args.measurements[0] if args.measurements[0] else None

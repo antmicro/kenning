@@ -26,17 +26,12 @@ from pipeline_manager_backend_communication.utils import (
 
 from kenning.core.drawing import (
     KENNING_COLORS,
-    RED_GREEN_CMAP,
     SERVIS_PLOT_OPTIONS,
     choose_theme,
 )
 from kenning.core.measurements import MeasurementsCollector
 from kenning.pipeline_manager.core import BaseDataflowHandler
-from kenning.scenarios.render_report import (
-    generate_html_report,
-    generate_report,
-    load_measurements_for_report,
-)
+from kenning.report.markdown_report import MarkdownReport
 from kenning.utils.class_loader import get_command
 from kenning.utils.logger import KLogger
 
@@ -514,16 +509,11 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
                     "content": "Run evaluation before generating a report",
                 }
             KLogger.info("Generating report...")
+
             command = get_command()
-            measurementsdata, report_types = load_measurements_for_report(
-                measurements_files=[self.output_file_path / self.filename],
-                model_names=None,
-                skip_unoptimized_model=True,
-                report_types=None,
-            )
+
             SERVIS_PLOT_OPTIONS["colormap"] = KENNING_COLORS
-            cmap = RED_GREEN_CMAP
-            colors = KENNING_COLORS
+
             output_path = self.output_file_path.parent / "report"
             output_path_html = self.output_file_path.parent / "report_html"
             if not output_path.exists():
@@ -535,21 +525,20 @@ class OptimizationHandlerRPC(PipelineManagerRPC):
             with choose_theme(
                 custom_bokeh_theme=True, custom_matplotlib_theme=True
             ):
-                generate_report(
+                report = MarkdownReport(
+                    measurements=[self.output_file_path / self.filename],
+                    model_names=None,
+                    skip_unoptimized_model=True,
+                    report_types=None,
                     report_name="Pipeline Manager Run Report",
-                    data=measurementsdata,
-                    outputpath=output_path / "report.md",
-                    imgdir=output_path / "imgs",
-                    report_types=report_types,
+                    report_path=output_path / "report.md",
+                    img_dir=output_path / "imgs",
                     root_dir=output_path,
-                    image_formats={"png", "html"},
-                    command=command,
-                    cmap=cmap,
-                    colors=colors,
+                    to_html=output_path_html,
                 )
-                generate_html_report(
-                    output_path / "report.md", output_path_html, False
-                )
+
+                report.generate_report(subcommands=None, command=command)
+
             import webbrowser
 
             KLogger.info("Generated report.")

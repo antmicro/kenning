@@ -7,17 +7,48 @@ A package that provides markdown and HTML report generator
 implementation of core report class.
 """
 
+import argparse
+import json
+import re
 import sys
+from collections import namedtuple
 from pathlib import Path
-from typing import Optional
+from typing import Dict, List, Optional
+
+from matplotlib.colors import to_hex
+
+from kenning.cli.command_template import AUTOML
+from kenning.report.markdown_components import (
+    automl_report,
+    classification_report,
+    comparison_classification_report,
+    comparison_detection_report,
+    comparison_performance_report,
+    comparison_renode_stats_report,
+    comparison_text_summarization_report,
+    create_report_from_measurements,
+    detection_report,
+    performance_report,
+    renode_stats_report,
+    text_summarization_report,
+)
+from kenning.resources import reports
+from kenning.utils.logger import KLogger
 
 if sys.version_info.minor < 9:
-    pass
+    from importlib_resources import path
 else:
-    pass
-from kenning.core.report import (
-    Report,
+    from importlib.resources import path
+
+from kenning.core.drawing import (
+    KENNING_COLORS,
+    RED_GREEN_CMAP,
+    SERVIS_PLOT_OPTIONS,
+    Plot,
+    choose_theme,
 )
+from kenning.core.measurements import Measurements
+from kenning.core.report import Report, ReportTypes
 
 
 class MarkdownReport(Report):
@@ -32,6 +63,17 @@ class MarkdownReport(Report):
             "type": bool | Path,
             "default": False,
         },
+        "report_path": {
+            "description": "Path to the output MyST file",
+            "type": Path,
+            "default": None,
+        },
+        "root_dir": {
+            "description": "Path to root directory for documentation \
+                (paths in the MyST file are relative to this directory)",
+            "type": Path,
+            "default": None,
+        },
         "img_dir": {
             "description": "Path to the directory where images will be stored",
             "type": Path,
@@ -42,6 +84,12 @@ class MarkdownReport(Report):
                 if not specified also images in HTML will be generated",
             "type": bool,
             "default": False,
+        },
+        "model_names": {
+            "description": "Names of the models used to create measurements\
+                  in order",
+            "type": str,
+            "default": None,
         },
         "comparison_only": {
             "description": "Creates only sections with comparisons\
@@ -73,17 +121,11 @@ class MarkdownReport(Report):
             "type": bool,
             "default": False,
         },
-        "report_types": {
-            "description": "List of types that implement this report",
-            "type": list[str],
-            # "enum":REPORT_TYPES,
-            "default": None,
-        },
     }
 
     def __init__(
         self,
-        measurements: list[Path] | Path = [None],
+        measurements: List[Path] | Path = [None],
         report_name: str = None,
         report_path: Optional[Path] = None,
         to_html: bool | Path = False,
@@ -97,13 +139,13 @@ class MarkdownReport(Report):
         smaller_header: bool = False,
         save_summary: bool = False,
         skip_general_information: bool = False,
-        verbosity: str = "INFO",
+        automl_stats: Optional[Path] = None,
     ):
-        super().__init__(measurements, report_name, report_path, verbosity)
+        super().__init__(measurements, report_name, report_types, automl_stats)
 
         self.to_html = to_html
+        self.report_path = report_path
         self.root_dir = root_dir
-        self.report_types = report_types
         self.img_dir = img_dir
         self.model_names = model_names
         self.only_png_images = only_png_images
@@ -113,8 +155,342 @@ class MarkdownReport(Report):
         self.save_summary = save_summary
         self.skip_general_information = skip_general_information
 
-    def generate_report(self):
+        self.measurementsdata = {}
+
+        if self.to_html:
+            if not isinstance(self.to_html, (str, Path)):
+                self.to_html = Path(self.report_path).with_suffix("")
+
+        if self.to_html and not self.measurements:
+            raise argparse.ArgumentError(
+                None,
+                "HTML report cannot be generated, file from "
+                "'--report-path' does not exist. Please, make sure the "
+                "path is correct or use '--measurements' to generate new "
+                "report.",
+            )
+
+        if not self.measurements:
+            raise argparse.ArgumentError(
+                None,
+                "'--measurements' have to be defined to generate new report. "
+                "If only HTML version from existing report has to be "
+                "rendered, please use '--to-html' flag",
+            )
+
+        if self.comparison_only and len(self.measurements) <= 1:
+            KLogger.warn(
+                "'--comparison-only' used, but only one measurements file"
+                " provided - creating standard report"
+            )
+            self.comparison_only = False
+
+        if self.root_dir is None and self.report_path is not None:
+            self.root_dir = self.report_path.parent.absolute()
+
+        if not self.img_dir and self.root_dir is not None:
+            self.img_dir = self.root_dir / "img"
+
+        if self.model_names is not None and len(self.measurements) != len(
+            self.model_names
+        ):
+            KLogger.warning(
+                "Number of model names differ from number of measurements! "
+                "Ignoring --model-names argument"
+            )
+            self.model_names = None
+
+        self.image_formats = {"png"}
+        if not self.only_png_images:
+            self.image_formats |= {"html"}
+
+        (
+            self.measurementsdata,
+            self.report_types,
+            self.automl_stats,
+        ) = Report.load_measurements_for_report(
+            measurements_files=self.measurements,
+            model_names=self.model_names,
+            skip_unoptimized_model=self.skip_unoptimized_model,
+            report_types=self.report_types,
+            automl_stats_file=self.automl_stats,
+        )
+
+        if self.report_name is None:
+            self.report_name = Report.deduce_report_name(
+                self.measurementsdata, report_types
+            )
+
+        # Fill missing colors with ones generated from nipy_spectral
+
+        self.colors = KENNING_COLORS
+
+        if len(self.measurementsdata) > len(self.colors):
+            self.colors += [
+                to_hex(c)
+                for c in Plot._get_comparison_color_scheme(
+                    len(self.measurementsdata) - len(self.colors)
+                )
+            ]
+
+        SERVIS_PLOT_OPTIONS["colormap"] = self.colors
+        self.cmap = RED_GREEN_CMAP
+
+    def generate_markdown_report(
+        self, command: List[str] = [], draw_titles: bool = True
+    ):
+        """
+        Generates an MyST report based on Measurements data.
+
+        The report is saved to the file in ``outputpath``.
+
+        Parameters
+        ----------
+        command : List[str]
+            Full command used to render this report, split into separate lines.
+        draw_titles : bool
+            Should titles be drawn on the plot.
+        """
+        rep = ReportTypes
+
+        reptypes = {
+            rep.PERFORMANCE: performance_report,
+            rep.CLASSIFICATION: classification_report,
+            rep.DETECTION: detection_report,
+            rep.RENODE: renode_stats_report,
+            rep.TEXT_SUMMARIZATION: text_summarization_report,
+        }
+        comparereptypes = {
+            rep.PERFORMANCE: comparison_performance_report,
+            rep.CLASSIFICATION: comparison_classification_report,
+            rep.DETECTION: comparison_detection_report,
+            rep.RENODE: comparison_renode_stats_report,
+            rep.TEXT_SUMMARIZATION: comparison_text_summarization_report,
+        }
+
+        header_data = {
+            "report_name": self.report_name,
+            "model_names": [],
+            "command": [],
+            "smaller_header": self.smaller_header,
+        }
+
+        for model_data in filter(
+            lambda x: not x.get(Measurements.UNOPTIMIZED),
+            self.measurementsdata,
+        ):
+            header_data["model_names"].append(model_data["model_name"])
+            if "command" in model_data:
+                header_data["command"] += model_data["command"] + [""]
+            header_data[model_data["model_name"]] = model_data
+
+        # add command only if previous one is not the same
+        if any(c1 != c2 for c1, c2 in zip(header_data["command"], command)):
+            header_data["command"].extend(command)
+
+        content = ""
+
+        if not self.skip_general_information:
+            with path(reports, "header.md") as reporttemplate:
+                content += create_report_from_measurements(
+                    reporttemplate, header_data
+                )
+
+        if self.automl_stats:
+            content += automl_report(
+                self.automl_stats,
+                self.img_dir,
+                self.root_dir,
+                self.image_formats,
+                self.colors,
+                draw_titles,
+            )
+
+        models_metrics = {}
+        if len(self.measurementsdata) > 1:
+            for _type in self.report_types:
+                content += comparereptypes[_type](
+                    self.measurementsdata,
+                    self.img_dir,
+                    self.root_dir,
+                    self.image_formats,
+                    cmap=self.cmap,
+                    colors=self.colors,
+                    draw_titles=draw_titles,
+                )
+        if not self.comparison_only or self.save_summary:
+            for _type in self.report_types:
+                for i, model_data in enumerate(self.measurementsdata):
+                    if model_data["model_name"] not in models_metrics:
+                        models_metrics[model_data["model_name"]] = {
+                            "metrics": [],
+                            "scenarioPath": model_data.get("cfg_path", None),
+                        }
+                    if len(self.measurementsdata) > 1:
+                        imgprefix = (
+                            model_data["model_name"].replace(" ", "_") + "_"
+                        )
+                    else:
+                        imgprefix = ""
+                    additional_content, metrics = reptypes[_type](
+                        model_data,
+                        self.img_dir,
+                        imgprefix,
+                        self.root_dir,
+                        self.image_formats,
+                        color_offset=i,
+                        cmap=self.cmap,
+                        colors=self.colors,
+                        draw_titles=draw_titles,
+                    )
+                    for metric_name, metric in metrics.items():
+                        models_metrics[model_data["model_name"]][
+                            "metrics"
+                        ].append(
+                            {
+                                "type": _type,
+                                "name": metric_name,
+                                "value": metric,
+                            }
+                        )
+                    if not self.comparison_only:
+                        content += additional_content
+
+        content = re.sub(r"[ \t]+$", "", content, 0, re.M)
+
+        with open(self.report_path, "w") as out:
+            out.write(content)
+        if self.save_summary:
+            report_summary = []
+            for name, data in models_metrics.items():
+                report_summary.append(data | {"modelName": name})
+            with open(
+                self.report_path.with_suffix(".summary.json"), "w"
+            ) as out:
+                json.dump(report_summary, out)
+
+    def generate_html_report(
+        self,
+        report_path: Path,
+        output_folder: Path,
+        debug: bool = False,
+        override_conf: Optional[Dict] = None,
+    ):
+        """
+        Runs Sphinx with HTML builder for generated report.
+
+        Parameters
+        ----------
+        report_path : Path
+            Path to the generated report file
+        output_folder : Path
+            Where generated HTML report should be saved
+        debug : bool
+            Debug mode -- allows to print more information
+        override_conf : Optional[Dict]
+            Custom configuration of Sphinx app
+        """
+        from sphinx.application import Sphinx
+        from sphinx.cmd.build import handle_exception
+        from sphinx.util.docutils import docutils_namespace, patch_docutils
+
+        with path(reports, "conf.py") as _conf:
+            override_conf = (override_conf or {}) | {
+                # Include only report file
+                "include_patterns": [f"{report_path.name}"],
+                # Ensure report file isn't excluded
+                "exclude_patterns": [],
+                # Use report file as main source
+                "master_doc": f'{report_path.with_suffix("").name}',
+                # Static files for HTML
+                "html_static_path": [f'{_conf.parent / "_static"}'],
+                # Remove PFD button
+                "html_theme_options.pdf_url": [],
+                # Warning about using h2 header
+                "suppress_warnings": ["myst.header"],
+            }
+            app = None
+            try:
+                with patch_docutils(_conf.parent), docutils_namespace():
+                    app = Sphinx(
+                        report_path.parent,
+                        _conf.parent,
+                        output_folder,
+                        output_folder / ".doctrees",
+                        "html",
+                        override_conf,
+                        freshenv=False,
+                    )
+                    app.build(False, [str(report_path)])
+            except Exception as ex:
+                mock_args = namedtuple(
+                    "MockArgs", ("pdb", "verbosity", "traceback")
+                )(pdb=debug, verbosity=debug, traceback=debug)
+                handle_exception(app, mock_args, ex)
+                KLogger.error(
+                    "Error occurred, HTML report won't be generated",
+                    ex.args,
+                    stack_info=True,
+                )
+
+    def generate_report(
+        self,
+        subcommands: Optional[List[str]] = None,
+        command: Optional[List[str]] = None,
+    ) -> None:
         """
         Generate report.
+
+        Parameters
+        ----------
+        subcommands : Optional[List[str]]
+            Used subcommands from parsed arguments.
+        command : Optional[List[str]]
+            A list of arguments from command line.
+
+        Raises
+        ------
+        argparse.ArgumentError
+            if there is missing or wrong arguments
+
+        Returns
+        -------
+        None
         """
-        pass
+        KLogger.debug(f"Measurements {self.measurements}")
+
+        if (
+            self.to_html
+            and not self.measurements
+            and self.report_path.exists()
+        ):
+            # Only render HTML report
+            KLogger.info("Generating HTML report only!")
+            self.generate_html_report(
+                self.report_path, self.to_html, KLogger.level == "DEBUG"
+            )
+            return
+
+        if (
+            self.comparison_only
+            and len(self.measurements) <= 1
+            and AUTOML not in subcommands
+        ):
+            raise argparse.ArgumentError(
+                None,
+                "'--comparison-only' applies only if there are more "
+                "than one measurements' file.",
+            )
+
+        self.img_dir.mkdir(parents=True, exist_ok=True)
+
+        with choose_theme(
+            custom_bokeh_theme=True,
+            custom_matplotlib_theme=True,
+        ):
+            self.generate_markdown_report(command, draw_titles=False)
+
+        if self.to_html:
+            self.generate_html_report(
+                self.report_path, self.to_html, KLogger.level == "DEBUG"
+            )

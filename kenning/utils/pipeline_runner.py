@@ -696,7 +696,7 @@ class PipelineRunner(object):
 
             # prepare iterator for inference
             iterable = (
-                range(self.platform.batches_count)
+                range(self.platform.number_of_batches)
                 if use_platform_sensor
                 else self.dataset.iter_test()
             )

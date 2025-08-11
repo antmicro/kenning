@@ -13,7 +13,7 @@
             "profiler_dump_path": "build/profiler.dump",
             "uart_port": "/tmp/uart",
             "sensor": "adxl345",
-            "batches_count": 100
+            "number_of_batches": 100
         }
     },
     "dataset": {

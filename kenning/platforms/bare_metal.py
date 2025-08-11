@@ -62,6 +62,17 @@ class BareMetalPlatform(SimulatablePlatform):
             "type": Path,
             "default": "openocd",
         },
+        "sensor": {
+            "description": "Name of the sensor",
+            "type": str,
+            "nullable": True,
+            "default": None,
+        },
+        "number_of_batches": {
+            "description": "Number of batches made of samples.",
+            "type": int,
+            "default": 16,
+        },
     }
 
     platform_defaults = dict(

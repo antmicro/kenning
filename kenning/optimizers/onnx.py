@@ -244,41 +244,38 @@ class ONNXCompiler(Optimizer):
 
             io_spec = deepcopy(io_spec)
 
-            input_spec = (
+            io_spec["input"] = (
                 io_spec["processed_input"]
                 if "processed_input" in io_spec
                 else io_spec["input"]
             )
-            output_spec = io_spec["output"]
+
         except (TypeError, KeyError):
             raise IOSpecificationNotFoundError(
                 "No input/output specification found"
             )
 
         try:
-            output_names = [spec["name"] for spec in output_spec]
+            output_names = [spec["name"] for spec in io_spec["output"]]
         except KeyError:
             output_names = None
 
         input_type = self.get_input_type(input_model_path)
 
         model = self.inputtypes[input_type](
-            input_model_path, input_spec, output_names
+            input_model_path, io_spec["input"], output_names
         )
 
         onnx.save(model, self.compiled_model_path)
 
         # update the io specification with names
-        for spec, input in zip(input_spec, model.graph.input):
+        for spec, input in zip(io_spec["input"], model.graph.input):
             spec["name"] = input.name
 
-        for spec, output in zip(output_spec, model.graph.output):
+        for spec, output in zip(io_spec["output"], model.graph.output):
             spec["name"] = output.name
 
-        self.save_io_specification(
-            input_model_path, {"input": input_spec, "output": output_spec}
-        )
-        return 0
+        self.save_io_specification(input_model_path, io_spec)
 
     def get_framework_and_version(self):
         return ("onnx", onnx.__version__)

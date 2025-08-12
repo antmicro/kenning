@@ -59,7 +59,9 @@ class TensorFlowWrapper(ModelWrapper, ABC):
         self.model = None
 
         try:
-            self.model = tf.keras.models.load_model(str(model_path))
+            self.model = tf.keras.models.load_model(
+                str(model_path), compile=False
+            )
         except Exception:
             KLogger.warning(
                 "The model %s could not be loaded with tf.keras loader.",
@@ -71,7 +73,9 @@ class TensorFlowWrapper(ModelWrapper, ABC):
             try:
                 import tf_keras
 
-                self.model = tf_keras.models.load_model(str(model_path))
+                self.model = tf_keras.models.load_model(
+                    str(model_path), compile=False
+                )
             except Exception as e:
                 KLogger.error(
                     "All methods to load the model %s failed.", str(model_path)

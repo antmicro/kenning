@@ -37,6 +37,11 @@ RUNTIME_STAT_NAME_MAX_LEN = 32
 RUNTIME_STAT_FMT = f"{RUNTIME_STAT_NAME_MAX_LEN}sQQ"
 STAT_SIZE = struct.calcsize(RUNTIME_STAT_FMT)
 
+# How many seconds to wait for the client to respond to our connection attempt.
+CONNECTION_TIMEOUT = 1
+# How many times to re-try estabilishing a connection before throwing an error.
+CONNECTION_RETRY = 5
+
 
 class RuntimeStatType(enum.IntEnum):
     """An enum of statistic types returned by the protocol."""
@@ -179,9 +184,23 @@ class UARTProtocol(KenningProtocol):
         if self.connection.is_open:
             self.start()
             _, flags = self.request_blocking(
-                MessageType.PING, None, None, [TransmissionFlag.SUCCESS]
+                MessageType.PING,
+                None,
+                None,
+                [TransmissionFlag.SUCCESS],
+                CONNECTION_TIMEOUT,
+                CONNECTION_RETRY,
             )
-            return flags is not None and TransmissionFlag.SUCCESS in flags
+            if flags is None:
+                KLogger.error(
+                    "Device not responding to connection requests. Device"
+                    " reset might be necessary."
+                )
+                return False
+            if TransmissionFlag.FAIL in flags:
+                KLogger.error("Device refused connection.")
+                return False
+            return True
         else:
             return False
 
@@ -201,9 +220,19 @@ class UARTProtocol(KenningProtocol):
 
     def disconnect(self):
         if self.connection is not None and self.connection.is_open:
-            self.request_blocking(
-                MessageType.PING, None, None, [TransmissionFlag.FAIL]
+            _, flags = self.request_blocking(
+                MessageType.PING,
+                None,
+                None,
+                [TransmissionFlag.FAIL],
+                CONNECTION_TIMEOUT,
+                CONNECTION_RETRY,
             )
+            if flags is None:
+                KLogger.error(
+                    "Device is not responding to disconnect requests. Device"
+                    " reset might be necessary."
+                )
             self.stop()
             self.connection.close()
 

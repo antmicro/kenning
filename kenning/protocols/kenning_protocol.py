@@ -1358,7 +1358,11 @@ class KenningProtocol(BytesBasedProtocol, ABC):
                     " same type was in progress."
                 )
 
-    def finish_event(self, event: ProtocolEvent):
+    def finish_event(
+        self,
+        event: ProtocolEvent,
+        log_failure: bool = True,
+    ):
         """
         Removes an event from the 'current_protocol_events' dict and
         logs it's success or failure.
@@ -1367,10 +1371,13 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         ----------
         event: ProtocolEvent
             Event to finish
+        log_failure: bool
+            If true, in case of event failure an error will be logged (used
+            to suppress errors, when the event is being re-tried).
         """
         if event.has_succeeded():
             KLogger.debug(f"{event} has succeeded.")
-        else:
+        elif log_failure:
             KLogger.error(f"{event} has failed.")
         with self.event_lock:
             if event.message_type in self.current_protocol_events.keys():
@@ -1448,19 +1455,29 @@ class KenningProtocol(BytesBasedProtocol, ABC):
         retry: int = 1,
         deny_callback: Optional[ProtocolFailureCallback] = None,
     ) -> Tuple[Optional[bytes], Optional[List[TransmissionFlag]]]:
-        is_successful, event = self.run_event_blocking(
-            OutgoingRequest(message_type, self, retry, payload, flags), timeout
-        )
-        self.finish_event(event)
-        if is_successful:
-            _, data, flags = event.get_contents()
-            if callback is not None:
-                callback(message_type, data, flags)
-            return data, flags
-        else:
-            if deny_callback is not None:
-                deny_callback(event.message_type)
-            return None, None
+        event = None
+        attempt = 0
+        while True:
+            is_successful, event = self.run_event_blocking(
+                # We are setting retries to 0, because in blocking mode we
+                # handle retries with a simple loop in this method (otherwise
+                # retry mechanism would not work in case of a timeout).
+                OutgoingRequest(message_type, self, 0, payload, flags),
+                timeout,
+            )
+            self.finish_event(event, attempt == retry)
+            if is_successful:
+                _, data, flags = event.get_contents()
+                if callback is not None:
+                    callback(message_type, data, flags)
+                return data, flags
+            attempt += 1
+            if attempt > retry:
+                break
+            KLogger.debug(f"{event} has failed. Retrying...")
+        if deny_callback is not None:
+            deny_callback(event.message_type)
+        return None, None
 
     def listen(
         self,

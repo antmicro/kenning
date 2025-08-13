@@ -13,6 +13,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from tqdm import tqdm
 
+from kenning.cli.command_template import OPTIMIZE, TEST, CommandTemplate
 from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
@@ -324,6 +325,8 @@ class PipelineRunner(object):
 
         model_framework = self._guess_model_framework(convert_to_onnx)
 
+        CommandTemplate.current_command = OPTIMIZE
+
         # initialize protocol if needed
         protocol_required_by_optimizers = run_optimizations and any(
             optimizer.location == "target" for optimizer in self.optimizers
@@ -388,6 +391,8 @@ class PipelineRunner(object):
             KLogger.info(f"Deduced runtime {self.runtime}")
 
         if run_benchmarks:
+            CommandTemplate.current_command = TEST
+
             if self.runtime is None:
                 self.model_wrapper.test_inference()
             else:

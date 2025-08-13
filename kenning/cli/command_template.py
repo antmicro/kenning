@@ -64,6 +64,8 @@ class CommandTemplate(ABC):
     description: Union[str, Dict[str, str]]
     ID = generate_command_type()
 
+    current_command: str = ""
+
     @staticmethod
     def configure_parser(
         parser: Optional[argparse.ArgumentParser] = None,

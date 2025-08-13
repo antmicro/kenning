@@ -12,7 +12,7 @@ import sys
 from typing import Dict
 
 from kenning.cli.autocompletion import configure_autocomplete
-from kenning.cli.command_template import LIST
+from kenning.cli.command_template import LIST, CommandTemplate
 from kenning.cli.config import (
     AVAILABLE_COMMANDS,
     MAP_COMMAND_TO_SCENARIO,
@@ -160,10 +160,12 @@ def main():
             continue
         try:
             try:
+                CommandTemplate.current_command = subcommand
                 result = scenario.run(args, not_parsed=rem)
                 if result:
                     parser.error(
-                        f"`{subcommand}` subcommand did not end successfully",
+                        f"`{CommandTemplate.current_command}` subcommand did "
+                        "not end successfully",
                         print_usage=False,
                     )
             except ModuleNotFoundError as er:
@@ -178,6 +180,12 @@ def main():
             except argparse.ArgumentError as er:
                 parser.error(er.message)
                 return 2
+            except Exception as exp:
+                parser.error(
+                    f"`{CommandTemplate.current_command}` subcommand did "
+                    f"not end successfully error msg: {exp}",
+                    print_usage=False,
+                )
         except ParserHelpException as ex:
             # Prepare combined errors
             if ex.error is not None:

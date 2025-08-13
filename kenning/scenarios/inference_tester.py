@@ -178,7 +178,6 @@ class InferenceTester(CommandTemplate):
                     nargs=1,
                     type=Path,
                     default=[None],
-                    required=bool(types),
                 )
             other_group.add_argument(
                 "--evaluate-unoptimized",
@@ -288,9 +287,11 @@ class InferenceTester(CommandTemplate):
             override=(args, not_parsed),
         )
 
-        if ConfigKey.report in json_cfg.keys():
+        if (
+            args.measurements[0] is None
+            and ConfigKey.report in json_cfg.keys()
+        ):
             report: Report = obj_from_json(json_cfg, ConfigKey.report)
-
             args.measurements = report.measurements
 
         return InferenceTester._run_pipeline(

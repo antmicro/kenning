@@ -13,7 +13,7 @@ from jinja2 import Template
 from transformers import __version__ as transformers_version
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import MissingUserMessage
+from kenning.core.exceptions import MissingUserMessage, NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.cnn_dailymail import CNNDailymailDataset
 from kenning.utils.logger import KLogger
@@ -258,7 +258,7 @@ class LLM(ModelWrapper, ABC):
         return [outputs]
 
     def save_to_onnx(self):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def get_framework_and_version(self) -> Tuple[str, str]:
         return "transformers", transformers_version

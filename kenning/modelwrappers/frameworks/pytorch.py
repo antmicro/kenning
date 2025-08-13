@@ -16,6 +16,7 @@ from sklearn import metrics
 from tqdm import tqdm
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.utils.logger import LoggerProgressBar
 from kenning.utils.resource_manager import PathOrURI
@@ -72,7 +73,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
         Recreates the model structure.
         Every PyTorchWrapper subclass has to implement its own architecture.
         """
-        raise NotImplementedError
+        raise NotSupportedError
 
     def load_model(self, model_path: PathOrURI):
         import torch
@@ -148,7 +149,7 @@ class PyTorchWrapper(ModelWrapper, ABC):
             return y
         if isinstance(y, list):
             return [self.postprocess_outputs(_y) for _y in y]
-        raise NotImplementedError
+        raise NotSupportedError
 
     def run_inference(self, X: List[Any]) -> List[Any]:
         self.prepare_model()

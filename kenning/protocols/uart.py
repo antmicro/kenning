@@ -16,6 +16,7 @@ from typing import Optional
 import numpy as np
 import serial
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.core.protocol import ServerAction, ServerStatus
 from kenning.interfaces.io_interface import IOInterface
@@ -207,7 +208,9 @@ class UARTProtocol(KenningProtocol):
             self.connection.close()
 
     def initialize_server(self) -> bool:
-        raise NotImplementedError
+        raise NotSupportedError(
+            "Kenning Server cannot use UART (the protocol is client-side only)"
+        )
 
     def upload_io_specification(self, path: Path) -> bool:
         KLogger.debug("Uploading io specification")

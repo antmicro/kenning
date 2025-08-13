@@ -15,6 +15,7 @@ import numpy as np
 import tensorflow as tf
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.visual_wake_words_dataset import VisualWakeWordsDataset
 from kenning.utils.resource_manager import PathOrURI
@@ -230,16 +231,16 @@ class PersonDetectionModelWrapper(ModelWrapper):
         return [(output.astype(dtype) - zero_point) * scale for output in y]
 
     def load_model(self, model_path: PathOrURI):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def save_model(self, model_path: PathOrURI):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def save_to_onnx(self, model_path: PathOrURI):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def train_model(self):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def run_inference(self, X: List) -> Any:
-        raise NotImplementedError
+        raise NotSupportedError

@@ -20,6 +20,7 @@ import onnx
 import pyximport
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.model import ModelWrapper
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
@@ -203,7 +204,7 @@ class YOLACTWrapper(ModelWrapper, ABC):
         if self.model_prepared:
             return None
         if not self.from_file:
-            raise NotImplementedError(
+            raise NotSupportedError(
                 "Yolact ModelWrapper only supports loading model from a file."
             )
         self.load_model(self.model_path)
@@ -429,7 +430,7 @@ class YOLACTWithPostprocessing(YOLACTWrapper):
         }
 
     def run_inference(self, X: List) -> Any:
-        raise NotImplementedError
+        raise NotSupportedError
 
 
 class YOLACT(YOLACTWrapper):
@@ -703,4 +704,4 @@ class YOLACT(YOLACTWrapper):
         }
 
     def run_inference(self, X: List) -> Any:
-        raise NotImplementedError
+        raise NotSupportedError

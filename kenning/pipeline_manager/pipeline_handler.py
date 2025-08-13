@@ -13,7 +13,10 @@ from typing import Any, Dict, List, Tuple, Union
 from pipeline_manager import specification_builder
 from pipeline_manager.frontend_builder import build_prepare
 
-from kenning.core.exceptions import VisualEditorGraphParserError
+from kenning.core.exceptions import (
+    NotSupportedError,
+    VisualEditorGraphParserError,
+)
 from kenning.core.model import ModelWrapper
 from kenning.core.runtimebuilder import RuntimeBuilder
 from kenning.pipeline_manager.core import (
@@ -422,4 +425,4 @@ class PipelineGraphCreator(GraphCreator):
         return pipeline
 
     def find_compatible_io(self, from_id: str, to_id: str) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError

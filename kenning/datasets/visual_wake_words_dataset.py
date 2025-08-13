@@ -15,6 +15,7 @@ import numpy as np
 from pycocotools.coco import COCO
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.utils.resource_manager import Resources, extract_zip
 
@@ -206,4 +207,4 @@ class VisualWakeWordsDataset(Dataset):
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError

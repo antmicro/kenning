@@ -14,7 +14,10 @@ import numpy as np
 from PIL import Image
 
 from kenning.core.dataset import Dataset
-from kenning.core.exceptions import CannotDownloadDatasetError
+from kenning.core.exceptions import (
+    CannotDownloadDatasetError,
+    NotSupportedError,
+)
 from kenning.core.measurements import Measurements
 
 
@@ -211,4 +214,4 @@ class ImageNetDataset(Dataset):
         return self.classnames
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean or std.")

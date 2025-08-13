@@ -23,6 +23,8 @@ from kenning_sparsity_aware_kernel.utils import (
 )
 from torch.nn.parameter import Parameter
 
+from kenning.core.exceptions import NotSupportedError
+
 
 class GPTQLayer(torch.nn.Module):
     """
@@ -179,11 +181,11 @@ class GPTQLayer(torch.nn.Module):
 
         Raises
         ------
-        NotImplementedError
+        NotSupportedError
             This is a stub method, which does not implement any logic.
             Hence, the error is raised on call.
         """
-        raise NotImplementedError
+        raise NotSupportedError
 
     def unquantized(self) -> torch.Tensor:
         """

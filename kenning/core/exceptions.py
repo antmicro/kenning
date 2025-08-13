@@ -182,6 +182,15 @@ class IOSpecNotFound(KenningError):
     pass
 
 
+class NotSupportedError(KenningError):
+    """
+    Raised when attempting to use a functionality, that is not supported by
+    Kenning (or by that specific module implementation).
+    """
+
+    pass
+
+
 class IOSpecWrongFormat(KenningError):
     """
     Kenning module IO specification contains unsupported entries.

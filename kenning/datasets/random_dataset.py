@@ -15,6 +15,7 @@ import numpy as np
 from PIL import Image
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
@@ -291,7 +292,9 @@ class RandomizedDetectionSegmentationDataset(
         return Measurements()
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError(
+            "Randomized dataset does not support mean std. "
+        )
 
 
 class RandomizedTextDataset(Dataset):
@@ -376,10 +379,12 @@ class RandomizedTextDataset(Dataset):
         )
 
     def get_class_names(self) -> List[str]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support class names.")
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError(
+            "Randomized dataset does not support mean std."
+        )
 
     def train_test_split_representations(
         self,

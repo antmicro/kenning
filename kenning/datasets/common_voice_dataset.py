@@ -16,6 +16,7 @@ import numpy as np
 import pandas as pd
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.utils.resource_manager import Resources, extract_tar
 
@@ -474,7 +475,7 @@ class CommonVoiceDataset(Dataset):
         )
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean or std.")
 
     def get_class_names(self) -> List[str]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support class names.")

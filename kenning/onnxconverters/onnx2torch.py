@@ -42,6 +42,7 @@ from onnx2torch.utils.common import (
     OperationConverterResult,
 )
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.utils.logger import KLogger
 
 CONST_NODES = dict()
@@ -357,7 +358,7 @@ def dropout_converter(
     ratio = extract_value_from_graph(node, graph, "ratio", 0.5)
     seed = extract_value_from_graph(node, graph, "seed")
     if seed is not None:
-        raise NotImplementedError("Dropout nodes seeds are not supported")
+        raise NotSupportedError("Dropout nodes seeds are not supported")
 
     dropout = torch.nn.Dropout(ratio)
     return OperationConverterResult(

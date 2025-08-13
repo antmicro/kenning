@@ -17,6 +17,7 @@ import sensor_msgs.msg
 from kenning_computer_vision_msgs.msg import BoxMsg, MaskMsg, SegmentationMsg
 from rclpy.node import Node
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.outputcollector import OutputCollector
 from kenning.datasets.helpers.detection_and_segmentation import SegmObject
 from kenning.utils.args_manager import get_parsed_json_dict
@@ -280,4 +281,4 @@ class ROS2YolactOutputCollector(OutputCollector):
         return encodings[color_format]
 
     def process_output(self, input_data, output_data):
-        raise NotImplementedError
+        raise NotSupportedError("Output processing is not supported.")

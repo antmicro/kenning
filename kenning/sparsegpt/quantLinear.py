@@ -14,6 +14,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
+from kenning.core.exceptions import NotSupportedError
+
 INT32_BITS = 32
 METADATA_ELEMENTS_PER_INT16 = 8
 
@@ -83,23 +85,23 @@ class QuantLinear(nn.Module):
         """
         super().__init__()
         if infeatures < 8 or outfeatures < 8:
-            raise NotImplementedError(
+            raise NotSupportedError(
                 "Pack method requires the model to "
                 + "be at least of shape 8x8. "
                 + "Make sure the parameters are set correctly."
             )
         if sparse and infeatures < 16:
-            raise NotImplementedError(
+            raise NotSupportedError(
                 "Sparse quantization requires the model to "
                 + "be at least of shape 16x8. "
                 + "Make sure the parameters are set correctly."
             )
 
         if bits != 4:
-            raise NotImplementedError("Only 4 bits are supported.")
+            raise NotSupportedError("Only 4 bits are supported.")
 
         if prunem * prunen != 0 and prunen != 2 and prunem != 4:
-            raise NotImplementedError("Only 2:4 pruning is supported. ")
+            raise NotSupportedError("Only 2:4 pruning is supported. ")
 
         self.infeatures = infeatures
         self.outfeatures = outfeatures
@@ -364,6 +366,6 @@ class QuantLinear(nn.Module):
             )
 
     def forward(self, x):
-        raise NotImplementedError(
+        raise NotSupportedError(
             "QuantLinear is not a valid layer for forward pass."
         )

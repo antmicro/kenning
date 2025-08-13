@@ -14,6 +14,7 @@ import cv2
 import numpy as np
 from pycocotools.coco import COCO
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     ObjectDetectionSegmentationDataset,
@@ -205,4 +206,4 @@ class COCODataset2017(ObjectDetectionSegmentationDataset):
         return measurements
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean or std.")

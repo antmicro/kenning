@@ -17,6 +17,7 @@ from kenning.core.dataconverter import DataConverter
 from kenning.core.dataset import Dataset
 from kenning.core.exceptions import (
     ModelTooLargeError,
+    NotSupportedError,
     PipelineRunnerInvalidConfigError,
 )
 from kenning.core.measurements import (
@@ -353,7 +354,7 @@ class PipelineRunner(object):
             check_request(self.protocol.initialize_client(), "prepare client")
             try:
                 self.protocol.listen_to_server_logs()
-            except NotImplementedError:
+            except NotSupportedError:
                 KLogger.warning(
                     "Server logs not available for this protocol:"
                     f" {type(self.protocol)}."
@@ -407,7 +408,7 @@ class PipelineRunner(object):
                         )
                         try:
                             self.protocol.listen_to_server_logs()
-                        except NotImplementedError:
+                        except NotSupportedError:
                             KLogger.warning(
                                 "Server logs not available for this protocol:"
                                 f" {type(self.protocol)}."

@@ -19,6 +19,7 @@ from rclpy.action import ActionClient
 from rclpy.impl.implementation_singleton import rclpy_implementation as _rclpy
 from rclpy.node import Node
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements, timemeasurements
 from kenning.core.protocol import (
     Protocol,
@@ -350,10 +351,12 @@ class ROS2Protocol(Protocol):
         client_connected_callback: Optional[Callable[Any, None]] = None,
         client_disconnected_callback: Optional[Callable[None, None]] = None,
     ) -> bool:
-        raise NotImplementedError
+        raise NotSupportedError(
+            "Kenning Server cannot use ROS2 (the protocol is client-side only)"
+        )
 
     def listen_to_server_logs(self):
-        raise NotImplementedError
+        raise NotSupportedError("ROS2 protocol does not support sending logs.")
 
     def serve(
         self,
@@ -372,4 +375,6 @@ class ROS2Protocol(Protocol):
         ] = None,
         upload_runtime_callback: Optional[ServerUploadCallback] = None,
     ):
-        raise NotImplementedError
+        raise NotSupportedError(
+            "Kenning Server cannot use ROS2 (the protocol is client-side only)"
+        )

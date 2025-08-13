@@ -19,6 +19,7 @@ import numpy as np
 from pycocotools.coco import COCO
 from tqdm import tqdm
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.datasets.helpers.detection_and_segmentation import (
     ObjectDetectionSegmentationDataset,
@@ -774,7 +775,7 @@ class LindenthalCameraTrapsDataset(ObjectDetectionSegmentationDataset):
         return self.coco.imgs[first_frame_key]["seq_id"]
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean or std.")
 
     @staticmethod
     def convert_bag_to_images(bagfile: Path, output: Path, topics: List[str]):

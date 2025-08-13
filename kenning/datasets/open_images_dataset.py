@@ -40,6 +40,7 @@ else:
 
 import zipfile
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.helpers.detection_and_segmentation import (
     DetectObject,
     ObjectDetectionSegmentationDataset,
@@ -626,4 +627,4 @@ class OpenImagesDatasetV6(ObjectDetectionSegmentationDataset):
         return self.classnames
 
     def get_input_mean_std(self) -> Tuple[Any, Any]:
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean or std.")

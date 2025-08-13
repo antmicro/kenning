@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, List, Optional, Tuple
 
 from kenning.core.dataset import Dataset
+from kenning.core.exceptions import NotSupportedError
 from kenning.core.measurements import Measurements
 from kenning.utils.resource_manager import Resources
 
@@ -148,12 +149,12 @@ class CNNDailymailDataset(Dataset):
         # Text summarization is not a numerical task.
         # Every input is a list of words, that are later tokenized,
         # therefore, mean and std are not defined.
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support mean/std.")
 
     def get_class_names(self) -> List[str]:
         # Text summarization is not a classification task.
         # There are no classes to be classified.
-        raise NotImplementedError
+        raise NotSupportedError("This dataset does not support class names")
 
     def download_dataset_fun(self):
         from datasets import load_dataset
@@ -165,10 +166,10 @@ class CNNDailymailDataset(Dataset):
         ds.save_to_disk(str(self.root))
 
     def get_data(self) -> Tuple[List, List]:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def get_data_unloaded(self) -> Tuple[List, List]:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def train_test_split_representations(
         self,

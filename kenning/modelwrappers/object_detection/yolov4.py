@@ -30,6 +30,7 @@ from typing import Any, List
 import numpy as np
 import onnx
 
+from kenning.core.exceptions import NotSupportedError
 from kenning.datasets.coco_dataset import COCODataset2017
 from kenning.datasets.helpers.detection_and_segmentation import DetectObject
 from kenning.modelwrappers.object_detection.yolo_wrapper import YOLOWrapper
@@ -400,10 +401,10 @@ class ONNXYOLOV4(YOLOWrapper):
         shutil.copy(self.model_path, model_path)
 
     def run_inference(self, X: List) -> Any:
-        raise NotImplementedError
+        raise NotSupportedError
 
     def save_model(self, model_path: PathOrURI):
-        raise NotImplementedError
+        raise NotSupportedError
 
     def train_model(self):
-        raise NotImplementedError
+        raise NotSupportedError
